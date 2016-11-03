@@ -5,7 +5,7 @@ const corsPlugin = {
   serverDependencies: {
     'react-tools': '',
   },
-  client: ({engines: {React, ReactDOM}}) => {
+  client: ({engines: {React, ReactDOM}}) => ({
     mount() {
       const jsx = `\
 <div style={{position: 'relative'}}>
@@ -37,11 +37,11 @@ const corsPlugin = {
       this._cleanup = () => {
         live = false;
       };
-    }
+    },
     unmount() {
       this._cleanup();
-    }
-  },
+    },
+  }),
   server: ({engines: {express}, dependencies: {'react-tools': ReactTools}}) => ({
     mount() {
       function corsPost(req, res) {
@@ -71,10 +71,10 @@ const corsPlugin = {
         }
         express._router.stack.forEach(removeMiddlewares);
       };
-    }
+    },
     unmount() {
       this._cleanup();
-    }
+    },
   })
 };
 

@@ -1,7 +1,7 @@
-const http = require('http');
-const express = require('express');
+const path = require('path');
 
-const st = require('st');
+const express = require('express');
+const ws = require('ws');
 
 class ArchaeServer {
   constructor(options) {
@@ -18,33 +18,31 @@ class ArchaeServer {
     cb(); // XXX
   }
 
-  listen(server) {
+  listen({server, app}) {
+    server = server || http.createServer();
+    app = app || express();
+
     const {_options: options} = this;
 
-    const app = express();
-
-    /* app.all(/^\/archae(?:\/|$)/, (req, res, next) => {
-      const u = req.url.replace(/^\/archae/, '');
-
-      res.send('ok');
-    }); */
-
-    const static = st({
-      path: path.join(__dirname, 'public'),
-      url: '/',
-    });
-    app.get('*', (req, res, next) => {
-      static(req, res);
-    });
+    app.use('/', express.static(path.join(__dirname, 'public')));
     server.on('request', app);
 
-    const wss = new WebSocketServer({
+    const wss = new ws.Server({
       server,
     });
     wss.on('connection', c => {
-      console.log('got connection');
+      console.log('connection open');
 
-      c.send('lol');
+      c.on('message', s => {
+        const m = JSON.parse(s);
+        console.log('got message', m);
+      });
+      c.send(JSON.stringify({
+        lol: 'zol',
+      }));
+      c.on('close', () => {
+        console.log('connection close');
+      });
     });
   }
 }
