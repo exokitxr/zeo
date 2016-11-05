@@ -11,13 +11,20 @@ app.use('/', express.static(__dirname));
 
 const a = archae();
 
-a.addPlugin('react', err => {
+a.addEngine('/core/engines/react', err => {
+  if (!err) {
+    console.log('react engine add ok');
+  } else {
+    console.warn('react engine add fail', err);
+  }
+});
+/* a.addPlugin('react', err => {
   if (!err) {
     console.log('react plugin add ok');
   } else {
     console.warn('react plugin add fail', err);
   }
-});
+}); */
 a.addPlugin('jquery', err => {
   if (!err) {
     console.log('jquery plugin add ok');

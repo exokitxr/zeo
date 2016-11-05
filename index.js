@@ -1,5 +1,5 @@
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const child_process = require('child_process');
 
 const express = require('express');
@@ -14,6 +14,34 @@ class ArchaeServer {
     this._options = options;
   }
 
+  addEngine(engine, opts, cb) {
+    if (cb === undefined) {
+      cb = opts;
+      opts = {};
+    }
+
+    if (opts.force) {
+      _removeModule(engine, 'engines', err => {
+        if (!err) {
+          _addModule(engine, 'engines', cb);
+        } else {
+          cb(err);
+        }
+      });
+    } else {
+      _addModule(engine, 'engines', cb);
+    }
+  }
+  
+  removeEngine(engine, opts, cb) {
+    if (cb === undefined) {
+      cb = opts;
+      opts = {};
+    }
+
+    _removeModule(engine, 'engines', cb);
+  }
+
   addPlugin(plugin, opts, cb) {
     if (cb === undefined) {
       cb = opts;
@@ -21,15 +49,15 @@ class ArchaeServer {
     }
 
     if (opts.force) {
-      _removePlugin(plugin, err => {
+      _removeModule(plugin, 'plugins', err => {
         if (!err) {
-          _addPlugin(plugin, cb);
+          _addModule(plugin, 'plugins', cb);
         } else {
           cb(err);
         }
       });
     } else {
-      _addPlugin(plugin, cb);
+      _addModule(plugin, 'plugins', cb);
     }
   }
   
@@ -39,7 +67,7 @@ class ArchaeServer {
       opts = {};
     }
 
-    _removePlugin(plugin, cb);
+    _removeModule(plugin, 'plugins', cb);
   }
 
   listen({server, app}) {
@@ -90,19 +118,35 @@ class ArchaeServer {
             c.send(s);
           };
 
-          if (m.type === 'addPlugin') {
+          if (m.type === 'addEngine') {
+            const {engine} = m;
+
+            if (_isValidModule(engine)) {
+              _addModule(engine, 'engines', cb);
+            } else {
+              cb('invalid engine spec');
+            }
+          } else if (m.type === 'removePlugin') {
+            const {engine} = m;
+
+            if (_isValidModule(engine)) {
+              _removeModule(engine, 'engines', cb);
+            } else {
+              cb('invalid engine spec');
+            }
+          } else if (m.type === 'addPlugin') {
             const {plugin} = m;
 
-            if (_isValidPlugin(plugin)) {
-              _addPlugin(plugin, cb);
+            if (_isValidModule(plugin)) {
+              _addModule(plugin, 'plugins', cb);
             } else {
               cb('invalid plugin spec');
             }
           } else if (m.type === 'removePlugin') {
             const {plugin} = m;
 
-            if (_isValidPlugin(plugin)) {
-              _removePlugin(plugin, cb);
+            if (_isValidModule(plugin)) {
+              _removeModule(plugin, 'plugins', cb);
             } else {
               cb('invalid plugin spec');
             }
@@ -120,31 +164,73 @@ class ArchaeServer {
   }
 }
 
-const _addPlugin = (plugin, cb) => {
-  const _downloadPlugin = (plugin, cb) => {
-    _yarnAdd(plugin, err => {
-      if (!err) {
-        const pluginPath = _getPluginPath(plugin);
-        fs.readFile(path.join(pluginPath, 'package.json'), 'utf8', (err, s) => {
-          if (!err) {
-            const j = JSON.parse(s);
-            cb(null, j);
-          } else {
-            cb(err);
-          }
-        });
-      } else {
-        cb(err);
-      }
-    });
+const _addModule = (module, type, cb) => {
+  const _downloadModule = (module, type, cb) => {
+    if (path.isAbsolute(module)) {
+      const modulePackageJsonPath = _getModulePackageJsonPath(module);
+      fs.readFile(modulePackageJsonPath, 'utf8', (err, s) => {
+        if (!err) {
+          const j = JSON.parse(s);
+          const moduleName = j.name;
+          const modulePath = _getModulePath(moduleName, type);
+
+          fs.exists(modulePath, exists => {
+            if (exists) {
+              _yarnInstall(moduleName, type, err => {
+                if (!err) {
+                  cb(null, j);
+                } else {
+                  cb(err);
+                }
+              });
+            } else {
+              const localModulePath = path.join(__dirname, module);
+              fs.copy(localModulePath, modulePath, err => {
+                if (!err) {
+                  _yarnInstall(moduleName, type, err => {
+                    if (!err) {
+                      cb(null, j);
+                    } else {
+                      cb(err);
+                    }
+                  });
+                } else {
+                  cb(err);
+                }
+              });
+            }
+          });
+        } else {
+          cb(err);
+
+          cleanup();
+        }
+      });  
+    } else {
+      _yarnAdd(module, type, err => {
+        if (!err) {
+          const modulePackageJsonPath = _getModulePackageJsonPath(module, type);
+          fs.readFile(modulePackageJsonPath, 'utf8', (err, s) => {
+            if (!err) {
+              const j = JSON.parse(s);
+              cb(null, j);
+            } else {
+              cb(err);
+            }
+          });
+        } else {
+          cb(err);
+        }
+      });
+    }
   };
-  const _yarnAdd = (plugin, cb) => {
+  const _yarnAdd = (module, type, cb) => {
     _queueYarn(cleanup => {
       const yarnAdd = child_process.spawn(
         'yarn',
-        [ 'add', plugin ],
+        [ 'add', module ],
         {
-          cwd: path.join(__dirname, 'plugins'),
+          cwd: path.join(__dirname, type),
         }
       );
       yarnAdd.stdout.pipe(process.stdout);
@@ -152,7 +238,7 @@ const _addPlugin = (plugin, cb) => {
       yarnAdd.on('exit', code => {
         if (code === 0) {
           cb();
-        } else {r
+        } else {
           const err = new Error('yarn add error: ' + code);
           cb(err);
         }
@@ -161,14 +247,14 @@ const _addPlugin = (plugin, cb) => {
       });
     });
   };
-  const _yarnInstall = (plugin, cb) => {
+  const _yarnInstall = (module, type, cb) => {
     _queueYarn(cleanup => {
-      const pluginPath = _getPluginPath(plugin);
+      const modulePath = _getModulePath(module, type);
       const yarnInstall = child_process.spawn(
         'yarn',
         [ 'install' ],
         {
-          cwd: pluginPath,
+          cwd: modulePath,
         }
       );
       yarnInstall.stdout.pipe(process.stdout);
@@ -185,13 +271,13 @@ const _addPlugin = (plugin, cb) => {
       });
     });
   };
-  const _dumpPlugin = (plugin, cb) => {
-    const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', files} = plugin;
+  const _dumpPlugin = (module, type, cb) => {
+    const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', files} = module;
 
-    if (_isValidPluginSpec(plugin)) {
-      const pluginPath = _getPluginPath(plugin.name);
+    if (_isValidModuleSpec(module)) {
+      const modulePath = _getModulePath(plugin.name, type);
 
-      mkdirp(pluginPath, err => {
+      mkdirp(modulePath, err => {
         if (!err) {
           const packageJson = {
             name,
@@ -202,9 +288,9 @@ const _addPlugin = (plugin, cb) => {
           };
           const packageJsonString = JSON.stringify(packageJson, null, 2);
 
-          fs.writeFile(path.join(pluginPath, 'package.json'), packageJsonString, 'utf8', err => {
+          fs.writeFile(path.join(modulePath, 'package.json'), packageJsonString, 'utf8', err => {
             if (!err) {
-              _yarnInstall(plugin.name, err => {
+              _yarnInstall(module.name, type, err => {
                 if (!err) {
                   if (_isValidFiles(files)) {
                     const fileNames = Object.keys(files);
@@ -221,7 +307,7 @@ const _addPlugin = (plugin, cb) => {
                         const fileName = fileNames[i];
                         const fileData = files[fileName];
 
-                        fs.writeFile(path.join(pluginPath, fileName), fileData, 'utf8', pend);
+                        fs.writeFile(path.join(modulePath, fileName), fileData, 'utf8', pend);
                       }
                     } else {
                       cb();
@@ -242,17 +328,17 @@ const _addPlugin = (plugin, cb) => {
         }
       });
     } else {
-      const err = new Error('invalid plugin declaration');
+      const err = new Error('invalid module declaration');
       cb(err);
     }
   };
-  const _buildPlugin = (plugin, cb) => {
-    const pluginClientPath = _getPluginClientPath(plugin);
-    const pluginBuildPath = _getPluginBuildPath(plugin);
+  const _buildModule = (module, type, cb) => {
+    const moduleClientPath = _getModuleClientPath(module, type);
+    const moduleBuildPath = _getModuleBuildPath(module, type);
 
     const webpack = child_process.spawn(
       path.join(__dirname, 'node_modules', 'webpack', 'bin', 'webpack.js'),
-      [ pluginClientPath, pluginBuildPath ],
+      [ moduleClientPath, moduleBuildPath ],
       {
         cwd: __dirname,
       }
@@ -269,30 +355,30 @@ const _addPlugin = (plugin, cb) => {
     });
   };
 
-  mkdirp(path.join(__dirname, 'plugins'), err => {
+  mkdirp(path.join(__dirname, type), err => {
     if (!err) {
-      const pluginBuildPath = _getPluginBuildPath(plugin);
+      const moduleBuildPath = _getModuleBuildPath(module, type);
 
-      fs.exists(pluginBuildPath, exists => {
+      fs.exists(moduleBuildPath, exists => {
         if (!exists) {
-          if (typeof plugin === 'string') {
-            _downloadPlugin(plugin, (err, packageJson) => {
+          if (typeof module === 'string') {
+            _downloadModule(module, type, (err, packageJson) => {
               if (!err) {
-                _buildPlugin(packageJson, cb);
+                _buildModule(packageJson, type, cb);
               } else {
                 cb(err);
               }
             });
-          } else if (typeof plugin === 'object') {
-            _dumpPlugin(plugin, err => {
+          } else if (typeof module === 'object') {
+            _dumpPlugin(module, type, err => {
               if (!err) {
-                _buildPlugin(plugin, cb);
+                _buildModule(module, type, cb);
               } else {
                 cb(err);
               }
             });
           } else {
-            const err = new Error('invalid plugin format');
+            const err = new Error('invalid module format');
             cb(err);
           }
         } else {
@@ -305,30 +391,30 @@ const _addPlugin = (plugin, cb) => {
   });
 };
 
-const _removePlugin = (plugin, cb) => {
-  if (typeof plugin === 'string') {
-    const pluginPath = _getPluginPath(plugin);
+const _removeModule = (module, type, cb) => {
+  if (typeof module === 'string') {
+    const modulePath = _getModulePath(module, type); // XXX fix package json removal here
 
-    rimraf(pluginPath, err => {
+    rimraf(modulePath, err => {
       if (!err) {
-        const pluginBuildPath = _getPluginBuildPath(plugin);
+        const moduleBuildPath = _getModuleBuildPath(module, type);
 
-        rimraf(pluginBuildPath, cb);
+        rimraf(moduleBuildPath, cb);
       } else {
         cb(err);
       }
     });
-  } else if (typeof plugin ==='object') {
-    if (plugin && typeof plugin.name === 'string') {
-      const pluginBuildPath = _getPluginBuildPath(plugin.name);
+  } else if (typeof module ==='object') {
+    if (module && typeof module.name === 'string') {
+      const moduleBuildPath = _getModuleBuildPath(module.name);
 
-      rimraf(pluginBuildPath, cb);
+      rimraf(moduleBuildPath, cb);
     } else {
-      const err = new Error('invalid plugin declaration');
+      const err = new Error('invalid module declaration');
       cb(err);
     }
   } else {
-    const err = new Error('invalid plugin format');
+    const err = new Error('invalid module format');
     cb(err);
   }
 };
@@ -356,38 +442,46 @@ const _queueYarn = (() => {
   return _next;
 })();
 
-const _getPluginName = plugin => {
-  if (typeof plugin === 'string') {
-    return plugin;
-  } else if (_isValidPluginSpec(plugin)) {
-    return plugin.name;
+const _getModuleName = module => {
+  if (typeof module === 'string') {
+    return module;
+  } else if (_isValidModuleSpec(module)) {
+    return module.name;
   } else {
     return null;
   }
 };
-const _getPluginPath = plugin => path.join(__dirname, 'plugins', 'node_modules', _getPluginName(plugin));
-const _getPluginClientPath = plugin => {
-  const pluginPath = _getPluginPath(plugin);
+const _getModulePath = (module, type) => path.join(__dirname, type, 'node_modules', _getModuleName(module));
+const _getModulePackageJsonPath = (module, type) => {
+  if (path.isAbsolute(module)) {
+    return path.join(__dirname, module, 'package.json');
+  } else {
+    const modulePath = _getModulePath(module, type);
+    return path.join(modulePath, 'package.json');
+  }
+};
+const _getModuleClientPath = (module, type) => {
+  const modulePath = _getModulePath(module, type);
 
-  if (typeof plugin === 'string') {
-    return pluginPath;
-  } else if (_isValidPluginSpec(plugin)) {
-    const {client} = plugin;
+  if (typeof module === 'string') {
+    return modulePath;
+  } else if (_isValidModuleSpec(module)) {
+    const {client} = module;
     if (client) {
-      return path.join(pluginPath, client);
+      return path.join(modulePath, client);
     } else {
-      const {main = 'index.js'} = plugin;
-      return path.join(pluginPath, main);
+      const {main = 'index.js'} = module;
+      return path.join(modulePath, main);
     }
   } else {
     return null;
   }
 };
-const _getPluginBuildPath = plugin => path.join(__dirname, 'plugins', 'build', _getPluginName(plugin) + '.js');
+const _getModuleBuildPath = (module, type) => path.join(__dirname, type, 'build', _getModuleName(module) + '.js');
 
-const _isValidPlugin = plugin => typeof plugin === 'string' || _isValidPluginSpec(plugin);
-const _isValidPluginSpec = plugin => {
-  const {name, version = '', dependencies = {}, client = '', server = ''} = plugin;
+const _isValidModule = module => typeof module === 'string' || _isValidModuleSpec(module);
+const _isValidModuleSpec = module => {
+  const {name, version = '', dependencies = {}, client = '', server = ''} = module;
 
   return typeof name === 'string' &&
     typeof version === 'string' &&
