@@ -139,43 +139,50 @@ const _addPlugin = (plugin, cb) => {
     });
   };
   const _yarnAdd = (plugin, cb) => {
-    const yarnAdd = child_process.spawn(
-      'yarn',
-      [ 'add', plugin ],
-      {
-        cwd: path.join(__dirname, 'plugins'),
-      }
-    );
-    yarnAdd.stdout.pipe(process.stdout);
-    yarnAdd.stderr.pipe(process.stderr);
-    yarnAdd.on('exit', code => {
-      if (code === 0) {
-        cb();
-      } else {r
-        const err = new Error('yarn add error: ' + code);
-        cb(err);
-      }
+    _queueYarn(cleanup => {
+      const yarnAdd = child_process.spawn(
+        'yarn',
+        [ 'add', plugin ],
+        {
+          cwd: path.join(__dirname, 'plugins'),
+        }
+      );
+      yarnAdd.stdout.pipe(process.stdout);
+      yarnAdd.stderr.pipe(process.stderr);
+      yarnAdd.on('exit', code => {
+        if (code === 0) {
+          cb();
+        } else {r
+          const err = new Error('yarn add error: ' + code);
+          cb(err);
+        }
+
+        cleanup();
+      });
     });
   };
   const _yarnInstall = (plugin, cb) => {
-    const pluginPath = _getPluginPath(plugin);
+    _queueYarn(cleanup => {
+      const pluginPath = _getPluginPath(plugin);
+      const yarnInstall = child_process.spawn(
+        'yarn',
+        [ 'install' ],
+        {
+          cwd: pluginPath,
+        }
+      );
+      yarnInstall.stdout.pipe(process.stdout);
+      yarnInstall.stderr.pipe(process.stderr);
+      yarnInstall.on('exit', code => {
+        if (code === 0) {
+          cb();
+        } else {
+          const err = new Error('yard install error: ' + code);
+          cb(err);
+        }
 
-    const yarnInstall = child_process.spawn(
-      'yarn',
-      [ 'install' ],
-      {
-        cwd: pluginPath,
-      }
-    );
-    yarnInstall.stdout.pipe(process.stdout);
-    yarnInstall.stderr.pipe(process.stderr);
-    yarnInstall.on('exit', code => {
-      if (code === 0) {
-        cb();
-      } else {
-        const err = new Error('yard install error: ' + code);
-        cb(err);
-      }
+        cleanup();
+      });
     });
   };
   const _dumpPlugin = (plugin, cb) => {
@@ -280,7 +287,6 @@ const _addPlugin = (plugin, cb) => {
                     cb(err);
                   }
                 }); */
-console.log('downloaded plugin', packageJson.name);
                 _buildPlugin(packageJson, cb);
               } else {
                 cb(err);
@@ -344,6 +350,29 @@ const _removePlugin = (plugin, cb) => {
     cb(err);
   }
 };
+
+const _queueYarn = (() => {
+  let running = false;
+  const queue = [];
+
+  const _next = handler => {
+    if (!running) {
+      running = true;
+
+      handler(() => {
+        running = false;
+
+        if (queue.length > 0) {
+          _next(queue.pop());
+        }
+      });
+    } else {
+      queue.push(handler);
+    }
+  };
+
+  return _next;
+})();
 
 const _getPluginName = plugin => {
   if (typeof plugin === 'string') {
