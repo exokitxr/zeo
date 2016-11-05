@@ -77,21 +77,38 @@ class ArchaeServer {
     const {_options: options} = this;
 
     app.use('/', express.static(path.join(__dirname, 'public')));
-    app.use('/archae/plugins.json', (req, res, next) => {
+    app.use('/archae/modules.json', (req, res, next) => {
+      let engines = [];
+      let plugins = [];
+
+      let pending = 2;
+      const pend = () => {
+        if (--pending === 0) {
+          res.json({
+            engines: _sort(engines),
+            plugins: _sort(plugins),
+          });
+        }
+      };
+      const _sort = modules => modules.map(m => m.replace(/\.js$/, '')).sort();
+
+      fs.readdir(path.join(__dirname, 'engines', 'build'), (err, files) => {
+        if (!err) {
+          engines = engines.concat(files);
+        }
+
+        pend();
+      });
       fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
         if (!err) {
-          const result = files.map(f => f.replace(/\.js$/, '')).sort();
-          res.json(result);
-        } else if (err.code === 'ENOENT') {
-          res.json([]);
-        } else {
-          res.status(500);
-          res.send(err.stack);
+          plugins = plugins.concat(files);
         }
+
+        pend();
       });
     });
+    app.use('/archae/engines', express.static(path.join(__dirname, 'engines', 'build')));
     app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
-    // app.use('/archae/bundle.js', express.static(path.join(__dirname, 'plugins', 'bundle.js')));
     server.on('request', app);
 
     const wss = new ws.Server({
@@ -275,7 +292,7 @@ const _addModule = (module, type, cb) => {
     const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', files} = module;
 
     if (_isValidModuleSpec(module)) {
-      const modulePath = _getModulePath(plugin.name, type);
+      const modulePath = _getModulePath(module.name, type);
 
       mkdirp(modulePath, err => {
         if (!err) {

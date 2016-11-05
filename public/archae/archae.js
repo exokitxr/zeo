@@ -29,58 +29,127 @@ class ArchaeClient {
   }
 
   bootstrap() {
-    this.loadAllPlugins();
+    this.mountAll();
     this.connect();
   }
 
-  loadAllPlugins() {
-    fetch('/archae/plugins.json')
+  loadModules(modules, cb) {
+    window.module = {};
+    this.engines = {};
+    this.plugins = {};
+
+    const {engines, plugins} = modules;
+
+    if ((engines.length + plugins.length) > 0) {
+      let pending = engines.length + plugins.length;
+      const pend = () => {
+        if (--pending === 0) {
+          console.log('all modules loaded');
+
+          cb();
+        }
+      };
+      const _load = (modules, type, exports, cb) => {
+        modules.forEach(module => {
+          const script = document.createElement('script');
+          script.src = '/archae/' + type + '/' + module + '.js';
+          script.async = true;
+          script.onload = () => {
+            console.log('module loaded:', type + '/' + module);
+
+            exports[module] = window.module.exports;
+            window.module = {};
+
+            cb();
+            cleanup();
+          };
+          script.onerror = err => {
+            console.warn(err);
+
+            cb();
+            cleanup();
+          };
+
+          document.body.appendChild(script);
+          const cleanup = () => {
+            document.body.removeChild(script);
+          };
+        });
+      };
+
+      _load(engines, 'engines', this.engines, pend);
+      _load(plugins, 'plugins', this.plugins, pend);
+    } else {
+      cb();
+    }
+  }
+
+  mountEngines(engines, cb) {
+    this._engines = {};
+
+    const engineMountPromises = engines.map(engine => {
+      const engineModule = this.engines[engine];
+
+      const engineInstance = {};
+      this._engines[engine] = engineInstance;
+
+      return engineModule.mount.call(engineInstance);
+    });
+
+    Promise.all(engineMountPromises)
+      .then(() => {
+        cb();
+      })
+     .catch(cb);
+  }
+
+  mountPlugins(plugins, cb) {
+    this._plugins = {};
+
+    const pluginOptions = {
+      engines: this._engines,
+    };
+
+    const pluginMountPromises = plugins.map(plugin => {
+      const pluginModule = this.plugins[plugin];
+
+      const pluginInstance = pluginModule(pluginOptions);
+      this._plugins[plugin] = pluginInstance;
+
+      return pluginInstance.mount();
+    });
+
+    Promise.all(pluginMountPromises)
+      .then(() => {
+        cb();
+      })
+     .catch(cb);
+  }
+
+  mountAll() {
+    fetch('/archae/modules.json')
       .then(res => {
         res.json()
-          .then(plugins => {
-            const done = () => {
-              console.log('done loading plugins');
-            };
+          .then(modules => {
+            this.loadModules(modules, err => {
+              if (err) {
+                console.warn(err);
+              }
 
-            if (plugins.length > 0) {
-              let pending = plugins.length;
-              const pend = () => {
-                if (--pending === 0) {
-                  done();
-                }
-              };
-
-              window.module = {};
-              window.modules = {};
-
-              plugins.forEach(plugin => {
-                const script = document.createElement('script');
-                script.src = '/archae/plugins/' + plugin + '.js';
-                script.async = true;
-                script.onload = () => {
-                  console.log('plugin loaded:', plugin);
-
-                  window.modules[plugin] = module.exports;
-                  window.module = {};
-
-                  pend();
-                  cleanup();
-                };
-                script.onerror = err => {
+              this.mountEngines(modules.engines, err => {
+                if (err) {
                   console.warn(err);
+                }
 
-                  pend();
-                  cleanup();
-                };
+                this.mountPlugins(modules.plugins, err => {
+                  if (err) {
+                    console.warn(err);
+                  }
 
-                document.body.appendChild(script);
-                const cleanup = () => {
-                  document.body.removeChild(script);
-                };
+                  console.log('done mounting');
+                });
               });
-            } else {
-              done();
-            }
+            });
           })
           .catch(err => {
             console.warn(err);

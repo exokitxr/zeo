@@ -3,7 +3,8 @@
   "main": "index.js",
   "version": "0.0.1",
   "scripts": {
-    "start": "node ./examples/index.js"
+    "start": "node ./examples/index.js",
+    "clean": "rm -Rf ./engines ./plugins"
   },
   "dependencies": {
     "babel-core": "^6.18.2",

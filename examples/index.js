@@ -24,7 +24,7 @@ a.addEngine('/core/engines/react', err => {
   } else {
     console.warn('react plugin add fail', err);
   }
-}); */
+});
 a.addPlugin('jquery', err => {
   if (!err) {
     console.log('jquery plugin add ok');
@@ -39,7 +39,7 @@ a.addPlugin('lodash', err => {
     console.warn('lodash plugin add fail', err);
   }
 });
-/* a.addPlugin('three', err => {
+a.addPlugin('three', err => {
   if (!err) {
     console.log('three plugin add ok');
   } else {

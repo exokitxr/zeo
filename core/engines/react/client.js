@@ -1,5 +1,7 @@
+const ReactDOM = require('react-dom');
+
 const client = {
-  mount: ({dependencies: {'react': React, 'react-dom': ReactDOM}}) => {
+  mount() {
     let rootEl = null;
 
     this._cleanup = () => {
@@ -8,7 +10,7 @@ const client = {
       }
     };
 
-    return Promise.accept({
+    return Promise.resolve({
       render(component) {
         if (!rootEl) {
           rootEl = document.createElement('div');
@@ -19,7 +21,7 @@ const client = {
       }
     });
   },
-  unmount: () => {
+  unmount() {
     this._cleanup();
   },
 };
