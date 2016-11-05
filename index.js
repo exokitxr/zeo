@@ -63,7 +63,7 @@ class ArchaeServer {
       });
     });
     app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
-    app.use('/archae/bundle.js', express.static(path.join(__dirname, 'plugins', 'bundle.js')));
+    // app.use('/archae/bundle.js', express.static(path.join(__dirname, 'plugins', 'bundle.js')));
     server.on('request', app);
 
     const wss = new ws.Server({
@@ -148,11 +148,11 @@ const _addPlugin = (plugin, cb) => {
     );
     yarnAdd.stdout.pipe(process.stdout);
     yarnAdd.stderr.pipe(process.stderr);
-    yarnAdd.on('close', code => {
+    yarnAdd.on('exit', code => {
       if (code === 0) {
         cb();
-      } else {
-        const err = new Error('yard add error: ' + code);
+      } else {r
+        const err = new Error('yarn add error: ' + code);
         cb(err);
       }
     });
@@ -169,7 +169,7 @@ const _addPlugin = (plugin, cb) => {
     );
     yarnInstall.stdout.pipe(process.stdout);
     yarnInstall.stderr.pipe(process.stderr);
-    yarnInstall.on('close', code => {
+    yarnInstall.on('exit', code => {
       if (code === 0) {
         cb();
       } else {
@@ -252,7 +252,7 @@ const _addPlugin = (plugin, cb) => {
     );
     webpack.stdout.pipe(process.stdout);
     webpack.stderr.pipe(process.stderr);
-    webpack.on('close', code => {
+    webpack.on('exit', code => {
       if (code === 0) {
         cb();
       } else {
@@ -271,7 +271,7 @@ const _addPlugin = (plugin, cb) => {
           if (typeof plugin === 'string') {
             _downloadPlugin(plugin, (err, packageJson) => {
               if (!err) {
-                _buildPlugin(packageJson, err => {
+                /* _buildPlugin(packageJson, err => {
                   if (!err) {
                     _rebuildBundle();
 
@@ -279,7 +279,9 @@ const _addPlugin = (plugin, cb) => {
                   } else {
                     cb(err);
                   }
-                });
+                }); */
+console.log('downloaded plugin', packageJson.name);
+                _buildPlugin(packageJson, cb);
               } else {
                 cb(err);
               }
@@ -287,7 +289,7 @@ const _addPlugin = (plugin, cb) => {
           } else if (typeof plugin === 'object') {
             _dumpPlugin(plugin, err => {
               if (!err) {
-                _buildPlugin(plugin, err => {
+                /* _buildPlugin(plugin, err => {
                   if (!err) {
                     _rebuildBundle();
 
@@ -295,7 +297,8 @@ const _addPlugin = (plugin, cb) => {
                   } else {
                     cb(err);
                   }
-                });
+                }); */
+                _buildPlugin(plugin, cb);
               } else {
                 cb(err);
               }
@@ -409,7 +412,7 @@ const _isValidFiles = files => {
   }
 };
 
-const _rebuildBundle = (() => {
+/* const _rebuildBundle = (() => {
   let running = false;
   let queued = false;
 
@@ -486,7 +489,7 @@ const _rebuildBundle = (() => {
       }
     }
   };
-})();
+})(); */
 
 const archae = (opts) => new ArchaeServer(opts);
 
