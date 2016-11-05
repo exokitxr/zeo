@@ -64,14 +64,19 @@ class ArchaeClient {
                   window.module = {};
 
                   pend();
+                  cleanup();
                 };
                 script.onerror = err => {
                   console.warn(err);
 
                   pend();
+                  cleanup();
                 };
 
                 document.body.appendChild(script);
+                const cleanup = () => {
+                  document.body.removeChild(script);
+                };
               });
             } else {
               done();
