@@ -278,15 +278,6 @@ const _addPlugin = (plugin, cb) => {
           if (typeof plugin === 'string') {
             _downloadPlugin(plugin, (err, packageJson) => {
               if (!err) {
-                /* _buildPlugin(packageJson, err => {
-                  if (!err) {
-                    _rebuildBundle();
-
-                    cb();
-                  } else {
-                    cb(err);
-                  }
-                }); */
                 _buildPlugin(packageJson, cb);
               } else {
                 cb(err);
@@ -295,15 +286,6 @@ const _addPlugin = (plugin, cb) => {
           } else if (typeof plugin === 'object') {
             _dumpPlugin(plugin, err => {
               if (!err) {
-                /* _buildPlugin(plugin, err => {
-                  if (!err) {
-                    _rebuildBundle();
-
-                    cb();
-                  } else {
-                    cb(err);
-                  }
-                }); */
                 _buildPlugin(plugin, cb);
               } else {
                 cb(err);
@@ -440,85 +422,6 @@ const _isValidFiles = files => {
     return false;
   }
 };
-
-/* const _rebuildBundle = (() => {
-  let running = false;
-  let queued = false;
-
-  return () => {
-    if (!running) {
-      running = true;
-
-      const _write = (s, cb) => {
-        fs.writeFile(path.join(__dirname, 'plugins', 'bundle.js'), s, 'utf8', cb);
-      };
-      const done = () => {
-        console.log('done bundle rebuild');
-
-        running = false;
-
-        if (queued) {
-          queued = false;
-
-          _rebuild();
-        }
-      };
-      
-      fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
-        let b = 'if (typeof window.modules === \'undefined\') { modules = {}; }\n';
-        if (!err) {
-          const allFiles = files.sort();
-          const _recurse = i => {
-            if (i < allFiles.length) {
-              const file = allFiles[i];
-              const pluginName = file.replace(/\.js$/, '');
-
-              // b += 'modules.' + pluginName + ' = ';
-              const s = fs.createReadStream(path.join(__dirname, 'plugins', 'build', file));
-              s.setEncoding('utf8');
-              s.on('data', d => {
-                b += d;
-              });
-              s.on('end', () => {
-                _recurse(i + 1);
-              });
-              s.on('error', err => {
-                console.warn(err);
-
-                _recurse(i + 1);
-              });
-            } else {
-              _write(b, err => {
-                if (err) {
-                  console.warn(err);
-                }
-
-                done();
-              });
-            }
-          };
-          _recurse(0);
-        } else if (err.code === 'ENOENT') {
-          _write(b, err => {
-            if (err) {
-              console.warn(err);
-            }
-
-            done();
-          });
-        } else {
-          console.warn(err);
-
-          done();
-        }
-      });
-    } else {
-      if (!queued) {
-        queued = true;
-      }
-    }
-  };
-})(); */
 
 const archae = (opts) => new ArchaeServer(opts);
 
