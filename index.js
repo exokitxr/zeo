@@ -52,10 +52,42 @@ class ArchaeServer {
     app.use('/archae/plugins.json', (req, res, next) => {
       fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
         if (!err) {
-          const result = files.map(f => f.replace(/\.js$/, ''));
+          const result = files.map(f => f.replace(/\.js$/, '')).sort();
           res.json(result);
         } else if (err.code === 'ENOENT') {
           res.json([]);
+        } else {
+          res.status(500);
+          res.send(err.stack);
+        }
+      });
+    });
+    app.use('/archae/allplugins.js', (req, res, next) => {
+      fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
+        if (!err) {
+          res.type('application/javascript');
+
+          const allFiles = files.sort();
+          const _recurse = i => {
+            if (i < allFiles.length) {
+              const file = allFiles[i];
+              const s = fs.createReadStream(path.join(__dirname, 'plugins', 'build', file));
+              s.pipe(res, { end: false });
+              s.on('end', () => {
+                _recurse(i + 1);
+              });
+              s.on('error', err => {
+                console.warn(err);
+                res.end();
+              });
+            } else {
+              res.end();
+            }
+          };
+          _recurse(0);
+        } else if (err.code === 'ENOENT') {
+          res.type('application/javascript');
+          res.send('');
         } else {
           res.status(500);
           res.send(err.stack);
