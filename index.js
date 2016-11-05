@@ -59,11 +59,45 @@ class ArchaeServer {
 
       c.on('message', s => {
         const m = JSON.parse(s);
-        console.log('got message', m);
+
+        const cb = err => {
+          console.warn(err);
+        };
+
+        if (typeof m === 'object' && m && typeof m.type === 'string' && typeof m.id === 'string') {
+          const cb = (err = null, result = null) => {
+            const o = {
+              id: m.id,
+              error: err,
+              result: result,
+            };
+            const s = JSON.stringify(o);
+            c.send(s);
+          };
+
+          if (m.type === 'addPlugin') {
+            const {plugin} = m;
+
+            if (_isValidPlugin(plugin)) {
+              _addPlugin(plugin, cb);
+            } else {
+              cb('invalid plugin spec');
+            }
+          } else if (m.type === 'removePlugin') {
+            const {plugin} = m;
+
+            if (_isValidPlugin(plugin)) {
+              _removePlugin(plugin, cb);
+            } else {
+              cb('invalid plugin spec');
+            }
+          } else {
+            cb('invalid message type');
+          }
+        } else {
+          cb('invalid message');
+        }
       });
-      c.send(JSON.stringify({
-        lol: 'zol',
-      }));
       c.on('close', () => {
         console.log('connection close');
       });
@@ -116,14 +150,9 @@ const _addPlugin = (plugin, cb) => {
   const _dumpPlugin = (plugin, cb) => {
     const {name, version = '0.0.1', main = 'index.js', dependencies = {}, files = {}} = plugin;
 
-    if (
-      typeof name === 'string' &&
-      typeof version === 'string' &&
-      typeof main === 'string' &&
-      _isValidDependencies(dependencies) &&
-      _isValidFiles(files)
-    ) {
+    if (_isValidPluginSpec(plugin)) {
       const pluginPath = _getPluginPath(plugin.name);
+
       mkdirp(pluginPath, err => {
         if (!err) {
           _yarnInstall(plugin.name, err => {
@@ -263,6 +292,16 @@ const _removePlugin = (plugin, cb) => {
 const _getPluginPath = plugin => path.join(__dirname, 'plugins', 'node_modules', plugin);
 const _getPluginBuildPath = plugin => path.join(__dirname, 'plugins', 'build', plugin + '.js');
 
+const _isValidPlugin = plugin => typeof plugin === 'string' || _isValidPluginSpec(plugin);
+const _isValidPluginSpec = plugin => {
+  const {name, version = '', main, dependencies = {}, files = {}} = plugin;
+
+  return typeof name === 'string' &&
+    typeof version === 'string' &&
+    typeof main === 'string' &&
+    _isValidDependencies(dependencies) &&
+    _isValidFiles(files);
+};
 const _isValidDependencies = dependencies => {
   if (dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)) {
     for (const k in dependencies) {
