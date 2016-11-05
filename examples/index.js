@@ -18,6 +18,13 @@ a.addPlugin('react', err => {
     console.warn('react plugin add fail', err);
   }
 });
+/* a.addPlugin('three', err => {
+  if (!err) {
+    console.log('three plugin add ok');
+  } else {
+    console.warn('three plugin add fail', err);
+  }
+}); */
 
 a.listen({server, app});
 
