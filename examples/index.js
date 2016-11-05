@@ -18,6 +18,20 @@ a.addPlugin('react', err => {
     console.warn('react plugin add fail', err);
   }
 });
+a.addPlugin('jquery', err => {
+  if (!err) {
+    console.log('jquery plugin add ok');
+  } else {
+    console.warn('jquery plugin add fail', err);
+  }
+});
+a.addPlugin('lodash', err => {
+  if (!err) {
+    console.log('lodash plugin add ok');
+  } else {
+    console.warn('lodash plugin add fail', err);
+  }
+});
 /* a.addPlugin('three', err => {
   if (!err) {
     console.log('three plugin add ok');

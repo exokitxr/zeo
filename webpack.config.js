@@ -1,6 +1,9 @@
 const path = require('path');
 
 const config = {
+  output: {
+    libraryTarget: 'commonjs2',
+  },
   module: {
     loaders: [
       {

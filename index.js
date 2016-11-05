@@ -433,7 +433,7 @@ const _rebuildBundle = (() => {
       };
       
       fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
-        let b = 'var modules = {};\n';
+        let b = 'if (typeof window.modules === \'undefined\') { modules = {}; }\n';
         if (!err) {
           const allFiles = files.sort();
           const _recurse = i => {
@@ -441,7 +441,7 @@ const _rebuildBundle = (() => {
               const file = allFiles[i];
               const pluginName = file.replace(/\.js$/, '');
 
-              b += 'modules.' + pluginName + ' = ';
+              // b += 'modules.' + pluginName + ' = ';
               const s = fs.createReadStream(path.join(__dirname, 'plugins', 'build', file));
               s.setEncoding('utf8');
               s.on('data', d => {
