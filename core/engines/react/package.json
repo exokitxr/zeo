@@ -1,0 +1,9 @@
+{
+  "name": "archae-react",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {
+    "react": "^15.3.2",
+    "react-dom": "^15.3.2"
+  }
+}
