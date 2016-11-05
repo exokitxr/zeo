@@ -49,6 +49,20 @@ class ArchaeServer {
     const {_options: options} = this;
 
     app.use('/', express.static(path.join(__dirname, 'public')));
+    app.use('/archae/plugins.json', (req, res, next) => {
+      fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
+        if (!err) {
+          const result = files.map(f => f.replace(/\.js$/, ''));
+          res.json(result);
+        } else if (err.code === 'ENOENT') {
+          res.json([]);
+        } else {
+          res.status(500);
+          res.send(err.stack);
+        }
+      });
+    });
+    app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
     server.on('request', app);
 
     const wss = new ws.Server({
