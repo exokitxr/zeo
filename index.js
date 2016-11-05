@@ -5,6 +5,7 @@ const child_process = require('child_process');
 const express = require('express');
 const ws = require('ws');
 const mkdirp = require('mkdirp');
+const rimraf = require('rimraf');
 
 class ArchaeServer {
   constructor(options) {
@@ -19,55 +20,17 @@ class ArchaeServer {
       opts = {};
     }
 
-    mkdirp(path.join(__dirname, 'plugins'), err => {
-      if (!err) {
-        const pluginBuildPath = path.join(__dirname, 'plugins', 'build', plugin + '.js');
-        fs.exists(pluginBuildPath, exists => {
-          if (!exists || opts.force) {
-            const yarnAdd = child_process.spawn(
-              // path.join(__dirname, 'node_modules', 'yarn', 'bin', 'yarn'),
-              'yarn',
-              [ 'add', plugin ],
-              {
-                cwd: path.join(__dirname, 'plugins'),
-              }
-            );
-            yarnAdd.stdout.pipe(process.stdout);
-            yarnAdd.stderr.pipe(process.stderr);
-            yarnAdd.on('close', code => {
-              if (code === 0) {
-                const pluginPath = path.join(__dirname, 'plugins', 'node_modules', plugin);
-
-                const webpack = child_process.spawn(
-                  path.join(__dirname, 'node_modules', 'webpack', 'bin', 'webpack.js'),
-                  [ pluginPath, pluginBuildPath ],
-                  {
-                    cwd: __dirname,
-                  }
-                );
-                webpack.stdout.pipe(process.stdout);
-                webpack.stderr.pipe(process.stderr);
-                webpack.on('close', code => {
-                  if (code === 0) {
-                    cb();
-                  } else {
-                    const err = new Error('webpack error: ' + code);
-                    cb(err);
-                  }
-                });
-              } else {
-                const err = new Error('yard add error: ' + code);
-                cb(err);
-              }
-            });
-          } else {
-            cb();
-          }
-        });
-      } else {
-        console.warn(err);
-      }
-    });
+    if (opts.force) {
+      _removePlugin(plugin, err => {
+        if (!err) {
+          _addPlugin(plugin, cb);
+        } else {
+          cb(err);
+        }
+      });
+    } else {
+      _addPlugin(plugin, cb);
+    }
   }
   
   removePlugin(plugin, opts, cb) {
@@ -76,7 +39,7 @@ class ArchaeServer {
       opts = {};
     }
 
-    cb(); // XXX
+    _removePlugin(plugin, cb);
   }
 
   listen({server, app}) {
@@ -107,6 +70,226 @@ class ArchaeServer {
     });
   }
 }
+
+const _addPlugin = (plugin, cb) => {
+  const _installPlugin = (plugin, cb) => {
+    _yarnAdd(plugin, cb);
+  };
+  const _yarnAdd = (plugin, cb) => {
+    const yarnAdd = child_process.spawn(
+      'yarn',
+      [ 'add', plugin ],
+      {
+        cwd: path.join(__dirname, 'plugins'),
+      }
+    );
+    yarnAdd.stdout.pipe(process.stdout);
+    yarnAdd.stderr.pipe(process.stderr);
+    yarnAdd.on('close', code => {
+      if (code === 0) {
+        cb();
+      } else {
+        const err = new Error('yard add error: ' + code);
+        cb(err);
+      }
+    });
+  };
+  const _yarnInstall = (plugin, cb) => {
+    const yarnInstall = child_process.spawn(
+      'yarn',
+      [ 'install' ],
+      {
+        cwd: path.join(__dirname, 'plugins', plugin),
+      }
+    );
+    yarnInstall.stdout.pipe(process.stdout);
+    yarnInstall.stderr.pipe(process.stderr);
+    yarnInstall.on('close', code => {
+      if (code === 0) {
+        cb();
+      } else {
+        const err = new Error('yard install error: ' + code);
+        cb(err);
+      }
+    });
+  };
+  const _dumpPlugin = (plugin, cb) => {
+    const {name, version = '0.0.1', main = 'index.js', dependencies = {}, files = {}} = plugin;
+
+    if (
+      typeof name === 'string' &&
+      typeof version === 'string' &&
+      typeof main === 'string' &&
+      _isValidDependencies(dependencies) &&
+      _isValidFiles(files)
+    ) {
+      const pluginPath = _getPluginPath(plugin.name);
+      mkdirp(pluginPath, err => {
+        if (!err) {
+          _yarnInstall(plugin.name, err => {
+            if (!err) {
+              const packageJson = {
+                name,
+                version,
+                dependencies,
+              };
+              const packageJsonString = JSON.stringify(packageJson, null, 2);
+
+              fs.writeFile(path.join(pluginPath, 'package.json'), packageJsonString, 'utf8', err => {
+                if (!err) {
+                  const fileNames = Object.keys(files);
+
+                  if (fileNames.length > 0) {
+                    let pending = fileNames.length;
+                    const pend = () => {
+                      if (--pending === 0) {
+                        cb();
+                      }
+                    };
+
+                    for (let i = 0; i < fileNames.length; i++) {
+                      const fileName = fileNames[i];
+                      const fileData = files[fileName];
+
+                      fs.writeFile(fileName, fileData, 'utf8', pend);
+                    }
+                  } else {
+                    cb();
+                  }
+                } else {
+                  cb(err);
+                }
+              });
+            } else {
+              cb(err);
+            }
+          });
+        } else {
+          cb(err);
+        }
+      });
+    } else {
+      const err = new Error('invalid plugin declaration');
+      cb(err);
+    }
+  };
+  const _buildPlugin = (plugin, cb) => {
+    const pluginPath = _getPluginPath(plugin);
+    const pluginBuildPath = _getPluginBuildPath(plugin);
+
+    const webpack = child_process.spawn(
+      path.join(__dirname, 'node_modules', 'webpack', 'bin', 'webpack.js'),
+      [ pluginPath, pluginBuildPath ],
+      {
+        cwd: __dirname,
+      }
+    );
+    webpack.stdout.pipe(process.stdout);
+    webpack.stderr.pipe(process.stderr);
+    webpack.on('close', code => {
+      if (code === 0) {
+        cb();
+      } else {
+        const err = new Error('webpack error: ' + code);
+        cb(err);
+      }
+    });
+  };
+
+  mkdirp(path.join(__dirname, 'plugins'), err => {
+    if (!err) {
+      const pluginBuildPath = _getPluginBuildPath(plugin);
+
+      fs.exists(pluginBuildPath, exists => {
+        if (!exists) {
+          if (typeof plugin === 'string') {
+            _installPlugin(plugin, err => {
+              if (!err) {
+                _buildPlugin(plugin, cb);
+              } else {
+                cb(err);
+              }
+            });
+          } else if (typeof plugin === 'object') {
+            _dumpPlugin(plugin, err => {
+              if (!err) {
+                _buildPlugin(plugin.name, cb);
+              } else {
+                cb(err);
+              }
+            });
+          } else {
+            const err = new Error('invalid plugin format');
+            cb(err);
+          }
+        } else {
+          cb();
+        }
+      });
+    } else {
+      console.warn(err);
+    }
+  });
+};
+
+const _removePlugin = (plugin, cb) => {
+  if (typeof plugin === 'string') {
+    const pluginPath = _getPluginPath(plugin);
+
+    rimraf(pluginPath, err => {
+      if (!err) {
+        const pluginBuildPath = _getPluginBuildPath(plugin);
+
+        rimraf(pluginBuildPath, cb);
+      } else {
+        cb(err);
+      }
+    });
+  } else if (typeof plugin ==='object') {
+    if (plugin && typeof plugin.name === 'string') {
+      const pluginBuildPath = _getPluginBuildPath(plugin.name);
+
+      rimraf(pluginBuildPath, cb);
+    } else {
+      const err = new Error('invalid plugin declaration');
+      cb(err);
+    }
+  } else {
+    const err = new Error('invalid plugin format');
+    cb(err);
+  }
+};
+
+const _getPluginPath = plugin => path.join(__dirname, 'plugins', 'node_modules', plugin);
+const _getPluginBuildPath = plugin => path.join(__dirname, 'plugins', 'build', plugin + '.js');
+
+const _isValidDependencies = dependencies => {
+  if (dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)) {
+    for (const k in dependencies) {
+      const v = dependencies[k];
+      if (typeof v !== 'string') {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+};
+
+const _isValidFiles = files => {
+  if (files && typeof files === 'object' && !Array.isArray(files)) {
+    for (const k in dependencies) {
+      const v = dependencies[k];
+      if (typeof v !== 'string') {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+};
 
 const archae = (opts) => new ArchaeServer(opts);
 
