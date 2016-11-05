@@ -4,9 +4,16 @@ class ArchaeClient {
   }
 
   addPlugin(plugin, cb) {
+    const id = _makeId();
+
     this.send({
       type: 'addPlugin',
-      plugin: _stringifyPlugin(plugin),
+      id: id,
+      plugin: plugin,
+    });
+
+    this.on(id, (err, result) => {
+      console.log('got result', {err, result});
     });
 
     cb();
@@ -41,12 +48,18 @@ class ArchaeClient {
         const m = JSON.parse(msg.data);
 
         console.log('on messsage', m);
+
+        for (let i = 0; i < this._listeners.length; i++) {
+          const listener = this._listeners[i];
+          listener(m);
+        }
       };
       return result;
     })();
 
     this._connection = connection;
     this._queue = [];
+    this._listeners = [];
   }
 
   send(o) {
@@ -56,18 +69,20 @@ class ArchaeClient {
       this._queue.push(o);
     }
   }
+
+  on(id, cb) {
+    const listener = m => {
+      if (m.id === id) {
+        cb(m.error, m.result);
+
+        this._listeners.splice(this._listeners.indexOf(listener), 1);
+      }
+    };
+    this._listeners.push(listener);
+  }
 }
 
-const _stringifyPlugin = plugin => {
-  if (plugin.client) {
-    plugin.client = plugin.client.toString();
-  }
-  if (plugin.server) {
-    plugin.server = plugin.server.toString();
-  }
-
-  return plugin;
-};
+const _makeId = () => Math.random().toString(36).substring(7);
 
 const archae = new ArchaeClient();
 archae.connect();

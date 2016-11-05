@@ -129,11 +129,13 @@ const _addPlugin = (plugin, cb) => {
     });
   };
   const _yarnInstall = (plugin, cb) => {
+    const pluginPath = _getPluginPath(plugin);
+
     const yarnInstall = child_process.spawn(
       'yarn',
       [ 'install' ],
       {
-        cwd: path.join(__dirname, 'plugins', plugin),
+        cwd: pluginPath,
       }
     );
     yarnInstall.stdout.pipe(process.stdout);
@@ -148,23 +150,25 @@ const _addPlugin = (plugin, cb) => {
     });
   };
   const _dumpPlugin = (plugin, cb) => {
-    const {name, version = '0.0.1', main = 'index.js', dependencies = {}, files = {}} = plugin;
+    const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', files = {}} = plugin;
 
     if (_isValidPluginSpec(plugin)) {
       const pluginPath = _getPluginPath(plugin.name);
 
       mkdirp(pluginPath, err => {
         if (!err) {
-          _yarnInstall(plugin.name, err => {
-            if (!err) {
-              const packageJson = {
-                name,
-                version,
-                dependencies,
-              };
-              const packageJsonString = JSON.stringify(packageJson, null, 2);
+          const packageJson = {
+            name,
+            version,
+            dependencies,
+            client,
+            server,
+          };
+          const packageJsonString = JSON.stringify(packageJson, null, 2);
 
-              fs.writeFile(path.join(pluginPath, 'package.json'), packageJsonString, 'utf8', err => {
+          fs.writeFile(path.join(pluginPath, 'package.json'), packageJsonString, 'utf8', err => {
+            if (!err) {
+              _yarnInstall(plugin.name, err => {
                 if (!err) {
                   const fileNames = Object.keys(files);
 
@@ -180,7 +184,7 @@ const _addPlugin = (plugin, cb) => {
                       const fileName = fileNames[i];
                       const fileData = files[fileName];
 
-                      fs.writeFile(fileName, fileData, 'utf8', pend);
+                      fs.writeFile(path.join(pluginPath, fileName), fileData, 'utf8', pend);
                     }
                   } else {
                     cb();
@@ -203,12 +207,12 @@ const _addPlugin = (plugin, cb) => {
     }
   };
   const _buildPlugin = (plugin, cb) => {
-    const pluginPath = _getPluginPath(plugin);
+    const pluginClientPath = _getPluginClientPath(plugin);
     const pluginBuildPath = _getPluginBuildPath(plugin);
 
     const webpack = child_process.spawn(
       path.join(__dirname, 'node_modules', 'webpack', 'bin', 'webpack.js'),
-      [ pluginPath, pluginBuildPath ],
+      [ pluginClientPath, pluginBuildPath ],
       {
         cwd: __dirname,
       }
@@ -242,7 +246,7 @@ const _addPlugin = (plugin, cb) => {
           } else if (typeof plugin === 'object') {
             _dumpPlugin(plugin, err => {
               if (!err) {
-                _buildPlugin(plugin.name, cb);
+                _buildPlugin(plugin, cb);
               } else {
                 cb(err);
               }
@@ -289,16 +293,38 @@ const _removePlugin = (plugin, cb) => {
   }
 };
 
-const _getPluginPath = plugin => path.join(__dirname, 'plugins', 'node_modules', plugin);
-const _getPluginBuildPath = plugin => path.join(__dirname, 'plugins', 'build', plugin + '.js');
+const _getPluginName = plugin => {
+  if (typeof plugin === 'string') {
+    return plugin;
+  } else if (_isValidPluginSpec(plugin)) {
+    return plugin.name;
+  } else {
+    return null;
+  }
+};
+const _getPluginPath = plugin => path.join(__dirname, 'plugins', 'node_modules', _getPluginName(plugin));
+const _getPluginClientPath = plugin => {
+  const pluginPath = _getPluginPath(plugin);
+
+  if (typeof plugin === 'string') {
+    return pluginPath;
+  } else if (_isValidPluginSpec(plugin)) {
+    const {client = 'client.js'} = plugin;
+    return path.join(pluginPath, client);
+  } else {
+    return null;
+  }
+};
+const _getPluginBuildPath = plugin => path.join(__dirname, 'plugins', 'build', _getPluginName(plugin) + '.js');
 
 const _isValidPlugin = plugin => typeof plugin === 'string' || _isValidPluginSpec(plugin);
 const _isValidPluginSpec = plugin => {
-  const {name, version = '', main, dependencies = {}, files = {}} = plugin;
+  const {name, version = '', dependencies = {}, client = '', server = '', files = {}} = plugin;
 
   return typeof name === 'string' &&
     typeof version === 'string' &&
-    typeof main === 'string' &&
+    typeof client === 'string' &&
+    typeof server === 'string' &&
     _isValidDependencies(dependencies) &&
     _isValidFiles(files);
 };
@@ -318,8 +344,8 @@ const _isValidDependencies = dependencies => {
 
 const _isValidFiles = files => {
   if (files && typeof files === 'object' && !Array.isArray(files)) {
-    for (const k in dependencies) {
-      const v = dependencies[k];
+    for (const k in files) {
+      const v = files[k];
       if (typeof v !== 'string') {
         return false;
       }
