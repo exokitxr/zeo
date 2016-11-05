@@ -106,8 +106,22 @@ class ArchaeServer {
 }
 
 const _addPlugin = (plugin, cb) => {
-  const _installPlugin = (plugin, cb) => {
-    _yarnAdd(plugin, cb);
+  const _downloadPlugin = (plugin, cb) => {
+    _yarnAdd(plugin, err => {
+      if (!err) {
+        const pluginPath = _getPluginPath(plugin);
+        fs.readFile(path.join(pluginPath, 'package.json'), 'utf8', (err, s) => {
+          if (!err) {
+            const j = JSON.parse(s);
+            cb(null, j);
+          } else {
+            cb(err);
+          }
+        });
+      } else {
+        cb(err);
+      }
+    });
   };
   const _yarnAdd = (plugin, cb) => {
     const yarnAdd = child_process.spawn(
@@ -150,7 +164,7 @@ const _addPlugin = (plugin, cb) => {
     });
   };
   const _dumpPlugin = (plugin, cb) => {
-    const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', files = {}} = plugin;
+    const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', files} = plugin;
 
     if (_isValidPluginSpec(plugin)) {
       const pluginPath = _getPluginPath(plugin.name);
@@ -170,27 +184,31 @@ const _addPlugin = (plugin, cb) => {
             if (!err) {
               _yarnInstall(plugin.name, err => {
                 if (!err) {
-                  const fileNames = Object.keys(files);
+                  if (_isValidFiles(files)) {
+                    const fileNames = Object.keys(files);
 
-                  if (fileNames.length > 0) {
-                    let pending = fileNames.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        cb();
+                    if (fileNames.length > 0) {
+                      let pending = fileNames.length;
+                      const pend = () => {
+                        if (--pending === 0) {
+                          cb();
+                        }
+                      };
+
+                      for (let i = 0; i < fileNames.length; i++) {
+                        const fileName = fileNames[i];
+                        const fileData = files[fileName];
+
+                        fs.writeFile(path.join(pluginPath, fileName), fileData, 'utf8', pend);
                       }
-                    };
-
-                    for (let i = 0; i < fileNames.length; i++) {
-                      const fileName = fileNames[i];
-                      const fileData = files[fileName];
-
-                      fs.writeFile(path.join(pluginPath, fileName), fileData, 'utf8', pend);
+                    } else {
+                      cb();
                     }
                   } else {
-                    cb();
+                    cb(err);
                   }
                 } else {
-                  cb(err);
+                  cb();
                 }
               });
             } else {
@@ -236,9 +254,9 @@ const _addPlugin = (plugin, cb) => {
       fs.exists(pluginBuildPath, exists => {
         if (!exists) {
           if (typeof plugin === 'string') {
-            _installPlugin(plugin, err => {
+            _downloadPlugin(plugin, (err, packageJson) => {
               if (!err) {
-                _buildPlugin(plugin, cb);
+                _buildPlugin(packageJson, cb);
               } else {
                 cb(err);
               }
@@ -309,8 +327,13 @@ const _getPluginClientPath = plugin => {
   if (typeof plugin === 'string') {
     return pluginPath;
   } else if (_isValidPluginSpec(plugin)) {
-    const {client = 'client.js'} = plugin;
-    return path.join(pluginPath, client);
+    const {client} = plugin;
+    if (client) {
+      return path.join(pluginPath, client);
+    } else {
+      const {main = 'index.js'} = plugin;
+      return path.join(pluginPath, main);
+    }
   } else {
     return null;
   }
@@ -319,14 +342,13 @@ const _getPluginBuildPath = plugin => path.join(__dirname, 'plugins', 'build', _
 
 const _isValidPlugin = plugin => typeof plugin === 'string' || _isValidPluginSpec(plugin);
 const _isValidPluginSpec = plugin => {
-  const {name, version = '', dependencies = {}, client = '', server = '', files = {}} = plugin;
+  const {name, version = '', dependencies = {}, client = '', server = ''} = plugin;
 
   return typeof name === 'string' &&
     typeof version === 'string' &&
     typeof client === 'string' &&
     typeof server === 'string' &&
-    _isValidDependencies(dependencies) &&
-    _isValidFiles(files);
+    _isValidDependencies(dependencies);
 };
 const _isValidDependencies = dependencies => {
   if (dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)) {
