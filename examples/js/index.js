@@ -24,7 +24,7 @@ Promise.all([
     })),
 ])
 .then(() => {
-  const corsPlugin = {
+  /* const corsPlugin = {
     name: 'corsPlugin',
     version: '0.0.1',
     dependencies: {
@@ -40,7 +40,11 @@ Promise.all([
     }
   };
   archae.addPlugin(corsPlugin, err => {
-    console.log('added plugin', err);
+    console.log('added cors plugin', err);
+  }); */
+
+  archae.addPlugin('/core/plugins/biolumi', err => {
+    console.log('added biolumi plugin', err);
   });
 })
 .catch(err => {

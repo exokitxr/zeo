@@ -38,10 +38,15 @@ class ArchaeServer {
 
             const {added, moduleName: engineName} = result;
             if (added) {
-              this.loadEngine(engineName, err => {
+              this.loadEngine(engineName, (err, result) => {
                 if (!err) {
-                  this.mountEngine(engineName);
-                  this.broadcastAddEngine(engineName);
+                  const {loadedClient, loadedServer} = result;
+                  if (loadedClient) {
+                    this.broadcastAddEngine(engineName);
+                  }
+                  if (loadedServer) {
+                    this.mountEngine(engineName);
+                  }
                 } else {
                   console.warn(err);
                 }
@@ -103,10 +108,15 @@ class ArchaeServer {
 
             const {added, moduleName: pluginName} = result;
             if (added) {
-              this.loadPlugin(pluginName, err => {
+              this.loadPlugin(pluginName, (err, result) => {
                 if (!err) {
-                  this.mountPlugin(pluginName);
-                  this.broadcastAddPlugin(pluginName);
+                  const {loadedClient, loadedServer} = result;
+                  if (loadedClient) {
+                    this.broadcastAddPlugin(pluginName);
+                  }
+                  if (loadedServer) {
+                    this.mountPlugin(pluginName);
+                  }
                 } else {
                   console.warn(err);
                 }
@@ -338,12 +348,17 @@ class ArchaeServer {
     fs.readFile(path.join(__dirname, 'engines', 'node_modules', engine, 'package.json'), 'utf8', (err, s) => {
       if (!err) {
         const j = JSON.parse(s);
-        const serverFileName = j.server;
-        const engineModule = require(path.join(__dirname, 'engines', 'node_modules', engine, serverFileName));
+        const {client: clientFileName, server: serverFileName} = j;
+        if (serverFileName) {
+          const engineModule = require(path.join(__dirname, 'engines', 'node_modules', engine, serverFileName));
 
-        this.engines[engine] = engineModule;
+          this.engines[engine] = engineModule;
+        }
 
-        cb();
+        cb(null, {
+          loadedClient: Boolean(clientFileName),
+          loadedServer: Boolean(serverFileName),
+        });
       } else {
         cb(err);
       }
@@ -407,12 +422,17 @@ class ArchaeServer {
     fs.readFile(path.join(__dirname, 'plugins', 'node_modules', plugin, 'package.json'), 'utf8', (err, s) => {
       if (!err) {
         const j = JSON.parse(s);
-        const serverFileName = j.server;
-        const pluginModule = require(path.join(__dirname, 'plugins', 'node_modules', plugin, serverFileName));
+        const {client: clientFileName, server: serverFileName} = j;
+        if (serverFileName) {
+          const pluginModule = require(path.join(__dirname, 'plugins', 'node_modules', plugin, serverFileName));
 
-        this.plugins[plugin] = pluginModule;
+          this.plugins[plugin] = pluginModule;
+        }
 
-        cb();
+        cb(null, {
+          loadedClient: Boolean(clientFileName),
+          loadedServer: Boolean(serverFileName),
+        });
       } else {
         cb(err);
       }
@@ -431,10 +451,6 @@ class ArchaeServer {
   }
 
   broadcastAddPlugin(plugin) {
-console.log('broadcast add plugin', {
-  type: 'addPlugin',
-  plugin: plugin,
-});
     this.broadcast({
       type: 'addPlugin',
       plugin: plugin,

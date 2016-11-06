@@ -1,0 +1,8 @@
+{
+  "name": "biolumi",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {
+    "fontfaceobserver": ""
+  }
+}

@@ -14,52 +14,25 @@ const a = archae();
 Promise.all([
   a.addEngine('/core/engines/express'),
   a.addEngine('/core/engines/react'),
+  a.addEngine('/core/engines/biolumi'),
 ])
   .then(() => {
-    console.log('react engine add ok');
+    console.log('adds ok');
+
+    a.listen({server, app}, err => {
+      if (!err) {
+        server.listen(8000);
+        server.on('listening', () => {
+          console.log('listening');
+        });
+        server.on('error', err => {
+          console.warn(err);
+        });
+      } else {
+        console.warn(err);
+      }
+    });
   })
   .catch(err => {
     console.warn('react engine add fail', err);
   });
-/* a.addPlugin('react', err => {
-  if (!err) {
-    console.log('react plugin add ok');
-  } else {
-    console.warn('react plugin add fail', err);
-  }
-});
-a.addPlugin('jquery', err => {
-  if (!err) {
-    console.log('jquery plugin add ok');
-  } else {
-    console.warn('jquery plugin add fail', err);
-  }
-});
-a.addPlugin('lodash', err => {
-  if (!err) {
-    console.log('lodash plugin add ok');
-  } else {
-    console.warn('lodash plugin add fail', err);
-  }
-});
-a.addPlugin('three', err => {
-  if (!err) {
-    console.log('three plugin add ok');
-  } else {
-    console.warn('three plugin add fail', err);
-  }
-}); */
-
-a.listen({server, app}, err => {
-  if (!err) {
-    server.listen(8000);
-    server.on('listening', () => {
-      console.log('listening');
-    });
-    server.on('error', err => {
-      console.warn(err);
-    });
-  } else {
-    console.warn(err);
-  }
-});
