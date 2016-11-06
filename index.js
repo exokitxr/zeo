@@ -26,10 +26,35 @@ class ArchaeServer {
 
   addEngine(engine, opts = {}) {
     return new Promise((accept, reject) => {
-      if (opts.force) {
-        _removeModule(engine, 'engines', err => {
+      const _remove = cb => {
+        _removeModule(engine, 'engines', cb);
+      };
+      const _add = cb => {
+        _addModule(engine, 'engines', (err, result) => {
           if (!err) {
-            _addModule(engine, 'engines', err => {
+            cb();
+
+            const {added, moduleName: engineName} = result;
+            if (added) {
+              this.loadEngine(engineName, err => {
+                if (!err) {
+                  this.mountEngine(engineName);
+                  this.broadcastAddEngine(engineName);
+                } else {
+                  console.warn(err);
+                }
+              });
+            }
+          } else {
+            cb(err);
+          }
+        });
+      };
+
+      if (opts.force) {
+        _remove(err => {
+          if (!err) {
+            _add(err => {
               if (!err) {
                 accept();
               } else {
@@ -41,7 +66,7 @@ class ArchaeServer {
           }
         });
       } else {
-        _addModule(engine, 'engines', err => {
+        _add(err => {
           if (!err) {
             accept(err);
           } else {
@@ -66,12 +91,37 @@ class ArchaeServer {
 
   addPlugin(plugin, opts = {}) {
     return new Promise((accept, reject) => {
-      if (opts.force) {
-        _removeModule(plugin, 'plugins', err => {
+      const _remove = cb => {
+        _removeModule(plugin, 'plugins', cb);
+      };
+      const _add = cb => {
+        _addModule(plugin, 'plugins', (err, result) => {
           if (!err) {
-            _addModule(plugin, 'plugins', err => {
+            accept();
+
+            const {added, moduleName: pluginName} = result;
+            if (added) {
+              this.loadPlugin(pluginName, err => {
+                if (!err) {
+                  this.mountPlugin(pluginName);
+                  this.broadcastAddPlugin();
+                } else {
+                  console.warn(err);
+                }
+              });
+            }
+          } else {
+            reject(err);
+          }
+        });
+      };
+
+      if (opts.force) {
+        _remove(err => {
+          if (!err) {
+            _add(err => {
               if (!err) {
-                accept(err);
+                accept();
               } else {
                 reject(err);
               }
@@ -81,7 +131,7 @@ class ArchaeServer {
           }
         });
       } else {
-        _addModule(plugin, 'plugins', err => {
+        _add(err => {
           if (!err) {
             accept();
           } else {
@@ -310,6 +360,10 @@ class ArchaeServer {
     this.__engines[engine] = engineApi;
   }
 
+  broadcastAddEngine(engine) {
+    // XXX
+  }
+
   loadPlugins(plugins, cb) {
     const _loadAll = cb => {
       if (plugins.length > 0) {
@@ -369,6 +423,10 @@ class ArchaeServer {
 
     const pluginApi = pluginInstance.mount();
     this.__plugins[plugin] = pluginApi;
+  }
+
+  broadcastAddPlugin(plugin) {
+    // XXX
   }
 
   listen({server, app}, cb) {
@@ -698,21 +756,47 @@ const _addModule = (module, type, cb) => {
                 _downloadModule(module, type, (err, packageJson) => {
                   if (!err) {
                     if (packageJson.client) {
-                      _buildModule(packageJson, type, cb);
+                      _buildModule(packageJson, type, err => {
+                        if (!err) {
+                          cb(null, {
+                            added: true,
+                            moduleName,
+                          });
+                        } else {
+                          cb(err);
+                        }
+                      });
                     } else {
-                      cb();
+                      cb(null, {
+                        added: true,
+                        moduleName,
+                      });
                     }
                   } else {
                     cb(err);
                   }
                 });
               } else if (typeof module === 'object') {
-                _dumpPlugin(module, type, err => {
+                const packageJson = module;
+
+                _dumpPlugin(packageJson, type, err => {
                   if (!err) {
-                    if (module.client) {
-                      _buildModule(module, type, cb);
+                    if (packageJson.client) {
+                      _buildModule(packageJson, type, err => {
+                        if (!err) {
+                          cb(null, {
+                            added: true,
+                            moduleName,
+                          });
+                        } else {
+                          cb(err);
+                        }
+                      });
                     } else {
-                      cb();
+                      cb(null, {
+                        added: true,
+                        moduleName,
+                      });
                     }
                   } else {
                     cb(err);
@@ -723,7 +807,9 @@ const _addModule = (module, type, cb) => {
                 cb(err);
               }
             } else {
-              cb();
+              cb(null, {
+                added: false,
+              });
             }
           });
         } else {
