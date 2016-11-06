@@ -15,6 +15,7 @@ Promise.all([
   a.addEngine('/core/engines/express'),
   a.addEngine('/core/engines/react'),
   a.addEngine('/core/engines/ws'),
+  a.addEngine('/core/engines/bus'),
   a.addEngine('/core/engines/biolumi'),
 ])
   .then(() => {
