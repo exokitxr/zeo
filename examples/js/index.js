@@ -27,8 +27,7 @@ Promise.all([
   const corsPlugin = {
     name: 'corsPlugin',
     version: '0.0.1',
-    clientDependencies: {},
-    serverDependencies: {
+    dependencies: {
       'react-tools': '',
     },
     client: 'client.js',

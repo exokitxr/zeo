@@ -12,171 +12,463 @@ class ArchaeServer {
     options = options || {};
 
     this._options = options;
+
+    this.engines = {};
+    this._engines = {};
+    this.plugins = {};
+    this._plugins = {};
   }
 
-  addEngine(engine, opts, cb) {
-    if (cb === undefined) {
-      cb = opts;
-      opts = {};
-    }
+  addEngine(engine, opts = {}) {
+    return new Promise((accept, reject) => {
+      if (opts.force) {
+        _removeModule(engine, 'engines', err => {
+          if (!err) {
+            _addModule(engine, 'engines', err => {
+              if (!err) {
+                accept();
+              } else {
+                reject(err);
+              }
+            });
+          } else {
+            reject(err);
+          }
+        });
+      } else {
+        _addModule(engine, 'engines', err => {
+          if (!err) {
+            accept(err);
+          } else {
+            reject(err);
+          }
+        });
+      }
+    });
+  }
 
-    if (opts.force) {
+  removeEngine(engine, opts = {}) {
+    return new Promise((accept, reject) => {
       _removeModule(engine, 'engines', err => {
         if (!err) {
-          _addModule(engine, 'engines', cb);
+          accept();
         } else {
-          cb(err);
+          reject(err);
         }
       });
-    } else {
-      _addModule(engine, 'engines', cb);
-    }
-  }
-  
-  removeEngine(engine, opts, cb) {
-    if (cb === undefined) {
-      cb = opts;
-      opts = {};
-    }
-
-    _removeModule(engine, 'engines', cb);
+    });
   }
 
-  addPlugin(plugin, opts, cb) {
-    if (cb === undefined) {
-      cb = opts;
-      opts = {};
-    }
+  addPlugin(plugin, opts = {}) {
+    return new Promise((accept, reject) => {
+      if (opts.force) {
+        _removeModule(plugin, 'plugins', err => {
+          if (!err) {
+            _addModule(plugin, 'plugins', err => {
+              if (!err) {
+                accept(err);
+              } else {
+                reject(err);
+              }
+            });
+          } else {
+            reject(err);
+          }
+        });
+      } else {
+        _addModule(plugin, 'plugins', err => {
+          if (!err) {
+            accept();
+          } else {
+            reject(err);
+          }
+        });
+      }
+    });
+  }
 
-    if (opts.force) {
+  removePlugin(plugin, opts = {}) {
+    return new Promise((accept, reject) => {
       _removeModule(plugin, 'plugins', err => {
         if (!err) {
-          _addModule(plugin, 'plugins', cb);
+          accept();
         } else {
-          cb(err);
+          reject(err);
         }
       });
-    } else {
-      _addModule(plugin, 'plugins', cb);
-    }
-  }
-  
-  removePlugin(plugin, opts, cb) {
-    if (cb === undefined) {
-      cb = opts;
-      opts = {};
-    }
-
-    _removeModule(plugin, 'plugins', cb);
+    });
   }
 
-  listen({server, app}) {
+  getClientModules(cb) {
+    let engines = [];
+    let plugins = [];
+
+    let pending = 2;
+    const pend = () => {
+      if (--pending === 0) {
+        cb(null, {
+          engines: _sort(engines),
+          plugins: _sort(plugins),
+        });
+      }
+    };
+    const _sort = modules => modules.map(m => m.replace(/\.js$/, '')).sort();
+
+    fs.readdir(path.join(__dirname, 'engines', 'build'), (err, files) => {
+      if (!err) {
+        engines = engines.concat(files);
+      }
+
+      pend();
+    });
+    fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
+      if (!err) {
+        plugins = plugins.concat(files);
+      }
+
+      pend();
+    });
+  }
+
+  getServerModules(cb) {
+    let engines = [];
+    let plugins = [];
+
+    let pending = 2;
+    const pend = () => {
+      if (--pending === 0) {
+        cb(null, {
+          engines: _sort(engines),
+          plugins: _sort(plugins),
+        });
+      }
+    };
+    const _sort = modules => modules.map(m => m.replace(/\.js$/, '')).sort();
+
+    fs.readdir(path.join(__dirname, 'engines', 'node_modules'), (err, files) => {
+      if (!err) {
+        if (files.length > 0) {
+          let pending = files.length;
+          const pend2 = () => {
+            if (--pending === 0) {
+              pend();
+            }
+          };
+
+          files.forEach(file => {
+            const engine = file;
+
+            fs.readFile(path.join(__dirname, 'engines', 'node_modules', engine, 'package.json'), 'utf8', (err, s) => {
+              if (!err) {
+                const j = JSON.parse(s);
+                const serverFileName = j.server;
+                if (serverFileName) {
+                  engines.push(engine);
+                }
+
+                pend2();
+              } else {
+                console.warn(err);
+
+                pend2();
+              }
+            });
+          });
+        } else {
+          pend();
+        }
+      } else if (err.code === 'ENOENT') {
+        pend();
+      } else {
+        console.warn(err);
+
+        pend();
+      }
+    });
+    fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
+      if (!err) {
+        if (files.length > 0) {
+          let pending = files.length;
+          const pend2 = () => {
+            if (--pending === 0) {
+              pend();
+            }
+          };
+
+          files.forEach(file => {
+            const plugin = file.replace(/\.js$/, '');
+
+            fs.readFile(path.join(__dirname, 'plugins', 'node_modules', plugin, 'package.json'), 'utf8', (err, s) => {
+              if (!err) {
+                const j = JSON.parse(s);
+                const serverFileName = j.server;
+                if (serverFileName) {
+                  plugins.push(plugin);
+                }
+
+                pend2();
+              } else {
+                console.warn(err);
+
+                pend2();
+              }
+            });
+          });
+        } else {
+          pend();
+        }
+      } else if (err.code === 'ENOENT') {
+        pend();
+      } else {
+        console.warn(err);
+
+        pend();
+      }
+    });
+  }
+
+  loadAll(cb) {
+    this.getServerModules((err, modules) => {
+      if (!err) {
+        this.loadEngines(modules.engines, err => {
+          if (!err) {
+            this.loadPlugins(modules.plugins, cb);
+          } else {
+            cb(err);
+          }
+        });
+      } else {
+        cb(err);
+      }
+    });
+  }
+
+  loadEngines(engines, cb) {
+    const _loadAll = cb => {
+      if (engines.length > 0) {
+        let pending = engines.length;
+        const pend = () => {
+          if (--pending === 0) {
+            cb();
+          }
+        };
+
+        engines.forEach(engine => {
+          this.loadEngine(engine, pend);
+        });
+      } else {
+        cb();
+      }
+    };
+    const _mountAll = cb => {
+      const engineMountPromises = engines.map(engine => {
+        return this.mountEngine(engine);
+      });
+
+      Promise.all(engineMountPromises)
+        .then(() => {
+          cb();
+        })
+        .catch(cb);
+    };
+
+    _loadAll(err => {
+      if (!err) {
+        _mountAll(cb);
+      } else {
+        cb(err);
+      }
+    });
+  }
+
+  loadEngine(engine, cb) {
+    fs.readFile(path.join(__dirname, 'engines', 'node_modules', engine, 'package.json'), 'utf8', (err, s) => {
+      if (!err) {
+        const j = JSON.parse(s);
+        const serverFileName = j.server;
+        const engineModule = require(path.join(__dirname, 'engines', 'node_modules', engine, serverFileName));
+
+        this.engines[engine] = engineModule;
+
+        cb();
+      } else {
+        cb(err);
+      }
+    });
+  }
+
+  mountEngine(engine) {
+    const engineModule = this.engines[engine];
+
+    const engineInstance = {};
+    this._engines[engine] = engineInstance;
+
+    return engineModule.mount.call(engineInstance);
+  }
+
+  loadPlugins(plugins, cb) {
+    const _loadAll = cb => {
+      if (plugins.length > 0) {
+        let pending = plugins.length;
+        const pend = () => {
+          if (--pending === 0) {
+            cb();
+          }
+        }
+
+        plugins.forEach(plugin => {
+          this.loadPlugin(plugin, pend);
+        });
+      } else {
+        cb();
+      }
+    };
+    const _mountAll = cb => {
+      const pluginMountPromises = plugins.map(plugin => {
+        return this.mountPlugin(plugin);
+      });
+
+      Promise.all(pluginMountPromises)
+        .then(() => {
+          cb();
+        })
+        .catch(cb);
+    };
+
+    _loadAll(err => {
+      if (!err) {
+        _mountAll(cb);
+      } else {
+        cb(err);
+      }
+    });
+  }
+
+  loadPlugin(plugin, cb) {
+    fs.readFile(path.join(__dirname, 'plugins', 'node_modules', plugin, 'package.json'), 'utf8', (err, s) => {
+      if (!err) {
+        const j = JSON.parse(s);
+        const serverFileName = j.server;
+        const pluginModule = require(path.join(__dirname, 'plugins', 'node_modules', plugin, serverFileName));
+        const pluginModuleInstance = pluginModule({
+          engines: this._engines,
+        });
+
+        this.plugins[plugin] = pluginModuleInstance;
+
+        cb();
+      } else {
+        cb(err);
+      }
+    });
+  }
+
+  mountPlugin(plugin) {
+    const pluginModuleInstance = this.plugins[plugin];
+
+    const pluginInstance = {};
+    this._plugins = pluginInstance;
+
+    return pluginModuleInstance.mount.call(pluginInstance);
+  }
+
+  listen({server, app}, cb) {
     server = server || http.createServer();
     app = app || express();
 
     const {_options: options} = this;
 
-    app.use('/', express.static(path.join(__dirname, 'public')));
-    app.use('/archae/modules.json', (req, res, next) => {
-      let engines = [];
-      let plugins = [];
-
-      let pending = 2;
-      const pend = () => {
-        if (--pending === 0) {
-          res.json({
-            engines: _sort(engines),
-            plugins: _sort(plugins),
+    this.loadAll(err => {
+      if (!err) {
+        app.use('/', express.static(path.join(__dirname, 'public')));
+        app.use('/archae/modules.json', (req, res, next) => {
+          this.getClientModules((err, modules) => {
+            if (!err) {
+              res.json(modules);
+            } else {
+              res.status(500);
+              res.send(err.stack);
+            }
           });
-        }
-      };
-      const _sort = modules => modules.map(m => m.replace(/\.js$/, '')).sort();
+        });
+        app.use('/archae/engines', express.static(path.join(__dirname, 'engines', 'build')));
+        app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
+        server.on('request', app);
 
-      fs.readdir(path.join(__dirname, 'engines', 'build'), (err, files) => {
-        if (!err) {
-          engines = engines.concat(files);
-        }
+        const wss = new ws.Server({
+          server,
+        });
+        wss.on('connection', c => {
+          console.log('connection open');
 
-        pend();
-      });
-      fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
-        if (!err) {
-          plugins = plugins.concat(files);
-        }
+          c.on('message', s => {
+            const m = JSON.parse(s);
 
-        pend();
-      });
-    });
-    app.use('/archae/engines', express.static(path.join(__dirname, 'engines', 'build')));
-    app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
-    server.on('request', app);
-
-    const wss = new ws.Server({
-      server,
-    });
-    wss.on('connection', c => {
-      console.log('connection open');
-
-      c.on('message', s => {
-        const m = JSON.parse(s);
-
-        const cb = err => {
-          console.warn(err);
-        };
-
-        if (typeof m === 'object' && m && typeof m.type === 'string' && typeof m.id === 'string') {
-          const cb = (err = null, result = null) => {
-            const o = {
-              id: m.id,
-              error: err,
-              result: result,
+            const cb = err => {
+              console.warn(err);
             };
-            const s = JSON.stringify(o);
-            c.send(s);
-          };
 
-          if (m.type === 'addEngine') {
-            const {engine} = m;
+            if (typeof m === 'object' && m && typeof m.type === 'string' && typeof m.id === 'string') {
+              const cb = (err = null, result = null) => {
+                if (c.readyState === ws.OPEN) {
+                  const o = {
+                    id: m.id,
+                    error: err,
+                    result: result,
+                  };
+                  const s = JSON.stringify(o);
+                  c.send(s);
+                }
+              };
 
-            if (_isValidModule(engine)) {
-              _addModule(engine, 'engines', cb);
+              if (m.type === 'addEngine') {
+                const {engine} = m;
+
+                if (_isValidModule(engine)) {
+                  _addModule(engine, 'engines', cb);
+                } else {
+                  cb('invalid engine spec');
+                }
+              } else if (m.type === 'removePlugin') {
+                const {engine} = m;
+
+                if (_isValidModule(engine)) {
+                  _removeModule(engine, 'engines', cb);
+                } else {
+                  cb('invalid engine spec');
+                }
+              } else if (m.type === 'addPlugin') {
+                const {plugin} = m;
+
+                if (_isValidModule(plugin)) {
+                  _addModule(plugin, 'plugins', cb);
+                } else {
+                  cb('invalid plugin spec');
+                }
+              } else if (m.type === 'removePlugin') {
+                const {plugin} = m;
+
+                if (_isValidModule(plugin)) {
+                  _removeModule(plugin, 'plugins', cb);
+                } else {
+                  cb('invalid plugin spec');
+                }
+              } else {
+                cb('invalid message type');
+              }
             } else {
-              cb('invalid engine spec');
+              cb('invalid message');
             }
-          } else if (m.type === 'removePlugin') {
-            const {engine} = m;
+          });
+          c.on('close', () => {
+            console.log('connection close');
+          });
+        });
 
-            if (_isValidModule(engine)) {
-              _removeModule(engine, 'engines', cb);
-            } else {
-              cb('invalid engine spec');
-            }
-          } else if (m.type === 'addPlugin') {
-            const {plugin} = m;
-
-            if (_isValidModule(plugin)) {
-              _addModule(plugin, 'plugins', cb);
-            } else {
-              cb('invalid plugin spec');
-            }
-          } else if (m.type === 'removePlugin') {
-            const {plugin} = m;
-
-            if (_isValidModule(plugin)) {
-              _removeModule(plugin, 'plugins', cb);
-            } else {
-              cb('invalid plugin spec');
-            }
-          } else {
-            cb('invalid message type');
-          }
-        } else {
-          cb('invalid message');
-        }
-      });
-      c.on('close', () => {
-        console.log('connection close');
-      });
+        cb();
+      } else {
+        cb(err);
+      }
     });
   }
 }
@@ -483,13 +775,8 @@ const _getModuleClientPath = (module, type) => {
   if (typeof module === 'string') {
     return modulePath;
   } else if (_isValidModuleSpec(module)) {
-    const {client} = module;
-    if (client) {
-      return path.join(modulePath, client);
-    } else {
-      const {main = 'index.js'} = module;
-      return path.join(modulePath, main);
-    }
+    const clientFileName = module.client;
+    return path.join(modulePath, clientFileName);
   } else {
     return null;
   }

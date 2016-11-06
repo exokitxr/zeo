@@ -1,9 +1,36 @@
 class ArchaeClient {
   constructor() {
-    // XXX
+    this.engines = {};
+    this._engines = {};
+    this.plugins = {};
+    this._plugins = {};
   }
 
-  addPlugin(plugin, cb) {
+  addEngine(engine) {
+    const id = _makeId();
+
+    this.send({
+      type: 'addEngine',
+      id: id,
+      engine: engine,
+    });
+
+    return this.waitForId(id);
+  }
+
+  removePlugin(engine) {
+    const id = _makeId();
+
+    this.send({
+      type: 'removeEngine',
+      id: id,
+      engine: engine,
+    });
+
+    return this.waitForId(id);
+  }
+
+  addPlugin(plugin) {
     const id = _makeId();
 
     this.send({
@@ -12,20 +39,31 @@ class ArchaeClient {
       plugin: plugin,
     });
 
-    this.on(id, (err, result) => {
-      console.log('got result', {err, result});
-    });
-
-    cb();
+    return this.waitForId(id);
   }
 
-  removePlugin(plugin, cb) {
+  removePlugin(plugin) {
+    const id = _makeId();
+
     this.send({
       type: 'removePlugin',
-      plugin: _stringifyPlugin(plugin),
+      id: id,
+      plugin: plugin,
     });
 
-    cb();
+    return this.waitForId(id);
+  }
+
+  waitForId(id) {
+    return new Promise((accept, reject) => {
+      this.once(id, (err, result) => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    });
   }
 
   bootstrap() {
@@ -35,8 +73,6 @@ class ArchaeClient {
 
   loadModules(modules, cb) {
     window.module = {};
-    this.engines = {};
-    this.plugins = {};
 
     const {engines, plugins} = modules;
 
@@ -85,15 +121,8 @@ class ArchaeClient {
   }
 
   mountEngines(engines, cb) {
-    this._engines = {};
-
     const engineMountPromises = engines.map(engine => {
-      const engineModule = this.engines[engine];
-
-      const engineInstance = {};
-      this._engines[engine] = engineInstance;
-
-      return engineModule.mount.call(engineInstance);
+      return this.mountEngine(engine);
     });
 
     Promise.all(engineMountPromises)
@@ -103,20 +132,18 @@ class ArchaeClient {
      .catch(cb);
   }
 
+  mountEngine(engine) {
+    const engineModule = this.engines[engine];
+
+    const engineInstance = {};
+    this._engines[engine] = engineInstance;
+
+    return engineModule.mount.call(engineInstance);
+  }
+
   mountPlugins(plugins, cb) {
-    this._plugins = {};
-
-    const pluginOptions = {
-      engines: this._engines,
-    };
-
     const pluginMountPromises = plugins.map(plugin => {
-      const pluginModule = this.plugins[plugin];
-
-      const pluginInstance = pluginModule(pluginOptions);
-      this._plugins[plugin] = pluginInstance;
-
-      return pluginInstance.mount();
+      return this.mountPlugin(plugin);
     });
 
     Promise.all(pluginMountPromises)
@@ -124,6 +151,17 @@ class ArchaeClient {
         cb();
       })
      .catch(cb);
+  }
+
+  mountPlugin(plugin) {
+    const pluginModule = this.plugins[plugin];
+
+    const pluginInstance = pluginModule({
+      engines: this._engines,
+    });
+    this._plugins[plugin] = pluginInstance;
+
+    return pluginInstance.mount();
   }
 
   mountAll() {
@@ -202,7 +240,7 @@ class ArchaeClient {
     }
   }
 
-  on(id, cb) {
+  once(id, cb) {
     const listener = m => {
       if (m.id === id) {
         cb(m.error, m.result);

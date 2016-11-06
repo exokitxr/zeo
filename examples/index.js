@@ -11,13 +11,13 @@ app.use('/', express.static(__dirname));
 
 const a = archae();
 
-a.addEngine('/core/engines/react', err => {
-  if (!err) {
+a.addEngine('/core/engines/react')
+  .then(() => {
     console.log('react engine add ok');
-  } else {
+  })
+  .catch(err => {
     console.warn('react engine add fail', err);
-  }
-});
+  });
 /* a.addPlugin('react', err => {
   if (!err) {
     console.log('react plugin add ok');
@@ -47,12 +47,16 @@ a.addPlugin('three', err => {
   }
 }); */
 
-a.listen({server, app});
-
-server.listen(8000);
-server.on('listening', () => {
-  console.log('listening');
-});
-server.on('error', err => {
-  console.warn(err);
+a.listen({server, app}, err => {
+  if (!err) {
+    server.listen(8000);
+    server.on('listening', () => {
+      console.log('listening');
+    });
+    server.on('error', err => {
+      console.warn(err);
+    });
+  } else {
+    console.warn(err);
+  }
 });
