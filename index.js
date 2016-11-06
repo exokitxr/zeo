@@ -13,10 +13,15 @@ class ArchaeServer {
 
     this._options = options;
 
+    this.server = null;
+    this.app = null;
+
     this.engines = {};
     this._engines = {};
+    this.__engines = {};
     this.plugins = {};
     this._plugins = {};
+    this.__plugins = {};
   }
 
   addEngine(engine, opts = {}) {
@@ -260,21 +265,17 @@ class ArchaeServer {
         cb();
       }
     };
-    const _mountAll = cb => {
-      const engineMountPromises = engines.map(engine => {
-        return this.mountEngine(engine);
+    const _mountAll = () => {
+      engines.forEach(engine => {
+        this.mountEngine(engine);
       });
-
-      Promise.all(engineMountPromises)
-        .then(() => {
-          cb();
-        })
-        .catch(cb);
     };
 
     _loadAll(err => {
       if (!err) {
-        _mountAll(cb);
+        _mountAll();
+
+        cb();
       } else {
         cb(err);
       }
@@ -299,11 +300,14 @@ class ArchaeServer {
 
   mountEngine(engine) {
     const engineModule = this.engines[engine];
-
-    const engineInstance = {};
+    const engineInstance = engineModule({
+      server: this.server,
+      app: this.app,
+    });
     this._engines[engine] = engineInstance;
 
-    return engineModule.mount.call(engineInstance);
+    const engineApi = engineInstance.mount();
+    this.__engines[engine] = engineApi;
   }
 
   loadPlugins(plugins, cb) {
@@ -323,21 +327,17 @@ class ArchaeServer {
         cb();
       }
     };
-    const _mountAll = cb => {
-      const pluginMountPromises = plugins.map(plugin => {
-        return this.mountPlugin(plugin);
+    const _mountAll = () => {
+      plugins.forEach(plugin => {
+        this.mountPlugin(plugin);
       });
-
-      Promise.all(pluginMountPromises)
-        .then(() => {
-          cb();
-        })
-        .catch(cb);
     };
 
     _loadAll(err => {
       if (!err) {
-        _mountAll(cb);
+        _mountAll();
+
+        cb();
       } else {
         cb(err);
       }
@@ -350,11 +350,8 @@ class ArchaeServer {
         const j = JSON.parse(s);
         const serverFileName = j.server;
         const pluginModule = require(path.join(__dirname, 'plugins', 'node_modules', plugin, serverFileName));
-        const pluginModuleInstance = pluginModule({
-          engines: this._engines,
-        });
 
-        this.plugins[plugin] = pluginModuleInstance;
+        this.plugins[plugin] = pluginModule;
 
         cb();
       } else {
@@ -364,17 +361,22 @@ class ArchaeServer {
   }
 
   mountPlugin(plugin) {
-    const pluginModuleInstance = this.plugins[plugin];
-
-    const pluginInstance = {};
+    const pluginModule = this.plugins[plugin];
+    const pluginInstance = pluginModule({
+      engines: this.__engines,
+    });
     this._plugins = pluginInstance;
 
-    return pluginModuleInstance.mount.call(pluginInstance);
+    const pluginApi = pluginInstance.mount();
+    this.__plugins[plugin] = pluginApi;
   }
 
   listen({server, app}, cb) {
     server = server || http.createServer();
     app = app || express();
+
+    this.server = server;
+    this.app = app;
 
     const {_options: options} = this;
 
@@ -666,36 +668,70 @@ const _addModule = (module, type, cb) => {
 
   mkdirp(path.join(__dirname, type), err => {
     if (!err) {
-      const moduleBuildPath = _getModuleBuildPath(module, type);
+      const _getModuleRealName = (module, cb) => {
+        if (typeof module === 'string') {
+          const packageJsonPath = _getModulePackageJsonPath(module, type);
 
-      fs.exists(moduleBuildPath, exists => {
-        if (!exists) {
-          if (typeof module === 'string') {
-            _downloadModule(module, type, (err, packageJson) => {
-              if (!err) {
-                _buildModule(packageJson, type, cb);
-              } else {
-                cb(err);
-              }
-            });
-          } else if (typeof module === 'object') {
-            _dumpPlugin(module, type, err => {
-              if (!err) {
-                _buildModule(module, type, cb);
-              } else {
-                cb(err);
-              }
-            });
-          } else {
-            const err = new Error('invalid module format');
-            cb(err);
-          }
+          fs.readFile(packageJsonPath, 'utf8', (err, s) => {
+            if (!err) {
+              const j = JSON.parse(s);
+              const moduleName = j.name;
+              cb(null, moduleName);
+            } else {
+              cb(err);
+            }
+          });
+        } else if (_isValidModuleSpec(module)) {
+          cb(null, module.name);
         } else {
-          cb();
+          cb(null, null);
+        }
+      };
+
+      _getModuleRealName(module, (err, moduleName) => {
+        if (!err) {
+          const modulePath = _getModulePath(moduleName, type);
+
+          fs.exists(modulePath, exists => {
+            if (!exists) {
+              if (typeof module === 'string') {
+                _downloadModule(module, type, (err, packageJson) => {
+                  if (!err) {
+                    if (packageJson.client) {
+                      _buildModule(packageJson, type, cb);
+                    } else {
+                      cb();
+                    }
+                  } else {
+                    cb(err);
+                  }
+                });
+              } else if (typeof module === 'object') {
+                _dumpPlugin(module, type, err => {
+                  if (!err) {
+                    if (module.client) {
+                      _buildModule(module, type, cb);
+                    } else {
+                      cb();
+                    }
+                  } else {
+                    cb(err);
+                  }
+                });
+              } else {
+                const err = new Error('invalid module format');
+                cb(err);
+              }
+            } else {
+              cb();
+            }
+          });
+        } else {
+          cb(err);
         }
       });
     } else {
-      console.warn(err);
+      cb(err);
     }
   });
 };
@@ -762,11 +798,12 @@ const _getModuleName = module => {
 };
 const _getModulePath = (module, type) => path.join(__dirname, type, 'node_modules', _getModuleName(module));
 const _getModulePackageJsonPath = (module, type) => {
-  if (path.isAbsolute(module)) {
-    return path.join(__dirname, module, 'package.json');
+  const moduleName = _getModuleName(module);
+
+  if (path.isAbsolute(moduleName)) {
+    return path.join(__dirname, moduleName, 'package.json');
   } else {
-    const modulePath = _getModulePath(module, type);
-    return path.join(modulePath, 'package.json');
+    return path.join(_getModulePath(moduleName, type), 'package.json');
   }
 };
 const _getModuleClientPath = (module, type) => {

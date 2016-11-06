@@ -1,6 +1,6 @@
 const ReactTools = require('react-tools');
 
-const server = ({engines: {express}}) => ({
+const server = ({engines: {express: app}}) => ({
   mount() {
     function corsPost(req, res) {
       console.log('cors post', req.url);
@@ -11,12 +11,19 @@ const server = ({engines: {express}}) => ({
         b += s;
       });
       req.on('end', () => {
-        res.type('text/plain');
-        res.send(ReactTools.transform());
+        const js = ReactTools.transform(b);
+
+        console.log('cors client transform', {
+          req: b,
+          res: js,
+        });
+
+        res.type('application/javascript');
+        res.send(js);
       });
     }
 
-    express.post('/corsPlugin', corsPost);
+    app.post('/corsPlugin', corsPost);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
@@ -27,7 +34,7 @@ const server = ({engines: {express}}) => ({
           route.route.stack.forEach(removeMiddlewares);
         }
       }
-      express._router.stack.forEach(removeMiddlewares);
+      app._router.stack.forEach(removeMiddlewares);
     };
   },
   unmount() {

@@ -2,8 +2,10 @@ class ArchaeClient {
   constructor() {
     this.engines = {};
     this._engines = {};
+    this.__engines = {};
     this.plugins = {};
     this._plugins = {};
+    this.__plugins = {};
   }
 
   addEngine(engine) {
@@ -120,48 +122,38 @@ class ArchaeClient {
     }
   }
 
-  mountEngines(engines, cb) {
-    const engineMountPromises = engines.map(engine => {
-      return this.mountEngine(engine);
+  mountEngines(engines) {
+    engines.forEach(engine => {
+      this.mountEngine(engine);
     });
-
-    Promise.all(engineMountPromises)
-      .then(() => {
-        cb();
-      })
-     .catch(cb);
   }
 
   mountEngine(engine) {
     const engineModule = this.engines[engine];
 
-    const engineInstance = {};
+    const engineInstance = engineModule();
     this._engines[engine] = engineInstance;
 
-    return engineModule.mount.call(engineInstance);
+    const engineApi = engineInstance.mount();
+    this.__engines[engine] = engineApi;
   }
 
-  mountPlugins(plugins, cb) {
-    const pluginMountPromises = plugins.map(plugin => {
-      return this.mountPlugin(plugin);
+  mountPlugins(plugins) {
+    plugins.forEach(plugin => {
+      this.mountPlugin(plugin);
     });
-
-    Promise.all(pluginMountPromises)
-      .then(() => {
-        cb();
-      })
-     .catch(cb);
   }
 
   mountPlugin(plugin) {
     const pluginModule = this.plugins[plugin];
 
     const pluginInstance = pluginModule({
-      engines: this._engines,
+      engines: this.__engines,
     });
     this._plugins[plugin] = pluginInstance;
 
-    return pluginInstance.mount();
+    const pluginApi = pluginInstance.mount();
+    this.__plugins[plugin] = pluginApi;
   }
 
   mountAll() {
@@ -174,19 +166,10 @@ class ArchaeClient {
                 console.warn(err);
               }
 
-              this.mountEngines(modules.engines, err => {
-                if (err) {
-                  console.warn(err);
-                }
+              this.mountEngines(modules.engines);
+              this.mountPlugins(modules.plugins);
 
-                this.mountPlugins(modules.plugins, err => {
-                  if (err) {
-                    console.warn(err);
-                  }
-
-                  console.log('done mounting');
-                });
-              });
+              console.log('done mounting');
             });
           })
           .catch(err => {

@@ -11,7 +11,10 @@ app.use('/', express.static(__dirname));
 
 const a = archae();
 
-a.addEngine('/core/engines/react')
+Promise.all([
+  a.addEngine('/core/engines/express'),
+  a.addEngine('/core/engines/react'),
+])
   .then(() => {
     console.log('react engine add ok');
   })

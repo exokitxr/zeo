@@ -28,6 +28,8 @@ Promise.all([
     name: 'corsPlugin',
     version: '0.0.1',
     dependencies: {
+      'react': '',
+      'react-dom': '',
       'react-tools': '',
     },
     client: 'client.js',
