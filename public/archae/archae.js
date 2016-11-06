@@ -58,7 +58,7 @@ class ArchaeClient {
 
   waitForId(id) {
     return new Promise((accept, reject) => {
-      this.once(id, (err, result) => {
+      this.onceId(id, (err, result) => {
         if (!err) {
           accept();
         } else {
@@ -71,11 +71,10 @@ class ArchaeClient {
   bootstrap() {
     this.mountAll();
     this.connect();
+    this.listen();
   }
 
   loadModules(modules, cb) {
-    window.module = {};
-
     const {engines, plugins} = modules;
 
     if ((engines.length + plugins.length) > 0) {
@@ -87,39 +86,61 @@ class ArchaeClient {
           cb();
         }
       };
+      const loaded = err => {
+        if (err) {
+          console.warn(err);
+        }
+
+        pend();
+      };
+
       const _load = (modules, type, exports, cb) => {
         modules.forEach(module => {
-          const script = document.createElement('script');
-          script.src = '/archae/' + type + '/' + module + '.js';
-          script.async = true;
-          script.onload = () => {
-            console.log('module loaded:', type + '/' + module);
-
-            exports[module] = window.module.exports;
-            window.module = {};
-
-            cb();
-            cleanup();
-          };
-          script.onerror = err => {
-            console.warn(err);
-
-            cb();
-            cleanup();
-          };
-
-          document.body.appendChild(script);
-          const cleanup = () => {
-            document.body.removeChild(script);
-          };
+          this.loadModule(module, type, exports, cb);
         });
       };
 
-      _load(engines, 'engines', this.engines, pend);
-      _load(plugins, 'plugins', this.plugins, pend);
+      _load(engines, 'engines', this.engines, loaded);
+      _load(plugins, 'plugins', this.plugins, loaded);
     } else {
       cb();
     }
+  }
+
+  loadModule(module, type, exports, cb) {
+    window.module = {};
+
+    const script = document.createElement('script');
+    script.src = '/archae/' + type + '/' + module + '.js';
+    script.async = true;
+    script.onload = () => {
+      console.log('module loaded:', type + '/' + module);
+
+      exports[module] = window.module.exports;
+      window.module = {};
+
+      cb();
+      cleanup();
+    };
+    script.onerror = err => {
+      console.warn(err);
+
+      cb();
+      cleanup();
+    };
+
+    document.body.appendChild(script);
+    const cleanup = () => {
+      document.body.removeChild(script);
+    };
+  }
+
+  loadEngine(engine, cb) {
+    this.loadModule(engine, 'engines', this.engines, cb);
+  }
+
+  loadPlugin(plugin, cb) {
+    this.loadModule(plugin, 'plugins', this.plugins, cb);
   }
 
   mountEngines(engines) {
@@ -215,6 +236,27 @@ class ArchaeClient {
     this._listeners = [];
   }
 
+  listen() {
+    this.on('addEngine', ({engine}) => {
+      this.loadEngine(engine, err => {
+        if (!err) {
+          this.mountEngine(engine);
+        } else {
+          console.warn(err);
+        }
+      });
+    });
+    this.on('addPlugin', ({plugin}) => {
+      this.loadPlugin(plugin, err => {
+        if (!err) {
+          this.mountPlugin(plugin);
+        } else {
+          console.warn(err);
+        }
+      });
+    });
+  }
+
   send(o) {
     if (this._connection.readyState === 1) {
       this._connection.send(JSON.stringify(o));
@@ -223,10 +265,18 @@ class ArchaeClient {
     }
   }
 
-  once(id, cb) {
+  on(type, handler) {
+    this._listeners.push(m => {
+      if (m.type === type) {
+        handler(m);
+      }
+    });
+  }
+
+  onceId(id, handler) {
     const listener = m => {
       if (m.id === id) {
-        cb(m.error, m.result);
+        handler(m.error, m.result);
 
         this._listeners.splice(this._listeners.indexOf(listener), 1);
       }

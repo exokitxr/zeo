@@ -16,6 +16,8 @@ class ArchaeServer {
     this.server = null;
     this.app = null;
 
+    this.connections = [];
+
     this.engines = {};
     this._engines = {};
     this.__engines = {};
@@ -104,7 +106,7 @@ class ArchaeServer {
               this.loadPlugin(pluginName, err => {
                 if (!err) {
                   this.mountPlugin(pluginName);
-                  this.broadcastAddPlugin();
+                  this.broadcastAddPlugin(pluginName);
                 } else {
                   console.warn(err);
                 }
@@ -361,7 +363,10 @@ class ArchaeServer {
   }
 
   broadcastAddEngine(engine) {
-    // XXX
+    this.broadcast({
+      type: 'addEngine',
+      engine: engine,
+    });
   }
 
   loadPlugins(plugins, cb) {
@@ -426,7 +431,23 @@ class ArchaeServer {
   }
 
   broadcastAddPlugin(plugin) {
-    // XXX
+console.log('broadcast add plugin', {
+  type: 'addPlugin',
+  plugin: plugin,
+});
+    this.broadcast({
+      type: 'addPlugin',
+      plugin: plugin,
+    });
+  }
+
+  broadcast(message) {
+    const messageString = JSON.stringify(message);
+
+    for (let i = 0; i < this.connections.length; i++) {
+      const connection = this.connections[i];
+      connection.send(messageString);
+    }
   }
 
   listen({server, app}, cb) {
@@ -461,6 +482,8 @@ class ArchaeServer {
         wss.on('connection', c => {
           console.log('connection open');
 
+          this.connections.push(c);
+
           c.on('message', s => {
             const m = JSON.parse(s);
 
@@ -485,7 +508,7 @@ class ArchaeServer {
                 const {engine} = m;
 
                 if (_isValidModule(engine)) {
-                  _addModule(engine, 'engines', cb);
+                  this.addEngine(engine, cb);
                 } else {
                   cb('invalid engine spec');
                 }
@@ -493,7 +516,7 @@ class ArchaeServer {
                 const {engine} = m;
 
                 if (_isValidModule(engine)) {
-                  _removeModule(engine, 'engines', cb);
+                  this.removeEngine(engine, cb);
                 } else {
                   cb('invalid engine spec');
                 }
@@ -501,7 +524,7 @@ class ArchaeServer {
                 const {plugin} = m;
 
                 if (_isValidModule(plugin)) {
-                  _addModule(plugin, 'plugins', cb);
+                  this.addPlugin(plugin, cb);
                 } else {
                   cb('invalid plugin spec');
                 }
@@ -509,7 +532,7 @@ class ArchaeServer {
                 const {plugin} = m;
 
                 if (_isValidModule(plugin)) {
-                  _removeModule(plugin, 'plugins', cb);
+                  this.removePlugin(plugin, cb);
                 } else {
                   cb('invalid plugin spec');
                 }
@@ -522,6 +545,8 @@ class ArchaeServer {
           });
           c.on('close', () => {
             console.log('connection close');
+
+            this.connections.splice(this.connections.indexOf(c), 1);
           });
         });
 
