@@ -64,34 +64,35 @@ const client = () => ({
     const _push = page => {
       _drawInput(ctx, {
         x: 50,
-        y: 50,
-        width: 400,
-        height: 40,
+        y: 100,
+        width: WIDTH - (50 * 2),
+        height: 100,
         value: 'Biolumi',
       });
 
       _drawButton(ctx, {
         x: 50,
-        y: 100,
-        width: 125,
-        height: 40,
+        y: 200,
+        width: 350,
+        height: 100,
         value: 'Submit',
       });
 
       _drawSlider(ctx, {
         x: 50,
-        y: 150,
-        width: 400,
-        height: 40,
-        valueWidth: 80,
+        y: 300,
+        width: WIDTH - (50 * 2),
+        height: 100,
+        valueWidth: 200,
         value: 100,
       });
 
       _drawUnitBox(ctx, {
         x: 50,
-        y: 200,
+        y: 400,
         width: 100,
-        height: 40,
+        height: 100,
+        valueWidth: 200,
         value: 100,
       });
 
@@ -140,7 +141,7 @@ const _drawInput = (ctx, {x, y, width, height, value}) => {
 const _drawButton = (ctx, {x, y, width, height, value}) => {
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 5;
   ctx.rect(x, y, width, height);
   ctx.stroke();
 
@@ -160,8 +161,8 @@ const _drawSlider = (ctx, {x, y, width, height, valueWidth, value}) => {
   ctx.beginPath()
   ctx.strokeStyle = '#FF0000';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, y);
-  ctx.lineTo(x, y + height);
+  ctx.moveTo(x, y + height * 0.25);
+  ctx.lineTo(x, y + height * 0.75);
   ctx.stroke();
 
   ctx.font = height + 'px \'Titillium Web\'';
@@ -169,22 +170,22 @@ const _drawSlider = (ctx, {x, y, width, height, valueWidth, value}) => {
   ctx.fillText(value, x + width - valueWidth * 0.9, y + height * 0.75);
 };
 
-const _drawUnitBox = (ctx, {x, y, width, height, value}) => {
+const _drawUnitBox = (ctx, {x, y, width, height, valueWidth, value}) => {
   ctx.font = height + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x, y + height * 0.7);
+  ctx.fillText(value, x, y + height * 0.725);
 
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
-  ctx.lineWidth = 3;
-  ctx.moveTo(x + width - 20, y + height * 0.25);
-  ctx.lineTo(x + width - 10, y + height * 0);
-  ctx.moveTo(x + width - 10, y + height * 0);
-  ctx.lineTo(x + width, y + height * 0.25);
-  ctx.moveTo(x + width - 20, y + height * 0.5);
-  ctx.lineTo(x + width - 10, y + height * 0.75);
-  ctx.moveTo(x + width - 10, y + height * 0.75);
-  ctx.lineTo(x + width, y + height * 0.5);
+  ctx.lineWidth = 5;
+  ctx.moveTo(x + valueWidth + 0, y + height * 0.3);
+  ctx.lineTo(x + valueWidth + 20, y + height * 0.1);
+  ctx.moveTo(x + valueWidth + 20, y + height * 0.1);
+  ctx.lineTo(x + valueWidth + 40, y + height * 0.3);
+  ctx.moveTo(x + valueWidth + 0, y + height * 0.5);
+  ctx.lineTo(x + valueWidth + 20, y + height * 0.7);
+  ctx.moveTo(x + valueWidth + 20, y + height * 0.7);
+  ctx.lineTo(x + valueWidth + 40, y + height * 0.5);
   ctx.stroke();
 };
 
