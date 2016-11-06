@@ -108,31 +108,37 @@ class ArchaeClient {
   }
 
   loadModule(module, type, exports, cb) {
-    window.module = {};
-
-    const script = document.createElement('script');
-    script.src = '/archae/' + type + '/' + module + '.js';
-    script.async = true;
-    script.onload = () => {
-      console.log('module loaded:', type + '/' + module);
-
-      exports[module] = window.module.exports;
+    if (!exports[module]) {
       window.module = {};
 
-      cb();
-      cleanup();
-    };
-    script.onerror = err => {
-      console.warn(err);
+      const script = document.createElement('script');
+      script.src = '/archae/' + type + '/' + module + '.js';
+      script.async = true;
+      script.onload = () => {
+        console.log('module loaded:', type + '/' + module);
 
-      cb();
-      cleanup();
-    };
+        exports[module] = window.module.exports;
+        window.module = {};
 
-    document.body.appendChild(script);
-    const cleanup = () => {
-      document.body.removeChild(script);
-    };
+        cb(null, {
+          loaded: true,
+        });
+        cleanup();
+      };
+      script.onerror = err => {
+        cb(err);
+        cleanup();
+      };
+
+      document.body.appendChild(script);
+      const cleanup = () => {
+        document.body.removeChild(script);
+      };
+    } else {
+      cb(null, {
+        loaded: false,
+      });
+    }
   }
 
   loadEngine(engine, cb) {
@@ -204,7 +210,7 @@ class ArchaeClient {
 
   connect() {
     const connection = (() => {
-      const result = new WebSocket('ws://' + window.location.host + '/archae/ws');
+      const result = new WebSocket('ws://' + location.host + '/archae/ws');
       result.onopen = () => {
         console.log('on open');
 
@@ -238,18 +244,24 @@ class ArchaeClient {
 
   listen() {
     this.on('addEngine', ({engine}) => {
-      this.loadEngine(engine, err => {
+      this.loadEngine(engine, (err, result) => {
         if (!err) {
-          this.mountEngine(engine);
+          const {loaded} = result;
+          if (loaded) {
+            this.mountEngine(engine);
+          }
         } else {
           console.warn(err);
         }
       });
     });
     this.on('addPlugin', ({plugin}) => {
-      this.loadPlugin(plugin, err => {
+      this.loadPlugin(plugin, (err, result) => {
         if (!err) {
-          this.mountPlugin(plugin);
+          const {loaded} = result;
+          if (loaded) {
+            this.mountPlugin(plugin);
+          }
         } else {
           console.warn(err);
         }

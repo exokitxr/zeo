@@ -8,13 +8,14 @@ const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
 
 class ArchaeServer {
-  constructor(options) {
-    options = options || {};
+  constructor({server, app, wss} = {}) {
+    server = server || http.createServer();
+    app = app || express();
+    wss = wss || new ws.Server({ server });
 
-    this._options = options;
-
-    this.server = null;
-    this.app = null;
+    this.server = server;
+    this.app = app;
+    this.wss = wss;
 
     this.connections = [];
 
@@ -297,9 +298,11 @@ class ArchaeServer {
   loadAll(cb) {
     this.getServerModules((err, modules) => {
       if (!err) {
-        this.loadEngines(modules.engines, err => {
+        const missingEngines = modules.engines.filter(engine => !(engine in this.engines));
+        this.loadEngines(missingEngines, err => {
           if (!err) {
-            this.loadPlugins(modules.plugins, cb);
+            const missingPlugins = modules.plugins.filter(plugin => !(plugin in this.plugins));
+            this.loadPlugins(missingPlugins, cb);
           } else {
             cb(err);
           }
@@ -370,6 +373,7 @@ class ArchaeServer {
     const engineInstance = engineModule({
       server: this.server,
       app: this.app,
+      wss: this.wss,
     });
     this._engines[engine] = engineInstance;
 
@@ -466,12 +470,8 @@ class ArchaeServer {
     }
   }
 
-  listen({server, app}, cb) {
-    server = server || http.createServer();
-    app = app || express();
-
-    this.server = server;
-    this.app = app;
+  listen(cb) {
+    const {server, app, wss} = this;
 
     const {_options: options} = this;
 
@@ -492,78 +492,78 @@ class ArchaeServer {
         app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
         server.on('request', app);
 
-        const wss = new ws.Server({
-          server,
-        });
         wss.on('connection', c => {
-          console.log('connection open');
+          const {url} = c.upgradeReq;
+          if (url === '/archae/ws') {
+            console.log('connection open');
 
-          this.connections.push(c);
+            this.connections.push(c);
 
-          c.on('message', s => {
-            const m = JSON.parse(s);
+            c.on('message', s => {
+              const m = JSON.parse(s);
 
-            const cb = err => {
-              console.warn(err);
-            };
-
-            if (typeof m === 'object' && m && typeof m.type === 'string' && typeof m.id === 'string') {
-              const cb = (err = null, result = null) => {
-                if (c.readyState === ws.OPEN) {
-                  const o = {
-                    id: m.id,
-                    error: err,
-                    result: result,
-                  };
-                  const s = JSON.stringify(o);
-                  c.send(s);
-                }
+              const cb = err => {
+                console.warn(err);
               };
 
-              if (m.type === 'addEngine') {
-                const {engine} = m;
+              if (typeof m === 'object' && m && typeof m.type === 'string' && typeof m.id === 'string') {
+                const cb = (err = null, result = null) => {
+                  if (c.readyState === ws.OPEN) {
+                    const e = {
+                      id: m.id,
+                      error: err,
+                      result: result,
+                    };
+                    const es = JSON.stringify(e);
+                    c.send(es);
+                  }
+                };
 
-                if (_isValidModule(engine)) {
-                  this.addEngine(engine, cb);
-                } else {
-                  cb('invalid engine spec');
-                }
-              } else if (m.type === 'removePlugin') {
-                const {engine} = m;
+                if (m.type === 'addEngine') {
+                  const {engine} = m;
 
-                if (_isValidModule(engine)) {
-                  this.removeEngine(engine, cb);
-                } else {
-                  cb('invalid engine spec');
-                }
-              } else if (m.type === 'addPlugin') {
-                const {plugin} = m;
+                  if (_isValidModule(engine)) {
+                    this.addEngine(engine, cb);
+                  } else {
+                    cb('invalid engine spec');
+                  }
+                } else if (m.type === 'removePlugin') {
+                  const {engine} = m;
 
-                if (_isValidModule(plugin)) {
-                  this.addPlugin(plugin, cb);
-                } else {
-                  cb('invalid plugin spec');
-                }
-              } else if (m.type === 'removePlugin') {
-                const {plugin} = m;
+                  if (_isValidModule(engine)) {
+                    this.removeEngine(engine, cb);
+                  } else {
+                    cb('invalid engine spec');
+                  }
+                } else if (m.type === 'addPlugin') {
+                  const {plugin} = m;
 
-                if (_isValidModule(plugin)) {
-                  this.removePlugin(plugin, cb);
+                  if (_isValidModule(plugin)) {
+                    this.addPlugin(plugin, cb);
+                  } else {
+                    cb('invalid plugin spec');
+                  }
+                } else if (m.type === 'removePlugin') {
+                  const {plugin} = m;
+
+                  if (_isValidModule(plugin)) {
+                    this.removePlugin(plugin, cb);
+                  } else {
+                    cb('invalid plugin spec');
+                  }
                 } else {
-                  cb('invalid plugin spec');
+                  cb('invalid message type');
                 }
               } else {
-                cb('invalid message type');
+                cb('invalid message');
               }
-            } else {
-              cb('invalid message');
-            }
-          });
-          c.on('close', () => {
-            console.log('connection close');
+            });
+            c.on('close', () => {
+              console.log('connection close');
 
-            this.connections.splice(this.connections.indexOf(c), 1);
-          });
+              this.connections.splice(this.connections.indexOf(c), 1);
+            });
+          }
         });
 
         cb();

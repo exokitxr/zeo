@@ -43,9 +43,17 @@ Promise.all([
     console.log('added cors plugin', err);
   }); */
 
-  archae.addPlugin('/core/plugins/biolumi', err => {
-    console.log('added biolumi plugin', err);
-  });
+
+  Promise.all([
+    archae.addPlugin('/core/plugins/ws'),
+    archae.addPlugin('/core/plugins/biolumi'),
+  ])
+    .then(() => {
+      console.log('added client plugins');
+    })
+    .catch(err => {
+      console.warn(err);
+    });
 })
 .catch(err => {
   console.warn(err);

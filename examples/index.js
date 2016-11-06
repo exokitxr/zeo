@@ -9,17 +9,18 @@ const server = http.createServer();
 const app = express();
 app.use('/', express.static(__dirname));
 
-const a = archae();
+const a = archae({server, app});
 
 Promise.all([
   a.addEngine('/core/engines/express'),
   a.addEngine('/core/engines/react'),
+  a.addEngine('/core/engines/ws'),
   a.addEngine('/core/engines/biolumi'),
 ])
   .then(() => {
     console.log('adds ok');
 
-    a.listen({server, app}, err => {
+    a.listen(err => {
       if (!err) {
         server.listen(8000);
         server.on('listening', () => {
