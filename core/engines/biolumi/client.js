@@ -73,7 +73,7 @@ const client = () => ({
       _drawButton(ctx, {
         x: 50,
         y: 200,
-        width: 350,
+        width: 200,
         height: 100,
         value: 'Submit',
       });
@@ -83,7 +83,7 @@ const client = () => ({
         y: 300,
         width: WIDTH - (50 * 2),
         height: 100,
-        valueWidth: 200,
+        valueWidth: 120,
         value: 100,
       });
 
@@ -92,7 +92,7 @@ const client = () => ({
         y: 400,
         width: 100,
         height: 100,
-        valueWidth: 200,
+        valueWidth: 160,
         value: 100,
       });
 
@@ -131,23 +131,23 @@ const client = () => ({
 
 const _drawInput = (ctx, {x, y, width, height, value}) => {
   ctx.fillStyle = '#CCC';
-  ctx.fillRect(x, y, width, height);
+  ctx.fillRect(x, y + height * 0.1, width, height * 0.8);
 
-  ctx.font = height + 'px \'Titillium Web\'';
+  ctx.font = (height * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x, y + height * 0.85);
+  ctx.fillText(value, x, y + height * 0.75);
 };
 
 const _drawButton = (ctx, {x, y, width, height, value}) => {
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.rect(x, y, width, height);
+  ctx.rect(x, y + height * 0.1, width, height * 0.8);
   ctx.stroke();
 
-  ctx.font = (height * 0.8) + 'px \'Titillium Web\'';
+  ctx.font = (height * 0.5) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x + width * 0.1, y + height * 0.75);
+  ctx.fillText(value, x + width * 0.1, y + height * 0.7);
 };
 
 const _drawSlider = (ctx, {x, y, width, height, valueWidth, value}) => {
@@ -165,27 +165,27 @@ const _drawSlider = (ctx, {x, y, width, height, valueWidth, value}) => {
   ctx.lineTo(x, y + height * 0.75);
   ctx.stroke();
 
-  ctx.font = height + 'px \'Titillium Web\'';
+  ctx.font = (height * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x + width - valueWidth * 0.9, y + height * 0.75);
+  ctx.fillText(value, x + width - valueWidth * 0.9, y + height * 0.7);
 };
 
 const _drawUnitBox = (ctx, {x, y, width, height, valueWidth, value}) => {
-  ctx.font = height + 'px \'Titillium Web\'';
+  ctx.font = (height * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x, y + height * 0.725);
+  ctx.fillText(value, x, y + height * 0.75);
 
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.moveTo(x + valueWidth + 0, y + height * 0.3);
-  ctx.lineTo(x + valueWidth + 20, y + height * 0.1);
-  ctx.moveTo(x + valueWidth + 20, y + height * 0.1);
-  ctx.lineTo(x + valueWidth + 40, y + height * 0.3);
-  ctx.moveTo(x + valueWidth + 0, y + height * 0.5);
-  ctx.lineTo(x + valueWidth + 20, y + height * 0.7);
-  ctx.moveTo(x + valueWidth + 20, y + height * 0.7);
-  ctx.lineTo(x + valueWidth + 40, y + height * 0.5);
+  ctx.moveTo(x + valueWidth + 0, y + height * 0.4);
+  ctx.lineTo(x + valueWidth + 20, y + height * 0.2);
+  ctx.moveTo(x + valueWidth + 20, y + height * 0.2);
+  ctx.lineTo(x + valueWidth + 40, y + height * 0.4);
+  ctx.moveTo(x + valueWidth + 0, y + height * 0.6);
+  ctx.lineTo(x + valueWidth + 20, y + height * 0.8);
+  ctx.moveTo(x + valueWidth + 20, y + height * 0.8);
+  ctx.lineTo(x + valueWidth + 40, y + height * 0.6);
   ctx.stroke();
 };
 
