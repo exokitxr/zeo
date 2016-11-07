@@ -5,8 +5,13 @@ const HEIGHT = WIDTH * 1.5;
 
 const client = () => ({
   mount() {
-    let canvas = null;
-    let ctx = null;
+    const canvas = document.createElement('canvas');
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+    canvas.style.width = (WIDTH / window.devicePixelRatio) + 'px';
+    canvas.style.height = (HEIGHT / window.devicePixelRatio) + 'px';
+    canvas.style.cursor = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AsGEDMxMbgZlQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAFUlEQVQI12NkYGD4z4AEmBjQAGEBAEEUAQeL0gY8AAAAAElFTkSuQmCC") 2 2, auto';
+    const ctx = canvas.getContext('2d');
     let loaded = false;
     let queue = [];
 
@@ -25,14 +30,6 @@ const client = () => ({
     }).load()
       .then(() => {
         if (live) {
-          canvas = document.createElement('canvas');
-          canvas.width = WIDTH;
-          canvas.height = HEIGHT;
-          canvas.style.width = (WIDTH / window.devicePixelRatio) + 'px';
-          canvas.style.height = (HEIGHT / window.devicePixelRatio) + 'px';
-          canvas.style.cursor = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AsGEDMxMbgZlQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAFUlEQVQI12NkYGD4z4AEmBjQAGEBAEEUAQeL0gY8AAAAAElFTkSuQmCC") 2 2, auto';
-          ctx = canvas.getContext('2d');
-
           loaded = true;
           if (queue.length > 0) {
             for (let i = 0; i < queue.length; i++) {
@@ -62,6 +59,17 @@ const client = () => ({
       });
 
     const _push = page => {
+      // XXX
+      _refresh();
+    };
+    const _pop = () => {
+      // XXX
+      _refresh();
+    };
+    const _clear = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+    const _refreshPage = () => {
       _drawInput(ctx, {
         x: 50,
         y: 100,
@@ -95,12 +103,42 @@ const client = () => ({
         valueWidth: 160,
         value: 100,
       });
+    };
+    const _refreshCursors = () => {
+      for (let i = 0; i < cursors.length; i++) {
+        const cursor = cursors[i];
+        const {position: {x, y}} = cursor;
+        _drawCursor(ctx, {x, y});
+      }
+    };
+    const _refresh = () => {
+      _clear();
+      _refreshPage();
+      _refreshCursors();
+    };
 
-      // XXX
-    };
-    const _pop = () => {
-      // XXX
-    };
+    const cursors = [];
+    class Cursor {
+      constructor() {
+        this.position = {
+          x: 0,
+          y: 0,
+        };
+      }
+
+      setPosition(x, y) {
+        this.position.x = x;
+        this.position.y = y;
+
+        _refresh();
+      }
+
+      remove() {
+        cursors.splice(cursors.indexOf(this), 1);
+
+        _refresh();
+      }
+    }
 
     return {
       push(page) {
@@ -121,7 +159,15 @@ const client = () => ({
             type: 'pop'
           });
         }
-      }
+      },
+      getForm() {
+        return canvas;
+      },
+      addCursor() {
+        const cursor = new Cursor();
+        cursors.push(cursor);
+        return cursor;
+      },
     };
   },
   unmount() {
@@ -187,6 +233,11 @@ const _drawUnitBox = (ctx, {x, y, width, height, valueWidth, value}) => {
   ctx.moveTo(x + valueWidth + 20, y + height * 0.8);
   ctx.lineTo(x + valueWidth + 40, y + height * 0.6);
   ctx.stroke();
+};
+
+const _drawCursor = (ctx, {x, y}) => {
+  ctx.fillStyle = '#000000';
+  ctx.fillRect((x - 2) * window.devicePixelRatio, (y - 2) * window.devicePixelRatio, 4 * window.devicePixelRatio, 4 * window.devicePixelRatio);
 };
 
 module.exports = client;

@@ -45,8 +45,7 @@ Promise.all([
 
 
   Promise.all([
-    archae.addPlugin('/core/plugins/ws'),
-    archae.addPlugin('/core/plugins/biolumi'),
+    archae.addPlugin('/core/plugins/todo'),
   ])
     .then(() => {
       console.log('added client plugins');

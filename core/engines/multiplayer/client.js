@@ -3,7 +3,7 @@ const {EventEmitter} = events;
 
 const client = () => ({
   mount() {
-    const connection = new WebSocket('ws://' + location.host + '/archae/engineWs');
+    const connection = new WebSocket('ws://' + location.host + '/archae/multiplayerWs');
     connection.onopen = () => {
       if (queue.length > 0) {
         for (let i = 0; i < queue.length; i++) {
@@ -20,22 +20,33 @@ const client = () => ({
     };
     connection.onmessage = msg => {
       const m = JSON.parse(msg.data);
-      const {event, data} = m;
-      _emit.call(result, event, data);
+      const {type} = m;
+      if (type === 'statuses') {
+        const {statuses} = m;
+        for (let i = 0; i < statuses.length; i++) {
+          const entry = statuses[i];
+          const {id, status} = entry;
+          _emit.call(result, 'status', {id, status});
+        }
+      } else if (type === 'status') {
+        const {id, status} = m;
+        _emit.call(result, 'status', {id, status});
+      }
     };
     let queue = [];
 
     const result = new EventEmitter();
 
     const _emit = result.emit;
-    result.emit = function(event, data) {
-      const o = {
-        event,
-        data,
+    result.status = function(status) {
+      const e = {
+        type: 'status',
+        status,
       };
 
       if (connection.readyState === WebSocket.OPEN) {
-        connection.send(JSON.stringify(o));
+        const es = JSON.stringify(e);
+        connection.send(es);
       } else {
         queue.push(o);
       }
