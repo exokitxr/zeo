@@ -1,9 +1,35 @@
-const client = ({engines: {biolumi, multiplayer}}) => ({
+const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
   mount() {
+    // worlds
+    nedb.ensureIndex({
+      fieldName: 'lol',
+      unique: true,
+    }, err => {
+      if (!err) {
+        db.insert({
+          lol: 'zol',
+        }, err => {
+          if (!err || err.errorType === 'uniqueViolated') {
+            db.find({}, (err, result) => {
+              if (!err) {
+                console.log('got result', result);
+              } else {
+                console.warn(err);
+              }
+            });
+          } else {
+            console.warn(err);
+          }
+        });
+      } else {
+        console.warn(err, JSON.stringify(err));
+      }
+    });
     biolumi.push({
       // XXX push the core UI here
     });
 
+    // multiplayer
     const form = biolumi.getForm();
     const mousemove = e => {
       const {clientX, clientY} = e;
