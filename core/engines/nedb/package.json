@@ -1,0 +1,9 @@
+{
+  "name": "nedb",
+  "version": "0.0.1",
+  "server": "server.js",
+  "dependencies": {
+    "nedb": "",
+    "mkdirp": ""
+  }
+}

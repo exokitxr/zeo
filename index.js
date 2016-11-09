@@ -374,6 +374,7 @@ class ArchaeServer {
       server: this.server,
       app: this.app,
       wss: this.wss,
+      dirname: __dirname,
     });
     this._engines[engine] = engineInstance;
 

@@ -16,6 +16,7 @@ Promise.all([
   a.addEngine('/core/engines/react'),
   // a.addEngine('/core/engines/ws'),
   // a.addEngine('/core/engines/bus'),
+  a.addEngine('/core/engines/nedb'),
   a.addEngine('/core/engines/biolumi'),
   a.addEngine('/core/engines/multiplayer'),
 ])
