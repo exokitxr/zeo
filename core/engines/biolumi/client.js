@@ -120,6 +120,12 @@ const client = () => ({
                 value,
               });
               break;
+            case 'link':
+              _drawLink(ctx, {
+                index: i,
+                value,
+              });
+              break;
           }
         }
       }
@@ -196,7 +202,7 @@ const client = () => ({
 });
 
 const _drawHeader = (ctx, {img, text}) => {
-  ctx.beginPath()
+  ctx.beginPath();
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
   ctx.moveTo((MARGIN / 2) - (PADDING / 2), HEADER_HEIGHT * 0.5);
@@ -250,7 +256,7 @@ const _drawButton = (ctx, {index, label, value}) => {
   ctx.fillStyle = '#333333';
   const metrics = ctx.measureText(value);
 
-  ctx.beginPath()
+  ctx.beginPath();
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
   ctx.rect(x, iy + INPUT_HEIGHT * 0.1, (PADDING * 2) + metrics.width, INPUT_HEIGHT * 0.7);
@@ -271,14 +277,14 @@ const _drawSlider = (ctx, {index, label, value}) => {
   ctx.fillStyle = '#333333';
   const metrics = ctx.measureText(value);
 
-  ctx.beginPath()
+  ctx.beginPath();
   ctx.strokeStyle = '#CCCCCC';
   ctx.lineWidth = 5;
   ctx.moveTo(x, iy + INPUT_HEIGHT / 2);
   ctx.lineTo(WIDTH - (MARGIN + PADDING + metrics.width), iy + INPUT_HEIGHT / 2);
   ctx.stroke();
 
-  ctx.beginPath()
+  ctx.beginPath();
   ctx.strokeStyle = '#FF0000';
   ctx.lineWidth = 5;
   ctx.moveTo(x, iy + INPUT_HEIGHT * 0.25);
@@ -302,7 +308,7 @@ const _drawUnitBox = (ctx, {index, label, value}) => {
 
   ctx.fillText(value, x, iy + INPUT_HEIGHT * 0.75);
 
-  ctx.beginPath()
+  ctx.beginPath();
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
   ctx.moveTo(x + metrics.width + PADDING + 0, iy + INPUT_HEIGHT * 0.4);
@@ -318,6 +324,26 @@ const _drawUnitBox = (ctx, {index, label, value}) => {
   _drawInputSeparator(ctx, {index});
 };
 
+const _drawLink = (ctx, {index, value}) => {
+  const x = MARGIN;
+  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index;
+
+  ctx.font = (INPUT_HEIGHT * 0.8) + 'px \'Titillium Web\'';
+  ctx.fillStyle = '#333333';
+  ctx.fillText(value, MARGIN, iy + SLICE_HEIGHT * 0.675);
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#333333';
+  ctx.lineWidth = 5;
+  ctx.moveTo(WIDTH - MARGIN - PADDING, iy + SLICE_HEIGHT * 0.3);
+  ctx.lineTo(WIDTH - MARGIN, iy + SLICE_HEIGHT * 0.5);
+  ctx.moveTo(WIDTH - MARGIN, iy + SLICE_HEIGHT * 0.5);
+  ctx.lineTo(WIDTH - MARGIN - PADDING, iy + SLICE_HEIGHT * 0.7);
+  ctx.stroke();
+
+  _drawInputSeparator(ctx, {index});
+};
+
 const _drawInputLabel = (ctx, {index, label}) => {
   const x = MARGIN / 2;
   const ly = HEADER_HEIGHT + SLICE_HEIGHT * index;
@@ -328,7 +354,7 @@ const _drawInputLabel = (ctx, {index, label}) => {
 };
 
 const _drawInputSeparator = (ctx, {index}) => {
-  const y = HEADER_HEIGHT + SLICE_HEIGHT * index;
+  const y = HEADER_HEIGHT + SLICE_HEIGHT * (index + 1);
 
   ctx.beginPath();
   ctx.strokeStyle = '#808080';

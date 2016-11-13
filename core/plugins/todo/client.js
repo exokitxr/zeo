@@ -75,6 +75,10 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
           label: 'Unitbox',
           value: 100,
         },
+        {
+          type: 'link',
+          value: 'New world',
+        },
       ],
     });
 
