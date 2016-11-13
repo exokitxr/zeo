@@ -22,11 +22,6 @@ const client = () => ({
     let loaded = false;
     let queue = [];
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
-
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://fonts.googleapis.com/css?family=Titillium+Web:200,200i,300,300i,400,400i,600,600i,700,700i';
@@ -54,8 +49,13 @@ const client = () => ({
           }
 
           document.body.appendChild(canvas);
-          this._cleanup = () => {
+          const _cleanupDom = () => {
             document.body.removeChild(canvas);
+          };
+
+          this._cleanup = () => {
+            _cleanupDom();
+            _cleanupEvents();
           };
         }
       })
@@ -80,13 +80,17 @@ const client = () => ({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
     const _refreshPage = () => {
+      let offset = 0;
+      let hotspots = [];
+
       if (pages.length > 0) {
         const lastPage = pages[pages.length - 1];
         const {header, body} = lastPage;
 
         const {img, text} = header;
         const next = _drawHeader(ctx, {img, text});
-        let {offset} = next;
+        offset += next.offset;
+        hotspots = hotspots.concat(next.hotspots);
 
         for (let i = 0; i < body.length; i++) {
           const section = body[i];
@@ -144,8 +148,38 @@ const client = () => ({
                 value,
               });
               offset = next.offset;
+              hotspots = hotspots.concat(next.hotspots);
               break;
             }
+          }
+        }
+      }
+
+      return {
+        offset,
+        hotspots,
+      };
+    };
+    const _refreshHotspots = hotspots => {
+      if (hotspots.length > 0) {
+        const allCursors = [localCursor].concat(cursors);
+
+        for (let i = 0; i < hotspots.length; i++) {
+          const hotspot = hotspots[i];
+          const [x, y, width, height] = hotspot;
+
+          if (
+            allCursors.some(cursor => {
+              const {position} = cursor;
+
+              const cx = position.x * window.devicePixelRatio;
+              const cy = position.y * window.devicePixelRatio;
+
+              return cx >= x && cy >= y &&
+                (cx < (x + width)) && (cy < (y + height))
+            })
+          ) {
+            _drawHotspot(ctx, {x, y, width, height});
           }
         }
       }
@@ -159,11 +193,14 @@ const client = () => ({
     };
     const _refresh = () => {
       _clear();
-      _refreshPage();
+
+      const next = _refreshPage();
+      const {hotspots} = next;
+      _refreshHotspots(hotspots);
+
       _refreshCursors();
     };
 
-    const cursors = [];
     class Cursor {
       constructor() {
         this.position = {
@@ -185,6 +222,32 @@ const client = () => ({
         _refresh();
       }
     }
+
+    const localCursor = new Cursor();
+    const mousemove = e => {
+      const {clientX, clientY} = e;
+
+      const clientRect = canvas.getBoundingClientRect();
+      const {left, top} = clientRect;
+
+      const x = clientX - left;
+      const y = clientY - top;
+
+      localCursor.setPosition(x, y);
+    };
+    canvas.addEventListener('mousemove', mousemove);
+    const _cleanupEvents = () => {
+      canvas.removeEventListener('mousemove', mousemove);
+    };
+
+    const cursors = [];
+
+    let live = true;
+    this._cleanup = () => {
+      live = false;
+
+      _cleanupEvents();
+    };
 
     return {
       push(page) {
@@ -251,6 +314,7 @@ const _drawHeader = (ctx, {img, text}) => {
 
   return {
     offset: HEADER_HEIGHT,
+    hotspots: [],
   };
 };
 
@@ -419,7 +483,6 @@ const _drawUnitBox = (ctx, {offset, value}) => {
 };
 
 const _drawLink = (ctx, {offset, value}) => {
-  const x = MARGIN;
   const y = offset;
 
   ctx.font = (INPUT_HEIGHT * 0.8) + 'px \'Titillium Web\'';
@@ -441,6 +504,9 @@ const _drawLink = (ctx, {offset, value}) => {
 
   return {
     offset,
+    hotspots: [
+      [0, y, WIDTH, LINK_HEIGHT],
+    ],
   };
 };
 
@@ -466,6 +532,11 @@ const _drawInputSeparator = (ctx, {offset}) => {
   ctx.moveTo(0, y);
   ctx.lineTo(WIDTH, y);
   ctx.stroke();
+};
+
+const _drawHotspot = (ctx, {x, y, width, height}) => {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.075)';
+  ctx.fillRect(x, y, width, height);
 };
 
 const _drawCursor = (ctx, {x, y}) => {
