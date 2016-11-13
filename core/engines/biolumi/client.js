@@ -3,6 +3,10 @@ const FontFaceObserver = require('fontfaceobserver');
 const WIDTH = 1024;
 const HEIGHT = WIDTH * 1.5;
 
+const MARGIN = 50;
+const PADDING = 20;
+const SLICE_HEIGHT = 100;
+
 const client = () => ({
   mount() {
     const canvas = document.createElement('canvas');
@@ -58,51 +62,60 @@ const client = () => ({
         }
       });
 
+    const pages = [];
     const _push = page => {
-      // XXX
+      pages.push(page);
+
       _refresh();
     };
     const _pop = () => {
-      // XXX
+      pages.pop();
+
       _refresh();
     };
     const _clear = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
     const _refreshPage = () => {
-      _drawInput(ctx, {
-        x: 50,
-        y: 100,
-        width: WIDTH - (50 * 2),
-        height: 100,
-        value: 'Biolumi',
-      });
+      if (pages.length > 0) {
+        const lastPage = pages[pages.length - 1];
+        const {header, body} = lastPage;
 
-      _drawButton(ctx, {
-        x: 50,
-        y: 200,
-        width: 200,
-        height: 100,
-        value: 'Submit',
-      });
+        const {img, text} = header;
+        _drawHeader(ctx, {img, text});
 
-      _drawSlider(ctx, {
-        x: 50,
-        y: 300,
-        width: WIDTH - (50 * 2),
-        height: 100,
-        valueWidth: 120,
-        value: 100,
-      });
+        for (let i = 0; i < body.length; i++) {
+          const section = body[i];
+          const {type, value} = section;
 
-      _drawUnitBox(ctx, {
-        x: 50,
-        y: 400,
-        width: 100,
-        height: 100,
-        valueWidth: 160,
-        value: 100,
-      });
+          switch (type) {
+            case 'input':
+              _drawInput(ctx, {
+                index: i + 1,
+                value,
+              });
+              break;
+            case 'button':
+              _drawButton(ctx, {
+                index: i + 1,
+                value,
+              });
+              break;
+            case 'slider':
+              _drawSlider(ctx, {
+                index: i + 1,
+                value,
+              });
+              break;
+            case 'unitbox':
+              _drawUnitBox(ctx, {
+                index: i + 1,
+                value,
+              });
+              break;
+          }
+        }
+      }
     };
     const _refreshCursors = () => {
       for (let i = 0; i < cursors.length; i++) {
@@ -175,69 +188,125 @@ const client = () => ({
   },
 });
 
-const _drawInput = (ctx, {x, y, width, height, value}) => {
-  ctx.fillStyle = '#CCC';
-  ctx.fillRect(x, y + height * 0.1, width, height * 0.8);
+const _drawHeader = (ctx, {img, text}) => {
+  const imageSize = SLICE_HEIGHT;
+  const imageData = _scaleImageData(img, {
+    width: imageSize,
+    height: imageSize,
+  });
+  ctx.drawImage(imageData, MARGIN, 0, imageSize, imageSize);
 
-  ctx.font = (height * 0.6) + 'px \'Titillium Web\'';
+  ctx.font = (SLICE_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x, y + height * 0.75);
+  ctx.fillText(text, MARGIN + imageSize + PADDING, SLICE_HEIGHT * 0.8);
+
+  ctx.beginPath()
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.moveTo(0, SLICE_HEIGHT);
+  ctx.lineTo(WIDTH, SLICE_HEIGHT);
+  ctx.stroke();
 };
 
-const _drawButton = (ctx, {x, y, width, height, value}) => {
+const _drawInput = (ctx, {index, value}) => {
+  const x = MARGIN;
+  const y = SLICE_HEIGHT * index;
+
+  ctx.fillStyle = '#CCC';
+  ctx.fillRect(x, y + SLICE_HEIGHT * 0.1, WIDTH - (MARGIN * 2), SLICE_HEIGHT * 0.8);
+
+  ctx.font = (SLICE_HEIGHT * 0.6) + 'px \'Titillium Web\'';
+  ctx.fillStyle = '#333333';
+  ctx.fillText(value, x + PADDING, y + SLICE_HEIGHT * 0.75);
+};
+
+const _drawButton = (ctx, {index, value}) => {
+  const x = MARGIN;
+  const y = SLICE_HEIGHT * index;
+
+  ctx.font = (SLICE_HEIGHT * 0.5) + 'px \'Titillium Web\'';
+  ctx.fillStyle = '#333333';
+  const metrics = ctx.measureText(value);
+
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.rect(x, y + height * 0.1, width, height * 0.8);
+  ctx.rect(x, y + SLICE_HEIGHT * 0.1, /*(5 * 2) + */(PADDING * 2) + metrics.width, SLICE_HEIGHT * 0.8);
   ctx.stroke();
 
-  ctx.font = (height * 0.5) + 'px \'Titillium Web\'';
-  ctx.fillStyle = '#333333';
-  ctx.fillText(value, x + width * 0.1, y + height * 0.7);
+  ctx.fillText(value, x + PADDING, y + SLICE_HEIGHT * 0.7);
 };
 
-const _drawSlider = (ctx, {x, y, width, height, valueWidth, value}) => {
+const _drawSlider = (ctx, {index, value}) => {
+  const x = MARGIN;
+  const y = SLICE_HEIGHT * index;
+
+  ctx.font = (SLICE_HEIGHT * 0.6) + 'px \'Titillium Web\'';
+  ctx.fillStyle = '#333333';
+  const metrics = ctx.measureText(value);
+
   ctx.beginPath()
   ctx.strokeStyle = '#CCCCCC';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, y + height / 2);
-  ctx.lineTo(x + width - valueWidth, y + height / 2);
+  ctx.moveTo(x, y + SLICE_HEIGHT / 2);
+  ctx.lineTo(WIDTH - (MARGIN + PADDING + metrics.width), y + SLICE_HEIGHT / 2);
   ctx.stroke();
 
   ctx.beginPath()
   ctx.strokeStyle = '#FF0000';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, y + height * 0.25);
-  ctx.lineTo(x, y + height * 0.75);
+  ctx.moveTo(x, y + SLICE_HEIGHT * 0.25);
+  ctx.lineTo(x, y + SLICE_HEIGHT * 0.75);
   ctx.stroke();
 
-  ctx.font = (height * 0.6) + 'px \'Titillium Web\'';
-  ctx.fillStyle = '#333333';
-  ctx.fillText(value, x + width - valueWidth * 0.9, y + height * 0.7);
+  ctx.fillText(value, WIDTH - (MARGIN + metrics.width), y + SLICE_HEIGHT * 0.7);
 };
 
-const _drawUnitBox = (ctx, {x, y, width, height, valueWidth, value}) => {
-  ctx.font = (height * 0.8) + 'px \'Titillium Web\'';
+const _drawUnitBox = (ctx, {index, value}) => {
+  const x = MARGIN;
+  const y = SLICE_HEIGHT * index;
+
+  ctx.font = (SLICE_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x, y + height * 0.75);
+  const metrics = ctx.measureText(value);
+
+  ctx.fillText(value, x, y + SLICE_HEIGHT * 0.75);
 
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.moveTo(x + valueWidth + 0, y + height * 0.4);
-  ctx.lineTo(x + valueWidth + 20, y + height * 0.2);
-  ctx.moveTo(x + valueWidth + 20, y + height * 0.2);
-  ctx.lineTo(x + valueWidth + 40, y + height * 0.4);
-  ctx.moveTo(x + valueWidth + 0, y + height * 0.6);
-  ctx.lineTo(x + valueWidth + 20, y + height * 0.8);
-  ctx.moveTo(x + valueWidth + 20, y + height * 0.8);
-  ctx.lineTo(x + valueWidth + 40, y + height * 0.6);
+  ctx.moveTo(x + metrics.width + PADDING + 0, y + SLICE_HEIGHT * 0.4);
+  ctx.lineTo(x + metrics.width + PADDING + 20, y + SLICE_HEIGHT * 0.2);
+  ctx.moveTo(x + metrics.width + PADDING + 20, y + SLICE_HEIGHT * 0.2);
+  ctx.lineTo(x + metrics.width + PADDING + 40, y + SLICE_HEIGHT * 0.4);
+  ctx.moveTo(x + metrics.width + PADDING + 0, y + SLICE_HEIGHT * 0.6);
+  ctx.lineTo(x + metrics.width + PADDING + 20, y + SLICE_HEIGHT * 0.8);
+  ctx.moveTo(x + metrics.width + PADDING + 20, y + SLICE_HEIGHT * 0.8);
+  ctx.lineTo(x + metrics.width + PADDING + 40, y + SLICE_HEIGHT * 0.6);
   ctx.stroke();
 };
 
 const _drawCursor = (ctx, {x, y}) => {
   ctx.fillStyle = '#000000';
   ctx.fillRect((x - 2) * window.devicePixelRatio, (y - 2) * window.devicePixelRatio, 4 * window.devicePixelRatio, 4 * window.devicePixelRatio);
+};
+
+const _scaleImageData = (imageData, {width, height}) => {
+  const sideCanvas = document.createElement('canvas');
+  sideCanvas.width = imageData.width;
+  sideCanvas.height = imageData.height;
+  const sideCtx = sideCanvas.getContext('2d');
+  sideCtx.imageSmoothingEnabled = false;
+  sideCtx.putImageData(imageData, 0, 0);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(sideCanvas, 0, 0, width, height);
+
+  return canvas;
 };
 
 module.exports = client;

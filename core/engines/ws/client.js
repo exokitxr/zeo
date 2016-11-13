@@ -29,15 +29,16 @@ const client = () => ({
 
     const _emit = result.emit;
     result.emit = function(event, data) {
-      const o = {
+      const e = {
         event,
         data,
       };
 
       if (connection.readyState === WebSocket.OPEN) {
-        connection.send(JSON.stringify(o));
+        const es = JSON.stringify(o);
+        connection.send(es);
       } else {
-        queue.push(o);
+        queue.push(e);
       }
     };
 

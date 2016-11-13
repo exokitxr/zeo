@@ -1,3 +1,6 @@
+const creatureUtils = require('./lib/creatureUtils'); 
+const textUtils = require('./lib/textUtils'); 
+
 const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
   mount() {
     // worlds
@@ -31,7 +34,7 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
                   if (!err) {
                     console.log('performed update', result);
                   } else {
-                    consoel.warn(err);
+                    console.warn(err);
                   }
                 });
               } else {
@@ -47,7 +50,28 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
       }
     });
     biolumi.push({
-      // XXX push the core UI here
+      header: {
+        img: creatureUtils.makeCreature()[0],
+        text: textUtils.makePlanetName(),
+      },
+      body: [
+        {
+          type: 'input',
+          value: 'Biolumi',
+        },
+        {
+          type: 'button',
+          value: 'Submit',
+        },
+        {
+          type: 'slider',
+          value: 100,
+        },
+        {
+          type: 'unitbox',
+          value: 100,
+        },
+      ],
     });
 
     // multiplayer

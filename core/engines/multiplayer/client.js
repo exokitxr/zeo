@@ -48,7 +48,7 @@ const client = () => ({
         const es = JSON.stringify(e);
         connection.send(es);
       } else {
-        queue.push(o);
+        queue.push(e);
       }
     };
 
