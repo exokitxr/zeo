@@ -85,47 +85,58 @@ const client = () => ({
         const {header, body} = lastPage;
 
         const {img, text} = header;
-        _drawHeader(ctx, {img, text});
+        const next = _drawHeader(ctx, {img, text});
+        let {offset} = next;
 
         for (let i = 0; i < body.length; i++) {
           const section = body[i];
           const {type, label, value} = section;
 
           switch (type) {
-            case 'input':
-              _drawInput(ctx, {
-                index: i,
+            case 'input': {
+              const next = _drawInput(ctx, {
+                offset,
                 label,
                 value,
               });
+              offset = next.offset;
               break;
-            case 'button':
-              _drawButton(ctx, {
-                index: i,
+            }
+            case 'button': {
+              const next = _drawButton(ctx, {
+                offset,
                 label,
                 value,
               });
+              offset = next.offset;
               break;
-            case 'slider':
-              _drawSlider(ctx, {
-                index: i,
+            }
+            case 'slider': {
+              const next =_drawSlider(ctx, {
+                offset,
                 label,
                 value,
               });
+              offset = next.offset;
               break;
-            case 'unitbox':
-              _drawUnitBox(ctx, {
-                index: i,
+            }
+            case 'unitbox': {
+              const next = _drawUnitBox(ctx, {
+                offset,
                 label,
                 value,
               });
+              offset = next.offset;
               break;
-            case 'link':
-              _drawLink(ctx, {
-                index: i,
+            }
+            case 'link': {
+              const next = _drawLink(ctx, {
+                offset,
                 value,
               });
+              offset = next.offset;
               break;
+            }
           }
         }
       }
@@ -228,29 +239,37 @@ const _drawHeader = (ctx, {img, text}) => {
   ctx.moveTo(0, HEADER_HEIGHT);
   ctx.lineTo(WIDTH, HEADER_HEIGHT);
   ctx.stroke();
+
+  return {
+    offset: HEADER_HEIGHT,
+  };
 };
 
-const _drawInput = (ctx, {index, label, value}) => {
+const _drawInput = (ctx, {offset, label, value}) => {
   const x = MARGIN;
-  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index + LABEL_HEIGHT;
+  const y = offset + LABEL_HEIGHT;
 
-  _drawInputLabel(ctx, {index, label});
+  _drawInputLabel(ctx, {offset, label});
 
   ctx.fillStyle = '#CCC';
-  ctx.fillRect(x, iy + INPUT_HEIGHT * 0.1, WIDTH - (MARGIN * 2), INPUT_HEIGHT * 0.8);
+  ctx.fillRect(x, y + INPUT_HEIGHT * 0.1, WIDTH - (MARGIN * 2), INPUT_HEIGHT * 0.8);
 
   ctx.font = (INPUT_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x + PADDING, iy + INPUT_HEIGHT * 0.75);
+  ctx.fillText(value, x + PADDING, y + INPUT_HEIGHT * 0.75);
 
-  _drawInputSeparator(ctx, {index});
+  _drawInputSeparator(ctx, {offset});
+
+  return {
+    offset: offset + SLICE_HEIGHT,
+  };
 };
 
-const _drawButton = (ctx, {index, label, value}) => {
+const _drawButton = (ctx, {offset, label, value}) => {
   const x = MARGIN;
-  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index + LABEL_HEIGHT;
+  const y = offset + LABEL_HEIGHT;
 
-  _drawInputLabel(ctx, {index, label});
+  _drawInputLabel(ctx, {offset, label});
 
   ctx.font = (INPUT_HEIGHT * 0.4) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
@@ -259,19 +278,23 @@ const _drawButton = (ctx, {index, label, value}) => {
   ctx.beginPath();
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.rect(x, iy + INPUT_HEIGHT * 0.1, (PADDING * 2) + metrics.width, INPUT_HEIGHT * 0.7);
+  ctx.rect(x, y + INPUT_HEIGHT * 0.1, (PADDING * 2) + metrics.width, INPUT_HEIGHT * 0.7);
   ctx.stroke();
 
-  ctx.fillText(value, x + PADDING, iy + INPUT_HEIGHT * 0.6);
+  ctx.fillText(value, x + PADDING, y + INPUT_HEIGHT * 0.6);
 
-  _drawInputSeparator(ctx, {index});
+  _drawInputSeparator(ctx, {offset});
+
+  return {
+    offset: offset + SLICE_HEIGHT,
+  };
 };
 
-const _drawSlider = (ctx, {index, label, value}) => {
+const _drawSlider = (ctx, {offset, label, value}) => {
   const x = MARGIN;
-  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index + LABEL_HEIGHT;
+  const y = offset + LABEL_HEIGHT;
 
-  _drawInputLabel(ctx, {index, label});
+  _drawInputLabel(ctx, {offset, label});
 
   ctx.font = (INPUT_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
@@ -280,81 +303,93 @@ const _drawSlider = (ctx, {index, label, value}) => {
   ctx.beginPath();
   ctx.strokeStyle = '#CCCCCC';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, iy + INPUT_HEIGHT / 2);
-  ctx.lineTo(WIDTH - (MARGIN + PADDING + metrics.width), iy + INPUT_HEIGHT / 2);
+  ctx.moveTo(x, y + INPUT_HEIGHT / 2);
+  ctx.lineTo(WIDTH - (MARGIN + PADDING + metrics.width), y + INPUT_HEIGHT / 2);
   ctx.stroke();
 
   ctx.beginPath();
   ctx.strokeStyle = '#FF0000';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, iy + INPUT_HEIGHT * 0.25);
-  ctx.lineTo(x, iy + INPUT_HEIGHT * 0.75);
+  ctx.moveTo(x, y + INPUT_HEIGHT * 0.25);
+  ctx.lineTo(x, y + INPUT_HEIGHT * 0.75);
   ctx.stroke();
 
-  ctx.fillText(value, WIDTH - (MARGIN + metrics.width), iy + INPUT_HEIGHT * 0.7);
+  ctx.fillText(value, WIDTH - (MARGIN + metrics.width), y + INPUT_HEIGHT * 0.7);
 
-  _drawInputSeparator(ctx, {index});
+  _drawInputSeparator(ctx, {offset});
+
+  return {
+    offset: offset + SLICE_HEIGHT,
+  };
 };
 
-const _drawUnitBox = (ctx, {index, label, value}) => {
+const _drawUnitBox = (ctx, {offset, label, value}) => {
   const x = MARGIN;
-  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index + LABEL_HEIGHT;
+  const y = offset + LABEL_HEIGHT;
 
-  _drawInputLabel(ctx, {index, label});
+  _drawInputLabel(ctx, {offset, label});
 
   ctx.font = (INPUT_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
   const metrics = ctx.measureText(value);
 
-  ctx.fillText(value, x, iy + INPUT_HEIGHT * 0.75);
+  ctx.fillText(value, x, y + INPUT_HEIGHT * 0.75);
 
   ctx.beginPath();
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.moveTo(x + metrics.width + PADDING + 0, iy + INPUT_HEIGHT * 0.4);
-  ctx.lineTo(x + metrics.width + PADDING + 20, iy + INPUT_HEIGHT * 0.2);
-  ctx.moveTo(x + metrics.width + PADDING + 20, iy + INPUT_HEIGHT * 0.2);
-  ctx.lineTo(x + metrics.width + PADDING + 40, iy + INPUT_HEIGHT * 0.4);
-  ctx.moveTo(x + metrics.width + PADDING + 0, iy + INPUT_HEIGHT * 0.6);
-  ctx.lineTo(x + metrics.width + PADDING + 20, iy + INPUT_HEIGHT * 0.8);
-  ctx.moveTo(x + metrics.width + PADDING + 20, iy + INPUT_HEIGHT * 0.8);
-  ctx.lineTo(x + metrics.width + PADDING + 40, iy + INPUT_HEIGHT * 0.6);
+  ctx.moveTo(x + metrics.width + PADDING + 0, y + INPUT_HEIGHT * 0.4);
+  ctx.lineTo(x + metrics.width + PADDING + 20, y + INPUT_HEIGHT * 0.2);
+  ctx.moveTo(x + metrics.width + PADDING + 20, y + INPUT_HEIGHT * 0.2);
+  ctx.lineTo(x + metrics.width + PADDING + 40, y + INPUT_HEIGHT * 0.4);
+  ctx.moveTo(x + metrics.width + PADDING + 0, y + INPUT_HEIGHT * 0.6);
+  ctx.lineTo(x + metrics.width + PADDING + 20, y + INPUT_HEIGHT * 0.8);
+  ctx.moveTo(x + metrics.width + PADDING + 20, y + INPUT_HEIGHT * 0.8);
+  ctx.lineTo(x + metrics.width + PADDING + 40, y + INPUT_HEIGHT * 0.6);
   ctx.stroke();
 
-  _drawInputSeparator(ctx, {index});
+  _drawInputSeparator(ctx, {offset});
+
+  return {
+    offset: offset + SLICE_HEIGHT,
+  };
 };
 
-const _drawLink = (ctx, {index, value}) => {
+const _drawLink = (ctx, {offset, value}) => {
   const x = MARGIN;
-  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index;
+  const y = offset;
 
   ctx.font = (INPUT_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, MARGIN, iy + SLICE_HEIGHT * 0.675);
+  ctx.fillText(value, MARGIN, y + SLICE_HEIGHT * 0.675);
 
   ctx.beginPath();
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.moveTo(WIDTH - MARGIN - PADDING, iy + SLICE_HEIGHT * 0.3);
-  ctx.lineTo(WIDTH - MARGIN, iy + SLICE_HEIGHT * 0.5);
-  ctx.moveTo(WIDTH - MARGIN, iy + SLICE_HEIGHT * 0.5);
-  ctx.lineTo(WIDTH - MARGIN - PADDING, iy + SLICE_HEIGHT * 0.7);
+  ctx.moveTo(WIDTH - MARGIN - PADDING, y + SLICE_HEIGHT * 0.3);
+  ctx.lineTo(WIDTH - MARGIN, y + SLICE_HEIGHT * 0.5);
+  ctx.moveTo(WIDTH - MARGIN, y + SLICE_HEIGHT * 0.5);
+  ctx.lineTo(WIDTH - MARGIN - PADDING, y + SLICE_HEIGHT * 0.7);
   ctx.stroke();
 
-  _drawInputSeparator(ctx, {index});
+  _drawInputSeparator(ctx, {offset});
+
+  return {
+    offset: offset + SLICE_HEIGHT,
+  };
 };
 
-const _drawInputLabel = (ctx, {index, label}) => {
+const _drawInputLabel = (ctx, {offset, label}) => {
   const x = MARGIN / 2;
-  const ly = HEADER_HEIGHT + SLICE_HEIGHT * index;
+  const y = offset;
 
   ctx.font = (LABEL_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(label, x, ly + LABEL_HEIGHT * 0.9);
+  ctx.fillText(label, x, y + LABEL_HEIGHT * 0.9);
 };
 
-const _drawInputSeparator = (ctx, {index}) => {
-  const y = HEADER_HEIGHT + SLICE_HEIGHT * (index + 1);
+const _drawInputSeparator = (ctx, {offset}) => {
+  const y = offset + SLICE_HEIGHT;
 
   ctx.beginPath();
   ctx.strokeStyle = '#808080';
