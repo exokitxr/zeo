@@ -57,18 +57,22 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
       body: [
         {
           type: 'input',
+          label: 'Name',
           value: 'Biolumi',
         },
         {
           type: 'button',
+          label: 'Button',
           value: 'Submit',
         },
         {
           type: 'slider',
+          label: 'Slider',
           value: 100,
         },
         {
           type: 'unitbox',
+          label: 'Unitbox',
           value: 100,
         },
       ],

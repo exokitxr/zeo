@@ -5,7 +5,10 @@ const HEIGHT = WIDTH * 1.5;
 
 const MARGIN = 80;
 const PADDING = 20;
-const SLICE_HEIGHT = 100;
+const HEADER_HEIGHT = 100;
+const LABEL_HEIGHT = 50;
+const INPUT_HEIGHT = 100;
+const SLICE_HEIGHT = LABEL_HEIGHT + INPUT_HEIGHT;
 
 const client = () => ({
   mount() {
@@ -86,30 +89,34 @@ const client = () => ({
 
         for (let i = 0; i < body.length; i++) {
           const section = body[i];
-          const {type, value} = section;
+          const {type, label, value} = section;
 
           switch (type) {
             case 'input':
               _drawInput(ctx, {
-                index: i + 1,
+                index: i,
+                label,
                 value,
               });
               break;
             case 'button':
               _drawButton(ctx, {
-                index: i + 1,
+                index: i,
+                label,
                 value,
               });
               break;
             case 'slider':
               _drawSlider(ctx, {
-                index: i + 1,
+                index: i,
+                label,
                 value,
               });
               break;
             case 'unitbox':
               _drawUnitBox(ctx, {
-                index: i + 1,
+                index: i,
+                label,
                 value,
               });
               break;
@@ -192,106 +199,142 @@ const _drawHeader = (ctx, {img, text}) => {
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.moveTo((MARGIN / 2) - (PADDING / 2), SLICE_HEIGHT * 0.5);
-  ctx.lineTo((MARGIN / 2) + (PADDING / 2), SLICE_HEIGHT * 0.25);
-  ctx.moveTo((MARGIN / 2) - (PADDING / 2), SLICE_HEIGHT * 0.5);
-  ctx.lineTo((MARGIN / 2) + (PADDING / 2), SLICE_HEIGHT * 0.75);
+  ctx.moveTo((MARGIN / 2) - (PADDING / 2), HEADER_HEIGHT * 0.5);
+  ctx.lineTo((MARGIN / 2) + (PADDING / 2), HEADER_HEIGHT * 0.25);
+  ctx.moveTo((MARGIN / 2) - (PADDING / 2), HEADER_HEIGHT * 0.5);
+  ctx.lineTo((MARGIN / 2) + (PADDING / 2), HEADER_HEIGHT * 0.75);
   ctx.stroke();
 
-  const imageSize = SLICE_HEIGHT;
+  const imageSize = HEADER_HEIGHT;
   const imageData = _scaleImageData(img, {
     width: imageSize,
     height: imageSize,
   });
   ctx.drawImage(imageData, MARGIN, 0, imageSize, imageSize);
 
-  ctx.font = (SLICE_HEIGHT * 0.8) + 'px \'Titillium Web\'';
+  ctx.font = (HEADER_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(text, MARGIN + imageSize + PADDING, SLICE_HEIGHT * 0.8);
+  ctx.fillText(text, MARGIN + imageSize + PADDING, HEADER_HEIGHT * 0.8);
 
-  ctx.beginPath()
+  ctx.beginPath();
   ctx.strokeStyle = '#333';
   ctx.lineWidth = 1;
-  ctx.moveTo(0, SLICE_HEIGHT);
-  ctx.lineTo(WIDTH, SLICE_HEIGHT);
+  ctx.moveTo(0, HEADER_HEIGHT);
+  ctx.lineTo(WIDTH, HEADER_HEIGHT);
   ctx.stroke();
 };
 
-const _drawInput = (ctx, {index, value}) => {
+const _drawInput = (ctx, {index, label, value}) => {
   const x = MARGIN;
-  const y = SLICE_HEIGHT * index;
+  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index + LABEL_HEIGHT;
+
+  _drawInputLabel(ctx, {index, label});
 
   ctx.fillStyle = '#CCC';
-  ctx.fillRect(x, y + SLICE_HEIGHT * 0.1, WIDTH - (MARGIN * 2), SLICE_HEIGHT * 0.8);
+  ctx.fillRect(x, iy + INPUT_HEIGHT * 0.1, WIDTH - (MARGIN * 2), INPUT_HEIGHT * 0.8);
 
-  ctx.font = (SLICE_HEIGHT * 0.6) + 'px \'Titillium Web\'';
+  ctx.font = (INPUT_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(value, x + PADDING, y + SLICE_HEIGHT * 0.75);
+  ctx.fillText(value, x + PADDING, iy + INPUT_HEIGHT * 0.75);
+
+  _drawInputSeparator(ctx, {index});
 };
 
-const _drawButton = (ctx, {index, value}) => {
+const _drawButton = (ctx, {index, label, value}) => {
   const x = MARGIN;
-  const y = SLICE_HEIGHT * index;
+  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index + LABEL_HEIGHT;
 
-  ctx.font = (SLICE_HEIGHT * 0.5) + 'px \'Titillium Web\'';
+  _drawInputLabel(ctx, {index, label});
+
+  ctx.font = (INPUT_HEIGHT * 0.4) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
   const metrics = ctx.measureText(value);
 
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.rect(x, y + SLICE_HEIGHT * 0.1, /*(5 * 2) + */(PADDING * 2) + metrics.width, SLICE_HEIGHT * 0.8);
+  ctx.rect(x, iy + INPUT_HEIGHT * 0.1, (PADDING * 2) + metrics.width, INPUT_HEIGHT * 0.7);
   ctx.stroke();
 
-  ctx.fillText(value, x + PADDING, y + SLICE_HEIGHT * 0.7);
+  ctx.fillText(value, x + PADDING, iy + INPUT_HEIGHT * 0.6);
+
+  _drawInputSeparator(ctx, {index});
 };
 
-const _drawSlider = (ctx, {index, value}) => {
+const _drawSlider = (ctx, {index, label, value}) => {
   const x = MARGIN;
-  const y = SLICE_HEIGHT * index;
+  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index + LABEL_HEIGHT;
 
-  ctx.font = (SLICE_HEIGHT * 0.6) + 'px \'Titillium Web\'';
+  _drawInputLabel(ctx, {index, label});
+
+  ctx.font = (INPUT_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
   const metrics = ctx.measureText(value);
 
   ctx.beginPath()
   ctx.strokeStyle = '#CCCCCC';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, y + SLICE_HEIGHT / 2);
-  ctx.lineTo(WIDTH - (MARGIN + PADDING + metrics.width), y + SLICE_HEIGHT / 2);
+  ctx.moveTo(x, iy + INPUT_HEIGHT / 2);
+  ctx.lineTo(WIDTH - (MARGIN + PADDING + metrics.width), iy + INPUT_HEIGHT / 2);
   ctx.stroke();
 
   ctx.beginPath()
   ctx.strokeStyle = '#FF0000';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, y + SLICE_HEIGHT * 0.25);
-  ctx.lineTo(x, y + SLICE_HEIGHT * 0.75);
+  ctx.moveTo(x, iy + INPUT_HEIGHT * 0.25);
+  ctx.lineTo(x, iy + INPUT_HEIGHT * 0.75);
   ctx.stroke();
 
-  ctx.fillText(value, WIDTH - (MARGIN + metrics.width), y + SLICE_HEIGHT * 0.7);
+  ctx.fillText(value, WIDTH - (MARGIN + metrics.width), iy + INPUT_HEIGHT * 0.7);
+
+  _drawInputSeparator(ctx, {index});
 };
 
-const _drawUnitBox = (ctx, {index, value}) => {
+const _drawUnitBox = (ctx, {index, label, value}) => {
   const x = MARGIN;
-  const y = SLICE_HEIGHT * index;
+  const iy = HEADER_HEIGHT + SLICE_HEIGHT * index + LABEL_HEIGHT;
 
-  ctx.font = (SLICE_HEIGHT * 0.8) + 'px \'Titillium Web\'';
+  _drawInputLabel(ctx, {index, label});
+
+  ctx.font = (INPUT_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
   const metrics = ctx.measureText(value);
 
-  ctx.fillText(value, x, y + SLICE_HEIGHT * 0.75);
+  ctx.fillText(value, x, iy + INPUT_HEIGHT * 0.75);
 
   ctx.beginPath()
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.moveTo(x + metrics.width + PADDING + 0, y + SLICE_HEIGHT * 0.4);
-  ctx.lineTo(x + metrics.width + PADDING + 20, y + SLICE_HEIGHT * 0.2);
-  ctx.moveTo(x + metrics.width + PADDING + 20, y + SLICE_HEIGHT * 0.2);
-  ctx.lineTo(x + metrics.width + PADDING + 40, y + SLICE_HEIGHT * 0.4);
-  ctx.moveTo(x + metrics.width + PADDING + 0, y + SLICE_HEIGHT * 0.6);
-  ctx.lineTo(x + metrics.width + PADDING + 20, y + SLICE_HEIGHT * 0.8);
-  ctx.moveTo(x + metrics.width + PADDING + 20, y + SLICE_HEIGHT * 0.8);
-  ctx.lineTo(x + metrics.width + PADDING + 40, y + SLICE_HEIGHT * 0.6);
+  ctx.moveTo(x + metrics.width + PADDING + 0, iy + INPUT_HEIGHT * 0.4);
+  ctx.lineTo(x + metrics.width + PADDING + 20, iy + INPUT_HEIGHT * 0.2);
+  ctx.moveTo(x + metrics.width + PADDING + 20, iy + INPUT_HEIGHT * 0.2);
+  ctx.lineTo(x + metrics.width + PADDING + 40, iy + INPUT_HEIGHT * 0.4);
+  ctx.moveTo(x + metrics.width + PADDING + 0, iy + INPUT_HEIGHT * 0.6);
+  ctx.lineTo(x + metrics.width + PADDING + 20, iy + INPUT_HEIGHT * 0.8);
+  ctx.moveTo(x + metrics.width + PADDING + 20, iy + INPUT_HEIGHT * 0.8);
+  ctx.lineTo(x + metrics.width + PADDING + 40, iy + INPUT_HEIGHT * 0.6);
+  ctx.stroke();
+
+  _drawInputSeparator(ctx, {index});
+};
+
+const _drawInputLabel = (ctx, {index, label}) => {
+  const x = MARGIN / 2;
+  const ly = HEADER_HEIGHT + SLICE_HEIGHT * index;
+
+  ctx.font = (LABEL_HEIGHT * 0.6) + 'px \'Titillium Web\'';
+  ctx.fillStyle = '#333333';
+  ctx.fillText(label, x, ly + LABEL_HEIGHT * 0.9);
+};
+
+const _drawInputSeparator = (ctx, {index}) => {
+  const y = HEADER_HEIGHT + SLICE_HEIGHT * index;
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#808080';
+  ctx.lineWidth = 1;
+  ctx.moveTo(0, y);
+  ctx.lineTo(WIDTH, y);
   ctx.stroke();
 };
 
