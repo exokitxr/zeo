@@ -22,31 +22,6 @@ const server = ({wss, dirname}) => ({
           db.loadDatabase(err => {
             if (live) {
               if (!err) {
-                /* db.ensureIndex({
-                  fieldName: 'lol',
-                  unique: true,
-                }, err => {
-                  if (!err) {
-                    db.insert({
-                      lol: 'zol',
-                    }, err => {
-                      if (!err || err.errorType === 'uniqueViolated') {
-                        db.find({}, (err, result) => {
-                          if (!err) {
-                            console.log('got result', result);
-                          } else {
-                            console.warn(err);
-                          }
-                        });
-                      } else {
-                        console.warn(err);
-                      }
-                    });
-                  } else {
-                    console.warn(err, JSON.stringify(err));
-                  }
-                }); */
-
                 const connections = [];
 
                 wss.on('connection', c => {
@@ -57,16 +32,8 @@ const server = ({wss, dirname}) => ({
                       const m = JSON.parse(s);
                       if (typeof m === 'object' && m && typeof m.method === 'string' && typeof m.id === 'string' && Array.isArray(m.args)) {
                         const {method, id, args} = m;
-                        if (
-                            method === 'insert' ||
-                            method === 'find' ||
-                            method === 'findOne' ||
-                            method === 'update' ||
-                            method === 'remove' ||
-                            method === 'ensureIndex' ||
-                            method === 'removeIndex'
-                        ) {
-                          const cb = (err = null, result = null) => {
+
+                        const cb = (err = null, result = null) => {
                             if (c.readyState === OPEN) {
                               const e = {
                                 id: id,
@@ -77,7 +44,26 @@ const server = ({wss, dirname}) => ({
                               c.send(es);
                             }
                           };
+
+                        if (
+                            method === 'insert' ||
+                            method === 'find' ||
+                            method === 'findOne' ||
+                            method === 'update' ||
+                            method === 'remove' ||
+                            method === 'ensureIndex' ||
+                            method === 'removeIndex'
+                        ) {
                           db[method](...args, cb);
+                        } else if (method === 'subscribe') {
+                          const [query, subscriptionId] = args;
+                          // XXX implement subscription tracking with proper cleanup
+                        } else if (method === 'unsubscribe') {
+                          const [subscriptionId] = args;
+                          // XXX
+                        } else {
+                          const err = new Error('no such method:' + JSON.stringify(method));
+                          cb(err.stack);
                         }
                       }
                     });
