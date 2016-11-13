@@ -34,7 +34,7 @@ class Subscription {
               data: result,
             };
             const es = JSON.stringify(e);
-            c.send(es);
+            connection.send(es);
 
             this._lastValue = result;
           }
@@ -125,13 +125,13 @@ const server = ({wss, dirname}) => ({
                         ) {
                           db[method](...args, (err, result) => {
                             if (!err) {
-                              cb(err);
-                            } else {
                               cb(null, result);
 
                               if (method === 'insert' || method === 'update' || method === 'remove') {
                                 _updateSubscriptions();
                               }
+                            } else {
+                              cb(err);
                             }
                           });
                         } else if (method === 'subscribe') {

@@ -8,11 +8,32 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
       if (!err) {
         nedb.insert({
           lol: 'zol',
+          // count: 0,
         }, err => {
           if (!err || err.errorType === 'uniqueViolated') {
             nedb.find({}, (err, result) => {
               if (!err) {
-                console.log('got result', result);
+                // console.log('got result', result);
+
+                const subscription = nedb.subscribe({
+                  lol: 'zol',
+                }, o => {
+                  console.log('got update', o);
+                });
+
+                nedb.update({
+                  lol: 'zol',
+                }, {
+                  $inc: {
+                    count: 1,
+                  }
+                }, (err, result) => {
+                  if (!err) {
+                    console.log('performed update', result);
+                  } else {
+                    consoel.warn(err);
+                  }
+                });
               } else {
                 console.warn(err);
               }
