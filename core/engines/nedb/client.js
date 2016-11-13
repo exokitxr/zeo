@@ -25,7 +25,7 @@ const client = () => ({
       const handler = handlers.get(id);
       if (handler) {
         const {error, result} = m;
-        handler(error, resul);
+        handler(error, result);
       } else {
         console.warn('unregistered nedb response handler', id);
       }
@@ -54,9 +54,9 @@ const client = () => ({
           cb(err);
         }
 
-        handers.delete(id);
+        handlers.delete(id);
       };
-      handers.set(id, handler);
+      handlers.set(id, handler);
 
       if (connection.readyState === WebSocket.OPEN) {
         connection.send(JSON.stringify(e));

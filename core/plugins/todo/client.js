@@ -6,11 +6,11 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
       unique: true,
     }, err => {
       if (!err) {
-        db.insert({
+        nedb.insert({
           lol: 'zol',
         }, err => {
           if (!err || err.errorType === 'uniqueViolated') {
-            db.find({}, (err, result) => {
+            nedb.find({}, (err, result) => {
               if (!err) {
                 console.log('got result', result);
               } else {
