@@ -3,7 +3,7 @@ const FontFaceObserver = require('fontfaceobserver');
 const WIDTH = 1024;
 const HEIGHT = WIDTH * 1.5;
 
-const MARGIN = 50;
+const MARGIN = 80;
 const PADDING = 20;
 const SLICE_HEIGHT = 100;
 
@@ -189,6 +189,15 @@ const client = () => ({
 });
 
 const _drawHeader = (ctx, {img, text}) => {
+  ctx.beginPath()
+  ctx.strokeStyle = '#333333';
+  ctx.lineWidth = 5;
+  ctx.moveTo((MARGIN / 2) - (PADDING / 2), SLICE_HEIGHT * 0.5);
+  ctx.lineTo((MARGIN / 2) + (PADDING / 2), SLICE_HEIGHT * 0.25);
+  ctx.moveTo((MARGIN / 2) - (PADDING / 2), SLICE_HEIGHT * 0.5);
+  ctx.lineTo((MARGIN / 2) + (PADDING / 2), SLICE_HEIGHT * 0.75);
+  ctx.stroke();
+
   const imageSize = SLICE_HEIGHT;
   const imageData = _scaleImageData(img, {
     width: imageSize,
