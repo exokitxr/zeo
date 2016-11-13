@@ -90,19 +90,15 @@ const client = () => ({
 
         for (let i = 0; i < body.length; i++) {
           const section = body[i];
-          const {type, label, value} = section;
-
-          const _maybeDrawInputLabel = () => {
-            if (label) {
-              const next = _drawInputLabel(ctx, {offset, label});
-              offset = next.offset;
-            }
-          };
+          const {type, value} = section;
 
           switch (type) {
+            case 'label': {
+              const next = _drawLabel(ctx, {offset, value});
+              offset = next.offset;
+              break;
+            }
             case 'input': {
-              _maybeDrawInputLabel();
-
               const next = _drawInput(ctx, {
                 offset,
                 value,
@@ -111,8 +107,6 @@ const client = () => ({
               break;
             }
             case 'text': {
-              _maybeDrawInputLabel();
-
               const next = _drawText(ctx, {
                 offset,
                 value,
@@ -121,8 +115,6 @@ const client = () => ({
               break;
             }
             case 'button': {
-              _maybeDrawInputLabel();
-
               const next = _drawButton(ctx, {
                 offset,
                 value,
@@ -131,8 +123,6 @@ const client = () => ({
               break;
             }
             case 'slider': {
-              _maybeDrawInputLabel();
-
               const next =_drawSlider(ctx, {
                 offset,
                 value,
@@ -141,8 +131,6 @@ const client = () => ({
               break;
             }
             case 'unitbox': {
-              _maybeDrawInputLabel();
-
               const next = _drawUnitBox(ctx, {
                 offset,
                 value,
@@ -456,13 +444,13 @@ const _drawLink = (ctx, {offset, value}) => {
   };
 };
 
-const _drawInputLabel = (ctx, {offset, label}) => {
+const _drawLabel = (ctx, {offset, value}) => {
   const x = MARGIN / 2;
   const y = offset;
 
   ctx.font = (LABEL_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(label, x, y + LABEL_HEIGHT * 0.9);
+  ctx.fillText(value, x, y + LABEL_HEIGHT * 0.9);
 
   return {
     offset: offset + LABEL_HEIGHT,

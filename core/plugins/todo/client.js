@@ -56,30 +56,45 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
       },
       body: [
         {
+          type: 'label',
+          value: 'Name',
+        },
+        {
           type: 'input',
-          label: 'Name',
           value: 'Biolumi',
         },
         {
+          type: 'label',
+          value: 'Warning',
+        },
+        {
           type: 'text',
-          label: 'Warning',
           value: `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`
         },
         {
+          type: 'label',
+          value: 'Button',
+        },
+        {
           type: 'button',
-          label: 'Button',
           value: 'Submit',
         },
         {
+          type: 'label',
+          value: 'Slider',
+        },
+        {
           type: 'slider',
-          label: 'Slider',
           value: 100,
         },
         {
+          type: 'label',
+          value: 'Unitbox',
+        },
+        {
           type: 'unitbox',
-          label: 'Unitbox',
           value: 100,
         },
         {
