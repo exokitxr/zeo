@@ -100,6 +100,7 @@ const client = () => ({
             case 'label': {
               const next = _drawLabel(ctx, {offset, value});
               offset = next.offset;
+              hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'input': {
@@ -108,6 +109,7 @@ const client = () => ({
                 value,
               });
               offset = next.offset;
+              hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'text': {
@@ -116,6 +118,7 @@ const client = () => ({
                 value,
               });
               offset = next.offset;
+              hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'button': {
@@ -124,6 +127,7 @@ const client = () => ({
                 value,
               });
               offset = next.offset;
+              hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'slider': {
@@ -132,6 +136,7 @@ const client = () => ({
                 value,
               });
               offset = next.offset;
+              hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'unitbox': {
@@ -140,6 +145,7 @@ const client = () => ({
                 value,
               });
               offset = next.offset;
+              hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'link': {
@@ -314,7 +320,9 @@ const _drawHeader = (ctx, {img, text}) => {
 
   return {
     offset: HEADER_HEIGHT,
-    hotspots: [],
+    hotspots: [
+      [0, 0, MARGIN, HEADER_HEIGHT],
+    ],
   };
 };
 
@@ -322,8 +330,13 @@ const _drawInput = (ctx, {offset, label, value}) => {
   const x = MARGIN;
   const y = offset;
 
+  const bx = x;
+  const by = y + INPUT_HEIGHT * 0.1;
+  const bw = WIDTH - (MARGIN * 2);
+  const bh = INPUT_HEIGHT * 0.8;
+
   ctx.fillStyle = '#CCC';
-  ctx.fillRect(x, y + INPUT_HEIGHT * 0.1, WIDTH - (MARGIN * 2), INPUT_HEIGHT * 0.8);
+  ctx.fillRect(bx, by, bw, bh);
 
   ctx.font = (INPUT_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
@@ -335,6 +348,9 @@ const _drawInput = (ctx, {offset, label, value}) => {
 
   return {
     offset,
+    hotspots: [
+      [bx, by, bw, bh],
+    ],
   };
 };
 
@@ -389,6 +405,7 @@ const _drawText = (ctx, {offset, value}) => {
 
   return {
     offset,
+    hotspots: [],
   };
 };
 
@@ -400,10 +417,15 @@ const _drawButton = (ctx, {offset, value}) => {
   ctx.fillStyle = '#333333';
   const metrics = ctx.measureText(value);
 
+  const bx = x;
+  const by = y + INPUT_HEIGHT * 0.1;
+  const bw = (PADDING * 2) + metrics.width;
+  const bh = INPUT_HEIGHT * 0.7;
+
   ctx.beginPath();
   ctx.strokeStyle = '#333333';
   ctx.lineWidth = 5;
-  ctx.rect(x, y + INPUT_HEIGHT * 0.1, (PADDING * 2) + metrics.width, INPUT_HEIGHT * 0.7);
+  ctx.rect(bx, by, bw, bh);
   ctx.stroke();
 
   ctx.fillText(value, x + PADDING, y + INPUT_HEIGHT * 0.6);
@@ -414,6 +436,9 @@ const _drawButton = (ctx, {offset, value}) => {
 
   return {
     offset,
+    hotspots: [
+      [bx, by, bw, bh],
+    ],
   };
 };
 
@@ -425,18 +450,23 @@ const _drawSlider = (ctx, {offset, value}) => {
   ctx.fillStyle = '#333333';
   const metrics = ctx.measureText(value);
 
+  const bx = x;
+  const by = y + INPUT_HEIGHT * 0.25;
+  const bw = WIDTH - (bx + MARGIN + PADDING + metrics.width);
+  const bh = INPUT_HEIGHT * 0.5;
+
   ctx.beginPath();
   ctx.strokeStyle = '#CCCCCC';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, y + INPUT_HEIGHT / 2);
-  ctx.lineTo(WIDTH - (MARGIN + PADDING + metrics.width), y + INPUT_HEIGHT / 2);
+  ctx.moveTo(bx, by + (bh / 2));
+  ctx.lineTo(bx + bw, by + (bh / 2));
   ctx.stroke();
 
   ctx.beginPath();
   ctx.strokeStyle = '#FF0000';
   ctx.lineWidth = 5;
-  ctx.moveTo(x, y + INPUT_HEIGHT * 0.25);
-  ctx.lineTo(x, y + INPUT_HEIGHT * 0.75);
+  ctx.moveTo(x, by);
+  ctx.lineTo(x, by + bh);
   ctx.stroke();
 
   ctx.fillText(value, WIDTH - (MARGIN + metrics.width), y + INPUT_HEIGHT * 0.7);
@@ -447,6 +477,9 @@ const _drawSlider = (ctx, {offset, value}) => {
 
   return {
     offset,
+    hotspots: [
+      [bx, by, bw, bh],
+    ],
   };
 };
 
@@ -479,6 +512,9 @@ const _drawUnitBox = (ctx, {offset, value}) => {
 
   return {
     offset,
+    hotspots: [
+      [x, y + INPUT_HEIGHT * 0.1, metrics.width + PADDING + 50, INPUT_HEIGHT * 0.8],
+    ],
   };
 };
 
@@ -520,6 +556,7 @@ const _drawLabel = (ctx, {offset, value}) => {
 
   return {
     offset: offset + LABEL_HEIGHT,
+    hotspots: [],
   };
 };
 
