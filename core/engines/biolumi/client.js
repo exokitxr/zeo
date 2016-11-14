@@ -1,7 +1,12 @@
 const FontFaceObserver = require('fontfaceobserver');
+const BezierEasing = require('bezier-easing');
+
+const bezier = BezierEasing(0, 1, 0, 1);
 
 const WIDTH = 1024;
 const HEIGHT = WIDTH * 1.5;
+
+const TRANSITION_TIME = 300;
 
 const MARGIN = 80;
 const PADDING = 20;
@@ -89,7 +94,7 @@ const client = () => ({
         if (animation) {
           const {start, end, startTime, endTime} = animation;
           const now = Date.now();
-          const timeFactor = Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0);
+          const timeFactor = bezier(Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0));
           const value = start + (timeFactor * (end - start));
           return value * WIDTH;
         } else {
@@ -124,7 +129,7 @@ const client = () => ({
 
         const now = Date.now();
         const startTime = now;
-        const endTime = now + 500;
+        const endTime = now + TRANSITION_TIME;
         this.animation = {
           start,
           end,
