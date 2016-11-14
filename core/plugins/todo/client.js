@@ -52,13 +52,20 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
     const _makePage = () => {
       return {
         header: {
-          img: creatureUtils.makeCreature()[0],
+          img: creatureUtils.makeCreature(),
           text: textUtils.makePlanetName(),
           onclick: biolumi.getPages().length > 0 ? () => {
             biolumi.pop();
           } : null,
         },
         body: [
+          {
+            type: 'link',
+            value: 'Click here',
+            onclick: () => {
+              biolumi.push(_makePage());
+            },
+          },
           {
             type: 'label',
             value: 'Name',

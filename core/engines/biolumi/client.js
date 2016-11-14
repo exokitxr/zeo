@@ -7,6 +7,7 @@ const WIDTH = 1024;
 const HEIGHT = WIDTH * 1.5;
 
 const TRANSITION_TIME = 300;
+const ANIMATION_TIME = 300;
 
 const MARGIN = 80;
 const PADDING = 20;
@@ -71,8 +72,9 @@ const client = () => ({
       });
 
     class Page {
-      constructor(spec) {
+      constructor({spec, externalCtx}) {
         this._spec = spec;
+        this._externalCtx = externalCtx;
 
         const canvas = document.createElement('canvas');
         canvas.width = WIDTH;
@@ -83,16 +85,19 @@ const client = () => ({
         this.ctx = ctx;
 
         this.hotspots = [];
-        this.animation = null;
+        this.currentAnimation = null;
+        this.currentTransition = null;
+      }
 
-        // this.refresh();
+      getSpec() {
+        return this._spec;
       }
 
       getXOffset() {
-        const {animation} = this;
+        const {currentTransition} = this;
 
-        if (animation) {
-          const {start, end, startTime, endTime} = animation;
+        if (currentTransition) {
+          const {start, end, startTime, endTime} = currentTransition;
           const now = Date.now();
           const timeFactor = bezier(Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0));
           const value = start + (timeFactor * (end - start));
@@ -103,34 +108,48 @@ const client = () => ({
       }
 
       refresh() {
-        const {_spec: spec, canvas, ctx} = this;
+        const {canvas, ctx, currentAnimation} = this;
 
-        const render = _renderPage({canvas, ctx, spec});
-        const {hotspots} = render;
+        if (currentAnimation) {
+          currentAnimation.cancel();
+          this.currentAnimation = null;
+        }
+
+        const {hotspots} = _renderPage({
+          canvas,
+          ctx,
+          page: this,
+        });
+        const {animation} = _animatePage({
+          ctx,
+          page: this,
+        });
+        // const animation = null;
         _drawHotspots({ctx, hotspots});
 
         this.hotspots = hotspots;
+        this.currentAnimation = animation;
       }
 
-      draw(ctx) {
-        const {canvas} = this;
+      draw() {
+        const {_externalCtx: externalCtx, canvas} = this;
 
         const xOffset = this.getXOffset();
 
-        _clear(ctx, xOffset, 0);
-        ctx.drawImage(canvas, xOffset, 0);
+        _clear(externalCtx, xOffset, 0);
+        externalCtx.drawImage(canvas, xOffset, 0);
       }
 
-      animate(ctx, {start, end}) {
-        if (this.animation) {
-          this.animation.cancel();
-          this.animation = null;
+      transition({start, end}, cb) {
+        if (this.currentTransition) {
+          this.currentTransition.cancel();
+          this.currentTransition = null;
         }
 
         const now = Date.now();
         const startTime = now;
         const endTime = now + TRANSITION_TIME;
-        this.animation = {
+        this.currentTransition = {
           start,
           end,
           startTime,
@@ -144,31 +163,49 @@ const client = () => ({
 
         let animationFrame = null;
         const _recurse = () => {
-          this.draw(ctx);
+          this.draw();
 
           const now = Date.now();
           if (now < endTime) {
             animationFrame = requestAnimationFrame(_recurse);
           } else {
-            this.animation = null;
+            this.currentTransition = null;
             animationFrame = null;
+
+            if (cb) {
+              cb();
+            }
           }
         };
         _recurse();
+      }
+
+      destroy() {
+        const {currentAnimation, currentTransition} = this;
+
+        if (currentAnimation) {
+          currentAnimation.cancel();
+        }
+        if (currentTransition) {
+          currentTransition.cancel();
+        }
       }
     }
 
     const pages = [];
     const _push = spec => {
-      const nextPage = new Page(spec);
+      const nextPage = new Page({
+        spec,
+        externalCtx: ctx,
+      });
 
       if (pages.length > 0) {
         const prevPage = pages[pages.length - 1];
-        prevPage.animate(ctx, {
+        prevPage.transition({
           start: 0,
           end: -1,
         });
-        nextPage.animate(ctx, {
+        nextPage.transition({
           start: 1,
           end: 0,
         });
@@ -181,17 +218,20 @@ const client = () => ({
     const _pop = () => {
       if (pages.length > 1) {
         const removedPage = pages.pop();
-        removedPage.animate(ctx, {
+        removedPage.transition({
           start: 0,
           end: 1,
+        }, () => {
+          removedPage.destroy();
         });
         const nextPage = pages[pages.length - 1];
-        nextPage.animate(ctx, {
+        nextPage.transition({
           start: -1,
           end: 0,
         });
       } else {
-        pages.pop();
+        const removedPage = pages.pop();
+        removedPage.destroy();
 
         _refresh();
       }
@@ -214,95 +254,135 @@ const client = () => ({
         page.draw(ctx);
       }
     };
-    const _renderPage = ({canvas, ctx, spec}) => {
+    const _renderPage = ({canvas, ctx, page}) => {
       _clear(ctx);
 
       let yOffset = 0;
       let hotspots = [];
 
-      if (pages.length > 0) {
-        const {header, body} = spec;
+      const spec = page.getSpec();
+      const {header, body} = spec;
 
-        const {img, text, onclick} = header;
-        const next = _drawHeader(ctx, {img, text, onclick});
-        yOffset += next.yOffset;
-        hotspots = hotspots.concat(next.hotspots);
+      const {img, text, onclick} = header;
+      const next = _drawHeader(ctx, {img, text, onclick});
+      yOffset += next.yOffset;
+      hotspots = hotspots.concat(next.hotspots);
 
-        for (let i = 0; i < body.length; i++) {
-          const section = body[i];
-          const {type, value, onclick} = section;
+      for (let i = 0; i < body.length; i++) {
+        const section = body[i];
+        const {type, value, onclick} = section;
 
-          switch (type) {
-            case 'label': {
-              const next = _drawLabel(ctx, {
-                yOffset,
-                value,
-              });
-              yOffset = next.yOffset;
-              hotspots = hotspots.concat(next.hotspots);
-              break;
-            }
-            case 'input': {
-              const next = _drawInput(ctx, {
-                yOffset,
-                value,
-              });
-              yOffset = next.yOffset;
-              hotspots = hotspots.concat(next.hotspots);
-              break;
-            }
-            case 'text': {
-              const next = _drawText(ctx, {
-                yOffset,
-                value,
-              });
-              yOffset = next.yOffset;
-              hotspots = hotspots.concat(next.hotspots);
-              break;
-            }
-            case 'button': {
-              const next = _drawButton(ctx, {
-                yOffset,
-                value,
-              });
-              yOffset = next.yOffset;
-              hotspots = hotspots.concat(next.hotspots);
-              break;
-            }
-            case 'slider': {
-              const next =_drawSlider(ctx, {
-                yOffset,
-                value,
-              });
-              yOffset = next.yOffset;
-              hotspots = hotspots.concat(next.hotspots);
-              break;
-            }
-            case 'unitbox': {
-              const next = _drawUnitBox(ctx, {
-                yOffset,
-                value,
-              });
-              yOffset = next.yOffset;
-              hotspots = hotspots.concat(next.hotspots);
-              break;
-            }
-            case 'link': {
-              const next = _drawLink(ctx, {
-                yOffset,
-                value,
-                onclick,
-              });
-              yOffset = next.yOffset;
-              hotspots = hotspots.concat(next.hotspots);
-              break;
-            }
+        switch (type) {
+          case 'label': {
+            const next = _drawLabel(ctx, {
+              yOffset,
+              value,
+            });
+            yOffset = next.yOffset;
+            hotspots = hotspots.concat(next.hotspots);
+            break;
+          }
+          case 'input': {
+            const next = _drawInput(ctx, {
+              yOffset,
+              value,
+            });
+            yOffset = next.yOffset;
+            hotspots = hotspots.concat(next.hotspots);
+            break;
+          }
+          case 'text': {
+            const next = _drawText(ctx, {
+              yOffset,
+              value,
+            });
+            yOffset = next.yOffset;
+            hotspots = hotspots.concat(next.hotspots);
+            break;
+          }
+          case 'button': {
+            const next = _drawButton(ctx, {
+              yOffset,
+              value,
+            });
+            yOffset = next.yOffset;
+            hotspots = hotspots.concat(next.hotspots);
+            break;
+          }
+          case 'slider': {
+            const next =_drawSlider(ctx, {
+              yOffset,
+              value,
+            });
+            yOffset = next.yOffset;
+            hotspots = hotspots.concat(next.hotspots);
+            break;
+          }
+          case 'unitbox': {
+            const next = _drawUnitBox(ctx, {
+              yOffset,
+              value,
+            });
+            yOffset = next.yOffset;
+            hotspots = hotspots.concat(next.hotspots);
+            break;
+          }
+          case 'link': {
+            const next = _drawLink(ctx, {
+              yOffset,
+              value,
+              onclick,
+            });
+            yOffset = next.yOffset;
+            hotspots = hotspots.concat(next.hotspots);
+            break;
           }
         }
       }
 
       return {
         hotspots,
+      };
+    };
+    const _animatePage = ({ctx, page}) => {
+      const {header: {img, txt, onclick}} = page.getSpec();
+
+      const animation = (() => {
+        if (_isMultiFrameImage(img)) {
+          let animationFrame = null;
+          let lastFrameIndex = _getCurrentImageFrameIndex(img);
+          const _recurse = () => {
+            animationFrame = requestAnimationFrame(() => {
+              const lastPage = pages[pages.length - 1];
+              if (page === lastPage) { // only animate the last page
+                const currentFrameIndex = _getCurrentImageFrameIndex(img);
+                if (currentFrameIndex !== lastFrameIndex) {
+                  _clearHeaderImage(ctx);
+                  _drawHeaderImage(ctx, {img});
+
+                  page.draw();
+
+                  lastFrameIndex = currentFrameIndex;
+                }
+              }
+
+              _recurse();
+            });
+          };
+          _recurse();
+
+          return {
+            cancel: () => {
+              cancelAnimationFrame(animationFrame);
+            },
+          };
+        } else {
+          return null;
+        }
+      })();
+
+      return {
+        animation,
       };
     };
     const _drawHotspots = ({ctx, hotspots}) => {
@@ -460,23 +540,13 @@ const _drawHeader = (ctx, {img, text, onclick}) => {
     ctx.stroke();
   }
 
-  const imageSize = HEADER_HEIGHT;
-  const imageData = _scaleImageData(img, {
-    width: imageSize,
-    height: imageSize,
-  });
-  ctx.drawImage(imageData, MARGIN, 0, imageSize, imageSize);
+  _drawHeaderImage(ctx, {img});
 
   ctx.font = (HEADER_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
-  ctx.fillText(text, MARGIN + imageSize + PADDING, HEADER_HEIGHT * 0.8);
+  ctx.fillText(text, MARGIN + HEADER_HEIGHT + PADDING, HEADER_HEIGHT * 0.8);
 
-  ctx.beginPath();
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 1;
-  ctx.moveTo(0, HEADER_HEIGHT);
-  ctx.lineTo(WIDTH, HEADER_HEIGHT);
-  ctx.stroke();
+  _drawHeaderUnderline(ctx);
 
   return {
     yOffset: HEADER_HEIGHT,
@@ -487,6 +557,39 @@ const _drawHeader = (ctx, {img, text, onclick}) => {
       }
     ] : [],
   };
+};
+
+const _drawHeaderImage = (ctx, {img}) => {
+  const frame = (() => {
+    if (_isMultiFrameImage(img)) {
+      const frameIndex = _getCurrentImageFrameIndex(img);
+      return img[frameIndex];
+    } else {
+      return img;
+    }
+  })();
+
+  const imageSize = HEADER_HEIGHT;
+  const imageData = _scaleImageData(frame, {
+    width: imageSize,
+    height: imageSize,
+  });
+  ctx.drawImage(imageData, MARGIN, 0, imageSize, imageSize);
+};
+
+const _clearHeaderImage = ctx => {
+  const imageSize = HEADER_HEIGHT;
+
+  ctx.clearRect(MARGIN, 0, imageSize, imageSize - window.devicePixelRatio);
+};
+
+const _drawHeaderUnderline = ctx => {
+  ctx.beginPath();
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.moveTo(0, HEADER_HEIGHT);
+  ctx.lineTo(WIDTH, HEADER_HEIGHT);
+  ctx.stroke();
 };
 
 const _drawInput = (ctx, {yOffset, label, value}) => {
@@ -754,6 +857,9 @@ const _drawCursor = (ctx, {x, y}) => {
   ctx.fillStyle = '#000000';
   ctx.fillRect((x - 2) * window.devicePixelRatio, (y - 2) * window.devicePixelRatio, 4 * window.devicePixelRatio, 4 * window.devicePixelRatio);
 };
+
+const _isMultiFrameImage = img => Array.isArray(img);
+const _getCurrentImageFrameIndex = img => Math.floor(((Date.now() % ANIMATION_TIME) / ANIMATION_TIME) * img.length);
 
 const _scaleImageData = (imageData, {width, height}) => {
   const sideCanvas = document.createElement('canvas');
