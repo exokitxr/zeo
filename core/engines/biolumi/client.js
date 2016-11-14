@@ -78,8 +78,23 @@ const client = () => ({
         this.ctx = ctx;
 
         this.hotspots = [];
+        this.animation = null;
 
-        this.refresh();
+        // this.refresh();
+      }
+
+      getXOffset() {
+        const {animation} = this;
+
+        if (animation) {
+          const {start, end, startTime, endTime} = animation;
+          const now = Date.now();
+          const timeFactor = Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0);
+          const value = start + (timeFactor * (end - start));
+          return value * WIDTH;
+        } else {
+          return 0;
+        }
       }
 
       refresh() {
@@ -95,22 +110,86 @@ const client = () => ({
       draw(ctx) {
         const {canvas} = this;
 
-        _clear(canvas, ctx);
-        ctx.drawImage(canvas, 0, 0);
+        const xOffset = this.getXOffset();
+
+        _clear(ctx, xOffset, 0);
+        ctx.drawImage(canvas, xOffset, 0);
+      }
+
+      animate(ctx, {start, end}) {
+        if (this.animation) {
+          this.animation.cancel();
+          this.animation = null;
+        }
+
+        const now = Date.now();
+        const startTime = now;
+        const endTime = now + 500;
+        this.animation = {
+          start,
+          end,
+          startTime,
+          endTime,
+          cancel: () => {
+            if (animationFrame) {
+              cancelAnimationFrame(animationFrame);
+            }
+          },
+        };
+
+        let animationFrame = null;
+        const _recurse = () => {
+          this.draw(ctx);
+
+          const now = Date.now();
+          if (now < endTime) {
+            animationFrame = requestAnimationFrame(_recurse);
+          } else {
+            this.animation = null;
+            animationFrame = null;
+          }
+        };
+        _recurse();
       }
     }
 
     const pages = [];
     const _push = spec => {
-      const page = new Page(spec);
-      pages.push(page);
+      const nextPage = new Page(spec);
+
+      if (pages.length > 0) {
+        const prevPage = pages[pages.length - 1];
+        prevPage.animate(ctx, {
+          start: 0,
+          end: -1,
+        });
+        nextPage.animate(ctx, {
+          start: 1,
+          end: 0,
+        });
+      }
+
+      pages.push(nextPage);
 
       _refresh();
     };
     const _pop = () => {
-      pages.pop();
+      if (pages.length > 1) {
+        const removedPage = pages.pop();
+        removedPage.animate(ctx, {
+          start: 0,
+          end: 1,
+        });
+        const nextPage = pages[pages.length - 1];
+        nextPage.animate(ctx, {
+          start: -1,
+          end: 0,
+        });
+      } else {
+        pages.pop();
 
-      _refresh();
+        _refresh();
+      }
     };
 
     const _refreshPages = () => {
@@ -120,8 +199,8 @@ const client = () => ({
       }
     };
 
-    const _clear = (canvas, ctx) => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const _clear = (ctx, x = 0, y = 0, width = WIDTH, height = HEIGHT) => {
+      ctx.clearRect(x, y, width, height);
     };
     const _drawPages = () => {
       for (let i = 0; i < pages.length; i++) {
@@ -131,9 +210,9 @@ const client = () => ({
       }
     };
     const _renderPage = ({canvas, ctx, spec}) => {
-      _clear(canvas, ctx);
+      _clear(ctx);
 
-      let offset = 0;
+      let yOffset = 0;
       let hotspots = [];
 
       if (pages.length > 0) {
@@ -141,7 +220,7 @@ const client = () => ({
 
         const {img, text, onclick} = header;
         const next = _drawHeader(ctx, {img, text, onclick});
-        offset += next.offset;
+        yOffset += next.yOffset;
         hotspots = hotspots.concat(next.hotspots);
 
         for (let i = 0; i < body.length; i++) {
@@ -151,65 +230,65 @@ const client = () => ({
           switch (type) {
             case 'label': {
               const next = _drawLabel(ctx, {
-                offset,
+                yOffset,
                 value,
               });
-              offset = next.offset;
+              yOffset = next.yOffset;
               hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'input': {
               const next = _drawInput(ctx, {
-                offset,
+                yOffset,
                 value,
               });
-              offset = next.offset;
+              yOffset = next.yOffset;
               hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'text': {
               const next = _drawText(ctx, {
-                offset,
+                yOffset,
                 value,
               });
-              offset = next.offset;
+              yOffset = next.yOffset;
               hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'button': {
               const next = _drawButton(ctx, {
-                offset,
+                yOffset,
                 value,
               });
-              offset = next.offset;
+              yOffset = next.yOffset;
               hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'slider': {
               const next =_drawSlider(ctx, {
-                offset,
+                yOffset,
                 value,
               });
-              offset = next.offset;
+              yOffset = next.yOffset;
               hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'unitbox': {
               const next = _drawUnitBox(ctx, {
-                offset,
+                yOffset,
                 value,
               });
-              offset = next.offset;
+              yOffset = next.yOffset;
               hotspots = hotspots.concat(next.hotspots);
               break;
             }
             case 'link': {
               const next = _drawLink(ctx, {
-                offset,
+                yOffset,
                 value,
                 onclick,
               });
-              offset = next.offset;
+              yOffset = next.yOffset;
               hotspots = hotspots.concat(next.hotspots);
               break;
             }
@@ -246,7 +325,7 @@ const client = () => ({
     const _refresh = () => {
       _refreshPages();
 
-      _clear(canvas, ctx);
+      _clear(ctx);
       _drawPages();
       _drawCursors();
     };
@@ -395,7 +474,7 @@ const _drawHeader = (ctx, {img, text, onclick}) => {
   ctx.stroke();
 
   return {
-    offset: HEADER_HEIGHT,
+    yOffset: HEADER_HEIGHT,
     hotspots: onclick ? [
       {
         position: [0, 0, MARGIN, HEADER_HEIGHT],
@@ -405,9 +484,9 @@ const _drawHeader = (ctx, {img, text, onclick}) => {
   };
 };
 
-const _drawInput = (ctx, {offset, label, value}) => {
+const _drawInput = (ctx, {yOffset, label, value}) => {
   const x = MARGIN;
-  const y = offset;
+  const y = yOffset;
 
   const bx = x;
   const by = y + INPUT_HEIGHT * 0.1;
@@ -421,12 +500,12 @@ const _drawInput = (ctx, {offset, label, value}) => {
   ctx.fillStyle = '#333333';
   ctx.fillText(value, x + PADDING, y + INPUT_HEIGHT * 0.75);
 
-  offset += INPUT_HEIGHT;
+  yOffset += INPUT_HEIGHT;
 
-  _drawInputSeparator(ctx, {offset});
+  _drawInputSeparator(ctx, {yOffset});
 
   return {
-    offset,
+    yOffset,
     hotspots: [
       {
         position: [bx, by, bw, bh],
@@ -435,7 +514,7 @@ const _drawInput = (ctx, {offset, label, value}) => {
   };
 };
 
-const _drawText = (ctx, {offset, value}) => {
+const _drawText = (ctx, {yOffset, value}) => {
   const maxWidth = WIDTH - (MARGIN * 2);
   const offsetStep = INPUT_HEIGHT * 0.4;
 
@@ -454,9 +533,9 @@ const _drawText = (ctx, {offset, value}) => {
       const _flushLine = () => {
         const {width} = ctx.measureText(value);
 
-        ctx.fillText(acc, MARGIN, offset + INPUT_HEIGHT * 0.4);
+        ctx.fillText(acc, MARGIN, yOffset + INPUT_HEIGHT * 0.4);
 
-        offset += offsetStep;
+        yOffset += offsetStep;
         acc = '';
       };
       while (words.length > 0) {
@@ -476,23 +555,23 @@ const _drawText = (ctx, {offset, value}) => {
         _flushLine();
       }
     } else {
-      offset += offsetStep;
+      yOffset += offsetStep;
     }
   }
 
-  offset += offsetStep;
+  yOffset += offsetStep;
 
-  _drawInputSeparator(ctx, {offset});
+  _drawInputSeparator(ctx, {yOffset});
 
   return {
-    offset,
+    yOffset,
     hotspots: [],
   };
 };
 
-const _drawButton = (ctx, {offset, value}) => {
+const _drawButton = (ctx, {yOffset, value}) => {
   const x = MARGIN;
-  const y = offset;
+  const y = yOffset;
 
   ctx.font = (INPUT_HEIGHT * 0.4) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
@@ -511,12 +590,12 @@ const _drawButton = (ctx, {offset, value}) => {
 
   ctx.fillText(value, x + PADDING, y + INPUT_HEIGHT * 0.6);
 
-  offset += INPUT_HEIGHT;
+  yOffset += INPUT_HEIGHT;
 
-  _drawInputSeparator(ctx, {offset});
+  _drawInputSeparator(ctx, {yOffset});
 
   return {
-    offset,
+    yOffset,
     hotspots: [
       {
         position: [bx, by, bw, bh],
@@ -525,9 +604,9 @@ const _drawButton = (ctx, {offset, value}) => {
   };
 };
 
-const _drawSlider = (ctx, {offset, value}) => {
+const _drawSlider = (ctx, {yOffset, value}) => {
   const x = MARGIN;
-  const y = offset;
+  const y = yOffset;
 
   ctx.font = (INPUT_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
@@ -554,12 +633,12 @@ const _drawSlider = (ctx, {offset, value}) => {
 
   ctx.fillText(value, WIDTH - (MARGIN + metrics.width), y + INPUT_HEIGHT * 0.7);
 
-  offset += INPUT_HEIGHT;
+  yOffset += INPUT_HEIGHT;
 
-  _drawInputSeparator(ctx, {offset});
+  _drawInputSeparator(ctx, {yOffset});
 
   return {
-    offset,
+    yOffset,
     hotspots: [
       {
         position: [bx, by, bw, bh],
@@ -568,9 +647,9 @@ const _drawSlider = (ctx, {offset, value}) => {
   };
 };
 
-const _drawUnitBox = (ctx, {offset, value}) => {
+const _drawUnitBox = (ctx, {yOffset, value}) => {
   const x = MARGIN;
-  const y = offset;
+  const y = yOffset;
 
   ctx.font = (INPUT_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
@@ -591,12 +670,12 @@ const _drawUnitBox = (ctx, {offset, value}) => {
   ctx.lineTo(x + metrics.width + PADDING + 40, y + INPUT_HEIGHT * 0.6);
   ctx.stroke();
 
-  offset += INPUT_HEIGHT;
+  yOffset += INPUT_HEIGHT;
 
-  _drawInputSeparator(ctx, {offset});
+  _drawInputSeparator(ctx, {yOffset});
 
   return {
-    offset,
+    yOffset,
     hotspots: [
       {
         position: [x, y + INPUT_HEIGHT * 0.1, metrics.width + PADDING + 50, INPUT_HEIGHT * 0.8],
@@ -605,8 +684,8 @@ const _drawUnitBox = (ctx, {offset, value}) => {
   };
 };
 
-const _drawLink = (ctx, {offset, value, onclick}) => {
-  const y = offset;
+const _drawLink = (ctx, {yOffset, value, onclick}) => {
+  const y = yOffset;
 
   ctx.font = (INPUT_HEIGHT * 0.8) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
@@ -621,12 +700,12 @@ const _drawLink = (ctx, {offset, value, onclick}) => {
   ctx.lineTo(WIDTH - MARGIN - PADDING, y + LINK_HEIGHT * 0.7);
   ctx.stroke();
 
-  offset += LINK_HEIGHT;
+  yOffset += LINK_HEIGHT;
 
-  _drawInputSeparator(ctx, {offset});
+  _drawInputSeparator(ctx, {yOffset});
 
   return {
-    offset,
+    yOffset,
     hotspots: onclick ? [
       {
         position: [0, y, WIDTH, LINK_HEIGHT],
@@ -636,22 +715,22 @@ const _drawLink = (ctx, {offset, value, onclick}) => {
   };
 };
 
-const _drawLabel = (ctx, {offset, value}) => {
+const _drawLabel = (ctx, {yOffset, value}) => {
   const x = MARGIN / 2;
-  const y = offset;
+  const y = yOffset;
 
   ctx.font = (LABEL_HEIGHT * 0.6) + 'px \'Titillium Web\'';
   ctx.fillStyle = '#333333';
   ctx.fillText(value, x, y + LABEL_HEIGHT * 0.9);
 
   return {
-    offset: offset + LABEL_HEIGHT,
+    yOffset: yOffset + LABEL_HEIGHT,
     hotspots: [],
   };
 };
 
-const _drawInputSeparator = (ctx, {offset}) => {
-  const y = offset;
+const _drawInputSeparator = (ctx, {yOffset}) => {
+  const y = yOffset;
 
   ctx.beginPath();
   ctx.strokeStyle = '#808080';
