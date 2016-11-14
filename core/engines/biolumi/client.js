@@ -286,9 +286,25 @@ const client = () => ({
             const next = _drawInput(ctx, {
               yOffset,
               value,
+              onclick: e => {
+                const {clientX, clientY} = e;
+                const position = _normalizeEventPosition({clientX, clientY});
+
+                const cx = position.x * window.devicePixelRatio;
+
+                const textDistances = textOffsets.map((textOffset, index) => ({
+                  index,
+                  distance: Math.abs(cx - textOffset),
+                }));
+                const sortedTextDistances = textDistances.sort((a, b) => a.distance - b.distance);
+                const shortestTextDistanceIndex = sortedTextDistances[0].index;
+
+                console.log('clicked', JSON.stringify(value.slice(0, shortestTextDistanceIndex)));
+              },
             });
             yOffset = next.yOffset;
             hotspots = hotspots.concat(next.hotspots);
+            const textOffsets = next.textOffsets;
             break;
           }
           case 'text': {
@@ -436,8 +452,28 @@ const client = () => ({
         _refresh();
       }
     }
+    const _normalizeEventPosition = ({clientX, clientY}) => {
+      const clientRect = canvas.getBoundingClientRect();
+      const {left, top} = clientRect;
+
+      const x = clientX - left;
+      const y = clientY - top;
+
+      return {
+        x,
+        y,
+      };
+    };
     const _cursorMatchesHotspot = (cursor, hotspot) => {
       const {position} = cursor;
+      return _positionMatchesHotspot(position, hotspot);
+    };
+    const _eventMatchesHotspot = (event, hotspot) => {
+      const {clientX, clientY} = event;
+      const position = _normalizeEventPosition({clientX, clientY});
+      return _positionMatchesHotspot(position, hotspot);
+    };
+    const _positionMatchesHotspot = (position, hotspot) => {
       const cx = position.x * window.devicePixelRatio;
       const cy = position.y * window.devicePixelRatio;
 
@@ -450,26 +486,20 @@ const client = () => ({
     const localCursor = new Cursor();
     const mousemove = e => {
       const {clientX, clientY} = e;
-
-      const clientRect = canvas.getBoundingClientRect();
-      const {left, top} = clientRect;
-
-      const x = clientX - left;
-      const y = clientY - top;
-
+      const {x, y} = _normalizeEventPosition({clientX, clientY});
       localCursor.setPosition(x, y);
     };
-    const click = () => {
+    const click = e => {
       if (pages.length > 0) {
         const lastPage = pages[pages.length - 1];
         const {hotspots} = lastPage;
-        const hotspot = hotspots.find(hotspot => _cursorMatchesHotspot(localCursor, hotspot));
+        const hotspot = hotspots.find(hotspot => _eventMatchesHotspot(e, hotspot));
 
         if (hotspot) {
           const {onclick} = hotspot;
 
           if (onclick) {
-            onclick();
+            onclick(e);
           }
         }
       }
@@ -592,7 +622,9 @@ const _drawHeaderUnderline = ctx => {
   ctx.stroke();
 };
 
-const _drawInput = (ctx, {yOffset, label, value}) => {
+const _drawInput = (ctx, {yOffset, label, value, onclick}) => {
+  value = String(value);
+
   const x = MARGIN;
   const y = yOffset;
 
@@ -610,6 +642,18 @@ const _drawInput = (ctx, {yOffset, label, value}) => {
 
   yOffset += INPUT_HEIGHT;
 
+  const textOffsets = (() => {
+    const result = Array(value.length + 1);
+
+    result[0] = x + PADDING;
+    for (let i = 1; i <= value.length; i++) {
+      const {width} = ctx.measureText(value.slice(0, i));
+      result[i] = x + PADDING + width;
+    }
+
+    return result;
+  })();
+
   _drawInputSeparator(ctx, {yOffset});
 
   return {
@@ -617,8 +661,10 @@ const _drawInput = (ctx, {yOffset, label, value}) => {
     hotspots: [
       {
         position: [bx, by, bw, bh],
+        onclick,
       }
     ],
+    textOffsets,
   };
 };
 
