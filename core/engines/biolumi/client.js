@@ -65,9 +65,44 @@ const client = () => ({
         }
       });
 
+    class Page {
+      constructor(spec) {
+        this._spec = spec;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = WIDTH;
+        canvas.height = HEIGHT;
+        this.canvas = canvas;
+
+        const ctx = canvas.getContext('2d');
+        this.ctx = ctx;
+
+        this.hotspots = [];
+
+        this.refresh();
+      }
+
+      refresh() {
+        const {_spec: spec, canvas, ctx} = this;
+
+        const render = _renderPage({canvas, ctx, spec});
+        const {hotspots} = render;
+        _drawHotspots({ctx, hotspots});
+
+        this.hotspots = hotspots;
+      }
+
+      draw(ctx) {
+        const {canvas} = this;
+
+        _clear(canvas, ctx);
+        ctx.drawImage(canvas, 0, 0);
+      }
+    }
+
     const pages = [];
-    let hotspots = [];
-    const _push = page => {
+    const _push = spec => {
+      const page = new Page(spec);
       pages.push(page);
 
       _refresh();
@@ -77,15 +112,32 @@ const client = () => ({
 
       _refresh();
     };
-    const _clear = () => {
+
+    const _refreshPages = () => {
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        page.refresh();
+      }
+    };
+
+    const _clear = (canvas, ctx) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
-    const _refreshPage = ({hotspots}) => {
+    const _drawPages = () => {
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+
+        page.draw(ctx);
+      }
+    };
+    const _renderPage = ({canvas, ctx, spec}) => {
+      _clear(canvas, ctx);
+
       let offset = 0;
+      let hotspots = [];
 
       if (pages.length > 0) {
-        const lastPage = pages[pages.length - 1];
-        const {header, body} = lastPage;
+        const {header, body} = spec;
 
         const {img, text, onclick} = header;
         const next = _drawHeader(ctx, {img, text, onclick});
@@ -166,11 +218,10 @@ const client = () => ({
       }
 
       return {
-        offset,
         hotspots,
       };
     };
-    const _refreshHotspots = ({hotspots}) => {
+    const _drawHotspots = ({ctx, hotspots}) => {
       if (hotspots.length > 0) {
         const allCursors = [localCursor].concat(cursors);
 
@@ -185,7 +236,7 @@ const client = () => ({
         }
       }
     };
-    const _refreshCursors = () => {
+    const _drawCursors = () => {
       for (let i = 0; i < cursors.length; i++) {
         const cursor = cursors[i];
         const {position: {x, y}} = cursor;
@@ -193,13 +244,11 @@ const client = () => ({
       }
     };
     const _refresh = () => {
-      _clear();
+      _refreshPages();
 
-      hotspots = [];
-      hotspots = _refreshPage({hotspots}).hotspots;
-      _refreshHotspots({hotspots});
-
-      _refreshCursors();
+      _clear(canvas, ctx);
+      _drawPages();
+      _drawCursors();
     };
 
     class Cursor {
@@ -247,11 +296,15 @@ const client = () => ({
       localCursor.setPosition(x, y);
     };
     const click = () => {
-      const hotspot = hotspots.find(hotspot => _cursorMatchesHotspot(localCursor, hotspot));
+      if (pages.length > 0) {
+        const lastPage = pages[pages.length - 1];
+        const {hotspots} = lastPage;
+        const hotspot = hotspots.find(hotspot => _cursorMatchesHotspot(localCursor, hotspot));
 
-      if (hotspot) {
-        const {onclick} = hotspot;
-        onclick();
+        if (hotspot) {
+          const {onclick} = hotspot;
+          onclick();
+        }
       }
     };
     canvas.addEventListener('mousemove', mousemove);
