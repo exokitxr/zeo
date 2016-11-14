@@ -49,60 +49,69 @@ const client = ({engines: {nedb, biolumi, multiplayer}}) => ({
         console.warn(err, JSON.stringify(err));
       }
     });
-    biolumi.push({
-      header: {
-        img: creatureUtils.makeCreature()[0],
-        text: textUtils.makePlanetName(),
-      },
-      body: [
-        {
-          type: 'label',
-          value: 'Name',
+    const _makePage = () => {
+      return {
+        header: {
+          img: creatureUtils.makeCreature()[0],
+          text: textUtils.makePlanetName(),
+          onclick: biolumi.getPages().length > 0 ? () => {
+            biolumi.pop();
+          } : null,
         },
-        {
-          type: 'input',
-          value: 'Biolumi',
-        },
-        {
-          type: 'label',
-          value: 'Warning',
-        },
-        {
-          type: 'text',
-          value: `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+        body: [
+          {
+            type: 'label',
+            value: 'Name',
+          },
+          {
+            type: 'input',
+            value: 'Biolumi',
+          },
+          {
+            type: 'label',
+            value: 'Warning',
+          },
+          {
+            type: 'text',
+            value: `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 
-Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`
-        },
-        {
-          type: 'label',
-          value: 'Button',
-        },
-        {
-          type: 'button',
-          value: 'Submit',
-        },
-        {
-          type: 'label',
-          value: 'Slider',
-        },
-        {
-          type: 'slider',
-          value: 100,
-        },
-        {
-          type: 'label',
-          value: 'Unitbox',
-        },
-        {
-          type: 'unitbox',
-          value: 100,
-        },
-        {
-          type: 'link',
-          value: 'New world',
-        },
-      ],
-    });
+  Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`
+          },
+          {
+            type: 'label',
+            value: 'Button',
+          },
+          {
+            type: 'button',
+            value: 'Submit',
+          },
+          {
+            type: 'label',
+            value: 'Slider',
+          },
+          {
+            type: 'slider',
+            value: 100,
+          },
+          {
+            type: 'label',
+            value: 'Unitbox',
+          },
+          {
+            type: 'unitbox',
+            value: 100,
+          },
+          {
+            type: 'link',
+            value: 'New world',
+            onclick: () => {
+              biolumi.push(_makePage());
+            },
+          },
+        ],
+      }
+    };
+    biolumi.push(_makePage());
 
     // multiplayer
     const form = biolumi.getForm();

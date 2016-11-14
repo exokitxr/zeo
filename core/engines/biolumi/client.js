@@ -66,6 +66,7 @@ const client = () => ({
       });
 
     const pages = [];
+    let hotspots = [];
     const _push = page => {
       pages.push(page);
 
@@ -79,26 +80,28 @@ const client = () => ({
     const _clear = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
-    const _refreshPage = () => {
+    const _refreshPage = ({hotspots}) => {
       let offset = 0;
-      let hotspots = [];
 
       if (pages.length > 0) {
         const lastPage = pages[pages.length - 1];
         const {header, body} = lastPage;
 
-        const {img, text} = header;
-        const next = _drawHeader(ctx, {img, text});
+        const {img, text, onclick} = header;
+        const next = _drawHeader(ctx, {img, text, onclick});
         offset += next.offset;
         hotspots = hotspots.concat(next.hotspots);
 
         for (let i = 0; i < body.length; i++) {
           const section = body[i];
-          const {type, value} = section;
+          const {type, value, onclick} = section;
 
           switch (type) {
             case 'label': {
-              const next = _drawLabel(ctx, {offset, value});
+              const next = _drawLabel(ctx, {
+                offset,
+                value,
+              });
               offset = next.offset;
               hotspots = hotspots.concat(next.hotspots);
               break;
@@ -152,6 +155,7 @@ const client = () => ({
               const next = _drawLink(ctx, {
                 offset,
                 value,
+                onclick,
               });
               offset = next.offset;
               hotspots = hotspots.concat(next.hotspots);
@@ -166,25 +170,16 @@ const client = () => ({
         hotspots,
       };
     };
-    const _refreshHotspots = hotspots => {
+    const _refreshHotspots = ({hotspots}) => {
       if (hotspots.length > 0) {
         const allCursors = [localCursor].concat(cursors);
 
         for (let i = 0; i < hotspots.length; i++) {
           const hotspot = hotspots[i];
-          const [x, y, width, height] = hotspot;
 
-          if (
-            allCursors.some(cursor => {
-              const {position} = cursor;
+          if (allCursors.some(cursor => _cursorMatchesHotspot(cursor, hotspot))) {
+            const {position: [x, y, width, height]} = hotspot;
 
-              const cx = position.x * window.devicePixelRatio;
-              const cy = position.y * window.devicePixelRatio;
-
-              return cx >= x && cy >= y &&
-                (cx < (x + width)) && (cy < (y + height))
-            })
-          ) {
             _drawHotspot(ctx, {x, y, width, height});
           }
         }
@@ -200,9 +195,9 @@ const client = () => ({
     const _refresh = () => {
       _clear();
 
-      const next = _refreshPage();
-      const {hotspots} = next;
-      _refreshHotspots(hotspots);
+      hotspots = [];
+      hotspots = _refreshPage({hotspots}).hotspots;
+      _refreshHotspots({hotspots});
 
       _refreshCursors();
     };
@@ -228,6 +223,16 @@ const client = () => ({
         _refresh();
       }
     }
+    const _cursorMatchesHotspot = (cursor, hotspot) => {
+      const {position} = cursor;
+      const cx = position.x * window.devicePixelRatio;
+      const cy = position.y * window.devicePixelRatio;
+
+      const {position: [x, y, width, height]} = hotspot;
+
+      return cx >= x && cy >= y &&
+        (cx < (x + width)) && (cy < (y + height));
+    };
 
     const localCursor = new Cursor();
     const mousemove = e => {
@@ -241,9 +246,19 @@ const client = () => ({
 
       localCursor.setPosition(x, y);
     };
+    const click = () => {
+      const hotspot = hotspots.find(hotspot => _cursorMatchesHotspot(localCursor, hotspot));
+
+      if (hotspot) {
+        const {onclick} = hotspot;
+        onclick();
+      }
+    };
     canvas.addEventListener('mousemove', mousemove);
+    canvas.addEventListener('click', click);
     const _cleanupEvents = () => {
       canvas.removeEventListener('mousemove', mousemove);
+      canvas.removeEventListener('click', click);
     };
 
     const cursors = [];
@@ -278,6 +293,9 @@ const client = () => ({
       getForm() {
         return canvas;
       },
+      getPages() {
+        return pages;
+      },
       addCursor() {
         const cursor = new Cursor();
         cursors.push(cursor);
@@ -290,15 +308,17 @@ const client = () => ({
   },
 });
 
-const _drawHeader = (ctx, {img, text}) => {
-  ctx.beginPath();
-  ctx.strokeStyle = '#333333';
-  ctx.lineWidth = 5;
-  ctx.moveTo((MARGIN / 2) - (PADDING / 2), HEADER_HEIGHT * 0.5);
-  ctx.lineTo((MARGIN / 2) + (PADDING / 2), HEADER_HEIGHT * 0.25);
-  ctx.moveTo((MARGIN / 2) - (PADDING / 2), HEADER_HEIGHT * 0.5);
-  ctx.lineTo((MARGIN / 2) + (PADDING / 2), HEADER_HEIGHT * 0.75);
-  ctx.stroke();
+const _drawHeader = (ctx, {img, text, onclick}) => {
+  if (onclick) {
+    ctx.beginPath();
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 5;
+    ctx.moveTo((MARGIN / 2) - (PADDING / 2), HEADER_HEIGHT * 0.5);
+    ctx.lineTo((MARGIN / 2) + (PADDING / 2), HEADER_HEIGHT * 0.25);
+    ctx.moveTo((MARGIN / 2) - (PADDING / 2), HEADER_HEIGHT * 0.5);
+    ctx.lineTo((MARGIN / 2) + (PADDING / 2), HEADER_HEIGHT * 0.75);
+    ctx.stroke();
+  }
 
   const imageSize = HEADER_HEIGHT;
   const imageData = _scaleImageData(img, {
@@ -320,9 +340,12 @@ const _drawHeader = (ctx, {img, text}) => {
 
   return {
     offset: HEADER_HEIGHT,
-    hotspots: [
-      [0, 0, MARGIN, HEADER_HEIGHT],
-    ],
+    hotspots: onclick ? [
+      {
+        position: [0, 0, MARGIN, HEADER_HEIGHT],
+        onclick,
+      }
+    ] : [],
   };
 };
 
@@ -349,7 +372,9 @@ const _drawInput = (ctx, {offset, label, value}) => {
   return {
     offset,
     hotspots: [
-      [bx, by, bw, bh],
+      {
+        position: [bx, by, bw, bh],
+      }
     ],
   };
 };
@@ -437,7 +462,9 @@ const _drawButton = (ctx, {offset, value}) => {
   return {
     offset,
     hotspots: [
-      [bx, by, bw, bh],
+      {
+        position: [bx, by, bw, bh],
+      }
     ],
   };
 };
@@ -478,7 +505,9 @@ const _drawSlider = (ctx, {offset, value}) => {
   return {
     offset,
     hotspots: [
-      [bx, by, bw, bh],
+      {
+        position: [bx, by, bw, bh],
+      }
     ],
   };
 };
@@ -513,12 +542,14 @@ const _drawUnitBox = (ctx, {offset, value}) => {
   return {
     offset,
     hotspots: [
-      [x, y + INPUT_HEIGHT * 0.1, metrics.width + PADDING + 50, INPUT_HEIGHT * 0.8],
+      {
+        position: [x, y + INPUT_HEIGHT * 0.1, metrics.width + PADDING + 50, INPUT_HEIGHT * 0.8],
+      }
     ],
   };
 };
 
-const _drawLink = (ctx, {offset, value}) => {
+const _drawLink = (ctx, {offset, value, onclick}) => {
   const y = offset;
 
   ctx.font = (INPUT_HEIGHT * 0.8) + 'px \'Titillium Web\'';
@@ -540,9 +571,12 @@ const _drawLink = (ctx, {offset, value}) => {
 
   return {
     offset,
-    hotspots: [
-      [0, y, WIDTH, LINK_HEIGHT],
-    ],
+    hotspots: onclick ? [
+      {
+        position: [0, y, WIDTH, LINK_HEIGHT],
+        onclick,
+      }
+    ] : [],
   };
 };
 
