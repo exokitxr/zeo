@@ -303,7 +303,10 @@ const client = () => ({
 
         if (hotspot) {
           const {onclick} = hotspot;
-          onclick();
+
+          if (onclick) {
+            onclick();
+          }
         }
       }
     };
