@@ -326,9 +326,17 @@ const client = () => ({
             const next =_drawSlider(ctx, {
               yOffset,
               value,
+              onclick: e => {
+                const {x} = _normalizeDevicePosition(_normalizeEventPosition(e));
+
+                const [sx, sy, sw, sh] = sliderBounds;
+
+                console.log('clicked', (x - sx) / sw);
+              },
             });
             yOffset = next.yOffset;
             hotspots = hotspots.concat(next.hotspots);
+            const sliderBounds = next.sliderBounds;
             break;
           }
           case 'unitbox': {
@@ -751,7 +759,7 @@ const _drawButton = (ctx, {yOffset, value}) => {
   };
 };
 
-const _drawSlider = (ctx, {yOffset, value}) => {
+const _drawSlider = (ctx, {yOffset, value, onclick}) => {
   const x = MARGIN;
   const y = yOffset;
 
@@ -789,8 +797,10 @@ const _drawSlider = (ctx, {yOffset, value}) => {
     hotspots: [
       {
         position: [bx, by, bw, bh],
+        onclick,
       }
     ],
+    sliderBounds: [bx, by, bw, bh],
   };
 };
 
