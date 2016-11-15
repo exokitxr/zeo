@@ -287,14 +287,11 @@ const client = () => ({
               yOffset,
               value,
               onclick: e => {
-                const {clientX, clientY} = e;
-                const position = _normalizeEventPosition({clientX, clientY});
-
-                const cx = position.x * window.devicePixelRatio;
+                const {x} = _normalizeDevicePosition(_normalizeEventPosition(e));
 
                 const textDistances = textOffsets.map((textOffset, index) => ({
                   index,
-                  distance: Math.abs(cx - textOffset),
+                  distance: Math.abs(x - textOffset),
                 }));
                 const sortedTextDistances = textDistances.sort((a, b) => a.distance - b.distance);
                 const shortestTextDistanceIndex = sortedTextDistances[0].index;
@@ -464,29 +461,25 @@ const client = () => ({
         y,
       };
     };
-    const _cursorMatchesHotspot = (cursor, hotspot) => {
-      const {position} = cursor;
-      return _positionMatchesHotspot(position, hotspot);
-    };
-    const _eventMatchesHotspot = (event, hotspot) => {
-      const {clientX, clientY} = event;
-      const position = _normalizeEventPosition({clientX, clientY});
-      return _positionMatchesHotspot(position, hotspot);
-    };
+    const _normalizeDevicePosition = ({x, y}) => ({
+      x: x * window.devicePixelRatio,
+      y: y * window.devicePixelRatio,
+    });
+    const _cursorMatchesHotspot = (cursor, hotspot) => _positionMatchesHotspot(cursor.position, hotspot);
+    const _eventMatchesHotspot = (event, hotspot) => _positionMatchesHotspot(_normalizeEventPosition(event), hotspot);
     const _positionMatchesHotspot = (position, hotspot) => {
-      const cx = position.x * window.devicePixelRatio;
-      const cy = position.y * window.devicePixelRatio;
+      const {x: dx, y: dy} = _normalizeDevicePosition(position);
 
-      const {position: [x, y, width, height]} = hotspot;
+      const {position: [hx, hy, width, height]} = hotspot;
 
-      return cx >= x && cy >= y &&
-        (cx < (x + width)) && (cy < (y + height));
+      return dx >= hx && dy >= hy &&
+        (dx < (hx + width)) && (dy < (hy + height));
     };
 
     const localCursor = new Cursor();
     const mousemove = e => {
-      const {clientX, clientY} = e;
-      const {x, y} = _normalizeEventPosition({clientX, clientY});
+      const {x, y} = _normalizeEventPosition(e);
+
       localCursor.setPosition(x, y);
     };
     const click = e => {
