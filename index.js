@@ -20,14 +20,14 @@ class ArchaeServer {
     this.connections = [];
 
     this.engines = {};
-    this._engines = {};
-    this.__engines = {};
+    this.engineInstances = {};
+    this.engineApis = {};
     this.plugins = {};
-    this._plugins = {};
-    this.__plugins = {};
+    this.pluginInstances = {};
+    this.pluginApis = {};
   }
 
-  addEngine(engine, opts = {}) {
+  requestEngine(engine, opts = {}) {
     return new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(engine, 'engines', cb);
@@ -43,7 +43,7 @@ class ArchaeServer {
                 if (!err) {
                   const {loadedClient, loadedServer} = result;
                   if (loadedClient) {
-                    this.broadcastAddEngine(engineName);
+                    this.broadcastRequestEngine(engineName);
                   }
                   if (loadedServer) {
                     this.mountEngine(engineName);
@@ -97,7 +97,7 @@ class ArchaeServer {
     });
   }
 
-  addPlugin(plugin, opts = {}) {
+  requestPlugin(plugin, opts = {}) {
     return new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(plugin, 'plugins', cb);
@@ -113,7 +113,7 @@ class ArchaeServer {
                 if (!err) {
                   const {loadedClient, loadedServer} = result;
                   if (loadedClient) {
-                    this.broadcastAddPlugin(pluginName);
+                    this.broadcastRequestPlugin(pluginName);
                   }
                   if (loadedServer) {
                     this.mountPlugin(pluginName);
@@ -370,21 +370,23 @@ class ArchaeServer {
 
   mountEngine(engine) {
     const engineModule = this.engines[engine];
-    const engineInstance = engineModule({
+
+    const engineOptions = {
       server: this.server,
       app: this.app,
       wss: this.wss,
       dirname: __dirname,
-    });
-    this._engines[engine] = engineInstance;
+    };
+    const engineInstance = engineModule(engineOptions);
+    this.engineInstances[engine] = engineInstance;
 
     const engineApi = engineInstance.mount();
-    this.__engines[engine] = engineApi;
+    this.engineApis[engine] = engineApi;
   }
 
-  broadcastAddEngine(engine) {
+  broadcastRequestEngine(engine) {
     this.broadcast({
-      type: 'addEngine',
+      type: 'requestEngine',
       engine: engine,
     });
   }
@@ -446,18 +448,20 @@ class ArchaeServer {
 
   mountPlugin(plugin) {
     const pluginModule = this.plugins[plugin];
-    const pluginInstance = pluginModule({
-      engines: this.__engines,
-    });
-    this._plugins = pluginInstance;
+
+    const pluginOptions = {
+      engines: this.engineApis,
+    };
+    const pluginInstance = pluginModule(pluginOptions);
+    this.pluginInstances[plugin] = pluginInstance;
 
     const pluginApi = pluginInstance.mount();
-    this.__plugins[plugin] = pluginApi;
+    this.pluginApis[plugin] = pluginApi;
   }
 
-  broadcastAddPlugin(plugin) {
+  broadcastRequestPlugin(plugin) {
     this.broadcast({
-      type: 'addPlugin',
+      type: 'requestPlugin',
       plugin: plugin,
     });
   }
@@ -520,11 +524,11 @@ class ArchaeServer {
                   }
                 };
 
-                if (m.type === 'addEngine') {
+                if (m.type === 'requestEngine') {
                   const {engine} = m;
 
                   if (_isValidModule(engine)) {
-                    this.addEngine(engine, cb);
+                    this.requestEngine(engine, cb);
                   } else {
                     cb('invalid engine spec');
                   }
@@ -536,11 +540,11 @@ class ArchaeServer {
                   } else {
                     cb('invalid engine spec');
                   }
-                } else if (m.type === 'addPlugin') {
+                } else if (m.type === 'requestPlugin') {
                   const {plugin} = m;
 
                   if (_isValidModule(plugin)) {
-                    this.addPlugin(plugin, cb);
+                    this.requestPlugin(plugin, cb);
                   } else {
                     cb('invalid plugin spec');
                   }

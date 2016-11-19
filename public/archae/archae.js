@@ -1,18 +1,18 @@
 class ArchaeClient {
   constructor() {
     this.engines = {};
-    this._engines = {};
-    this.__engines = {};
+    this.engineInstances = {};
+    this.engineApis = {};
     this.plugins = {};
-    this._plugins = {};
-    this.__plugins = {};
+    this.pluginInstances = {};
+    this.pluginApis = {};
   }
 
-  addEngine(engine) {
+  requestEngine(engine) {
     const id = _makeId();
 
     this.send({
-      type: 'addEngine',
+      type: 'requestEngine',
       id: id,
       engine: engine,
     });
@@ -20,7 +20,7 @@ class ArchaeClient {
     return this.waitForId(id);
   }
 
-  removePlugin(engine) {
+  removeEngine(engine) {
     const id = _makeId();
 
     this.send({
@@ -32,11 +32,11 @@ class ArchaeClient {
     return this.waitForId(id);
   }
 
-  addPlugin(plugin) {
+  requestPlugin(plugin) {
     const id = _makeId();
 
     this.send({
-      type: 'addPlugin',
+      type: 'requestPlugin',
       id: id,
       plugin: plugin,
     });
@@ -159,10 +159,10 @@ class ArchaeClient {
     const engineModule = this.engines[engine];
 
     const engineInstance = engineModule();
-    this._engines[engine] = engineInstance;
+    this.engineInstances[engine] = engineInstance;
 
     const engineApi = engineInstance.mount();
-    this.__engines[engine] = engineApi;
+    this.engineApis[engine] = engineApi;
   }
 
   mountPlugins(plugins) {
@@ -175,12 +175,12 @@ class ArchaeClient {
     const pluginModule = this.plugins[plugin];
 
     const pluginInstance = pluginModule({
-      engines: this.__engines,
+      engines: this.engineApis,
     });
-    this._plugins[plugin] = pluginInstance;
+    this.pluginInstances[plugin] = pluginInstance;
 
     const pluginApi = pluginInstance.mount();
-    this.__plugins[plugin] = pluginApi;
+    this.pluginApis[plugin] = pluginApi;
   }
 
   mountAll() {
@@ -243,7 +243,7 @@ class ArchaeClient {
   }
 
   listen() {
-    this.on('addEngine', ({engine}) => {
+    this.on('requestEngine', ({engine}) => {
       this.loadEngine(engine, (err, result) => {
         if (!err) {
           const {loaded} = result;
@@ -255,7 +255,7 @@ class ArchaeClient {
         }
       });
     });
-    this.on('addPlugin', ({plugin}) => {
+    this.on('requestPlugin', ({plugin}) => {
       this.loadPlugin(plugin, (err, result) => {
         if (!err) {
           const {loaded} = result;

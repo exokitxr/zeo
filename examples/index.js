@@ -12,16 +12,17 @@ app.use('/', express.static(__dirname));
 const a = archae({server, app});
 
 Promise.all([
-  a.addEngine('/core/engines/express'),
-  a.addEngine('/core/engines/react'),
-  // a.addEngine('/core/engines/ws'),
-  // a.addEngine('/core/engines/bus'),
-  a.addEngine('/core/engines/nedb'),
-  a.addEngine('/core/engines/biolumi'),
-  a.addEngine('/core/engines/multiplayer'),
+  a.requestEngine('/core/engines/express'),
+  // a.requestEngine('/core/engines/react'),
+  // a.requestEngine('/core/engines/ws'),
+  // a.requestEngine('/core/engines/bus'),
+  // a.requestEngine('/core/engines/three'),
+  a.requestEngine('/core/engines/nedb'),
+  a.requestEngine('/core/engines/biolumi'),
+  a.requestEngine('/core/engines/multiplayer'),
 ])
   .then(() => {
-    console.log('adds ok');
+    console.log('request engines ok');
 
     a.listen(err => {
       if (!err) {
@@ -38,5 +39,5 @@ Promise.all([
     });
   })
   .catch(err => {
-    console.warn('react engine add fail', err);
+    console.warn('request engines fail', err);
   });

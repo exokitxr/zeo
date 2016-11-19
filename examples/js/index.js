@@ -39,13 +39,12 @@ Promise.all([
       'server.js': serverJs,
     }
   };
-  archae.addPlugin(corsPlugin, err => {
+  archae.requestPlugin(corsPlugin, err => {
     console.log('added cors plugin', err);
   }); */
 
-
   Promise.all([
-    archae.addPlugin('/core/plugins/todo'),
+    archae.requestPlugin('/core/plugins/todo'),
   ])
     .then(() => {
       console.log('added client plugins');

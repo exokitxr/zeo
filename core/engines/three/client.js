@@ -1,5 +1,7 @@
 const THREE = require('three');
 
+const CAMERA_ROTATION_ORDER = 'YXZ';
+
 const client = () => ({
   mount() {
     const scene = new THREE.Scene();
