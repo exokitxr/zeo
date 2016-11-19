@@ -184,9 +184,7 @@ class ArchaeClient {
   mountPlugin(plugin) {
     const pluginModule = this.plugins[plugin];
 
-    const pluginInstance = pluginModule({
-      engines: this.engineApis,
-    });
+    const pluginInstance = pluginModule();
     this.pluginInstances[plugin] = pluginInstance;
 
     const pluginApi = pluginInstance.mount();

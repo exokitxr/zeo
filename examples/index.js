@@ -9,10 +9,13 @@ const server = http.createServer();
 const app = express();
 app.use('/', express.static(__dirname));
 
-const a = archae({server, app});
+const a = archae({
+  server,
+  app,
+});
 
 a.requestEngines([
-  '/core/engines/express',
+  // '/core/engines/express',
   // '/core/engines/react',
   // '/core/engines/ws',
   // '/core/engines/bus',
@@ -24,18 +27,12 @@ a.requestEngines([
   .then(() => {
     console.log('request engines ok');
 
-    a.listen(err => {
-      if (!err) {
-        server.listen(8000);
-        server.on('listening', () => {
-          console.log('listening');
-        });
-        server.on('error', err => {
-          console.warn(err);
-        });
-      } else {
-        console.warn(err);
-      }
+    a.server.listen(8000);
+    a.server.on('listening', () => {
+      console.log('listening');
+    });
+    a.server.on('error', err => {
+      console.warn(err);
     });
   })
   .catch(err => {
