@@ -43,8 +43,8 @@ Promise.all([
     console.log('added cors plugin', err);
   }); */
 
-  Promise.all([
-    archae.requestPlugin('/core/plugins/todo'),
+  archae.requestPlugins([
+    '/core/plugins/todo',
   ])
     .then(() => {
       console.log('added client plugins');

@@ -85,6 +85,11 @@ class ArchaeServer {
     });
   }
 
+  requestEngines(engines, opts = {}) {
+    const requestEnginePromises = engines.map(engine => this.requestEngine(engine, opts));
+    return Promise.all(requestEnginePromises);
+  }
+
   removeEngine(engine, opts = {}) {
     return new Promise((accept, reject) => {
       _removeModule(engine, 'engines', err => {
@@ -153,6 +158,11 @@ class ArchaeServer {
         });
       }
     });
+  }
+
+  requestPlugins(plugins, opts = {}) {
+    const requestPluginPromises = plugins.map(plugin => this.requestPlugin(plugin, opts));
+    return Promise.all(requestPluginPromises);
   }
 
   removePlugin(plugin, opts = {}) {

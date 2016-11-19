@@ -11,15 +11,15 @@ app.use('/', express.static(__dirname));
 
 const a = archae({server, app});
 
-Promise.all([
-  a.requestEngine('/core/engines/express'),
-  // a.requestEngine('/core/engines/react'),
-  // a.requestEngine('/core/engines/ws'),
-  // a.requestEngine('/core/engines/bus'),
-  // a.requestEngine('/core/engines/three'),
-  a.requestEngine('/core/engines/nedb'),
-  a.requestEngine('/core/engines/biolumi'),
-  a.requestEngine('/core/engines/multiplayer'),
+a.requestEngines([
+  '/core/engines/express',
+  // '/core/engines/react',
+  // '/core/engines/ws',
+  // '/core/engines/bus',
+  // '/core/engines/three',
+  '/core/engines/nedb',
+  '/core/engines/biolumi',
+  '/core/engines/multiplayer',
 ])
   .then(() => {
     console.log('request engines ok');

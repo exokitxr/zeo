@@ -20,6 +20,11 @@ class ArchaeClient {
     return this.waitForId(id);
   }
 
+  requestEngines(engines) {
+    const requestEnginePromises = engines.map(engine => this.requestEngine(engine));
+    return Promise.all(requestEnginePromises);
+  }
+
   removeEngine(engine) {
     const id = _makeId();
 
@@ -42,6 +47,11 @@ class ArchaeClient {
     });
 
     return this.waitForId(id);
+  }
+
+  requestPlugins(plugins) {
+    const requestPluginPromises = plugins.map(plugin => this.requestPlugin(plugin));
+    return Promise.all(requestPluginPromises);
   }
 
   removePlugin(plugin) {
