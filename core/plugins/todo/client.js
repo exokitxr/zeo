@@ -1,8 +1,8 @@
 const creatureUtils = require('./lib/creatureUtils'); 
 const textUtils = require('./lib/textUtils'); 
 
-const client = () => ({
-  mount(archae) {
+const client = archae => ({
+  mount() {
     archae.requestEngines([
       '/core/engines/nedb',
       '/core/engines/biolumi',

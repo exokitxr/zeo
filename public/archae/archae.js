@@ -20,13 +20,15 @@ class ArchaeClient {
 
         this.request('requestEngine', {
           engine,
-        }, err => {
+        }, (err, result) => {
           if (!err) {
-            this.loadEngine(engine, err => {
-              if (!err) {
-                this.mountEngine(engine);
+            const {engineName} = result;
 
-                const engineApi = this.engineApis[engine];
+            this.loadEngine(engineName, err => {
+              if (!err) {
+                this.mountEngine(engineName);
+
+                const engineApi = this.engineApis[engineName];
                 accept(engineApi);
               } else {
                 reject(err);
@@ -69,13 +71,15 @@ class ArchaeClient {
       } else {
         this.request('requestPlugin', {
           plugin,
-        }, err => {
+        }, (err, result) => {
           if (!err) {
-            this.loadPlugin(plugin, err => {
-              if (!err) {
-                this.mountPlugin(plugin);
+            const {pluginName} = result;
 
-                const pluginApi = this.pluginApis[plugin];
+            this.loadPlugin(pluginName, err => {
+              if (!err) {
+                this.mountPlugin(pluginName);
+
+                const pluginApi = this.pluginApis[pluginName];
                 accept(pluginApi);
               } else {
                 reject(err);
@@ -108,7 +112,7 @@ class ArchaeClient {
     });
   }
 
-  waitForId(id) {
+  /* waitForId(id) {
     return new Promise((accept, reject) => {
       this.onceId(id, (err, result) => {
         if (!err) {
@@ -118,7 +122,7 @@ class ArchaeClient {
         }
       });
     });
-  }
+  } */
 
   bootstrap() {
     // this.mountAll();
@@ -177,7 +181,7 @@ class ArchaeClient {
         });
         cleanup();
       };
-      script.onerror = err => {
+      script.onerror = err => { // XXX handle the no client script case
         cb(err);
         cleanup();
       };
@@ -232,7 +236,7 @@ class ArchaeClient {
     const pluginModule = this.plugins[plugin];
 
     if (pluginModule) {
-      const pluginInstance = pluginModule();
+      const pluginInstance = pluginModule(this);
       this.pluginInstances[plugin] = pluginInstance;
 
       const pluginApi = pluginInstance.mount();
@@ -338,7 +342,13 @@ class ArchaeClient {
       id: id,
     });
 
-    this.onceId(id, cb);
+    this.onceId(id, (err, result) => {
+      if (!err) {
+        cb(null, result);
+      } else {
+        cb(err);
+      }
+    });
   }
 
   send(o) {

@@ -30,7 +30,9 @@ class ArchaeServer {
   }
 
   requestEngine(engine, opts = {}) { // XXX implement locking for these
-    return new Promise((accept, reject) => {
+    let name = null;
+
+    const result = new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(engine, 'engines', cb);
       };
@@ -38,6 +40,8 @@ class ArchaeServer {
         _addModule(engine, 'engines', (err, result) => {
           if (!err) {
             const {moduleName: engineName} = result;
+
+            name = engineName;
 
             const existingEngine = this.engines[engineName];
             if (existingEngine !== undefined) {
@@ -85,6 +89,9 @@ class ArchaeServer {
         });
       }
     });
+    result.getName = () => name;
+
+    return result;
   }
 
   requestEngines(engines, opts = {}) {
@@ -105,7 +112,9 @@ class ArchaeServer {
   }
 
   requestPlugin(plugin, opts = {}) {
-    return new Promise((accept, reject) => {
+    let name = null;
+
+    const result = new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(plugin, 'plugins', cb);
       };
@@ -113,6 +122,8 @@ class ArchaeServer {
         _addModule(plugin, 'plugins', (err, result) => {
           if (!err) {
             const {added, moduleName: pluginName} = result;
+
+            name = pluginName;
 
             const existingPlugin = this.plugins[pluginName];
             if (existingPlugin !== undefined) {
@@ -160,6 +171,9 @@ class ArchaeServer {
         });
       }
     });
+    result.getName = () => name;
+
+    return result;
   }
 
   requestPlugins(plugins, opts = {}) {
@@ -392,7 +406,10 @@ class ArchaeServer {
       const engineInstance = engineModule(engineOptions);
       this.engineInstances[engine] = engineInstance;
 
-      const engineApi = engineInstance.mount();
+      let engineApi = engineInstance.mount();
+      if (engineApi === undefined) {
+        engineApi = {};
+      }
       this.engineApis[engine] = engineApi;
     } else {
       this.engineInstances[engine] = null;
@@ -465,10 +482,13 @@ class ArchaeServer {
     const pluginModule = this.plugins[plugin];
 
     if (pluginModule !== null) {
-      const pluginInstance = pluginModule();
+      const pluginInstance = pluginModule(this);
       this.pluginInstances[plugin] = pluginInstance;
 
-      const pluginApi = pluginInstance.mount();
+      let pluginApi = pluginInstance.mount();
+      if (pluginApi === undefined) {
+        pluginApi = {};
+      }
       this.pluginApis[plugin] = pluginApi;
     } else {
       this.pluginInstances[plugin] = null;
@@ -542,9 +562,13 @@ class ArchaeServer {
               const {engine} = args;
 
               if (_isValidModule(engine)) {
-                this.requestEngine(engine)
-                  .then(() => {
-                    cb();
+                const requestEnginePromise = this.requestEngine(engine);
+                requestEnginePromise
+                  .then(engineApi => {
+                    const engineName = requestEnginePromise.getName();
+                    cb(null, {
+                      engineName,
+                    });
                   })
                   .catch(err => {
                     cb(err);
@@ -572,9 +596,13 @@ class ArchaeServer {
               const {plugin} = args;
 
               if (_isValidModule(plugin)) {
-                this.requestPlugin(plugin)
+                const requestPluginPromise = this.requestPlugin(plugin);
+                requestPluginPromise
                   .then(() => {
-                    cb();
+                    const pluginName = requestPluginPromise.getName()
+                    cb(null, {
+                      pluginName,
+                    });
                   })
                   .catch(err => {
                     cb(err);
