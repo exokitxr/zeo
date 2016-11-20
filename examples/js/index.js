@@ -52,8 +52,8 @@
 // main
 
 archae.requestPlugins([
-  // '/core/plugins/todo',
-  '/core/plugins/zeo',
+  // '/extra/plugins/biolumi/form',
+  '/extra/plugins/zeo-extra/ocean',
 ])
   .then(result => {
     console.log('added client plugins', result);

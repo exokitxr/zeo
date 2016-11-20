@@ -26,10 +26,14 @@ class ArchaeClient {
 
             this.loadEngine(engineName, err => {
               if (!err) {
-                this.mountEngine(engineName);
-
-                const engineApi = this.engineApis[engineName];
-                accept(engineApi);
+                this.mountEngine(engineName, err => {
+                  if (!err) {
+                    const engineApi = this.engineApis[engineName];
+                    accept(engineApi);
+                  } else {
+                    reject(err);
+                  }
+                });
               } else {
                 reject(err);
               }
@@ -77,10 +81,14 @@ class ArchaeClient {
 
             this.loadPlugin(pluginName, err => {
               if (!err) {
-                this.mountPlugin(pluginName);
-
-                const pluginApi = this.pluginApis[pluginName];
-                accept(pluginApi);
+                this.mountPlugin(pluginName, err => {
+                  if (!err) {
+                    const pluginApi = this.pluginApis[pluginName];
+                    accept(pluginApi);
+                  } else {
+                    reject(err);
+                  }
+                });
               } else {
                 reject(err);
               }
@@ -154,18 +162,37 @@ class ArchaeClient {
     this.loadModule(engine, 'engines', this.engines, cb);
   }
 
-  mountEngine(engine) {
+  mountEngine(engine, cb) {
     const engineModule = this.engines[engine];
 
     if (engineModule) {
-      const engineInstance = engineModule();
-      this.engineInstances[engine] = engineInstance;
+      Promise.resolve(engineModule())
+        .then(engineInstance => {
+          this.engineInstances[engine] = engineInstance;
 
-      const engineApi = engineInstance.mount();
-      this.engineApis[engine] = engineApi;
+          Promise.resolve(engineInstance.mount())
+            .then((engineApi = {}) => {
+              this.engineApis[engine] = engineApi;
+
+              cb();
+            })
+            .catch(err => {
+              this.engineApis[engine] = null;
+
+              cb(err);
+            });
+        })
+        .catch(err => {
+          this.engineInstances[engine] = null;
+          this.engineApis[engine] = null;
+
+          cb(err);
+        });
     } else {
       this.engineInstances[engine] = null;
       this.engineApis[engine] = null;
+
+      cb();
     }
   }
 
@@ -173,18 +200,35 @@ class ArchaeClient {
     this.loadModule(plugin, 'plugins', this.plugins, cb);
   }
 
-  mountPlugin(plugin) {
+  mountPlugin(plugin, cb) {
     const pluginModule = this.plugins[plugin];
 
     if (pluginModule) {
-      const pluginInstance = pluginModule(this);
-      this.pluginInstances[plugin] = pluginInstance;
+      Promise.resolve(pluginModule(this))
+        .then(pluginInstance => {
+          this.pluginInstances[plugin] = pluginInstance;
 
-      const pluginApi = pluginInstance.mount();
-      this.pluginApis[plugin] = pluginApi;
+          Promise.resolve(pluginInstance.mount())
+            .then((pluginApi = {}) => {
+              this.pluginApis[plugin] = pluginApi;
+
+              cb();
+            });
+            .catch(err => {
+              cb(err);
+            });
+        })
+        .catch(err => {
+          this.pluginInstances[plugin] = null;
+          this.pluginApis[plugin] = null;
+
+          cb(err);
+        });
     } else {
       this.pluginInstances[plugin] = null;
       this.pluginApis[plugin] = null;
+
+      cb();
     }
   }
 
