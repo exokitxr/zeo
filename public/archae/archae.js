@@ -10,28 +10,33 @@ class ArchaeClient {
 
   requestEngine(engine) {
     return new Promise((accept, reject) => {
-      const id = _makeId();
+      const existingEngine = this.engines[engine]; // XXX make this support object arguments
 
-      this.send({
-        type: 'requestEngine',
-        id: id,
-        engine: engine,
-      });
+      if (existingEngine !== undefined) {
+        const engineApi = this.engineApis[engine];
+        accept(engineApi);
+      } else {
+        const id = _makeId();
 
-      this.waitForId(id)
-        .then(() => {
-          this.loadEngine(engine, err => {
-            if (!err) {
-              this.mountEngine(engine);
+        this.request('requestEngine', {
+          engine,
+        }, err => {
+          if (!err) {
+            this.loadEngine(engine, err => {
+              if (!err) {
+                this.mountEngine(engine);
 
-              const engineApi = this.engineApis[engine];
-              accept(engineApi);
-            } else {
-              reject(err);
-            }
-          });
-        })
-        .catch(reject);
+                const engineApi = this.engineApis[engine];
+                accept(engineApi);
+              } else {
+                reject(err);
+              }
+            });
+          } else {
+            reject(err);
+          }
+        });
+      }
     });
   }
 
@@ -41,41 +46,46 @@ class ArchaeClient {
   }
 
   removeEngine(engine) {
-    const id = _makeId();
-
-    this.send({
-      type: 'removeEngine',
-      id: id,
-      engine: engine,
+    return new Promise((accept, reject) => {
+      this.request('removeEngine', {
+        engine,
+      }, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
     });
-
-    return this.waitForId(id);
   }
 
   requestPlugin(plugin) {
     return new Promise((accept, reject) => {
-      const id = _makeId();
+      const existingPlugin = this.plugins[plugin];
 
-      this.send({
-        type: 'requestPlugin',
-        id: id,
-        plugin: plugin,
-      });
+      if (existingPlugin !== undefined) {
+        const pluginApi = this.pluginApis[plugin];
+        accept(pluginApi);
+      } else {
+        this.request('requestPlugin', {
+          plugin,
+        }, err => {
+          if (!err) {
+            this.loadPlugin(plugin, err => {
+              if (!err) {
+                this.mountPlugin(plugin);
 
-      this.waitForId(id)
-        .then(() => {
-          this.loadPlugin(plugin, err => {
-            if (!err) {
-              this.mountPlugin(plugin);
-
-              const pluginApi = this.pluginApis[plugin];
-              accept(pluginApi);
-            } else {
-              reject(err);
-            }
-          });
-        })
-        .catch(reject);
+                const pluginApi = this.pluginApis[plugin];
+                accept(pluginApi);
+              } else {
+                reject(err);
+              }
+            });
+          } else {
+            reject(err);
+          }
+        });
+      }
     });
   }
 
@@ -85,15 +95,17 @@ class ArchaeClient {
   }
 
   removePlugin(plugin) {
-    const id = _makeId();
-
-    this.send({
-      type: 'removePlugin',
-      id: id,
-      plugin: plugin,
+    return new Promise((accept, reject) => {
+      this.request('removePlugin', {
+        plugin,
+      }, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
     });
-
-    return this.waitForId(id);
   }
 
   waitForId(id) {
@@ -316,6 +328,18 @@ class ArchaeClient {
       });
     });
   } */
+
+  request(method, args, cb) {
+    const id = _makeId();
+
+    this.send({
+      method,
+      args,
+      id: id,
+    });
+
+    this.onceId(id, cb);
+  }
 
   send(o) {
     if (this._connection.readyState === 1) {

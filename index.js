@@ -25,9 +25,11 @@ class ArchaeServer {
     this.plugins = {};
     this.pluginInstances = {};
     this.pluginApis = {};
+
+    this.mountApp();
   }
 
-  requestEngine(engine, opts = {}) {
+  requestEngine(engine, opts = {}) { // XXX implement locking for these
     return new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(engine, 'engines', cb);
@@ -490,7 +492,7 @@ class ArchaeServer {
     }
   }
 
-  listen() {
+  mountApp() {
     const {server, app, wss} = this;
 
     app.use('/', express.static(path.join(__dirname, 'public')));
@@ -522,7 +524,7 @@ class ArchaeServer {
             console.warn(err);
           };
 
-          if (typeof m === 'object' && m && typeof m.type === 'string' && typeof m.id === 'string') {
+          if (typeof m === 'object' && m && typeof m.method === 'string' && ('args' in m) && typeof m.id === 'string') {
             const cb = (err = null, result = null) => {
               if (c.readyState === ws.OPEN) {
                 const e = {
@@ -535,43 +537,74 @@ class ArchaeServer {
               }
             };
 
-            if (m.type === 'requestEngine') {
-              const {engine} = m;
+            const {method, args} = m;
+            if (method === 'requestEngine') {
+              const {engine} = args;
 
               if (_isValidModule(engine)) {
-                this.requestEngine(engine, cb);
+                this.requestEngine(engine)
+                  .then(() => {
+                    cb();
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
               } else {
-                cb('invalid engine spec');
+                const err = new Error('invalid engine spec');
+                cb(err);
               }
-            } else if (m.type === 'removePlugin') {
-              const {engine} = m;
+            } else if (method === 'removeEngine') {
+              const {engine} = args;
 
               if (_isValidModule(engine)) {
-                this.removeEngine(engine, cb);
+                this.removeEngine(engine)
+                  .then(() => {
+                    cb();
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
               } else {
-                cb('invalid engine spec');
+                const err = new Error('invalid engine spec');
+                cb(err);
               }
-            } else if (m.type === 'requestPlugin') {
-              const {plugin} = m;
+            } else if (method === 'requestPlugin') {
+              const {plugin} = args;
 
               if (_isValidModule(plugin)) {
-                this.requestPlugin(plugin, cb);
+                this.requestPlugin(plugin)
+                  .then(() => {
+                    cb();
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
               } else {
-                cb('invalid plugin spec');
+                const err = new Error('invalid plugin spec');
+                cb(err);
               }
-            } else if (m.type === 'removePlugin') {
-              const {plugin} = m;
+            } else if (method === 'removePlugin') {
+              const {plugin} = args;
 
               if (_isValidModule(plugin)) {
-                this.removePlugin(plugin, cb);
+                this.removePlugin(engine)
+                  .then(() => {
+                    cb();
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
               } else {
-                cb('invalid plugin spec');
+                const err = new Error('invalid plugin spec');
+                cb(err);
               }
             } else {
-              cb('invalid message type');
+              const err = new Error('invalid message method: ' + JSON.stringify(method));
+              cb(err);
             }
           } else {
-            cb('invalid message');
+            const err = new Error('invalid message');
+            cb(err);
           }
         });
         c.on('close', () => {
