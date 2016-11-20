@@ -1,4 +1,5 @@
-const POSITION_SPEED = 0.02;
+const POSITION_SPEED = 0.05;
+const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
 const controls = archae => ({
@@ -16,6 +17,7 @@ const controls = archae => ({
           down: false,
           left: false,
           right: false,
+          shift: false,
         };
         this.keys = keys;
 
@@ -24,6 +26,7 @@ const controls = archae => ({
           keys.down = false;
           keys.left = false;
           keys.right = false;
+          keys.shift = false;
         };
 
         const click = () => {
@@ -62,6 +65,9 @@ const controls = archae => ({
               case 68: // D
                 keys.right = true;
                 break;
+              case 16: // shift
+                keys.shift = true;
+                break;
             }
           }
         };
@@ -80,6 +86,9 @@ const controls = archae => ({
               case 68: // D
                 keys.right = false;
                 break;
+              case 16: // shift
+                keys.shift = false;
+                break;
             }
           }
         };
@@ -94,17 +103,18 @@ const controls = archae => ({
           const {keys} = this;
 
           const moveVector = new THREE.Vector3();
+          const speed = keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED;
           if (keys.up) {
-            moveVector.z -= POSITION_SPEED;
+            moveVector.z -= speed;
           }
           if (keys.down) {
-            moveVector.z += POSITION_SPEED;
+            moveVector.z += speed;
           }
           if (keys.left) {
-            moveVector.x -= POSITION_SPEED;
+            moveVector.x -= speed;
           }
           if (keys.right) {
-            moveVector.x += POSITION_SPEED;
+            moveVector.x += speed;
           }
 
           moveVector.applyQuaternion(camera.quaternion);
