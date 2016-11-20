@@ -37,18 +37,14 @@ class ArchaeServer {
           if (!err) {
             const {moduleName: engineName} = result;
 
-            const existingEngineApi = this.engineApis[engineName];
-            if (existingEngineApi !== undefined) {
-              cb(null, existingEngineApi);
+            const existingEngine = this.engines[engineName];
+            if (existingEngine !== undefined) {
+              const engineApi = this.engineApis[engineName];
+              cb(null, engineApi);
             } else {
-              this.loadEngine(engineName, (err, result) => {
+              this.loadEngine(engineName, err => {
                 if (!err) {
-                  const {loadedServer} = result;
-                  if (loadedServer) {
-                    this.mountEngine(engineName);
-                  } else {
-                    this.mountEmptyEngine(engineName);
-                  }
+                  this.mountEngine(engineName);
 
                   const engineApi = this.engineApis[engineName];
                   cb(null, engineApi);
@@ -116,18 +112,14 @@ class ArchaeServer {
           if (!err) {
             const {added, moduleName: pluginName} = result;
 
-            const existingPluginApi = this.pluginApis[pluginName];
-            if (existingPluginApi !== undefined) {
-              cb(null, existingPluginApi);
+            const existingPlugin = this.plugins[pluginName];
+            if (existingPlugin !== undefined) {
+              const pluginApi = this.pluginApis[pluginName];
+              cb(null, pluginApi);
             } else {
-              this.loadPlugin(pluginName, (err, result) => {
+              this.loadPlugin(pluginName, err => {
                 if (!err) {
-                  const {loadedServer} = result;
-                  if (loadedServer) {
-                    this.mountPlugin(pluginName);
-                  } else {
-                    this.mountEmptyPlugin(pluginName);
-                  }
+                  this.mountPlugin(pluginName);
 
                   const pluginApi = this.pluginApis[pluginName];
                   cb(null, pluginApi);
@@ -378,10 +370,7 @@ class ArchaeServer {
           this.engines[engine] = null;
         }
 
-        cb(null, {
-          loadedClient: Boolean(clientFileName),
-          loadedServer: Boolean(serverFileName),
-        });
+        cb();
       } else {
         cb(err);
       }
@@ -391,22 +380,22 @@ class ArchaeServer {
   mountEngine(engine) {
     const engineModule = this.engines[engine];
 
-    const engineOptions = {
-      server: this.server,
-      app: this.app,
-      wss: this.wss,
-      dirname: __dirname,
-    };
-    const engineInstance = engineModule(engineOptions);
-    this.engineInstances[engine] = engineInstance;
+    if (engineModule !== null) {
+      const engineOptions = {
+        server: this.server,
+        app: this.app,
+        wss: this.wss,
+        dirname: __dirname,
+      };
+      const engineInstance = engineModule(engineOptions);
+      this.engineInstances[engine] = engineInstance;
 
-    const engineApi = engineInstance.mount();
-    this.engineApis[engine] = engineApi;
-  }
-
-  mountEmptyEngine(engine) {
-    this.engineInstances[engine] = null;
-    this.engineApis[engine] = null;
+      const engineApi = engineInstance.mount();
+      this.engineApis[engine] = engineApi;
+    } else {
+      this.engineInstances[engine] = null;
+      this.engineApis[engine] = null;
+    }
   }
 
   /* broadcastRequestEngine(engine) {
@@ -463,10 +452,7 @@ class ArchaeServer {
           this.plugins[plugin] = null;
         }
 
-        cb(null, {
-          loadedClient: Boolean(clientFileName),
-          loadedServer: Boolean(serverFileName),
-        });
+        cb();
       } else {
         cb(err);
       }
@@ -475,16 +461,17 @@ class ArchaeServer {
 
   mountPlugin(plugin) {
     const pluginModule = this.plugins[plugin];
-    const pluginInstance = pluginModule();
-    this.pluginInstances[plugin] = pluginInstance;
 
-    const pluginApi = pluginInstance.mount();
-    this.pluginApis[plugin] = pluginApi;
-  }
+    if (pluginModule !== null) {
+      const pluginInstance = pluginModule();
+      this.pluginInstances[plugin] = pluginInstance;
 
-  mountEmptyPlugin(plugin) {
-    this.pluginInstances[plugin] = null;
-    this.pluginApis[plugin] = null;
+      const pluginApi = pluginInstance.mount();
+      this.pluginApis[plugin] = pluginApi;
+    } else {
+      this.pluginInstances[plugin] = null;
+      this.pluginApis[plugin] = null;
+    }
   }
 
   /* broadcastRequestPlugin(plugin) {
