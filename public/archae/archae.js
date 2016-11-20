@@ -9,15 +9,30 @@ class ArchaeClient {
   }
 
   requestEngine(engine) {
-    const id = _makeId();
+    return new Promise((accept, reject) => {
+      const id = _makeId();
 
-    this.send({
-      type: 'requestEngine',
-      id: id,
-      engine: engine,
+      this.send({
+        type: 'requestEngine',
+        id: id,
+        engine: engine,
+      });
+
+      this.waitForId(id)
+        .then(() => {
+          this.loadEngine(engine, err => {
+            if (!err) {
+              this.mountEngine(engine);
+
+              const engineApi = this.engineApis[engine];
+              accept(engineApi);
+            } else {
+              reject(err);
+            }
+          });
+        })
+        .catch(reject);
     });
-
-    return this.waitForId(id);
   }
 
   requestEngines(engines) {
@@ -38,15 +53,30 @@ class ArchaeClient {
   }
 
   requestPlugin(plugin) {
-    const id = _makeId();
+    return new Promise((accept, reject) => {
+      const id = _makeId();
 
-    this.send({
-      type: 'requestPlugin',
-      id: id,
-      plugin: plugin,
+      this.send({
+        type: 'requestPlugin',
+        id: id,
+        plugin: plugin,
+      });
+
+      this.waitForId(id)
+        .then(() => {
+          this.loadPlugin(plugin, err => {
+            if (!err) {
+              this.mountPlugin(plugin);
+
+              const pluginApi = this.pluginApis[plugin];
+              accept(pluginApi);
+            } else {
+              reject(err);
+            }
+          });
+        })
+        .catch(reject);
     });
-
-    return this.waitForId(id);
   }
 
   requestPlugins(plugins) {
@@ -79,12 +109,12 @@ class ArchaeClient {
   }
 
   bootstrap() {
-    this.mountAll();
+    // this.mountAll();
     this.connect();
-    this.listen();
+    // this.listen();
   }
 
-  loadModules(modules, cb) {
+  /* loadModules(modules, cb) {
     const {engines, plugins} = modules;
 
     if ((engines.length + plugins.length) > 0) {
@@ -115,7 +145,7 @@ class ArchaeClient {
     } else {
       cb();
     }
-  }
+  } */
 
   loadModule(module, type, exports, cb) {
     if (!exports[module]) {
@@ -155,43 +185,53 @@ class ArchaeClient {
     this.loadModule(engine, 'engines', this.engines, cb);
   }
 
-  loadPlugin(plugin, cb) {
-    this.loadModule(plugin, 'plugins', this.plugins, cb);
-  }
-
-  mountEngines(engines) {
+  /* mountEngines(engines) {
     engines.forEach(engine => {
       this.mountEngine(engine);
     });
-  }
+  } */
 
   mountEngine(engine) {
     const engineModule = this.engines[engine];
 
-    const engineInstance = engineModule();
-    this.engineInstances[engine] = engineInstance;
+    if (engineModule) {
+      const engineInstance = engineModule();
+      this.engineInstances[engine] = engineInstance;
 
-    const engineApi = engineInstance.mount();
-    this.engineApis[engine] = engineApi;
+      const engineApi = engineInstance.mount();
+      this.engineApis[engine] = engineApi;
+    } else {
+      this.engineInstances[engine] = null;
+      this.engineApis[engine] = null;
+    }
   }
 
-  mountPlugins(plugins) {
+  /* mountPlugins(plugins) {
     plugins.forEach(plugin => {
       this.mountPlugin(plugin);
     });
+  } */
+
+  loadPlugin(plugin, cb) {
+    this.loadModule(plugin, 'plugins', this.plugins, cb);
   }
 
   mountPlugin(plugin) {
     const pluginModule = this.plugins[plugin];
 
-    const pluginInstance = pluginModule();
-    this.pluginInstances[plugin] = pluginInstance;
+    if (pluginModule) {
+      const pluginInstance = pluginModule();
+      this.pluginInstances[plugin] = pluginInstance;
 
-    const pluginApi = pluginInstance.mount();
-    this.pluginApis[plugin] = pluginApi;
+      const pluginApi = pluginInstance.mount();
+      this.pluginApis[plugin] = pluginApi;
+    } else {
+      this.pluginInstances[plugin] = null;
+      this.pluginApis[plugin] = null;
+    }
   }
 
-  mountAll() {
+  /* mountAll() {
     fetch('/archae/modules.json')
       .then(res => {
         res.json()
@@ -214,7 +254,7 @@ class ArchaeClient {
       .catch(err => {
         console.warn(err);
       });
-  }
+  } */
 
   connect() {
     const connection = (() => {
@@ -250,7 +290,7 @@ class ArchaeClient {
     this._listeners = [];
   }
 
-  listen() {
+  /* listen() {
     this.on('requestEngine', ({engine}) => {
       this.loadEngine(engine, (err, result) => {
         if (!err) {
@@ -275,7 +315,7 @@ class ArchaeClient {
         }
       });
     });
-  }
+  } */
 
   send(o) {
     if (this._connection.readyState === 1) {
