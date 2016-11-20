@@ -121,11 +121,6 @@ const controllers = archae => ({
         this.left = controllers[0];
         this.right = controllers[1];
 
-        const light = new THREE.DirectionalLight(0xffffff, 0.5);
-        light.position.set(0, 10, 0);
-        light.lookAt(new THREE.Vector3(0, 0, 0));
-        scene.add(light);
-
         let mode = 'move';
         const keydown = e => {
           if (window.document.pointerLockElement) {
