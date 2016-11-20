@@ -7,6 +7,8 @@ const ws = require('ws');
 const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
 
+const nameSymbol = Symbol();
+
 class ArchaeServer {
   constructor({server, app, wss} = {}) {
     server = server || http.createServer();
@@ -30,9 +32,7 @@ class ArchaeServer {
   }
 
   requestEngine(engine, opts = {}) { // XXX implement locking for these
-    let name = null;
-
-    const result = new Promise((accept, reject) => {
+    return new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(engine, 'engines', cb);
       };
@@ -93,9 +93,6 @@ class ArchaeServer {
         });
       }
     });
-    result.getName = () => name;
-
-    return result;
   }
 
   requestEngines(engines, opts = {}) {
@@ -116,9 +113,7 @@ class ArchaeServer {
   }
 
   requestPlugin(plugin, opts = {}) {
-    let name = null;
-
-    const result = new Promise((accept, reject) => {
+    return new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(plugin, 'plugins', cb);
       };
@@ -179,9 +174,6 @@ class ArchaeServer {
         });
       }
     });
-    result.getName = () => name;
-
-    return result;
   }
 
   requestPlugins(plugins, opts = {}) {
@@ -364,7 +356,12 @@ class ArchaeServer {
           this.engineInstances[engine] = engineInstance;
 
           Promise.resolve(engineInstance.mount())
-            .then((engineApi = {}) => {
+            .then(engineApi => {
+              if (typeof engineApi !== 'object' || engineApi === null) {
+                engineApi = {};
+              }
+              engineApi[nameSymbol] = engine;
+
               this.engineApis[engine] = engineApi;
 
               cb();
@@ -418,7 +415,12 @@ class ArchaeServer {
           this.pluginInstances[plugin] = pluginInstance;
 
           Promise.resolve(pluginInstance.mount())
-            .then((pluginApi = {}) => {
+            .then(pluginApi => {
+              if (typeof pluginApi !== 'object' || pluginApi === null) {
+                pluginApi = {};
+              }
+              pluginApi[nameSymbol] = plugin;
+
               this.pluginApis[plugin] = pluginApi;
 
               cb();
@@ -441,14 +443,18 @@ class ArchaeServer {
     }
   }
 
-  broadcast(message) {
+  getName(moduleApi) {
+    return moduleApi[nameSymbol] || null;
+  }
+
+  /* broadcast(message) {
     const messageString = JSON.stringify(message);
 
     for (let i = 0; i < this.connections.length; i++) {
       const connection = this.connections[i];
       connection.send(messageString);
     }
-  }
+  } */
 
   mountApp() {
     const {server, app, wss} = this;
@@ -500,10 +506,9 @@ class ArchaeServer {
               const {engine} = args;
 
               if (_isValidModule(engine)) {
-                const requestEnginePromise = this.requestEngine(engine);
-                requestEnginePromise
+                this.requestEngine(engine);
                   .then(engineApi => {
-                    const engineName = requestEnginePromise.getName();
+                    const engineName = this.getName(engineApi);
                     cb(null, {
                       engineName,
                     });
@@ -534,10 +539,9 @@ class ArchaeServer {
               const {plugin} = args;
 
               if (_isValidModule(plugin)) {
-                const requestPluginPromise = this.requestPlugin(plugin);
-                requestPluginPromise
-                  .then(() => {
-                    const pluginName = requestPluginPromise.getName()
+                this.requestPlugin(plugin);
+                  .then(pluginApi => {
+                    const pluginName = this.getName(pluginApi);
                     cb(null, {
                       pluginName,
                     });

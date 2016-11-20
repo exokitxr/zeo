@@ -14,12 +14,15 @@ const client = archae => ({
       const _requestPlugin = pluginSpec => new Promise((accept, reject) => {
         archae.requestPlugin(pluginSpec)
           .then(plugin => {
-            // XXX register the plugin here
+            const pluginName = archae.getName(plugin);
+            plugins[pluginName] = plugin;
 
             accept();
           })
           .catch(reject);
       });
+
+      // XXX perform update cycle for plugins here
 
       return {
         scene,

@@ -1,3 +1,5 @@
+const nameSymbol = Symbol();
+
 class ArchaeClient {
   constructor() {
     this.engines = {};
@@ -171,7 +173,12 @@ class ArchaeClient {
           this.engineInstances[engine] = engineInstance;
 
           Promise.resolve(engineInstance.mount())
-            .then((engineApi = {}) => {
+            .then(engineApi => {
+              if (typeof engineApi !== 'object' || engineApi === null) {
+                engineApi = {};
+              }
+              engineApi[nameSymbol] = engine;
+
               this.engineApis[engine] = engineApi;
 
               cb();
@@ -209,7 +216,12 @@ class ArchaeClient {
           this.pluginInstances[plugin] = pluginInstance;
 
           Promise.resolve(pluginInstance.mount())
-            .then((pluginApi = {}) => {
+            .then(pluginApi => {
+              if (typeof pluginApi !== 'object' || pluginApi === null) {
+                pluginApi = {};
+              }
+              pluginApi[nameSymbol] = plugin;
+
               this.pluginApis[plugin] = pluginApi;
 
               cb();
@@ -230,6 +242,10 @@ class ArchaeClient {
 
       cb();
     }
+  }
+
+  getName(moduleApi) {
+    return moduleApi[nameSymbol] || null'
   }
 
   connect() {
