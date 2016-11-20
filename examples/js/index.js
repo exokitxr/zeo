@@ -75,7 +75,7 @@ archae.requestEngines([
         world.requestMods([
           '/extra/plugins/zeo/controls',
           '/extra/plugins/zeo/controllers',
-          '/extra/plugins/zeo/hmd',
+          // '/extra/plugins/zeo/hmd',
           '/extra/plugins/zeo/ocean',
         ])
           .then(() => {
