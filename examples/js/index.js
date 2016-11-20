@@ -52,7 +52,8 @@
 // main
 
 archae.requestPlugins([
-  '/core/plugins/todo',
+  // '/core/plugins/todo',
+  '/core/plugins/zeo',
 ])
   .then(result => {
     console.log('added client plugins', result);
