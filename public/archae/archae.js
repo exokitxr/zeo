@@ -9,15 +9,37 @@ class ArchaeClient {
   }
 
   requestEngine(engine) {
-    const id = _makeId();
+    return new Promise((accept, reject) => {
+      const existingEngine = this.engines[engine]; // XXX make this support object arguments
 
-    this.send({
-      type: 'requestEngine',
-      id: id,
-      engine: engine,
+      if (existingEngine !== undefined) {
+        const engineApi = this.engineApis[engine];
+        accept(engineApi);
+      } else {
+        const id = _makeId();
+
+        this.request('requestEngine', {
+          engine,
+        }, (err, result) => {
+          if (!err) {
+            const {engineName} = result;
+
+            this.loadEngine(engineName, err => {
+              if (!err) {
+                this.mountEngine(engineName);
+
+                const engineApi = this.engineApis[engineName];
+                accept(engineApi);
+              } else {
+                reject(err);
+              }
+            });
+          } else {
+            reject(err);
+          }
+        });
+      }
     });
-
-    return this.waitForId(id);
   }
 
   requestEngines(engines) {
@@ -26,49 +48,10 @@ class ArchaeClient {
   }
 
   removeEngine(engine) {
-    const id = _makeId();
-
-    this.send({
-      type: 'removeEngine',
-      id: id,
-      engine: engine,
-    });
-
-    return this.waitForId(id);
-  }
-
-  requestPlugin(plugin) {
-    const id = _makeId();
-
-    this.send({
-      type: 'requestPlugin',
-      id: id,
-      plugin: plugin,
-    });
-
-    return this.waitForId(id);
-  }
-
-  requestPlugins(plugins) {
-    const requestPluginPromises = plugins.map(plugin => this.requestPlugin(plugin));
-    return Promise.all(requestPluginPromises);
-  }
-
-  removePlugin(plugin) {
-    const id = _makeId();
-
-    this.send({
-      type: 'removePlugin',
-      id: id,
-      plugin: plugin,
-    });
-
-    return this.waitForId(id);
-  }
-
-  waitForId(id) {
     return new Promise((accept, reject) => {
-      this.onceId(id, (err, result) => {
+      this.request('removeEngine', {
+        engine,
+      }, err => {
         if (!err) {
           accept();
         } else {
@@ -78,13 +61,76 @@ class ArchaeClient {
     });
   }
 
-  bootstrap() {
-    this.mountAll();
-    this.connect();
-    this.listen();
+  requestPlugin(plugin) {
+    return new Promise((accept, reject) => {
+      const existingPlugin = this.plugins[plugin];
+
+      if (existingPlugin !== undefined) {
+        const pluginApi = this.pluginApis[plugin];
+        accept(pluginApi);
+      } else {
+        this.request('requestPlugin', {
+          plugin,
+        }, (err, result) => {
+          if (!err) {
+            const {pluginName} = result;
+
+            this.loadPlugin(pluginName, err => {
+              if (!err) {
+                this.mountPlugin(pluginName);
+
+                const pluginApi = this.pluginApis[pluginName];
+                accept(pluginApi);
+              } else {
+                reject(err);
+              }
+            });
+          } else {
+            reject(err);
+          }
+        });
+      }
+    });
   }
 
-  loadModules(modules, cb) {
+  requestPlugins(plugins) {
+    const requestPluginPromises = plugins.map(plugin => this.requestPlugin(plugin));
+    return Promise.all(requestPluginPromises);
+  }
+
+  removePlugin(plugin) {
+    return new Promise((accept, reject) => {
+      this.request('removePlugin', {
+        plugin,
+      }, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    });
+  }
+
+  /* waitForId(id) {
+    return new Promise((accept, reject) => {
+      this.onceId(id, (err, result) => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    });
+  } */
+
+  bootstrap() {
+    // this.mountAll();
+    this.connect();
+    // this.listen();
+  }
+
+  /* loadModules(modules, cb) {
     const {engines, plugins} = modules;
 
     if ((engines.length + plugins.length) > 0) {
@@ -115,7 +161,7 @@ class ArchaeClient {
     } else {
       cb();
     }
-  }
+  } */
 
   loadModule(module, type, exports, cb) {
     if (!exports[module]) {
@@ -135,7 +181,7 @@ class ArchaeClient {
         });
         cleanup();
       };
-      script.onerror = err => {
+      script.onerror = err => { // XXX handle the no client script case
         cb(err);
         cleanup();
       };
@@ -155,45 +201,53 @@ class ArchaeClient {
     this.loadModule(engine, 'engines', this.engines, cb);
   }
 
-  loadPlugin(plugin, cb) {
-    this.loadModule(plugin, 'plugins', this.plugins, cb);
-  }
-
-  mountEngines(engines) {
+  /* mountEngines(engines) {
     engines.forEach(engine => {
       this.mountEngine(engine);
     });
-  }
+  } */
 
   mountEngine(engine) {
     const engineModule = this.engines[engine];
 
-    const engineInstance = engineModule();
-    this.engineInstances[engine] = engineInstance;
+    if (engineModule) {
+      const engineInstance = engineModule();
+      this.engineInstances[engine] = engineInstance;
 
-    const engineApi = engineInstance.mount();
-    this.engineApis[engine] = engineApi;
+      const engineApi = engineInstance.mount();
+      this.engineApis[engine] = engineApi;
+    } else {
+      this.engineInstances[engine] = null;
+      this.engineApis[engine] = null;
+    }
   }
 
-  mountPlugins(plugins) {
+  /* mountPlugins(plugins) {
     plugins.forEach(plugin => {
       this.mountPlugin(plugin);
     });
+  } */
+
+  loadPlugin(plugin, cb) {
+    this.loadModule(plugin, 'plugins', this.plugins, cb);
   }
 
   mountPlugin(plugin) {
     const pluginModule = this.plugins[plugin];
 
-    const pluginInstance = pluginModule({
-      engines: this.engineApis,
-    });
-    this.pluginInstances[plugin] = pluginInstance;
+    if (pluginModule) {
+      const pluginInstance = pluginModule(this);
+      this.pluginInstances[plugin] = pluginInstance;
 
-    const pluginApi = pluginInstance.mount();
-    this.pluginApis[plugin] = pluginApi;
+      const pluginApi = pluginInstance.mount();
+      this.pluginApis[plugin] = pluginApi;
+    } else {
+      this.pluginInstances[plugin] = null;
+      this.pluginApis[plugin] = null;
+    }
   }
 
-  mountAll() {
+  /* mountAll() {
     fetch('/archae/modules.json')
       .then(res => {
         res.json()
@@ -216,7 +270,7 @@ class ArchaeClient {
       .catch(err => {
         console.warn(err);
       });
-  }
+  } */
 
   connect() {
     const connection = (() => {
@@ -252,7 +306,7 @@ class ArchaeClient {
     this._listeners = [];
   }
 
-  listen() {
+  /* listen() {
     this.on('requestEngine', ({engine}) => {
       this.loadEngine(engine, (err, result) => {
         if (!err) {
@@ -276,6 +330,24 @@ class ArchaeClient {
           console.warn(err);
         }
       });
+    });
+  } */
+
+  request(method, args, cb) {
+    const id = _makeId();
+
+    this.send({
+      method,
+      args,
+      id: id,
+    });
+
+    this.onceId(id, (err, result) => {
+      if (!err) {
+        cb(null, result);
+      } else {
+        cb(err);
+      }
     });
   }
 

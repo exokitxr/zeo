@@ -25,31 +25,37 @@ class ArchaeServer {
     this.plugins = {};
     this.pluginInstances = {};
     this.pluginApis = {};
+
+    this.mountApp();
   }
 
-  requestEngine(engine, opts = {}) {
-    return new Promise((accept, reject) => {
+  requestEngine(engine, opts = {}) { // XXX implement locking for these
+    let name = null;
+
+    const result = new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(engine, 'engines', cb);
       };
       const _add = cb => {
         _addModule(engine, 'engines', (err, result) => {
           if (!err) {
-            cb();
+            const {moduleName: engineName} = result;
 
-            const {added, moduleName: engineName} = result;
-            if (added) {
-              this.loadEngine(engineName, (err, result) => {
+            name = engineName;
+
+            const existingEngine = this.engines[engineName];
+            if (existingEngine !== undefined) {
+              const engineApi = this.engineApis[engineName];
+              cb(null, engineApi);
+            } else {
+              this.loadEngine(engineName, err => {
                 if (!err) {
-                  const {loadedClient, loadedServer} = result;
-                  if (loadedClient) {
-                    this.broadcastRequestEngine(engineName);
-                  }
-                  if (loadedServer) {
-                    this.mountEngine(engineName);
-                  }
+                  this.mountEngine(engineName);
+
+                  const engineApi = this.engineApis[engineName];
+                  cb(null, engineApi);
                 } else {
-                  console.warn(err);
+                  cb(err);
                 }
               });
             }
@@ -62,9 +68,9 @@ class ArchaeServer {
       if (opts.force) {
         _remove(err => {
           if (!err) {
-            _add(err => {
+            _add((err, result) => {
               if (!err) {
-                accept();
+                accept(result);
               } else {
                 reject(err);
               }
@@ -74,15 +80,18 @@ class ArchaeServer {
           }
         });
       } else {
-        _add(err => {
+        _add((err, result) => {
           if (!err) {
-            accept(err);
+            accept(result);
           } else {
             reject(err);
           }
         });
       }
     });
+    result.getName = () => name;
+
+    return result;
   }
 
   requestEngines(engines, opts = {}) {
@@ -103,28 +112,32 @@ class ArchaeServer {
   }
 
   requestPlugin(plugin, opts = {}) {
-    return new Promise((accept, reject) => {
+    let name = null;
+
+    const result = new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(plugin, 'plugins', cb);
       };
       const _add = cb => {
         _addModule(plugin, 'plugins', (err, result) => {
           if (!err) {
-            accept();
-
             const {added, moduleName: pluginName} = result;
-            if (added) {
-              this.loadPlugin(pluginName, (err, result) => {
+
+            name = pluginName;
+
+            const existingPlugin = this.plugins[pluginName];
+            if (existingPlugin !== undefined) {
+              const pluginApi = this.pluginApis[pluginName];
+              cb(null, pluginApi);
+            } else {
+              this.loadPlugin(pluginName, err => {
                 if (!err) {
-                  const {loadedClient, loadedServer} = result;
-                  if (loadedClient) {
-                    this.broadcastRequestPlugin(pluginName);
-                  }
-                  if (loadedServer) {
-                    this.mountPlugin(pluginName);
-                  }
+                  this.mountPlugin(pluginName);
+
+                  const pluginApi = this.pluginApis[pluginName];
+                  cb(null, pluginApi);
                 } else {
-                  console.warn(err);
+                  cb(err);
                 }
               });
             }
@@ -158,6 +171,9 @@ class ArchaeServer {
         });
       }
     });
+    result.getName = () => name;
+
+    return result;
   }
 
   requestPlugins(plugins, opts = {}) {
@@ -305,7 +321,7 @@ class ArchaeServer {
     });
   }
 
-  loadAll(cb) {
+  /* loadAll(cb) {
     this.getServerModules((err, modules) => {
       if (!err) {
         const missingEngines = modules.engines.filter(engine => !(engine in this.engines));
@@ -355,7 +371,7 @@ class ArchaeServer {
         cb(err);
       }
     });
-  }
+  } */
 
   loadEngine(engine, cb) {
     fs.readFile(path.join(__dirname, 'engines', 'node_modules', engine, 'package.json'), 'utf8', (err, s) => {
@@ -366,12 +382,11 @@ class ArchaeServer {
           const engineModule = require(path.join(__dirname, 'engines', 'node_modules', engine, serverFileName));
 
           this.engines[engine] = engineModule;
+        } else {
+          this.engines[engine] = null;
         }
 
-        cb(null, {
-          loadedClient: Boolean(clientFileName),
-          loadedServer: Boolean(serverFileName),
-        });
+        cb();
       } else {
         cb(err);
       }
@@ -381,27 +396,35 @@ class ArchaeServer {
   mountEngine(engine) {
     const engineModule = this.engines[engine];
 
-    const engineOptions = {
-      server: this.server,
-      app: this.app,
-      wss: this.wss,
-      dirname: __dirname,
-    };
-    const engineInstance = engineModule(engineOptions);
-    this.engineInstances[engine] = engineInstance;
+    if (engineModule !== null) {
+      const engineOptions = {
+        server: this.server,
+        app: this.app,
+        wss: this.wss,
+        dirname: __dirname,
+      };
+      const engineInstance = engineModule(engineOptions);
+      this.engineInstances[engine] = engineInstance;
 
-    const engineApi = engineInstance.mount();
-    this.engineApis[engine] = engineApi;
+      let engineApi = engineInstance.mount();
+      if (engineApi === undefined) {
+        engineApi = {};
+      }
+      this.engineApis[engine] = engineApi;
+    } else {
+      this.engineInstances[engine] = null;
+      this.engineApis[engine] = null;
+    }
   }
 
-  broadcastRequestEngine(engine) {
+  /* broadcastRequestEngine(engine) {
     this.broadcast({
       type: 'requestEngine',
       engine: engine,
     });
-  }
+  } */
 
-  loadPlugins(plugins, cb) {
+  /* loadPlugins(plugins, cb) {
     const _loadAll = cb => {
       if (plugins.length > 0) {
         let pending = plugins.length;
@@ -433,7 +456,7 @@ class ArchaeServer {
         cb(err);
       }
     });
-  }
+  } */
 
   loadPlugin(plugin, cb) {
     fs.readFile(path.join(__dirname, 'plugins', 'node_modules', plugin, 'package.json'), 'utf8', (err, s) => {
@@ -444,12 +467,11 @@ class ArchaeServer {
           const pluginModule = require(path.join(__dirname, 'plugins', 'node_modules', plugin, serverFileName));
 
           this.plugins[plugin] = pluginModule;
+        } else {
+          this.plugins[plugin] = null;
         }
 
-        cb(null, {
-          loadedClient: Boolean(clientFileName),
-          loadedServer: Boolean(serverFileName),
-        });
+        cb();
       } else {
         cb(err);
       }
@@ -459,22 +481,27 @@ class ArchaeServer {
   mountPlugin(plugin) {
     const pluginModule = this.plugins[plugin];
 
-    const pluginOptions = {
-      engines: this.engineApis,
-    };
-    const pluginInstance = pluginModule(pluginOptions);
-    this.pluginInstances[plugin] = pluginInstance;
+    if (pluginModule !== null) {
+      const pluginInstance = pluginModule(this);
+      this.pluginInstances[plugin] = pluginInstance;
 
-    const pluginApi = pluginInstance.mount();
-    this.pluginApis[plugin] = pluginApi;
+      let pluginApi = pluginInstance.mount();
+      if (pluginApi === undefined) {
+        pluginApi = {};
+      }
+      this.pluginApis[plugin] = pluginApi;
+    } else {
+      this.pluginInstances[plugin] = null;
+      this.pluginApis[plugin] = null;
+    }
   }
 
-  broadcastRequestPlugin(plugin) {
+  /* broadcastRequestPlugin(plugin) {
     this.broadcast({
       type: 'requestPlugin',
       plugin: plugin,
     });
-  }
+  } */
 
   broadcast(message) {
     const messageString = JSON.stringify(message);
@@ -485,105 +512,134 @@ class ArchaeServer {
     }
   }
 
-  listen(cb) {
+  mountApp() {
     const {server, app, wss} = this;
 
-    const {_options: options} = this;
+    app.use('/', express.static(path.join(__dirname, 'public')));
+    app.use('/archae/modules.json', (req, res, next) => {
+      this.getClientModules((err, modules) => {
+        if (!err) {
+          res.json(modules);
+        } else {
+          res.status(500);
+          res.send(err.stack);
+        }
+      });
+    });
+    app.use('/archae/engines', express.static(path.join(__dirname, 'engines', 'build')));
+    app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
+    server.on('request', app);
 
-    this.loadAll(err => {
-      if (!err) {
-        app.use('/', express.static(path.join(__dirname, 'public')));
-        app.use('/archae/modules.json', (req, res, next) => {
-          this.getClientModules((err, modules) => {
-            if (!err) {
-              res.json(modules);
-            } else {
-              res.status(500);
-              res.send(err.stack);
-            }
-          });
-        });
-        app.use('/archae/engines', express.static(path.join(__dirname, 'engines', 'build')));
-        app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
-        server.on('request', app);
+    wss.on('connection', c => {
+      const {url} = c.upgradeReq;
+      if (url === '/archae/ws') {
+        console.log('connection open');
 
-        wss.on('connection', c => {
-          const {url} = c.upgradeReq;
-          if (url === '/archae/ws') {
-            console.log('connection open');
+        this.connections.push(c);
 
-            this.connections.push(c);
+        c.on('message', s => {
+          const m = JSON.parse(s);
 
-            c.on('message', s => {
-              const m = JSON.parse(s);
+          const cb = err => {
+            console.warn(err);
+          };
 
-              const cb = err => {
-                console.warn(err);
-              };
-
-              if (typeof m === 'object' && m && typeof m.type === 'string' && typeof m.id === 'string') {
-                const cb = (err = null, result = null) => {
-                  if (c.readyState === ws.OPEN) {
-                    const e = {
-                      id: m.id,
-                      error: err,
-                      result: result,
-                    };
-                    const es = JSON.stringify(e);
-                    c.send(es);
-                  }
+          if (typeof m === 'object' && m && typeof m.method === 'string' && ('args' in m) && typeof m.id === 'string') {
+            const cb = (err = null, result = null) => {
+              if (c.readyState === ws.OPEN) {
+                const e = {
+                  id: m.id,
+                  error: err,
+                  result: result,
                 };
-
-                if (m.type === 'requestEngine') {
-                  const {engine} = m;
-
-                  if (_isValidModule(engine)) {
-                    this.requestEngine(engine, cb);
-                  } else {
-                    cb('invalid engine spec');
-                  }
-                } else if (m.type === 'removePlugin') {
-                  const {engine} = m;
-
-                  if (_isValidModule(engine)) {
-                    this.removeEngine(engine, cb);
-                  } else {
-                    cb('invalid engine spec');
-                  }
-                } else if (m.type === 'requestPlugin') {
-                  const {plugin} = m;
-
-                  if (_isValidModule(plugin)) {
-                    this.requestPlugin(plugin, cb);
-                  } else {
-                    cb('invalid plugin spec');
-                  }
-                } else if (m.type === 'removePlugin') {
-                  const {plugin} = m;
-
-                  if (_isValidModule(plugin)) {
-                    this.removePlugin(plugin, cb);
-                  } else {
-                    cb('invalid plugin spec');
-                  }
-                } else {
-                  cb('invalid message type');
-                }
-              } else {
-                cb('invalid message');
+                const es = JSON.stringify(e);
+                c.send(es);
               }
-            });
-            c.on('close', () => {
-              console.log('connection close');
+            };
 
-              this.connections.splice(this.connections.indexOf(c), 1);
-            });
+            const {method, args} = m;
+            if (method === 'requestEngine') {
+              const {engine} = args;
+
+              if (_isValidModule(engine)) {
+                const requestEnginePromise = this.requestEngine(engine);
+                requestEnginePromise
+                  .then(engineApi => {
+                    const engineName = requestEnginePromise.getName();
+                    cb(null, {
+                      engineName,
+                    });
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
+              } else {
+                const err = new Error('invalid engine spec');
+                cb(err);
+              }
+            } else if (method === 'removeEngine') {
+              const {engine} = args;
+
+              if (_isValidModule(engine)) {
+                this.removeEngine(engine)
+                  .then(() => {
+                    cb();
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
+              } else {
+                const err = new Error('invalid engine spec');
+                cb(err);
+              }
+            } else if (method === 'requestPlugin') {
+              const {plugin} = args;
+
+              if (_isValidModule(plugin)) {
+                const requestPluginPromise = this.requestPlugin(plugin);
+                requestPluginPromise
+                  .then(() => {
+                    const pluginName = requestPluginPromise.getName()
+                    cb(null, {
+                      pluginName,
+                    });
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
+              } else {
+                const err = new Error('invalid plugin spec');
+                cb(err);
+              }
+            } else if (method === 'removePlugin') {
+              const {plugin} = args;
+
+              if (_isValidModule(plugin)) {
+                this.removePlugin(engine)
+                  .then(() => {
+                    cb();
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
+              } else {
+                const err = new Error('invalid plugin spec');
+                cb(err);
+              }
+            } else {
+              const err = new Error('invalid message method: ' + JSON.stringify(method));
+              cb(err);
+            }
+          } else {
+            const err = new Error('invalid message');
+            cb(err);
           }
         });
+        c.on('close', () => {
+          console.log('connection close');
 
-        cb();
-      } else {
-        cb(err);
+          this.connections.splice(this.connections.indexOf(c), 1);
+        });
       }
     });
   }
@@ -815,7 +871,6 @@ const _addModule = (module, type, cb) => {
                       _buildModule(packageJson, type, err => {
                         if (!err) {
                           cb(null, {
-                            added: true,
                             moduleName,
                           });
                         } else {
@@ -824,7 +879,6 @@ const _addModule = (module, type, cb) => {
                       });
                     } else {
                       cb(null, {
-                        added: true,
                         moduleName,
                       });
                     }
@@ -841,7 +895,6 @@ const _addModule = (module, type, cb) => {
                       _buildModule(packageJson, type, err => {
                         if (!err) {
                           cb(null, {
-                            added: true,
                             moduleName,
                           });
                         } else {
@@ -850,7 +903,6 @@ const _addModule = (module, type, cb) => {
                       });
                     } else {
                       cb(null, {
-                        added: true,
                         moduleName,
                       });
                     }
@@ -864,7 +916,7 @@ const _addModule = (module, type, cb) => {
               }
             } else {
               cb(null, {
-                added: false,
+                moduleName,
               });
             }
           });
