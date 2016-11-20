@@ -112,56 +112,9 @@ class ArchaeClient {
     });
   }
 
-  /* waitForId(id) {
-    return new Promise((accept, reject) => {
-      this.onceId(id, (err, result) => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    });
-  } */
-
   bootstrap() {
-    // this.mountAll();
     this.connect();
-    // this.listen();
   }
-
-  /* loadModules(modules, cb) {
-    const {engines, plugins} = modules;
-
-    if ((engines.length + plugins.length) > 0) {
-      let pending = engines.length + plugins.length;
-      const pend = () => {
-        if (--pending === 0) {
-          console.log('all modules loaded');
-
-          cb();
-        }
-      };
-      const loaded = err => {
-        if (err) {
-          console.warn(err);
-        }
-
-        pend();
-      };
-
-      const _load = (modules, type, exports, cb) => {
-        modules.forEach(module => {
-          this.loadModule(module, type, exports, cb);
-        });
-      };
-
-      _load(engines, 'engines', this.engines, loaded);
-      _load(plugins, 'plugins', this.plugins, loaded);
-    } else {
-      cb();
-    }
-  } */
 
   loadModule(module, type, exports, cb) {
     if (!exports[module]) {
@@ -201,12 +154,6 @@ class ArchaeClient {
     this.loadModule(engine, 'engines', this.engines, cb);
   }
 
-  /* mountEngines(engines) {
-    engines.forEach(engine => {
-      this.mountEngine(engine);
-    });
-  } */
-
   mountEngine(engine) {
     const engineModule = this.engines[engine];
 
@@ -221,12 +168,6 @@ class ArchaeClient {
       this.engineApis[engine] = null;
     }
   }
-
-  /* mountPlugins(plugins) {
-    plugins.forEach(plugin => {
-      this.mountPlugin(plugin);
-    });
-  } */
 
   loadPlugin(plugin, cb) {
     this.loadModule(plugin, 'plugins', this.plugins, cb);
@@ -246,31 +187,6 @@ class ArchaeClient {
       this.pluginApis[plugin] = null;
     }
   }
-
-  /* mountAll() {
-    fetch('/archae/modules.json')
-      .then(res => {
-        res.json()
-          .then(modules => {
-            this.loadModules(modules, err => {
-              if (err) {
-                console.warn(err);
-              }
-
-              this.mountEngines(modules.engines);
-              this.mountPlugins(modules.plugins);
-
-              console.log('done mounting');
-            });
-          })
-          .catch(err => {
-            console.warn(err);
-          });
-      })
-      .catch(err => {
-        console.warn(err);
-      });
-  } */
 
   connect() {
     const connection = (() => {
@@ -305,33 +221,6 @@ class ArchaeClient {
     this._queue = [];
     this._listeners = [];
   }
-
-  /* listen() {
-    this.on('requestEngine', ({engine}) => {
-      this.loadEngine(engine, (err, result) => {
-        if (!err) {
-          const {loaded} = result;
-          if (loaded) {
-            this.mountEngine(engine);
-          }
-        } else {
-          console.warn(err);
-        }
-      });
-    });
-    this.on('requestPlugin', ({plugin}) => {
-      this.loadPlugin(plugin, (err, result) => {
-        if (!err) {
-          const {loaded} = result;
-          if (loaded) {
-            this.mountPlugin(plugin);
-          }
-        } else {
-          console.warn(err);
-        }
-      });
-    });
-  } */
 
   request(method, args, cb) {
     const id = _makeId();

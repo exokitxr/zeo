@@ -417,47 +417,6 @@ class ArchaeServer {
     }
   }
 
-  /* broadcastRequestEngine(engine) {
-    this.broadcast({
-      type: 'requestEngine',
-      engine: engine,
-    });
-  } */
-
-  /* loadPlugins(plugins, cb) {
-    const _loadAll = cb => {
-      if (plugins.length > 0) {
-        let pending = plugins.length;
-        const pend = () => {
-          if (--pending === 0) {
-            cb();
-          }
-        }
-
-        plugins.forEach(plugin => {
-          this.loadPlugin(plugin, pend);
-        });
-      } else {
-        cb();
-      }
-    };
-    const _mountAll = () => {
-      plugins.forEach(plugin => {
-        this.mountPlugin(plugin);
-      });
-    };
-
-    _loadAll(err => {
-      if (!err) {
-        _mountAll();
-
-        cb();
-      } else {
-        cb(err);
-      }
-    });
-  } */
-
   loadPlugin(plugin, cb) {
     fs.readFile(path.join(__dirname, 'plugins', 'node_modules', plugin, 'package.json'), 'utf8', (err, s) => {
       if (!err) {
@@ -495,13 +454,6 @@ class ArchaeServer {
       this.pluginApis[plugin] = null;
     }
   }
-
-  /* broadcastRequestPlugin(plugin) {
-    this.broadcast({
-      type: 'requestPlugin',
-      plugin: plugin,
-    });
-  } */
 
   broadcast(message) {
     const messageString = JSON.stringify(message);
