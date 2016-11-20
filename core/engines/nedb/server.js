@@ -50,8 +50,10 @@ class Subscription {
   }
 }
 
-const server = ({wss, dirname}) => ({
+const server = archae => ({
   mount() {
+    const {wss, dirname} = archae.getCore();
+
     const db = new nedb({
       filename: path.join(dirname, 'data', 'nedb.db'),
     });

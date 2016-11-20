@@ -1,7 +1,9 @@
 console.log('load express server');
 
-const server = ({app}) => ({
+const server = archae => ({
   mount() {
+    const {app} = archae.getCore();
+
     console.log('mount express server');
 
     return app;

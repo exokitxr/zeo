@@ -1,5 +1,7 @@
-const server = ({wss}) => ({
+const server = archae => ({
   mount() {
+    const {wss} = archae.getCore();
+
     const connections = [];
     const statuses = new Map();
 

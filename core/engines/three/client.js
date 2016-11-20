@@ -41,6 +41,7 @@ const client = () => ({
     });
 
     return {
+      THREE,
       scene,
       camera,
       renderer,

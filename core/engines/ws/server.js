@@ -1,7 +1,9 @@
 console.log('load wss server');
 
-const server = ({wss}) => ({
+const server = archae => ({
   mount() {
+    const {wss} = archae.getCore();
+
     const connections = [];
 
     wss.on('connection', c => {

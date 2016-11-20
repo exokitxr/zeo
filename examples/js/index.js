@@ -72,11 +72,11 @@ archae.requestEngines([
       .then(world => {
         console.log('added zeo world');
 
-        world.requestPlugins([
-          '/extra/plugins/zeo-extra/ocean',
+        world.requestMods([
+          '/extra/plugins/zeo/ocean',
         ])
           .then(() => {
-            console.log('added zeo plugins');
+            console.log('added zeo mods');
           })
           .catch(err => {
             console.warn(err);

@@ -149,9 +149,9 @@ class ArchaeServer {
       if (opts.force) {
         _remove(err => {
           if (!err) {
-            _add(err => {
+            _add((err, result) => {
               if (!err) {
-                accept();
+                accept(result);
               } else {
                 reject(err);
               }
@@ -161,9 +161,9 @@ class ArchaeServer {
           }
         });
       } else {
-        _add(err => {
+        _add((err, result) => {
           if (!err) {
-            accept();
+            accept(result);
           } else {
             reject(err);
           }
@@ -341,13 +341,7 @@ class ArchaeServer {
     const engineModule = this.engines[engine];
 
     if (engineModule !== null) {
-      const engineOptions = {
-        server: this.server,
-        app: this.app,
-        wss: this.wss,
-        dirname: __dirname,
-      };
-      Promise.resolve(engineModule(engineOptions))
+      Promise.resolve(engineModule(this))
         .then(engineInstance => {
           this.engineInstances[engine] = engineInstance;
 
@@ -404,7 +398,7 @@ class ArchaeServer {
     });
   }
 
-  mountPlugin(plugin) {
+  mountPlugin(plugin, cb) {
     const pluginModule = this.plugins[plugin];
 
     if (pluginModule !== null) {
@@ -443,6 +437,15 @@ class ArchaeServer {
 
       cb();
     }
+  }
+
+  getCore() {
+    return {
+      server: this.server,
+      app: this.app,
+      wss: this.wss,
+      dirname: __dirname,
+    };
   }
 
   getName(moduleApi) {
@@ -492,7 +495,6 @@ class ArchaeServer {
 
           if (typeof m === 'object' && m && typeof m.method === 'string' && ('args' in m) && typeof m.id === 'string') {
             const cb = (err = null, result = null) => {
-console.log('reply', err);
               if (c.readyState === ws.OPEN) {
                 const e = {
                   id: m.id,
@@ -512,7 +514,6 @@ console.log('reply', err);
                 this.requestEngine(engine)
                   .then(engineApi => {
                     const engineName = this.getName(engineApi);
-console.log('get engine name', {engine, engineApi, engineName});
                     cb(null, {
                       engineName,
                     });

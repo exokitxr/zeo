@@ -11,7 +11,7 @@ const client = archae => ({
       three,
     ]) => {
       if (live) {
-        const {scene, camera, renderer} = three;
+        const {THREE, scene, camera, renderer} = three;
 
         const worlds = new Map();
 
@@ -23,8 +23,8 @@ const client = archae => ({
           } else {
             const plugins = new Map();
 
-            const _requestPlugin = pluginSpec => new Promise((accept, reject) => {
-              archae.requestPlugin(pluginSpec)
+            const _requestMod = modSpec => new Promise((accept, reject) => {
+              archae.requestPlugin(modSpec)
                 .then(plugin => {
                   const pluginName = archae.getName(plugin);
                   plugins.set(pluginName, plugin);
@@ -33,6 +33,10 @@ const client = archae => ({
                 })
                 .catch(reject);
             });
+            const _requestMods = modSpecs => {
+              const modPromises = modSpecs.map(_requestMod);
+              return Promise.all(modPromises);
+            };
             const _destroy = () => {
               if (animationFrame) {
                 cancelAnimationFrame(animationFrame);
@@ -63,7 +67,8 @@ const client = archae => ({
             _recurse();
 
             const world = {
-              requestPlugin: _requestPlugin,
+              requestMod: _requestMod,
+              requestMods: _requestMods,
               destroy: _destroy,
             };
 
@@ -80,6 +85,7 @@ const client = archae => ({
         };
 
         return {
+          THREE,
           scene,
           camera,
           renderer,

@@ -6,8 +6,8 @@ const ocean = archae => ({
       '/core/engines/zeo',
     ]).then(([
       zeo,
-    ])) => {
-      const {scene} = zeo;
+    ]) => {
+      const {THREE, scene} = zeo;
 
       const planeMesh = (() => {
         const geometry = new THREE.PlaneBufferGeometry(200, 200, 200 / 2, 200 / 2);
@@ -52,30 +52,35 @@ const ocean = archae => ({
         });
       }
 
-      return {};
+      const _update = ({worldTime}) => {
+        const {planeMesh, waves} = this;
+
+        const positionAttribute = planeMesh.geometry.getAttribute('position');
+        const positions = positionAttribute.array;
+        const numPositions = positions.length / 3;
+        for (let i = 0; i < numPositions; i++) {
+          /* const v = new THREE.Vector3(
+            positions[(i * 3] + 0],
+            positions[(i * 3] + 1],
+            positions[(i * 3] + 2]
+          ); */
+          const vprops = waves[i];
+          // v.y = vprops.y + Math.sin(vprops.ang) * vprops.amp;
+          const angValue = Math.sin(vprops.ang + (vprops.speed * worldTime));
+          positions[(i * 3) + 1] = vprops.y + angValue * vprops.amp;
+          // vprops.ang += vprops.speed;
+        }
+        positionAttribute.needsUpdate = true;
+      };
+
+      return {
+        update: _update,
+      };
     });
   },
-  update({worldTime}) {
-    const {planeMesh, waves} = this;
-
-    const positionAttribute = planeMesh.geometry.getAttribute('position');
-    const positions = positionAttribute.array;
-    const numPositions = positions.length / 3;
-    for (let i = 0; i < numPositions; i++) {
-      /* const v = new THREE.Vector3(
-        positions[(i * 3] + 0],
-        positions[(i * 3] + 1],
-        positions[(i * 3] + 2]
-      ); */
-      const vprops = waves[i];
-      // v.y = vprops.y + Math.sin(vprops.ang) * vprops.amp;
-      const angValue = Math.sin(vprops.ang + (vprops.speed * worldTime));
-      positions[(i * 3) + 1] = vprops.y + angValue * vprops.amp;
-      // vprops.ang += vprops.speed;
-    }
-    positionAttribute.needsUpdate = true;
-  }
   unmount() {
     this._cleanup();
   },
 });
+
+module.exports = ocean;
