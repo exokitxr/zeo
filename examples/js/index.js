@@ -49,14 +49,42 @@
   .catch(reject);
 }); */
 
+/* archae.requestPlugins([
+  '/extra/plugins/biolumi/form',
+]).then(([
+    form,
+  ]) => {
+    console.log('ok');
+  })
+  .catch(err => {
+    console.warn(err);
+  }); */
+
 // main
 
-archae.requestPlugins([
-  // '/extra/plugins/biolumi/form',
-  '/extra/plugins/zeo-extra/ocean',
+archae.requestEngines([
+  '/core/engines/zeo',
 ])
-  .then(result => {
-    console.log('added client plugins', result);
+  .then(([
+    zeo,
+  ]) => {
+    zeo.requestWorld('proteus')
+      .then(world => {
+        console.log('added zeo world');
+
+        world.requestPlugins([
+          '/extra/plugins/zeo-extra/ocean',
+        ])
+          .then(() => {
+            console.log('added zeo plugins');
+          })
+          .catch(err => {
+            console.warn(err);
+          });
+      })
+      .catch(err => {
+        console.warn(err);
+      });
   })
   .catch(err => {
     console.warn(err);

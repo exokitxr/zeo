@@ -197,7 +197,9 @@ class ArchaeClient {
         });
     } else {
       this.engineInstances[engine] = null;
-      this.engineApis[engine] = null;
+      this.engineApis[engine] = {
+        [nameSymbol]: engine,
+      };
 
       cb();
     }
@@ -225,7 +227,7 @@ class ArchaeClient {
               this.pluginApis[plugin] = pluginApi;
 
               cb();
-            });
+            })
             .catch(err => {
               cb(err);
             });
@@ -238,14 +240,16 @@ class ArchaeClient {
         });
     } else {
       this.pluginInstances[plugin] = null;
-      this.pluginApis[plugin] = null;
+      this.pluginApis[plugin] = {
+        [nameSymbol]: plugin,
+      };
 
       cb();
     }
   }
 
   getName(moduleApi) {
-    return moduleApi[nameSymbol] || null'
+    return moduleApi ? moduleApi[nameSymbol] : null;
   }
 
   connect() {

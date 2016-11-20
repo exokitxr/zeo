@@ -41,8 +41,6 @@ class ArchaeServer {
           if (!err) {
             const {moduleName: engineName} = result;
 
-            name = engineName;
-
             const existingEngine = this.engines[engineName];
             if (existingEngine !== undefined) {
               const engineApi = this.engineApis[engineName];
@@ -121,8 +119,6 @@ class ArchaeServer {
         _addModule(plugin, 'plugins', (err, result) => {
           if (!err) {
             const {added, moduleName: pluginName} = result;
-
-            name = pluginName;
 
             const existingPlugin = this.plugins[pluginName];
             if (existingPlugin !== undefined) {
@@ -379,8 +375,10 @@ class ArchaeServer {
           cb(err);
         });
     } else {
-      this.engineInstances[engine] = null;
-      this.engineApis[engine] = null;
+      this.engineInstances[engine] = {};
+      this.engineApis[engine] = {
+        [nameSymbol]: engine,
+      };
 
       cb();
     }
@@ -439,12 +437,16 @@ class ArchaeServer {
         });
     } else {
       this.pluginInstances[plugin] = null;
-      this.pluginApis[plugin] = null;
+      this.pluginApis[plugin] = {
+        [nameSymbol]: plugin,
+      };
+
+      cb();
     }
   }
 
   getName(moduleApi) {
-    return moduleApi[nameSymbol] || null;
+    return moduleApi ? moduleApi[nameSymbol] : null;
   }
 
   /* broadcast(message) {
@@ -490,6 +492,7 @@ class ArchaeServer {
 
           if (typeof m === 'object' && m && typeof m.method === 'string' && ('args' in m) && typeof m.id === 'string') {
             const cb = (err = null, result = null) => {
+console.log('reply', err);
               if (c.readyState === ws.OPEN) {
                 const e = {
                   id: m.id,
@@ -506,9 +509,10 @@ class ArchaeServer {
               const {engine} = args;
 
               if (_isValidModule(engine)) {
-                this.requestEngine(engine);
+                this.requestEngine(engine)
                   .then(engineApi => {
                     const engineName = this.getName(engineApi);
+console.log('get engine name', {engine, engineApi, engineName});
                     cb(null, {
                       engineName,
                     });
@@ -539,7 +543,7 @@ class ArchaeServer {
               const {plugin} = args;
 
               if (_isValidModule(plugin)) {
-                this.requestPlugin(plugin);
+                this.requestPlugin(plugin)
                   .then(pluginApi => {
                     const pluginName = this.getName(pluginApi);
                     cb(null, {
