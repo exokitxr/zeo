@@ -441,10 +441,11 @@ class ArchaeServer {
 
   getCore() {
     return {
+      express: express,
+      dirname: __dirname,
       server: this.server,
       app: this.app,
       wss: this.wss,
-      dirname: __dirname,
     };
   }
 
@@ -498,7 +499,7 @@ class ArchaeServer {
               if (c.readyState === ws.OPEN) {
                 const e = {
                   id: m.id,
-                  error: err,
+                  error: err ? (err.stack || err) : null,
                   result: result,
                 };
                 const es = JSON.stringify(e);
