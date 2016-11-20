@@ -56,7 +56,9 @@ const client = archae => ({
                   worldTime,
                 };
                 plugins.forEach(plugin => {
-                  plugin.update(updateOptions);
+                  if (typeof plugin.update === 'function') {
+                    plugin.update(updateOptions);
+                  }
                 });
 
                 renderer.render(scene, camera);

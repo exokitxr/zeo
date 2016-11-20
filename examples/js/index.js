@@ -73,6 +73,7 @@ archae.requestEngines([
         console.log('added zeo world');
 
         world.requestMods([
+          '/extra/plugins/zeo/controls',
           '/extra/plugins/zeo/ocean',
         ])
           .then(() => {
