@@ -1,0 +1,9 @@
+{
+  "name": "models",
+  "version": "0.0.1",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "async-json-parse": "^1.0.3"
+  }
+}

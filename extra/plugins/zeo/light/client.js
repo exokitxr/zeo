@@ -14,8 +14,8 @@ const light = archae => ({
         const {THREE, scene} = zeo;
 
         const light = (() => {
-          const result = new THREE.DirectionalLight(0xffffff, 0.5);
-          result.position.set(0, 10, 0);
+          const result = new THREE.DirectionalLight(0xFFFFFF, 2);
+          result.position.set(3, 3, 3);
           result.lookAt(new THREE.Vector3(0, 0, 0));
           return result;
         })();
