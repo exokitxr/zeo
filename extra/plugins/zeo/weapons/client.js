@@ -1,36 +1,5 @@
-const geometryUtils = require('../../../extra/utils/geometryUtils');
-const textUtils = require('../../../extra/utils/textUtils');
-const creatureUtils = require('../../../extra/utils/creatureUtils');
-
 const MINIMAP_SIZE = 256;
 const MINIMAP_RANGE = 200;
-
-const HUD_SOLID_MATERIAL = new THREE.MeshBasicMaterial({
-  color: 0xFFFFFFF,
-  side: THREE.DoubleSide,
-  opacity: 0.8,
-  transparent: true,
-});
-const HUD_WIREFRAME_MATERIAL = new THREE.MeshBasicMaterial({
-  color: 0x333333,
-  wireframe: true,
-});
-
-const ITEM_WIREFRAME_MATERIAL = new THREE.MeshBasicMaterial({
-  color: 0x000000,
-  wireframe: true,
-  opacity: 0.25,
-  transparent: true,
-});
-const ITEM_LINE_MATERIAL = new THREE.LineBasicMaterial({
-  color: 0x000000,
-  opacity: 0.25,
-  transparent: true,
-});
-const ITEM_POINTS_MATERIAL = new THREE.PointsMaterial({
-  color: 0xFFFFFF,
-  size: 0.025,
-});
 
 class Weapons {
   constructor(archae) {
@@ -45,13 +14,48 @@ class Weapons {
       live = false;
     };
 
-    return archae.requestEngines([
-      '/core/engines/zeo',
+    return Promise.all([
+      archae.requestEngines([
+        '/core/engines/zeo',
+      ]),
+      archae.requestPlugins([
+        '/core/plugins/geometry-utils',
+        '/core/plugins/text-utils',
+        '/core/plugins/creature-utils',
+      ]),
     ]).then(([
-      zeo,
+      [zeo],
+      [geometryUtils, textUtils, creatureUtils],
     ]) => {
       if (live) {
         const {THREE, scene, renderer} = zeo;
+
+        const HUD_SOLID_MATERIAL = new THREE.MeshBasicMaterial({
+          color: 0xFFFFFFF,
+          side: THREE.DoubleSide,
+          opacity: 0.8,
+          transparent: true,
+        });
+        const HUD_WIREFRAME_MATERIAL = new THREE.MeshBasicMaterial({
+          color: 0x333333,
+          wireframe: true,
+        });
+
+        const ITEM_WIREFRAME_MATERIAL = new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          wireframe: true,
+          opacity: 0.25,
+          transparent: true,
+        });
+        const ITEM_LINE_MATERIAL = new THREE.LineBasicMaterial({
+          color: 0x000000,
+          opacity: 0.25,
+          transparent: true,
+        });
+        const ITEM_POINTS_MATERIAL = new THREE.PointsMaterial({
+          color: 0xFFFFFF,
+          size: 0.025,
+        });
 
         const miniMapCamera = (() => {
           const camera = new THREE.OrthographicCamera(MINIMAP_RANGE / - 2, MINIMAP_RANGE / 2, MINIMAP_RANGE / - 2, MINIMAP_RANGE / 2, 0.1, 1024);

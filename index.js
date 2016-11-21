@@ -367,7 +367,7 @@ class ArchaeServer {
     const engineModule = this.engines[engine];
 
     if (engineModule !== null) {
-      Promise.resolve(new engineModule(this))
+      Promise.resolve(_instantiate(engineModule, this))
         .then(engineInstance => {
           this.engineInstances[engine] = engineInstance;
 
@@ -428,7 +428,7 @@ class ArchaeServer {
     const pluginModule = this.plugins[plugin];
 
     if (pluginModule !== null) {
-      Promise.resolve(new pluginModule(this))
+      Promise.resolve(_instantiate(pluginModule, this))
         .then(pluginInstance => {
           this.pluginInstances[plugin] = pluginInstance;
 
@@ -903,6 +903,9 @@ const _addModule = (module, type, cb) => {
     }
   });
 };
+
+const _instantiate = (fn, arg) => _isConstructible(fn) ? new fn(arg) : fn(arg);
+const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/.test(fn.toString());
 
 const _removeModule = (module, type, cb) => {
   if (typeof module === 'string') {

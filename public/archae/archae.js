@@ -283,7 +283,7 @@ class ArchaeClient {
     const engineModule = this.engines[engine];
 
     if (engineModule) {
-      Promise.resolve(new engineModule(this))
+      Promise.resolve(_instantiate(engineModule, this))
         .then(engineInstance => {
           this.engineInstances[engine] = engineInstance;
 
@@ -328,7 +328,7 @@ class ArchaeClient {
     const pluginModule = this.plugins[plugin];
 
     if (pluginModule) {
-      Promise.resolve(new pluginModule(this))
+      Promise.resolve(_instantiate(pluginModule, this))
         .then(pluginInstance => {
           this.pluginInstances[plugin] = pluginInstance;
 
@@ -448,6 +448,9 @@ class ArchaeClient {
     this._listeners.push(listener);
   }
 }
+
+const _instantiate = (fn, arg) => _isConstructible(fn) ? new fn(arg) : fn(arg);
+const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/.test(fn.toString());
 
 const _makeId = () => Math.random().toString(36).substring(7);
 
