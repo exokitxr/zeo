@@ -1,6 +1,6 @@
 const path = require('path');
 
-const server = archae => ({
+class Hmd {
   mount() {
     const {express, app} = archae.getCore();
 
@@ -25,6 +25,6 @@ const server = archae => ({
   unmount() {
     this._cleanup();
   },
-});
+}
 
-module.exports = server;
+module.exports = Hmd;

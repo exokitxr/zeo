@@ -16,7 +16,7 @@ const LABEL_HEIGHT = 50;
 const INPUT_HEIGHT = 100;
 const LINK_HEIGHT = 150;
 
-const client = () => ({
+class Biolumi {
   mount() {
     const canvas = document.createElement('canvas');
     canvas.width = WIDTH;
@@ -553,11 +553,12 @@ const client = () => ({
         return cursor;
       },
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
 const _drawHeader = (ctx, {img, text, onclick}) => {
   if (onclick) {
@@ -928,4 +929,4 @@ const _scaleImageData = (imageData, {width, height}) => {
   return canvas;
 };
 
-module.exports = client;
+module.exports = Biolumi;

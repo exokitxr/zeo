@@ -1,5 +1,10 @@
-const ocean = archae => ({
+class Ocean {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
     this._cleanup = () => {};
 
     return archae.requestEngines([
@@ -74,10 +79,11 @@ const ocean = archae => ({
         update: _update,
       };
     });
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = ocean;
+module.exports = Ocean;

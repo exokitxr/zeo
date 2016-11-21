@@ -1,5 +1,10 @@
-const server = archae => ({
+class Multiplayer {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
     const {wss} = archae.getCore();
 
     const connections = [];
@@ -81,12 +86,13 @@ const server = archae => ({
       }
       connections = [];
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = server;
+module.exports = Multiplayer;

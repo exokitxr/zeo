@@ -341,7 +341,7 @@ class ArchaeServer {
     const engineModule = this.engines[engine];
 
     if (engineModule !== null) {
-      Promise.resolve(engineModule(this))
+      Promise.resolve(new engineModule(this))
         .then(engineInstance => {
           this.engineInstances[engine] = engineInstance;
 
@@ -402,7 +402,7 @@ class ArchaeServer {
     const pluginModule = this.plugins[plugin];
 
     if (pluginModule !== null) {
-      Promise.resolve(pluginModule(this))
+      Promise.resolve(new pluginModule(this))
         .then(pluginInstance => {
           this.pluginInstances[plugin] = pluginInstance;
 

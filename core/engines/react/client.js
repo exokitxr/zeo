@@ -1,6 +1,6 @@
 const ReactDOM = require('react-dom');
 
-const client = () => ({
+class React {
   mount() {
     let rootEl = null;
     this._cleanup = () => {
@@ -19,10 +19,11 @@ const client = () => ({
         ReactDOM.render(rootEl, component);
       }
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = client;
+module.exports = React;

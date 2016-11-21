@@ -1,7 +1,12 @@
 console.log('load wss server');
 
-const server = archae => ({
+class Ws {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
     const {wss} = archae.getCore();
 
     const connections = [];
@@ -40,10 +45,11 @@ const server = archae => ({
       }
       connections = [];
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = server;
+module.exports = Ws;

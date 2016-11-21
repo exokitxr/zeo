@@ -35,8 +35,14 @@ const MODELS = {
   },
 };
 
-const models = archae => ({
+class Models {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -213,13 +219,14 @@ const models = archae => ({
           });
       }
     });
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
 const _getModelPath = model => modelsPath + model.path;
 const _getTexturePath = url => url.substring(0, url.lastIndexOf('/') + 1);
 
-module.exports = models;
+module.exports = Models;

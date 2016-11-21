@@ -1,7 +1,13 @@
 const modelPath = '/archae/models/hmd/hmd.json';
 
-const controllers = archae => ({
+class Hmd {
+  constructor(archae) 
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae} = this;
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -103,10 +109,11 @@ const controllers = archae => ({
         };
       }
     });
-  },
+  }
+
   unount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = controllers;
+module.exports = Hmd;

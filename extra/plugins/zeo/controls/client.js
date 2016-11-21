@@ -2,8 +2,14 @@ const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
-const controls = archae => ({
+class Controls {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
+
     return archae.requestEngines([
       '/core/engines/zeo',
     ])
@@ -137,10 +143,11 @@ const controls = archae => ({
           update: _update,
         };
       });
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = controls;
+module.exports = Controls;

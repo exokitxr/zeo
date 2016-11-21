@@ -1,7 +1,7 @@
 const events = require('events');
 const {EventEmitter} = events;
 
-const client = () => ({
+class Nedb {
   mount() {
     const connection = new WebSocket('ws://' + location.host + '/archae/nedbWs');
     connection.onopen = () => {
@@ -108,12 +108,13 @@ const client = () => ({
         };
       },
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = client;
+module.exports = Nedb;

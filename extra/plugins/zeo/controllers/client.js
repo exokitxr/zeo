@@ -1,7 +1,13 @@
 const modelPath = '/archae/models/controller/controller.json';
 
-const controllers = archae => ({
+class Controllers {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -179,10 +185,11 @@ const controllers = archae => ({
         };
       }
     });
-  },
+  }
+
   unount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = controllers;
+module.exports = Controllers;

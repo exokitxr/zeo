@@ -2,7 +2,7 @@ const THREE = require('three');
 
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
-const client = () => ({
+class Three {
   mount() {
     const scene = new THREE.Scene();
 
@@ -46,10 +46,11 @@ const client = () => ({
       camera,
       renderer,
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = client;
+module.exports = Three;

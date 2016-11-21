@@ -1,7 +1,13 @@
 const TELEPORT_DISTANCE = 15;
 
-const teleport = archae => ({
+class Teleport {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -127,10 +133,11 @@ const teleport = archae => ({
           });
       }
     });
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
+  }
 };
 
 const _getMatrixWorld = mesh => {
@@ -147,4 +154,4 @@ const _getMatrixWorld = mesh => {
   };
 };
 
-module.exports = teleport;
+module.exports = Teleport;

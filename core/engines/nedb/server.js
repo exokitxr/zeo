@@ -50,8 +50,13 @@ class Subscription {
   }
 }
 
-const server = archae => ({
+class Nedb {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
     const {wss, dirname} = archae.getCore();
 
     const db = new nedb({
@@ -189,10 +194,11 @@ const server = archae => ({
     });
 
     return db;
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = server;
+module.exports = Nedb;

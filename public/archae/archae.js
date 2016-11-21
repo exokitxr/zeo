@@ -168,7 +168,7 @@ class ArchaeClient {
     const engineModule = this.engines[engine];
 
     if (engineModule) {
-      Promise.resolve(engineModule(this))
+      Promise.resolve(new engineModule(this))
         .then(engineInstance => {
           this.engineInstances[engine] = engineInstance;
 
@@ -213,7 +213,7 @@ class ArchaeClient {
     const pluginModule = this.plugins[plugin];
 
     if (pluginModule) {
-      Promise.resolve(pluginModule(this))
+      Promise.resolve(new pluginModule(this))
         .then(pluginInstance => {
           this.pluginInstances[plugin] = pluginInstance;
 

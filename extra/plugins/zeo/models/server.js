@@ -1,7 +1,12 @@
 const path = require('path');
 
-const server = archae => ({
+class Models {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
     const modelsStatic = express.static(path.join(__dirname, 'models'));
@@ -21,10 +26,11 @@ const server = archae => ({
       }
       app._router.stack.forEach(removeMiddlewares);
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = server;
+module.exports = Models;

@@ -1,7 +1,7 @@
 const events = require('events');
 const {EventEmitter} = events;
 
-const client = () => ({
+class Multiplayer {
   mount() {
     const connection = new WebSocket('ws://' + location.host + '/archae/multiplayerWs');
     connection.onopen = () => {
@@ -57,10 +57,11 @@ const client = () => ({
     };
 
     return result;
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = client;
+module.exports = Multiplayer;

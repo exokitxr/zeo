@@ -1,5 +1,11 @@
-const client = archae => ({
+class Zeo {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -95,10 +101,11 @@ const client = archae => ({
         };
       }
     });
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = client;
+module.exports = Zeo;

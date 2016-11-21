@@ -1,5 +1,11 @@
-const light = archae => ({
+class Light {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -26,10 +32,11 @@ const light = archae => ({
         };
       }
     });
-  },
+  }
+
   unount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = light;
+module.exports = Light;
