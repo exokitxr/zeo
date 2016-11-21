@@ -1,0 +1,11 @@
+{
+  "name": "youtube",
+  "version": "0.0.1",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "request": "^2.79.0",
+    "lru-cache": "^4.0.1",
+    "ytdl-core": "^0.7.19"
+  }
+}
