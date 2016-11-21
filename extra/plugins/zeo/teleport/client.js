@@ -95,7 +95,7 @@ class Teleport {
               };
             };
 
-            const _update = () => {
+            const _update = options => {
               if (teleporting) {
                 const rootMesh = controllerMeshes.left.mesh.inner;
                 const tipMesh = rootMesh.tip;
@@ -139,6 +139,9 @@ class Teleport {
                 if (mesh.visible) {
                   mesh.visible = false;
                 }
+
+                // update the controllers immediately instead of waiting for the next frame
+                controllers.update(options);
               }
             };
 
