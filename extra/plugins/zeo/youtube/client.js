@@ -47,7 +47,6 @@ class Youtube {
               video.update = () => {
                 texture.needsUpdate = true;
               };
-              video.muted = true;
 
               fetch('/archae/youtube/' + videoUrl)
                 .then(res => {
@@ -60,7 +59,7 @@ class Youtube {
                         texture.needsUpdate = true;
 
                         // video.play();
-                        video.currentTime = 0.5 * video.duration;
+                        // video.currentTime = 0.5 * video.duration;
 
                         video.oncanplay = null;
                       };
