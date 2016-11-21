@@ -390,8 +390,6 @@ class ArchaeClient {
       result.onmessage = msg => {
         const m = JSON.parse(msg.data);
 
-        console.log('on messsage', m);
-
         for (let i = 0; i < this._listeners.length; i++) {
           const listener = this._listeners[i];
           listener(m);
