@@ -19,7 +19,7 @@ class Teleport {
       zeo,
     ]) => {
       if (live) {
-        const {scene, camera} = zeo;
+        const {THREE, scene, camera} = zeo;
 
         const world = zeo.getCurrentWorld();
         world.requestMods([

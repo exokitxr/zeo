@@ -37,7 +37,7 @@ class Zeo {
                   const pluginName = archae.getName(plugin);
                   plugins.set(pluginName, plugin);
 
-                  accept();
+                  accept(plugin);
                 })
                 .catch(reject);
             });

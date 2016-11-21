@@ -180,7 +180,7 @@ class Controllers {
         };
 
         return {
-          _getControllerMeshes: _getControllerMeshes,
+          getControllerMeshes: _getControllerMeshes,
           update: _update,
         };
       }
