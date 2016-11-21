@@ -78,6 +78,7 @@ archae.requestEngines([
           '/extra/plugins/zeo/light',
           '/extra/plugins/zeo/controllers',
           // '/extra/plugins/zeo/hmd',
+          '/extra/plugins/zeo/skybox',
           '/extra/plugins/zeo/ocean',
           '/extra/plugins/zeo/models',
           '/extra/plugins/zeo/weapons',
