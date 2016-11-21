@@ -68,7 +68,7 @@ archae.requestEngines([
   .then(([
     zeo,
   ]) => {
-    zeo.requestWorld('proteus')
+    zeo.requestChangeWorld('proteus')
       .then(world => {
         console.log('added zeo world');
 

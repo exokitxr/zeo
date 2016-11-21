@@ -21,7 +21,8 @@ class Teleport {
       if (live) {
         const {scene, camera} = zeo;
 
-        zeo.requestMods([
+        const world = zeo.getCurrentWorld();
+        world.requestMods([
           '/extra/plugins/zeo/controllers'
         ])
           .then(([

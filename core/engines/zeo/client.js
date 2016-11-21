@@ -20,8 +20,10 @@ class Zeo {
         const {THREE, scene, camera, renderer} = three;
 
         const worlds = new Map();
+        let world = null;
 
-        const _requestWorld = worldName => new Promise((accept, reject) => {
+        const _getCurrentWorld = () => world;
+        const _requestChangeWorld = worldName => new Promise((accept, reject) => {
           const world = worlds.get(worldName);
 
           if (world) {
@@ -84,6 +86,10 @@ class Zeo {
 
             accept(world);
           }
+        }).then(newWorld => {
+          world = newWorld;
+
+          return newWorld;
         });
 
         this._cleanup = () => {
@@ -97,7 +103,8 @@ class Zeo {
           scene,
           camera,
           renderer,
-          requestWorld: _requestWorld,
+          getCurrentWorld: _getCurrentWorld,
+          requestChangeWorld: _requestChangeWorld,
         };
       }
     });
