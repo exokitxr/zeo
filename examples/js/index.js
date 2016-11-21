@@ -82,6 +82,7 @@ archae.requestEngines([
           '/extra/plugins/zeo/ocean',
           '/extra/plugins/zeo/models',
           '/extra/plugins/zeo/keyboard',
+          '/extra/plugins/zeo/rain',
           '/extra/plugins/zeo/weapons',
           '/extra/plugins/zeo/youtube',
           '/extra/plugins/zeo/lens',
