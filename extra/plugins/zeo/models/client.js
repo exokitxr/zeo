@@ -7,7 +7,7 @@ const MODELS = {
     path: 'cloud/cloud.json',
     position: [0, 0.5, -1],
     rotation: [0, Math.PI, 0],
-    scale: [0.07, 0.07, 0.07],
+    scale: [0.6, 0.6, 0.6],
   },
   lightning: {
     path: 'lightning/lightning.json',
