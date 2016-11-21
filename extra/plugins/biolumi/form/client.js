@@ -1,5 +1,5 @@
-const creatureUtils = require('./lib/creatureUtils'); 
-const textUtils = require('./lib/textUtils'); 
+const creatureUtils = require('../../../utils/creatureUtils');
+const textUtils = require('../../../utils/textUtils');
 
 const client = archae => ({
   mount() {
