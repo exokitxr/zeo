@@ -80,6 +80,7 @@ archae.requestEngines([
           // '/extra/plugins/zeo/hmd',
           '/extra/plugins/zeo/ocean',
           '/extra/plugins/zeo/models',
+          '/extra/plugins/zeo/lens',
         ])
           .then(() => {
             console.log('added zeo mods');
