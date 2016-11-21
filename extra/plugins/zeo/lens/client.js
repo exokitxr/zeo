@@ -1,3 +1,10 @@
+const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
+const RenderPass = require('./lib/three-extra/postprocessing/RenderPass');
+const ShaderPass = require('./lib/three-extra/postprocessing/ShaderPass');
+const CopyShader = require('./lib/three-extra/shaders/CopyShader');
+const HorizontalBlurShader = require('./lib/three-extra/shaders/HorizontalBlurShader');
+const VerticalBlurShader = require('./lib/three-extra/shaders/VerticalBlurShader');
+
 const width = 0.1;
 const height = 0.1;
 const pixelWidth = 128;
@@ -55,6 +62,12 @@ class Lens {
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
+        EffectComposer(THREE);
+        RenderPass(THREE);
+        ShaderPass(THREE);
+        CopyShader(THREE);
+        HorizontalBlurShader(THREE);
+        VerticalBlurShader(THREE);
 
         const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
           minFilter: THREE.NearestFilter,

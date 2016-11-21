@@ -1,10 +1,4 @@
 const THREE = require('three');
-require('./lib/three-extra/postprocessing/EffectComposer')(THREE);
-require('./lib/three-extra/postprocessing/RenderPass')(THREE);
-require('./lib/three-extra/postprocessing/ShaderPass')(THREE);
-require('./lib/three-extra/shaders/CopyShader')(THREE);
-require('./lib/three-extra/shaders/HorizontalBlurShader')(THREE);
-require('./lib/three-extra/shaders/VerticalBlurShader')(THREE);
 
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
