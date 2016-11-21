@@ -83,6 +83,7 @@ archae.requestEngines([
           '/extra/plugins/zeo/weapons',
           '/extra/plugins/zeo/youtube',
           '/extra/plugins/zeo/lens',
+          '/extra/plugins/zeo/portal',
           '/extra/plugins/zeo/camera',
         ])
           .then(() => {
