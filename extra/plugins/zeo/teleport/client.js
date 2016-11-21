@@ -51,14 +51,29 @@ class Teleport {
 
             const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
 
+            let side = null;
             let teleporting = false;
             let commitTeleporting = false;
             let teleportPoint = null;
             const keydown = e => {
               if (window.document.pointerLockElement) {
                 switch (e.keyCode) {
+                  case 90: // Z
+                    side = 'left';
+                    break;
+                  case 88: // X
+                    side = null;
+                    teleporting = false;
+                    commitTeleporting = false;
+                    teleportPoint = null;
+                    break;
+                  case 67: // C
+                    side = 'right';
+                    break;
                   case 32: // space
-                    teleporting = true;
+                    if (side !== null) {
+                      teleporting = true;
+                    }
                     break;
                 }
               }
@@ -97,7 +112,7 @@ class Teleport {
 
             const _update = options => {
               if (teleporting) {
-                const rootMesh = controllerMeshes.left.mesh.inner;
+                const rootMesh = controllerMeshes[side].mesh.inner;
                 const tipMesh = rootMesh.tip;
 
                 const rootMatrixWorld = _getMatrixWorld(rootMesh);
