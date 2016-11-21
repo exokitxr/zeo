@@ -121,6 +121,9 @@ class Controllers {
             result.push(controller);
           }
 
+          result.left = result[0];
+          result.right = result[1];
+
           return result;
         })();
 
@@ -145,7 +148,7 @@ class Controllers {
             e.preventDefault();
 
             if (mode === 'left') {
-              const controller = controllerMeshes[0];
+              const controller = controllerMeshes.left;
 
               if (!e.shiftKey) {
                 controller.move(e.deltaX, e.deltaY);
@@ -153,7 +156,7 @@ class Controllers {
                 controller.rotate(e.deltaX, e.deltaY);
               }
             } else if (mode === 'right') {
-              const controller = controllerMeshes[1];
+              const controller = controllerMeshes.right;
 
               if (!e.shiftKey) {
                 controller.move(e.deltaX, e.deltaY);

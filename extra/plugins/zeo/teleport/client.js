@@ -22,7 +22,7 @@ class Teleport {
         const {THREE, scene, camera} = zeo;
 
         const world = zeo.getCurrentWorld();
-        world.requestMods([
+        return world.requestMods([
           '/extra/plugins/zeo/controllers'
         ])
           .then(([
@@ -79,6 +79,20 @@ class Teleport {
             this._cleanup = () => {
               window.removeEventListener('keydown', keydown);
               window.removeEventListener('keyup', keyup);
+            };
+
+            const _getMatrixWorld = mesh => {
+              const position = new THREE.Vector3();
+              const quaternion = new THREE.Quaternion();
+              const scale = new THREE.Vector3();
+
+              mesh.matrixWorld.decompose(position, quaternion, scale);
+
+              return {
+                position,
+                quaternion,
+                scale,
+              };
             };
 
             const _update = () => {
@@ -139,20 +153,6 @@ class Teleport {
   unmount() {
     this._cleanup();
   }
-};
-
-const _getMatrixWorld = mesh => {
-  const position = new THREE.Vector3();
-  const quaternion = new THREE.Quaternion();
-  const scale = new THREE.Vector3();
-
-  mesh.matrixWorld.decompose(position, quaternion, scale);
-
-  return {
-    position,
-    quaternion,
-    scale,
-  };
 };
 
 module.exports = Teleport;
