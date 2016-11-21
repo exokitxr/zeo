@@ -107,7 +107,7 @@ const controllers = archae => ({
           }
         }
 
-        const controllers = (() => {
+        const controllerMeshes = (() => {
           const result = [];
 
           for (let index = 0; index < 2; index++) {
@@ -117,9 +117,6 @@ const controllers = archae => ({
 
           return result;
         })();
-        this.controllers = controllers;
-        this.left = controllers[0];
-        this.right = controllers[1];
 
         let mode = 'move';
         const keydown = e => {
@@ -141,10 +138,8 @@ const controllers = archae => ({
           if (window.document.pointerLockElement) {
             e.preventDefault();
 
-            const {controllers} = this;
-
             if (mode === 'left') {
-              const controller = controllers[0];
+              const controller = controllerMeshes[0];
 
               if (!e.shiftKey) {
                 controller.move(e.deltaX, e.deltaY);
@@ -152,7 +147,7 @@ const controllers = archae => ({
                 controller.rotate(e.deltaX, e.deltaY);
               }
             } else if (mode === 'right') {
-              const controller = controllers[1];
+              const controller = controllerMeshes[1];
 
               if (!e.shiftKey) {
                 controller.move(e.deltaX, e.deltaY);
@@ -170,13 +165,17 @@ const controllers = archae => ({
           window.removeEventListener('mousewheel', mousewheel);
         };
 
+        const _getControllerMeshes = () => controllerMeshes;
+        const _update = () => {
+          for (let i = 0; i < controllerMeshes.length; i++) {
+            const controller = controllerMeshes[i];
+            controller.update();
+          }
+        };
+
         return {
-          update() {
-            for (let i = 0; i < controllers.length; i++) {
-              const controller = controllers[i];
-              controller.update();
-            }
-          },
+          _getControllerMeshes: _getControllerMeshes,
+          update: _update,
         };
       }
     });

@@ -74,6 +74,7 @@ archae.requestEngines([
 
         world.requestMods([
           '/extra/plugins/zeo/controls',
+          '/extra/plugins/zeo/teleport',
           '/extra/plugins/zeo/light',
           '/extra/plugins/zeo/controllers',
           // '/extra/plugins/zeo/hmd',

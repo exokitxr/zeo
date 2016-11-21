@@ -26,7 +26,6 @@ const ocean = archae => ({
         return mesh;
       })();
       scene.add(planeMesh);
-      this.planeMesh = planeMesh;
 
       const data = {
         amplitude: 0.1,
@@ -35,7 +34,7 @@ const ocean = archae => ({
         speedVariance: 2,
       };
 
-      this.waves = [];
+      const waves = [];
       const positions = planeMesh.geometry.getAttribute('position').array;
       const numPositions = positions.length / 3;
       for (let i = 0; i < numPositions; i++) {
@@ -44,7 +43,7 @@ const ocean = archae => ({
           positions[(i * 3) + 1],
           positions[(i * 3) + 2]
         );
-        this.waves.push({
+        waves.push({
           y: v.y,
           ang: Math.random() * Math.PI * 2,
           amp: data.amplitude + Math.random() * data.amplitudeVariance,
@@ -53,8 +52,6 @@ const ocean = archae => ({
       }
 
       const _update = ({worldTime}) => {
-        const {planeMesh, waves} = this;
-
         const positionAttribute = planeMesh.geometry.getAttribute('position');
         const positions = positionAttribute.array;
         const numPositions = positions.length / 3;

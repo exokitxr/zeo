@@ -91,7 +91,6 @@ const controllers = archae => ({
         }
 
         const hmd = new Hmd();
-        this.hmd = hmd;
 
         this._cleanup = () => {
           hmd.destroy();
