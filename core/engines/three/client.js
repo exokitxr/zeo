@@ -1,4 +1,11 @@
 const THREE = require('three');
+window.THREE = THREE; // required for the below
+require('three/examples/js/postprocessing/EffectComposer');
+require('three/examples/js/postprocessing/RenderPass');
+require('three/examples/js/postprocessing/ShaderPass');
+require('three/examples/js/shaders/CopyShader');
+require('three/examples/js/shaders/HorizontalBlurShader');
+require('three/examples/js/shaders/VerticalBlurShader');
 
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
