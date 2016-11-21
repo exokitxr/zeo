@@ -8,12 +8,20 @@ const geometryUtils = archae => ({
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/plugins/fun-utils',
+    return Promise.all([
+      archae.requestEngines([
+        '/core/engines/three',
+      ]),
+      archae.requestPlugins([
+        '/core/plugins/fun-utils',
+      ]),
     ]).then(([
-      funUtils,
+      [three],
+      [funUtils],
     ]) => {
       if (live) {
+        const {THREE} = three;
+
         /* const VOXEL_VERTICES = (() => {
           const cubeGeometry = new THREE.CubeGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
           for (let i = 0; i < cubeGeometry.vertices.length; i++) {
