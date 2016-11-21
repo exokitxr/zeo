@@ -6,6 +6,7 @@ const express = require('express');
 const ws = require('ws');
 const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
+const MultiMutex = require('multimutex');
 
 const nameSymbol = Symbol();
 
@@ -28,10 +29,13 @@ class ArchaeServer {
     this.pluginInstances = {};
     this.pluginApis = {};
 
+    this.enginesMutex = new MultiMutex();
+    this.pluginsMutex = new MultiMutex();
+
     this.mountApp();
   }
 
-  requestEngine(engine, opts = {}) { // XXX implement locking for these
+  requestEngine(engine, opts = {}) {
     return new Promise((accept, reject) => {
       const _remove = cb => {
         _removeModule(engine, 'engines', cb);
@@ -41,26 +45,37 @@ class ArchaeServer {
           if (!err) {
             const {moduleName: engineName} = result;
 
-            const existingEngine = this.engines[engineName];
-            if (existingEngine !== undefined) {
-              const engineApi = this.engineApis[engineName];
-              cb(null, engineApi);
-            } else {
-              this.loadEngine(engineName, err => {
-                if (!err) {
-                  this.mountEngine(engineName, err => {
+            const {enginesMutex} = this;
+            enginesMutex.lock(engineName)
+              .then(unlock => {
+                cb = (cb => (err, result) => {
+                  cb(err, result);
+
+                  unlock();
+                })(cb);
+
+                const existingEngine = this.engines[engineName];
+                if (existingEngine !== undefined) {
+                  const engineApi = this.engineApis[engineName];
+                  cb(null, engineApi);
+                } else {
+                  this.loadEngine(engineName, err => {
                     if (!err) {
-                      const engineApi = this.engineApis[engineName];
-                      cb(null, engineApi);
+                      this.mountEngine(engineName, err => {
+                        if (!err) {
+                          const engineApi = this.engineApis[engineName];
+                          cb(null, engineApi);
+                        } else {
+                          cb(err);
+                        }
+                      });
                     } else {
                       cb(err);
                     }
                   });
-                } else {
-                  cb(err);
                 }
-              });
-            }
+              })
+              .catch(cb);
           } else {
             cb(err);
           }
@@ -120,26 +135,37 @@ class ArchaeServer {
           if (!err) {
             const {added, moduleName: pluginName} = result;
 
-            const existingPlugin = this.plugins[pluginName];
-            if (existingPlugin !== undefined) {
-              const pluginApi = this.pluginApis[pluginName];
-              cb(null, pluginApi);
-            } else {
-              this.loadPlugin(pluginName, err => {
-                if (!err) {
-                  this.mountPlugin(pluginName, err => {
+            const {pluginsMutex} = this;
+            pluginsMutex.lock(pluginName)
+              .then(unlock => {
+                cb = (cb => (err, result) => {
+                  cb(err, result);
+
+                  unlock();
+                })(cb);
+
+                const existingPlugin = this.plugins[pluginName];
+                if (existingPlugin !== undefined) {
+                  const pluginApi = this.pluginApis[pluginName];
+                  cb(null, pluginApi);
+                } else {
+                  this.loadPlugin(pluginName, err => {
                     if (!err) {
-                      const pluginApi = this.pluginApis[pluginName];
-                      cb(null, pluginApi);
+                      this.mountPlugin(pluginName, err => {
+                        if (!err) {
+                          const pluginApi = this.pluginApis[pluginName];
+                          cb(null, pluginApi);
+                        } else {
+                          cb(err);
+                        }
+                      });
                     } else {
                       cb(err);
                     }
                   });
-                } else {
-                  cb(err);
                 }
-              });
-            }
+            })
+            .catch(cb);
           } else {
             cb(err);
           }

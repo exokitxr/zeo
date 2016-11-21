@@ -1,3 +1,77 @@
+// begin inline
+
+class MultiMutex {
+  constructor() {
+    this.mutexes = new Map();
+  }
+
+  lock(key, options) {
+    let mutex = this.mutexes.get(key);
+    if (!mutex) {
+      mutex = new Mutex(key, this);
+      this.mutexes.set(key, mutex);
+    }
+
+    return mutex.lock(options);
+  }
+
+  remove(key) {
+    this.mutexes.delete(key);
+  }
+}
+
+class Mutex {
+  constructor(key, parent) {
+    this._key = key;
+    this._parent = parent;
+
+    this.locked = false;
+    this.queue = [];
+  }
+
+  lock(options = {}) {
+    return new Promise((accept, reject) => {
+      let timeout = options.timeout ? setTimeout(() => {
+        this.queue.splice(this.queue.indexOf(_tryLock), 1);
+
+        const err = new Error('mutex lock request timed out');
+        reject(err);
+      }, options.timeout) : null;
+
+      const _tryLock = () => {
+        if (!this.locked) {
+          this.locked = true;
+
+          if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+          }
+
+          accept(() => {
+            this.unlock();
+          });
+        } else {
+          this.queue.push(_tryLock);
+        }
+      };
+      _tryLock();
+    });
+  }
+
+  unlock() {
+    this.locked = false;
+
+    const next = this.queue.pop();
+    if (next) {
+      next();
+    } else {
+      this._parent.remove(this._key);
+    }
+  }
+}
+
+// end inline
+
 const nameSymbol = Symbol();
 
 class ArchaeClient {
@@ -8,11 +82,22 @@ class ArchaeClient {
     this.plugins = {};
     this.pluginInstances = {};
     this.pluginApis = {};
+
+    this.enginesMutex = new MultiMutex();
+    this.pluginsMutex = new MultiMutex();
   }
 
   requestEngine(engine) {
     return new Promise((accept, reject) => {
       const id = _makeId();
+
+      const cb = (err, result) => {
+        if (!err) {
+          accept(result);
+        } else {
+          reject(err);
+        }
+      };
 
       this.request('requestEngine', {
         engine,
@@ -20,29 +105,40 @@ class ArchaeClient {
         if (!err) {
           const {engineName} = result;
 
-          const existingEngine = this.engines[engineName];
+          const {enginesMutex} = this;
+          enginesMutex.lock(engineName)
+            .then(unlock => {
+              const unlockCb = (err, result) => {
+                cb(err, result);
 
-          if (existingEngine !== undefined) {
-            const engineApi = this.engineApis[engineName];
-            accept(engineApi);
-          } else {
-            this.loadEngine(engineName, err => {
-              if (!err) {
-                this.mountEngine(engineName, err => {
+                unlock();
+              };
+
+              const existingEngine = this.engines[engineName];
+
+              if (existingEngine !== undefined) {
+                const engineApi = this.engineApis[engineName];
+                unlockCb(null, engineApi);
+              } else {
+                this.loadEngine(engineName, err => {
                   if (!err) {
-                    const engineApi = this.engineApis[engineName];
-                    accept(engineApi);
+                    this.mountEngine(engineName, err => {
+                      if (!err) {
+                        const engineApi = this.engineApis[engineName];
+                        unlockCb(null, engineApi);
+                      } else {
+                        unlockCb(err);
+                      }
+                    });
                   } else {
-                    reject(err);
+                    unlockCb(err);
                   }
                 });
-              } else {
-                reject(err);
               }
-            });
-          }
+          })
+          .catch(cb);
         } else {
-          reject(err);
+          cb(err);
         }
       });
     });
@@ -69,35 +165,54 @@ class ArchaeClient {
 
   requestPlugin(plugin) {
     return new Promise((accept, reject) => {
+      const cb = (err, result) => {
+        if (!err) {
+          accept(result);
+        } else {
+          reject(err);
+        }
+      };
+
       this.request('requestPlugin', {
         plugin,
       }, (err, result) => {
         if (!err) {
           const {pluginName} = result;
 
-          const existingPlugin = this.plugins[pluginName];
+          const {pluginsMutex} = this;
+          pluginsMutex.lock(pluginName)
+            .then(unlock => {
+              const unlockCb = (err, result) => {
+                cb(err, result);
 
-          if (existingPlugin !== undefined) {
-            const pluginApi = this.pluginApis[pluginName];
-            accept(pluginApi);
-          } else {
-            this.loadPlugin(pluginName, err => {
-              if (!err) {
-                this.mountPlugin(pluginName, err => {
+                unlock();
+              };
+
+              const existingPlugin = this.plugins[pluginName];
+
+              if (existingPlugin !== undefined) {
+                const pluginApi = this.pluginApis[pluginName];
+                unlockCb(null, pluginApi);
+              } else {
+                this.loadPlugin(pluginName, err => {
                   if (!err) {
-                    const pluginApi = this.pluginApis[pluginName];
-                    accept(pluginApi);
+                    this.mountPlugin(pluginName, err => {
+                      if (!err) {
+                        const pluginApi = this.pluginApis[pluginName];
+                        unlockCb(null, pluginApi);
+                      } else {
+                        unlockCb(err);
+                      }
+                    });
                   } else {
-                    reject(err);
+                    unlockCb(err);
                   }
                 });
-              } else {
-                reject(err);
               }
-            });
-          }
+          })
+          .catch(cb);
         } else {
-          reject(err);
+          cb(err);
         }
       });
     });

@@ -13,6 +13,7 @@
     "express": "^4.14.0",
     "fs-extra": "^1.0.0",
     "mkdirp": "^0.5.1",
+    "multimutex": "0.0.1",
     "nedb": "^1.8.0",
     "rimraf": "^2.5.4",
     "webpack": "^1.13.3",
