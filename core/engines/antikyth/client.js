@@ -190,15 +190,15 @@ class AnyikythClient {
         }
       }
 
-      class Sphere extends Body {
-        constructor(opts = {}) {
-          super('sphere', opts);
-        }
-      }
-
       class Box extends Body {
         constructor(opts = {}) {
           super('box', opts);
+        }
+      }
+
+      class Sphere extends Body {
+        constructor(opts = {}) {
+          super('sphere', opts);
         }
       }
 
@@ -219,8 +219,8 @@ class AnyikythClient {
           id: worldId,
         });
         world.Plane = Plane;
-        world.Sphere = Sphere;
         world.Box = Box;
+        world.Sphere = Sphere;
         world.ConvexHull = ConvexHull;
         world.TriangleMesh = TriangleMesh;
 

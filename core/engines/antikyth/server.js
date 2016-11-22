@@ -59,6 +59,16 @@ class Context {
           sphere.clientId = id;
           return sphere;
         }
+        case 'convexHull': {
+          const convexHull = new Antikyth.ConvexHull(opts);
+          convexHull.clientId = id;
+          return convexHull;
+        }
+        case 'triangleMesh': {
+          const triangleMesh = new Antikyth.TriangleMesh(opts);
+          triangleMesh.clientId = id;
+          return triangleMesh;
+        }
         default: return null;
       }
     })();
