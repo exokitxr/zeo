@@ -263,7 +263,7 @@ class AnyikythClient {
         }
       });
       const _releaseWorld = worldId => new Promise((accept, reject) => {
-        _request('remove', [null, worldId], err => {
+        _request('remove', [null, worldId], err => { // XXX this needs to destroy bodies attached to the world as well
           if (!err) {
             accept();
           } else {
@@ -275,7 +275,7 @@ class AnyikythClient {
       let connection = null;
       let connecting = false;
       let connectCbs = [];
-      const _connect = cb => {
+      const _connect = cb => { // XXX queue here instead of blocking
         if (!connecting) {
           const cbs = err => {
             const oldConnectCbs = connectCbs;

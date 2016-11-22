@@ -84,6 +84,7 @@ class Zeo {
                 _recurse();
 
                 const world = {
+                  name: worldName,
                   requestMod: _requestMod,
                   requestMods: _requestMods,
                   physics,
@@ -101,6 +102,18 @@ class Zeo {
 
           return newWorld;
         });
+        const _requestDeleteWorld = worldName = new Promise((accept, reject) => {
+          antikyth.releaseWorld(worldName)
+            .then(() => {
+              worlds.delete(worldName);
+
+              if (world && world.name === worldName) {
+                world = null;
+              }
+            })
+            .then(accept)
+            .catch(reject);
+        });
 
         this._cleanup = () => {
           worlds.forEach(world => {
@@ -116,6 +129,7 @@ class Zeo {
           sound,
           getCurrentWorld: _getCurrentWorld,
           requestChangeWorld: _requestChangeWorld,
+          requestDeleteWorld: _requestDeleteWorld,
         };
       }
     });

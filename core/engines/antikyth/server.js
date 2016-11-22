@@ -83,15 +83,7 @@ class Context {
   }
 
   destroy(id) {
-    const {objects} = this;
-
-    const object = objects.get(id);
-    if (object instanceof Antikyth) {
-      object.stop();
-      object.destroy();
-    }
-
-    objects.delete(id);
+    this.objects.delete(id);
 
     const engine = this.getEngine();
     if (engine.running && !this.hasRunnableObjects()) {

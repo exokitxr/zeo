@@ -67,38 +67,31 @@ archae.requestEngines([
 ])
   .then(([
     zeo,
-  ]) => {
-    zeo.requestChangeWorld('proteus')
-      .then(world => {
-        console.log('added zeo world');
-
-        world.requestMods([
-          '/extra/plugins/zeo/controls',
-          '/extra/plugins/zeo/teleport',
-          '/extra/plugins/zeo/light',
-          '/extra/plugins/zeo/controllers',
-          // '/extra/plugins/zeo/hmd',
-          '/extra/plugins/zeo/skybox',
-          '/extra/plugins/zeo/ocean',
-          '/extra/plugins/zeo/models',
-          '/extra/plugins/zeo/keyboard',
-          '/extra/plugins/zeo/rain',
-          '/extra/plugins/zeo/weapons',
-          '/extra/plugins/zeo/youtube',
-          '/extra/plugins/zeo/lens',
-          '/extra/plugins/zeo/portal',
-          '/extra/plugins/zeo/camera',
-        ])
-          .then(() => {
-            console.log('added zeo mods');
-          })
-          .catch(err => {
-            console.warn(err);
-          });
-      })
-      .catch(err => {
-        console.warn(err);
-      });
+  ]) =>
+    zeo.requestDeleteWorld('proteus')
+    .then(zeo.requestChangeWorld('proteus'))
+    .then(world => 
+      world.requestMods([
+        '/extra/plugins/zeo/controls',
+        '/extra/plugins/zeo/teleport',
+        '/extra/plugins/zeo/light',
+        '/extra/plugins/zeo/controllers',
+        // '/extra/plugins/zeo/hmd',
+        '/extra/plugins/zeo/skybox',
+        '/extra/plugins/zeo/ocean',
+        '/extra/plugins/zeo/models',
+        '/extra/plugins/zeo/keyboard',
+        '/extra/plugins/zeo/rain',
+        '/extra/plugins/zeo/weapons',
+        '/extra/plugins/zeo/youtube',
+        '/extra/plugins/zeo/lens',
+        '/extra/plugins/zeo/portal',
+        '/extra/plugins/zeo/camera',
+      ])
+    )
+  )
+  .then(() => {
+    console.log('app started');
   })
   .catch(err => {
     console.warn(err);
