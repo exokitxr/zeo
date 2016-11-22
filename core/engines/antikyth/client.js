@@ -220,10 +220,10 @@ class AnyikythClient {
           }
 
           setObject(object) {
-            const {position, rotation} = object;
+            const {position, quaternion} = object;
 
             this.position = position;
-            this.rotation = rotation;
+            this.rotation = quaternion;
             this.linearVelocity = new THREE.Vector3();
             this.angularVelocity = new THREE.Vector3();
           }
@@ -295,7 +295,7 @@ class AnyikythClient {
             case 'Plane':
             case 'PlaneBufferGeometry': {
               const position = mesh.position.toArray();
-              const rotation = mesh.rotation.toArray();
+              const rotation = mesh.quaternion.toArray();
 
               return new Plane({
                 position,
@@ -307,7 +307,7 @@ class AnyikythClient {
             case 'BoxGeometry':
             case 'BoxBufferGeometry': {
               const position = mesh.position.toArray();
-              const rotation = mesh.rotation.toArray();
+              const rotation = mesh.quaternion.toArray();
               const {parameters: {width, height, depth}} = geometry;
 
               return new Box({
@@ -320,7 +320,7 @@ class AnyikythClient {
             case 'SphereGeometry':
             case 'Sphere': {
               const position = mesh.position.toArray();
-              const rotation = mesh.rotation.toArray();
+              const rotation = mesh.quaternion.toArray();
               const {parameters: {radius}} = geometry;
 
               return new Box({
@@ -335,7 +335,7 @@ class AnyikythClient {
         };
         const _makeConvexHullBody = mesh => {
           const position = mesh.position.toArray();
-          const rotation = mesh.rotation.toArray();
+          const rotation = mesh.quaternion.toArray();
           const points = _getGeometryPoints(mesh.geometry);
 
           return new ConvexHull({
@@ -347,7 +347,7 @@ class AnyikythClient {
         };
         const _makeTriangleMeshBody = mesh => {
           const position = mesh.position.toArray();
-          const rotation = mesh.rotation.toArray();
+          const rotation = mesh.quaternion.toArray();
           const points = _getGeometryPoints(mesh.geometry);
 
           return new TriangleMesh({
