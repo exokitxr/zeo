@@ -197,8 +197,10 @@ class AnyikythClient {
         }
       }
 
-      const _requestWorld = new Promise((accept, reject) => {
-        const world = new World();
+      const _requestWorld = worldId => new Promise((accept, reject) => {
+        const world = new World({
+          id: worldId,
+        });
         world.Plane = Plane;
         world.Sphere = Sphere;
         world.Box = Box;
@@ -207,8 +209,14 @@ class AnyikythClient {
 
         accept(world);
       });
-      const _releaseWorld = new Promise((acept, reject) => {
-        // XXX
+      const _releaseWorld = worldId => new Promise((accept, reject) => {
+        _request('remove', [null, worldId], err => {
+          if (!err) {
+            accept();
+          } else {
+            reject(err);
+          }
+        });
       });
 
       const connection = new WebSocket('ws://' + location.host + '/archae/antikythWs');
@@ -265,6 +273,11 @@ class AnyikythClient {
         worlds.forEach(world => {
           world.destroy();
         });
+      };
+
+      return {
+        requestWorld: _requestWorld,
+        releaseWorld: _releaseWorld,
       };
     });
   },
