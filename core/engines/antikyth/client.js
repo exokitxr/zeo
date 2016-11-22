@@ -3,6 +3,8 @@ const idUtils = require('./lib/idUtils');
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
 
+const engineKey = null;
+
 class AnyikythClient {
   mount() {
     return new Promise((accept, reject) => {
@@ -125,31 +127,29 @@ class AnyikythClient {
       }
 
       class Engine extends Entity {
-        constructor() {
-          super(null);
+        constructor(opts = {}) {
+          super(opts.id);
         }
       }
 
-      const engine = new Engine();
-
       class World extends Entity {
-        constructor() {
-          super();
+        constructor(opts = {}) {
+          super(opts.id);
 
           const {id} = this;
 
-          _request('create', ['world', id, {}], _warnError);
+          _request('create', ['world', id, _except(opts, ['id'])], _warnError);
         }
       }
       Engine.World = World;
 
       class Body extends Entity {
-        constructor(type, opts) {
-          super();
+        constructor(type, opts = {}) {
+          super(opts.id);
 
           const {id} = this;
 
-          _request('create', [type, id, opts], _warnError);
+          _request('create', [type, id, _except(opts, ['id'])], _warnError);
         }
 
         update({position, rotation, linearVelocity, angularVelocity}) {
@@ -185,34 +185,56 @@ class AnyikythClient {
       }
 
       class Plane extends Body {
-        constructor(opts) {
+        constructor(opts = {}) {
           super('plane', opts);
         }
       }
 
       class Sphere extends Body {
-        constructor(opts) {
+        constructor(opts = {}) {
           super('sphere', opts);
         }
       }
 
       class Box extends Body {
-        constructor(opts) {
+        constructor(opts = {}) {
           super('box', opts);
         }
       }
 
       class ConvexHull extends Body {
-        constructor(opts) {
+        constructor(opts = {}) {
           super('convexHull', opts);
         }
       }
 
       class TriangleMesh extends Body {
-        constructor(opts) {
+        constructor(opts = {}) {
           super('triangleMesh', opts);
         }
       }
+
+      class Context {
+        constructor() {
+          this.objects = new Map();
+
+          const engine = new Engine({
+            id: null,
+          });
+          this.setEngine(engine);
+        }
+
+        getEngine() {
+          return this.objects.get(engineKey);
+        }
+
+        setEngine(engine) {
+          this.objects.set(engineKey, engine);
+        }
+      }
+
+      const context = new Context();
+      const engine = context.getEngine();
 
       const api = {
         engine,
@@ -228,6 +250,18 @@ class AnyikythClient {
     this._cleanup();
   },
 });
+
+const _except = (o, excepts) => {
+  const result = {};
+
+  for (const k in o) {
+    if (!excepts.includes(k)) {
+      result[k] = o[k];
+    }
+  }
+
+  return result;
+};
 
 const _warnError = err => {
   if (err) {

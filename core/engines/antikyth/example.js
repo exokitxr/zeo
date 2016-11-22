@@ -47,7 +47,7 @@ antikyth.add(world);
 // main loop
 
 setInterval(() => {
-  antikyth.requestUpdate();
+  world.requestUpdate();
 }, TICK_TIME);
 setInterval(() => {
   const {box} = world;

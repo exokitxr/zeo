@@ -14,27 +14,38 @@ class BodyRecord {
   }
 }
 
-const _requestUpdate = () => {
+const _requestUpdate = worldId => {
   const updates = [];
 
+  const requestWorld = worlds.get(worldId);
   bodies.forEach((bodyRecord, bodyId) => {
-    const {body} = bodyRecord;
-    const position = body.getPosition();
-    const rotation = body.getRotation();
-    const linearVelocity = body.getLinearVelocity();
-    const angularVelocity = body.getAngularVelocity();
+    const {world} = bodyRecord;
 
-    const update = {
-      id: bodyId,
-      position,
-      rotation,
-      linearVelocity,
-      angularVelocity,
-    };
-    updates.push(update);
+    if (world === requestWorld) {
+      const {body} = bodyRecord;
+
+      const position = body.getPosition();
+      const rotation = body.getRotation();
+      const linearVelocity = body.getLinearVelocity();
+      const angularVelocity = body.getAngularVelocity();
+
+      const update = {
+        id: bodyId,
+        position,
+        rotation,
+        linearVelocity,
+        angularVelocity,
+      };
+      updates.push(update);
+    }
   });
 
-  send('update', updates);
+  if (updates.length > 0) {
+    send('update', {
+      id: worldId,
+      updates,
+    });
+  }
 };
 let interval = null;
 const _start = () => {
@@ -57,7 +68,7 @@ const _addWorld = ({id}) => {
   worlds.set(id, world);
 };
 const _removeWorld = ({id}) => {
-  worlds.remove(id);
+  worlds.delete(id);
 };
 const _addBody = ({worldId, body: bodySpec}) => {
   const world = worlds.get(worldId);
@@ -189,7 +200,8 @@ process.on('message', m => {
 
   switch (type) {
     case 'requestUpdate':
-      _requestUpdate();
+      const {args: {id}} = m;
+      _requestUpdate(id);
       break;
     case 'start':
       _start();

@@ -13,9 +13,12 @@ class Antikyth extends EventEmitter {
       const {type} = m;
 
       if (type === 'update') {
-        const {data: updates} = m;
+        const {data: {id, updates}} = m;
 
-        this.emit('update', updates);
+        const listener = this.updateListeners.get(id);
+        if (listener) {
+          listener(updates);
+        }
 
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
@@ -141,8 +144,10 @@ class Antikyth extends EventEmitter {
     });
   }
 
-  requestUpdate() {
-    this.send('requestUpdate');
+  requestWorldUpdate(world) {
+    this.send('requestUpdate', {
+      id: world.id,
+    });
   }
 
   send(type, args = {}) {
@@ -251,6 +256,10 @@ class World {
       }
       this.queue = [];
     }
+  }
+
+  requestUpdate() {
+    this.parent.requestWorldUpdate(this);
   }
 }
 Antikyth.World = World;
