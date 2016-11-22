@@ -8,7 +8,6 @@ const engineKey = null;
 class AnyikythClient {
   mount() {
     return new Promise((accept, reject) => {
-      const worlds = new Map();
       const engine = new Engine({
         id: null,
       });
@@ -36,6 +35,28 @@ class AnyikythClient {
       class Engine extends Entity {
         constructor(opts = {}) {
           super(opts.id);
+
+          this.worlds = new Map();
+        }
+
+        add(world) {
+          Entity.prototype.add.call(this, world);
+
+          const {id: worldId} = world;
+          this.worlds.set(worldId, world);
+        }
+
+        remove(world) {
+          Entity.prototype.remove.call(this, world);
+
+          const {id: worldId} = world;
+          this.worlds.delete(worldId);
+        }
+
+        destroy() {
+          this.worlds.forEach(world => {
+            world.destroy();
+          });
         }
       }
 
@@ -45,13 +66,13 @@ class AnyikythClient {
 
           const {id} = this;
 
-          _request('create', ['world', id, _except(opts, ['id'])], _warnError);
-
           this.bodies = new Map();
           this.running = false;
           this.timeout = null;
 
-          worlds.set(id, this);
+          _request('create', ['world', id, _except(opts, ['id'])], _warnError);
+
+          engine.add(this);
         }
 
         add(body) {
@@ -140,7 +161,6 @@ class AnyikythClient {
           }
         }
       }
-      Engine.World = World;
 
       class Body extends Entity {
         constructor(type, opts = {}) {
@@ -215,16 +235,32 @@ class AnyikythClient {
       }
 
       const _requestWorld = worldId => new Promise((accept, reject) => {
-        const world = new World({
-          id: worldId,
-        });
-        world.Plane = Plane;
-        world.Box = Box;
-        world.Sphere = Sphere;
-        world.ConvexHull = ConvexHull;
-        world.TriangleMesh = TriangleMesh;
+        const _acceptWorld = () => {
+          const world = new World({
+            id: worldId,
+          });
+          world.Plane = Plane;
+          world.Box = Box;
+          world.Sphere = Sphere;
+          world.ConvexHull = ConvexHull;
+          world.TriangleMesh = TriangleMesh;
 
-        accept(world);
+          world
+
+          accept(world);
+        };
+
+        if (!connected) {
+          _connect(err => {
+            if (!err) {
+              _acceptWorld();
+            } else {
+              reject(err);
+            }
+          });
+        } else {
+          _acceptWorld();
+        }
       });
       const _releaseWorld = worldId => new Promise((accept, reject) => {
         _request('remove', [null, worldId], err => {
@@ -236,28 +272,50 @@ class AnyikythClient {
         });
       });
 
-      const connection = new WebSocket('ws://' + location.host + '/archae/antikythWs');
-      connection.onopen = () => {
-        const api = {
-          requestWorld: _requestWorld,
-          releaseWorld: _releaseWorld,
-        };
-        accept(api);
-      };
-      connection.onerror = err => {
-        reject(err);
-      };
-      connection.onmessage = msg => {
-        const m = JSON.parse(msg.data);
-        const {id} = m;
+      let connection = null;
+      let connecting = false;
+      let connectCbs = [];
+      const _connect = cb => {
+        if (!connecting) {
+          const cbs = err => {
+            const oldConnectCbs = connectCbs;
+            connectCbs = [];
 
-        const requestHandler = requestHandlers.get(id);
-        if (requestHandler) {
-          const {error, result} = m;
-          requestHandler(error, result);
-        } else {
-          console.warn('unregistered handler:', JSON.stringify(id));
-        }
+            for (let i = 0; i < oldConnectCbs.length; i++) {
+              const cb = oldConnectCbs[i];
+              cb(err);
+            }
+          };
+
+          connection = new WebSocket('ws://' + location.host + '/archae/antikythWs');
+          connection.onopen = () => {
+            connecting = false;
+
+            cbs();
+          };
+          connection.onerror = err => {
+            connection = null;
+            connecting = false;
+
+            cbs(err);
+          };
+          connection.onmessage = msg => {
+            const m = JSON.parse(msg.data);
+            const {id} = m;
+
+            const requestHandler = requestHandlers.get(id);
+            if (requestHandler) {
+              const {error, result} = m;
+              requestHandler(error, result);
+            } else {
+              console.warn('unregistered handler:', JSON.stringify(id));
+            }
+          };
+
+          connecting = true;
+        };
+
+        connectCbs.push(cb);
       };
 
       const requestHandlers = new Map();
@@ -287,9 +345,7 @@ class AnyikythClient {
       this._cleanup = () => {
         connection.close();
 
-        worlds.forEach(world => {
-          world.destroy();
-        });
+        engine.destroy();
       };
 
       return {
