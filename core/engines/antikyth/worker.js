@@ -4,8 +4,10 @@ const FPS = 120;
 const STEP_SECONDS = 1 / FPS;
 const STEP_MILLISECONDS = 1000 / FPS;
 
-const worlds = new Map();
-const bodies = new Map();
+const worlds = new Map(); // worldId -> World
+const bodies = new Map(); // bodyId -> Body
+const worldBodyIndex = new Map(); // worldId -> [bodyId]
+const bodyWorldIndex = new Map(); // bodyId -> worldId
 
 class BodyRecord {
   constructor(world, body) {
@@ -15,29 +17,22 @@ class BodyRecord {
 }
 
 const _requestUpdate = worldId => {
-  const updates = [];
+  const bodyIds = worldBodyIndex.get(worldId);
+  const updates = bodyIds.map(bodyId => {
+    const body = bodies.get(bodyId);
 
-  const requestWorld = worlds.get(worldId);
-  bodies.forEach((bodyRecord, bodyId) => {
-    const {world} = bodyRecord;
+    const position = body.getPosition();
+    const rotation = body.getRotation();
+    const linearVelocity = body.getLinearVelocity();
+    const angularVelocity = body.getAngularVelocity();
 
-    if (world === requestWorld) {
-      const {body} = bodyRecord;
-
-      const position = body.getPosition();
-      const rotation = body.getRotation();
-      const linearVelocity = body.getLinearVelocity();
-      const angularVelocity = body.getAngularVelocity();
-
-      const update = {
-        id: bodyId,
-        position,
-        rotation,
-        linearVelocity,
-        angularVelocity,
-      };
-      updates.push(update);
-    }
+    return {
+      id: bodyId,
+      position,
+      rotation,
+      linearVelocity,
+      angularVelocity,
+    };
   });
 
   if (updates.length > 0) {
@@ -66,9 +61,21 @@ const _stop = () => {
 const _addWorld = ({id}) => {
   const world = new physics.World();
   worlds.set(id, world);
+
+  worldBodyIndex.set(id, []);
 };
 const _removeWorld = ({id}) => {
   worlds.delete(id);
+
+  const worldBodyIds = worldBodyIndex.get(id);
+  for (let i = 0; i < worldBodyIds.length; i++) {
+    const bodyId = worldBodyIds[i];
+
+    bodies.delete(bodyId);
+    bodyWorldIndex.delete(bodyId);
+  }
+
+  worldBodyIndex.delete(id);
 };
 const _addBody = ({worldId, body: bodySpec}) => {
   const world = worlds.get(worldId);
@@ -77,27 +84,34 @@ const _addBody = ({worldId, body: bodySpec}) => {
   world.addRigidBody(body);
 
   const {id: bodyId} = bodySpec;
-  const bodyRecord = new BodyRecord(world, body);
-  bodies.set(bodyId, bodyRecord);
+  bodies.set(bodyId, body);
+
+  const worldBodyIds = worldBodyIndex.get(worldId);
+  worldBodyIds.push(bodyId);
+
+  bodyWorldIndex.set(bodyId, worldId);
 };
 const _removeBody = ({bodyId}) => {
-  const bodyRecord = bodies.get(bodyId);
-  const {world, body} = bodyRecord;
+  const body = bodies.get(bodyId);
+  const world = bodyWorldIndex.get(bodyId);
 
   world.removeRigidBody(body);
 
   bodies.delete(bodyId);
+
+  const worldBodyIds = worldBodyIndex.get(worldId);
+  worldBodyIds.splice(worldBodyIds.indexOf(bodyId), 1);
+
+  bodyWorldIndex.delete(bodyId);
 };
 const _setPosition = ({bodyId, position}) => {
-  const bodyRecord = bodies.get(bodyId);
-  const {body} = bodyRecord;
+  const body = bodies.get(bodyId);
 
   const [x, y, z] = position;
   body.setPosition(x, y, z);
 };
 const _setRotation = ({bodyId, rotation}) => {
-  const bodyRecord = bodies.get(bodyId);
-  const {body} = bodyRecord;
+  const body = bodies.get(bodyId);
 
   const [x, y, z, w] = rotation;
   body.setRotation(x, y, z, w);
