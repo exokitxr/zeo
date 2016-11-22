@@ -221,9 +221,9 @@ class AntikythServer {
               cb();
             } else if (method === 'requestUpdate') {
               const [id] = args;
-              context.requestUpdate(id, updates => {
+              context.requestUpdate(id, (err, updates) => {
                 if (live) {
-                  cb(null, updates);
+                  cb(err, updates);
                 }
               });
 
