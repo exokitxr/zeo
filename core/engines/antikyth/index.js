@@ -69,16 +69,14 @@ class Antikyth extends EventEmitter {
 
     world.setParent(this);
 
-    let prevUpdate = null;
+    let prevUpdate = [];
     this.updateListeners.set(world.id, nextUpdate => {
-      if (!prevUpdate) {
-        const updateDiff = _getUpdateDiff(nextUpdate, prevUpdate);
-        if (updateDiff.length > 0) {
-          world.emit('update', updateDiff);
-        }
-
-        prevUpdate = nextUpdate;
+      const updateDiff = _getUpdateDiff(prevUpdate, nextUpdate);
+      if (updateDiff.length > 0) {
+        world.emit('update', updateDiff);
       }
+
+      prevUpdate = nextUpdate;
     });
   }
 
@@ -169,8 +167,10 @@ class Antikyth extends EventEmitter {
   }
 }
 
-class World {
+class World extends EventEmitter {
   constructor() {
+    super();
+
     this.id = idUtils.makeId();
     this.parent = null;
     this.queue = [];
@@ -405,8 +405,24 @@ const _isUpdateEqual = (a, b) => {
   return pax === pbx && pay === pby && paz === pbz &&
     rax === rbx && ray === rby && raz === rbz && raw === rbw;
 };
-const _getUpdateDiff = (a, b) => {
-  // XXX implement this
+const _makeIdMap = a => {
+  const result = {};
+
+  for (let i = 0; i < a.length; i++) {
+    const e = a[i];
+    const {id} = e;
+    result[id] = e;
+  }
+
+  return result;
+};
+const _getUpdateDiff = (prevUpdates, nextUpdates) => {
+  const prevUpdatesIdMap = _makeIdMap(prevUpdates);
+
+  return nextUpdates.filter(nextUpdate => {
+    const prevUpdate = prevUpdatesIdMap[nextUpdate.id];
+    return !prevUpdate || !_isUpdateEqual(prevUpdate, nextUpdate);
+  });
 };
 
 module.exports = Antikyth;
