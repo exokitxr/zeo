@@ -164,15 +164,47 @@ class AnyikythClient {
 
           const {id} = this;
 
+          const position = new THREE.Vector3();
+          if (opts.position) {
+            position.fromArray(opts.position);
+          }
+          this.position = position;
+
+          const rotation = new THREE.Quaternion();
+          if (opts.rotation) {
+            rotation.fromArray(opts.rotation);
+          }
+          this.rotation = rotation;
+
+          const linearVelocity = new THREE.Vector3();
+          if (opts.linearVelocity) {
+            linearVelocity.fromArray(opts.linearVelocity);
+          }
+          this.linearVelocity = linearVelocity;
+
+          const angularVelocity = new THREE.Vector3();
+          if (opts.angularVelocity) {
+            angularVelocity.fromArray(opts.angularVelocity);
+          }
+          this.angularVelocity = angularVelocity;
+
           _request('create', [type, id, _except(opts, ['id'])], _warnError);
         }
 
         update({position, rotation, linearVelocity, angularVelocity}) {
-          // XXX copy vectors here
+          this.position.fromArray(position);
+          this.rotation.fromArray(rotation);
+          this.linearVelocity.fromArray(linearVelocity);
+          this.angularVelocity.fromArray(angularVelocity);
+        }
+
+        setObject(object) {
+          const {position, rotation} = object;
+
           this.position = position;
           this.rotation = rotation;
-          this.linearVelocity = linearVelocity;
-          this.angularVelocity = angularVelocity;
+          this.linearVelocity = new THREE.Vector3();
+          this.angularVelocity = new THREE.Vector3();
         }
 
         setPosition(position) {
