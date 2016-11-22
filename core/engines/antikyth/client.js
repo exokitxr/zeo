@@ -8,103 +8,10 @@ const engineKey = null;
 class AnyikythClient {
   mount() {
     return new Promise((accept, reject) => {
-      const connection = new WebSocket('ws://' + location.host + '/archae/antikythWs');
-      connection.onopen = () => {
-        accept(api);
-      };
-      connection.onerror = err => {
-        reject(err);
-      };
-      connection.onmessage = msg => {
-        const m = JSON.parse(msg.data);
-        const {id} = m;
-
-        const requestHandler = requestHandlers.get(id);
-        if (requestHandler) {
-          const {error, result} = m;
-          requestHandler(error, result);
-        } else {
-          console.warn('unregistered handler:', JSON.stringify(id));
-        }
-      };
-
-      const requestHandlers = new Map();
-      const _request = (method, args, cb) => {
-        const id = idUitls.makeId();
-
-        const e = {
-          method,
-          id,
-          args,
-        };
-        const es = JSON.stringify(e);
-        connection.send(es);
-
-        const requestHandler = (err, result) => {
-          if (!err) {
-            cb(null, result);
-          } else {
-            cb(err);
-          }
-
-          requestHandlers.delete(id);
-        };
-        requestHandlers.set(id, requestHandler);
-      };
-
-      let lastUpdateTime = null;
-      let timeout = null;
-      const _recurse = () => {
-        const timeUntilNextUpdate = (() => {
-          if (lastUpdateTime === null) {
-            return 0;
-          } else {
-            const now = Date.now();
-            const timeSinceLastUpdate = now - lastUpdateTime;
-            return Math.max(TICK_TIME - timeSinceLastUpdate, 0);
-          }
-        })();
-
-        const _requestUpdate = () => {
-          _request('requestUpdate', [], (err, updates) => {
-            for (let i = 0; i < updates.length; i++) {
-              const update = updates[i];
-              const {id} = update;
-
-              const object = objects.get(id);
-              if (object) {
-                const {position, rotation, linearVelocity, angularVelocity} = update;
-                object.update({position, rotation, linearVelocity, angularVelocity});
-              } else {
-                console.warn('invalid object update:', JSON.stringify(id));
-              }
-            }
-
-            lastUpdateTime = Date.now();
-
-            _recurse();
-          });
-        };
-
-        if (timeUntilNextUpdate === 0) {
-          _requestUpdate();
-        } else {
-          timeout = setTimeout(() => {
-            _requestUpdate();
-
-            timeout = null;
-          }, FRAME_RATE);
-        }
-      };
-      _recurse();
-
-      this._cleanup = () => {
-        connection.close();
-
-        if (timeout) {
-          clearTimeout(timeout);
-        }
-      };
+      const worlds = new Map();
+      const engine = new Engine({
+        id: null,
+      });
 
       class Entity {
         constructor(id = idUtils.makeId()) {
@@ -139,6 +46,81 @@ class AnyikythClient {
           const {id} = this;
 
           _request('create', ['world', id, _except(opts, ['id'])], _warnError);
+
+          this.bodies = new Map();
+          this.timeout = null;
+          this.listen();
+
+          worlds.set(id, this);
+        }
+
+        add(body) {
+          Entity.prototype.add.call(this, body);
+
+          const {id: bodyId} = body;
+          this.bodies.set(bodyId, body);
+        }
+
+        remove(body) {
+          Entity.prototype.remove.call(this, body);
+
+          const {id: bodyId} = body;
+          this.bodies.delete(bodyId);
+        }
+
+        listen() {
+          let lastUpdateTime = null;
+          const _recurse = () => {
+            const timeUntilNextUpdate = (() => {
+              if (lastUpdateTime === null) {
+                return 0;
+              } else {
+                const now = Date.now();
+                const timeSinceLastUpdate = now - lastUpdateTime;
+                return Math.max(TICK_TIME - timeSinceLastUpdate, 0);
+              }
+            })();
+
+            const _requestUpdate = () => {
+              _request('requestUpdate', [this.id], (err, updates) => {
+                for (let i = 0; i < updates.length; i++) {
+                  const update = updates[i];
+                  const {id} = update;
+
+                  const body = this.bodies.get(id);
+                  if (body) {
+                    const {position, rotation, linearVelocity, angularVelocity} = update;
+                    body.update({position, rotation, linearVelocity, angularVelocity});
+                  } else {
+                    console.warn('invalid body update:', JSON.stringify(id));
+                  }
+                }
+
+                lastUpdateTime = Date.now();
+
+                _recurse();
+              });
+            };
+
+            if (timeUntilNextUpdate === 0) {
+              _requestUpdate();
+            } else {
+              this.timeout = setTimeout(() => {
+                _requestUpdate();
+
+                this.imeout = null;
+              }, FRAME_RATE);
+            }
+          };
+          _recurse();
+        }
+
+        destroy() {
+          if (this.timeout) {
+            clearTimeout(this.timeout);
+          }
+
+          worlds.delete(id);
         }
       }
       Engine.World = World;
@@ -153,6 +135,7 @@ class AnyikythClient {
         }
 
         update({position, rotation, linearVelocity, angularVelocity}) {
+          // XXX copy vectors here
           this.position = position;
           this.rotation = rotation;
           this.linearVelocity = linearVelocity;
@@ -214,35 +197,74 @@ class AnyikythClient {
         }
       }
 
-      class Context {
-        constructor() {
-          this.objects = new Map();
+      const _requestWorld = new Promise((accept, reject) => {
+        const world = new World();
+        world.Plane = Plane;
+        world.Sphere = Sphere;
+        world.Box = Box;
+        world.ConvexHull = ConvexHull;
+        world.TriangleMesh = TriangleMesh;
 
-          const engine = new Engine({
-            id: null,
-          });
-          this.setEngine(engine);
+        accept(world);
+      });
+      const _releaseWorld = new Promise((acept, reject) => {
+        // XXX
+      });
+
+      const connection = new WebSocket('ws://' + location.host + '/archae/antikythWs');
+      connection.onopen = () => {
+        const api = {
+          requestWorld: _requestWorld,
+          releaseWorld: _releaseWorld,
+        };
+        accept(api);
+      };
+      connection.onerror = err => {
+        reject(err);
+      };
+      connection.onmessage = msg => {
+        const m = JSON.parse(msg.data);
+        const {id} = m;
+
+        const requestHandler = requestHandlers.get(id);
+        if (requestHandler) {
+          const {error, result} = m;
+          requestHandler(error, result);
+        } else {
+          console.warn('unregistered handler:', JSON.stringify(id));
         }
+      };
 
-        getEngine() {
-          return this.objects.get(engineKey);
-        }
+      const requestHandlers = new Map();
+      const _request = (method, args, cb) => {
+        const id = idUitls.makeId();
 
-        setEngine(engine) {
-          this.objects.set(engineKey, engine);
-        }
-      }
+        const e = {
+          method,
+          id,
+          args,
+        };
+        const es = JSON.stringify(e);
+        connection.send(es);
 
-      const context = new Context();
-      const engine = context.getEngine();
+        const requestHandler = (err, result) => {
+          if (!err) {
+            cb(null, result);
+          } else {
+            cb(err);
+          }
 
-      const api = {
-        engine,
-        Plane,
-        Sphere,
-        Box,
-        ConvexHull,
-        TriangleMesh,
+          requestHandlers.delete(id);
+        };
+        requestHandlers.set(id, requestHandler);
+      };
+
+      this._cleanup = () => {
+        connection.close();
+
+        worlds.forEach(world => {
+          world.destroy();
+        });
       };
     });
   },

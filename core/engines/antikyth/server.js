@@ -133,12 +133,12 @@ class Context {
     object.setAngularVelocity(angularVelocity);
   }
 
-  requestUpdate(cb) {
+  requestUpdate(id, cb) {
     const {objects} = this;
 
-    const engine = objects.get(engineKey);
-    engine.requestUpdate();
-    engine.once('update', updates => {
+    const object = objects.get(id);
+    object.requestUpdate();
+    object.once('update', updates => {
       cb(null, updates);
     });
   }
@@ -219,7 +219,8 @@ class AntikythServer {
 
               cb();
             } else if (method === 'requestUpdate') {
-              context.requestUpdate(updates => {
+              const [id] = args;
+              context.requestUpdate(id, updates => {
                 if (live) {
                   cb(null, updates);
                 }

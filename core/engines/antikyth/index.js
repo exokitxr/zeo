@@ -68,6 +68,18 @@ class Antikyth extends EventEmitter {
     });
 
     world.setParent(this);
+
+    let prevUpdate = null;
+    this.updateListeners.set(world.id, nextUpdate => {
+      if (!prevUpdate) {
+        const updateDiff = _getUpdateDiff(nextUpdate, prevUpdate);
+        if (updateDiff.length > 0) {
+          world.emit('update', updateDiff);
+        }
+
+        prevUpdate = nextUpdate;
+      }
+    });
   }
 
   removeWorld(world) {
@@ -76,6 +88,8 @@ class Antikyth extends EventEmitter {
     });
 
     world.setParent(null);
+
+    this.updateListeners.delete(world.id);
   }
 
   addBody(world, body) {
@@ -105,13 +119,6 @@ class Antikyth extends EventEmitter {
     });
 
     let prevUpdate = null;
-    const _isUpdateEqual = (a, b) => {
-      const {position: [pax, pay, paz], rotation: [rax, ray, raz, raw]} = a;
-      const {position: [pbx, pby, pbz], rotation: [rbx, rby, rbz, rbw]} = b;
-
-      return pax === pbx && pay === pby && paz === pbz &&
-        rax === rbx && ray === rby && raz === rbz && raw === rbw;
-    };
     this.updateListeners.set(body.id, nextUpdate => {
       if (!prevUpdate || !_isUpdateEqual(nextUpdate, prevUpdate)) {
         body.emit('update', nextUpdate);
@@ -127,7 +134,7 @@ class Antikyth extends EventEmitter {
       bodyId: body.id,
     });
 
-    this.updateListeners.delete(id);
+    this.updateListeners.delete(body.id);
   }
 
   setWorldBodyPosition(world, body, x, y, z) {
@@ -390,5 +397,16 @@ class TriangleMesh extends Body {
   }
 }
 Antikyth.TriangleMesh = TriangleMesh;
+
+const _isUpdateEqual = (a, b) => {
+  const {position: [pax, pay, paz], rotation: [rax, ray, raz, raw]} = a;
+  const {position: [pbx, pby, pbz], rotation: [rbx, rby, rbz, rbw]} = b;
+
+  return pax === pbx && pay === pby && paz === pbz &&
+    rax === rbx && ray === rby && raz === rbz && raw === rbw;
+};
+const _getUpdateDiff = (a, b) => {
+  // XXX implement this
+};
 
 module.exports = Antikyth;
