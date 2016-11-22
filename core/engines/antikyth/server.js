@@ -5,7 +5,8 @@ const engineKey = null;
 
 class Context {
   constructor() {
-    this.objects = new Map(); // id -> Object
+    this.objects = new Map(); // clientId -> Object
+    this.updateIndex = new Map(); // engineId -> clientId
     this.childIndex = new Map(); // parentId -> [childId]
 
     const engine = new Antikyth();
@@ -50,6 +51,7 @@ class Context {
     })();
 
     this.objects.set(id, object);
+    this.updateIndex.set(object.id, id);
 
     const engine = this.getEngine();
     if (!engine.running && this.hasRunnableObjects()) {
@@ -58,7 +60,11 @@ class Context {
   }
 
   destroy(id) {
-    this.objects.delete(id);
+    const object = this.objects.get(id);
+    if (object) {
+      this.objects.delete(id);
+      this.updateIndex.delete(object.id);
+    }
 
     const childIds = this.childIndex.get(id);
     if (childIds) {
@@ -139,8 +145,21 @@ class Context {
 
     const object = objects.get(id);
     object.requestUpdate();
-    object.once('update', updates => {
-      cb(null, updates);
+    object.once('update', engineUpdates => {
+      const clientUpdates = engineUpdates.map(update => {
+        const {id: engineId, position, rotation, linearVelocity, angularVelocity} = update;
+        const clientId = this.updateIndex.get(engineId);
+
+        return {
+          id: clientId,
+          position,
+          rotation,
+          linearVelocity,
+          angularVelocity,
+        };
+      });
+
+      cb(null, clientUpdates);
     });
   }
 }
@@ -226,8 +245,6 @@ class AntikythServer {
                   cb(err, updates);
                 }
               });
-
-              cb();
             } else {
               const err = new Error('no such method:' + JSON.stringify(method));
               cb(err.stack);

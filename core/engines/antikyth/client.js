@@ -125,17 +125,21 @@ class AnyikythClient {
 
               const _requestUpdate = () => {
                 _request('requestUpdate', [this.id], (err, updates) => {
-                  for (let i = 0; i < updates.length; i++) {
-                    const update = updates[i];
-                    const {id} = update;
+                  if (!err) {
+                    for (let i = 0; i < updates.length; i++) {
+                      const update = updates[i];
+                      const {id} = update;
 
-                    const body = this.bodies.get(id);
-                    if (body) {
-                      const {position, rotation, linearVelocity, angularVelocity} = update;
-                      body.update({position, rotation, linearVelocity, angularVelocity});
-                    } else {
-                      console.warn('invalid body update:', JSON.stringify(id));
+                      const body = this.bodies.get(id);
+                      if (body) {
+                        const {position, rotation, linearVelocity, angularVelocity} = update;
+                        body.update({position, rotation, linearVelocity, angularVelocity});
+                      } else {
+                        console.warn('invalid body update:', JSON.stringify(id));
+                      }
                     }
+                  } else {
+                    console.warn(err);
                   }
 
                   lastUpdateTime = Date.now();
@@ -288,7 +292,8 @@ class AnyikythClient {
           const {type} = geometry;
 
           switch (type) {
-            case 'Plane': {
+            case 'Plane':
+            case 'PlaneBufferGeometry': {
               const position = mesh.position.toArray();
               const rotation = mesh.rotation.toArray();
 
@@ -299,7 +304,8 @@ class AnyikythClient {
                 mass: 1,
               });
             }
-            case 'Box': {
+            case 'BoxGeometry':
+            case 'BoxBufferGeometry': {
               const position = mesh.position.toArray();
               const rotation = mesh.rotation.toArray();
               const {parameters: {width, height, depth}} = geometry;
@@ -311,6 +317,7 @@ class AnyikythClient {
                 mass: 1,
               });
             }
+            case 'SphereGeometry':
             case 'Sphere': {
               const position = mesh.position.toArray();
               const rotation = mesh.rotation.toArray();
