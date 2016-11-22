@@ -1,4 +1,3 @@
-
 #include "helper.h"
 #include "btBulletDynamicsCommon.h"
 #include "pointers.h"

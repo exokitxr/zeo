@@ -234,6 +234,74 @@ class AnyikythClient {
         }
       }
 
+      const _makeBody = mesh => {
+        const {geometry} = mesh;
+        const {type} = geometry;
+
+        switch (type) {
+          case 'Plane': {
+            const position = mesh.position.toArray();
+            const rotation = mesh.rotation.toArray();
+
+            return new Plane({
+              position,
+              rotation,
+              dimensions: [0, 0, 1],
+              mass: 1,
+            });
+          }
+          case 'Box': {
+            const position = mesh.position.toArray();
+            const rotation = mesh.rotation.toArray();
+            const {parameters: {width, height, depth}} = geometry;
+
+            return new Box({
+              position,
+              rotation,
+              dimensions: [width, height, depth],
+              mass: 1,
+            });
+          }
+          case 'Sphere': {
+            const position = mesh.position.toArray();
+            const rotation = mesh.rotation.toArray();
+            const {parameters: {radius}} = geometry;
+
+            return new Box({
+              position,
+              rotation,
+              size: radius,
+              mass: 1,
+            });
+          }
+          default: throw new Error('unsupported mesh type: ' + JSON.stringify(type));
+        }
+      };
+      const _makeConvexHullBody = mesh => {
+        const position = mesh.position.toArray();
+        const rotation = mesh.rotation.toArray();
+        const points = _getGeometryPoints(mesh.geometry);
+
+        return new ConvexHull({
+          position,
+          rotation,
+          points,
+          mass: 1,
+        });
+      };
+      const _makeTriangleMeshBody = mesh => {
+        const position = mesh.position.toArray();
+        const rotation = mesh.rotation.toArray();
+        const points = _getGeometryPoints(mesh.geometry);
+
+        return new TriangleMesh({
+          position,
+          rotation,
+          points,
+          mass: 1,
+        });
+      };
+
       const _requestWorld = worldId => new Promise((accept, reject) => {
         if (!connection) {
           _ensureConnection();
@@ -247,6 +315,9 @@ class AnyikythClient {
         world.Sphere = Sphere;
         world.ConvexHull = ConvexHull;
         world.TriangleMesh = TriangleMesh;
+        world.makeBody = _makeBody;
+        world.makeConvexHullBody = _makeConvexHullBody;
+        world.makeTriangleMeshBody = _makeTriangleMeshBody;
 
         accept(world);
       });
@@ -357,6 +428,13 @@ const _except = (o, excepts) => {
   }
 
   return result;
+};
+
+const _getGeometryPoints = geometry => {
+  if (!(geometry instanceof BufferGeometry)) {
+    geometry = new THREE.BufferGeometry().fromGeometry(geometry);
+  }
+  return Array.from(geometry.getAttribute('position').array);
 };
 
 const _warnError = err => {
