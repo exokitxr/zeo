@@ -5,10 +5,11 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "nan": "^2.4.0"
+    "nan": "^2.4.0",
+    "node-gyp": "^3.4.0"
   },
-  "scripts" : {
+  "scripts": {
     "preinstall": "./build.sh",
-    "test" : "node test.js"
+    "test": "node test.js"
   }
 }

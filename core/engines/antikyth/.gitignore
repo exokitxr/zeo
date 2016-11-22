@@ -1,3 +1,4 @@
 node_modules/
 build/
 bullet3/bullet-build
+yarn.lock
