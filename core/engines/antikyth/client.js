@@ -235,32 +235,20 @@ class AnyikythClient {
       }
 
       const _requestWorld = worldId => new Promise((accept, reject) => {
-        const _acceptWorld = () => {
-          const world = new World({
-            id: worldId,
-          });
-          world.Plane = Plane;
-          world.Box = Box;
-          world.Sphere = Sphere;
-          world.ConvexHull = ConvexHull;
-          world.TriangleMesh = TriangleMesh;
-
-          world
-
-          accept(world);
-        };
-
-        if (!connected) {
-          _connect(err => {
-            if (!err) {
-              _acceptWorld();
-            } else {
-              reject(err);
-            }
-          });
-        } else {
-          _acceptWorld();
+        if (!connection) {
+          _ensureConnection();
         }
+
+        const world = new World({
+          id: worldId,
+        });
+        world.Plane = Plane;
+        world.Box = Box;
+        world.Sphere = Sphere;
+        world.ConvexHull = ConvexHull;
+        world.TriangleMesh = TriangleMesh;
+
+        accept(world);
       });
       const _releaseWorld = worldId => new Promise((accept, reject) => {
         _request('remove', [null, worldId], err => {
@@ -279,31 +267,25 @@ class AnyikythClient {
       });
 
       let connection = null;
-      let connecting = false;
-      let connectCbs = [];
-      const _connect = cb => { // XXX queue here instead of blocking
-        if (!connecting) {
-          const cbs = err => {
-            const oldConnectCbs = connectCbs;
-            connectCbs = [];
-
-            for (let i = 0; i < oldConnectCbs.length; i++) {
-              const cb = oldConnectCbs[i];
-              cb(err);
-            }
-          };
-
+      let queue = [];
+      const _ensureConnection = () => {
+        if (!connection) {
           connection = new WebSocket('ws://' + location.host + '/archae/antikythWs');
           connection.onopen = () => {
-            connecting = false;
+            if (queue.length > 0) {
+              for (let i = 0; i < queue.length; i++) {
+                const e = queue[i];
+                const es = JSON.stringify(e);
+                connection.send(es);
+              }
 
-            cbs();
+              queue = [];
+            }
           };
           connection.onerror = err => {
             connection = null;
-            connecting = false;
 
-            cbs(err);
+            console.warn(err);
           };
           connection.onmessage = msg => {
             const m = JSON.parse(msg.data);
@@ -317,11 +299,7 @@ class AnyikythClient {
               console.warn('unregistered handler:', JSON.stringify(id));
             }
           };
-
-          connecting = true;
-        };
-
-        connectCbs.push(cb);
+        }
       };
 
       const requestHandlers = new Map();
@@ -333,8 +311,12 @@ class AnyikythClient {
           id,
           args,
         };
-        const es = JSON.stringify(e);
-        connection.send(es);
+        if (connection) {
+          const es = JSON.stringify(e);
+          connection.send(es);
+        } else {
+          queue.push(e);
+        }
 
         const requestHandler = (err, result) => {
           if (!err) {
