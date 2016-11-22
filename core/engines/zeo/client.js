@@ -14,9 +14,11 @@ class Zeo {
     return archae.requestEngines([
       '/core/engines/three',
       '/core/engines/somnifer',
+      '/core/engines/antikyth',
     ]).then(([
       three,
       somnifer,
+      antikyth,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;

@@ -1,0 +1,14 @@
+{
+  "name": "antikyth",
+  "version": "0.0.2",
+  "main": "index.js",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "nan": "^2.4.0"
+  },
+  "scripts" : {
+    "preinstall": "./build.sh",
+    "test" : "node test.js"
+  }
+}
