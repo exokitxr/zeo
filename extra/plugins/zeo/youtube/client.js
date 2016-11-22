@@ -47,6 +47,7 @@ class Youtube {
                     .then(src => {
                       video.src = '/archae/cors/' + src;
                       video.loop = true;
+                      // video.muted = true;
                       video.oncanplay = () => {
                         texture.image = video;
                         texture.needsUpdate = true;
@@ -104,6 +105,13 @@ class Youtube {
             return result;
           })();
           mesh.video = video;
+
+          const soundBody = (() => {
+            const result = new sound.Body();
+            result.setInput(video);
+            result.setObject(mesh);
+            return result;
+          })();
 
           return mesh;
         })();
@@ -341,6 +349,8 @@ class Youtube {
           if (e.keyCode === 32) { // space
             const {video} = videoMesh;
             const {boxMesh} = menuMesh;
+
+console.log('got box mesh target', boxMesh.target);
 
             if (boxMesh.target === 'play') {
               if (video.paused) {
