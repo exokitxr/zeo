@@ -34,62 +34,67 @@ class Zeo {
           if (world) {
             accept(world);
           } else {
-            const plugins = new Map();
+            antikyth.requestWorld(worldName)
+              .then(physics => {
+                const plugins = new Map();
 
-            const _requestMod = modSpec => new Promise((accept, reject) => {
-              archae.requestPlugin(modSpec)
-                .then(plugin => {
-                  const pluginName = archae.getName(plugin);
-                  plugins.set(pluginName, plugin);
+                const _requestMod = modSpec => new Promise((accept, reject) => {
+                  archae.requestPlugin(modSpec)
+                    .then(plugin => {
+                      const pluginName = archae.getName(plugin);
+                      plugins.set(pluginName, plugin);
 
-                  accept(plugin);
-                })
-                .catch(reject);
-            });
-            const _requestMods = modSpecs => {
-              const modPromises = modSpecs.map(_requestMod);
-              return Promise.all(modPromises);
-            };
-            const _destroy = () => {
-              if (animationFrame) {
-                cancelAnimationFrame(animationFrame);
-              }
-            };
-
-            const startTime = Date.now()
-            let animationFrame = null;
-            const _recurse = () => {
-              animationFrame = requestAnimationFrame(() => {
-                animationFrame = null;
-
-                const now = Date.now();
-                const worldTime = now - startTime;
-
-                const updateOptions = {
-                  worldTime,
-                };
-                plugins.forEach(plugin => {
-                  if (typeof plugin.update === 'function') {
-                    plugin.update(updateOptions);
-                  }
+                      accept(plugin);
+                    })
+                    .catch(reject);
                 });
+                const _requestMods = modSpecs => {
+                  const modPromises = modSpecs.map(_requestMod);
+                  return Promise.all(modPromises);
+                };
+                const _destroy = () => {
+                  if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                  }
+                };
 
-                renderer.render(scene, camera);
+                const startTime = Date.now()
+                let animationFrame = null;
+                const _recurse = () => {
+                  animationFrame = requestAnimationFrame(() => {
+                    animationFrame = null;
 
+                    const now = Date.now();
+                    const worldTime = now - startTime;
+
+                    const updateOptions = {
+                      worldTime,
+                    };
+                    plugins.forEach(plugin => {
+                      if (typeof plugin.update === 'function') {
+                        plugin.update(updateOptions);
+                      }
+                    });
+
+                    renderer.render(scene, camera);
+
+                    _recurse();
+                  });
+                };
                 _recurse();
-              });
-            };
-            _recurse();
 
-            const world = {
-              requestMod: _requestMod,
-              requestMods: _requestMods,
-              destroy: _destroy,
-            };
+                const world = {
+                  requestMod: _requestMod,
+                  requestMods: _requestMods,
+                  physics,
+                  destroy: _destroy,
+                };
 
-            worlds.set(worldName, world);
+                worlds.set(worldName, world);
 
-            accept(world);
+                accept(world);
+              })
+              .catch(reject);
           }
         }).then(newWorld => {
           world = newWorld;
