@@ -13,11 +13,14 @@ class Zeo {
 
     return archae.requestEngines([
       '/core/engines/three',
+      '/core/engines/somnifer',
     ]).then(([
       three,
+      somnifer,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
+        const {sound} = somnifer;
 
         const worlds = new Map();
         let world = null;
@@ -103,6 +106,7 @@ class Zeo {
           scene,
           camera,
           renderer,
+          sound,
           getCurrentWorld: _getCurrentWorld,
           requestChangeWorld: _requestChangeWorld,
         };

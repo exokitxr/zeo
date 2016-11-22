@@ -10,7 +10,6 @@ const trackbarWidth = videoResolutionWidth - trackbarStart - (16);
 const transparentImg = (() => {
   const img = new Image();
   img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-  // img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAIAAAACUFjqAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3ggRDQENU0dyawAAACZJREFUGNNjPHXqDAMSMDY2ROYyMeAFNJVm/Pv3LzL/7Nnzg8VpAKebCGpIIxHBAAAAAElFTkSuQmCC';
   img.update = () => {};
   return img;
 })();
@@ -35,19 +34,13 @@ class Youtube {
       zeo,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = zeo;
+        const {THREE, scene, camera, sound} = zeo;
 
         const videoMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(videoWidth, videoHeight, 1, 1);
 
           const material = (() => {
             const videoTexture = (() => {
-              const video = document.createElement('video');
-              video.width = videoResolutionWidth;
-              video.update = () => {
-                texture.needsUpdate = true;
-              };
-
               fetch('/archae/youtube/' + videoUrl)
                 .then(res => {
                   res.text()
@@ -75,21 +68,6 @@ class Youtube {
                   console.warn(err);
                 });
 
-              window.addEventListener('keypress', e => { // XXX feed this in via the plugin API
-                if (e.keyCode === 32) { // space
-                  const {boxMesh} = menuMesh;
-                  if (boxMesh.target === 'play') {
-                    if (video.paused) {
-                      video.play();
-                    } else {
-                      video.pause();
-                    }
-                  } else if (boxMesh.target === 'track') {
-                    video.currentTime = boxMesh.value * video.duration;
-                  }
-                }
-              });
-
               const texture = new THREE.Texture(
                 transparentImg,
                 THREE.UVMapping,
@@ -116,6 +94,17 @@ class Youtube {
           mesh.position.y = 1.5;
           mesh.position.z = 0;
           mesh.rotation.y = Math.PI / 2;
+
+          const video = (() => {
+            const result = document.createElement('video');
+            result.width = videoResolutionWidth;
+            result.update = () => {
+              material.map.needsUpdate = true;
+            };
+            return result;
+          })();
+          mesh.video = video;
+
           return mesh;
         })();
         scene.add(videoMesh);
@@ -348,9 +337,30 @@ class Youtube {
         })();
         scene.add(menuMesh);
 
+        const keypress = e => {
+          if (e.keyCode === 32) { // space
+            const {video} = videoMesh;
+            const {boxMesh} = menuMesh;
+
+            if (boxMesh.target === 'play') {
+              if (video.paused) {
+                video.play();
+              } else {
+                video.pause();
+              }
+            } else if (boxMesh.target === 'track') {
+              video.currentTime = boxMesh.value * video.duration;
+            }
+          }
+        };
+        window.addEventListener('keypress', keypress);
+
+        this._cleanup = () => {
+          window.removeEventListener('keypress', keypress);
+        };
+
         const _update = () => {
-          const videoMeshTexture = videoMesh.material.map;
-          const video = videoMeshTexture.image;
+          const {video} = videoMesh;
           const {controlsMesh, boxMesh} = menuMesh;
           const canvas = controlsMesh.children[1].material.map.image;
 

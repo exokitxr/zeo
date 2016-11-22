@@ -37,74 +37,75 @@ class ArchaeServer {
 
   requestEngine(engine, opts = {}) {
     return new Promise((accept, reject) => {
-      const _remove = cb => {
-        _removeModule(engine, 'engines', cb);
+      const cb = (err, result) => {
+        if (!err) {
+          accept(result);
+        } else {
+          reject(err);
+        }
       };
-      const _add = cb => {
-        _addModule(engine, 'engines', (err, result) => {
-          if (!err) {
-            const {moduleName: engineName} = result;
 
-            const {enginesMutex} = this;
-            enginesMutex.lock(engineName)
-              .then(unlock => {
-                cb = (cb => (err, result) => {
-                  cb(err, result);
+      _getModuleRealName(engine, 'engines', (err, engineName) => {
+        if (!err) {
+          const {enginesMutex} = this;
 
-                  unlock();
-                })(cb);
+          enginesMutex.lock(engineName)
+            .then(unlock => {
+              const unlockCb = (cb => (err, result) => {
+                cb(err, result);
 
-                const existingEngine = this.engines[engineName];
-                if (existingEngine !== undefined) {
-                  const engineApi = this.engineApis[engineName];
-                  cb(null, engineApi);
-                } else {
-                  this.loadEngine(engineName, err => {
-                    if (!err) {
-                      this.mountEngine(engineName, err => {
+                unlock();
+              })(cb);
+          
+              const _remove = cb => {
+                _removeModule(engine, 'engines', cb);
+              };
+              const _add = cb => {
+                _addModule(engine, 'engines', err => {
+                  if (!err) {
+                    const existingEngine = this.engines[engineName];
+                    if (existingEngine !== undefined) {
+                      const engineApi = this.engineApis[engineName];
+                      cb(null, engineApi);
+                    } else {
+                      this.loadEngine(engineName, err => {
                         if (!err) {
-                          const engineApi = this.engineApis[engineName];
-                          cb(null, engineApi);
+                          this.mountEngine(engineName, err => {
+                            if (!err) {
+                              const engineApi = this.engineApis[engineName];
+                              cb(null, engineApi);
+                            } else {
+                              cb(err);
+                            }
+                          });
                         } else {
                           cb(err);
                         }
                       });
-                    } else {
-                      cb(err);
                     }
-                  });
-                }
-              })
-              .catch(cb);
-          } else {
-            cb(err);
-          }
-        });
-      };
+                  } else {
+                    cb(err);
+                  }
+                });
+              };
 
-      if (opts.force) {
-        _remove(err => {
-          if (!err) {
-            _add((err, result) => {
-              if (!err) {
-                accept(result);
+              if (opts.force) {
+                _remove(err => {
+                  if (!err) {
+                    _add(unlockCb);
+                  } else {
+                    unlockCb(err);
+                  }
+                });
               } else {
-                reject(err);
+                _add(unlockCb);
               }
-            });
-          } else {
-            reject(err);
-          }
-        });
-      } else {
-        _add((err, result) => {
-          if (!err) {
-            accept(result);
-          } else {
-            reject(err);
-          }
-        });
-      }
+           })
+           .catch(cb);
+        } else {
+          cb(err);
+        }
+      });
     });
   }
 
@@ -127,74 +128,75 @@ class ArchaeServer {
 
   requestPlugin(plugin, opts = {}) {
     return new Promise((accept, reject) => {
-      const _remove = cb => {
-        _removeModule(plugin, 'plugins', cb);
+      const cb = (err, result) => {
+        if (!err) {
+          accept(result);
+        } else {
+          reject(err);
+        }
       };
-      const _add = cb => {
-        _addModule(plugin, 'plugins', (err, result) => {
-          if (!err) {
-            const {added, moduleName: pluginName} = result;
 
-            const {pluginsMutex} = this;
-            pluginsMutex.lock(pluginName)
-              .then(unlock => {
-                cb = (cb => (err, result) => {
-                  cb(err, result);
+      _getModuleRealName(plugin, 'plugins', (err, pluginName) => {
+        if (!err) {
+          const {pluginsMutex} = this;
 
-                  unlock();
-                })(cb);
+          pluginsMutex.lock(pluginName)
+            .then(unlock => {
+              const unlockCb = (cb => (err, result) => {
+                cb(err, result);
 
-                const existingPlugin = this.plugins[pluginName];
-                if (existingPlugin !== undefined) {
-                  const pluginApi = this.pluginApis[pluginName];
-                  cb(null, pluginApi);
-                } else {
-                  this.loadPlugin(pluginName, err => {
-                    if (!err) {
-                      this.mountPlugin(pluginName, err => {
+                unlock();
+              })(cb);
+          
+              const _remove = cb => {
+                _removeModule(plugin, 'plugins', cb);
+              };
+              const _add = cb => {
+                _addModule(plugin, 'plugins', err => {
+                  if (!err) {
+                    const existingPlugin = this.plugins[pluginName];
+                    if (existingPlugin !== undefined) {
+                      const pluginApi = this.pluginApis[pluginName];
+                      cb(null, pluginApi);
+                    } else {
+                      this.loadPlugin(pluginName, err => {
                         if (!err) {
-                          const pluginApi = this.pluginApis[pluginName];
-                          cb(null, pluginApi);
+                          this.mountPlugin(pluginName, err => {
+                            if (!err) {
+                              const pluginApi = this.pluginApis[pluginName];
+                              cb(null, pluginApi);
+                            } else {
+                              cb(err);
+                            }
+                          });
                         } else {
                           cb(err);
                         }
                       });
-                    } else {
-                      cb(err);
                     }
-                  });
-                }
+                  } else {
+                    cb(err);
+                  }
+                });
+              };
+
+              if (opts.force) {
+                _remove(err => {
+                  if (!err) {
+                    _add(unlockCb);
+                  } else {
+                    unlockCb(err);
+                  }
+                });
+              } else {
+                _add(unlockCb);
+              }
             })
             .catch(cb);
-          } else {
-            cb(err);
-          }
-        });
-      };
-
-      if (opts.force) {
-        _remove(err => {
-          if (!err) {
-            _add((err, result) => {
-              if (!err) {
-                accept(result);
-              } else {
-                reject(err);
-              }
-            });
-          } else {
-            reject(err);
-          }
-        });
-      } else {
-        _add((err, result) => {
-          if (!err) {
-            accept(result);
-          } else {
-            reject(err);
-          }
-        });
-      }
+        } else {
+          unlockCb(err);
+        }
+      });
     });
   }
 
@@ -812,27 +814,7 @@ const _addModule = (module, type, cb) => {
 
   mkdirp(path.join(__dirname, type), err => {
     if (!err) {
-      const _getModuleRealName = (module, cb) => {
-        if (typeof module === 'string') {
-          const packageJsonPath = _getModulePackageJsonPath(module, type);
-
-          fs.readFile(packageJsonPath, 'utf8', (err, s) => {
-            if (!err) {
-              const j = JSON.parse(s);
-              const moduleName = j.name;
-              cb(null, moduleName);
-            } else {
-              cb(err);
-            }
-          });
-        } else if (_isValidModuleSpec(module)) {
-          cb(null, module.name);
-        } else {
-          cb(null, null);
-        }
-      };
-
-      _getModuleRealName(module, (err, moduleName) => {
+      _getModuleRealName(module, type, (err, moduleName) => {
         if (!err) {
           const modulePath = _getModulePath(moduleName, type);
 
@@ -842,19 +824,9 @@ const _addModule = (module, type, cb) => {
                 _downloadModule(module, type, (err, packageJson) => {
                   if (!err) {
                     if (packageJson.client) {
-                      _buildModule(packageJson, type, err => {
-                        if (!err) {
-                          cb(null, {
-                            moduleName,
-                          });
-                        } else {
-                          cb(err);
-                        }
-                      });
+                      _buildModule(packageJson, type, cb);
                     } else {
-                      cb(null, {
-                        moduleName,
-                      });
+                      cb();
                     }
                   } else {
                     cb(err);
@@ -866,19 +838,9 @@ const _addModule = (module, type, cb) => {
                 _dumpPlugin(packageJson, type, err => {
                   if (!err) {
                     if (packageJson.client) {
-                      _buildModule(packageJson, type, err => {
-                        if (!err) {
-                          cb(null, {
-                            moduleName,
-                          });
-                        } else {
-                          cb(err);
-                        }
-                      });
+                      _buildModule(packageJson, type, cb);
                     } else {
-                      cb(null, {
-                        moduleName,
-                      });
+                      cb();
                     }
                   } else {
                     cb(err);
@@ -889,9 +851,7 @@ const _addModule = (module, type, cb) => {
                 cb(err);
               }
             } else {
-              cb(null, {
-                moduleName,
-              });
+              cb();
             }
           });
         } else {
@@ -965,6 +925,25 @@ const _getModuleName = module => {
     return module.name;
   } else {
     return null;
+  }
+};
+const _getModuleRealName = (module, type, cb) => {
+  if (typeof module === 'string') {
+    const packageJsonPath = _getModulePackageJsonPath(module, type);
+
+    fs.readFile(packageJsonPath, 'utf8', (err, s) => {
+      if (!err) {
+        const j = JSON.parse(s);
+        const moduleName = j.name;
+        cb(null, moduleName);
+      } else {
+        cb(err);
+      }
+    });
+  } else if (_isValidModuleSpec(module)) {
+    cb(null, module.name);
+  } else {
+    cb(null, null);
   }
 };
 const _getModulePath = (module, type) => path.join(__dirname, type, 'node_modules', _getModuleName(module));
