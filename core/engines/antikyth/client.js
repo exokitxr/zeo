@@ -48,8 +48,8 @@ class AnyikythClient {
           _request('create', ['world', id, _except(opts, ['id'])], _warnError);
 
           this.bodies = new Map();
+          this.running = false;
           this.timeout = null;
-          this.listen();
 
           worlds.set(id, this);
         }
@@ -59,6 +59,10 @@ class AnyikythClient {
 
           const {id: bodyId} = body;
           this.bodies.set(bodyId, body);
+
+          if (!this.running) {
+            this.start();
+          }
         }
 
         remove(body) {
@@ -66,9 +70,13 @@ class AnyikythClient {
 
           const {id: bodyId} = body;
           this.bodies.delete(bodyId);
+
+          if (this.bodies.size === 0) {
+            this.stop();
+          }
         }
 
-        listen() {
+        start() {
           let lastUpdateTime = null;
           const _recurse = () => {
             const timeUntilNextUpdate = (() => {
@@ -113,14 +121,23 @@ class AnyikythClient {
             }
           };
           _recurse();
+
+          this.running = true;
+        }
+
+        stop() {
+          if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+          }
+
+          this.running = false;
         }
 
         destroy() {
-          if (this.timeout) {
-            clearTimeout(this.timeout);
+          if (this.running) {
+            this.stop();
           }
-
-          worlds.delete(id);
         }
       }
       Engine.World = World;
