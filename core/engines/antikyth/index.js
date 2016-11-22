@@ -1,3 +1,4 @@
+const path = require('path');
 const events = require('events');
 const EventEmitter = events.EventEmitter;
 const child_process = require('child_process');
@@ -8,7 +9,7 @@ class Antikyth extends EventEmitter {
   constructor() {
     super();
 
-    const workerProcess = child_process.fork('./worker.js');
+    const workerProcess = child_process.fork(path.join(__dirname, 'worker.js'));
     workerProcess.on('message', m => {
       const {type} = m;
 

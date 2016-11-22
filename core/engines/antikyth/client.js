@@ -8,10 +8,6 @@ const engineKey = null;
 class AnyikythClient {
   mount() {
     return new Promise((accept, reject) => {
-      const engine = new Engine({
-        id: null,
-      });
-
       class Entity {
         constructor(id = idUtils.makeId()) {
           this.id = id;
@@ -234,6 +230,10 @@ class AnyikythClient {
         }
       }
 
+      const engine = new Engine({
+        id: null,
+      });
+
       const _makeBody = mesh => {
         const {geometry} = mesh;
         const {type} = geometry;
@@ -412,11 +412,12 @@ class AnyikythClient {
         releaseWorld: _releaseWorld,
       };
     });
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
 const _except = (o, excepts) => {
   const result = {};

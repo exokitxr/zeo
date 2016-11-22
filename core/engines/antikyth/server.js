@@ -8,8 +8,7 @@ class Context {
     this.objects = new Map(); // id -> Object
     this.childIndex = new Map(); // parentId -> [childId]
 
-    const engine = new Antikyth(opts);
-    engine.clientId = id;
+    const engine = new Antikyth();
     this.setEngine(engine);
   }
 
@@ -40,42 +39,17 @@ class Context {
   create(type, id, opts) {
     const object = (() => {
       switch (type) {
-        case 'world': {
-          const world = new Antikyth.World(opts);
-          world.clientId = id;
-          return world;
-        }
-        case 'plane': {
-          const plane = new Antikyth.Plane(opts);
-          plane.clientId = id;
-          return plane;
-        }
-        case 'box': {
-          const box = new Antikyth.Box(opts);
-          box.clientId = id;
-          return box;
-        }
-        case 'sphere': {
-          const sphere = new Antikyth.Sphere(opts);
-          sphere.clientId = id;
-          return sphere;
-        }
-        case 'convexHull': {
-          const convexHull = new Antikyth.ConvexHull(opts);
-          convexHull.clientId = id;
-          return convexHull;
-        }
-        case 'triangleMesh': {
-          const triangleMesh = new Antikyth.TriangleMesh(opts);
-          triangleMesh.clientId = id;
-          return triangleMesh;
-        }
+        case 'world': return new Antikyth.World(opts);
+        case 'plane': return new Antikyth.Plane(opts);
+        case 'box': return new Antikyth.Box(opts);
+        case 'sphere': return new Antikyth.Sphere(opts);
+        case 'convexHull': return new Antikyth.ConvexHull(opts);
+        case 'triangleMesh': return new Antikyth.TriangleMesh(opts);
         default: return null;
       }
     })();
 
-    const {clientId} = object;
-    this.objects.set(clientId, object);
+    this.objects.set(id, object);
 
     const engine = this.getEngine();
     if (!engine.running && this.hasRunnableObjects()) {
