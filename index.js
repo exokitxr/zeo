@@ -8,6 +8,7 @@ const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
 const MultiMutex = require('multimutex');
 
+const yarnBin = path.join(__dirname, 'node_modules', 'yarn', 'bin', 'yarn.js');
 const nameSymbol = Symbol();
 
 class ArchaeServer {
@@ -684,7 +685,7 @@ const _addModule = (module, type, cb) => {
   const _yarnAdd = (module, type, cb) => {
     _queueYarn(cleanup => {
       const yarnAdd = child_process.spawn(
-        'yarn',
+        yarnBin,
         [ 'add', module ],
         {
           cwd: path.join(__dirname, type),
@@ -708,7 +709,7 @@ const _addModule = (module, type, cb) => {
     _queueYarn(cleanup => {
       const modulePath = _getModulePath(module, type);
       const yarnInstall = child_process.spawn(
-        'yarn',
+        yarnBin,
         [ 'install' ],
         {
           cwd: modulePath,
