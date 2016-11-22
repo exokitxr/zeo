@@ -263,9 +263,15 @@ class AnyikythClient {
         }
       });
       const _releaseWorld = worldId => new Promise((accept, reject) => {
-        _request('remove', [null, worldId], err => { // XXX this needs to destroy bodies attached to the world as well
+        _request('remove', [null, worldId], err => {
           if (!err) {
-            accept();
+            _request('destroy', [worldId], err => {
+              if (!err) {
+                accept();
+              } else {
+                reject(err);
+              }
+            });
           } else {
             reject(err);
           }

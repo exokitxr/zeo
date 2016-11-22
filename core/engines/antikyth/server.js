@@ -5,7 +5,8 @@ const engineKey = null;
 
 class Context {
   constructor() {
-    this.objects = new Map();
+    this.objects = new Map(); // id -> Object
+    this.parents = new Map(); // parentId -> [childId]
 
     const engine = new Antikyth(opts);
     engine.clientId = id;
@@ -85,6 +86,15 @@ class Context {
   destroy(id) {
     this.objects.delete(id);
 
+    const parentRecord = this.parents.get(id);
+    if (parentRecord) {
+      for (let i = 0; i < parentRecord.length; i++) {
+        const childId = parentRecord[i];
+        this.destroy(childId);
+      }
+      this.parents.delete(id);
+    }
+
     const engine = this.getEngine();
     if (engine.running && !this.hasRunnableObjects()) {
       engine.stop();
@@ -97,6 +107,13 @@ class Context {
     const parent = objects.get(parentId);
     const child = objects.get(childId);
     parent.add(child);
+
+    let parentRecord = this.parents.get(parentId);
+    if (!parentRecord) {
+      parentRecord = [];
+      this.parents.set(parentId, parentRecord);
+    }
+    parentRecord.push(childId);
   }
 
   remove(parentId, childId) {
@@ -105,6 +122,12 @@ class Context {
     const parent = objects.get(parentId);
     const child = objects.get(childId);
     parent.remove(child);
+
+    const parentRecord = this.parents.get(parentId);
+    parentRecord.splice(parentRecord.indexOf(childId), 1);
+    if (parentRecord.length === 0) {
+      this.parents.delete(parentId);
+    }
   }
 
   setPosition(id, position) {
