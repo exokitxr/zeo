@@ -3,25 +3,15 @@ const idUtils = require('./lib/idUtils');
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
 
-const client = () => ({
+class AnyikythClient {
   mount() {
-    const _connect = (contextName, cb) => {
-      const connection = new WebSocket('ws://' + location.host + '/archae/antikythWs/' + contextName);
+    return new Promise((accept, reject) => {
+      const connection = new WebSocket('ws://' + location.host + '/archae/antikythWs');
       connection.onopen = () => {
-        if (queue.length > 0) {
-          for (let i = 0; i < queue.length; i++) {
-            const e = queue[i];
-            const es = JSON.stringify(e);
-            connection.send(es);
-          }
-
-          queue = [];
-
-          cb(null, Engine);
-        }
+        accept(api);
       };
       connection.onerror = err => {
-        cb(err);
+        reject(err);
       };
       connection.onmessage = msg => {
         const m = JSON.parse(msg.data);
@@ -36,7 +26,6 @@ const client = () => ({
         }
       };
 
-      let queue = [];
       const requestHandlers = new Map();
       const _request = (method, args, cb) => {
         const id = idUitls.makeId();
@@ -46,6 +35,9 @@ const client = () => ({
           id,
           args,
         };
+        const es = JSON.stringify(e);
+        connection.send(es);
+
         const requestHandler = (err, result) => {
           if (!err) {
             cb(null, result);
@@ -56,12 +48,6 @@ const client = () => ({
           requestHandlers.delete(id);
         };
         requestHandlers.set(id, requestHandler);
-
-        if (connection.readyState === WebSocket.OPEN) {
-          connection.send(JSON.stringify(e));
-        } else {
-          queue.push(e);
-        }
       };
 
       let lastUpdateTime = null;
@@ -119,8 +105,7 @@ const client = () => ({
       };
 
       class Entity {
-        constructor() {
-          const id = idUtils.makeId();
+        constructor(id = idUtils.makeId()) {
           this.id = id;
         }
 
@@ -140,23 +125,15 @@ const client = () => ({
       }
 
       class Engine extends Entity {
-        constructor(opts) {
-          super();
-
-          const {id} = this;
-
-          _request('create', ['engine', id, {}], _warnError);
-        }
-
-        destroy() {
-          const {id} = this;
-
-          _request('destroy', [id], _warnError);
+        constructor() {
+          super(null);
         }
       }
 
+      const engine = new Engine();
+
       class World extends Entity {
-        constructor(opts) {
+        constructor() {
           super();
 
           const {id} = this;
@@ -206,47 +183,46 @@ const client = () => ({
           _request('setAngularVelocity', [id, angularVelocity], _warnError);
         }
       }
-      Engine.Body = Body;
 
       class Plane extends Body {
         constructor(opts) {
           super('plane', opts);
         }
       }
-      Engine.Plane = Plane;
 
       class Sphere extends Body {
         constructor(opts) {
           super('sphere', opts);
         }
       }
-      Engine.Sphere = Sphere;
 
       class Box extends Body {
         constructor(opts) {
           super('box', opts);
         }
       }
-      Engine.Box = Box;
 
       class ConvexHull extends Body {
         constructor(opts) {
           super('convexHull', opts);
         }
       }
-      Engine.ConvexHull = ConvexHull;
 
       class TriangleMesh extends Body {
         constructor(opts) {
           super('triangleMesh', opts);
         }
       }
-      Engine.TriangleMesh = TriangleMesh;
-    };
 
-    return {
-      connect: _connect,
-    };
+      const api = {
+        engine,
+        Plane,
+        Sphere,
+        Box,
+        ConvexHull,
+        TriangleMesh,
+      };
+    });
   },
   unmount() {
     this._cleanup();
@@ -259,4 +235,4 @@ const _warnError = err => {
   }
 };
 
-module.exports = client;
+module.exports = AnyikythClient;

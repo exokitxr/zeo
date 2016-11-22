@@ -35,16 +35,20 @@ class Antikyth extends EventEmitter {
     });
 
     this.workerProcess = workerProcess;
-    this.updatesListeners = [];
+    this.running = false;
     this.updateListeners = new Map();
   }
 
   start() {
     this.send('start');
+
+    this.running = true;
   }
 
   stop() {
     this.send('stop');
+
+    this.running = false;
   }
 
   add(world) {

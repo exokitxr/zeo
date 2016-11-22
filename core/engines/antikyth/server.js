@@ -1,23 +1,44 @@
 const Antikyth = require('antikyth');
 
 const OPEN = 1; // ws.OPEN
+const engineKey = null;
 
 class Context {
-  constructor(name) {
-    this._name = name;
-
+  constructor() {
     this.objects = new Map();
+
+    const engine = new Antikyth(opts);
+    engine.clientId = id;
+    this.setEngine(engine);
+  }
+
+  getEngine() {
+    return this.objects.get(engineKey);
+  }
+
+  setEngine(engine) {
+    this.objects.set(engineKey, engine);
+  }
+
+  hasRunnableObjects() {
+    const {objects} = this;
+
+    const _hasInstanceOf = type => {
+      for (k of objects) {
+        const v = objects.get(k);
+        if (v instanceof type) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    return _hasInstanceOf(Antikyth.World) && _hasInstanceOf(Antikyth.Body);
   }
 
   create(type, id, opts) {
     const object = (() => {
       switch (type) {
-        case 'engine': {
-          const engine = new Antikyth(opts);
-          engine.clientId = id;
-          engine.start();
-          return engine;
-        }
         case 'world': {
           const world = new Antikyth.World(opts);
           world.clientId = id;
@@ -42,9 +63,12 @@ class Context {
       }
     })();
 
-    if (object) {
-      const {clientId} = object;
-      this.objects.set(clientId, object);
+    const {clientId} = object;
+    this.objects.set(clientId, object);
+
+    const engine = this.getEngine();
+    if (!engine.running && this.hasRunnableObjects()) {
+      engine.start();
     }
   }
 
@@ -58,6 +82,11 @@ class Context {
     }
 
     objects.delete(id);
+
+    const engine = this.getEngine();
+    if (engine.running && !this.hasRunnableObjects()) {
+      engine.stop();
+    }
   }
 
   add(parentId, childId) {
@@ -104,36 +133,34 @@ class Context {
     object.setAngularVelocity(angularVelocity);
   }
 
-  requestUpdate(id, cb) {
+  requestUpdate(cb) {
     const {objects} = this;
 
-    const object = objects.get(id);
-    object.requestUpdate();
-    object.once('update', updates => {
+    const engine = objects.get(engineKey);
+    engine.requestUpdate();
+    engine.once('update', updates => {
       cb(null, updates);
     });
   }
 }
 
-const server = ({wss}) => ({
+class AntikythServer {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
-    const contexts = new Map();
+    const {_archae: archae} = this;
+    const {wss} = archae.getCore();
+
+    const context = new Context();
 
     const connections = [];
 
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
 
-      const match = url.match(/\/archae\/antikythWs\/(.*)/);
-      if (match) {
-        const contextName = match[1];
-
-        let context = contexts.get(contextName);
-        if (!context) {
-          context = new Context();
-          contexts.set(contextName, context);
-        }
-
+      if (url === '/archae/antikythWs') {
         c.on('message', s => {
           const m = JSON.parse(s);
           if (typeof m === 'object' && m && typeof m.method === 'string' && typeof m.id === 'string' && Array.isArray(m.args)) {
@@ -192,9 +219,7 @@ const server = ({wss}) => ({
 
               cb();
             } else if (method === 'requestUpdate') {
-              const [id] = args;
-
-              context.requestUpdate(id, updates => {
+              context.requestUpdate(updates => {
                 if (live) {
                   cb(null, updates);
                 }
@@ -225,10 +250,11 @@ const server = ({wss}) => ({
 
       live = false;
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
-});
+  }
+}
 
-module.exports = server;
+module.exports = AntikythServer;
