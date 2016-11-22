@@ -25,39 +25,21 @@ class Zeo {
         const {sound} = somnifer;
 
         const worlds = new Map();
-        let world = null;
+        let currentWorld = null;
 
-        const _getCurrentWorld = () => world;
+        const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
           const world = worlds.get(worldName);
 
           if (world) {
+            currentWorld = world;
+
             accept(world);
           } else {
             antikyth.requestWorld(worldName)
               .then(physics => {
-                const plugins = new Map();
 
-                const _requestMod = modSpec => new Promise((accept, reject) => {
-                  archae.requestPlugin(modSpec)
-                    .then(plugin => {
-                      const pluginName = archae.getName(plugin);
-                      plugins.set(pluginName, plugin);
-
-                      accept(plugin);
-                    })
-                    .catch(reject);
-                });
-                const _requestMods = modSpecs => {
-                  const modPromises = modSpecs.map(_requestMod);
-                  return Promise.all(modPromises);
-                };
-                const _destroy = () => {
-                  if (animationFrame) {
-                    cancelAnimationFrame(animationFrame);
-                  }
-                };
-
+                // main render loop
                 const startTime = Date.now()
                 let animationFrame = null;
                 const _recurse = () => {
@@ -83,6 +65,29 @@ class Zeo {
                 };
                 _recurse();
 
+                // plugin management
+                const plugins = new Map();
+
+                const _requestMod = modSpec => new Promise((accept, reject) => {
+                  archae.requestPlugin(modSpec)
+                    .then(plugin => {
+                      const pluginName = archae.getName(plugin);
+                      plugins.set(pluginName, plugin);
+
+                      accept(plugin);
+                    })
+                    .catch(reject);
+                });
+                const _requestMods = modSpecs => {
+                  const modPromises = modSpecs.map(_requestMod);
+                  return Promise.all(modPromises);
+                };
+                const _destroy = () => {
+                  if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                  }
+                };
+
                 const world = {
                   name: worldName,
                   requestMod: _requestMod,
@@ -92,26 +97,24 @@ class Zeo {
                 };
 
                 worlds.set(worldName, world);
+                currentWorld = world;
 
                 accept(world);
               })
               .catch(reject);
           }
-        }).then(newWorld => {
-          world = newWorld;
-
-          return newWorld;
         });
-        const _requestDeleteWorld = worldName = new Promise((accept, reject) => {
+        const _requestDeleteWorld = worldName => new Promise((accept, reject) => {
           antikyth.releaseWorld(worldName)
             .then(() => {
               worlds.delete(worldName);
 
-              if (world && world.name === worldName) {
-                world = null;
+              if (currentWorld && currentWorld.name === worldName) {
+                currentWorld = null;
               }
+
+              accept();
             })
-            .then(accept)
             .catch(reject);
         });
 

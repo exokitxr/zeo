@@ -24,7 +24,7 @@ class Context {
     const {objects} = this;
 
     const _hasInstanceOf = type => {
-      for (k of objects) {
+      for (const k of objects) {
         const v = objects.get(k);
         if (v instanceof type) {
           return true;
@@ -95,12 +95,14 @@ class Context {
 
     const parent = objects.get(parentId);
     const child = objects.get(childId);
-    parent.remove(child);
+    if (parent && child) {
+      parent.remove(child);
 
-    const parentRecord = this.parents.get(parentId);
-    parentRecord.splice(parentRecord.indexOf(childId), 1);
-    if (parentRecord.length === 0) {
-      this.parents.delete(parentId);
+      const childIds = this.childIndex.get(parentId);
+      childIds.splice(childIds.indexOf(childId), 1);
+      if (childIds.length === 0) {
+        this.childIndex.delete(parentId);
+      }
     }
   }
 
