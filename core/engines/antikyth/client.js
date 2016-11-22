@@ -154,8 +154,8 @@ class AnyikythClient {
                 this.timeout = setTimeout(() => {
                   _requestUpdate();
 
-                  this.imeout = null;
-                }, FRAME_RATE);
+                  this.timeout = null;
+                }, timeUntilNextUpdate);
               }
             };
             _recurse();
@@ -323,7 +323,7 @@ class AnyikythClient {
               const rotation = mesh.quaternion.toArray();
               const {parameters: {radius}} = geometry;
 
-              return new Box({
+              return new Sphere({
                 position,
                 rotation,
                 size: radius,

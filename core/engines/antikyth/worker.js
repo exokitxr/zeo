@@ -92,6 +92,8 @@ const _addBody = ({worldId, body: bodySpec}) => {
   bodyWorldIndex.set(bodyId, worldId);
 };
 const _removeBody = ({bodyId}) => {
+throw new Error('fail: ' + JSON.stringify(bodyId));
+
   const body = bodies.get(bodyId);
   const world = bodyWorldIndex.get(bodyId);
 
@@ -115,6 +117,18 @@ const _setRotation = ({bodyId, rotation}) => {
 
   const [x, y, z, w] = rotation;
   body.setRotation(x, y, z, w);
+};
+const _setLinearVelocity = ({bodyId, linearVelocity}) => {
+  const body = bodies.get(bodyId);
+
+  const [x, y, z] = linearVelocity;
+  body.setLinearVelocity(x, y, z);
+};
+const _setAngularVelocity = ({bodyId, angularVelocity}) => {
+  const body = bodies.get(bodyId);
+
+  const [x, y, z] = angularVelocity;
+  body.setAngularVelocity(x, y, z);
 };
 
 const _makeBody = bodySpec => {
@@ -250,6 +264,16 @@ process.on('message', m => {
     case 'setRotation': {
       const {args: {bodyId, rotation}} = m;
       _setRotation({bodyId, rotation});
+      break;
+    }
+    case 'setLinearVelocity': {
+      const {args: {bodyId, linearVelocity}} = m;
+      _setLinearVelocity({bodyId, linearVelocity});
+      break;
+    }
+    case 'setAngularVelocity': {
+      const {args: {bodyId, angularVelocity}} = m;
+      _setAngularVelocity({bodyId, angularVelocity});
       break;
     }
     default:

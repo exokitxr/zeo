@@ -25,8 +25,7 @@ class Context {
     const {objects} = this;
 
     const _hasInstanceOf = type => {
-      for (const k of objects) {
-        const v = objects.get(k);
+      for (const [k, v] of objects) {
         if (v instanceof type) {
           return true;
         }
@@ -116,28 +115,32 @@ class Context {
     const {objects} = this;
 
     const object = objects.get(id);
-    object.setPosition(position);
+    const [x, y, z] = position;
+    object.setPosition(x, y, z);
   }
 
   setRotation(id, rotation) {
     const {objects} = this;
 
     const object = objects.get(id);
-    object.setRotation(rotation);
+    const [x, y, z, w] = rotation;
+    object.setRotation(x, y, z, w);
   }
 
   setLinearVelocity(id, linearVelocity) {
     const {objects} = this;
 
     const object = objects.get(id);
-    object.setLinearVelocity(linearVelocity);
+    const [x, y, z] = linearVelocity;
+    object.setLinearVelocity(x, y, z);
   }
 
   setAngularVelocity(id, angularVelocity) {
     const {objects} = this;
 
     const object = objects.get(id);
-    object.setAngularVelocity(angularVelocity);
+    const [x, y, z] = angularVelocity;
+    object.setAngularVelocity(x, y, z);
   }
 
   requestUpdate(id, cb) {

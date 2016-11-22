@@ -251,6 +251,9 @@ NAN_METHOD(mox::physics::RigidBody::setPosition)
   btTransform xform = self->m_rigidBody->getCenterOfMassTransform();
   xform.setOrigin(btVector3(x, y, z));
   self->m_rigidBody->setCenterOfMassTransform(xform);
+
+  self->m_rigidBody->activate();
+
   info.GetReturnValue().Set(info.This());
 }
 
@@ -281,6 +284,9 @@ NAN_METHOD(mox::physics::RigidBody::setRotation)
   btTransform xform = self->m_rigidBody->getCenterOfMassTransform();
   xform.setRotation(btQuaternion(x, y, z, w));
   self->m_rigidBody->setCenterOfMassTransform(xform);
+
+  self->m_rigidBody->activate();
+
   info.GetReturnValue().Set(info.This());
 }
 
@@ -306,6 +312,9 @@ NAN_METHOD(mox::physics::RigidBody::setLinearVelocity)
   double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
 
   self->m_rigidBody->setLinearVelocity(btVector3(x, y, z));
+
+  self->m_rigidBody->activate();
+
   info.GetReturnValue().Set(info.This());
 }
 
@@ -331,6 +340,9 @@ NAN_METHOD(mox::physics::RigidBody::setAngularVelocity)
   double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
 
   self->m_rigidBody->setAngularVelocity(btVector3(x, y, z));
+
+  self->m_rigidBody->activate();
+
   info.GetReturnValue().Set(info.This());
 }
 

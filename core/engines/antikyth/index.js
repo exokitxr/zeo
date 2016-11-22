@@ -73,9 +73,7 @@ class Antikyth extends EventEmitter {
     let prevUpdate = [];
     this.updateListeners.set(world.id, nextUpdate => {
       const updateDiff = _getUpdateDiff(prevUpdate, nextUpdate);
-      if (updateDiff.length > 0) {
-        world.emit('update', updateDiff);
-      }
+      world.emit('update', updateDiff);
 
       prevUpdate = nextUpdate;
     });
@@ -147,6 +145,20 @@ class Antikyth extends EventEmitter {
     this.send('setRotation', {
       bodyId: body.id,
       rotation: [x, y, z, w],
+    });
+  }
+
+  setWorldBodyLinearVelocity(world, body, x, y, z) {
+    this.send('setLinearVelocity', {
+      bodyId: body.id,
+      linearVelocity: [x, y, z],
+    });
+  }
+
+  setWorldBodyAngularVelocity(world, body, x, y, z) {
+    this.send('setAngularVelocity', {
+      bodyId: body.id,
+      angularVelocity: [x, y, z],
     });
   }
 
@@ -231,6 +243,34 @@ class World extends EventEmitter {
     }
   }
 
+  setBodyLinearVelocity(body, x, y, z) {
+    if (this.parent) {
+      this.parent.setWorldBodyLinearVelocity(this, body, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setBodyLinearVelocity',
+        args: {
+          body,
+          linearVelocity: [x, y, z],
+        }
+      });
+    }
+  }
+
+  setBodyAngularVelocity(body, x, y, z) {
+    if (this.parent) {
+      this.parent.setWorldBodyAngularVelocity(this, body, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setBodyAngularVelocity',
+        args: {
+          body,
+          angularVelocity: [x, y, z],
+        }
+      });
+    }
+  }
+
   setParent(parent) {
     this.parent = parent;
 
@@ -258,6 +298,16 @@ class World extends EventEmitter {
           case 'setBodyRotation': {
             const {body, rotation: [x, y, z, w]} = args;
             this.parent.setWorldBodyRotation(this, body, x, y, z, w);
+            break;
+          }
+          case 'setBodyLinearVelocity': {
+            const {body, linearVelocity: [x, y, z]} = args;
+            this.parent.setWorldBodyLinearVelocity(this, body, x, y, z);
+            break;
+          }
+          case 'setBodyAngularVelocity': {
+            const {body, linearVelocity: [x, y, z]} = args;
+            this.parent.setWorldBodyAngularVelocity(this, body, x, y, z);
             break;
           }
         }
@@ -303,6 +353,28 @@ class Body extends EventEmitter {
     }
   }
 
+  setLinearVelocity(x, y, z) {
+    if (this.parent) {
+      this.parent.setBodyLinearVelocity(this, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setLinearVelocity',
+        args: [x, y, z],
+      });
+    }
+  }
+
+  setAngularVelocity(x, y, z) {
+    if (this.parent) {
+      this.parent.setBodyAngularVelocity(this, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setAngularVelocity',
+        args: [x, y, z],
+      });
+    }
+  }
+
   setParent(parent) {
     this.parent = parent;
 
@@ -322,12 +394,23 @@ class Body extends EventEmitter {
             this.parent.setBodyRotation(this, x, y, z, w);
             break;
           }
+          case 'setLinearVelocity': {
+            const [x, y, z] = args;
+            this.parent.setBodyLinearVelocity(this, x, y, z);
+            break;
+          }
+          case 'setAngularVelocity': {
+            const [x, y, z] = args;
+            this.parent.setBodyAngularVelocity(this, x, y, z);
+            break;
+          }
         }
       }
       this.queue = [];
     }
   }
 }
+Antikyth.Body = Body;
 
 class Plane extends Body {
   constructor(opts) {
