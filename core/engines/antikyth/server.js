@@ -147,23 +147,27 @@ class Context {
     const {objects} = this;
 
     const object = objects.get(id);
-    object.requestUpdate();
-    object.once('update', engineUpdates => {
-      const clientUpdates = engineUpdates.map(update => {
-        const {id: engineId, position, rotation, linearVelocity, angularVelocity} = update;
-        const clientId = this.updateIndex.get(engineId);
+    if (object) {
+      object.requestUpdate();
+      object.once('update', engineUpdates => {
+        const clientUpdates = engineUpdates.map(update => {
+          const {id: engineId, position, rotation, linearVelocity, angularVelocity} = update;
+          const clientId = this.updateIndex.get(engineId);
 
-        return {
-          id: clientId,
-          position,
-          rotation,
-          linearVelocity,
-          angularVelocity,
-        };
+          return {
+            id: clientId,
+            position,
+            rotation,
+            linearVelocity,
+            angularVelocity,
+          };
+        });
+
+        cb(null, clientUpdates);
       });
-
-      cb(null, clientUpdates);
-    });
+    } else {
+      cb(null, []);
+    }
   }
 }
 
