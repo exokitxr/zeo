@@ -62,8 +62,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
   v8::Local<v8::String> keyDimensions = Nan::New("dimensions").ToLocalChecked();
   v8::Local<v8::String> keySize = Nan::New("size").ToLocalChecked();
   v8::Local<v8::String> keyPoints = Nan::New("points").ToLocalChecked();
+  v8::Local<v8::String> keyScale = Nan::New("scale").ToLocalChecked();
   v8::Local<v8::String> keyLength = Nan::New("length").ToLocalChecked();
-  // v8::Local<v8::String> keyPosition = Nan::New("position").ToLocalChecked();
   v8::Local<v8::String> keyMass = Nan::New("mass").ToLocalChecked();
 
   v8::Local<v8::Object> def = Nan::To<v8::Object>(info[0]).ToLocalChecked();
@@ -80,19 +80,6 @@ NAN_METHOD(mox::physics::RigidBody::make)
   }
 
   nativeInstance->m_isDynamic = (nativeInstance->m_mass != 0.0f);
-
-  /* // position
-  v8::Local<v8::Object> position;
-  double x=0, y=0, z=0;
-
-  if (Nan::Has(def, keyPosition).FromJust()) {
-    position = Nan::To<v8::Object>(Nan::Get(def, keyPosition)
-      .ToLocalChecked()).ToLocalChecked();
-    x = Nan::To<double>(Nan::Get(position, 0).ToLocalChecked()).FromJust();
-    y = Nan::To<double>(Nan::Get(position, 1).ToLocalChecked()).FromJust();
-    z = Nan::To<double>(Nan::Get(position, 2).ToLocalChecked()).FromJust();
-    nativeInstance->m_transform.setOrigin(btVector3(x, y, z));
-  } */
 
 
   //
@@ -200,12 +187,23 @@ NAN_METHOD(mox::physics::RigidBody::make)
   }
   }
 
+  // scale
+  MOXCHK(Nan::Has(def, keyScale).FromJust());
+  v8::Local<v8::Object> scale = Nan::To<v8::Object>(Nan::Get(def, keyScale)
+    .ToLocalChecked()).ToLocalChecked();
+  double sx = Nan::To<double>(Nan::Get(scale, 0).ToLocalChecked()).FromJust();
+  double sy = Nan::To<double>(Nan::Get(scale, 1).ToLocalChecked()).FromJust();
+  double sz = Nan::To<double>(Nan::Get(scale, 2).ToLocalChecked()).FromJust();
+  nativeInstance->m_collisionShape->setLocalScaling(btVector3(sx, sy, sz));
+
+  // inertia
   btVector3 localInertia(0, 0, 0);
   if (nativeInstance->m_isDynamic) {
     nativeInstance->m_collisionShape->calculateLocalInertia(
       nativeInstance->m_mass, localInertia);
   }
 
+  // motion state
   nativeInstance->m_motionState = std::make_shared<btDefaultMotionState>(
     nativeInstance->m_transform);
   btRigidBody::btRigidBodyConstructionInfo rbInfo(
@@ -215,6 +213,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
     localInertia
   );
 
+  // ridig body
   nativeInstance->m_rigidBody = std::make_shared<btRigidBody>(rbInfo);
 
   info.GetReturnValue().Set(instance);

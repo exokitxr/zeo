@@ -136,11 +136,12 @@ const _makeBody = bodySpec => {
 
   switch (type) {
     case 'plane': {
-      const {dimensions, mass, position, rotation} = bodySpec;
+      const {dimensions, scale, mass, position, rotation} = bodySpec;
 
       const plane = physics.RigidBody.make({
         type: physics.RigidBody.PLANE,
         dimensions,
+        scale,
         mass,
       });
       if (position) {
@@ -153,11 +154,12 @@ const _makeBody = bodySpec => {
       return plane;
     }
     case 'box': {
-      const {dimensions, mass, position, rotation} = bodySpec;
+      const {dimensions, scale, mass, position, rotation} = bodySpec;
 
       const box = physics.RigidBody.make({
         type: physics.RigidBody.BOX,
         dimensions,
+        scale,
         mass,
       });
       if (position) {
@@ -170,11 +172,12 @@ const _makeBody = bodySpec => {
       return box;
     }
     case 'sphere': {
-      const {size, mass, position, rotation} = bodySpec;
+      const {size, mass, scale, position, rotation} = bodySpec;
 
       const sphere = physics.RigidBody.make({
         type: physics.RigidBody.SPHERE,
         size,
+        scale,
         mass,
       });
       if (position) {
@@ -187,11 +190,12 @@ const _makeBody = bodySpec => {
       return sphere;
     }
     case 'convexHull': {
-      const {size, points, position, rotation} = bodySpec;
+      const {points, scale, mass, position, rotation} = bodySpec;
 
       const convexHull = physics.RigidBody.make({
         type: physics.RigidBody.CONVEX_HULL,
-        convexHull,
+        points,
+        scale,
         mass,
       });
       if (position) {
@@ -204,11 +208,12 @@ const _makeBody = bodySpec => {
       return convexHull;
     }
     case 'triangleMesh': {
-      const {size, points, position, rotation} = bodySpec;
+      const {points, scale, position, rotation} = bodySpec;
 
       const triangleMesh = physics.RigidBody.make({
         type: physics.RigidBody.CONVEX_HULL,
         points,
+        scale,
         mass,
       });
       if (position) {
@@ -217,6 +222,8 @@ const _makeBody = bodySpec => {
       if (rotation) {
         triangleMesh.setRotation(rotation[0], rotation[1], rotation[2], rotation[3]);
       }
+
+      return triangleMesh;
     }
     default:
       return null;

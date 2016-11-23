@@ -111,6 +111,7 @@ class Antikyth extends EventEmitter {
         dimensions: body.dimensions,
         size: body.size,
         points: _formatPoints(body.points),
+        scale: body.scale,
         mass: body.mass,
       },
     });
@@ -416,11 +417,12 @@ class Plane extends Body {
   constructor(opts) {
     super();
 
-    const {position = null, rotation = null, dimensions = null, mass = 0} = opts;
+    const {position = null, rotation = null, dimensions = null, scale = [1, 1, 1], mass = 0} = opts;
     this.type = 'plane';
     this.position = position;
     this.rotation = rotation;
     this.dimensions = dimensions;
+    this.scale = scale;
     this.mass = mass;
   }
 }
@@ -430,11 +432,12 @@ class Box extends Body {
   constructor(opts) {
     super();
 
-    const {position = null, rotation = null, dimensions = null, mass = 0} = opts;
+    const {position = null, rotation = null, dimensions = null, scale = [1, 1, 1], mass = 1} = opts;
     this.type = 'box';
     this.position = position;
     this.rotation = rotation;
     this.dimensions = dimensions;
+    this.scale = scale;
     this.mass = mass;
   }
 }
@@ -444,11 +447,12 @@ class Sphere extends Body {
   constructor(opts) {
     super();
 
-    const {position = null, rotation = null, size = null, mass = 0} = opts;
+    const {position = null, rotation = null, size = null, scale = [1, 1, 1], mass = 1} = opts;
     this.type = 'sphere';
     this.position = position;
     this.rotation = rotation;
     this.size = size;
+    this.scale = scale;
     this.mass = mass;
   }
 }
@@ -458,11 +462,12 @@ class ConvexHull extends Body {
   constructor(opts) {
     super();
 
-    const {position = null, rotation = null, points = null, mass = 0} = opts;
+    const {position = null, rotation = null, points = null, scale = [1, 1, 1], mass = 1} = opts;
     this.type = 'convexHull';
     this.position = position;
     this.rotation = rotation;
     this.points = points;
+    this.scale = scale;
     this.mass = mass;
   }
 }
@@ -472,11 +477,12 @@ class TriangleMesh extends Body {
   constructor(opts) {
     super();
 
-    const {position = null, rotation = null, points = null, mass = 0} = opts;
+    const {position = null, rotation = null, points = null, scale = [1, 1, 1], mass = 0} = opts;
     this.type = 'triangleMesh';
     this.position = position;
     this.rotation = rotation;
     this.points = points;
+    this.scale = scale;
     this.mass = mass;
   }
 }
