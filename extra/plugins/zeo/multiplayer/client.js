@@ -41,18 +41,26 @@ class Multiplayer {
         });
         const _requestHmdMesh = () => _requestMesh(hmdModelPath)
           .then(mesh => {
+            const object = new THREE.Object3D();
+
             mesh.scale.set(0.045, 0.045, 0.045);
             mesh.rotation.order = camera.rotation.order;
             mesh.rotation.y = Math.PI;
 
-            return mesh;
+            object.add(mesh);
+
+            return object;
           });
         const _requestControllerMesh = () => _requestMesh(controllerModelPath);
 
         return Promise.all([
-          requestHmdMesh(),
-          requestControllerMesh(),
+          world.requestMods([
+            '/extra/plugins/zeo/singleplayer',
+          ]),
+          _requestHmdMesh(),
+          _requestControllerMesh(),
         ]).then(([
+          [singleplayer],
           hmdMesh,
           controllerMesh,
         ]) => {
@@ -74,7 +82,7 @@ class Multiplayer {
             controllers.forEach(controller => {
               object.add(controller);
             });
-            object.controllers = controller;
+            object.controllers = controllers;
 
             _updateRemotePlayerMesh(object, status);
 
@@ -91,10 +99,10 @@ class Multiplayer {
             hmd.rotation.fromArray(hmdStatus.rotation);
 
             leftController.position.fromArray(leftControllerStatus.position);
-            leftController.rotation.fromArray(leftControllerStatus.rotation);
+            leftController.quaternion.fromArray(leftControllerStatus.rotation);
 
             rightController.position.fromArray(rightControllerStatus.position);
-            rightController.rotation.fromArray(rightControllerStatus.rotation);
+            rightController.quaternion.fromArray(rightControllerStatus.rotation);
           };
 
           const playerStatuses = player.getPlayerStatuses();
@@ -125,12 +133,54 @@ class Multiplayer {
           player.on('playerEnter', playerEnter);
           player.on('playerLeave', playerLeave);
 
-          // XXX push status updates with player.updateStatus when controller/camera position changes
+          const singlePlayerInstance = singleplayer.getPlayer();
+          const initialLocalStatus = singlePlayerInstance.getStatus();
+          const localStatus = {
+            hmd: {
+              position: initialLocalStatus.hmd.position.toArray(),
+              rotation: initialLocalStatus.hmd.rotation.toArray(),
+            },
+            controllers: {
+              left: {
+                position: initialLocalStatus.controllers.left.position.toArray(),
+                rotation: initialLocalStatus.controllers.left.rotation.toArray(),
+              },
+              right: {
+                position: initialLocalStatus.controllers.right.position.toArray(),
+                rotation: initialLocalStatus.controllers.right.rotation.toArray(),
+              },
+            },
+          };
+          const hmdUpdate = update => {
+            const {position, rotation} = update;
+
+            localStatus.hmd.position = position.toArray();
+            localStatus.hmd.rotation = rotation.toArray();
+
+            player.updateStatus(localStatus);
+          };
+          const controllerUpdate = update => {
+            const {side, position, rotation} = update;
+
+            localStatus.controllers[side].position = position.toArray();
+            localStatus.controllers[side].rotation = rotation.toArray();
+
+            player.updateStatus(localStatus);
+          };
+          singlePlayerInstance.on('hmdUpdate', hmdUpdate);
+          singlePlayerInstance.on('controllerUpdate', controllerUpdate);
 
           this._cleanup = () => {
             remotePlayerMeshes.forEach(remotePlayerMesh => {
               scene.remove(remotePlayerMesh);
             });
+
+            player.removeListener('playerStatusUpdate', playerStatusUpdate);
+            player.removeListener('playerEnter', playerEnter);
+            player.removeListener('playerLeave', playerLeave);
+
+            singlePlayerInstance.removeListener('hmdUpdate', hmdUpdate);
+            singlePlayerInstance.removeListener('controllerUpdate', controllerUpdate);
           };
         });
       }

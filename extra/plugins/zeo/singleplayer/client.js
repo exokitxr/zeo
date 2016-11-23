@@ -24,6 +24,25 @@ class SinglePlayer {
         const {THREE, scene, camera, renderer} = zeo;
 
         class Player extends EventEmitter {
+          getStatus() {
+            return {
+              hmd: {
+                position: camera.position.clone(),
+                rotation: camera.quaternion.clone(),
+              },
+              controllers: {
+                left: {
+                  position: controllers.left.mesh.position.clone(),
+                  rotation: controllers.left.mesh.quaternion.clone(),
+                },
+                right: {
+                  position: controllers.right.mesh.position.clone(),
+                  rotation: controllers.right.mesh.quaternion.clone(),
+                },
+              },
+            };
+          }
+
           updateHmd({position, rotation}) {
             this.emit('hmdUpdate', {
               position,
@@ -32,7 +51,7 @@ class SinglePlayer {
           }
 
           updateController({side, position, rotation}) {
-            this.emit('hmdUpdate', {
+            this.emit('controllerUpdate', {
               side,
               position,
               rotation,
