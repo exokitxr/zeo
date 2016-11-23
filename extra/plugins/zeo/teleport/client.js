@@ -51,30 +51,24 @@ class Teleport {
 
             const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
 
-            let side = null;
             let teleporting = false;
             let commitTeleporting = false;
             let teleportPoint = null;
             const keydown = e => {
               if (window.document.pointerLockElement) {
                 switch (e.keyCode) {
-                  case 90: // Z
-                    side = 'left';
-                    break;
                   case 88: // X
-                    side = null;
                     teleporting = false;
                     commitTeleporting = false;
                     teleportPoint = null;
                     break;
-                  case 67: // C
-                    side = 'right';
-                    break;
-                  case 32: // space
-                    if (side !== null) {
+                  case 32: { // space
+                    const mode = singleplayer.getMode();
+                    if (mode !== 'move') {
                       teleporting = true;
                     }
                     break;
+                  }
                 }
               }
             };
@@ -112,6 +106,7 @@ class Teleport {
 
             const _update = options => {
               if (teleporting) {
+                const side = singleplayer.getMode();
                 const rootMesh = controllers[side].mesh;
                 const tipMesh = rootMesh.tip;
 

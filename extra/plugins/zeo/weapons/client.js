@@ -83,44 +83,44 @@ class Weapons {
                 depthBuffer: false,
               });
 
-              let side = null;
               const keydown = e => {
                 if (window.document.pointerLockElement) {
                   switch (e.keyCode) {
-                    case 90: // Z
-                      side = 'left';
-                      break;
-                    case 88: // X
-                      side = null;
-                      break;
-                    case 67: // C
-                      side = 'right';
-                      break;
-                    case 49: // 1
-                      if (side !== null) {
-                        _setWeapon(side, 'hud');
+                    case 49: { // 1
+                      const mode = singleplayer.getMode();
+                      if (mode !== 'move') {
+                        _setWeapon(mode, 'hud');
                       }
                       break;
-                    case 50: // 2
-                      if (side !== null) {
-                        _setWeapon(side, 'sword');
+                    }
+                    case 50: { // 2
+                      const mode = singleplayer.getMode();
+                      if (mode !== 'move') {
+                        _setWeapon(mode, 'sword');
                       }
                       break;
-                    case 51: // 3
-                      if (side !== null) {
-                        _setWeapon(side, 'gun');
+                    }
+                    case 51: { // 3
+                      const mode = singleplayer.getMode();
+                      if (mode !== 'move') {
+                        _setWeapon(mode, 'gun');
                       }
                       break;
-                    case 52: // 4
-                      if (side !== null) {
-                        _setWeapon(side, 'clip');
+                    }
+                    case 52: { // 4
+                      const mode = singleplayer.getMode();
+                      if (mode !== 'move') {
+                        _setWeapon(mode, 'clip');
                       }
                       break;
-                    case 53: // 5
-                      if (side !== null) {
-                        _setWeapon(side, 'grenade');
+                    }
+                    case 53: { // 5
+                      const mode = singleplayer.getMode();
+                      if (mode !== 'move') {
+                        _setWeapon(mode, 'grenade');
                       }
                       break;
+                    }
                   }
                 }
               };

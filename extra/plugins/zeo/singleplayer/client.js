@@ -307,6 +307,7 @@ class SinglePlayer {
 
         const _getPlayer = () => player;
         const _getControllers = () => controllers;
+        const _getMode = () => mode;
         const _update = () => {
           // move camera
           const {keys} = this;
@@ -373,6 +374,7 @@ class SinglePlayer {
         return {
           getPlayer: _getPlayer,
           getControllers: _getControllers,
+          getMode: _getMode,
           update: _update,
         };
       });
