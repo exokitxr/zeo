@@ -111,6 +111,7 @@ class Antikyth extends EventEmitter {
         id: body.id,
         type: body.type,
         position: body.position,
+        rotation: body.rotation,
         dimensions: body.dimensions,
         size: body.size,
         points: _formatPoints(body.points),
