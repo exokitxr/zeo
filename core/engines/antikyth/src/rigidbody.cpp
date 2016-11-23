@@ -181,7 +181,10 @@ NAN_METHOD(mox::physics::RigidBody::make)
         false
       );
     } else {
-      Nan::ThrowRangeError("points size is invalid");
+      v8::Local<v8::String> errorString = Nan::New(std::string("points size is invalid: ") + std::to_string(numScalars)).ToLocalChecked();
+      Nan::ThrowRangeError(errorString);
+
+      return;
     }
     break;
   }

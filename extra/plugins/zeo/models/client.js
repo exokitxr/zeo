@@ -5,9 +5,9 @@ const modelsPath = '/archae/models/models/';
 const MODELS = {
   cloud: {
     path: 'cloud/cloud.json',
-    position: [-1, 1, -1],
-    rotation: [0, Math.PI, 0],
-    scale: [0.6, 0.6, 0.6],
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: [1, 1, 1],
   },
   lightning: {
     path: 'lightning/lightning.json',

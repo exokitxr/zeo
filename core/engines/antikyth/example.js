@@ -40,6 +40,20 @@ const world = (() => {
   result.add(sphere);
   result.sphere = sphere;
 
+  const triangleMesh = new Antikyth.TriangleMesh({
+    position: [10, 0, 10],
+    rotation: [0, 0, 0],
+    scale: [0.5, 0.5, 0.5],
+    points: [
+      0, 0, 0,
+      1, 1, 1,
+      2, 2, 2,
+    ],
+    mass: 0,
+  });
+  result.add(triangleMesh);
+  result.triangleMesh = triangleMesh;
+
   return result;
 })();
 antikyth.add(world);

@@ -204,10 +204,10 @@ const _makeBody = bodySpec => {
       return convexHull;
     }
     case 'triangleMesh': {
-      const {points, scale, position, rotation} = bodySpec;
+      const {points, scale, mass, position, rotation} = bodySpec;
 
       const triangleMesh = physics.RigidBody.make({
-        type: physics.RigidBody.CONVEX_HULL,
+        type: physics.RigidBody.TRIANGLE_MESH,
         points,
         scale,
         mass,

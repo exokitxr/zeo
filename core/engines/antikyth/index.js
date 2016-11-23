@@ -34,8 +34,11 @@ class Antikyth extends EventEmitter {
         console.warn('unknown message type:', JSON.stringify(type));
       }
     });
-    workerProcess.on('exit', code => {
-      console.warn('worker exited with code', code);
+    workerProcess.on('error', err => {
+      console.warn(err);
+    });
+    workerProcess.on('exit', (code, signal) => {
+      console.warn('worker exited with code/signal', code, signal);
     });
 
     this.workerProcess = workerProcess;

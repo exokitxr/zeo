@@ -222,10 +222,17 @@ class AnyikythClient {
           setObject(object) {
             const {position, quaternion} = object;
 
+            // attach properties for updates to write to them
             this.position = position;
             this.rotation = quaternion;
             this.linearVelocity = new THREE.Vector3();
             this.angularVelocity = new THREE.Vector3();
+
+            // sync properties to the server
+            this.setPosition(this.position.toArray());
+            this.setRotation(this.rotation.toArray());
+            this.setLinearVelocity(this.linearVelocity.toArray());
+            this.setAngularVelocity(this.angularVelocity.toArray());
           }
 
           setPosition(position) {
