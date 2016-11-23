@@ -95,7 +95,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
     double dy = Nan::To<double>(Nan::Get(dimensions, 1).ToLocalChecked()).FromJust();
     double dz = Nan::To<double>(Nan::Get(dimensions, 2).ToLocalChecked()).FromJust();
     nativeInstance->m_collisionShape = std::make_shared<btBoxShape>(
-      btVector3(btScalar(dx), btScalar(dy), btScalar(dz))
+      btVector3(btScalar(dx / 2), btScalar(dy / 2), btScalar(dz / 2))
     );
     break;
   }
