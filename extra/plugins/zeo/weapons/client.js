@@ -32,13 +32,13 @@ class Weapons {
 
         const world = zeo.getCurrentWorld();
         return world.requestMods([
-          '/extra/plugins/zeo/controllers'
+          '/extra/plugins/zeo/singleplayer'
         ])
           .then(([
-            controllers,
+            singleplayer,
           ]) => {
             if (live) {
-              const controllerMeshes = controllers.getControllerMeshes();
+              const controllers = singleplayer.getControllers();
 
               const HUD_SOLID_MATERIAL = new THREE.MeshBasicMaterial({
                 color: 0xFFFFFFF,
@@ -131,7 +131,7 @@ class Weapons {
               };
 
               const _setWeapon = (side, weapon) => {
-                const rootMesh = controllerMeshes[side].mesh.inner;
+                const rootMesh = controllers[side].mesh.inner;
                 // const tipMesh = rootMesh.tip;
 
                 const oldWeapon = weaponMeshes[side];

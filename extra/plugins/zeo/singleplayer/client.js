@@ -1,3 +1,6 @@
+const events = require('events');
+const EventEmitter = events.EventEmitter;
+
 const controllerModelPath = '/archae/models/controller/controller.json';
 
 const POSITION_SPEED = 0.05;
@@ -19,6 +22,23 @@ class SinglePlayer {
         zeo,
       ]) => {
         const {THREE, scene, camera, renderer} = zeo;
+
+        class Player extends EventEmitter {
+          updateHmd({position, rotation}) {
+            this.emit('hmdUpdate', {
+              position,
+              rotation,
+            });
+          }
+
+          updateController({side, position, rotation}) {
+            this.emit('hmdUpdate', {
+              side,
+              position,
+              rotation,
+            });
+          }
+        }
 
         class Controller {
           constructor(index) {
@@ -56,7 +76,6 @@ class SinglePlayer {
 
               return result;
             })();
-            scene.add(mesh);
             this.mesh = mesh;
 
             const positionOffset = new THREE.Vector3();
@@ -112,19 +131,22 @@ class SinglePlayer {
           }
         }
 
-        const controllerMeshes = (() => {
-          const result = [];
+        const player = new Player();
 
-          for (let index = 0; index < 2; index++) {
-            const controller = new Controller(index)
-            result.push(controller);
-          }
-
+        const controllers = (() => {
+          const result = [
+            new Controller(0),
+            new Controller(1),
+          ];
           result.left = result[0];
           result.right = result[1];
-
           return result;
         })();
+        for (let i = 0; i < controllers.length; i++) {
+          const controller = controllers[i];
+          const {mesh} = controller;
+          scene.add(mesh);
+        }
 
         const keys = {
           up: false,
@@ -169,7 +191,7 @@ class SinglePlayer {
             e.preventDefault();
 
             if (mode === 'left') {
-              const controller = controllerMeshes.left;
+              const controller = controllers.left;
 
               if (!e.shiftKey) {
                 controller.move(e.deltaX, e.deltaY);
@@ -177,7 +199,7 @@ class SinglePlayer {
                 controller.rotate(e.deltaX, e.deltaY);
               }
             } else if (mode === 'right') {
-              const controller = controllerMeshes.right;
+              const controller = controllers.right;
 
               if (!e.shiftKey) {
                 controller.move(e.deltaX, e.deltaY);
@@ -248,8 +270,10 @@ class SinglePlayer {
         window.addEventListener('keydown', keydown);
         window.addEventListener('keyup', keyup);
 
-        const _getControllerMeshes = () => controllerMeshes;
+        const _getPlayer = () => player;
+        const _getControllers = () => controllers;
         const _update = () => {
+          // move camera
           const {keys} = this;
 
           const moveVector = new THREE.Vector3();
@@ -273,13 +297,36 @@ class SinglePlayer {
           camera.position.z += moveVector.z;
           camera.position.y += moveVector.y;
 
-          for (let i = 0; i < controllerMeshes.length; i++) {
-            const controller = controllerMeshes[i];
+          // move controllers
+          for (let i = 0; i < controllers.length; i++) {
+            const controller = controllers[i];
             controller.update();
           }
+
+          // emit updates
+          player.updateHmd({
+            position: camera.position.clone(),
+            rotation: camera.quaternion.clone(),
+          });
+          ['left', 'right'].forEach(side => {
+            const controller = controllers[side];
+            const {mesh} = controller;
+
+            player.updateController({
+              side,
+              position: mesh.position.clone(),
+              rotation: mesh.quaternion.clone(),
+            });
+          });
         };
 
         this._cleanup = () => {
+          for (let i = 0; i < controllers.length; i++) {
+            const controller = controllers[i];
+            const {mesh} = controller;
+            scene.remove(mesh);
+          }
+
           renderer.domElement.removeEventListener('click', click);
           window.document.removeEventListener('pointerlockchange', pointerlockchange);
           window.document.removeEventListener('pointerlockerror', pointerlockerror);
@@ -289,7 +336,8 @@ class SinglePlayer {
         };
 
         return {
-          controllerMeshes: _getControllerMeshes,
+          getPlayer: _getPlayer,
+          getControllers: _getControllers,
           update: _update,
         };
       });

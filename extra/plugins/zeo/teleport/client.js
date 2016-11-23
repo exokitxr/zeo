@@ -23,12 +23,12 @@ class Teleport {
 
         const world = zeo.getCurrentWorld();
         return world.requestMods([
-          '/extra/plugins/zeo/controllers'
+          '/extra/plugins/zeo/singleplayer'
         ])
           .then(([
-            controllers,
+            singleplayer,
           ]) => {
-            const controllerMeshes = controllers.getControllerMeshes();
+            const controllers = singleplayer.getControllers();
 
             const mesh = (() => {
               const geometry = new THREE.TorusBufferGeometry(0.5, 0.1, 3, 5, Math.PI * 2);
@@ -112,7 +112,7 @@ class Teleport {
 
             const _update = options => {
               if (teleporting) {
-                const rootMesh = controllerMeshes[side].mesh.inner;
+                const rootMesh = controllers[side].mesh.inner;
                 const tipMesh = rootMesh.tip;
 
                 const rootMatrixWorld = _getMatrixWorld(rootMesh);
