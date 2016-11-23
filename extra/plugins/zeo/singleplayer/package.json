@@ -1,5 +1,5 @@
 {
-  "name": "controllers",
+  "name": "singleplayer",
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",

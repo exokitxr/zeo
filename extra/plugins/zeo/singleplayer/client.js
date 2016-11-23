@@ -1,6 +1,10 @@
-const modelPath = '/archae/models/controller/controller.json';
+const controllerModelPath = '/archae/models/controller/controller.json';
 
-class Controllers {
+const POSITION_SPEED = 0.05;
+const POSITION_SPEED_FAST = POSITION_SPEED * 5;
+const ROTATION_SPEED = 0.02 / (Math.PI * 2);
+
+class SinglePlayer {
   constructor(archae) {
     this._archae = archae;
   }
@@ -8,18 +12,13 @@ class Controllers {
   mount() {
     const {_archae: archae} = this;
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
-
     return archae.requestEngines([
       '/core/engines/zeo',
-    ]).then(([
-      zeo,
-    ]) => {
-      if (live) {
-        const {THREE, scene, camera} = zeo;
+    ])
+      .then(([
+        zeo,
+      ]) => {
+        const {THREE, scene, camera, renderer} = zeo;
 
         class Controller {
           constructor(index) {
@@ -32,7 +31,7 @@ class Controllers {
                 const object = new THREE.Object3D();
 
                 const loader = new THREE.ObjectLoader();
-                loader.load(modelPath, mesh => {
+                loader.load(controllerModelPath, mesh => {
                   // const loader = new THREE.TextureLoader();
                   // const model = mesh.children[0];
                   // model.material.color.setHex(0xFFFFFF);
@@ -127,20 +126,42 @@ class Controllers {
           return result;
         })();
 
-        let mode = 'move';
-        const keydown = e => {
+        const keys = {
+          up: false,
+          down: false,
+          left: false,
+          right: false,
+          shift: false,
+        };
+        this.keys = keys;
+
+        const _resetKeys = () => {
+          keys.up = false;
+          keys.down = false;
+          keys.left = false;
+          keys.right = false;
+          keys.shift = false;
+        };
+
+        const click = () => {
+          renderer.domElement.requestPointerLock();
+        };
+        const pointerlockchange = e => {
+          if (!window.document.pointerLockElement) {
+            _resetKeys();
+          }
+        };
+        const pointerlockerror = e => {
+          _resetKeys();
+
+          console.warn('pointer lock error', e);
+        };
+        const mousemove = e => {
           if (window.document.pointerLockElement) {
-            switch (e.keyCode) {
-              case 90: // Z
-                mode = 'left';
-                break;
-              case 88: // X
-                mode = 'move';
-                break;
-              case 67: // C
-                mode = 'right';
-                break;
-            }
+            const {movementX, movementY} = e;
+
+            camera.rotation.x += (-movementY * ROTATION_SPEED);
+            camera.rotation.y += (-movementX * ROTATION_SPEED);
           }
         };
         const mousewheel = e => {
@@ -166,33 +187,117 @@ class Controllers {
             }
           }
         };
-        window.addEventListener('keydown', keydown);
-        window.addEventListener('mousewheel', mousewheel);
 
-        this._cleanup = () => {
-          window.removeEventListener('keydown', keydown);
-          window.removeEventListener('mousewheel', mousewheel);
+        let mode = 'move';
+        const keydown = e => {
+          if (window.document.pointerLockElement) {
+            switch (e.keyCode) {
+              case 87: // W
+                keys.up = true;
+                break;
+              case 65: // A
+                keys.left = true;
+                break;
+              case 83: // S
+                keys.down = true;
+                break;
+              case 68: // D
+                keys.right = true;
+                break;
+              case 16: // shift
+                keys.shift = true;
+                break;
+              case 90: // Z
+                mode = 'left';
+                break;
+              case 88: // X
+                mode = 'move';
+                break;
+              case 67: // C
+                mode = 'right';
+                break;
+            }
+          }
         };
+        const keyup = e => {
+          if (window.document.pointerLockElement) {
+            switch (e.keyCode) {
+              case 87: // W
+                keys.up = false;
+                break;
+              case 65: // A
+                keys.left = false;
+                break;
+              case 83: // S
+                keys.down = false;
+                break;
+              case 68: // D
+                keys.right = false;
+                break;
+              case 16: // shift
+                keys.shift = false;
+                break;
+            }
+          }
+        };
+        renderer.domElement.addEventListener('click', click);
+        window.document.addEventListener('pointerlockchange', pointerlockchange);
+        window.document.addEventListener('pointerlockerror', pointerlockerror);
+        window.addEventListener('mousemove', mousemove);
+        window.addEventListener('mousewheel', mousewheel);
+        window.addEventListener('keydown', keydown);
+        window.addEventListener('keyup', keyup);
 
         const _getControllerMeshes = () => controllerMeshes;
         const _update = () => {
+          const {keys} = this;
+
+          const moveVector = new THREE.Vector3();
+          const speed = keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED;
+          if (keys.up) {
+            moveVector.z -= speed;
+          }
+          if (keys.down) {
+            moveVector.z += speed;
+          }
+          if (keys.left) {
+            moveVector.x -= speed;
+          }
+          if (keys.right) {
+            moveVector.x += speed;
+          }
+
+          moveVector.applyQuaternion(camera.quaternion);
+
+          camera.position.x += moveVector.x;
+          camera.position.z += moveVector.z;
+          camera.position.y += moveVector.y;
+
           for (let i = 0; i < controllerMeshes.length; i++) {
             const controller = controllerMeshes[i];
             controller.update();
           }
         };
 
+        this._cleanup = () => {
+          renderer.domElement.removeEventListener('click', click);
+          window.document.removeEventListener('pointerlockchange', pointerlockchange);
+          window.document.removeEventListener('pointerlockerror', pointerlockerror);
+          window.removeEventListener('mousemove', mousemove);
+          window.removeEventListener('keydown', keydown);
+          window.removeEventListener('keyup', keyup);
+        };
+
         return {
-          getControllerMeshes: _getControllerMeshes,
+          controllerMeshes: _getControllerMeshes,
           update: _update,
         };
-      }
-    });
+      });
   }
 
-  unount() {
+  unmount() {
     this._cleanup();
   }
 }
 
-module.exports = Controllers;
+module.exports = SinglePlayer;

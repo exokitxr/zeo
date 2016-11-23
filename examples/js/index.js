@@ -73,13 +73,12 @@ archae.requestEngines([
       zeo.requestChangeWorld('proteus')
       .then(world => 
         world.requestMods([
-          '/extra/plugins/zeo/controls',
+          '/extra/plugins/zeo/singleplayer',
           '/extra/plugins/zeo/teleport',
           // '/extra/plugins/zeo/light',
-          '/extra/plugins/zeo/controllers',
           // '/extra/plugins/zeo/hmd',
           '/extra/plugins/zeo/physics',
-          '/extra/plugins/zeo/multiplayer',
+          // '/extra/plugins/zeo/multiplayer',
           '/extra/plugins/zeo/skybox',
           '/extra/plugins/zeo/ocean',
           '/extra/plugins/zeo/models',

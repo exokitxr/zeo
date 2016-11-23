@@ -22,7 +22,7 @@ a.requestEngines([
   // '/core/engines/three',
   '/core/engines/nedb',
   '/core/engines/biolumi',
-  '/core/engines/multiplayer',
+  '/core/engines/heartlink',
 ])
   .then(() => {
     console.log('request engines ok');
