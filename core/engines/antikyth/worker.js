@@ -78,13 +78,12 @@ const _removeWorld = ({id}) => {
   worldBodyIndex.delete(id);
 };
 const _addBody = ({worldId, body: bodySpec}) => {
-  const world = worlds.get(worldId);
   const body = _makeBody(bodySpec);
-
-  world.addRigidBody(body);
-
   const {id: bodyId} = bodySpec;
   bodies.set(bodyId, body);
+
+  const world = worlds.get(worldId);
+  world.addRigidBody(body);
 
   const worldBodyIds = worldBodyIndex.get(worldId);
   worldBodyIds.push(bodyId);
@@ -92,18 +91,15 @@ const _addBody = ({worldId, body: bodySpec}) => {
   bodyWorldIndex.set(bodyId, worldId);
 };
 const _removeBody = ({bodyId}) => {
-throw new Error('fail: ' + JSON.stringify(bodyId));
-
   const body = bodies.get(bodyId);
-  const world = bodyWorldIndex.get(bodyId);
 
+  const worldId = bodyWorldIndex.get(bodyId);
+  const world = worlds.get(worldId);
   world.removeRigidBody(body);
 
   bodies.delete(bodyId);
-
   const worldBodyIds = worldBodyIndex.get(worldId);
   worldBodyIds.splice(worldBodyIds.indexOf(bodyId), 1);
-
   bodyWorldIndex.delete(bodyId);
 };
 const _setPosition = ({bodyId, position}) => {
@@ -249,7 +245,7 @@ process.on('message', m => {
       break;
     }
     case 'removeWorld': {
-      const {id} = m;
+      const {args: {id}} = m;
       _removeWorld({id});
       break;
     }
@@ -295,5 +291,3 @@ const send = (type, data) => {
     data,
   });
 };
-
-// console.log(physics);
