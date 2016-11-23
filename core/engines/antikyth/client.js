@@ -313,7 +313,7 @@ class AnyikythClient {
               return new Box({
                 position,
                 rotation,
-                dimensions: [width, height, depth],
+                dimensions: [width / 2, height / 2, depth / 2],
                 mass: 1,
               });
             }
