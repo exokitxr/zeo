@@ -2,5 +2,8 @@
   "name": "multiplayer",
   "version": "0.0.1",
   "client": "client.js",
-  "dependencies": {}
+  "server": "server.js",
+  "dependencies": {
+    "async-json-parse": "^1.0.3"
+  }
 }
