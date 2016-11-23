@@ -112,7 +112,7 @@ class Teleport {
 
             const _update = options => {
               if (teleporting) {
-                const rootMesh = controllers[side].mesh.inner;
+                const rootMesh = controllers[side].mesh;
                 const tipMesh = rootMesh.tip;
 
                 const rootMatrixWorld = _getMatrixWorld(rootMesh);
@@ -155,8 +155,8 @@ class Teleport {
                   mesh.visible = false;
                 }
 
-                // update the controllers immediately instead of waiting for the next frame
-                controllers.update(options);
+                // update the singleplayer controllers immediately instead of waiting for the next frame
+                singleplayer.update(options);
               }
             };
 

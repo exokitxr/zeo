@@ -66,32 +66,24 @@ class SinglePlayer {
             const mesh = (() => {
               const result = new THREE.Object3D();
 
-              const inner = (() => {
-                const object = new THREE.Object3D();
+              const loader = new THREE.ObjectLoader();
+              loader.load(controllerModelPath, mesh => {
+                // const loader = new THREE.TextureLoader();
+                // const model = mesh.children[0];
+                // model.material.color.setHex(0xFFFFFF);
+                // model.material.map = loader.load(texturePath);
+                // model.material.specularMap = loader.load(specularMapPath);
 
-                const loader = new THREE.ObjectLoader();
-                loader.load(controllerModelPath, mesh => {
-                  // const loader = new THREE.TextureLoader();
-                  // const model = mesh.children[0];
-                  // model.material.color.setHex(0xFFFFFF);
-                  // model.material.map = loader.load(texturePath);
-                  // model.material.specularMap = loader.load(specularMapPath);
+                result.add(mesh);
+              });
 
-                  object.add(mesh);
-                });
-
-                const tip = (() => {
-                  const result = new THREE.Object3D();
-                  result.position.z = -1;
-                  return result;
-                })();
-                object.add(tip);
-                object.tip = tip;
-
-                return object;
+              const tip = (() => {
+                const result = new THREE.Object3D();
+                result.position.z = -1;
+                return result;
               })();
-              result.add(inner);
-              result.inner = inner;
+              result.add(tip);
+              result.tip = tip;
 
               return result;
             })();
@@ -111,12 +103,13 @@ class SinglePlayer {
             const cameraPosition = new THREE.Vector3();
             const cameraRotation = new THREE.Quaternion();
             const cameraScale = new THREE.Vector3();
-
             camera.updateMatrixWorld();
             camera.matrixWorld.decompose(cameraPosition, cameraRotation, cameraScale);
 
-            mesh.position.copy(
-              cameraPosition.clone()
+            const outerMatrix = (() => {
+              const result = new THREE.Matrix4();
+
+              const position = cameraPosition.clone()
                 .add(
                   new THREE.Vector3(
                     0.2 * (index === 0 ? -1 : 1),
@@ -124,13 +117,36 @@ class SinglePlayer {
                     -0.2
                   )
                   .applyQuaternion(cameraRotation)
-                )
-            );
-            mesh.quaternion.copy(cameraRotation);
+                );
+              const rotation = cameraRotation;
+              const scale = cameraScale;
 
-            const {inner} = mesh;
-            inner.position.copy(positionOffset);
-            inner.rotation.copy(rotationOffset);
+              result.compose(position, rotation, scale);
+
+              return result;
+            })();
+            const innerMatrix = (() => {
+              const result = new THREE.Matrix4();
+
+              const position = positionOffset;
+              const rotation = new THREE.Quaternion().setFromEuler(rotationOffset);
+              const scale = new THREE.Vector3(1, 1, 1);
+
+              result.compose(position, rotation, scale);
+
+              return result;
+            })();
+
+            const worldMatrix = outerMatrix.clone().multiply(innerMatrix);
+            const position = new THREE.Vector3();
+            const rotation = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            worldMatrix.decompose(position, rotation, scale);
+            // outerMatrix.decompose(position, rotation, scale);
+
+            mesh.position.copy(position);
+            mesh.quaternion.copy(rotation);
+            mesh.scale.copy(scale);
           }
 
           move(x, y) {

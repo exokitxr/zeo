@@ -84,7 +84,7 @@ class Weapons {
               });
 
               let side = null;
-              window.addEventListener('keydown', e => {
+              const keydown = e => {
                 if (window.document.pointerLockElement) {
                   switch (e.keyCode) {
                     case 90: // Z
@@ -123,7 +123,8 @@ class Weapons {
                       break;
                   }
                 }
-              });
+              };
+              window.addEventListener('keydown', keydown);
 
               const weaponMeshes = {
                 left: null,
@@ -131,7 +132,7 @@ class Weapons {
               };
 
               const _setWeapon = (side, weapon) => {
-                const rootMesh = controllers[side].mesh.inner;
+                const rootMesh = controllers[side].mesh;
                 // const tipMesh = rootMesh.tip;
 
                 const oldWeapon = weaponMeshes[side];
@@ -610,6 +611,10 @@ class Weapons {
 
                 _updateHudMeshIcon();
                 _updateMiniMap();
+              };
+
+              this._cleanup = () => {
+                window.removeEventListener('keydown', keydown);
               };
 
               return {

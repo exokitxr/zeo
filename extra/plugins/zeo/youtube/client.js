@@ -350,8 +350,6 @@ class Youtube {
             const {video} = videoMesh;
             const {boxMesh} = menuMesh;
 
-console.log('got box mesh target', boxMesh.target);
-
             if (boxMesh.target === 'play') {
               if (video.paused) {
                 video.play();
