@@ -195,7 +195,7 @@ class ArchaeServer {
             })
             .catch(cb);
         } else {
-          unlockCb(err);
+          cb(err);
         }
       });
     });
