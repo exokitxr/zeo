@@ -35,6 +35,8 @@ const MODELS = {
   },
 };
 
+const modelName = 'cloud';
+
 class Models {
   constructor(archae) {
     this._archae = archae;
@@ -56,167 +58,50 @@ class Models {
       if (live) {
         const {THREE, scene, camera} = zeo;
 
-        const _parseMesh = o => {
-          const geometries = o.geometries.map(geometry => {
-            const {data, uuid} = geometry;
-            const {attributes, index} = data;
-            const {position, normal, uv} = attributes;
+        const _getModel = modelName => MODELS[modelName];
+        const _requestModelJson = model => {
+          const modelPath = _getModelPath(model);
 
-            const numVertices = index.array.length;
-            const positions = new Float32Array(numVertices * 3);
-            const normals = new Float32Array(numVertices * 3);
-            const uvs = uv ? new Float32Array(numVertices * 2) : null;
-            for (let i = 0; i < numVertices; i++) {
-              const vertexIndex = index.array[i];
-
-              positions[(i * 3) + 0] = position.array[(vertexIndex * 3) + 0];
-              positions[(i * 3) + 1] = position.array[(vertexIndex * 3) + 1];
-              positions[(i * 3) + 2] = position.array[(vertexIndex * 3) + 2];
-
-              normals[(i * 3) + 0] = normal.array[(vertexIndex * 3) + 0];
-              normals[(i * 3) + 1] = normal.array[(vertexIndex * 3) + 1];
-              normals[(i * 3) + 2] = normal.array[(vertexIndex * 3) + 2];
-
-              if (uvs) {
-                uvs[(i * 2) + 0] = uv.array[(vertexIndex * 2) + 0];
-                uvs[(i * 2) + 1] = uv.array[(vertexIndex * 2) + 1];
-              }
-            }
-
-            const result = new THREE.BufferGeometry();
-            result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-            result.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-            if (uvs) {
-              result.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-            }
-            result.uuid = uuid;
-            return result;
-          });
-          const geometryIndex = _indexByUuid(geometries);
-          const images = o.images.map(image => {
-            const {url, uuid} = image;
-
-            const img = new Image();
-            img.src = url;
-            img.uuid = uuid;
-            return img;
-          });
-          const imageIndex = _indexByUuid(images);
-          const textures = o.textures.map(texture => {
-            const {image, uuid} = texture;
-
-            const img = imageIndex[image];
-            if (!img.complete) {
-              const onload = () => {
-                result.needsUpdate = true;
-
-                img.removeEventListener('load', onload);
-              };
-              img.addEventListener('load', onload);
-            }
-            const result = new THREE.Texture(
-              img,
-              THREE.UVMapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.LinearFilter,
-              THREE.LinearFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              16
-            );
-            result.needsUpdate = true;
-            result.uuid = uuid;
-            return result;
-          });
-          const textureIndex = _indexByUuid(textures);
-          const materials = o.materials.map(material => {
-            const {map, uuid} = material;
-
-            const texture = textureIndex[map];
-            const o = {
-              shininess: 0,
-              side: THREE.DoubleSide,
-              transparent: true,
-              alphaTest: 0.5,
-            };
-            if (texture) {
-              o.map = texture;
-            }
-            const result = new THREE.MeshPhongMaterial(o);
-            result.uuid = uuid;
-            return result;
-          });
-          const materialIndex = _indexByUuid(materials);
-          const meshes = o.object.children.map(child => {
-            const {uuid, geometry, material} = child;
-
-            const geo = geometryIndex[geometry];
-            const mat = materialIndex[material];
-            const result = new THREE.Mesh(geo, mat);
-            result.uuid = uuid;
-            return result;
-          });
-
-          const mesh = (() => {
-            const result = new THREE.Object3D();
-
-            for (let i = 0; i < meshes.length; i++) {
-              result.add(meshes[i]);
-            }
-
-            return result;
-          })();
-          return mesh;
-
-          function _indexByUuid(a) {
-            const result = {};
-
-            for (let i = 0; i < a.length; i++) {
-              const e = a[i];
-              result[e.uuid] = e;
-            }
-
-            return result;
-          }
+          return fetch(modelPath).then(res => res.text().then(s => asyncJsonParse(s)));
         };
+        const _requestModelMeshFromSpec = (modelJson, texturePath) => new Promise((accept, reject) => {
+          const loader = new THREE.ObjectLoader();
 
-        const model = MODELS['cloud'];
-        const modelPath = _getModelPath(model);
-        fetch(modelPath)
-          .then(res => {
-            res.text()
-              .then(s => {
-                asyncJsonParse(s)
-                  .then(json => {
-                    const loader = new THREE.ObjectLoader();
+          loader.setTexturePath(texturePath);
+          loader.parse(modelJson, accept);
+        });
+        const _requestModel = model => _requestModelJson(model).then(modelJson => {
+          const modelPath = _getModelPath(model);
+          const texturePath = _getTexturePath(modelPath); 
 
-                    loader.setTexturePath(_getTexturePath(modelPath));
-                    loader.parse(json, mesh => {
-                      mesh.rotation.order = camera.rotation.order;
+          return _requestModelMeshFromSpec(modelJson, texturePath);
+        });
 
-                      mesh.position.fromArray(model.position);
-                      mesh.rotation.fromArray(model.rotation);
-                      mesh.scale.fromArray(model.scale);
+        const model = _getModel(modelName);
+        _requestModel(model)
+          .then(mesh => {
+            if (live) {
+              mesh.rotation.order = camera.rotation.order;
 
-                      scene.add(mesh);
+              mesh.position.fromArray(model.position);
+              mesh.rotation.fromArray(model.rotation);
+              mesh.scale.fromArray(model.scale);
 
-                      this._cleanup = () => {
-                        scene.remove(mesh);
-                      };
-                    });
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-              })
-              .catch(err => {
-                console.warn(err);
-              });
+              scene.add(mesh);
+
+              this._cleanup = () => {
+                scene.remove(mesh);
+              };
+            }
           })
           .catch(err => {
             console.warn(err);
           });
+
+        return {
+          getModel: _getModel,
+          requestModelJson: _requestModelJson,
+        };
       }
     });
   }
