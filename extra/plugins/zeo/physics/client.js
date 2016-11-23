@@ -165,7 +165,7 @@ class Physics {
                   });
 
                   const keydown = e => {
-                    if (e.keyCode === 70) { // F
+                    if (e.keyCode === 82) { // R
                       boxPhysicsBodies.forEach(physicsBody => {
                         physicsBody.setPosition(_getRandomPosition().toArray());
                         physicsBody.setRotation(zeroQuaternion.toArray());
