@@ -1,4 +1,4 @@
-class Multiplayer {
+class Heartlink {
   constructor(archae) {
     this._archae = archae;
   }
@@ -25,7 +25,7 @@ class Multiplayer {
 
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
-      if (url === '/archae/multiplayerWs') {
+      if (url === '/archae/heartlink') {
         const id = _makeId();
 
         const e = {
@@ -95,4 +95,4 @@ class Multiplayer {
 
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = Multiplayer;
+module.exports = Heartlink;

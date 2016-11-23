@@ -1,5 +1,5 @@
 {
-  "name": "multiplayer",
+  "name": "heartlink",
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",

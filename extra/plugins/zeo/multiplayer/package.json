@@ -1,0 +1,6 @@
+{
+  "name": "multiplayer",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {}
+}

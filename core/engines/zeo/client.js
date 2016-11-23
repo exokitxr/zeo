@@ -15,10 +15,12 @@ class Zeo {
       '/core/engines/three',
       '/core/engines/somnifer',
       '/core/engines/antikyth',
+      '/core/engines/heartlink',
     ]).then(([
       three,
       somnifer,
       antikyth,
+      heartlink,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
@@ -38,6 +40,7 @@ class Zeo {
           } else {
             antikyth.requestWorld(worldName)
               .then(physics => {
+                const player = heartlink.getPlayer(); // XXX make this per-world
 
                 // main render loop
                 const startTime = Date.now()
@@ -93,6 +96,7 @@ class Zeo {
                   requestMod: _requestMod,
                   requestMods: _requestMods,
                   physics,
+                  player,
                   destroy: _destroy,
                 };
 
