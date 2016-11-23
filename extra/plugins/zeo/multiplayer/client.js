@@ -96,7 +96,7 @@ class Multiplayer {
             const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
 
             hmd.position.fromArray(hmdStatus.position);
-            hmd.rotation.fromArray(hmdStatus.rotation);
+            hmd.quaternion.fromArray(hmdStatus.rotation);
 
             leftController.position.fromArray(leftControllerStatus.position);
             leftController.quaternion.fromArray(leftControllerStatus.rotation);
