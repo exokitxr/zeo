@@ -568,6 +568,21 @@ class TriangleMesh extends Body {
 }
 Antikyth.TriangleMesh = TriangleMesh;
 
+class Compound extends Body {
+  constructor(opts) {
+    super();
+
+    const {position = null, rotation = null, children = [], scale = [1, 1, 1], mass = 0} = opts;
+    this.type = 'compound';
+    this.position = position;
+    this.rotation = rotation;
+    this.children = children;
+    this.scale = scale;
+    this.mass = mass;
+  }
+}
+Antikyth.Compound = Compound;
+
 const _isUpdateEqual = (a, b) => {
   const {position: [pax, pay, paz], rotation: [rax, ray, raz, raw]} = a;
   const {position: [pbx, pby, pbz], rotation: [rbx, rby, rbz, rbw]} = b;

@@ -225,6 +225,59 @@ const _makeBody = bodySpec => {
 
       return triangleMesh;
     }
+    case 'compound': {
+      const {children, scale, mass, position, rotation} = bodySpec;
+
+      const triangleMesh = physics.RigidBody.make({
+        type: physics.RigidBody.COMPOUND,
+        children: children.map(child => {
+          const {type, position = [0, 0, 0], rotation = [0, 0, 0, 1]} = child;
+
+          switch (type) {
+            case 'plane': {
+              const {dimensions} = child;
+              return {
+                type: physics.RigidBody.PLANE,
+                dimensions,
+                position,
+                rotation,
+              };
+            }
+            case 'box': {
+              const {dimensions} = child;
+              return {
+                type: physics.RigidBody.BOX,
+                dimensions,
+                position,
+                rotation,
+              };
+            }
+            case 'sphere': {
+              const {size} = child;
+              return {
+                type: physics.RigidBody.SPHERE,
+                size,
+                position,
+                rotation,
+              };
+            }
+            // XXX add remaining types here
+            default:
+              return null;
+          }
+        }),
+        scale,
+        mass,
+      });
+      if (position) {
+        triangleMesh.setPosition(position[0], position[1], position[2]);
+      }
+      if (rotation) {
+        triangleMesh.setRotation(rotation[0], rotation[1], rotation[2], rotation[3]);
+      }
+
+      return triangleMesh;
+    }
     default:
       return null;
   }

@@ -107,12 +107,12 @@ class AnyikythClient {
                     return _makeSphereDebugMesh(size);
                   }
                   case 'convexHull': {
-                    const {size} = child;
-                    return _makeSphereDebugMesh(size);
+                    const {points} = child;
+                    return _makeConvexHullDebugMesh(points);
                   }
                   case 'triangleMesh': {
-                    const {size} = child;
-                    return _makeSphereDebugMesh(size);
+                    const {points} = child;
+                    return _makeTriangleMeshDebugMesh(points);
                   }
                   default:
                     return null;
@@ -517,7 +517,6 @@ class AnyikythClient {
             const {position, rotation, scale, children} = this;
 
             const mesh = _makeCompoundDebugMesh(children);
-window.mesh = mesh;
             mesh.position.fromArray(position);
             mesh.quaternion.fromArray(rotation);
             mesh.scale.fromArray(scale);

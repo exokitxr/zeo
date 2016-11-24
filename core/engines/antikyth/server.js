@@ -45,6 +45,7 @@ class Context {
         case 'sphere': return new Antikyth.Sphere(opts);
         case 'convexHull': return new Antikyth.ConvexHull(opts);
         case 'triangleMesh': return new Antikyth.TriangleMesh(opts);
+        case 'compound': return new Antikyth.Compound(opts);
         default: return null;
       }
     })();

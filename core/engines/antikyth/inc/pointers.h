@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include "btBulletDynamicsCommon.h"
 
 namespace mox {
@@ -25,6 +26,12 @@ namespace mox {
 
     typedef std::shared_ptr<btTriangleMesh>
       btTriangleMeshPtr;
+
+    typedef std::shared_ptr<btCompoundShape>
+      btCompoundShapePtr;
+
+    typedef std::vector<btCollisionShapePtr>
+      btCollisionShapes;
 
     typedef std::shared_ptr<btDefaultMotionState>
       btDefaultMotionStatePtr;
