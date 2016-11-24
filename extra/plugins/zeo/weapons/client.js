@@ -39,6 +39,7 @@ class Weapons {
           ]) => {
             if (live) {
               const {physics} = world;
+              const player = singleplayer.getPlayer();
               const controllers = singleplayer.getControllers();
 
               const HUD_SOLID_MATERIAL = new THREE.MeshBasicMaterial({
@@ -141,6 +142,15 @@ class Weapons {
                 }
               };
               window.addEventListener('keydown', keydown);
+              const hmdUpdate = update => {
+                ['left', 'right'].forEach(_syncWeaponSide);
+              };
+              const controllerUpdate = update => {
+                const {side} = update;
+                _syncWeaponSide(side);
+              };
+              player.on('hmdUpdate', hmdUpdate);
+              player.on('controllerUpdate', controllerUpdate);
 
               const weaponMeshes = {
                 left: null,
@@ -164,6 +174,25 @@ class Weapons {
                 scene.add(newWeaponMesh);
 
                 weaponMeshes[side] = newWeaponMesh;
+              };
+              const _syncWeaponSide = side => {
+                const weaponMesh = weaponMeshes[side];
+                if (weaponMesh) {
+                  const controller = controllers[side];
+                  const {mesh: controllerMesh} = controller;
+
+                  const controllerPosition = new THREE.Vector3();
+                  const controllerRotation = new THREE.Quaternion();
+                  const controllerScale = new THREE.Vector3();
+                  controllerMesh.updateMatrixWorld();
+                  controllerMesh.matrixWorld.decompose(controllerPosition, controllerRotation, controllerScale);
+
+                  weaponMesh.position.copy(controllerPosition);
+                  weaponMesh.quaternion.copy(controllerRotation);
+
+                  const {physicsBody} = weaponMesh;
+                  physicsBody.sync();
+                }
               };
               const _makeWeaponMesh = weaponType => {
                 switch (weaponType) {
@@ -688,28 +717,6 @@ class Weapons {
                 const hudWeaponMeshes = [weaponMeshes.left, weaponMeshes.right]
                   .filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
 
-                const _updateWeaponMeshes = () => {
-                  ['left', 'right'].forEach(side => {
-                    const weaponMesh = weaponMeshes[side];
-
-                    if (weaponMesh) {
-                      const controller = controllers[side];
-                      const {mesh: controllerMesh} = controller;
-
-                      const controllerPosition = new THREE.Vector3();
-                      const controllerRotation = new THREE.Quaternion();
-                      const controllerScale = new THREE.Vector3();
-                      controllerMesh.updateMatrixWorld();
-                      controllerMesh.matrixWorld.decompose(controllerPosition, controllerRotation, controllerScale);
-
-                      weaponMesh.position.copy(controllerPosition);
-                      weaponMesh.quaternion.copy(controllerRotation);
-
-                      const {physicsBody} = weaponMesh;
-                      physicsBody.sync(); // XXX make this happen only on controller update
-                    }
-                  });
-                };
                 const _updateHudMeshIcon = () => {
                   const frameIndex = Math.floor(worldTime / 200) % 2;
 
@@ -738,13 +745,14 @@ class Weapons {
                   });
                 };
 
-                _updateWeaponMeshes();
                 _updateHudMeshIcon();
                 _updateMiniMap();
               };
 
               this._cleanup = () => {
                 window.removeEventListener('keydown', keydown);
+                player.removeEventListener('hmdUpdate', hmdUpdate);
+                player.removeEventListener('controllerUpdate', controllerUpdate);
               };
 
               return {
