@@ -38,6 +38,7 @@ class Weapons {
             singleplayer,
           ]) => {
             if (live) {
+              const {physics} = world;
               const controllers = singleplayer.getControllers();
 
               const HUD_SOLID_MATERIAL = new THREE.MeshBasicMaterial({
@@ -137,13 +138,15 @@ class Weapons {
 
                 const oldWeapon = weaponMeshes[side];
                 if (oldWeapon) {
-                  rootMesh.remove(oldWeapon);
+                  // rootMesh.remove(oldWeapon);
+                  scene.remove(oldWeapon);
 
                   weaponMeshes[side] = null;
                 }
 
                 const newWeaponMesh = _makeWeaponMesh(weapon);
-                rootMesh.add(newWeaponMesh);
+                // rootMesh.add(newWeaponMesh);
+                scene.add(newWeaponMesh);
 
                 weaponMeshes[side] = newWeaponMesh;
               };
@@ -395,12 +398,20 @@ class Weapons {
                   mesh1.add(tipMesh);
                   mesh.tipMesh = tipMesh;
 
-                  /* const physicsMesh = (() => {
-                    const geometry = new THREE.BoxGeometry(0.1, 0.1, 1);
-                    const mesh = new Physijs.BoxMesh(geometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                    return mesh;
-                  })();
-                  mesh.physicsMesh = physicsMesh; */
+                  const physicsBody = new physics.Compound({
+                    children: [
+                      {
+                        type: 'box',
+                        position: [0, -0.05, -0.45],
+                        dimensions: [0.1, 0.1, 1.1],
+                      }
+                    ],
+                    mass: 1,
+                  });
+                  physicsBody.deactivate();
+                  physicsBody.setObject(mesh);
+                  physics.add(physicsBody);
+                  mesh.physicsBody = physicsBody;
 
                   return mesh;
                 };
@@ -579,8 +590,33 @@ class Weapons {
               })();
 
               const _update = ({worldTime}) => {
-                const hudWeaponMeshes = [ weaponMeshes.left, weaponMeshes.right ].filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
+                const hudWeaponMeshes = [weaponMeshes.left, weaponMeshes.right]
+                  .filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
 
+                const _updateWeaponMeshes = () => {
+                  ['left', 'right'].forEach(side => {
+                    const weaponMesh = weaponMeshes[side];
+
+                    if (weaponMesh) {
+                      const controller = controllers[side];
+                      const {mesh: controllerMesh} = controller;
+
+                      const controllerPosition = new THREE.Vector3();
+                      const controllerRotation = new THREE.Quaternion();
+                      const controllerScale = new THREE.Vector3();
+                      controllerMesh.updateMatrixWorld();
+                      controllerMesh.matrixWorld.decompose(controllerPosition, controllerRotation, controllerScale);
+
+                      weaponMesh.position.copy(controllerPosition);
+                      weaponMesh.quaternion.copy(controllerRotation);
+
+                      const {physicsBody} = weaponMesh;
+                      if (physicsBody) { // XXX all weapon meshes should have this eventually
+                         physicsBody.sync();
+                      }
+                    }
+                  });
+                };
                 const _updateHudMeshIcon = () => {
                   const frameIndex = Math.floor(worldTime / 200) % 2;
 
@@ -609,6 +645,7 @@ class Weapons {
                   });
                 };
 
+                _updateWeaponMeshes();
                 _updateHudMeshIcon();
                 _updateMiniMap();
               };

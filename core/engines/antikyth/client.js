@@ -32,6 +32,29 @@ class AnyikythClient {
           wireframe: true,
         }) : null;
 
+        const _makePlaneDebugMesh = (dimensions, position, rotation, scale) => {
+          const geometry = new THREE.PlaneBufferGeometry(1024, 1024);
+          geometry.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 0, 1),
+            new THREE.Vector3().fromArray(dimensions)
+          )));
+
+          const mesh = new THREE.Mesh(geometry, debugMaterial);
+          mesh.position.fromArray(position);
+          mesh.quaternion.fromArray(rotation);
+          mesh.scale.fromArray(scale);
+          return mesh;
+        };
+        const _makeBoxDebugMesh = dimensions => {
+          const geometry = new THREE.BoxBufferGeometry(dimensions[0], dimensions[1], dimensions[2]);
+          const mesh = new THREE.Mesh(geometry, debugMaterial);
+          return mesh;
+        };
+        const _makeSphereDebugMesh = size => {
+          const geometry = new THREE.SphereBufferGeometry(size, 8, 8);
+          const mesh = new THREE.Mesh(geometry, debugMaterial);
+          return mesh;
+        };
         const _makeBoundingBoxDebugMesh = points => {
           const bufferGeometry = new THREE.BufferGeometry();
           bufferGeometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from(points), 3));
@@ -52,6 +75,59 @@ class AnyikythClient {
           const mesh = new THREE.Mesh(geometry, debugMaterial);
           return mesh;
         };
+        const _makeConvexHullDebugMesh = _makeBoundingBoxDebugMesh;
+        const _makeTriangleMeshDebugMesh = (points, position, rotation, scale) => {
+          const mesh = _makeBoundingBoxDebugMesh(points, position, rotation, scale);
+          mesh.position.fromArray(position);
+          mesh.quaternion.fromArray(rotation);
+          mesh.scale.fromArray(scale);
+          return mesh;
+        };
+        const _makeCompoundDebugMesh = children => {
+          const mesh = new THREE.Object3D();
+
+          for (let i = 0; i < children.length; i++) {
+            const child = children[i];
+
+            const childMesh = (() => {
+              const {type, position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1]} = child;
+
+              const result = (() => {
+                switch (type) {
+                  case 'plane': {
+                    const {dimensions} = child;
+                    return _makePlaneDebugMesh(dimensions);
+                  }
+                  case 'box': {
+                    const {dimensions} = child;
+                    return _makeBoxDebugMesh(dimensions);
+                  }
+                  case 'sphere': {
+                    const {size} = child;
+                    return _makeSphereDebugMesh(size);
+                  }
+                  case 'convexHull': {
+                    const {size} = child;
+                    return _makeSphereDebugMesh(size);
+                  }
+                  case 'triangleMesh': {
+                    const {size} = child;
+                    return _makeSphereDebugMesh(size);
+                  }
+                  default:
+                    return null;
+                }
+              })();
+              result.position.fromArray(position);
+              result.quaternion.fromArray(rotation);
+              result.scale.fromArray(scale);
+              return result;
+            })();
+            mesh.add(childMesh);
+          }
+
+          return mesh;
+        };
 
         class Entity {
           constructor(id = idUtils.makeId()) {
@@ -62,14 +138,18 @@ class AnyikythClient {
             const {id: parentId} = this;
             const {id: childId} = child;
 
-            _request('add', [parentId, childId], _warnError);
+            if (child.type !== 'compound') {
+              _request('add', [parentId, childId], _warnError);
+            }
           }
 
           remove(child) {
             const {id: parentId} = this;
             const {id: childId} = child;
 
-            _request('remove', [parentId, childId], _warnError);
+            if (child.type !== 'compound') {
+              _request('remove', [parentId, childId], _warnError);
+            }
           }
         }
 
@@ -217,6 +297,8 @@ class AnyikythClient {
 
             const {id} = this;
 
+            this.type = type; // XXX not needed
+
             const linearVelocity = new THREE.Vector3();
             if (opts.linearVelocity) {
               linearVelocity.fromArray(opts.linearVelocity);
@@ -234,7 +316,9 @@ class AnyikythClient {
             this.object = null;
             this.debugMesh = null;
 
-            _request('create', [type, id, _except(opts, ['id'])], _warnError);
+            if (type !== 'compound') {
+              _request('create', [type, id, _except(opts, ['id'])], _warnError);
+            }
           }
 
           update({position, rotation, linearVelocity, angularVelocity}) {
@@ -269,37 +353,49 @@ class AnyikythClient {
           setPosition(position) {
             const {id, active} = this;
 
-            _request('setPosition', [id, position, active], _warnError);
+            if (this.type !== 'compound') {
+              _request('setPosition', [id, position, active], _warnError);
+            }
           }
 
           setRotation(rotation) {
             const {id, active} = this;
 
-            _request('setRotation', [id, rotation, active], _warnError);
+            if (this.type !== 'compound') {
+              _request('setRotation', [id, rotation, active], _warnError);
+            }
           }
 
           setLinearVelocity(linearVelocity) {
             const {id, active} = this;
 
-            _request('setLinearVelocity', [id, linearVelocity, active], _warnError);
+            if (this.type !== 'compound') {
+              _request('setLinearVelocity', [id, linearVelocity, active], _warnError);
+            }
           }
 
           setAngularVelocity(angularVelocity) {
             const {id, active} = this;
 
-            _request('setAngularVelocity', [id, angularVelocity, active], _warnError);
+            if (this.type !== 'compound') {
+              _request('setAngularVelocity', [id, angularVelocity, active], _warnError);
+            }
           }
 
           activate() {
             this.active = true;
 
-            _request('activate', [this.id], _warnError);
+            if (this.type !== 'compound') {
+              _request('activate', [this.id], _warnError);
+            }
           }
 
           deactivate() {
             this.active = false;
 
-            _request('deactivate', [this.id], _warnError);
+            if (this.type !== 'compound') {
+              _request('deactivate', [this.id], _warnError);
+            }
           }
 
           sync() {
@@ -307,8 +403,13 @@ class AnyikythClient {
 
             this.setPosition(object.position.toArray());
             this.setRotation(object.quaternion.toArray());
-            this.setLinearVelocity(this.linearVelocity.toArray());
-            this.setAngularVelocity(this.angularVelocity.toArray());
+            this.setLinearVelocity([0, 0, 0]);
+            this.setAngularVelocity([0, 0, 0]);
+
+            if (this.debugMesh) { // XXX not needed -- will come from the server
+              this.debugMesh.position.copy(object.position);
+              this.debugMesh.quaternion.copy(object.quaternion);
+            }
           }
 
           addDebug() {
@@ -341,18 +442,7 @@ class AnyikythClient {
 
           makeDebugMesh() {
             const {position, rotation, scale, dimensions} = this;
-
-            const geometry = new THREE.PlaneBufferGeometry(1024, 1024);
-            geometry.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 0, 1),
-              new THREE.Vector3().fromArray(dimensions)
-            )));
-
-            const mesh = new THREE.Mesh(geometry, debugMaterial);
-            mesh.position.fromArray(position);
-            mesh.quaternion.fromArray(rotation);
-            mesh.scale.fromArray(scale);
-            return mesh;
+            return _makePlaneDebugMesh(dimensions, position, rotation, scale);
           }
         }
 
@@ -365,11 +455,7 @@ class AnyikythClient {
           }
 
           makeDebugMesh() {
-            const {dimensions} = this;
-            const geometry = new THREE.BoxBufferGeometry(dimensions[0], dimensions[1], dimensions[2]);
-
-            const mesh = new THREE.Mesh(geometry, debugMaterial);
-            return mesh;
+            return _makeBoxDebugMesh(this.dimensions);
           }
         }
 
@@ -382,11 +468,7 @@ class AnyikythClient {
           }
 
           makeDebugMesh() {
-            const {size} = this;
-            const geometry = new THREE.SphereBufferGeometry(size, 8, 8);
-
-            const mesh = new THREE.Mesh(geometry, debugMaterial);
-            return mesh;
+            return _makeSphereDebugMesh(this.size);
           }
         }
 
@@ -399,7 +481,7 @@ class AnyikythClient {
           }
 
           makeDebugMesh() {
-            return _makeBoundingBoxDebugMesh(this.points);
+            return _makeConvexHullDebugMesh(this.points);
           }
         }
 
@@ -416,8 +498,26 @@ class AnyikythClient {
 
           makeDebugMesh() {
             const {position, rotation, scale, points} = this;
+            return _makeTriangleMeshDebugMesh(points, position, rotation, scale);
+          }
+        }
 
-            const mesh = _makeBoundingBoxDebugMesh(points);
+        class Compound extends Body {
+          constructor(opts = {}) {
+            super('compound', opts);
+
+            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], children} = opts;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+            this.children = children;
+          }
+
+          makeDebugMesh() {
+            const {position, rotation, scale, children} = this;
+
+            const mesh = _makeCompoundDebugMesh(children);
+window.mesh = mesh;
             mesh.position.fromArray(position);
             mesh.quaternion.fromArray(rotation);
             mesh.scale.fromArray(scale);
@@ -509,6 +609,7 @@ class AnyikythClient {
           world.Sphere = Sphere;
           world.ConvexHull = ConvexHull;
           world.TriangleMesh = TriangleMesh;
+          world.Compound = Compound;
           world.makeBody = _makeBody;
           world.makeConvexHullBody = _makeConvexHullBody;
           world.makeTriangleMeshBody = _makeTriangleMeshBody;
