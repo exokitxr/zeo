@@ -9,13 +9,6 @@ const bodies = new Map(); // bodyId -> Body
 const worldBodyIndex = new Map(); // worldId -> [bodyId]
 const bodyWorldIndex = new Map(); // bodyId -> worldId
 
-class BodyRecord {
-  constructor(world, body) {
-    this.world = world;
-    this.body = body;
-  }
-}
-
 const _requestUpdate = worldId => {
   const bodyIds = worldBodyIndex.get(worldId);
   const updates = bodyIds.map(bodyId => {
