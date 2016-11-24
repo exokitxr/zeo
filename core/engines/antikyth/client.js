@@ -27,12 +27,9 @@ class AnyikythClient {
       if (live) {
         const {THREE, scene} = three;
 
-        const debugMaterial = DEBUG ? new THREE.MeshPhongMaterial({
+        const debugMaterial = DEBUG ? new THREE.MeshBasicMaterial({
           color: 0xFF0000,
-          shading: THREE.FlatShading,
-          shininess: 0,
-          opacity: 0.5,
-          transparent: true,
+          wireframe: true,
         }) : null;
 
         const _makeBoundingBoxDebugMesh = points => {
@@ -358,7 +355,7 @@ class AnyikythClient {
 
           makeDebugMesh() {
             const {dimensions} = this;
-            const geometry = new THREE.BoxBufferGeometry(dimensions[0] / 2, dimensions[1] / 2, dimensions[2] / 2);
+            const geometry = new THREE.BoxBufferGeometry(dimensions[0], dimensions[1], dimensions[2]);
 
             const mesh = new THREE.Mesh(geometry, debugMaterial);
             return mesh;
