@@ -577,8 +577,33 @@ class Weapons {
                 const clipMesh = new THREE.Mesh(clipGeometry, ITEM_WIREFRAME_MATERIAL);
                 mesh.add(clipMesh);
 
-                /* const physicsMesh = new Physijs.BoxMesh(clipPhysicsGeometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                mesh.physicsMesh = physicsMesh; */
+                const physicsBody = new physics.Compound({
+                  children: (() => {
+                    const clipEuler = new THREE.Euler(
+                      -(Math.PI / 2),
+                      0,
+                      0,
+                      camera.rotation.order
+                    );
+
+                    return [
+                      {
+                        type: 'box',
+                        position: new THREE.Vector3(0, -(0.165 / 2) + (0.01 / 2), 0)
+                          .add(new THREE.Vector3(0, 0.065, -0.01))
+                          .applyEuler(clipEuler)
+                          .toArray(),
+                        rotation: new THREE.Quaternion().setFromEuler(clipEuler).toArray(),
+                        dimensions: [0.03, 0.185, 0.05]
+                      }
+                    ];
+                  })(),
+                  mass: 1,
+                });
+                physicsBody.deactivate();
+                physicsBody.setObject(mesh);
+                physics.add(physicsBody);
+                mesh.physicsBody = physicsBody;
 
                 return mesh;
               };
