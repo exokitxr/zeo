@@ -424,43 +424,6 @@ class Weapons {
                   return mesh;
                 };
               })();
-
-              const clipGeometry = (() => {
-                const geometry1 = new THREE.BoxBufferGeometry(0.015, 0.175, 0.04);
-                geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.165 / 2) + (0.01 / 2), 0));
-                geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
-                geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
-
-                const geometry2 = new THREE.BoxBufferGeometry(0.03, 0.01, 0.05);
-                geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.165) - (0.01 / 2), 0));
-                geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
-                geometry2.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
-
-                const bulletGeometryTemplate = new THREE.BoxBufferGeometry(0.015 - 0.005, 0.01, 0.04 - 0.005);
-                bulletGeometryTemplate.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
-
-                const numBulletsTotal = 12;
-                const bulletGeometries = (() => {
-                  const result = [];
-                  for (let i = 0; i < numBulletsTotal; i++) {
-                    const bulletGeometry = bulletGeometryTemplate.clone();
-                    bulletGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.015 * i, 0));
-                    bulletGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
-
-                    result.push(bulletGeometry);
-                  }
-                  return result;
-                })();
-                const geometry = geometryUtils.concatBufferGeometry([
-                  geometry1,
-                  geometry2,
-                ].concat(bulletGeometries));
-                geometry.numBullets = numBulletsTotal;
-
-                return geometry;
-              })();
-              // const clipPhysicsGeometry = new THREE.BoxGeometry(0.015, 0.175, 0.05);
-
               const _makeGunMesh = (function() {
                 const geometry1 = new THREE.BoxBufferGeometry(0.04, 0.2, 0.04);
                 geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1, -0.005));
@@ -491,12 +454,8 @@ class Weapons {
                   mesh.add(mesh2);
 
                   const clipMesh = (() => {
-                    const mesh = new THREE.Mesh(clipGeometry, ITEM_WIREFRAME_MATERIAL);
+                    const mesh = _makeClipMesh();
                     mesh.position.z = 0.07;
-
-                    /* const physicsMesh = new Physijs.BoxMesh(clipPhysicsGeometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                    mesh.physicsMesh = physicsMesh; */
-
                     return mesh;
                   })();
                   mesh.add(clipMesh);
@@ -574,7 +533,42 @@ class Weapons {
                 const mesh = new THREE.Object3D();
                 mesh.weaponType = 'clip';
 
-                const clipMesh = new THREE.Mesh(clipGeometry, ITEM_WIREFRAME_MATERIAL);
+                const geometry = (() => {
+                  const geometry1 = new THREE.BoxBufferGeometry(0.015, 0.175, 0.04);
+                  geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.165 / 2) + (0.01 / 2), 0));
+                  geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
+                  geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+
+                  const geometry2 = new THREE.BoxBufferGeometry(0.03, 0.01, 0.05);
+                  geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.165) - (0.01 / 2), 0));
+                  geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
+                  geometry2.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+
+                  const bulletGeometryTemplate = new THREE.BoxBufferGeometry(0.015 - 0.005, 0.01, 0.04 - 0.005);
+                  bulletGeometryTemplate.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
+
+                  const numBulletsTotal = 12;
+                  const bulletGeometries = (() => {
+                    const result = [];
+                    for (let i = 0; i < numBulletsTotal; i++) {
+                      const bulletGeometry = bulletGeometryTemplate.clone();
+                      bulletGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.015 * i, 0));
+                      bulletGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+
+                      result.push(bulletGeometry);
+                    }
+                    return result;
+                  })();
+
+                  const result = geometryUtils.concatBufferGeometry([
+                    geometry1,
+                    geometry2,
+                  ].concat(bulletGeometries));
+                  result.numBullets = numBulletsTotal;
+                  return result;
+                })();
+
+                const clipMesh = new THREE.Mesh(geometry, ITEM_WIREFRAME_MATERIAL);
                 mesh.add(clipMesh);
 
                 const physicsBody = new physics.Compound({
