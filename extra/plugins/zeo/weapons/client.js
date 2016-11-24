@@ -340,12 +340,20 @@ class Weapons {
                 result.add(lowerRightMesh);
                 result.lowerRightMesh = lowerRightMesh;
 
-                /* const physicsMesh = (() => {
-                  const geometry = new THREE.BoxGeometry(0.1, 0.2, 0.01);
-                  const mesh = new Physijs.BoxMesh(geometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                  return mesh;
-                })();
-                result.physicsMesh = physicsMesh; */
+                const physicsBody = new physics.Compound({
+                  children: [
+                    {
+                      type: 'box',
+                      position: [0, 0.005, 0],
+                      dimensions: [0.1, 0.02, 0.2],
+                    }
+                  ],
+                  mass: 1,
+                });
+                physicsBody.deactivate();
+                physicsBody.setObject(result);
+                physics.add(physicsBody);
+                result.physicsBody = physicsBody;
 
                 return result;
               };
