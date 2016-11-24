@@ -28,7 +28,7 @@ class Weapons {
       [geometryUtils, textUtils, creatureUtils],
     ]) => {
       if (live) {
-        const {THREE, scene, renderer} = zeo;
+        const {THREE, scene, camera, renderer} = zeo;
 
         const world = zeo.getCurrentWorld();
         return world.requestMods([
@@ -525,12 +525,47 @@ class Weapons {
                   mesh.add(tipMesh);
                   mesh.tipMesh = tipMesh;
 
-                  /* const physicsMesh = (() => {
-                    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-                    const mesh = new Physijs.BoxMesh(geometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                    return mesh;
-                  })();
-                  mesh.physicsMesh = physicsMesh; */
+                  const physicsBody = new physics.Compound({
+                    children: (() => {
+                      const barrelEuler = new THREE.Euler(
+                        -(Math.PI / 2) - (Math.PI * 0.3),
+                        0,
+                        0,
+                        camera.rotation.order
+                      );
+                      const barrel = {
+                        type: 'box',
+                        position: new THREE.Vector3(0, 0.1, -0.005).applyEuler(barrelEuler).toArray(),
+                        rotation: new THREE.Quaternion().setFromEuler(barrelEuler).toArray(),
+                        dimensions: [0.04, 0.2, 0.04],
+                      };
+                      const gripEuler = new THREE.Euler(
+                        -(Math.PI / 2),
+                        0,
+                        0,
+                        camera.rotation.order
+                      );
+                      const grip = {
+                        type: 'box',
+                        position: new THREE.Vector3(0, -(0.165 / 2), 0)
+                          .add(new THREE.Vector3(0, 0, -0.01))
+                          .applyEuler(gripEuler)
+                          .toArray(),
+                        rotation: new THREE.Quaternion().setFromEuler(gripEuler).toArray(),
+                        dimensions: [0.03, 0.165, 0.05],
+                      };
+
+                      return [
+                        barrel,
+                        grip,
+                      ];
+                    })(),
+                    mass: 1,
+                  });
+                  physicsBody.deactivate();
+                  physicsBody.setObject(mesh);
+                  physics.add(physicsBody);
+                  mesh.physicsBody = physicsBody;
 
                   return mesh;
                 };
