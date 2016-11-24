@@ -81,10 +81,8 @@ class Models {
         _requestModel(model)
           .then(mesh => {
             if (live) {
-              mesh.rotation.order = camera.rotation.order;
-
               mesh.position.fromArray(model.position);
-              mesh.rotation.fromArray(model.rotation);
+              mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
               mesh.scale.fromArray(model.scale);
 
               scene.add(mesh);

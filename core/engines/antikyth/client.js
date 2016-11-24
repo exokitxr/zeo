@@ -2,6 +2,7 @@ const idUtils = require('./lib/idUtils');
 
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
+const DEBUG = true;
 
 const engineKey = null;
 
@@ -24,7 +25,37 @@ class AnyikythClient {
       three,
     ]) => {
       if (live) {
-        const {THREE} = three;
+        const {THREE, scene, camera} = three;
+
+        const debugMaterial = DEBUG ? new THREE.MeshPhongMaterial({
+          color: 0xFF0000,
+          shading: THREE.FlatShading,
+          shininess: 0,
+          opacity: 0.5,
+          transparent: true,
+        }) : null;
+
+        const _makeBoundingBoxDebugMesh = points => {
+          const bufferGeometry = new THREE.BufferGeometry();
+          bufferGeometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from(points), 3));
+          bufferGeometry.computeBoundingBox();
+          const {boundingBox} = bufferGeometry;
+          const w = boundingBox.max.x - boundingBox.min.x;
+          const h = boundingBox.max.y - boundingBox.min.y;
+          const d = boundingBox.max.z - boundingBox.min.z;
+          const center = new THREE.Vector3(
+            (boundingBox.min.x + boundingBox.max.x) / 2,
+            (boundingBox.min.y + boundingBox.max.y) / 2,
+            (boundingBox.min.z + boundingBox.max.z) / 2
+          );
+
+          const geometry = new THREE.BoxBufferGeometry(w, h, d);
+          geometry.applyMatrix(new THREE.Matrix4().makeTranslation(center.x, center.y, center.z));
+
+          const mesh = new THREE.Mesh(geometry, debugMaterial);
+          return mesh;
+        };
+
         class Entity {
           constructor(id = idUtils.makeId()) {
             this.id = id;
@@ -94,6 +125,8 @@ class AnyikythClient {
             const {id: bodyId} = body;
             this.bodies.set(bodyId, body);
 
+            body.addDebug();
+
             if (!this.running) {
               this.start();
             }
@@ -104,6 +137,8 @@ class AnyikythClient {
 
             const {id: bodyId} = body;
             this.bodies.delete(bodyId);
+
+            body.removeDebug();
 
             if (this.bodies.size === 0) {
               this.stop();
@@ -185,18 +220,6 @@ class AnyikythClient {
 
             const {id} = this;
 
-            const position = new THREE.Vector3();
-            if (opts.position) {
-              position.fromArray(opts.position);
-            }
-            this.position = position;
-
-            const rotation = new THREE.Quaternion();
-            if (opts.rotation) {
-              rotation.fromArray(opts.rotation);
-            }
-            this.rotation = rotation;
-
             const linearVelocity = new THREE.Vector3();
             if (opts.linearVelocity) {
               linearVelocity.fromArray(opts.linearVelocity);
@@ -209,30 +232,49 @@ class AnyikythClient {
             }
             this.angularVelocity = angularVelocity;
 
+            this.object = null;
+            this.debugMesh = null;
+
             _request('create', [type, id, _except(opts, ['id'])], _warnError);
           }
 
           update({position, rotation, linearVelocity, angularVelocity}) {
-            this.position.fromArray(position);
-            this.rotation.fromArray(rotation);
+            const {object} = this;
+            if (object) {
+              object.position.fromArray(position);
+              object.quaternion.fromArray(rotation);
+            }
+
             this.linearVelocity.fromArray(linearVelocity);
             this.angularVelocity.fromArray(angularVelocity);
+
+            if (DEBUG) {
+              const {debugMesh} = this;
+              debugMesh.position.fromArray(position);
+              debugMesh.quaternion.fromArray(rotation);
+            }
           }
 
           setObject(object) {
-            const {position, quaternion} = object;
-
-            // attach properties for updates to write to them
-            this.position = position;
-            this.rotation = quaternion;
             this.linearVelocity = new THREE.Vector3();
             this.angularVelocity = new THREE.Vector3();
 
             // sync properties to the server
-            this.setPosition(this.position.toArray());
-            this.setRotation(this.rotation.toArray());
+            this.setPosition(object.position.toArray());
+            this.setRotation(object.quaternion.toArray());
             this.setLinearVelocity(this.linearVelocity.toArray());
             this.setAngularVelocity(this.angularVelocity.toArray());
+
+            this.object = object;
+          }
+
+          unsetObject() {
+            this.position = new THREE.Vector3();
+            this.rotation = new THREE.Quaternion();
+            this.linearVelocity = new THREE.Vector3();
+            this.angularVelocity = new THREE.Vector3();
+
+            this.object = null;
           }
 
           setPosition(position) {
@@ -258,35 +300,118 @@ class AnyikythClient {
 
             _request('setAngularVelocity', [id, angularVelocity], _warnError);
           }
+
+          addDebug() {
+            if (DEBUG) {
+              const debugMesh = this.makeDebugMesh();
+              scene.add(debugMesh);
+              this.debugMesh = debugMesh;
+            }
+          }
+
+          removeDebug() {
+            if (DEBUG) {
+              const debugMesh = this.makeDebugMesh();
+              scene.remove(debugMesh);
+              this.debugMesh = null;
+            }
+          }
         }
 
         class Plane extends Body {
           constructor(opts = {}) {
             super('plane', opts);
+
+            const {position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1], dimensions} = opts;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+            this.dimensions = dimensions;
+          }
+
+          makeDebugMesh() {
+            const {position, rotation, scale, dimensions} = this;
+
+            const geometry = new THREE.PlaneBufferGeometry(1024, 1024);
+            geometry.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, 1),
+              new THREE.Vector3().fromArray(dimensions)
+            )));
+
+            const mesh = new THREE.Mesh(geometry, debugMaterial);
+            mesh.position.fromArray(position);
+            mesh.rotation.fromArray(rotation.concat(camera.rotation.order));
+            mesh.scale.fromArray(scale);
+            return mesh;
           }
         }
 
         class Box extends Body {
           constructor(opts = {}) {
             super('box', opts);
+
+            const {dimensions} = opts;
+            this.dimensions = dimensions;
+          }
+
+          makeDebugMesh() {
+            const {dimensions} = this;
+            const geometry = new THREE.BoxBufferGeometry(dimensions[0] / 2, dimensions[1] / 2, dimensions[2] / 2);
+
+            const mesh = new THREE.Mesh(geometry, debugMaterial);
+            return mesh;
           }
         }
 
         class Sphere extends Body {
           constructor(opts = {}) {
             super('sphere', opts);
+
+            const {size} = opts;
+            this.size = size;
+          }
+
+          makeDebugMesh() {
+            const {size} = this;
+            const geometry = new THREE.SphereBufferGeometry(size, 8, 8);
+
+            const mesh = new THREE.Mesh(geometry, debugMaterial);
+            return mesh;
           }
         }
 
         class ConvexHull extends Body {
           constructor(opts = {}) {
             super('convexHull', opts);
+
+            const {points} = opts;
+            this.points = points;
+          }
+
+          makeDebugMesh() {
+            return _makeBoundingBoxDebugMesh(this.points);
           }
         }
 
         class TriangleMesh extends Body {
           constructor(opts = {}) {
             super('triangleMesh', opts);
+
+            const {position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1], points} = opts;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+            this.points = points;
+          }
+
+          makeDebugMesh() {
+            const {position, rotation, scale, points} = this;
+
+            const mesh = _makeBoundingBoxDebugMesh(points);
+            mesh.position.fromArray(position);
+            mesh.rotation.fromArray(rotation.concat(camera.rotation.order));
+            mesh.scale.fromArray(scale);
+            return mesh;
           }
         }
 
