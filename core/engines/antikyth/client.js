@@ -138,18 +138,14 @@ class AnyikythClient {
             const {id: parentId} = this;
             const {id: childId} = child;
 
-            if (child.type !== 'compound') {
-              _request('add', [parentId, childId], _warnError);
-            }
+            _request('add', [parentId, childId], _warnError);
           }
 
           remove(child) {
             const {id: parentId} = this;
             const {id: childId} = child;
 
-            if (child.type !== 'compound') {
-              _request('remove', [parentId, childId], _warnError);
-            }
+            _request('remove', [parentId, childId], _warnError);
           }
         }
 
@@ -297,8 +293,6 @@ class AnyikythClient {
 
             const {id} = this;
 
-            this.type = type; // XXX not needed
-
             const linearVelocity = new THREE.Vector3();
             if (opts.linearVelocity) {
               linearVelocity.fromArray(opts.linearVelocity);
@@ -316,9 +310,7 @@ class AnyikythClient {
             this.object = null;
             this.debugMesh = null;
 
-            if (type !== 'compound') {
-              _request('create', [type, id, _except(opts, ['id'])], _warnError);
-            }
+            _request('create', [type, id, _except(opts, ['id'])], _warnError);
           }
 
           update({position, rotation, linearVelocity, angularVelocity}) {
@@ -353,49 +345,37 @@ class AnyikythClient {
           setPosition(position) {
             const {id, active} = this;
 
-            if (this.type !== 'compound') {
-              _request('setPosition', [id, position, active], _warnError);
-            }
+            _request('setPosition', [id, position, active], _warnError);
           }
 
           setRotation(rotation) {
             const {id, active} = this;
 
-            if (this.type !== 'compound') {
-              _request('setRotation', [id, rotation, active], _warnError);
-            }
+            _request('setRotation', [id, rotation, active], _warnError);
           }
 
           setLinearVelocity(linearVelocity) {
             const {id, active} = this;
 
-            if (this.type !== 'compound') {
-              _request('setLinearVelocity', [id, linearVelocity, active], _warnError);
-            }
+            _request('setLinearVelocity', [id, linearVelocity, active], _warnError);
           }
 
           setAngularVelocity(angularVelocity) {
             const {id, active} = this;
 
-            if (this.type !== 'compound') {
-              _request('setAngularVelocity', [id, angularVelocity, active], _warnError);
-            }
+            _request('setAngularVelocity', [id, angularVelocity, active], _warnError);
           }
 
           activate() {
             this.active = true;
 
-            if (this.type !== 'compound') {
-              _request('activate', [this.id], _warnError);
-            }
+            _request('activate', [this.id], _warnError);
           }
 
           deactivate() {
             this.active = false;
 
-            if (this.type !== 'compound') {
-              _request('deactivate', [this.id], _warnError);
-            }
+            _request('deactivate', [this.id], _warnError);
           }
 
           sync() {
@@ -406,10 +386,10 @@ class AnyikythClient {
             this.setLinearVelocity([0, 0, 0]);
             this.setAngularVelocity([0, 0, 0]);
 
-            if (this.debugMesh) { // XXX not needed -- will come from the server
+            /* if (this.debugMesh) { // XXX re-enable to enable pure reading from the server
               this.debugMesh.position.copy(object.position);
               this.debugMesh.quaternion.copy(object.quaternion);
-            }
+            } */
           }
 
           addDebug() {

@@ -681,9 +681,7 @@ class Weapons {
                       weaponMesh.quaternion.copy(controllerRotation);
 
                       const {physicsBody} = weaponMesh;
-                      if (physicsBody) { // XXX all weapon meshes should have this eventually
-                         physicsBody.sync();
-                      }
+                      physicsBody.sync();
                     }
                   });
                 };
