@@ -14,26 +14,29 @@ const _requestUpdate = worldId => {
   const updates = bodyIds.map(bodyId => {
     const body = bodies.get(bodyId);
 
-    const position = body.getPosition();
-    const rotation = body.getRotation();
-    const linearVelocity = body.getLinearVelocity();
-    const angularVelocity = body.getAngularVelocity();
+    const {type} = body;
+    if (type !== physics.RigidBody.PLANE && type !== physics.RigidBody.TRIANGLE_MESH) { // filter out static body updates
+      const position = body.getPosition();
+      const rotation = body.getRotation();
+      const linearVelocity = body.getLinearVelocity();
+      const angularVelocity = body.getAngularVelocity();
 
-    return {
-      id: bodyId,
-      position,
-      rotation,
-      linearVelocity,
-      angularVelocity,
-    };
+      return {
+        id: bodyId,
+        position,
+        rotation,
+        linearVelocity,
+        angularVelocity,
+      };
+    } else {
+      return null;
+    }
+  }).filter(update => update !== null);
+
+  send('update', {
+    id: worldId,
+    updates,
   });
-
-  if (updates.length > 0) {
-    send('update', {
-      id: worldId,
-      updates,
-    });
-  }
 };
 let interval = null;
 const _start = () => {

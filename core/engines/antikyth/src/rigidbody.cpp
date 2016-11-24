@@ -86,6 +86,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
   // type-specific construction of rigid body
   //
 
+  instance->Set(keyType, Nan::Get(def, keyType).ToLocalChecked());
+
   switch (nativeInstance->m_type) {
   case BOX: {
     MOXCHK(Nan::Has(def, keyDimensions).FromJust());
