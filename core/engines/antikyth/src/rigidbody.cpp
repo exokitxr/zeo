@@ -197,7 +197,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
     break;
   }
   case COMPOUND: {
-    MOXCHK(Nan::Has(def, keyPoints).FromJust());
+    MOXCHK(Nan::Has(def, keyChildren).FromJust());
     v8::Local<v8::Object> childrenArray = Nan::To<v8::Object>(Nan::Get(def, keyChildren)
       .ToLocalChecked()).ToLocalChecked();
 
@@ -210,7 +210,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
           .ToLocalChecked()).ToLocalChecked();
 
         btCollisionShapePtr childShape;
-        uint32_t type = Nan::To<uint32_t>(Nan::Get(def, keyType).ToLocalChecked()).FromJust();
+        uint32_t type = Nan::To<uint32_t>(Nan::Get(child, keyType).ToLocalChecked()).FromJust();
         switch (type) {
           case BOX: {
             MOXCHK(Nan::Has(child, keyDimensions).FromJust());
@@ -307,7 +307,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
     localInertia
   );
 
-  // ridig body
+  // rigid body
   nativeInstance->m_rigidBody = std::make_shared<btRigidBody>(rbInfo);
 
   info.GetReturnValue().Set(instance);

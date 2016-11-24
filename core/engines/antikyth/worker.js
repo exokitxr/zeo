@@ -231,7 +231,7 @@ const _makeBody = bodySpec => {
       const triangleMesh = physics.RigidBody.make({
         type: physics.RigidBody.COMPOUND,
         children: children.map(child => {
-          const {type, position = [0, 0, 0], rotation = [0, 0, 0, 1]} = child;
+          const {type, position, rotation} = child;
 
           switch (type) {
             case 'plane': {

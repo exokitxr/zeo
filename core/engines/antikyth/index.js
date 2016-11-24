@@ -36,9 +36,15 @@ class Antikyth extends EventEmitter {
     });
     workerProcess.on('error', err => {
       console.warn(err);
+
+      // fatal error
+      process.exit(1);
     });
     workerProcess.on('exit', (code, signal) => {
       console.warn('worker exited with code/signal', code, signal);
+
+      // fatal error
+      process.exit(1);
     });
 
     this.workerProcess = workerProcess;
@@ -101,7 +107,49 @@ class Antikyth extends EventEmitter {
           return Array.from(points);
         }
       } else {
-        return null;
+        return undefined;
+      }
+    };
+    const _formatChildren = children => {
+      if (children) {
+        return children.map(child => {
+          const {type, position = [0, 0, 0], rotation = [0, 0, 0, 1]} = child;
+
+          switch (type) {
+            case 'plane': {
+              const {dimensions} = child;
+              return {
+                type,
+                dimensions,
+                position,
+                rotation,
+              };
+            }
+            case 'box': {
+              const {dimensions} = child;
+              return {
+                type,
+                dimensions,
+                position,
+                rotation,
+              };
+            }
+            case 'sphere': {
+              const {size} = child;
+              return {
+                type,
+                size,
+                position,
+                rotation,
+              };
+            }
+            // XXX add remaining types here
+            default:
+              return null;
+          }
+        });
+      } else {
+        return undefined;
       }
     };
 
@@ -115,6 +163,7 @@ class Antikyth extends EventEmitter {
         dimensions: body.dimensions,
         size: body.size,
         points: _formatPoints(body.points),
+        children: _formatChildren(body.children),
         scale: body.scale,
         mass: body.mass,
       },
