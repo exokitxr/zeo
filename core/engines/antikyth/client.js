@@ -392,11 +392,6 @@ class AnyikythClient {
             this.setLinearVelocity([0, 0, 0]);
             this.setAngularVelocity([0, 0, 0]);
             this.activate();
-
-            /* if (this.debugMesh) { // XXX re-enable to enable pure reading from the server
-              this.debugMesh.position.copy(object.position);
-              this.debugMesh.quaternion.copy(object.quaternion);
-            } */
           }
 
           addDebug() {
