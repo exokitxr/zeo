@@ -7,6 +7,8 @@ const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
+const NUM_PREV_STATUSES = 2;
+
 class SinglePlayer {
   constructor(archae) {
     this._archae = archae;
@@ -24,6 +26,27 @@ class SinglePlayer {
         const {THREE, scene, camera, renderer} = zeo;
 
         class Player extends EventEmitter {
+          constructor() {
+            super();
+
+            const _makePositionRotation = () => ({
+              position: new THREE.Vector3(),
+              rotation: new THREE.Quaternion(),
+            });
+            this.prevStatuses = [
+              {
+                status: {
+                  hmd: _makePositionRotation(),
+                  controllers: {
+                    left: _makePositionRotation(),
+                    right: _makePositionRotation(),
+                  },
+                },
+                timestamp: Date.now(),
+              }
+            ];
+          }
+
           getStatus() {
             return {
               hmd: {
@@ -41,6 +64,49 @@ class SinglePlayer {
                 },
               },
             };
+          }
+
+          snapshotStatus() {
+            const snapshot = {
+              status: this.getStatus(),
+              timestamp: Date.now(),
+            };
+
+            this.prevStatuses.push(snapshot);
+
+            while (this.prevStatuses.length > NUM_PREV_STATUSES) {
+              this.prevStatuses.shift();
+            }
+          }
+
+          getControllerLinearVelocity(side) {
+            const {prevStatuses} = this;
+
+            if (prevStatuses.length > 1) {
+              const firstStatus = prevStatuses[0];
+              const lastStatus = prevStatuses[prevStatuses.length - 1];
+
+              return lastStatus.status.controllers[side].position.clone()
+                .sub(firstStatus.status.controllers[side].position)
+                .divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
+            } else {
+              return new THREE.Vector3(0, 0, 0);
+            }
+          }
+
+          getControllerAngularVelocity(side) {
+            const {prevStatuses} = this;
+
+            if (prevStatuses.length > 1) {
+              const firstStatus = prevStatuses[0];
+              const lastStatus = prevStatuses[prevStatuses.length - 1];
+
+              return new THREE.Euler().setFromQuaternion(lastStatus.status.controllers[side].rotation, camera.rotation.order).toVector3().clone()
+                .sub(new THREE.Euler().setFromQuaternion(firstStatus.status.controllers[side].rotation, camera.rotation.order).toVector3())
+                .divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
+            } else {
+              return new THREE.Vector3(0, 0, 0);
+            }
           }
 
           updateHmd({position, rotation}) {
@@ -339,6 +405,7 @@ class SinglePlayer {
             controller.update();
           }
 
+          // XXX only emit these if there was a difference
           // emit updates
           player.updateHmd({
             position: camera.position.clone(),
@@ -354,6 +421,9 @@ class SinglePlayer {
               rotation: mesh.quaternion.clone(),
             });
           });
+
+          // snapshot current status
+          player.snapshotStatus();
         };
 
         this._cleanup = () => {

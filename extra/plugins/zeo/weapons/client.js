@@ -126,12 +126,21 @@ class Weapons {
                     case 69: { // E
                       const mode = singleplayer.getMode();
                       if (mode !== 'move') {
-                        const weaponMesh = weaponMeshes[mode];
+                        const side = mode;
+                        const weaponMesh = weaponMeshes[side];
 
                         if (weaponMesh) {
                           const {physicsBody} = weaponMesh;
+                          const controllerLinearVelocity = player.getControllerLinearVelocity(side);
+                          const controllerAngularVelocity = player.getControllerAngularVelocity(side);
+
+console.log('release velocity', controllerLinearVelocity.toArray(), controllerAngularVelocity.toArray()); // XXX
+
                           physicsBody.setLinearFactor([1, 1, 1]);
                           physicsBody.setAngularFactor([1, 1, 1]);
+                          physicsBody.activate();
+                          physicsBody.setLinearVelocity(controllerLinearVelocity.toArray());
+                          physicsBody.setAngularVelocity(controllerAngularVelocity.toArray());
 
                           weaponMeshes[mode] = null;
                         }
