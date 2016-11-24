@@ -122,6 +122,18 @@ const _setAngularVelocity = ({bodyId, angularVelocity}) => {
   const [x, y, z] = angularVelocity;
   body.setAngularVelocity(x, y, z);
 };
+const _setLinearFactor = ({bodyId, linearFactor}) => {
+  const body = bodies.get(bodyId);
+
+  const [x, y, z] = linearFactor;
+  body.setLinearFactor(x, y, z);
+};
+const _setAngularFactor = ({bodyId, angularFactor}) => {
+  const body = bodies.get(bodyId);
+
+  const [x, y, z] = angularFactor;
+  body.setAngularFactor(x, y, z);
+};
 const _activateBody = ({id}) => {
   const body = bodies.get(id);
   body.activate();
@@ -225,6 +237,59 @@ const _makeBody = bodySpec => {
 
       return triangleMesh;
     }
+    case 'compound': {
+      const {children, scale, mass, position, rotation} = bodySpec;
+
+      const triangleMesh = physics.RigidBody.make({
+        type: physics.RigidBody.COMPOUND,
+        children: children.map(child => {
+          const {type, position, rotation} = child;
+
+          switch (type) {
+            case 'plane': {
+              const {dimensions} = child;
+              return {
+                type: physics.RigidBody.PLANE,
+                dimensions,
+                position,
+                rotation,
+              };
+            }
+            case 'box': {
+              const {dimensions} = child;
+              return {
+                type: physics.RigidBody.BOX,
+                dimensions,
+                position,
+                rotation,
+              };
+            }
+            case 'sphere': {
+              const {size} = child;
+              return {
+                type: physics.RigidBody.SPHERE,
+                size,
+                position,
+                rotation,
+              };
+            }
+            // XXX add remaining types here
+            default:
+              return null;
+          }
+        }),
+        scale,
+        mass,
+      });
+      if (position) {
+        triangleMesh.setPosition(position[0], position[1], position[2]);
+      }
+      if (rotation) {
+        triangleMesh.setRotation(rotation[0], rotation[1], rotation[2], rotation[3]);
+      }
+
+      return triangleMesh;
+    }
     default:
       return null;
   }
@@ -281,6 +346,16 @@ process.on('message', m => {
     case 'setAngularVelocity': {
       const {args: {bodyId, angularVelocity}} = m;
       _setAngularVelocity({bodyId, angularVelocity});
+      break;
+    }
+    case 'setLinearFactor': {
+      const {args: {bodyId, linearFactor}} = m;
+      _setLinearFactor({bodyId, linearFactor});
+      break;
+    }
+    case 'setAngularFactor': {
+      const {args: {bodyId, angularFactor}} = m;
+      _setAngularFactor({bodyId, angularFactor});
       break;
     }
     case 'activateBody': {

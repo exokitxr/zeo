@@ -36,9 +36,15 @@ class Antikyth extends EventEmitter {
     });
     workerProcess.on('error', err => {
       console.warn(err);
+
+      // fatal error
+      process.exit(1);
     });
     workerProcess.on('exit', (code, signal) => {
       console.warn('worker exited with code/signal', code, signal);
+
+      // fatal error
+      process.exit(1);
     });
 
     this.workerProcess = workerProcess;
@@ -101,7 +107,49 @@ class Antikyth extends EventEmitter {
           return Array.from(points);
         }
       } else {
-        return null;
+        return undefined;
+      }
+    };
+    const _formatChildren = children => {
+      if (children) {
+        return children.map(child => {
+          const {type, position = [0, 0, 0], rotation = [0, 0, 0, 1]} = child;
+
+          switch (type) {
+            case 'plane': {
+              const {dimensions} = child;
+              return {
+                type,
+                dimensions,
+                position,
+                rotation,
+              };
+            }
+            case 'box': {
+              const {dimensions} = child;
+              return {
+                type,
+                dimensions,
+                position,
+                rotation,
+              };
+            }
+            case 'sphere': {
+              const {size} = child;
+              return {
+                type,
+                size,
+                position,
+                rotation,
+              };
+            }
+            // XXX add remaining types here
+            default:
+              return null;
+          }
+        });
+      } else {
+        return undefined;
       }
     };
 
@@ -115,6 +163,7 @@ class Antikyth extends EventEmitter {
         dimensions: body.dimensions,
         size: body.size,
         points: _formatPoints(body.points),
+        children: _formatChildren(body.children),
         scale: body.scale,
         mass: body.mass,
       },
@@ -164,6 +213,20 @@ class Antikyth extends EventEmitter {
     this.send('setAngularVelocity', {
       bodyId: body.id,
       angularVelocity: [x, y, z],
+    });
+  }
+
+  setWorldBodyLinearFactor(world, body, x, y, z) {
+    this.send('setLinearFactor', {
+      bodyId: body.id,
+      linearFactor: [x, y, z],
+    });
+  }
+
+  setWorldBodyAngularFactor(world, body, x, y, z) {
+    this.send('setAngularFactor', {
+      bodyId: body.id,
+      angularFactor: [x, y, z],
     });
   }
 
@@ -288,6 +351,34 @@ class World extends EventEmitter {
     }
   }
 
+  setBodyLinearFactor(body, x, y, z) {
+    if (this.parent) {
+      this.parent.setWorldBodyLinearFactor(this, body, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setBodyLinearFactor',
+        args: {
+          body,
+          linearFactor: [x, y, z],
+        }
+      });
+    }
+  }
+
+  setBodyAngularFactor(body, x, y, z) {
+    if (this.parent) {
+      this.parent.setWorldBodyAngularFactor(this, body, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setBodyAngularFactor',
+        args: {
+          body,
+          angularFactor: [x, y, z],
+        }
+      });
+    }
+  }
+
   activateBody(body) {
     if (this.parent) {
       this.parent.activateWorldBody(this, body);
@@ -351,6 +442,16 @@ class World extends EventEmitter {
           case 'setBodyAngularVelocity': {
             const {body, linearVelocity: [x, y, z]} = args;
             this.parent.setWorldBodyAngularVelocity(this, body, x, y, z);
+            break;
+          }
+          case 'setBodyLinearFactor': {
+            const {body, linearFactor: [x, y, z]} = args;
+            this.parent.setWorldBodyLinearFactor(this, body, x, y, z);
+            break;
+          }
+          case 'setBodyAngularFactor': {
+            const {body, angularFactor: [x, y, z]} = args;
+            this.parent.setWorldBodyAngularFactor(this, body, x, y, z);
             break;
           }
           case 'activateBody': {
@@ -428,6 +529,28 @@ class Body extends EventEmitter {
     }
   }
 
+  setLinearFactor(x, y, z) {
+    if (this.parent) {
+      this.parent.setBodyLinearFactor(this, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setLinearFactor',
+        args: [x, y, z],
+      });
+    }
+  }
+
+  setAngularFactor(x, y, z) {
+    if (this.parent) {
+      this.parent.setBodyAngularFactor(this, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setAngularFactor',
+        args: [x, y, z],
+      });
+    }
+  }
+
   activate() {
     if (this.parent) {
       this.parent.activateBody(this);
@@ -475,6 +598,16 @@ class Body extends EventEmitter {
           case 'setAngularVelocity': {
             const [x, y, z] = args;
             this.parent.setBodyAngularVelocity(this, x, y, z);
+            break;
+          }
+          case 'setLinearFactor': {
+            const [x, y, z] = args;
+            this.parent.setBodyLinearFactor(this, x, y, z);
+            break;
+          }
+          case 'setAngularFactor': {
+            const [x, y, z] = args;
+            this.parent.setBodyAngularFactor(this, x, y, z);
             break;
           }
           case 'activate': {
@@ -567,6 +700,21 @@ class TriangleMesh extends Body {
   }
 }
 Antikyth.TriangleMesh = TriangleMesh;
+
+class Compound extends Body {
+  constructor(opts) {
+    super();
+
+    const {position = null, rotation = null, children = [], scale = [1, 1, 1], mass = 0} = opts;
+    this.type = 'compound';
+    this.position = position;
+    this.rotation = rotation;
+    this.children = children;
+    this.scale = scale;
+    this.mass = mass;
+  }
+}
+Antikyth.Compound = Compound;
 
 const _isUpdateEqual = (a, b) => {
   const {position: [pax, pay, paz], rotation: [rax, ray, raz, raw]} = a;

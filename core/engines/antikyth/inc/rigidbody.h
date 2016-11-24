@@ -21,6 +21,7 @@ namespace mox {
       uint32_t m_type;
       btCollisionShapePtr m_collisionShape;
       btTriangleMeshPtr m_triangleMesh;
+      btCollisionShapes m_collisionShapes;
       btTransform m_transform;
       btDefaultMotionStatePtr m_motionState;
       btRigidBodyPtr m_rigidBody;
@@ -32,6 +33,7 @@ namespace mox {
       static const uint32_t SPHERE = 3;
       static const uint32_t CONVEX_HULL = 4;
       static const uint32_t TRIANGLE_MESH = 5;
+      static const uint32_t COMPOUND = 6;
 
       static NAN_METHOD(New);
       static NAN_METHOD(make);
@@ -45,6 +47,8 @@ namespace mox {
       static NAN_METHOD(setLinearVelocity);
       static NAN_METHOD(getAngularVelocity);
       static NAN_METHOD(setAngularVelocity);
+      static NAN_METHOD(setLinearFactor);
+      static NAN_METHOD(setAngularFactor);
       static NAN_METHOD(activate);
       static NAN_METHOD(deactivate);
 

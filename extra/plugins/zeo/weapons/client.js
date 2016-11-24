@@ -28,7 +28,7 @@ class Weapons {
       [geometryUtils, textUtils, creatureUtils],
     ]) => {
       if (live) {
-        const {THREE, scene, renderer} = zeo;
+        const {THREE, scene, camera, renderer} = zeo;
 
         const world = zeo.getCurrentWorld();
         return world.requestMods([
@@ -38,6 +38,7 @@ class Weapons {
             singleplayer,
           ]) => {
             if (live) {
+              const {physics} = world;
               const controllers = singleplayer.getControllers();
 
               const HUD_SOLID_MATERIAL = new THREE.MeshBasicMaterial({
@@ -137,13 +138,15 @@ class Weapons {
 
                 const oldWeapon = weaponMeshes[side];
                 if (oldWeapon) {
-                  rootMesh.remove(oldWeapon);
+                  // rootMesh.remove(oldWeapon);
+                  scene.remove(oldWeapon);
 
                   weaponMeshes[side] = null;
                 }
 
                 const newWeaponMesh = _makeWeaponMesh(weapon);
-                rootMesh.add(newWeaponMesh);
+                // rootMesh.add(newWeaponMesh);
+                scene.add(newWeaponMesh);
 
                 weaponMeshes[side] = newWeaponMesh;
               };
@@ -337,12 +340,22 @@ class Weapons {
                 result.add(lowerRightMesh);
                 result.lowerRightMesh = lowerRightMesh;
 
-                /* const physicsMesh = (() => {
-                  const geometry = new THREE.BoxGeometry(0.1, 0.2, 0.01);
-                  const mesh = new Physijs.BoxMesh(geometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                  return mesh;
-                })();
-                result.physicsMesh = physicsMesh; */
+                const physicsBody = new physics.Compound({
+                  children: [
+                    {
+                      type: 'box',
+                      position: [0, 0.005, 0],
+                      dimensions: [0.1, 0.02, 0.2],
+                    }
+                  ],
+                  mass: 1,
+                });
+                // physicsBody.deactivate();
+                physicsBody.setLinearFactor([0, 0, 0]);
+                physicsBody.setAngularFactor([0, 0, 0]);
+                physicsBody.setObject(result);
+                physics.add(physicsBody);
+                result.physicsBody = physicsBody;
 
                 return result;
               };
@@ -395,53 +408,26 @@ class Weapons {
                   mesh1.add(tipMesh);
                   mesh.tipMesh = tipMesh;
 
-                  /* const physicsMesh = (() => {
-                    const geometry = new THREE.BoxGeometry(0.1, 0.1, 1);
-                    const mesh = new Physijs.BoxMesh(geometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                    return mesh;
-                  })();
-                  mesh.physicsMesh = physicsMesh; */
+                  const physicsBody = new physics.Compound({
+                    children: [
+                      {
+                        type: 'box',
+                        position: [0, -0.05, -0.45],
+                        dimensions: [0.1, 0.1, 1.1],
+                      }
+                    ],
+                    mass: 1,
+                  });
+                  // physicsBody.deactivate();
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
+                  physicsBody.setObject(mesh);
+                  physics.add(physicsBody);
+                  mesh.physicsBody = physicsBody;
 
                   return mesh;
                 };
               })();
-
-              const clipGeometry = (() => {
-                const geometry1 = new THREE.BoxBufferGeometry(0.015, 0.175, 0.04);
-                geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.165 / 2) + (0.01 / 2), 0));
-                geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
-                geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
-
-                const geometry2 = new THREE.BoxBufferGeometry(0.03, 0.01, 0.05);
-                geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.165) - (0.01 / 2), 0));
-                geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
-                geometry2.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
-
-                const bulletGeometryTemplate = new THREE.BoxBufferGeometry(0.015 - 0.005, 0.01, 0.04 - 0.005);
-                bulletGeometryTemplate.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
-
-                const numBulletsTotal = 12;
-                const bulletGeometries = (() => {
-                  const result = [];
-                  for (let i = 0; i < numBulletsTotal; i++) {
-                    const bulletGeometry = bulletGeometryTemplate.clone();
-                    bulletGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.015 * i, 0));
-                    bulletGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
-
-                    result.push(bulletGeometry);
-                  }
-                  return result;
-                })();
-                const geometry = geometryUtils.concatBufferGeometry([
-                  geometry1,
-                  geometry2,
-                ].concat(bulletGeometries));
-                geometry.numBullets = numBulletsTotal;
-
-                return geometry;
-              })();
-              // const clipPhysicsGeometry = new THREE.BoxGeometry(0.015, 0.175, 0.05);
-
               const _makeGunMesh = (function() {
                 const geometry1 = new THREE.BoxBufferGeometry(0.04, 0.2, 0.04);
                 geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1, -0.005));
@@ -472,12 +458,8 @@ class Weapons {
                   mesh.add(mesh2);
 
                   const clipMesh = (() => {
-                    const mesh = new THREE.Mesh(clipGeometry, ITEM_WIREFRAME_MATERIAL);
+                    const mesh = _makeClipMesh();
                     mesh.position.z = 0.07;
-
-                    /* const physicsMesh = new Physijs.BoxMesh(clipPhysicsGeometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                    mesh.physicsMesh = physicsMesh; */
-
                     return mesh;
                   })();
                   mesh.add(clipMesh);
@@ -506,12 +488,49 @@ class Weapons {
                   mesh.add(tipMesh);
                   mesh.tipMesh = tipMesh;
 
-                  /* const physicsMesh = (() => {
-                    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-                    const mesh = new Physijs.BoxMesh(geometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                    return mesh;
-                  })();
-                  mesh.physicsMesh = physicsMesh; */
+                  const physicsBody = new physics.Compound({
+                    children: (() => {
+                      const barrelEuler = new THREE.Euler(
+                        -(Math.PI / 2) - (Math.PI * 0.3),
+                        0,
+                        0,
+                        camera.rotation.order
+                      );
+                      const barrel = {
+                        type: 'box',
+                        position: new THREE.Vector3(0, 0.1, -0.005).applyEuler(barrelEuler).toArray(),
+                        rotation: new THREE.Quaternion().setFromEuler(barrelEuler).toArray(),
+                        dimensions: [0.04, 0.2, 0.04],
+                      };
+                      const gripEuler = new THREE.Euler(
+                        -(Math.PI / 2),
+                        0,
+                        0,
+                        camera.rotation.order
+                      );
+                      const grip = {
+                        type: 'box',
+                        position: new THREE.Vector3(0, -(0.165 / 2), 0)
+                          .add(new THREE.Vector3(0, 0, -0.01))
+                          .applyEuler(gripEuler)
+                          .toArray(),
+                        rotation: new THREE.Quaternion().setFromEuler(gripEuler).toArray(),
+                        dimensions: [0.03, 0.165, 0.05],
+                      };
+
+                      return [
+                        barrel,
+                        grip,
+                      ];
+                    })(),
+                    mass: 1,
+                  });
+                  // physicsBody.deactivate();
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
+                  physicsBody.setObject(mesh);
+                  physics.add(physicsBody);
+                  mesh.physicsBody = physicsBody;
 
                   return mesh;
                 };
@@ -520,11 +539,73 @@ class Weapons {
                 const mesh = new THREE.Object3D();
                 mesh.weaponType = 'clip';
 
-                const clipMesh = new THREE.Mesh(clipGeometry, ITEM_WIREFRAME_MATERIAL);
+                const geometry = (() => {
+                  const geometry1 = new THREE.BoxBufferGeometry(0.015, 0.175, 0.04);
+                  geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.165 / 2) + (0.01 / 2), 0));
+                  geometry1.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
+                  geometry1.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+
+                  const geometry2 = new THREE.BoxBufferGeometry(0.03, 0.01, 0.05);
+                  geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.165) - (0.01 / 2), 0));
+                  geometry2.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
+                  geometry2.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+
+                  const bulletGeometryTemplate = new THREE.BoxBufferGeometry(0.015 - 0.005, 0.01, 0.04 - 0.005);
+                  bulletGeometryTemplate.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.07, -0.01));
+
+                  const numBulletsTotal = 12;
+                  const bulletGeometries = (() => {
+                    const result = [];
+                    for (let i = 0; i < numBulletsTotal; i++) {
+                      const bulletGeometry = bulletGeometryTemplate.clone();
+                      bulletGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.015 * i, 0));
+                      bulletGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
+
+                      result.push(bulletGeometry);
+                    }
+                    return result;
+                  })();
+
+                  const result = geometryUtils.concatBufferGeometry([
+                    geometry1,
+                    geometry2,
+                  ].concat(bulletGeometries));
+                  result.numBullets = numBulletsTotal;
+                  return result;
+                })();
+
+                const clipMesh = new THREE.Mesh(geometry, ITEM_WIREFRAME_MATERIAL);
                 mesh.add(clipMesh);
 
-                /* const physicsMesh = new Physijs.BoxMesh(clipPhysicsGeometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                mesh.physicsMesh = physicsMesh; */
+                const physicsBody = new physics.Compound({
+                  children: (() => {
+                    const clipEuler = new THREE.Euler(
+                      -(Math.PI / 2),
+                      0,
+                      0,
+                      camera.rotation.order
+                    );
+
+                    return [
+                      {
+                        type: 'box',
+                        position: new THREE.Vector3(0, -(0.165 / 2) + (0.01 / 2), 0)
+                          .add(new THREE.Vector3(0, 0.065, -0.01))
+                          .applyEuler(clipEuler)
+                          .toArray(),
+                        rotation: new THREE.Quaternion().setFromEuler(clipEuler).toArray(),
+                        dimensions: [0.03, 0.185, 0.05]
+                      }
+                    ];
+                  })(),
+                  mass: 1,
+                });
+                // physicsBody.deactivate();
+                physicsBody.setLinearFactor([0, 0, 0]);
+                physicsBody.setAngularFactor([0, 0, 0]);
+                physicsBody.setObject(mesh);
+                physics.add(physicsBody);
+                mesh.physicsBody = physicsBody;
 
                 return mesh;
               };
@@ -567,20 +648,53 @@ class Weapons {
                   const mesh3 = new THREE.Mesh(geometry3, ITEM_WIREFRAME_MATERIAL);
                   mesh.add(mesh3);
 
-                  /* const physicsMesh = (() => {
-                    const geometry = new THREE.BoxGeometry(0.03, 0.125, 0.03);
-                    const mesh = new Physijs.BoxMesh(geometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                    return mesh;
-                  })();
-                  mesh.physicsMesh = physicsMesh; */
+                  const physicsBody = new physics.Compound({
+                    children: [
+                      {
+                        type: 'box',
+                        position: [0, -0.03, -(0.015 / 2)],
+                        dimensions: [0.06, 0.06, 0.125 + 0.015],
+                      }
+                    ],
+                    mass: 1,
+                  });
+                  // physicsBody.deactivate();
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
+                  physicsBody.setObject(mesh);
+                  physics.add(physicsBody);
+                  mesh.physicsBody = physicsBody;
 
                   return mesh;
                 };
               })();
 
               const _update = ({worldTime}) => {
-                const hudWeaponMeshes = [ weaponMeshes.left, weaponMeshes.right ].filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
+                const hudWeaponMeshes = [weaponMeshes.left, weaponMeshes.right]
+                  .filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
 
+                const _updateWeaponMeshes = () => {
+                  ['left', 'right'].forEach(side => {
+                    const weaponMesh = weaponMeshes[side];
+
+                    if (weaponMesh) {
+                      const controller = controllers[side];
+                      const {mesh: controllerMesh} = controller;
+
+                      const controllerPosition = new THREE.Vector3();
+                      const controllerRotation = new THREE.Quaternion();
+                      const controllerScale = new THREE.Vector3();
+                      controllerMesh.updateMatrixWorld();
+                      controllerMesh.matrixWorld.decompose(controllerPosition, controllerRotation, controllerScale);
+
+                      weaponMesh.position.copy(controllerPosition);
+                      weaponMesh.quaternion.copy(controllerRotation);
+
+                      const {physicsBody} = weaponMesh;
+                      physicsBody.sync();
+                    }
+                  });
+                };
                 const _updateHudMeshIcon = () => {
                   const frameIndex = Math.floor(worldTime / 200) % 2;
 
@@ -609,6 +723,7 @@ class Weapons {
                   });
                 };
 
+                _updateWeaponMeshes();
                 _updateHudMeshIcon();
                 _updateMiniMap();
               };

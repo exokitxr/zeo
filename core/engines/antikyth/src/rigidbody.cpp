@@ -27,6 +27,7 @@ void mox::physics::RigidBody::Init(v8::Local<v8::Object> namespc)
   tpl->Set(Nan::New("SPHERE").ToLocalChecked(), Nan::New(SPHERE));
   tpl->Set(Nan::New("CONVEX_HULL").ToLocalChecked(), Nan::New(CONVEX_HULL));
   tpl->Set(Nan::New("TRIANGLE_MESH").ToLocalChecked(), Nan::New(TRIANGLE_MESH));
+  tpl->Set(Nan::New("COMPOUND").ToLocalChecked(), Nan::New(COMPOUND));
 
   Nan::SetPrototypeMethod(tpl, "getMass", getMass);
   Nan::SetPrototypeMethod(tpl, "getPosition", getPosition);
@@ -38,6 +39,8 @@ void mox::physics::RigidBody::Init(v8::Local<v8::Object> namespc)
   Nan::SetPrototypeMethod(tpl, "getAngularVelocity", getAngularVelocity);
   Nan::SetPrototypeMethod(tpl, "setAngularVelocity", setAngularVelocity);
   Nan::SetPrototypeMethod(tpl, "activate", activate);
+  Nan::SetPrototypeMethod(tpl, "setLinearFactor", setLinearFactor);
+  Nan::SetPrototypeMethod(tpl, "setAngularFactor", setAngularFactor);
   Nan::SetPrototypeMethod(tpl, "deactivate", deactivate);
 
   constructor.Reset(tpl->GetFunction());
@@ -64,6 +67,9 @@ NAN_METHOD(mox::physics::RigidBody::make)
   v8::Local<v8::String> keyDimensions = Nan::New("dimensions").ToLocalChecked();
   v8::Local<v8::String> keySize = Nan::New("size").ToLocalChecked();
   v8::Local<v8::String> keyPoints = Nan::New("points").ToLocalChecked();
+  v8::Local<v8::String> keyChildren = Nan::New("children").ToLocalChecked();
+  v8::Local<v8::String> keyPosition = Nan::New("position").ToLocalChecked();
+  v8::Local<v8::String> keyRotation = Nan::New("rotation").ToLocalChecked();
   v8::Local<v8::String> keyScale = Nan::New("scale").ToLocalChecked();
   v8::Local<v8::String> keyLength = Nan::New("length").ToLocalChecked();
   v8::Local<v8::String> keyMass = Nan::New("mass").ToLocalChecked();
@@ -192,6 +198,89 @@ NAN_METHOD(mox::physics::RigidBody::make)
     }
     break;
   }
+  case COMPOUND: {
+    MOXCHK(Nan::Has(def, keyChildren).FromJust());
+    v8::Local<v8::Object> childrenArray = Nan::To<v8::Object>(Nan::Get(def, keyChildren)
+      .ToLocalChecked()).ToLocalChecked();
+
+    int numChildren = Nan::To<int>(Nan::Get(childrenArray, keyLength).ToLocalChecked()).FromJust();
+    if (numChildren > 0) {
+      btCompoundShapePtr compoundShape = std::make_shared<btCompoundShape>();
+
+      for (int i = 0; i < numChildren; i++) {
+        v8::Local<v8::Object> child = Nan::To<v8::Object>(Nan::Get(childrenArray, i)
+          .ToLocalChecked()).ToLocalChecked();
+
+        btCollisionShapePtr childShape;
+        uint32_t type = Nan::To<uint32_t>(Nan::Get(child, keyType).ToLocalChecked()).FromJust();
+        switch (type) {
+          case BOX: {
+            MOXCHK(Nan::Has(child, keyDimensions).FromJust());
+            v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(Nan::Get(child, keyDimensions)
+              .ToLocalChecked()).ToLocalChecked();
+            double dx = Nan::To<double>(Nan::Get(dimensions, 0).ToLocalChecked()).FromJust();
+            double dy = Nan::To<double>(Nan::Get(dimensions, 1).ToLocalChecked()).FromJust();
+            double dz = Nan::To<double>(Nan::Get(dimensions, 2).ToLocalChecked()).FromJust();
+            childShape = std::make_shared<btBoxShape>(
+              btVector3(btScalar(dx / 2), btScalar(dy / 2), btScalar(dz / 2))
+            );
+            break;
+          }
+          case PLANE: {
+            MOXCHK(Nan::Has(child, keyDimensions).FromJust());
+            v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(Nan::Get(child, keyDimensions)
+              .ToLocalChecked()).ToLocalChecked();
+            double dx = Nan::To<double>(Nan::Get(dimensions, 0).ToLocalChecked()).FromJust();
+            double dy = Nan::To<double>(Nan::Get(dimensions, 1).ToLocalChecked()).FromJust();
+            double dz = Nan::To<double>(Nan::Get(dimensions, 2).ToLocalChecked()).FromJust();
+            childShape = std::make_shared<btStaticPlaneShape>(
+              btVector3(btScalar(dx), btScalar(dy), btScalar(dz)),
+              btScalar(0)
+            );
+            break;
+          }
+          case SPHERE: {
+            MOXCHK(Nan::Has(def, keySize).FromJust());
+            double size = Nan::To<double>(Nan::Get(def, keySize)
+              .ToLocalChecked()).FromJust();
+            childShape = std::make_shared<btSphereShape>(
+              btScalar(size)
+            );
+            break;
+          }
+          // XXX add remaining types here
+        }
+
+        btTransform xform;
+        // position
+        v8::Local<v8::Object> position = Nan::To<v8::Object>(Nan::Get(child, keyPosition)
+          .ToLocalChecked()).ToLocalChecked();
+        double px = Nan::To<double>(Nan::Get(position, 0).ToLocalChecked()).FromJust();
+        double py = Nan::To<double>(Nan::Get(position, 1).ToLocalChecked()).FromJust();
+        double pz = Nan::To<double>(Nan::Get(position, 2).ToLocalChecked()).FromJust();
+        xform.setOrigin(btVector3(px, py, pz));
+        // rotation
+        v8::Local<v8::Object> rotation = Nan::To<v8::Object>(Nan::Get(child, keyRotation)
+          .ToLocalChecked()).ToLocalChecked();
+        double rx = Nan::To<double>(Nan::Get(rotation, 0).ToLocalChecked()).FromJust();
+        double ry = Nan::To<double>(Nan::Get(rotation, 1).ToLocalChecked()).FromJust();
+        double rz = Nan::To<double>(Nan::Get(rotation, 2).ToLocalChecked()).FromJust();
+        double rw = Nan::To<double>(Nan::Get(rotation, 3).ToLocalChecked()).FromJust();
+        xform.setRotation(btQuaternion(rx, ry, rz, rw));
+
+        compoundShape->addChildShape(xform, childShape.get());
+        nativeInstance->m_collisionShapes.push_back(childShape);
+      }
+
+      nativeInstance->m_collisionShape = compoundShape;
+    } else {
+      v8::Local<v8::String> errorString = Nan::New(std::string("number of children is invalid: ") + std::to_string(numChildren)).ToLocalChecked();
+      Nan::ThrowRangeError(errorString);
+
+      return;
+    }
+    break;
+  }
   }
 
   // scale
@@ -220,7 +309,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
     localInertia
   );
 
-  // ridig body
+  // rigid body
   nativeInstance->m_rigidBody = std::make_shared<btRigidBody>(rbInfo);
 
   info.GetReturnValue().Set(instance);
@@ -340,6 +429,32 @@ NAN_METHOD(mox::physics::RigidBody::setAngularVelocity)
   double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
 
   self->m_rigidBody->setAngularVelocity(btVector3(x, y, z));
+
+  info.GetReturnValue().Set(info.This());
+}
+
+NAN_METHOD(mox::physics::RigidBody::setLinearFactor)
+{
+  GET_SELF(mox::physics::RigidBody, self);
+  CHECK_NUM_ARGUMENTS(info, 3);
+  double x = info[0]->IsUndefined() ? 0 : Nan::To<double>(info[0]).FromJust();
+  double y = info[1]->IsUndefined() ? 0 : Nan::To<double>(info[1]).FromJust();
+  double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
+
+  self->m_rigidBody->setLinearFactor(btVector3(x, y, z));
+
+  info.GetReturnValue().Set(info.This());
+}
+
+NAN_METHOD(mox::physics::RigidBody::setAngularFactor)
+{
+  GET_SELF(mox::physics::RigidBody, self);
+  CHECK_NUM_ARGUMENTS(info, 3);
+  double x = info[0]->IsUndefined() ? 0 : Nan::To<double>(info[0]).FromJust();
+  double y = info[1]->IsUndefined() ? 0 : Nan::To<double>(info[1]).FromJust();
+  double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
+
+  self->m_rigidBody->setAngularFactor(btVector3(x, y, z));
 
   info.GetReturnValue().Set(info.This());
 }
