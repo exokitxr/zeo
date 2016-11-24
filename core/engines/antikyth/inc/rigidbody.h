@@ -47,6 +47,8 @@ namespace mox {
       static NAN_METHOD(setLinearVelocity);
       static NAN_METHOD(getAngularVelocity);
       static NAN_METHOD(setAngularVelocity);
+      static NAN_METHOD(setLinearFactor);
+      static NAN_METHOD(setAngularFactor);
       static NAN_METHOD(activate);
       static NAN_METHOD(deactivate);
 

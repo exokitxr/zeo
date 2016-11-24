@@ -168,6 +168,34 @@ class Context {
     }
   }
 
+  setLinearFactor(id, linearFactor, activate) {
+    const {objects} = this;
+
+    const object = objects.get(id);
+    const [x, y, z] = linearFactor;
+    object.setLinearFactor(x, y, z);
+
+    if (activate) {
+      object.activate();
+    } else {
+      object.deactivate();
+    }
+  }
+
+  setAngularFactor(id, angularFactor, activate) {
+    const {objects} = this;
+
+    const object = objects.get(id);
+    const [x, y, z] = angularFactor;
+    object.setAngularFactor(x, y, z);
+
+    if (activate) {
+      object.activate();
+    } else {
+      object.deactivate();
+    }
+  }
+
   activate(id) {
     const {objects} = this;
 
@@ -282,6 +310,16 @@ class AntikythServer {
             } else if (method === 'setAngularVelocity') {
               const [id, angularVelocity, activate] = args;
               context.setAngularVelocity(id, angularVelocity, activate);
+
+              cb();
+            } else if (method === 'setLinearFactor') {
+              const [id, linearFactor, activate] = args;
+              context.setLinearFactor(id, linearFactor, activate);
+
+              cb();
+            } else if (method === 'setAngularFactor') {
+              const [id, angularFactor, activate] = args;
+              context.setAngularFactor(id, angularFactor, activate);
 
               cb();
             } else if (method === 'activate') {

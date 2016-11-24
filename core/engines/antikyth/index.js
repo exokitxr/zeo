@@ -216,6 +216,20 @@ class Antikyth extends EventEmitter {
     });
   }
 
+  setWorldBodyLinearFactor(world, body, x, y, z) {
+    this.send('setLinearFactor', {
+      bodyId: body.id,
+      linearFactor: [x, y, z],
+    });
+  }
+
+  setWorldBodyAngularFactor(world, body, x, y, z) {
+    this.send('setAngularFactor', {
+      bodyId: body.id,
+      angularFactor: [x, y, z],
+    });
+  }
+
   activateWorldBody(world, body) {
     this.send('activateBody', {
       id: body.id,
@@ -337,6 +351,34 @@ class World extends EventEmitter {
     }
   }
 
+  setBodyLinearFactor(body, x, y, z) {
+    if (this.parent) {
+      this.parent.setWorldBodyLinearFactor(this, body, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setBodyLinearFactor',
+        args: {
+          body,
+          linearFactor: [x, y, z],
+        }
+      });
+    }
+  }
+
+  setBodyAngularFactor(body, x, y, z) {
+    if (this.parent) {
+      this.parent.setWorldBodyAngularFactor(this, body, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setBodyAngularFactor',
+        args: {
+          body,
+          angularFactor: [x, y, z],
+        }
+      });
+    }
+  }
+
   activateBody(body) {
     if (this.parent) {
       this.parent.activateWorldBody(this, body);
@@ -400,6 +442,16 @@ class World extends EventEmitter {
           case 'setBodyAngularVelocity': {
             const {body, linearVelocity: [x, y, z]} = args;
             this.parent.setWorldBodyAngularVelocity(this, body, x, y, z);
+            break;
+          }
+          case 'setBodyLinearFactor': {
+            const {body, linearFactor: [x, y, z]} = args;
+            this.parent.setWorldBodyLinearFactor(this, body, x, y, z);
+            break;
+          }
+          case 'setBodyAngularFactor': {
+            const {body, angularFactor: [x, y, z]} = args;
+            this.parent.setWorldBodyAngularFactor(this, body, x, y, z);
             break;
           }
           case 'activateBody': {
@@ -477,6 +529,28 @@ class Body extends EventEmitter {
     }
   }
 
+  setLinearFactor(x, y, z) {
+    if (this.parent) {
+      this.parent.setBodyLinearFactor(this, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setLinearFactor',
+        args: [x, y, z],
+      });
+    }
+  }
+
+  setAngularFactor(x, y, z) {
+    if (this.parent) {
+      this.parent.setBodyAngularFactor(this, x, y, z);
+    } else {
+      this.queue.push({
+        method: 'setAngularFactor',
+        args: [x, y, z],
+      });
+    }
+  }
+
   activate() {
     if (this.parent) {
       this.parent.activateBody(this);
@@ -524,6 +598,16 @@ class Body extends EventEmitter {
           case 'setAngularVelocity': {
             const [x, y, z] = args;
             this.parent.setBodyAngularVelocity(this, x, y, z);
+            break;
+          }
+          case 'setLinearFactor': {
+            const [x, y, z] = args;
+            this.parent.setBodyLinearFactor(this, x, y, z);
+            break;
+          }
+          case 'setAngularFactor': {
+            const [x, y, z] = args;
+            this.parent.setBodyAngularFactor(this, x, y, z);
             break;
           }
           case 'activate': {

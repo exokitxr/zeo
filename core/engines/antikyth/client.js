@@ -366,6 +366,18 @@ class AnyikythClient {
             _request('setAngularVelocity', [id, angularVelocity, active], _warnError);
           }
 
+          setLinearFactor(linearFactor) {
+            const {id, active} = this;
+
+            _request('setLinearFactor', [id, linearFactor, active], _warnError);
+          }
+
+          setAngularFactor(angularFactor) {
+            const {id, active} = this;
+
+            _request('setAngularFactor', [id, angularFactor, active], _warnError);
+          }
+
           activate() {
             this.active = true;
 

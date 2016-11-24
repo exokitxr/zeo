@@ -351,6 +351,8 @@ class Weapons {
                   mass: 1,
                 });
                 // physicsBody.deactivate();
+                physicsBody.setLinearFactor([0, 0, 0]);
+                physicsBody.setAngularFactor([0, 0, 0]);
                 physicsBody.setObject(result);
                 physics.add(physicsBody);
                 result.physicsBody = physicsBody;
@@ -417,6 +419,8 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
@@ -522,6 +526,8 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
@@ -595,6 +601,8 @@ class Weapons {
                   mass: 1,
                 });
                 // physicsBody.deactivate();
+                physicsBody.setLinearFactor([0, 0, 0]);
+                physicsBody.setAngularFactor([0, 0, 0]);
                 physicsBody.setObject(mesh);
                 physics.add(physicsBody);
                 mesh.physicsBody = physicsBody;
@@ -651,6 +659,8 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;

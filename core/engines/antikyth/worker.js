@@ -122,6 +122,18 @@ const _setAngularVelocity = ({bodyId, angularVelocity}) => {
   const [x, y, z] = angularVelocity;
   body.setAngularVelocity(x, y, z);
 };
+const _setLinearFactor = ({bodyId, linearFactor}) => {
+  const body = bodies.get(bodyId);
+
+  const [x, y, z] = linearFactor;
+  body.setLinearFactor(x, y, z);
+};
+const _setAngularFactor = ({bodyId, angularFactor}) => {
+  const body = bodies.get(bodyId);
+
+  const [x, y, z] = angularFactor;
+  body.setAngularFactor(x, y, z);
+};
 const _activateBody = ({id}) => {
   const body = bodies.get(id);
   body.activate();
@@ -334,6 +346,16 @@ process.on('message', m => {
     case 'setAngularVelocity': {
       const {args: {bodyId, angularVelocity}} = m;
       _setAngularVelocity({bodyId, angularVelocity});
+      break;
+    }
+    case 'setLinearFactor': {
+      const {args: {bodyId, linearFactor}} = m;
+      _setLinearFactor({bodyId, linearFactor});
+      break;
+    }
+    case 'setAngularFactor': {
+      const {args: {bodyId, angularFactor}} = m;
+      _setAngularFactor({bodyId, angularFactor});
       break;
     }
     case 'activateBody': {

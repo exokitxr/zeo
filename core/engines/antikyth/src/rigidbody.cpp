@@ -39,6 +39,8 @@ void mox::physics::RigidBody::Init(v8::Local<v8::Object> namespc)
   Nan::SetPrototypeMethod(tpl, "getAngularVelocity", getAngularVelocity);
   Nan::SetPrototypeMethod(tpl, "setAngularVelocity", setAngularVelocity);
   Nan::SetPrototypeMethod(tpl, "activate", activate);
+  Nan::SetPrototypeMethod(tpl, "setLinearFactor", setLinearFactor);
+  Nan::SetPrototypeMethod(tpl, "setAngularFactor", setAngularFactor);
   Nan::SetPrototypeMethod(tpl, "deactivate", deactivate);
 
   constructor.Reset(tpl->GetFunction());
@@ -427,6 +429,32 @@ NAN_METHOD(mox::physics::RigidBody::setAngularVelocity)
   double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
 
   self->m_rigidBody->setAngularVelocity(btVector3(x, y, z));
+
+  info.GetReturnValue().Set(info.This());
+}
+
+NAN_METHOD(mox::physics::RigidBody::setLinearFactor)
+{
+  GET_SELF(mox::physics::RigidBody, self);
+  CHECK_NUM_ARGUMENTS(info, 3);
+  double x = info[0]->IsUndefined() ? 0 : Nan::To<double>(info[0]).FromJust();
+  double y = info[1]->IsUndefined() ? 0 : Nan::To<double>(info[1]).FromJust();
+  double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
+
+  self->m_rigidBody->setLinearFactor(btVector3(x, y, z));
+
+  info.GetReturnValue().Set(info.This());
+}
+
+NAN_METHOD(mox::physics::RigidBody::setAngularFactor)
+{
+  GET_SELF(mox::physics::RigidBody, self);
+  CHECK_NUM_ARGUMENTS(info, 3);
+  double x = info[0]->IsUndefined() ? 0 : Nan::To<double>(info[0]).FromJust();
+  double y = info[1]->IsUndefined() ? 0 : Nan::To<double>(info[1]).FromJust();
+  double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
+
+  self->m_rigidBody->setAngularFactor(btVector3(x, y, z));
 
   info.GetReturnValue().Set(info.This());
 }
