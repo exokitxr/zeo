@@ -25,7 +25,7 @@ class AnyikythClient {
       three,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = three;
+        const {THREE, scene} = three;
 
         const debugMaterial = DEBUG ? new THREE.MeshPhongMaterial({
           color: 0xFF0000,
@@ -250,8 +250,10 @@ class AnyikythClient {
 
             if (DEBUG) {
               const {debugMesh} = this;
-              debugMesh.position.fromArray(position);
-              debugMesh.quaternion.fromArray(rotation);
+              if (debugMesh) {
+                debugMesh.position.fromArray(position);
+                debugMesh.quaternion.fromArray(rotation);
+              }
             }
           }
 
@@ -322,7 +324,7 @@ class AnyikythClient {
           constructor(opts = {}) {
             super('plane', opts);
 
-            const {position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1], dimensions} = opts;
+            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], dimensions} = opts;
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -340,7 +342,7 @@ class AnyikythClient {
 
             const mesh = new THREE.Mesh(geometry, debugMaterial);
             mesh.position.fromArray(position);
-            mesh.rotation.fromArray(rotation.concat(camera.rotation.order));
+            mesh.quaternion.fromArray(rotation);
             mesh.scale.fromArray(scale);
             return mesh;
           }
@@ -397,7 +399,7 @@ class AnyikythClient {
           constructor(opts = {}) {
             super('triangleMesh', opts);
 
-            const {position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1], points} = opts;
+            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], points} = opts;
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -409,7 +411,7 @@ class AnyikythClient {
 
             const mesh = _makeBoundingBoxDebugMesh(points);
             mesh.position.fromArray(position);
-            mesh.rotation.fromArray(rotation.concat(camera.rotation.order));
+            mesh.quaternion.fromArray(rotation);
             mesh.scale.fromArray(scale);
             return mesh;
           }
