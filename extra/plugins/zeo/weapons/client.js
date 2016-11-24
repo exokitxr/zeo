@@ -646,12 +646,20 @@ class Weapons {
                   const mesh3 = new THREE.Mesh(geometry3, ITEM_WIREFRAME_MATERIAL);
                   mesh.add(mesh3);
 
-                  /* const physicsMesh = (() => {
-                    const geometry = new THREE.BoxGeometry(0.03, 0.125, 0.03);
-                    const mesh = new Physijs.BoxMesh(geometry, ITEM_WIREFRAME_MATERIAL, weaponPhysicsMass, weaponPhysicsOptions);
-                    return mesh;
-                  })();
-                  mesh.physicsMesh = physicsMesh; */
+                  const physicsBody = new physics.Compound({
+                    children: [
+                      {
+                        type: 'box',
+                        position: [0, -0.03, -(0.015 / 2)],
+                        dimensions: [0.06, 0.06, 0.125 + 0.015],
+                      }
+                    ],
+                    mass: 1,
+                  });
+                  physicsBody.deactivate();
+                  physicsBody.setObject(mesh);
+                  physics.add(physicsBody);
+                  mesh.physicsBody = physicsBody;
 
                   return mesh;
                 };
