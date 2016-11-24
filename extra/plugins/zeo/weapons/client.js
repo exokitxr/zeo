@@ -122,6 +122,21 @@ class Weapons {
                       }
                       break;
                     }
+                    case 69: { // E
+                      const mode = singleplayer.getMode();
+                      if (mode !== 'move') {
+                        const weaponMesh = weaponMeshes[mode];
+
+                        if (weaponMesh) {
+                          const {physicsBody} = weaponMesh;
+                          physicsBody.setLinearFactor([1, 1, 1]);
+                          physicsBody.setAngularFactor([1, 1, 1]);
+
+                          weaponMeshes[mode] = null;
+                        }
+                      }
+                      break;
+                    }
                   }
                 }
               };
@@ -691,7 +706,7 @@ class Weapons {
                       weaponMesh.quaternion.copy(controllerRotation);
 
                       const {physicsBody} = weaponMesh;
-                      physicsBody.sync();
+                      physicsBody.sync(); // XXX make this happen only on controller update
                     }
                   });
                 };
