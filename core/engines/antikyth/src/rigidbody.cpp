@@ -37,6 +37,8 @@ void mox::physics::RigidBody::Init(v8::Local<v8::Object> namespc)
   Nan::SetPrototypeMethod(tpl, "setLinearVelocity", setLinearVelocity);
   Nan::SetPrototypeMethod(tpl, "getAngularVelocity", getAngularVelocity);
   Nan::SetPrototypeMethod(tpl, "setAngularVelocity", setAngularVelocity);
+  Nan::SetPrototypeMethod(tpl, "activate", activate);
+  Nan::SetPrototypeMethod(tpl, "deactivate", deactivate);
 
   constructor.Reset(tpl->GetFunction());
   namespc->Set(Nan::New("RigidBody").ToLocalChecked(), tpl->GetFunction());
@@ -256,8 +258,6 @@ NAN_METHOD(mox::physics::RigidBody::setPosition)
   xform.setOrigin(btVector3(x, y, z));
   self->m_rigidBody->setCenterOfMassTransform(xform);
 
-  self->m_rigidBody->activate();
-
   info.GetReturnValue().Set(info.This());
 }
 
@@ -289,8 +289,6 @@ NAN_METHOD(mox::physics::RigidBody::setRotation)
   xform.setRotation(btQuaternion(x, y, z, w));
   self->m_rigidBody->setCenterOfMassTransform(xform);
 
-  self->m_rigidBody->activate();
-
   info.GetReturnValue().Set(info.This());
 }
 
@@ -316,8 +314,6 @@ NAN_METHOD(mox::physics::RigidBody::setLinearVelocity)
   double z = info[2]->IsUndefined() ? 0 : Nan::To<double>(info[2]).FromJust();
 
   self->m_rigidBody->setLinearVelocity(btVector3(x, y, z));
-
-  self->m_rigidBody->activate();
 
   info.GetReturnValue().Set(info.This());
 }
@@ -345,7 +341,23 @@ NAN_METHOD(mox::physics::RigidBody::setAngularVelocity)
 
   self->m_rigidBody->setAngularVelocity(btVector3(x, y, z));
 
+  info.GetReturnValue().Set(info.This());
+}
+
+NAN_METHOD(mox::physics::RigidBody::activate)
+{
+  GET_SELF(mox::physics::RigidBody, self);
+
   self->m_rigidBody->activate();
+
+  info.GetReturnValue().Set(info.This());
+}
+
+NAN_METHOD(mox::physics::RigidBody::deactivate)
+{
+  GET_SELF(mox::physics::RigidBody, self);
+
+  self->m_rigidBody->setActivationState(0);
 
   info.GetReturnValue().Set(info.This());
 }

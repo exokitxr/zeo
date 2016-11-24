@@ -167,6 +167,18 @@ class Antikyth extends EventEmitter {
     });
   }
 
+  activateWorldBody(world, body) {
+    this.send('activateBody', {
+      id: body.id,
+    });
+  }
+
+  deactivateWorldBody(world, body) {
+    this.send('deactivateBody', {
+      id: body.id,
+    });
+  }
+
   requestWorldUpdate(world) {
     this.send('requestUpdate', {
       id: world.id,
@@ -276,6 +288,32 @@ class World extends EventEmitter {
     }
   }
 
+  activateBody(body) {
+    if (this.parent) {
+      this.parent.activateWorldBody(this, body);
+    } else {
+      this.queue.push({
+        method: 'activateBody',
+        args: {
+          body,
+        }
+      });
+    }
+  }
+
+  deactivateBody(body) {
+    if (this.parent) {
+      this.parent.deactivateWorldBody(this, body);
+    } else {
+      this.queue.push({
+        method: 'deactivateBody',
+        args: {
+          body,
+        }
+      });
+    }
+  }
+
   setParent(parent) {
     this.parent = parent;
 
@@ -313,6 +351,16 @@ class World extends EventEmitter {
           case 'setBodyAngularVelocity': {
             const {body, linearVelocity: [x, y, z]} = args;
             this.parent.setWorldBodyAngularVelocity(this, body, x, y, z);
+            break;
+          }
+          case 'activateBody': {
+            const {body} = args;
+            this.parent.activateWorldBody(this, body);
+            break;
+          }
+          case 'deactivateBody': {
+            const {body} = args;
+            this.parent.deactivateWorldBody(this, body);
             break;
           }
         }
@@ -380,6 +428,26 @@ class Body extends EventEmitter {
     }
   }
 
+  activate() {
+    if (this.parent) {
+      this.parent.activateBody(this);
+    } else {
+      this.queue.push({
+        method: 'activate',
+      });
+    }
+  }
+
+  deactivate() {
+    if (this.parent) {
+      this.parent.deactivateBody(this);
+    } else {
+      this.queue.push({
+        method: 'deactivate',
+      });
+    }
+  }
+
   setParent(parent) {
     this.parent = parent;
 
@@ -407,6 +475,14 @@ class Body extends EventEmitter {
           case 'setAngularVelocity': {
             const [x, y, z] = args;
             this.parent.setBodyAngularVelocity(this, x, y, z);
+            break;
+          }
+          case 'activate': {
+            this.parent.activateBody(this);
+            break;
+          }
+          case 'deactivate': {
+            this.parent.deactivateBody(this);
             break;
           }
         }

@@ -111,36 +111,74 @@ class Context {
     }
   }
 
-  setPosition(id, position) {
+  setPosition(id, position, activate) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z] = position;
     object.setPosition(x, y, z);
+
+    if (activate) {
+      object.activate();
+    } else {
+      object.deactivate();
+    }
   }
 
-  setRotation(id, rotation) {
+  setRotation(id, rotation, activate) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z, w] = rotation;
     object.setRotation(x, y, z, w);
+
+    if (activate) {
+      object.activate();
+    } else {
+      object.deactivate();
+    }
   }
 
-  setLinearVelocity(id, linearVelocity) {
+  setLinearVelocity(id, linearVelocity, activate) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z] = linearVelocity;
     object.setLinearVelocity(x, y, z);
+
+    if (activate) {
+      object.activate();
+    } else {
+      object.deactivate();
+    }
   }
 
-  setAngularVelocity(id, angularVelocity) {
+  setAngularVelocity(id, angularVelocity, activate) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z] = angularVelocity;
     object.setAngularVelocity(x, y, z);
+
+    if (activate) {
+      object.activate();
+    } else {
+      object.deactivate();
+    }
+  }
+
+  activate(id) {
+    const {objects} = this;
+
+    const object = objects.get(id);
+    object.activate();
+  }
+
+  deactivate(id) {
+    const {objects} = this;
+
+    const object = objects.get(id);
+    object.deactivate();
   }
 
   requestUpdate(id, cb) {
@@ -226,23 +264,33 @@ class AntikythServer {
 
               cb();
             } else if (method === 'setPosition') {
-              const [id, position] = args;
-              context.setPosition(id, position);
+              const [id, position, activate] = args;
+              context.setPosition(id, position, activate);
 
               cb();
             } else if (method === 'setRotation') {
-              const [id, rotation] = args;
-              context.setRotation(id, rotation);
+              const [id, rotation, activate] = args;
+              context.setRotation(id, rotation, activate);
 
               cb();
             } else if (method === 'setLinearVelocity') {
-              const [id, linearVelocity] = args;
-              context.setLinearVelocity(id, linearVelocity);
+              const [id, linearVelocity, activate] = args;
+              context.setLinearVelocity(id, linearVelocity, activate);
 
               cb();
             } else if (method === 'setAngularVelocity') {
-              const [id, angularVelocity] = args;
-              context.setAngularVelocity(id, angularVelocity);
+              const [id, angularVelocity, activate] = args;
+              context.setAngularVelocity(id, angularVelocity, activate);
+
+              cb();
+            } else if (method === 'activate') {
+              const [id] = args;
+              context.activate(id);
+
+              cb();
+            } else if (method === 'deactivate') {
+              const [id] = args;
+              context.deactivate(id);
 
               cb();
             } else if (method === 'requestUpdate') {

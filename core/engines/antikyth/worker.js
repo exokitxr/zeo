@@ -122,6 +122,14 @@ const _setAngularVelocity = ({bodyId, angularVelocity}) => {
   const [x, y, z] = angularVelocity;
   body.setAngularVelocity(x, y, z);
 };
+const _activateBody = ({id}) => {
+  const body = bodies.get(id);
+  body.activate();
+};
+const _deactivateBody = ({id}) => {
+  const body = bodies.get(id);
+  body.deactivate();
+};
 
 const _makeBody = bodySpec => {
   const {type} = bodySpec;
@@ -273,6 +281,16 @@ process.on('message', m => {
     case 'setAngularVelocity': {
       const {args: {bodyId, angularVelocity}} = m;
       _setAngularVelocity({bodyId, angularVelocity});
+      break;
+    }
+    case 'activateBody': {
+      const {args: {id}} = m;
+      _activateBody({id});
+      break;
+    }
+    case 'deactivateBody': {
+      const {args: {id}} = m;
+      _deactivateBody({id});
       break;
     }
     default:

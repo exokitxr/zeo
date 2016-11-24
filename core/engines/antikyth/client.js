@@ -229,6 +229,8 @@ class AnyikythClient {
             }
             this.angularVelocity = angularVelocity;
 
+            this.active = true;
+
             this.object = null;
             this.debugMesh = null;
 
@@ -255,49 +257,58 @@ class AnyikythClient {
           }
 
           setObject(object) {
-            this.linearVelocity = new THREE.Vector3();
-            this.angularVelocity = new THREE.Vector3();
-
-            // sync properties to the server
-            this.setPosition(object.position.toArray());
-            this.setRotation(object.quaternion.toArray());
-            this.setLinearVelocity(this.linearVelocity.toArray());
-            this.setAngularVelocity(this.angularVelocity.toArray());
-
             this.object = object;
+
+            this.sync();
           }
 
           unsetObject() {
-            this.position = new THREE.Vector3();
-            this.rotation = new THREE.Quaternion();
-            this.linearVelocity = new THREE.Vector3();
-            this.angularVelocity = new THREE.Vector3();
-
             this.object = null;
           }
 
           setPosition(position) {
-            const {id} = this;
+            const {id, active} = this;
 
-            _request('setPosition', [id, position], _warnError);
+            _request('setPosition', [id, position, active], _warnError);
           }
 
           setRotation(rotation) {
-            const {id} = this;
+            const {id, active} = this;
 
-            _request('setRotation', [id, rotation], _warnError);
+            _request('setRotation', [id, rotation, active], _warnError);
           }
 
           setLinearVelocity(linearVelocity) {
-            const {id} = this;
+            const {id, active} = this;
 
-            _request('setLinearVelocity', [id, linearVelocity], _warnError);
+            _request('setLinearVelocity', [id, linearVelocity, active], _warnError);
           }
 
           setAngularVelocity(angularVelocity) {
-            const {id} = this;
+            const {id, active} = this;
 
-            _request('setAngularVelocity', [id, angularVelocity], _warnError);
+            _request('setAngularVelocity', [id, angularVelocity, active], _warnError);
+          }
+
+          activate() {
+            this.active = true;
+
+            _request('activate', [this.id], _warnError);
+          }
+
+          deactivate() {
+            this.active = false;
+
+            _request('deactivate', [this.id], _warnError);
+          }
+
+          sync() {
+            const {object} = this;
+
+            this.setPosition(object.position.toArray());
+            this.setRotation(object.quaternion.toArray());
+            this.setLinearVelocity(this.linearVelocity.toArray());
+            this.setAngularVelocity(this.angularVelocity.toArray());
           }
 
           addDebug() {
