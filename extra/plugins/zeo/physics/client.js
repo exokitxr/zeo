@@ -171,6 +171,7 @@ class Physics {
                         physicsBody.setRotation(zeroQuaternion.toArray());
                         physicsBody.setLinearVelocity(zeroVector.toArray());
                         physicsBody.setAngularVelocity(zeroVector.toArray());
+                        physicsBody.activate();
                       });
                     }
                   };

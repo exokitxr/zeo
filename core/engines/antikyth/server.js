@@ -112,88 +112,52 @@ class Context {
     }
   }
 
-  setPosition(id, position, activate) {
+  setPosition(id, position) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z] = position;
     object.setPosition(x, y, z);
-
-    if (activate) {
-      object.activate();
-    } else {
-      object.deactivate();
-    }
   }
 
-  setRotation(id, rotation, activate) {
+  setRotation(id, rotation) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z, w] = rotation;
     object.setRotation(x, y, z, w);
-
-    if (activate) {
-      object.activate();
-    } else {
-      object.deactivate();
-    }
   }
 
-  setLinearVelocity(id, linearVelocity, activate) {
+  setLinearVelocity(id, linearVelocity) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z] = linearVelocity;
     object.setLinearVelocity(x, y, z);
-
-    if (activate) {
-      object.activate();
-    } else {
-      object.deactivate();
-    }
   }
 
-  setAngularVelocity(id, angularVelocity, activate) {
+  setAngularVelocity(id, angularVelocity) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z] = angularVelocity;
     object.setAngularVelocity(x, y, z);
-
-    if (activate) {
-      object.activate();
-    } else {
-      object.deactivate();
-    }
   }
 
-  setLinearFactor(id, linearFactor, activate) {
+  setLinearFactor(id, linearFactor) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z] = linearFactor;
     object.setLinearFactor(x, y, z);
-
-    if (activate) {
-      object.activate();
-    } else {
-      object.deactivate();
-    }
   }
 
-  setAngularFactor(id, angularFactor, activate) {
+  setAngularFactor(id, angularFactor) {
     const {objects} = this;
 
     const object = objects.get(id);
     const [x, y, z] = angularFactor;
     object.setAngularFactor(x, y, z);
-
-    if (activate) {
-      object.activate();
-    } else {
-      object.deactivate();
-    }
   }
 
   activate(id) {

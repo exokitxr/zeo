@@ -305,8 +305,6 @@ class AnyikythClient {
             }
             this.angularVelocity = angularVelocity;
 
-            this.active = true;
-
             this.object = null;
             this.debugMesh = null;
 
@@ -343,50 +341,46 @@ class AnyikythClient {
           }
 
           setPosition(position) {
-            const {id, active} = this;
+            const {id} = this;
 
-            _request('setPosition', [id, position, active], _warnError);
+            _request('setPosition', [id, position], _warnError);
           }
 
           setRotation(rotation) {
-            const {id, active} = this;
+            const {id} = this;
 
-            _request('setRotation', [id, rotation, active], _warnError);
+            _request('setRotation', [id, rotation], _warnError);
           }
 
           setLinearVelocity(linearVelocity) {
-            const {id, active} = this;
+            const {id} = this;
 
-            _request('setLinearVelocity', [id, linearVelocity, active], _warnError);
+            _request('setLinearVelocity', [id, linearVelocity], _warnError);
           }
 
           setAngularVelocity(angularVelocity) {
-            const {id, active} = this;
+            const {id} = this;
 
-            _request('setAngularVelocity', [id, angularVelocity, active], _warnError);
+            _request('setAngularVelocity', [id, angularVelocity], _warnError);
           }
 
           setLinearFactor(linearFactor) {
-            const {id, active} = this;
+            const {id} = this;
 
-            _request('setLinearFactor', [id, linearFactor, active], _warnError);
+            _request('setLinearFactor', [id, linearFactor], _warnError);
           }
 
           setAngularFactor(angularFactor) {
-            const {id, active} = this;
+            const {id} = this;
 
-            _request('setAngularFactor', [id, angularFactor, active], _warnError);
+            _request('setAngularFactor', [id, angularFactor], _warnError);
           }
 
           activate() {
-            this.active = true;
-
             _request('activate', [this.id], _warnError);
           }
 
           deactivate() {
-            this.active = false;
-
             _request('deactivate', [this.id], _warnError);
           }
 
@@ -397,6 +391,7 @@ class AnyikythClient {
             this.setRotation(object.quaternion.toArray());
             this.setLinearVelocity([0, 0, 0]);
             this.setAngularVelocity([0, 0, 0]);
+            this.activate();
 
             /* if (this.debugMesh) { // XXX re-enable to enable pure reading from the server
               this.debugMesh.position.copy(object.position);
