@@ -1,9 +1,9 @@
 const physics = require('./build/Release/physics.node');
 
-const FPS = 120;
+const FPS = 60;
+const RESOLUTION = 4;
 const STEP_SECONDS = 1 / FPS;
 const STEP_MILLISECONDS = 1000 / FPS;
-const NUM_ITERATIONS = 2;
 
 const worlds = new Map(); // worldId -> World
 const bodies = new Map(); // bodyId -> Body
@@ -48,14 +48,14 @@ const _start = () => {
 
   let lastUpdate = Date.now();
   interval = setInterval(() => {
+    const now = Date.now();
+    const timeDiff = now - lastUpdate;
+
     worlds.forEach(world => {
-      const now = Date.now();
-      const timeDiff = now - lastUpdate;
-
-      world.stepSimulation(timeDiff, NUM_ITERATIONS, STEP_SECONDS / NUM_ITERATIONS);
-      lastUpdate = now;
-
+      world.stepSimulation(timeDiff, RESOLUTION, STEP_SECONDS / RESOLUTION);
     });
+
+    lastUpdate = now;
   }, STEP_MILLISECONDS);
 };
 const _stop = () => {
