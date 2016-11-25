@@ -66,6 +66,11 @@ class SinglePlayer {
             };
           }
 
+          getLastStatus() {
+            const {prevStatuses} = this;
+            return prevStatuses[prevStatuses.length - 1];
+          }
+
           snapshotStatus() {
             const snapshot = {
               status: this.getStatus(),
@@ -110,18 +115,24 @@ class SinglePlayer {
           }
 
           updateHmd({position, rotation}) {
-            this.emit('hmdUpdate', {
-              position,
-              rotation,
-            });
+            const lastStatus = player.getLastStatus();
+
+            if (!position.equals(lastStatus.hmd.position) || !rotation.equals(lastStatus.hmd.rotation)) {
+              this.emit('hmdUpdate', {
+                position,
+                rotation,
+              });
+            }
           }
 
           updateController({side, position, rotation}) {
-            this.emit('controllerUpdate', {
-              side,
-              position,
-              rotation,
-            });
+            if (!position.equals(lastStatus.controllers[side].position) || !rotation.equals(lastStatus.controllers[side].rotation)) {
+              this.emit('controllerUpdate', {
+                side,
+                position,
+                rotation,
+              });
+            }
           }
         }
 
@@ -405,7 +416,6 @@ class SinglePlayer {
             controller.update();
           }
 
-          // XXX only emit these if there was a difference
           // emit updates
           player.updateHmd({
             position: camera.position.clone(),
