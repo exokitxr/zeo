@@ -355,7 +355,7 @@ class AnyikythClient {
           setObject(object) {
             this.object = object;
 
-            this.sync();
+            // this.sync();
           }
 
           unsetObject() {
@@ -404,6 +404,10 @@ class AnyikythClient {
 
           deactivate() {
             _request('deactivate', [this.id], _warnError);
+          }
+
+          setIgnoreCollisionCheck(targetBody, ignore) {
+            _request('setIgnoreCollisionCheck', [this.id, targetBody.id, ignore], _warnError);
           }
 
           sync() {

@@ -186,6 +186,14 @@ class Context {
     object.deactivate();
   }
 
+  setIgnoreCollisionCheck(sourceBodyId, targetBodyId, ignore) {
+    const {objects} = this;
+
+    const sourceBody = objects.get(sourceBodyId);
+    const targetBody = objects.get(targetBodyId);
+    sourceBody.setIgnoreCollisionCheck(targetBody, ignore);
+  }
+
   requestUpdate(id, cb) {
     const {objects} = this;
 
@@ -306,6 +314,11 @@ class AntikythServer {
             } else if (method === 'deactivate') {
               const [id] = args;
               context.deactivate(id);
+
+              cb();
+            } else if (method === 'setIgnoreCollisionCheck') {
+              const [sourceId, targetId, ignore] = args;
+              context.setIgnoreCollisionCheck(sourceId, targetId, ignore);
 
               cb();
             } else if (method === 'requestUpdate') {

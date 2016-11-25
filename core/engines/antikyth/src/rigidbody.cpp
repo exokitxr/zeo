@@ -40,10 +40,11 @@ void mox::physics::RigidBody::Init(v8::Local<v8::Object> namespc)
   Nan::SetPrototypeMethod(tpl, "setLinearVelocity", setLinearVelocity);
   Nan::SetPrototypeMethod(tpl, "getAngularVelocity", getAngularVelocity);
   Nan::SetPrototypeMethod(tpl, "setAngularVelocity", setAngularVelocity);
-  Nan::SetPrototypeMethod(tpl, "activate", activate);
   Nan::SetPrototypeMethod(tpl, "setLinearFactor", setLinearFactor);
   Nan::SetPrototypeMethod(tpl, "setAngularFactor", setAngularFactor);
+  Nan::SetPrototypeMethod(tpl, "activate", activate);
   Nan::SetPrototypeMethod(tpl, "deactivate", deactivate);
+  Nan::SetPrototypeMethod(tpl, "setIgnoreCollisionCheck", setIgnoreCollisionCheck);
 
   constructor.Reset(tpl->GetFunction());
   namespc->Set(Nan::New("RigidBody").ToLocalChecked(), tpl->GetFunction());
@@ -477,6 +478,20 @@ NAN_METHOD(mox::physics::RigidBody::deactivate)
   GET_SELF(mox::physics::RigidBody, self);
 
   self->m_rigidBody->setActivationState(0);
+
+  info.GetReturnValue().Set(info.This());
+}
+
+NAN_METHOD(mox::physics::RigidBody::setIgnoreCollisionCheck)
+{
+  GET_SELF(mox::physics::RigidBody, self);
+  CHECK_NUM_ARGUMENTS(info, 2);
+
+  v8::Local<v8::Object> rigidBodyObject = Nan::To<v8::Object>(info[0]).ToLocalChecked();
+  RigidBody *rigidBody = ObjectWrap::Unwrap<RigidBody>(rigidBodyObject);
+  bool ignore = Nan::To<bool>(info[1]).FromJust();
+
+  self->m_rigidBody->setIgnoreCollisionCheck(rigidBody->getRigidBody().get(), ignore);
 
   info.GetReturnValue().Set(info.This());
 }

@@ -3,7 +3,7 @@ const physics = require('./build/Release/physics.node');
 const FPS = 120;
 const STEP_SECONDS = 1 / FPS;
 const STEP_MILLISECONDS = 1000 / FPS;
-const NUM_ITERATIONS = 7;
+const NUM_ITERATIONS = 2;
 
 const worlds = new Map(); // worldId -> World
 const bodies = new Map(); // bodyId -> Body
@@ -176,6 +176,11 @@ const _activateBody = ({id}) => {
 const _deactivateBody = ({id}) => {
   const body = bodies.get(id);
   body.deactivate();
+};
+const _setIgnoreCollisionCheck = ({sourceBodyId, targetBodyId, ignore}) => {
+  const sourceBody = bodies.get(sourceBodyId);
+  const targetBody = bodies.get(targetBodyId);
+  sourceBody.setIgnoreCollisionCheck(targetBody, ignore);
 };
 
 const _makeBody = bodySpec => {
@@ -418,6 +423,11 @@ process.on('message', m => {
     case 'deactivateBody': {
       const {args: {id}} = m;
       _deactivateBody({id});
+      break;
+    }
+    case 'setIgnoreCollisionCheck': {
+      const {args: {sourceBodyId, targetBodyId, ignore}} = m;
+      _setIgnoreCollisionCheck({sourceBodyId, targetBodyId, ignore});
       break;
     }
     default:

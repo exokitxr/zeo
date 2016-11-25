@@ -53,6 +53,7 @@ namespace mox {
       static NAN_METHOD(setAngularFactor);
       static NAN_METHOD(activate);
       static NAN_METHOD(deactivate);
+      static NAN_METHOD(setIgnoreCollisionCheck);
 
       static Nan::Persistent<v8::Function> constructor;
     };

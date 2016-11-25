@@ -138,12 +138,6 @@ class Weapons {
                           physicsBody.setAngularFactor([1, 1, 1]);
                           physicsBody.setLinearVelocity(controllerLinearVelocity.toArray());
                           physicsBody.setAngularVelocity(controllerAngularVelocity.toArray());
-
-                          /* physicsBody.constraints.forEach(constraint => {
-                            physics.remove(constraint);
-                            // constraint.destroy(); // XXX implement this
-                          });
-                          physicsBody.constraints = []; */
                           physicsBody.activate();
 
                           weaponMeshes[mode] = null;
@@ -185,24 +179,17 @@ class Weapons {
 
                 newWeaponMesh.position.copy(controller.mesh.position);
                 newWeaponMesh.quaternion.copy(controller.mesh.quaternion);
-                // newWeaponMesh.physicsBody.setLinearVelocity([0, 0, 0]);
-                // newWeaponMesh.physicsBody.setAngularVelocity([0, 0, 0]);
-                newWeaponMesh.physicsBody.sync();
-                physics.add(newWeaponMesh.physicsBody);
 
-                /* const sqrt = Math.sqrt(Math.pow(0.1, 2) + Math.pow(0.1, 2));
-                const constraints = [
-                  new physics.Constraint({
-                    bodyA: controller.physicsBody,
-                    bodyB: newWeaponMesh.physicsBody,
-                    pivotA: [0, 0, -0.1],
-                    pivotB: [0, 0, -0.1],
-                  }),
-                ];
-                constraints.forEach(constraint => {
-                  physics.add(constraint);
+                newWeaponMesh.physicsBody.sync();
+                newWeaponMesh.physicsBody.setLinearVelocity([0, 0, 0]);
+                newWeaponMesh.physicsBody.setAngularVelocity([0, 0, 0]);
+                newWeaponMesh.physicsBody.setLinearFactor([0, 0, 0]);
+                newWeaponMesh.physicsBody.setAngularFactor([0, 0, 0]);
+                newWeaponMesh.physicsBody.deactivate();
+                controllers.forEach(controller => {
+                  newWeaponMesh.physicsBody.setIgnoreCollisionCheck(controller.physicsBody, true);
                 });
-                newWeaponMesh.physicsBody.constraints = constraints; */
+                physics.add(newWeaponMesh.physicsBody);
 
                 weaponMeshes[side] = newWeaponMesh;
               };
@@ -427,10 +414,6 @@ class Weapons {
                   mass: 1,
                 });
                 // physicsBody.deactivate();
-                physicsBody.setLinearVelocity([0, 0, 0]);
-                physicsBody.setAngularVelocity([0, 0, 0]);
-                physicsBody.setLinearFactor([0, 0, 0]);
-                physicsBody.setAngularFactor([0, 0, 0]);
                 physicsBody.setObject(result);
                 // physics.add(physicsBody);
                 result.physicsBody = physicsBody;
@@ -497,10 +480,6 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  physicsBody.setLinearVelocity([0, 0, 0]);
-                  physicsBody.setAngularVelocity([0, 0, 0]);
-                  physicsBody.setLinearFactor([0, 0, 0]);
-                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
@@ -606,10 +585,6 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  physicsBody.setLinearVelocity([0, 0, 0]);
-                  physicsBody.setAngularVelocity([0, 0, 0]);
-                  physicsBody.setLinearFactor([0, 0, 0]);
-                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
@@ -683,10 +658,6 @@ class Weapons {
                   mass: 1,
                 });
                 // physicsBody.deactivate();
-                physicsBody.setLinearVelocity([0, 0, 0]);
-                physicsBody.setAngularVelocity([0, 0, 0]);
-                physicsBody.setLinearFactor([0, 0, 0]);
-                physicsBody.setAngularFactor([0, 0, 0]);
                 physicsBody.setObject(mesh);
                 // physics.add(physicsBody);
                 mesh.physicsBody = physicsBody;
@@ -743,10 +714,6 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  physicsBody.setLinearVelocity([0, 0, 0]);
-                  physicsBody.setAngularVelocity([0, 0, 0]);
-                  physicsBody.setLinearFactor([0, 0, 0]);
-                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;

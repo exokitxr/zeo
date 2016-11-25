@@ -262,6 +262,14 @@ class Antikyth extends EventEmitter {
     });
   }
 
+  setIgnoreCollisionCheckWorldBody(world, sourceBody, targetBody, ignore) {
+    this.send('setIgnoreCollisionCheck', {
+      sourceBodyId: sourceBody.id,
+      targetBodyId: targetBody.id,
+      ignore: ignore,
+    });
+  }
+
   requestWorldUpdate(world) {
     this.send('requestUpdate', {
       id: world.id,
@@ -433,6 +441,21 @@ class World extends EventEmitter {
     }
   }
 
+  setIgnoreCollisionCheckBody(sourceBody, targetBody, ignore) {
+    if (this.parent) {
+      this.parent.setIgnoreCollisionCheckWorldBody(this, sourceBody, targetBody, ignore);
+    } else {
+      this.queue.push({
+        method: 'setIgnoreCollisionCheckBody',
+        args: {
+          sourceBody,
+          targetBody,
+          ignore,
+        }
+      });
+    }
+  }
+
   setParent(parent) {
     this.parent = parent;
 
@@ -498,6 +521,11 @@ class World extends EventEmitter {
           case 'deactivateBody': {
             const {body} = args;
             this.parent.deactivateWorldBody(this, body);
+            break;
+          }
+          case 'setIgnoreCollisionCheckBody': {
+            const {sourceBody, targetBody, ignore} = args;
+            this.parent.setIgnoreCollisionCheckWorldBody(this, sourceBody, targetBody, ignore);
             break;
           }
         }
@@ -607,6 +635,20 @@ class Body extends EventEmitter {
     }
   }
 
+  setIgnoreCollisionCheck(targetBody, ignore) {
+    if (this.parent) {
+      this.parent.setIgnoreCollisionCheckBody(this, targetBody, ignore);
+    } else {
+      this.queue.push({
+        method: 'setIgnoreCollisionCheck',
+        args: {
+          targetBody,
+          ignore,
+        }
+      });
+    }
+  }
+
   setParent(parent) {
     this.parent = parent;
 
@@ -652,6 +694,11 @@ class Body extends EventEmitter {
           }
           case 'deactivate': {
             this.parent.deactivateBody(this);
+            break;
+          }
+          case 'setIgnoreCollisionCheck': {
+            const {targetBody, ignore} = args;
+            this.parent.setIgnoreCollisionCheckBody(this, targetBody, ignore);
             break;
           }
         }

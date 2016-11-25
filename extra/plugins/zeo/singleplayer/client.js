@@ -149,8 +149,8 @@ class SinglePlayer {
 
             if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
               const controller = controllers[side];
-              /* const {physicsBody} = controller; // XXX
-              physicsBody.sync(); */
+              const {physicsBody} = controller;
+              physicsBody.sync();
 
               this.emit('controllerUpdate', {
                 side,
@@ -202,12 +202,12 @@ class SinglePlayer {
               ],
               mass: 1,
             });
-            /* physicsBody.setLinearVelocity([0, 0, 0]);
+            physicsBody.setLinearVelocity([0, 0, 0]);
             physicsBody.setAngularVelocity([0, 0, 0]);
             physicsBody.setLinearFactor([0, 0, 0]);
             physicsBody.setAngularFactor([0, 0, 0]);
             physicsBody.setObject(mesh);
-            physics.add(physicsBody); */
+            physics.add(physicsBody);
             this.physicsBody = physicsBody;
 
             const positionOffset = new THREE.Vector3();
