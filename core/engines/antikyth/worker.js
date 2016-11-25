@@ -14,8 +14,11 @@ const _requestUpdate = worldId => {
   const updates = bodyIds.map(bodyId => {
     const body = bodies.get(bodyId);
 
-    const {type} = body;
-    if (type !== physics.RigidBody.PLANE && type !== physics.RigidBody.TRIANGLE_MESH) { // filter out static body updates
+    const {objectType, type} = body;
+    if (
+      objectType === physics.RigidBody.OBJECT_TYPE && // only update bodies (as opposed to constraints)
+      type !== physics.RigidBody.PLANE && type !== physics.RigidBody.TRIANGLE_MESH // only update non-static bodies
+    ) {
       const position = body.getPosition();
       const rotation = body.getRotation();
       const linearVelocity = body.getLinearVelocity();
@@ -98,12 +101,12 @@ const _removeBody = ({bodyId}) => {
   worldBodyIds.splice(worldBodyIds.indexOf(bodyId), 1);
   bodyWorldIndex.delete(bodyId);
 };
-const _addConstraint = ({worldId, body: constraintSpec}) => {
+const _addConstraint = ({worldId, constraint: constraintSpec}) => {
   const constraint = _makeConstraint(constraintSpec);
   const {id: constraintId} = constraintSpec;
-  bodies.set(constraintId, v);
+  bodies.set(constraintId, constraint);
 
-  const world = worlds.get(worldId);
+  const world = worlds.get(worldId)
   world.addConstraint(constraint);
 
   const worldBodyIds = worldBodyIndex.get(worldId);
@@ -320,7 +323,7 @@ const _makeBody = bodySpec => {
   }
 };
 const _makeConstraint = constraintSpec => {
-  const {bodyAId, bodyBId, pivotA, pivotB} = bodySpec;
+  const {bodyAId, bodyBId, pivotA, pivotB} = constraintSpec;
   const bodyA = bodies.get(bodyAId);
   const bodyB = bodies.get(bodyBId);
 

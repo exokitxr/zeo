@@ -46,7 +46,18 @@ class Context {
         case 'convexHull': return new Antikyth.ConvexHull(opts);
         case 'triangleMesh': return new Antikyth.TriangleMesh(opts);
         case 'compound': return new Antikyth.Compound(opts);
-        case 'constraint': return new Antikyth.Constraint(opts);
+        case 'constraint': {
+          const {bodyAId, bodyBId, pivotA, pivotB} = opts;
+          const bodyA = this.objects.get(bodyAId);
+          const bodyB = this.objects.get(bodyBId);
+
+          return new Antikyth.Constraint({
+            bodyA,
+            bodyB,
+            pivotA,
+            pivotB,
+          });
+        }
         default: return null;
       }
     })();

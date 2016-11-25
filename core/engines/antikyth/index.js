@@ -442,9 +442,9 @@ class World extends EventEmitter {
 
         switch (method) {
           case 'add': {
-            const body = args;
+            const object = args;
             if (object instanceof Body) {
-              this.parent.addBody(this, body);
+              this.parent.addBody(this, object);
             } else if (object instanceof Constraint) {
               this.parent.addConstraint(this, object);
             }

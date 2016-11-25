@@ -130,8 +130,11 @@ class AnyikythClient {
         };
 
         class Entity {
-          constructor(id = idUtils.makeId()) {
+          constructor(type, id = idUtils.makeId()) {
+            this.type = type;
             this.id = id;
+
+            this.debugMesh = null;
           }
 
           add(child) {
@@ -147,11 +150,31 @@ class AnyikythClient {
 
             _request('remove', [parentId, childId], _warnError);
           }
+
+          addDebug() {
+            if (DEBUG) {
+              if (this.makeDebugMesh) {
+                const debugMesh = this.makeDebugMesh();
+                scene.add(debugMesh);
+                this.debugMesh = debugMesh;
+              }
+            }
+          }
+
+          removeDebug() {
+            if (DEBUG) {
+              if (this.makeDebugMesh) {
+                const debugMesh = this.makeDebugMesh();
+                scene.remove(debugMesh);
+                this.debugMesh = null;
+              }
+            }
+          }
         }
 
         class Engine extends Entity {
           constructor(opts = {}) {
-            super(opts.id);
+            super('engine', opts.id);
 
             this.worlds = new Map();
           }
@@ -179,39 +202,39 @@ class AnyikythClient {
 
         class World extends Entity {
           constructor(opts = {}) {
-            super(opts.id);
+            super('world', opts.id);
 
-            const {id} = this;
+            const {type, id} = this;
 
             this.bodies = new Map();
             this.running = false;
             this.timeout = null;
 
-            _request('create', ['world', id, _except(opts, ['id'])], _warnError);
+            _request('create', [type, id, _except(opts, ['id'])], _warnError);
 
             engine.add(this);
           }
 
-          add(body) {
-            Entity.prototype.add.call(this, body);
+          add(object) {
+            Entity.prototype.add.call(this, object);
 
-            const {id: bodyId} = body;
-            this.bodies.set(bodyId, body);
+            const {id: objectId} = object;
+            this.bodies.set(objectId, object);
 
-            body.addDebug();
+            object.addDebug();
 
             if (!this.running) {
               this.start();
             }
           }
 
-          remove(body) {
-            Entity.prototype.remove.call(this, body);
+          remove(object) {
+            Entity.prototype.remove.call(this, object);
 
-            const {id: bodyId} = body;
-            this.bodies.delete(bodyId);
+            const {id: objectId} = object;
+            this.bodies.delete(objectId);
 
-            body.removeDebug();
+            object.removeDebug();
 
             if (this.bodies.size === 0) {
               this.stop();
@@ -289,7 +312,7 @@ class AnyikythClient {
 
         class Body extends Entity {
           constructor(type, opts = {}) {
-            super(opts.id);
+            super(type, opts.id);
 
             const {id} = this;
 
@@ -306,7 +329,6 @@ class AnyikythClient {
             this.angularVelocity = angularVelocity;
 
             this.object = null;
-            this.debugMesh = null;
 
             _request('create', [type, id, _except(opts, ['id'])], _warnError);
           }
@@ -392,22 +414,6 @@ class AnyikythClient {
             this.setLinearVelocity([0, 0, 0]);
             this.setAngularVelocity([0, 0, 0]);
             this.activate();
-          }
-
-          addDebug() {
-            if (DEBUG) {
-              const debugMesh = this.makeDebugMesh();
-              scene.add(debugMesh);
-              this.debugMesh = debugMesh;
-            }
-          }
-
-          removeDebug() {
-            if (DEBUG) {
-              const debugMesh = this.makeDebugMesh();
-              scene.remove(debugMesh);
-              this.debugMesh = null;
-            }
           }
         }
 
@@ -507,12 +513,13 @@ class AnyikythClient {
         }
 
         class Constraint extends Entity {
-          constructor(type, opts = {}) {
-            super(opts.id);
+          constructor(opts = {}) {
+            super('constraint', opts.id);
 
-            const {id} = this;
+            const {type, id} = this;
+            const {bodyA: {id: bodyAId}, bodyB: {id: bodyBId}, pivotA = [0, 0, 0], pivotB = [0, 0, 0]} = opts;
 
-            _request('create', [type, id, _except(opts, ['id'])], _warnError);
+            _request('create', [type, id, {bodyAId, bodyBId, pivotA, pivotB}], _warnError);
           }
         }
 

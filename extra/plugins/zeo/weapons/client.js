@@ -136,11 +136,11 @@ class Weapons {
 
 console.log('release velocity', controllerLinearVelocity.toArray(), controllerAngularVelocity.toArray()); // XXX
 
-                          physicsBody.setLinearFactor([1, 1, 1]);
-                          physicsBody.setAngularFactor([1, 1, 1]);
-                          physicsBody.activate();
+                          // physicsBody.setLinearFactor([1, 1, 1]);
+                          // physicsBody.setAngularFactor([1, 1, 1]);
                           physicsBody.setLinearVelocity(controllerLinearVelocity.toArray());
                           physicsBody.setAngularVelocity(controllerAngularVelocity.toArray());
+                          physicsBody.activate();
 
                           weaponMeshes[mode] = null;
                         }
@@ -167,20 +167,28 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
               };
 
               const _setWeapon = (side, weapon) => {
-                const rootMesh = controllers[side].mesh;
-                // const tipMesh = rootMesh.tip;
+                const controller = controllers[side];
 
                 const oldWeapon = weaponMeshes[side];
                 if (oldWeapon) {
-                  // rootMesh.remove(oldWeapon);
                   scene.remove(oldWeapon);
 
                   weaponMeshes[side] = null;
                 }
 
                 const newWeaponMesh = _makeWeaponMesh(weapon);
-                // rootMesh.add(newWeaponMesh);
                 scene.add(newWeaponMesh);
+
+                newWeaponMesh.position.copy(controller.mesh.position);
+                newWeaponMesh.quaternion.copy(controller.mesh.quaternion);
+                newWeaponMesh.physicsBody.sync();
+                physics.add(newWeaponMesh.physicsBody);
+
+                const constraint1 = new physics.Constraint({
+                  bodyA: controller.physicsBody,
+                  bodyB: newWeaponMesh.physicsBody,
+                });
+                physics.add(constraint1);
 
                 weaponMeshes[side] = newWeaponMesh;
               };
@@ -404,10 +412,10 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                   mass: 1,
                 });
                 // physicsBody.deactivate();
-                physicsBody.setLinearFactor([0, 0, 0]);
-                physicsBody.setAngularFactor([0, 0, 0]);
+                // physicsBody.setLinearFactor([0, 0, 0]);
+                // physicsBody.setAngularFactor([0, 0, 0]);
                 physicsBody.setObject(result);
-                physics.add(physicsBody);
+                // physics.add(physicsBody);
                 result.physicsBody = physicsBody;
 
                 return result;
@@ -472,10 +480,10 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  physicsBody.setLinearFactor([0, 0, 0]);
-                  physicsBody.setAngularFactor([0, 0, 0]);
+                  // physicsBody.setLinearFactor([0, 0, 0]);
+                  // physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
-                  physics.add(physicsBody);
+                  // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
 
                   return mesh;
@@ -579,10 +587,10 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  physicsBody.setLinearFactor([0, 0, 0]);
-                  physicsBody.setAngularFactor([0, 0, 0]);
+                  // physicsBody.setLinearFactor([0, 0, 0]);
+                  // physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
-                  physics.add(physicsBody);
+                  // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
 
                   return mesh;
@@ -654,10 +662,10 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                   mass: 1,
                 });
                 // physicsBody.deactivate();
-                physicsBody.setLinearFactor([0, 0, 0]);
-                physicsBody.setAngularFactor([0, 0, 0]);
+                // physicsBody.setLinearFactor([0, 0, 0]);
+                // physicsBody.setAngularFactor([0, 0, 0]);
                 physicsBody.setObject(mesh);
-                physics.add(physicsBody);
+                // physics.add(physicsBody);
                 mesh.physicsBody = physicsBody;
 
                 return mesh;
@@ -712,10 +720,10 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  physicsBody.setLinearFactor([0, 0, 0]);
-                  physicsBody.setAngularFactor([0, 0, 0]);
+                  // physicsBody.setLinearFactor([0, 0, 0]);
+                  // physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
-                  physics.add(physicsBody);
+                  // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
 
                   return mesh;

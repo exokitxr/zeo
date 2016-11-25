@@ -18,6 +18,8 @@ namespace mox {
       explicit Constraint();
       ~Constraint();
 
+      static const uint32_t OBJECT_TYPE = 2;
+
       btTypedConstraintPtr m_constraint;
 
       static NAN_METHOD(New);

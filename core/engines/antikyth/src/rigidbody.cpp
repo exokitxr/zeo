@@ -22,6 +22,8 @@ void mox::physics::RigidBody::Init(v8::Local<v8::Object> namespc)
 
   Nan::SetMethod(tpl, "make", make);
 
+  tpl->Set(Nan::New("OBJECT_TYPE").ToLocalChecked(), Nan::New(OBJECT_TYPE));
+
   tpl->Set(Nan::New("BOX").ToLocalChecked(), Nan::New(BOX));
   tpl->Set(Nan::New("PLANE").ToLocalChecked(), Nan::New(PLANE));
   tpl->Set(Nan::New("SPHERE").ToLocalChecked(), Nan::New(SPHERE));
@@ -73,6 +75,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
   v8::Local<v8::String> keyScale = Nan::New("scale").ToLocalChecked();
   v8::Local<v8::String> keyLength = Nan::New("length").ToLocalChecked();
   v8::Local<v8::String> keyMass = Nan::New("mass").ToLocalChecked();
+  v8::Local<v8::String> keyObjectType = Nan::New("objectType").ToLocalChecked();
 
   v8::Local<v8::Object> def = Nan::To<v8::Object>(info[0]).ToLocalChecked();
 
@@ -94,6 +97,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
   // type-specific construction of rigid body
   //
 
+  instance->Set(keyObjectType, Nan::New(OBJECT_TYPE));
   instance->Set(keyType, Nan::Get(def, keyType).ToLocalChecked());
 
   switch (nativeInstance->m_type) {

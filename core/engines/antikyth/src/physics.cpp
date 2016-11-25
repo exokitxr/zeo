@@ -2,12 +2,14 @@
 
 #include "physics.h"
 #include "rigidbody.h"
+#include "constraint.h"
 #include "world.h"
 
 void mox::physics::init(Local<Object> exports)
 {
   mox::physics::World::Init(exports);
   mox::physics::RigidBody::Init(exports);
+  mox::physics::Constraint::Init(exports);
 }
 
 NAN_METHOD(mox::physics::makeBoxRigidBody)

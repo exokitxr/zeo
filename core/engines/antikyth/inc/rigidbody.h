@@ -18,6 +18,15 @@ namespace mox {
       explicit RigidBody();
       ~RigidBody();
 
+      static const uint32_t OBJECT_TYPE = 1;
+
+      static const uint32_t BOX = 1;
+      static const uint32_t PLANE = 2;
+      static const uint32_t SPHERE = 3;
+      static const uint32_t CONVEX_HULL = 4;
+      static const uint32_t TRIANGLE_MESH = 5;
+      static const uint32_t COMPOUND = 6;
+
       uint32_t m_type;
       btCollisionShapePtr m_collisionShape;
       btTriangleMeshPtr m_triangleMesh;
@@ -27,13 +36,6 @@ namespace mox {
       btRigidBodyPtr m_rigidBody;
       bool m_isDynamic;
       double m_mass;
-
-      static const uint32_t BOX = 1;
-      static const uint32_t PLANE = 2;
-      static const uint32_t SPHERE = 3;
-      static const uint32_t CONVEX_HULL = 4;
-      static const uint32_t TRIANGLE_MESH = 5;
-      static const uint32_t COMPOUND = 6;
 
       static NAN_METHOD(New);
       static NAN_METHOD(make);

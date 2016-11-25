@@ -23,6 +23,8 @@ void mox::physics::Constraint::Init(v8::Local<v8::Object> namespc)
 
   Nan::SetMethod(tpl, "make", make);
 
+  tpl->Set(Nan::New("OBJECT_TYPE").ToLocalChecked(), Nan::New(OBJECT_TYPE));
+
   constructor.Reset(tpl->GetFunction());
   namespc->Set(Nan::New("Constraint").ToLocalChecked(), tpl->GetFunction());
 
@@ -38,7 +40,6 @@ NAN_METHOD(mox::physics::Constraint::New)
 
 NAN_METHOD(mox::physics::Constraint::make)
 {
-  GET_SELF(mox::physics::Constraint, self);
   CHECK_NUM_ARGUMENTS(info, 4);
 
   v8::Local<v8::Object> bodyA = Nan::To<v8::Object>(info[0]).ToLocalChecked();
@@ -58,6 +59,10 @@ NAN_METHOD(mox::physics::Constraint::make)
 
   v8::Local<v8::Object> instance = NewInstance();
   Constraint *nativeInstance = ObjectWrap::Unwrap<Constraint>(instance);
+
+  v8::Local<v8::String> keyObjectType = Nan::New("objectType").ToLocalChecked();
+
+  instance->Set(keyObjectType, Nan::New(OBJECT_TYPE));
 
   nativeInstance->m_constraint = std::make_shared<btPoint2PointConstraint>(
     *(bodyAInstance->getRigidBody()),

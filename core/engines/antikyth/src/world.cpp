@@ -37,6 +37,8 @@ void mox::physics::World::Init(v8::Local<v8::Object> namespc)
 
   Nan::SetPrototypeMethod(tpl, "addRigidBody", addRigidBody);
   Nan::SetPrototypeMethod(tpl, "removeRigidBody", removeRigidBody);
+  Nan::SetPrototypeMethod(tpl, "addConstraint", addConstraint);
+  Nan::SetPrototypeMethod(tpl, "removeConstraint", removeConstraint);
   Nan::SetPrototypeMethod(tpl, "stepSimulation", stepSimulation);
   Nan::SetPrototypeMethod(tpl, "analyse", analyse);
 
