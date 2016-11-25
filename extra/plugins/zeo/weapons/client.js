@@ -184,11 +184,27 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                 newWeaponMesh.physicsBody.sync();
                 physics.add(newWeaponMesh.physicsBody);
 
-                const constraint1 = new physics.Constraint({
-                  bodyA: controller.physicsBody,
-                  bodyB: newWeaponMesh.physicsBody,
+                const sqrt = Math.sqrt(Math.pow(0.1, 2) + Math.pow(0.1, 2));
+                const constraints = [
+                  new physics.Constraint({
+                    bodyA: controller.physicsBody,
+                    bodyB: newWeaponMesh.physicsBody,
+                    position: [0, 0, -0.1],
+                  }),
+                  /* new physics.Constraint({
+                    bodyA: controller.physicsBody,
+                    bodyB: newWeaponMesh.physicsBody,
+                    position: [-sqrt, 0, sqrt],
+                  }),
+                  new physics.Constraint({
+                    bodyA: controller.physicsBody,
+                    bodyB: newWeaponMesh.physicsBody,
+                    position: [sqrt, 0, sqrt],
+                  }), */
+                ];
+                constraints.forEach(constraint => {
+                  physics.add(constraint);
                 });
-                physics.add(constraint1);
 
                 weaponMeshes[side] = newWeaponMesh;
               };
