@@ -131,14 +131,19 @@ class Weapons {
 
                         if (weaponMesh) {
                           const {physicsBody} = weaponMesh;
-                          // const controllerLinearVelocity = player.getControllerLinearVelocity(side); // XXX delete these
-                          // const controllerAngularVelocity = player.getControllerAngularVelocity(side);
+                          const controllerLinearVelocity = player.getControllerLinearVelocity(side);
+                          const controllerAngularVelocity = player.getControllerAngularVelocity(side);
 
-                          physicsBody.constraints.forEach(constraint => {
+                          physicsBody.setLinearFactor([1, 1, 1]);
+                          physicsBody.setAngularFactor([1, 1, 1]);
+                          physicsBody.setLinearVelocity(controllerLinearVelocity.toArray());
+                          physicsBody.setAngularVelocity(controllerAngularVelocity.toArray());
+
+                          /* physicsBody.constraints.forEach(constraint => {
                             physics.remove(constraint);
                             // constraint.destroy(); // XXX implement this
                           });
-                          physicsBody.constraints = [];
+                          physicsBody.constraints = []; */
                           physicsBody.activate();
 
                           weaponMeshes[mode] = null;
@@ -150,7 +155,7 @@ class Weapons {
                 }
               };
               window.addEventListener('keydown', keydown);
-              /* const hmdUpdate = update => {
+              const hmdUpdate = update => {
                 ['left', 'right'].forEach(_syncWeaponSide);
               };
               const controllerUpdate = update => {
@@ -158,7 +163,7 @@ class Weapons {
                 _syncWeaponSide(side);
               };
               player.on('hmdUpdate', hmdUpdate);
-              player.on('controllerUpdate', controllerUpdate); */
+              player.on('controllerUpdate', controllerUpdate);
 
               const weaponMeshes = {
                 left: null,
@@ -185,7 +190,7 @@ class Weapons {
                 newWeaponMesh.physicsBody.sync();
                 physics.add(newWeaponMesh.physicsBody);
 
-                const sqrt = Math.sqrt(Math.pow(0.1, 2) + Math.pow(0.1, 2));
+                /* const sqrt = Math.sqrt(Math.pow(0.1, 2) + Math.pow(0.1, 2));
                 const constraints = [
                   new physics.Constraint({
                     bodyA: controller.physicsBody,
@@ -193,52 +198,34 @@ class Weapons {
                     pivotA: [0, 0, -0.1],
                     pivotB: [0, 0, -0.1],
                   }),
-                  new physics.Constraint({
-                    bodyA: controller.physicsBody,
-                    bodyB: newWeaponMesh.physicsBody,
-                    pivotA: [sqrt, 0, sqrt],
-                    pivotB: [sqrt, 0, sqrt],
-                  }),
-                  new physics.Constraint({
-                    bodyA: controller.physicsBody,
-                    bodyB: newWeaponMesh.physicsBody,
-                    pivotA: [-sqrt, 0, sqrt],
-                    pivotB: [-sqrt, 0, sqrt],
-                  }),
-                  /* new physics.Constraint({
-                    bodyA: controller.physicsBody,
-                    bodyB: newWeaponMesh.physicsBody,
-                    pivotA: [0, 0.1, 0],
-                    pivotB: [0, 0.1, 0],
-                  }), */
                 ];
                 constraints.forEach(constraint => {
                   physics.add(constraint);
                 });
-                newWeaponMesh.physicsBody.constraints = constraints;
+                newWeaponMesh.physicsBody.constraints = constraints; */
 
                 weaponMeshes[side] = newWeaponMesh;
               };
               const _hasWeapon = side => Boolean(weaponMeshes[side]);
-              /* const _syncWeaponSide = side => {
+              const _syncWeaponSide = side => {
                 const weaponMesh = weaponMeshes[side];
                 if (weaponMesh) {
                   const controller = controllers[side];
-                  const {mesh: controllerMesh} = controller;
+                  // const {mesh: controllerMesh} = controller;
 
-                  const controllerPosition = new THREE.Vector3();
+                  /* const controllerPosition = new THREE.Vector3();
                   const controllerRotation = new THREE.Quaternion();
                   const controllerScale = new THREE.Vector3();
                   controllerMesh.updateMatrixWorld();
-                  controllerMesh.matrixWorld.decompose(controllerPosition, controllerRotation, controllerScale);
+                  controllerMesh.matrixWorld.decompose(controllerPosition, controllerRotation, controllerScale); */
 
-                  weaponMesh.position.copy(controllerPosition);
-                  weaponMesh.quaternion.copy(controllerRotation);
+                  weaponMesh.position.copy(controller.mesh.position);
+                  weaponMesh.quaternion.copy(controller.mesh.quaternion);
 
                   const {physicsBody} = weaponMesh;
                   physicsBody.sync();
                 }
-              }; */
+              };
               const _makeWeaponMesh = weaponType => {
                 switch (weaponType) {
                   case 'hud': return _makeHudMesh();
@@ -440,8 +427,10 @@ class Weapons {
                   mass: 1,
                 });
                 // physicsBody.deactivate();
-                // physicsBody.setLinearFactor([0, 0, 0]);
-                // physicsBody.setAngularFactor([0, 0, 0]);
+                physicsBody.setLinearVelocity([0, 0, 0]);
+                physicsBody.setAngularVelocity([0, 0, 0]);
+                physicsBody.setLinearFactor([0, 0, 0]);
+                physicsBody.setAngularFactor([0, 0, 0]);
                 physicsBody.setObject(result);
                 // physics.add(physicsBody);
                 result.physicsBody = physicsBody;
@@ -508,8 +497,10 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  // physicsBody.setLinearFactor([0, 0, 0]);
-                  // physicsBody.setAngularFactor([0, 0, 0]);
+                  physicsBody.setLinearVelocity([0, 0, 0]);
+                  physicsBody.setAngularVelocity([0, 0, 0]);
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
@@ -615,8 +606,10 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  // physicsBody.setLinearFactor([0, 0, 0]);
-                  // physicsBody.setAngularFactor([0, 0, 0]);
+                  physicsBody.setLinearVelocity([0, 0, 0]);
+                  physicsBody.setAngularVelocity([0, 0, 0]);
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
@@ -690,8 +683,10 @@ class Weapons {
                   mass: 1,
                 });
                 // physicsBody.deactivate();
-                // physicsBody.setLinearFactor([0, 0, 0]);
-                // physicsBody.setAngularFactor([0, 0, 0]);
+                physicsBody.setLinearVelocity([0, 0, 0]);
+                physicsBody.setAngularVelocity([0, 0, 0]);
+                physicsBody.setLinearFactor([0, 0, 0]);
+                physicsBody.setAngularFactor([0, 0, 0]);
                 physicsBody.setObject(mesh);
                 // physics.add(physicsBody);
                 mesh.physicsBody = physicsBody;
@@ -748,8 +743,10 @@ class Weapons {
                     mass: 1,
                   });
                   // physicsBody.deactivate();
-                  // physicsBody.setLinearFactor([0, 0, 0]);
-                  // physicsBody.setAngularFactor([0, 0, 0]);
+                  physicsBody.setLinearVelocity([0, 0, 0]);
+                  physicsBody.setAngularVelocity([0, 0, 0]);
+                  physicsBody.setLinearFactor([0, 0, 0]);
+                  physicsBody.setAngularFactor([0, 0, 0]);
                   physicsBody.setObject(mesh);
                   // physics.add(physicsBody);
                   mesh.physicsBody = physicsBody;
@@ -796,8 +793,8 @@ class Weapons {
 
               this._cleanup = () => {
                 window.removeEventListener('keydown', keydown);
-                /* player.removeEventListener('hmdUpdate', hmdUpdate);
-                player.removeEventListener('controllerUpdate', controllerUpdate); */
+                player.removeEventListener('hmdUpdate', hmdUpdate);
+                player.removeEventListener('controllerUpdate', controllerUpdate);
               };
 
               return {

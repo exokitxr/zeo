@@ -111,9 +111,23 @@ class SinglePlayer {
               const firstStatus = this.getFirstStatus();
               const lastStatus = this.getLastStatus();
 
-              return new THREE.Euler().setFromQuaternion(lastStatus.status.controllers[side].rotation, camera.rotation.order).toVector3().clone()
-                .sub(new THREE.Euler().setFromQuaternion(firstStatus.status.controllers[side].rotation, camera.rotation.order).toVector3())
-                .divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
+              const diff = lastStatus.status.controllers[side].rotation.clone()
+                .multiply(firstStatus.status.controllers[side].rotation.clone().inverse());
+              const axisAngle = (() => {
+                const x = diff.x / Math.sqrt(1 - (diff.w * diff.w));
+                const y = diff.y / Math.sqrt(1 - (diff.w * diff.w));
+                const z = diff.y / Math.sqrt(1 - (diff.w * diff.w));
+                const angle = 2 * Math.acos(diff.w);
+
+                return {
+                  axis: new THREE.Vector3(x, y, z),
+                  angle: angle,
+                };
+              })();
+              const angularDiff = axisAngle.axis.clone().multiplyScalar(axisAngle.angle);
+              const angularVelocity = angularDiff.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
+
+              return angularVelocity;
             } else {
               return new THREE.Vector3(0, 0, 0);
             }
@@ -135,8 +149,8 @@ class SinglePlayer {
 
             if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
               const controller = controllers[side];
-              const {physicsBody} = controller;
-              physicsBody.sync();
+              /* const {physicsBody} = controller; // XXX
+              physicsBody.sync(); */
 
               this.emit('controllerUpdate', {
                 side,
@@ -188,10 +202,12 @@ class SinglePlayer {
               ],
               mass: 1,
             });
+            /* physicsBody.setLinearVelocity([0, 0, 0]);
+            physicsBody.setAngularVelocity([0, 0, 0]);
             physicsBody.setLinearFactor([0, 0, 0]);
             physicsBody.setAngularFactor([0, 0, 0]);
             physicsBody.setObject(mesh);
-            physics.add(physicsBody);
+            physics.add(physicsBody); */
             this.physicsBody = physicsBody;
 
             const positionOffset = new THREE.Vector3();
