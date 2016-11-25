@@ -12,11 +12,13 @@ class Zeo {
     };
 
     return archae.requestEngines([
+      '/core/engines/webvr',
       '/core/engines/three',
       '/core/engines/somnifer',
       '/core/engines/antikyth',
       '/core/engines/heartlink',
     ]).then(([
+      webvr,
       three,
       somnifer,
       antikyth,

@@ -1,0 +1,9 @@
+{
+  "name": "webvr",
+  "version": "0.0.1",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "webvr-polyfill": "^0.9.23"
+  }
+}
