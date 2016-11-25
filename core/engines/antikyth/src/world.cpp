@@ -91,7 +91,7 @@ NAN_METHOD(mox::physics::World::addConstraint)
       Nan::ObjectWrap::Unwrap<mox::physics::Constraint>(info[0]->ToObject());
 
     btTypedConstraintPtr btTypedConstraint = constraint->getConstraint();
-    self->m_discreteDynamicsWorld->addConstraint(btTypedConstraint.get());
+    self->m_discreteDynamicsWorld->addConstraint(btTypedConstraint.get(), true); // disableCollisionsBetweenLinkedBodies=true
   }
 }
 
