@@ -1,9 +1,9 @@
-
 #include "helper.h"
 #include "pointers.h"
 #include "btBulletDynamicsCommon.h"
 #include "world.h"
 #include "rigidbody.h"
+#include "constraint.h"
 
 Nan::Persistent<v8::Function> mox::physics::World::constructor;
 
@@ -78,6 +78,34 @@ NAN_METHOD(mox::physics::World::removeRigidBody)
 
     btRigidBodyPtr btRigidBody = rigidBody->getRigidBody();
     self->m_discreteDynamicsWorld->removeRigidBody(btRigidBody.get());
+  }
+}
+
+NAN_METHOD(mox::physics::World::addConstraint)
+{
+  CHECK_NUM_ARGUMENTS(info, 1);
+  GET_SELF(mox::physics::World, self);
+
+  if (!info[0]->IsUndefined()) {
+    mox::physics::Constraint *constraint =
+      Nan::ObjectWrap::Unwrap<mox::physics::Constraint>(info[0]->ToObject());
+
+    btTypedConstraintPtr btTypedConstraint = constraint->getConstraint();
+    self->m_discreteDynamicsWorld->addConstraint(btTypedConstraint.get());
+  }
+}
+
+NAN_METHOD(mox::physics::World::removeConstraint)
+{
+  CHECK_NUM_ARGUMENTS(info, 1);
+  GET_SELF(mox::physics::World, self);
+
+  if (!info[0]->IsUndefined()) {
+    mox::physics::Constraint *constraint =
+      Nan::ObjectWrap::Unwrap<mox::physics::Constraint>(info[0]->ToObject());
+
+    btTypedConstraintPtr btTypedConstraint = constraint->getConstraint();
+    self->m_discreteDynamicsWorld->removeConstraint(btTypedConstraint.get());
   }
 }
 

@@ -24,6 +24,8 @@ namespace mox {
 
       static NAN_METHOD(addRigidBody);
       static NAN_METHOD(removeRigidBody);
+      static NAN_METHOD(addConstraint);
+      static NAN_METHOD(removeConstraint);
       static NAN_METHOD(stepSimulation);
       static NAN_METHOD(analyse);
       

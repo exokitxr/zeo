@@ -38,5 +38,8 @@ namespace mox {
 
     typedef std::shared_ptr<btRigidBody>
       btRigidBodyPtr;
+
+    typedef std::shared_ptr<btTypedConstraint>
+      btTypedConstraintPtr;
   }
 }
