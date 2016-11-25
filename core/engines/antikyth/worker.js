@@ -98,6 +98,31 @@ const _removeBody = ({bodyId}) => {
   worldBodyIds.splice(worldBodyIds.indexOf(bodyId), 1);
   bodyWorldIndex.delete(bodyId);
 };
+const _addConstraint = ({worldId, body: constraintSpec}) => {
+  const constraint = _makeConstraint(constraintSpec);
+  const {id: constraintId} = constraintSpec;
+  bodies.set(constraintId, v);
+
+  const world = worlds.get(worldId);
+  world.addConstraint(constraint);
+
+  const worldBodyIds = worldBodyIndex.get(worldId);
+  worldBodyIds.push(constraintId);
+
+  bodyWorldIndex.set(constraintId, worldId);
+};
+const _removeConstraint = ({constraintId}) => {
+  const constraint = bodies.get(constraintId);
+
+  const worldId = bodyWorldIndex.get(constraintId);
+  const world = worlds.get(worldId);
+  world.removeConstraint(constraint);
+
+  bodies.delete(constraintId);
+  const worldBodyIds = worldBodyIndex.get(worldId);
+  worldBodyIds.splice(worldBodyIds.indexOf(constraintId), 1);
+  bodyWorldIndex.delete(constraintId);
+};
 const _setPosition = ({bodyId, position}) => {
   const body = bodies.get(bodyId);
 
@@ -294,6 +319,13 @@ const _makeBody = bodySpec => {
       return null;
   }
 };
+const _makeConstraint = constraintSpec => {
+  const {bodyAId, bodyBId, pivotA, pivotB} = bodySpec;
+  const bodyA = bodies.get(bodyAId);
+  const bodyB = bodies.get(bodyBId);
+
+  return physics.Constraint.make(bodyA, bodyB, pivotA, pivotB);
+};
 
 process.on('message', m => {
   const {type} = m;
@@ -326,6 +358,16 @@ process.on('message', m => {
     case 'removeBody': {
       const {args: {bodyId}} = m;
       _removeBody({bodyId});
+      break;
+    }
+    case 'addConstraint': {
+      const {args: {worldId, constraint}} = m;
+      _addConstraint({worldId, constraint});
+      break;
+    }
+    case 'removeConstraint': {
+      const {args: {constraintId}} = m;
+      _removeConstraint({constraintId});
       break;
     }
     case 'setPosition': {
