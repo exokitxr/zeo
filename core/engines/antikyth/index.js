@@ -192,6 +192,7 @@ class Antikyth extends EventEmitter {
     this.send('addConstraint', {
       worldId: world.id,
       constraint: {
+        id: constraint.id,
         bodyAId: constraint.bodyA.id,
         bodyBId: constraint.bodyB.id,
         pivotA: constraint.pivotA,
@@ -319,7 +320,7 @@ class World extends EventEmitter {
       });
     }
 
-    body.setParent(null);
+    object.setParent(null);
   }
 
   setBodyPosition(body, x, y, z) {

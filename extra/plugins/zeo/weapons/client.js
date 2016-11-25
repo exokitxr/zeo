@@ -90,35 +90,35 @@ class Weapons {
                   switch (e.keyCode) {
                     case 49: { // 1
                       const mode = singleplayer.getMode();
-                      if (mode !== 'move') {
+                      if (mode !== 'move' && !_hasWeapon(mode)) {
                         _setWeapon(mode, 'hud');
                       }
                       break;
                     }
                     case 50: { // 2
                       const mode = singleplayer.getMode();
-                      if (mode !== 'move') {
+                      if (mode !== 'move' && !_hasWeapon(mode)) {
                         _setWeapon(mode, 'sword');
                       }
                       break;
                     }
                     case 51: { // 3
                       const mode = singleplayer.getMode();
-                      if (mode !== 'move') {
+                      if (mode !== 'move' && !_hasWeapon(mode)) {
                         _setWeapon(mode, 'gun');
                       }
                       break;
                     }
                     case 52: { // 4
                       const mode = singleplayer.getMode();
-                      if (mode !== 'move') {
+                      if (mode !== 'move' && !_hasWeapon(mode)) {
                         _setWeapon(mode, 'clip');
                       }
                       break;
                     }
                     case 53: { // 5
                       const mode = singleplayer.getMode();
-                      if (mode !== 'move') {
+                      if (mode !== 'move' && !_hasWeapon(mode)) {
                         _setWeapon(mode, 'grenade');
                       }
                       break;
@@ -131,15 +131,14 @@ class Weapons {
 
                         if (weaponMesh) {
                           const {physicsBody} = weaponMesh;
-                          const controllerLinearVelocity = player.getControllerLinearVelocity(side);
-                          const controllerAngularVelocity = player.getControllerAngularVelocity(side);
+                          // const controllerLinearVelocity = player.getControllerLinearVelocity(side); // XXX delete these
+                          // const controllerAngularVelocity = player.getControllerAngularVelocity(side);
 
-console.log('release velocity', controllerLinearVelocity.toArray(), controllerAngularVelocity.toArray()); // XXX
-
-                          // physicsBody.setLinearFactor([1, 1, 1]);
-                          // physicsBody.setAngularFactor([1, 1, 1]);
-                          physicsBody.setLinearVelocity(controllerLinearVelocity.toArray());
-                          physicsBody.setAngularVelocity(controllerAngularVelocity.toArray());
+                          physicsBody.constraints.forEach(constraint => {
+                            physics.remove(constraint);
+                            // constraint.destroy(); // XXX implement this
+                          });
+                          physicsBody.constraints = [];
                           physicsBody.activate();
 
                           weaponMeshes[mode] = null;
@@ -181,6 +180,8 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
 
                 newWeaponMesh.position.copy(controller.mesh.position);
                 newWeaponMesh.quaternion.copy(controller.mesh.quaternion);
+                // newWeaponMesh.physicsBody.setLinearVelocity([0, 0, 0]);
+                // newWeaponMesh.physicsBody.setAngularVelocity([0, 0, 0]);
                 newWeaponMesh.physicsBody.sync();
                 physics.add(newWeaponMesh.physicsBody);
 
@@ -189,25 +190,36 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                   new physics.Constraint({
                     bodyA: controller.physicsBody,
                     bodyB: newWeaponMesh.physicsBody,
-                    position: [0, 0, -0.1],
-                  }),
-                  /* new physics.Constraint({
-                    bodyA: controller.physicsBody,
-                    bodyB: newWeaponMesh.physicsBody,
-                    position: [-sqrt, 0, sqrt],
+                    pivotA: [0, 0, -0.1],
+                    pivotB: [0, 0, -0.1],
                   }),
                   new physics.Constraint({
                     bodyA: controller.physicsBody,
                     bodyB: newWeaponMesh.physicsBody,
-                    position: [sqrt, 0, sqrt],
+                    pivotA: [sqrt, 0, sqrt],
+                    pivotB: [sqrt, 0, sqrt],
+                  }),
+                  new physics.Constraint({
+                    bodyA: controller.physicsBody,
+                    bodyB: newWeaponMesh.physicsBody,
+                    pivotA: [-sqrt, 0, sqrt],
+                    pivotB: [-sqrt, 0, sqrt],
+                  }),
+                  /* new physics.Constraint({
+                    bodyA: controller.physicsBody,
+                    bodyB: newWeaponMesh.physicsBody,
+                    pivotA: [0, 0.1, 0],
+                    pivotB: [0, 0.1, 0],
                   }), */
                 ];
                 constraints.forEach(constraint => {
                   physics.add(constraint);
                 });
+                newWeaponMesh.physicsBody.constraints = constraints;
 
                 weaponMeshes[side] = newWeaponMesh;
               };
+              const _hasWeapon = side => Boolean(weaponMeshes[side]);
               /* const _syncWeaponSide = side => {
                 const weaponMesh = weaponMeshes[side];
                 if (weaponMesh) {

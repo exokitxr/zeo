@@ -411,8 +411,8 @@ class AnyikythClient {
 
             this.setPosition(object.position.toArray());
             this.setRotation(object.quaternion.toArray());
-            this.setLinearVelocity([0, 0, 0]);
-            this.setAngularVelocity([0, 0, 0]);
+            // this.setLinearVelocity([0, 0, 0]);
+            // this.setAngularVelocity([0, 0, 0]);
             this.activate();
           }
         }

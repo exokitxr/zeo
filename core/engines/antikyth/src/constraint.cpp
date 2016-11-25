@@ -1,6 +1,5 @@
 #include "helper.h"
 #include "btBulletDynamicsCommon.h"
-// #include "../bullet3/src/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "pointers.h"
 #include "rigidbody.h"
 #include "constraint.h"
@@ -42,6 +41,7 @@ NAN_METHOD(mox::physics::Constraint::make)
 {
   CHECK_NUM_ARGUMENTS(info, 4);
 
+  // args
   v8::Local<v8::Object> bodyA = Nan::To<v8::Object>(info[0]).ToLocalChecked();
   v8::Local<v8::Object> bodyB = Nan::To<v8::Object>(info[1]).ToLocalChecked();
   v8::Local<v8::Object> pivotA = Nan::To<v8::Object>(info[2]).ToLocalChecked();
@@ -50,13 +50,7 @@ NAN_METHOD(mox::physics::Constraint::make)
   RigidBody *bodyAInstance = ObjectWrap::Unwrap<RigidBody>(bodyA);
   RigidBody *bodyBInstance = ObjectWrap::Unwrap<RigidBody>(bodyB);
 
-  double pax = Nan::To<double>(Nan::Get(pivotA, 0).ToLocalChecked()).FromJust();
-  double pay = Nan::To<double>(Nan::Get(pivotA, 1).ToLocalChecked()).FromJust();
-  double paz = Nan::To<double>(Nan::Get(pivotA, 2).ToLocalChecked()).FromJust();
-  double pbx = Nan::To<double>(Nan::Get(pivotB, 0).ToLocalChecked()).FromJust();
-  double pby = Nan::To<double>(Nan::Get(pivotB, 1).ToLocalChecked()).FromJust();
-  double pbz = Nan::To<double>(Nan::Get(pivotB, 2).ToLocalChecked()).FromJust();
-
+  // meta
   v8::Local<v8::Object> instance = NewInstance();
   Constraint *nativeInstance = ObjectWrap::Unwrap<Constraint>(instance);
 
@@ -64,12 +58,29 @@ NAN_METHOD(mox::physics::Constraint::make)
 
   instance->Set(keyObjectType, Nan::New(OBJECT_TYPE));
 
-  nativeInstance->m_constraint = std::make_shared<btPoint2PointConstraint>(
+  // constraint
+  // btTransform xformA;
+  double pax = Nan::To<double>(Nan::Get(pivotA, 0).ToLocalChecked()).FromJust();
+  double pay = Nan::To<double>(Nan::Get(pivotA, 1).ToLocalChecked()).FromJust();
+  double paz = Nan::To<double>(Nan::Get(pivotA, 2).ToLocalChecked()).FromJust();
+  // xformA.setOrigin(btVector3(pax, pay, paz));
+
+  // btTransform xformB;
+  double pbx = Nan::To<double>(Nan::Get(pivotB, 0).ToLocalChecked()).FromJust();
+  double pby = Nan::To<double>(Nan::Get(pivotB, 1).ToLocalChecked()).FromJust();
+  double pbz = Nan::To<double>(Nan::Get(pivotB, 2).ToLocalChecked()).FromJust();
+  // xformB.setOrigin(btVector3(pbx, pby, pbz));
+
+  std::shared_ptr<btPoint2PointConstraint> btConstraint = std::make_shared<btPoint2PointConstraint>(
     *(bodyAInstance->getRigidBody()),
     *(bodyBInstance->getRigidBody()),
     btVector3(pax, pay, paz),
     btVector3(pbx, pby, pbz)
   );
+  // btConstraint->m_setting.m_tau = 0.01;
+  // btConstraint->m_setting.m_damping = 2;
+  // btConstraint->m_setting.m_impulseClamp = 0.1;
+  nativeInstance->m_constraint = btConstraint;
 
   info.GetReturnValue().Set(instance);
 }
