@@ -140,6 +140,12 @@ class Weapons {
                           physicsBody.setAngularVelocity(controllerAngularVelocity.toArray());
                           physicsBody.activate();
 
+                          setTimeout(() => { // delay to prevent immediate collision
+                            controllers.forEach(controller => {
+                              physicsBody.setIgnoreCollisionCheck(controller.physicsBody, false);
+                            });
+                          }, 500);
+
                           weaponMeshes[mode] = null;
                         }
                       }
