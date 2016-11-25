@@ -151,7 +151,7 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                 }
               };
               window.addEventListener('keydown', keydown);
-              const hmdUpdate = update => {
+              /* const hmdUpdate = update => {
                 ['left', 'right'].forEach(_syncWeaponSide);
               };
               const controllerUpdate = update => {
@@ -159,7 +159,7 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                 _syncWeaponSide(side);
               };
               player.on('hmdUpdate', hmdUpdate);
-              player.on('controllerUpdate', controllerUpdate);
+              player.on('controllerUpdate', controllerUpdate); */
 
               const weaponMeshes = {
                 left: null,
@@ -184,7 +184,7 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
 
                 weaponMeshes[side] = newWeaponMesh;
               };
-              const _syncWeaponSide = side => {
+              /* const _syncWeaponSide = side => {
                 const weaponMesh = weaponMeshes[side];
                 if (weaponMesh) {
                   const controller = controllers[side];
@@ -202,7 +202,7 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
                   const {physicsBody} = weaponMesh;
                   physicsBody.sync();
                 }
-              };
+              }; */
               const _makeWeaponMesh = weaponType => {
                 switch (weaponType) {
                   case 'hud': return _makeHudMesh();
@@ -760,8 +760,8 @@ console.log('release velocity', controllerLinearVelocity.toArray(), controllerAn
 
               this._cleanup = () => {
                 window.removeEventListener('keydown', keydown);
-                player.removeEventListener('hmdUpdate', hmdUpdate);
-                player.removeEventListener('controllerUpdate', controllerUpdate);
+                /* player.removeEventListener('hmdUpdate', hmdUpdate);
+                player.removeEventListener('controllerUpdate', controllerUpdate); */
               };
 
               return {

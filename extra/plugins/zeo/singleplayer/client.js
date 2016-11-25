@@ -24,6 +24,8 @@ class SinglePlayer {
         zeo,
       ]) => {
         const {THREE, scene, camera, renderer} = zeo;
+        const world = zeo.getCurrentWorld();
+        const {physics} = world;
 
         class Player extends EventEmitter {
           constructor() {
@@ -120,7 +122,7 @@ class SinglePlayer {
           updateHmd({position, rotation}) {
             const lastStatus = player.getLastStatus();
 
-            if (!position.equals(lastStatus.hmd.position) || !rotation.equals(lastStatus.hmd.rotation)) {
+            if (!position.equals(lastStatus.status.hmd.position) || !rotation.equals(lastStatus.status.hmd.rotation)) {
               this.emit('hmdUpdate', {
                 position,
                 rotation,
@@ -131,7 +133,11 @@ class SinglePlayer {
           updateController({side, position, rotation}) {
             const lastStatus = this.getLastStatus();
 
-            if (!position.equals(lastStatus.controllers[side].position) || !rotation.equals(lastStatus.controllers[side].rotation)) {
+            if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
+              const controller = controllers[side];
+              const {physicsBody} = controller;
+              physicsBody.sync();
+
               this.emit('controllerUpdate', {
                 side,
                 position,
@@ -169,7 +175,24 @@ class SinglePlayer {
 
               return result;
             })();
+            scene.add(mesh);
             this.mesh = mesh;
+
+            const physicsBody = new physics.Compound({
+              children: [
+                {
+                  type: 'box',
+                  dimensions: [0.115, 0.075, 0.215],
+                  position: [0, -(0.075 / 2), (0.215 / 2) - 0.045],
+                },
+              ],
+              mass: 1,
+            });
+            physicsBody.setLinearFactor([0, 0, 0]);
+            physicsBody.setAngularFactor([0, 0, 0]);
+            physicsBody.setObject(mesh);
+            physics.add(physicsBody);
+            this.physicsBody = physicsBody;
 
             const positionOffset = new THREE.Vector3();
             this.positionOffset = positionOffset;
@@ -246,6 +269,12 @@ class SinglePlayer {
             rotationOffset.y = Math.max(Math.min(rotationOffset.y + (x * moveFactor), Math.PI / 2), -Math.PI / 2);
             rotationOffset.x = Math.max(Math.min(rotationOffset.x + (y * moveFactor), Math.PI / 2), -Math.PI / 2);
           }
+
+          destroy() {
+            const {mesh, physicsBody} = this;
+            scene.remove(mesh);
+            physics.remove(physicsBody);
+          }
         }
 
         const player = new Player();
@@ -259,11 +288,6 @@ class SinglePlayer {
           result.right = result[1];
           return result;
         })();
-        for (let i = 0; i < controllers.length; i++) {
-          const controller = controllers[i];
-          const {mesh} = controller;
-          scene.add(mesh);
-        }
 
         const keys = {
           up: false,
@@ -444,8 +468,7 @@ class SinglePlayer {
         this._cleanup = () => {
           for (let i = 0; i < controllers.length; i++) {
             const controller = controllers[i];
-            const {mesh} = controller;
-            scene.remove(mesh);
+            controller.destroy();
           }
 
           renderer.domElement.removeEventListener('click', click);
