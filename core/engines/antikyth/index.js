@@ -752,15 +752,16 @@ class Compound extends Body {
 Antikyth.Compound = Compound;
 
 class Constraint {
-  constructor(bodyA, bodyB, pivotA = [0, 0, 0], pivotB = [0, 0, 0]) {
+  constructor(opts) {
+    this.id = idUtils.makeId();
+    this.parent = null;
+    this.queue = [];
+
+    const {bodyA, bodyB, pivotA = [0, 0, 0], pivotB = [0, 0, 0]} = opts;
     this.bodyA = bodyA;
     this.bodyB = bodyB;
     this.pivotA = pivotA;
     this.pivotB = pivotB;
-
-    this.id = idUtils.makeId();
-    this.parent = null;
-    this.queue = [];
   }
 
   setParent(parent) {

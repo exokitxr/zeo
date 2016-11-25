@@ -506,6 +506,16 @@ class AnyikythClient {
           }
         }
 
+        class Constraint extends Entity {
+          constructor(type, opts = {}) {
+            super(opts.id);
+
+            const {id} = this;
+
+            _request('create', [type, id, _except(opts, ['id'])], _warnError);
+          }
+        }
+
         const engine = new Engine({
           id: null,
         });
@@ -591,6 +601,7 @@ class AnyikythClient {
           world.ConvexHull = ConvexHull;
           world.TriangleMesh = TriangleMesh;
           world.Compound = Compound;
+          world.Constraint = Constraint;
           world.makeBody = _makeBody;
           world.makeConvexHullBody = _makeConvexHullBody;
           world.makeTriangleMeshBody = _makeTriangleMeshBody;
