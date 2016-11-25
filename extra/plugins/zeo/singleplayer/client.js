@@ -66,9 +66,12 @@ class SinglePlayer {
             };
           }
 
+          getFirstStatus() {
+            return this.prevStatuses[0];
+          }
+
           getLastStatus() {
-            const {prevStatuses} = this;
-            return prevStatuses[prevStatuses.length - 1];
+            return this.prevStatuses[this.prevStatuses.length - 1];
           }
 
           snapshotStatus() {
@@ -88,8 +91,8 @@ class SinglePlayer {
             const {prevStatuses} = this;
 
             if (prevStatuses.length > 1) {
-              const firstStatus = prevStatuses[0];
-              const lastStatus = prevStatuses[prevStatuses.length - 1];
+              const firstStatus = this.getFirstStatus();
+              const lastStatus = this.getLastStatus();
 
               return lastStatus.status.controllers[side].position.clone()
                 .sub(firstStatus.status.controllers[side].position)
@@ -103,8 +106,8 @@ class SinglePlayer {
             const {prevStatuses} = this;
 
             if (prevStatuses.length > 1) {
-              const firstStatus = prevStatuses[0];
-              const lastStatus = prevStatuses[prevStatuses.length - 1];
+              const firstStatus = this.getFirstStatus();
+              const lastStatus = this.getLastStatus();
 
               return new THREE.Euler().setFromQuaternion(lastStatus.status.controllers[side].rotation, camera.rotation.order).toVector3().clone()
                 .sub(new THREE.Euler().setFromQuaternion(firstStatus.status.controllers[side].rotation, camera.rotation.order).toVector3())
@@ -126,6 +129,8 @@ class SinglePlayer {
           }
 
           updateController({side, position, rotation}) {
+            const lastStatus = this.getLastStatus();
+
             if (!position.equals(lastStatus.controllers[side].position) || !rotation.equals(lastStatus.controllers[side].rotation)) {
               this.emit('controllerUpdate', {
                 side,
