@@ -639,7 +639,7 @@ class AnyikythClient {
         let queue = [];
         const _ensureConnection = () => {
           if (!connection) {
-            connection = new WebSocket('ws://' + location.host + '/archae/antikythWs');
+            connection = new WebSocket('wss://' + location.host + '/archae/antikythWs');
             connection.onopen = () => {
               if (queue.length > 0) {
                 for (let i = 0; i < queue.length; i++) {

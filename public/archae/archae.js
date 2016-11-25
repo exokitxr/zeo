@@ -373,7 +373,7 @@ class ArchaeClient {
 
   connect() {
     const connection = (() => {
-      const result = new WebSocket('ws://' + location.host + '/archae/ws');
+      const result = new WebSocket('wss://' + location.host + '/archae/ws');
       result.onopen = () => {
         console.log('on open');
 

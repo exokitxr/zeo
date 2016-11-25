@@ -5,7 +5,7 @@ class Heartlink {
   mount() {
     const playerStatuses = new Map();
 
-    const connection = new WebSocket('ws://' + location.host + '/archae/heartlink');
+    const connection = new WebSocket('wss://' + location.host + '/archae/heartlink');
     let queue = [];
     connection.onopen = () => {
       if (queue.length > 0) {

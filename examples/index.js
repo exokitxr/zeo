@@ -1,16 +1,12 @@
 const http = require('http');
 
 const express = require('express');
-
 const archae = require('..');
-
-const server = http.createServer();
 
 const app = express();
 app.use('/', express.static(__dirname));
 
 const a = archae({
-  server,
   app,
 });
 

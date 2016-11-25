@@ -2,18 +2,26 @@ const path = require('path');
 const fs = require('fs-extra');
 const child_process = require('child_process');
 
+const spdy = require('spdy');
 const express = require('express');
 const ws = require('ws');
 const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
+const cryptoutils = require('cryptoutils');
 const MultiMutex = require('multimutex');
+
+const defaultConfig = {
+  hostname: 'zeo.sh',
+  port: 8000,
+  dataDirectory: 'data',
+};
 
 const yarnBin = path.join(__dirname, 'node_modules', 'yarn', 'bin', 'yarn.js');
 const nameSymbol = Symbol();
 
 class ArchaeServer {
   constructor({server, app, wss} = {}) {
-    server = server || http.createServer();
+    server = server || _getServer();
     app = app || express();
     wss = wss || new ws.Server({ server });
 
@@ -863,6 +871,79 @@ const _addModule = (module, type, cb) => {
       cb(err);
     }
   });
+};
+
+const _getServer = () => {
+  const certs = _loadCerts();
+
+  const server = spdy.createServer({
+    cert: certs.cert,
+    key: certs.privateKey,
+  });
+
+  process.nextTick(() => {
+    server.listen(defaultConfig.port);
+  });
+
+  return server;
+};
+
+const _loadCerts = () => {
+  const _getOldCerts = () => {
+    const _getFile = fileName => {
+      try {
+        return fs.readFileSync(path.join(__dirname, defaultConfig.dataDirectory, 'crypto', fileName), 'utf8');
+      } catch(err) {
+        if (err.code !== 'ENOENT') {
+          console.warn(err);
+        }
+        return null;
+      }
+    };
+
+    const publicKey = _getFile('public.pem');
+    const privateKey = _getFile('private.pem');
+    const cert = _getFile('cert.pem');
+    if (publicKey && privateKey && cert) {
+      return {
+        publicKey,
+        privateKey,
+        cert,
+      };
+    } else {
+      return null;
+    }
+  };
+
+  const _getNewCerts = () => {
+    const keys = cryptoutils.generateKeys();
+    const publicKey = keys.publicKey;
+    const privateKey = keys.privateKey;
+    const cert = cryptoutils.generateCert(keys, {
+      commonName: defaultConfig.hostname,
+    });
+
+    const cryptoDirectory = path.join(__dirname, defaultConfig.dataDirectory, 'crypto');
+    const _makeCryptoDirectory = () => {
+      mkdirp.sync(cryptoDirectory);
+    };
+    const _setFile = (fileName, fileData) => {
+      fs.writeFileSync(path.join(cryptoDirectory, fileName), fileData);
+    };
+
+    _makeCryptoDirectory();
+    _setFile('public.pem', publicKey);
+    _setFile('private.pem', privateKey);
+    _setFile('cert.pem', cert);
+
+    return {
+      publicKey,
+      privateKey,
+      cert,
+    };
+  };
+
+  return _getOldCerts() || _getNewCerts();
 };
 
 const _instantiate = (fn, arg) => _isConstructible(fn) ? new fn(arg) : fn(arg);

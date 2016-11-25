@@ -3,7 +3,7 @@ const {EventEmitter} = events;
 
 class Nedb {
   mount() {
-    const connection = new WebSocket('ws://' + location.host + '/archae/nedbWs');
+    const connection = new WebSocket('wss://' + location.host + '/archae/nedbWs');
     connection.onopen = () => {
       if (queue.length > 0) {
         for (let i = 0; i < queue.length; i++) {

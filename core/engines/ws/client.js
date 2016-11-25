@@ -3,7 +3,7 @@ const {EventEmitter} = events;
 
 class Ws {
   mount() {
-    const connection = new WebSocket('ws://' + location.host + '/archae/engineWs');
+    const connection = new WebSocket('wss://' + location.host + '/archae/engineWs');
     connection.onopen = () => {
       if (queue.length > 0) {
         for (let i = 0; i < queue.length; i++) {
