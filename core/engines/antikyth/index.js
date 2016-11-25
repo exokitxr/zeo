@@ -188,6 +188,25 @@ class Antikyth extends EventEmitter {
     this.updateListeners.delete(body.id);
   }
 
+  addConstraint(world, constraint) {
+    this.send('addConstraint', {
+      worldId: world.id,
+      constraint: {
+        bodyAId: constraint.bodyA.id,
+        bodyBId: constraint.bodyB.id,
+        pivotA: constraint.pivotA,
+        pivotB: constraint.pivotB,
+      },
+    });
+  }
+
+  removeConstraint(world, constraint) {
+    this.send('removeConstraint', {
+      worldId: world.id,
+      constraintId: constraint.id,
+    });
+  }
+
   setWorldBodyPosition(world, body, x, y, z) {
     this.send('setPosition', {
       bodyId: body.id,
@@ -269,26 +288,34 @@ class World extends EventEmitter {
     this.queue = [];
   }
 
-  add(body) {
+  add(object) {
     if (this.parent) {
-      this.parent.addBody(this, body);
+      if (object instanceof Body) {
+        this.parent.addBody(this, object);
+      } else if (object instanceof Constraint) {
+        this.parent.addConstraint(this, object);
+      }
     } else {
       this.queue.push({
         method: 'add',
-        args: body,
+        args: object,
       });
     }
 
-    body.setParent(this);
+    object.setParent(this);
   }
 
-  remove(body) {
+  remove(object) {
     if (this.parent) {
-      this.parent.removeBody(this, body);
+      if (object instanceof Body) {
+        this.parent.removeBody(this, object);
+      } else if (object instanceof Constraint) {
+        this.parent.removeConstraint(this, object);
+      }
     } else {
       this.queue.push({
         method: 'remove',
-        args: body,
+        args: object,
       });
     }
 
@@ -416,12 +443,20 @@ class World extends EventEmitter {
         switch (method) {
           case 'add': {
             const body = args;
-            this.parent.addBody(this, body);
+            if (object instanceof Body) {
+              this.parent.addBody(this, body);
+            } else if (object instanceof Constraint) {
+              this.parent.addConstraint(this, object);
+            }
             break;
           }
           case 'remove': {
-            const body = args;
-            this.parent.removeBody(this, body);
+            const object = args;
+            if (object instanceof Body) {
+              this.parent.removeBody(this, body);
+            } else if (object instanceof Constraint) {
+              this.parent.removeConstraint(this, object);
+            }
             break;
           }
           case 'setBodyPosition': {
@@ -715,6 +750,38 @@ class Compound extends Body {
   }
 }
 Antikyth.Compound = Compound;
+
+class Constraint {
+  constructor(bodyA, bodyB, pivotA = [0, 0, 0], pivotB = [0, 0, 0]) {
+    this.bodyA = bodyA;
+    this.bodyB = bodyB;
+    this.pivotA = pivotA;
+    this.pivotB = pivotB;
+
+    this.id = idUtils.makeId();
+    this.parent = null;
+    this.queue = [];
+  }
+
+  setParent(parent) {
+    this.parent = parent;
+
+    if (parent && this.queue.length > 0) {
+      for (let i = 0; i < this.queue.length; i++) {
+        const entry = this.queue[i];
+        const {method, args} = entry;
+
+        /* switch (method) { // XXX fill this in as needed
+          case 'add': {
+            break;
+          }
+        } */
+      }
+      this.queue = [];
+    }
+  }
+}
+Antikyth.Constraint = Constraint;
 
 const _isUpdateEqual = (a, b) => {
   const {position: [pax, pay, paz], rotation: [rax, ray, raz, raw]} = a;
