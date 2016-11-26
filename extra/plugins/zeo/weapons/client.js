@@ -728,7 +728,9 @@ class Weapons {
                 };
               })();
 
-              const _update = ({worldTime}) => {
+              const _update = () => {
+                const worldTime = world.getWorldTime();
+
                 const hudWeaponMeshes = [weaponMeshes.left, weaponMeshes.right]
                   .filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
 

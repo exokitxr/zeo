@@ -13,6 +13,7 @@ class Ocean {
       zeo,
     ]) => {
       const {THREE, scene} = zeo;
+      const world = zeo.getCurrentWorld();
 
       const planeMesh = (() => {
         const geometry = new THREE.PlaneBufferGeometry(200, 200, 200 / 2, 200 / 2);
@@ -56,7 +57,9 @@ class Ocean {
         });
       }
 
-      const _update = ({worldTime}) => {
+      const _update = () => {
+        const worldTime = world.getWorldTime();
+
         const positionAttribute = planeMesh.geometry.getAttribute('position');
         const positions = positionAttribute.array;
         const numPositions = positions.length / 3;

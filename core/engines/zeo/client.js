@@ -45,34 +45,79 @@ class Zeo {
                 const player = heartlink.getPlayer(); // XXX make this per-world
 
                 // main render loop
-                const startTime = Date.now()
+                const startTime = Date.now();
+                let worldTime = 0;
                 let animationFrame = null;
-                const _recurse = () => {
-                  animationFrame = requestAnimationFrame(() => {
-                    animationFrame = null;
+                const _tick = () => {
+                  // update state
+                  const now = Date.now();
+                  worldTime = now - startTime;
 
-                    const now = Date.now();
-                    const worldTime = now - startTime;
+                  // update plugins
+                  plugins.forEach(plugin => {
+                    if (typeof plugin.update === 'function') {
+                      plugin.update();
+                    }
+                  });
 
-                    const updateOptions = {
-                      worldTime,
-                    };
-                    plugins.forEach(plugin => {
-                      if (typeof plugin.update === 'function') {
-                        plugin.update(updateOptions);
-                      }
+                  // render
+                  renderer.render(scene, camera);
+                };
+                let cleanups = [];
+                const _cleanup = () => {
+                  for (let i = 0; i < cleanups.length; i++) {
+                    const cleanup = cleanups[i];
+                    cleanup();
+                  }
+
+                  cleanups = [];
+                };
+                const _enterNormal = () => {
+                  const _recurse = () => {
+                    animationFrame = requestAnimationFrame(() => {
+                      animationFrame = null;
+
+                      _tick();
+
+                      _recurse();
                     });
+                  };
+                  _recurse();
 
-                    renderer.render(scene, camera);
-
-                    _recurse();
+                  cleanups.push(() => {
+                    if (animationFrame) {
+                      cancelAnimationFrame(animationFrame);
+                      animationFrame = null;
+                    }
                   });
                 };
-                _recurse();
+                const _enterVr = () => {
+                  const update = () => {
+                    _tick();
+                  };
+                  webvr.on('update', update);
+
+                  cleanups.push(() => {
+                    webvr.removeListener('update', update);
+                  });
+                };
+
+                _enterNormal();
+                webvr.on('open', () => {
+                  _cleanup();
+                  _enterVr();
+                });
+                webvr.on('close', () => {
+                  _cleanup();
+                  _enterNormal();
+                });
 
                 // plugin management
                 const plugins = new Map();
 
+                const _getWorldTime = () => {
+                  return worldTime;
+                };
                 const _requestMod = modSpec => new Promise((accept, reject) => {
                   archae.requestPlugin(modSpec)
                     .then(plugin => {
@@ -95,6 +140,7 @@ class Zeo {
 
                 const world = {
                   name: worldName,
+                  getWorldTime: _getWorldTime,
                   requestMod: _requestMod,
                   requestMods: _requestMods,
                   physics,

@@ -27,6 +27,8 @@ class Skybox {
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
+        const world = zeo.getCurrentWorld();
+
         SkyShader(THREE);
 
         const MAP_SUN_MATERIAL = new THREE.MeshBasicMaterial({
@@ -131,7 +133,9 @@ class Skybox {
         })();
         scene.add(moonSphere);
 
-        const _update = ({worldTime}) => {
+        const _update = () => {
+          let worldTime = world.getWorldTime();
+
           const speed = 1;
           // const speed = 50;
           worldTime += 60000;

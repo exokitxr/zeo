@@ -26,6 +26,7 @@ class Rain {
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
+        const world = zeo.getCurrentWorld();
 
         const geometry = (() => {
           const result = new THREE.BufferGeometry();
@@ -164,7 +165,9 @@ class Rain {
         mesh.frustumCulled = false;
         scene.add(mesh);
 
-        const _update = ({worldTime}) => {
+        const _update = () => {
+          const worldTime = world.getWorldTime();
+
           const frame = Math.floor(worldTime / PARTICLE_FRAME_TIME) % PARTICLE_FRAMES;
           material.uniforms.frame.value = frame;
         };

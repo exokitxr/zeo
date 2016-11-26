@@ -1,5 +1,6 @@
 const THREE = require('three');
 
+const DEFAULT_USER_HEIGHT = 1.6;
 const CAMERA_ROTATION_ORDER = 'YXZ';
 
 class Three {
@@ -9,12 +10,12 @@ class Three {
     const camera = (() => {
       const result = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.001, 100000);
       result.position.x = 0;
-      result.position.y = 1.5;
+      result.position.y = DEFAULT_USER_HEIGHT;
       result.position.z = 0;
       result.rotation.order = CAMERA_ROTATION_ORDER;
       result.up = new THREE.Vector3(0, 1, 0);
 
-      const target = new THREE.Vector3(0, 1.5, -0.1);
+      const target = new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1);
       result.lookAt(target);
       result.target = target;
 
