@@ -242,7 +242,14 @@ class SinglePlayer {
 
         const _getPlayer = () => player;
         const _getControllers = () => controllers;
-        const _getMode = () => mode;
+        const _getMode = () => {
+          const display = webvr.getDisplay();
+          if (display && display.getMode) {
+            return display.getMode();
+          } else {
+            return 'move';
+          }
+        };
         const _update = () => {
           // update camera
           const status = webvr.getStatus();

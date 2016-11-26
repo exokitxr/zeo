@@ -49,6 +49,7 @@ class WebVR {
           constructor() {
             super();
 
+            this.display = null;
             this.isOpen = false;
             this.isOpening = false;
 
@@ -70,13 +71,15 @@ class WebVR {
             };
           }
 
-          open() {
+          open(display) {
+            this.display = display;
             this.isOpen = true;
 
             this.emit('open');
           }
 
           close() {
+            this.display = null;
             this.isOpen = false;
 
             this.emit('close');
@@ -92,6 +95,10 @@ class WebVR {
 
           endOpening() {
             this.isOpening = false;
+          }
+
+          getDisplay() {
+            return this.display;
           }
 
           getStatus() {
@@ -332,6 +339,10 @@ class WebVR {
                   return this.gamepads;
                 }
 
+                getMode() {
+                  return this.mode;
+                }
+
                 updateMatrix() {
                   const {position, rotation, scale, matrix} = this;
 
@@ -363,11 +374,6 @@ class WebVR {
                   const scale = new THREE.Vector3(1, 1, 1);
                   this.scale = scale;
 
-                  this.pose = {
-                    position: position.toArray(),
-                    orientation: rotation.toArray(),
-                  };
-
                   const buttons = (() => {
                     const _makeButton = () => {
                       return {
@@ -398,9 +404,16 @@ class WebVR {
                   rotationOffset.order = camera.rotation.order;
                   this.rotationOffset = rotationOffset;
 
+                  this.pose = {
+                    position: null,
+                    orientation: null,
+                  };
+
+                  this.updateProperties();
+
                   const mousewheel = e => {
                     const {_parent: parent, _index: index} = this;
-                    const {mode} = parent;
+                    const mode = parent.getMode();
 
                     if (parent.isPresenting && ((mode === 'left' && index === 0) || (mode === 'right' && index === 1))) {
                       e.preventDefault();
@@ -596,7 +609,7 @@ class WebVR {
                 };
 
                 const _open = () => {
-                  webvrInstance.open();
+                  webvrInstance.open(display);
 
                   let animationFrame = null;
                   const _recurse = () => {
