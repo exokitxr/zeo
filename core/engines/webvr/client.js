@@ -97,8 +97,6 @@ class WebVR {
                     sittingToStandingTransform: sittingToStandingTransform.toArray(),
                   };
 
-                  // this.updateStageParameters();
-
                   const fullscreenchange = e => {
                     const {isPresenting: wasPresenting} = this;
 
@@ -181,8 +179,6 @@ class WebVR {
                       rotation.x += (-e.movementY * ROTATION_SPEED);
                       rotation.y += (-e.movementX * ROTATION_SPEED);
                       quaternion.setFromEuler(rotation);
-
-                      // this.updateStageParameters();
                     }
                   };
                   const pointerlockchange = e => {
@@ -241,8 +237,6 @@ class WebVR {
                       moveVector.applyQuaternion(rotation);
 
                       position.add(moveVector);
-
-                      // this.updateStageParameters();
                     };
 
                     _updatePosition();
@@ -266,13 +260,6 @@ class WebVR {
                 submitFrame(pose) {
                   // nothing
                 }
-
-                /* updateStageParameters() {
-                  const {position, rotation, scale} = this;
-                  const matrix = new THREE.Matrix4().compose(position, rotation, scale);
-
-                  this.stageParameters.sittingToStandingTransform = matrix.toArray();
-                } */
 
                 destroy() {
                   this._cleanup();
