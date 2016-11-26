@@ -53,6 +53,8 @@ class WebVR {
             this.isOpen = false;
             this.isOpening = false;
 
+            this.stageMatrix = new THREE.Matrix4();
+
             const _makeDefaultHmdStatus = () => {
               return {
                 pose: null,
@@ -74,6 +76,15 @@ class WebVR {
           open(display) {
             this.display = display;
             this.isOpen = true;
+
+            const stageMatrix = (() => {
+              if (display.stageParameters) {
+                return new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform);
+              } else {
+                return new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
+              }
+            })();
+            this.setStageMatrix(stageMatrix);
 
             this.emit('open');
           }
@@ -103,6 +114,14 @@ class WebVR {
 
           getStatus() {
             return this.status;
+          }
+
+          getStageMatrix() {
+            return this.stageMatrix.clone();
+          }
+
+          setStageMatrix(stageMatrix) {
+            this.stageMatrix.copy(stageMatrix);
           }
 
           setStatus(status) {
@@ -504,20 +523,11 @@ class WebVR {
                   source: domElement,
                 }
               ]).then(() => {
-                const _getStandingMatrix = () => {
-                  const result = new THREE.Matrix4();
-                  if (display.stageParameters) {
-                    result.fromArray(display.stageParameters.sittingToStandingTransform);
-                  } else {
-                    result.multiply(new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0));
-                  }
-                  return result;
-                };
-                const _getMatrixFromPose = (pose, standingMatrix) => {
+                const _getMatrixFromPose = (pose, stageMatrix) => {
                   const position = pose.position !== null ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
                   const rotation = pose.orientation !== null ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
                   const scale = new THREE.Vector3(1, 1, 1);
-                  const matrix = standingMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
+                  const matrix = stageMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
                   return matrix;
                 };
                 const _getPropertiesFromMatrix = matrix => {
@@ -532,10 +542,10 @@ class WebVR {
                     scale,
                   };
                 };
-                const _getHmdStatus = ({standingMatrix}) => {
+                const _getHmdStatus = ({stageMatrix}) => {
                   const pose = display.getPose();
 
-                  const matrix = _getMatrixFromPose(pose, standingMatrix);
+                  const matrix = _getMatrixFromPose(pose, stageMatrix);
                   const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
 
                   return {
@@ -546,7 +556,7 @@ class WebVR {
                     scale,
                   };
                 };
-                const _getGamepadsStatus = ({standingMatrix}) => {
+                const _getGamepadsStatus = ({stageMatrix}) => {
                   const gamepads = (() => {
                     if (display instanceof FakeVRDisplay) {
                       return display.getGamepads();
@@ -576,7 +586,7 @@ class WebVR {
                       }
                     };
 
-                    const matrix = _getMatrixFromPose(pose, standingMatrix);
+                    const matrix = _getMatrixFromPose(pose, stageMatrix);
                     const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
                     const buttons = {
                       pad: _getGamepadButtonStatus(padButton),
@@ -616,10 +626,10 @@ class WebVR {
                     animationFrame = _requestAnimationFrame(() => {
                       animationFrame = null;
 
-                      const standingMatrix = _getStandingMatrix();
+                      const stageMatrix = webvrInstance.getStageMatrix();
                       const status = {
-                        hmd: _getHmdStatus({standingMatrix}),
-                        gamepads: _getGamepadsStatus({standingMatrix}),
+                        hmd: _getHmdStatus({stageMatrix}),
+                        gamepads: _getGamepadsStatus({stageMatrix}),
                       };
                       webvrInstance.setStatus(status);
                       webvrInstance.update();

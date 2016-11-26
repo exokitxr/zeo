@@ -235,7 +235,7 @@ class Portal {
             };
           };
 
-          const _moveCamera = () => {
+          const _checkTeleport = () => {
             const currentCameraPosition = camera.position.clone();
             const cameraMoveLine = new THREE.Line3(lastCameraPosition, currentCameraPosition);
 
@@ -321,7 +321,7 @@ class Portal {
             });
           };
 
-          _moveCamera();
+          _checkTeleport();
           _renderPortals();
         };
 
