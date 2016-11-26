@@ -43,12 +43,13 @@ class Portal {
     return Promise.all([
       archae.requestEngines([
         '/core/engines/zeo',
+        '/core/engines/webvr',
       ]),
       archae.requestPlugins([
         '/core/plugins/geometry-utils',
       ]),
     ]).then(([
-      [zeo],
+      [zeo, webvr],
       [geometryUtils]
     ]) => {
       if (live) {
@@ -234,6 +235,16 @@ class Portal {
               rotation,
             };
           };
+          const _getSourcePortalToTargetPortalMatrix = (camera, sourcePortalMesh, targetPortalMesh) => {
+            const {position, rotation} = _getSourcePortalCameraPosition(camera, sourcePortalMesh, targetPortalMesh);
+
+            return new THREE.Matrix4().compose(
+                position,
+                new THREE.Quaternion().setFromEuler(rotation),
+                new THREE.Vector3(1, 1, 1)
+              )
+              .multiply(new THREE.Matrix4().getInverse(camera.matrixWorld));
+          };
 
           const _checkTeleport = () => {
             const currentCameraPosition = camera.position.clone();
@@ -262,10 +273,8 @@ class Portal {
                     const targetPortalMesh = portalMesh;
                     const sourcePortalMesh = a[i === 0 ? 1 : 0];
 
-                    const sourcePortalCameraPosition = _getSourcePortalCameraPosition(camera, sourcePortalMesh, targetPortalMesh);
-
-                    camera.position.copy(sourcePortalCameraPosition.position);
-                    camera.rotation.copy(sourcePortalCameraPosition.rotation);
+                    const matrix = _getSourcePortalToTargetPortalMatrix(camera, sourcePortalMesh, targetPortalMesh);
+                    webvr.setStageMatrix(webvr.getStageMatrix().multiply(matrix));
                   }
                 }
               }
