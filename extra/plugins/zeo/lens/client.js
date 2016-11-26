@@ -126,18 +126,22 @@ class Lens {
             };
 
             const composer = new THREE.EffectComposer(renderer, renderTarget);
-            composer.addPass(new THREE.RenderPass(scene, camera));
+            const renderPass = new THREE.RenderPass(scene, camera);
+            composer.addPass(renderPass);
             const hblur = new THREE.ShaderPass(horizontalBlurShader);
             composer.addPass(hblur);
             composer.addPass(hblur);
             const vblur = new THREE.ShaderPass(verticalBlurShader);
             composer.addPass(vblur);
             const vblurFinal = new THREE.ShaderPass(verticalBlurShader);
-            vblurFinal.renderToScreen = true;
+            // vblurFinal.renderToScreen = true;
 
             composer.addPass(vblurFinal);
 
-            return () => {
+            return (scene, camera) => {
+              renderPass.scene = scene;
+              renderPass.camera = camera;
+
               composer.render();
               renderer.setRenderTarget(null);
             };
@@ -180,7 +184,7 @@ class Lens {
           object.position.z = -0.1;
 
           const renderTarget = _makeRenderTarget(pixelWidth, pixelHeight);
-          object.render = () => {
+          object.render = (scene, camera) => {
             renderer.render(scene, camera, renderTarget);
             renderer.setRenderTarget(null);
           };
@@ -221,7 +225,7 @@ class Lens {
           scene.remove(pixelLensMesh);
         };
 
-        const _update = () => {
+        const _updateEye = eyeCamera => {
           meshes.forEach(mesh => {
             const {planeMesh, lineMesh} = mesh;
 
@@ -230,7 +234,7 @@ class Lens {
           });
 
           meshes.forEach(mesh => {
-            mesh.render();
+            mesh.render(scene, eyeCamera);
           });
 
           meshes.forEach(mesh => {
@@ -242,7 +246,7 @@ class Lens {
         };
 
         return {
-          update: _update,
+          updateEye: _updateEye,
         };
       }
     });

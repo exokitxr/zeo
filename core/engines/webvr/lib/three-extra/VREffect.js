@@ -230,10 +230,14 @@ THREE.VREffect = function ( renderer, onError ) {
 	// render
 
 	var cameraL = new THREE.PerspectiveCamera();
+  cameraL.eye = 'left';
 	cameraL.layers.enable( 1 );
 
 	var cameraR = new THREE.PerspectiveCamera();
+  cameraR.eye = 'right';
 	cameraR.layers.enable( 2 );
+
+  this.onEye = null;
 
 	this.render = function ( scene, camera, renderTarget, forceClear ) {
 
@@ -335,6 +339,9 @@ THREE.VREffect = function ( renderer, onError ) {
 
 			}
 
+      cameraL.rotation.order = camera.rotation.order;
+      this.onEye && this.onEye(cameraL);
+
 			// render left eye
 			if ( renderTarget ) {
 
@@ -348,6 +355,9 @@ THREE.VREffect = function ( renderer, onError ) {
 
 			}
 			renderer.render( scene, cameraL, renderTarget, forceClear );
+
+      cameraR.rotation.order = camera.rotation.order;
+      this.onEye && this.onEye(cameraR);
 
 			// render right eye
 			if ( renderTarget ) {

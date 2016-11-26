@@ -93,6 +93,9 @@ class WebVR {
               navigator.getVRDisplays = getVRDisplays;
 
               effect.setVRDisplay(display);
+              effect.onEye = camera => {
+                this.eye(camera);
+              };
               effect.isPresenting = true;
               effect.autoSubmitFrame = false;
 
@@ -238,6 +241,10 @@ class WebVR {
             this.emit('tick');
           }
 
+          eye(camera) {
+            this.emit('eye', camera);
+          }
+
           startOpening() {
             this.isOpening = true;
           }
@@ -250,9 +257,10 @@ class WebVR {
             const {effect} = this;
 
             if (effect) {
-              effect.render(scene, camera);
+              effect.render(scene, camera); // perform binocular render
             } else {
-              renderer.render(scene, camera);
+              this.eye(camera); // perform monocular eye render
+              renderer.render(scene, camera); // perform final render
             }
           }
 
@@ -723,7 +731,8 @@ class WebVR {
 
                 const _open = () => {
                   webvrInstance.open(display, {
-                    stereoscopic: true,
+                    // stereoscopic: true,
+                    stereoscopic: false,
                   });
 
                   let animationFrame = null;

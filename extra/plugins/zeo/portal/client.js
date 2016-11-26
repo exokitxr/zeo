@@ -224,40 +224,40 @@ class Portal {
 
             let {position: lastCameraPosition} = _decomposeObjectMatrixWorld(camera);
 
-            const _update = () => {
-              const _getSourcePortalCameraPosition = (camera, sourcePortalMesh, targetPortalMesh) => {
-                const {position: cameraPosition, quaternion: cameraQuaternion} = _decomposeObjectMatrixWorld(camera);
+            const _getSourcePortalCameraPosition = (camera, sourcePortalMesh, targetPortalMesh) => {
+              const {position: cameraPosition, quaternion: cameraQuaternion} = _decomposeObjectMatrixWorld(camera);
 
-                const vectorToTarget = targetPortalMesh.position.clone().sub(cameraPosition);
-                const targetRotation = targetPortalMesh.rotation.toVector3();
-                const flippedSourceRotation = (() => {
-                  const result = sourcePortalMesh.rotation.toVector3();
-                  result.y += Math.PI;
-                  result.x *= -1;
-                  return result;
-                })();
-                const rotationDelta = targetRotation.sub(flippedSourceRotation);
-                const rotatedVectorToTarget = vectorToTarget.clone()
-                  .applyEuler(new THREE.Euler(
-                    -rotationDelta.x,
-                    -rotationDelta.y,
-                    -rotationDelta.z,
-                    camera.rotation.order
-                  ));
-                const cameraEuler = new THREE.Euler().setFromQuaternion(cameraQuaternion, camera.rotation.order);
-
-                const position = sourcePortalMesh.position.clone().sub(rotatedVectorToTarget);
-                const rotation = new THREE.Euler(
-                  cameraEuler.x - rotationDelta.x,
-                  cameraEuler.y - rotationDelta.y,
-                  cameraEuler.z - rotationDelta.z,
+              const vectorToTarget = targetPortalMesh.position.clone().sub(cameraPosition);
+              const targetRotation = targetPortalMesh.rotation.toVector3();
+              const flippedSourceRotation = (() => {
+                const result = sourcePortalMesh.rotation.toVector3();
+                result.y += Math.PI;
+                result.x *= -1;
+                return result;
+              })();
+              const rotationDelta = targetRotation.sub(flippedSourceRotation);
+              const rotatedVectorToTarget = vectorToTarget.clone()
+                .applyEuler(new THREE.Euler(
+                  -rotationDelta.x,
+                  -rotationDelta.y,
+                  -rotationDelta.z,
                   camera.rotation.order
-                );
-                return {
-                  position,
-                  rotation,
-                };
+                ));
+              const cameraEuler = new THREE.Euler().setFromQuaternion(cameraQuaternion, camera.rotation.order);
+
+              const position = sourcePortalMesh.position.clone().sub(rotatedVectorToTarget);
+              const rotation = new THREE.Euler(
+                cameraEuler.x - rotationDelta.x,
+                cameraEuler.y - rotationDelta.y,
+                cameraEuler.z - rotationDelta.z,
+                camera.rotation.order
+              );
+              return {
+                position,
+                rotation,
               };
+            };
+            const _update = () => {
               const _getTeleportMatrix = (camera, sourcePortalMesh, targetPortalMesh) => {
                 const {position: destinationPoint, rotation: destinationRotation} = _getSourcePortalCameraPosition(camera, sourcePortalMesh, targetPortalMesh);
 
@@ -320,6 +320,10 @@ class Portal {
 
                 lastCameraPosition = currentCameraPosition;
               };
+
+              _checkTeleport();
+            };
+            const _updateEye = eyeCamera => {
               const _renderPortals = () => {
                 const {meshes: portalMeshes, renderTargets: portalRenderTargets} = portalsMesh;
                 const {red: redPortalMesh, blue: bluePortalMesh} = portalMeshes;
@@ -337,13 +341,13 @@ class Portal {
                     if (!sourcePortalCamera.parent) {
                       scene.add(sourcePortalCamera);
                     }
-                    sourcePortalCamera.fov = camera.fov;
-                    sourcePortalCamera.aspect = camera.aspect;
-                    sourcePortalCamera.near = camera.near;
-                    sourcePortalCamera.far = camera.far;
-                    sourcePortalCamera.rotation.order = camera.rotation.order;
+                    sourcePortalCamera.fov = eyeCamera.fov * (eyeCamera.eye ? 2 : 1);
+                    sourcePortalCamera.aspect = eyeCamera.aspect;
+                    sourcePortalCamera.near = eyeCamera.near;
+                    sourcePortalCamera.far = eyeCamera.far;
+                    sourcePortalCamera.rotation.order = eyeCamera.rotation.order;
 
-                    const sourcePortalCameraPosition = _getSourcePortalCameraPosition(camera, sourcePortalMesh, targetPortalMesh);
+                    const sourcePortalCameraPosition = _getSourcePortalCameraPosition(eyeCamera, sourcePortalMesh, targetPortalMesh);
 
                     sourcePortalCamera.position.copy(sourcePortalCameraPosition.position);
                     sourcePortalCamera.rotation.copy(sourcePortalCameraPosition.rotation);
@@ -368,12 +372,12 @@ class Portal {
                 });
               };
 
-              _checkTeleport();
               _renderPortals();
             };
 
             return {
               update: _update,
+              updateEye: _updateEye,
             };
           }
         });

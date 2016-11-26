@@ -60,6 +60,15 @@ class Zeo {
                     }
                   });
                 };
+                const _eye = camera => {
+                  // update plugins per eye
+                  plugins.forEach(plugin => {
+                    if (typeof plugin.updateEye === 'function') {
+                      plugin.updateEye(camera);
+                    }
+                  });
+                };
+
                 let cleanups = [];
                 const _cleanup = () => {
                   for (let i = 0; i < cleanups.length; i++) {
@@ -75,6 +84,7 @@ class Zeo {
                       animationFrame = null;
 
                       _tick();
+                      _eye(camera);
 
                       // non-vr rendering
                       renderer.render(scene, camera);
@@ -95,10 +105,15 @@ class Zeo {
                   const tick = () => {
                     _tick();
                   };
+                  const eye = camera => {
+                    _eye(camera);
+                  };
                   webvr.on('tick', tick);
+                  webvr.on('eye', eye);
 
                   cleanups.push(() => {
                     webvr.removeListener('tick', tick);
+                    webvr.removeListener('eye', eye);
                   });
                 };
 
