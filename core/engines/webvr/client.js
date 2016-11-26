@@ -49,6 +49,9 @@ class WebVR {
           constructor() {
             super();
 
+            this.isOpen = false;
+            this.isOpening = false;
+
             const _makeDefaultHmdStatus = () => {
               return {
                 pose: null,
@@ -60,11 +63,35 @@ class WebVR {
             };
             this.status = {
               hmd: _makeDefaultHmdStatus(),
-              controllers: {
+              gamepads: {
                 left: null,
                 right: null,
               },
             };
+          }
+
+          open() {
+            this.isOpen = true;
+
+            this.emit('open');
+          }
+
+          close() {
+            this.isOpen = false;
+
+            this.emit('close');
+          }
+
+          update() {
+            this.emit('update');
+          }
+
+          startOpening() {
+            this.isOpening = true;
+          }
+
+          endOpening() {
+            this.isOpening = false;
           }
 
           getStatus() {
@@ -79,6 +106,8 @@ class WebVR {
         const webvrInstance = new WebvrInstance();
 
         const _enterVr = () => {
+          webvrInstance.startOpening();
+
           return navigator.getVRDisplays()
             .then(displays => {
               class FakeVRDisplay extends EventEmitter {
@@ -90,12 +119,20 @@ class WebVR {
 
                   const sittingToStandingTransform = new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
                   const standingToSittingTransform = new THREE.Matrix4().getInverse(sittingToStandingTransform);
-                  this.position = camera.position.clone().applyMatrix4(standingToSittingTransform);
-                  this.rotation = camera.quaternion.clone();
-                  this.scale = camera.scale.clone();
+                  const position = camera.position.clone().applyMatrix4(standingToSittingTransform);
+                  this.position = position;
+                  const rotation = camera.quaternion.clone();
+                  this.rotation = rotation;
+                  const scale = camera.scale.clone();
+                  this.scale = scale;
+                  this.matrix = new THREE.Matrix4().compose(position, rotation, scale);
+
                   this.stageParameters = {
                     sittingToStandingTransform: sittingToStandingTransform.toArray(),
                   };
+
+                  const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
+                  this.gamepads = gamepads;
 
                   const fullscreenchange = e => {
                     const {isPresenting: wasPresenting} = this;
@@ -129,6 +166,8 @@ class WebVR {
                     keys.shift = false;
                   };
 
+                  this.mode = 'move';
+
                   const keydown = e => {
                     if (this.isPresenting) {
                       switch (e.keyCode) {
@@ -146,6 +185,15 @@ class WebVR {
                           break;
                         case 16: // shift
                           keys.shift = true;
+                          break;
+                        case 90: // Z
+                          this.mode = 'left';
+                          break;
+                        case 88: // X
+                          this.mode = 'move';
+                          break;
+                        case 67: // C
+                          this.mode = 'right';
                           break;
                       }
                     }
@@ -179,6 +227,9 @@ class WebVR {
                       rotation.x += (-e.movementY * ROTATION_SPEED);
                       rotation.y += (-e.movementX * ROTATION_SPEED);
                       quaternion.setFromEuler(rotation);
+
+                      this.updateMatrix();
+                      this.updateGamepads();
                     }
                   };
                   const pointerlockchange = e => {
@@ -198,6 +249,11 @@ class WebVR {
                   document.addEventListener('pointerlockerror', pointerlockerror);
 
                   this._cleanup = () => {
+                    for (let i = 0; i < gamepads.length; i++) {
+                      const gamepad = gamepads[i];
+                      gamepad.destroy();
+                    }
+
                     // document.removeEventListener('fullscreenchange', fullscreenchange);
                     document.removeEventListener('webkitfullscreenchange', fullscreenchange);
                     document.removeEventListener('keydown', keydown);
@@ -217,29 +273,40 @@ class WebVR {
 
                 requestAnimationFrame(fn) {
                   return requestAnimationFrame(() => {
-                    const _updatePosition = () => {
+                    const _updateDisplay = () => {
                       const {position, rotation, keys} = this;
 
                       const moveVector = new THREE.Vector3();
                       const speed = keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED;
+                      let moved = false;
                       if (keys.up) {
                         moveVector.z -= speed;
+                        moved = true;
                       }
                       if (keys.down) {
                         moveVector.z += speed;
+                        moved = true;
                       }
                       if (keys.left) {
                         moveVector.x -= speed;
+                        moved = true;
                       }
                       if (keys.right) {
                         moveVector.x += speed;
+                        moved = true;
                       }
-                      moveVector.applyQuaternion(rotation);
 
-                      position.add(moveVector);
+                      if (moved) {
+                        moveVector.applyQuaternion(rotation);
+
+                        position.add(moveVector);
+
+                        this.updateMatrix();
+                        this.updateGamepads();
+                      }
                     };
 
-                    _updatePosition();
+                    _updateDisplay();
                     fn();
                   });
                 }
@@ -259,6 +326,146 @@ class WebVR {
 
                 submitFrame(pose) {
                   // nothing
+                }
+
+                getGamepads() {
+                  return this.gamepads;
+                }
+
+                updateMatrix() {
+                  const {position, rotation, scale, matrix} = this;
+
+                  matrix.compose(position, rotation, scale);
+                }
+
+                updateGamepads() {
+                  const {gamepads} = this;
+
+                  for (let i = 0; i < gamepads.length; i++) {
+                    const gamepad = gamepads[i];
+                    gamepad.updateProperties();
+                  }
+                }
+
+                destroy() {
+                  this._cleanup();
+                }
+              }
+              class FakeVRGamepad {
+                constructor(parent, index) {
+                  this._parent = parent;
+                  this._index = index;
+
+                  const position = new THREE.Vector3(0, 0, 0);
+                  this.position = position;
+                  const rotation = new THREE.Quaternion(0, 0, 0, 1);
+                  this.rotation = rotation;
+                  const scale = new THREE.Vector3(1, 1, 1);
+                  this.scale = scale;
+
+                  this.pose = {
+                    position: position.toArray(),
+                    orientation: rotation.toArray(),
+                  };
+
+                  const buttons = (() => {
+                    const _makeButton = () => {
+                      return {
+                        touched: false,
+                        pressed: false,
+                        axes: [0, 0],
+                        value: 0,
+                      };
+                    };
+
+                    const numButtons = 4;
+                    const result = Array(numButtons);
+                    for (let i = 0; i < numButtons; i++) {
+                      result[i] = _makeButton();
+                    }
+                    return result;
+                  })();
+                  this.buttons = buttons;
+
+                  const positionOffset = new THREE.Vector3(
+                    0.2 * (index === 0 ? -1 : 1),
+                    -0.1,
+                    -0.2
+                  );
+                  this.positionOffset = positionOffset;
+
+                  const rotationOffset = new THREE.Euler();
+                  rotationOffset.order = camera.rotation.order;
+                  this.rotationOffset = rotationOffset;
+
+                  const mousewheel = e => {
+                    const {_parent: parent, _index: index} = this;
+                    const {mode} = parent;
+
+                    if (parent.isPresenting && ((mode === 'left' && index === 0) || (mode === 'right' && index === 1))) {
+                      e.preventDefault();
+
+                      if (!e.shiftKey) {
+                        this.move(e.deltaX, e.deltaY);
+                      } else {
+                        this.rotate(e.deltaX, e.deltaY);
+                      }
+                    }
+                  };
+                  document.addEventListener('mousewheel', mousewheel);
+
+                  this._cleanup = () => {
+                    document.removeEventListener('mousewheel', mousewheel);
+                  };
+                }
+
+                move(x, y) {
+                  const {positionOffset} = this;
+
+                  const moveFactor = 0.001;
+                  positionOffset.x += -x * moveFactor;
+                  positionOffset.y += y * moveFactor;
+
+                  this.updateProperties();
+                }
+
+                rotate(x, y) {
+                  const {rotationOffset} = this;
+
+                  const moveFactor = 0.001 * (Math.PI * 2);
+                  rotationOffset.y = Math.max(Math.min(rotationOffset.y + (x * moveFactor), Math.PI / 2), -Math.PI / 2);
+                  rotationOffset.x = Math.max(Math.min(rotationOffset.x + (y * moveFactor), Math.PI / 2), -Math.PI / 2);
+
+                  this.updateProperties();
+                }
+
+                updateProperties() {
+                  const {_parent: parent, positionOffset, rotationOffset} = this;
+
+                  const {matrix: outerMatrix} = parent;
+                  const innerMatrix = (() => {
+                    const result = new THREE.Matrix4();
+
+                    const position = positionOffset;
+                    const rotation = new THREE.Quaternion().setFromEuler(rotationOffset);
+                    const scale = new THREE.Vector3(1, 1, 1);
+                    result.compose(position, rotation, scale);
+
+                    return result;
+                  })();
+
+                  const worldMatrix = outerMatrix.clone().multiply(innerMatrix);
+                  const position = new THREE.Vector3();
+                  const rotation = new THREE.Quaternion();
+                  const scale = new THREE.Vector3();
+                  worldMatrix.decompose(position, rotation, scale);
+
+                  this.position.copy(position);
+                  this.rotation.copy(rotation);
+                  this.scale.copy(scale);
+
+                  this.pose.position = position.toArray();
+                  this.pose.orientation = rotation.toArray();
                 }
 
                 destroy() {
@@ -326,12 +533,18 @@ class WebVR {
                     scale,
                   };
                 };
-                const _getControllerStatus = ({standingMatrix}) => {
-                  const gamepads = navigator.getGamepads();
+                const _getGamepadsStatus = ({standingMatrix}) => {
+                  const gamepads = (() => {
+                    if (display instanceof FakeVRDisplay) {
+                      return display.getGamepads();
+                    } else {
+                      navigator.getGamepads();
+                    }
+                  })();
                   const leftGamepad = gamepads[0];
                   const rightGamepad = gamepads[1];
 
-                  const _isGamepadAvailable = gamepad => gamepad !== undefined && gamepad.pose !== null && pose.position !== null && pose.orientation !== null;
+                  const _isGamepadAvailable = gamepad => gamepad !== undefined && gamepad.pose !== null && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
                   const _getGamepadPose = gamepad => {
                     const {pose, buttons: [padButton, triggerButton, gripButton, menuButton]} = gamepad;
 
@@ -383,7 +596,7 @@ class WebVR {
                 };
 
                 const _open = () => {
-                  webvrInstance.emit('open');
+                  webvrInstance.open();
 
                   let animationFrame = null;
                   const _recurse = () => {
@@ -393,10 +606,10 @@ class WebVR {
                       const standingMatrix = _getStandingMatrix();
                       const status = {
                         hmd: _getHmdStatus({standingMatrix}),
-                        controller: _getControllerStatus({standingMatrix}),
+                        gamepads: _getGamepadsStatus({standingMatrix}),
                       };
                       webvrInstance.setStatus(status);
-                      webvrInstance.emit('update');
+                      webvrInstance.update();
 
                       _submitFrame(status.hmd.pose);
 
@@ -422,7 +635,7 @@ class WebVR {
 
                   cleanups = [];
 
-                  webvrInstance.emit('close');
+                  webvrInstance.close();
                 };
                 if (display instanceof FakeVRDisplay) {
                   const fullscreenchange = () => {
@@ -456,6 +669,14 @@ class WebVR {
 
                 _open();
               });
+            })
+            .then(() => {
+              webvrInstance.endOpening();
+            })
+            .catch(err => {
+              webvrInstance.endOpening();
+
+              return Promise.reject(err);
             });
         };
 
@@ -477,13 +698,15 @@ cursor: pointer;
             document.body.appendChild(a);
 
             const click = e => {
-              _enterVr()
-                .then(() => {
-                  console.log('success!');
-                })
-                .catch(err => {
-                  console.log('failure', err);
-                });
+              if (!webvrInstance.isOpen && !webvrInstance.isOpening) {
+                _enterVr()
+                  .then(() => {
+                    console.log('success!');
+                  })
+                  .catch(err => {
+                    console.log('failure', err);
+                  });
+              }
             };
             domElement.addEventListener('click', click);
 

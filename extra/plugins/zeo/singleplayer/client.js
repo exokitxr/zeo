@@ -211,81 +211,14 @@ class SinglePlayer {
             physicsBody.setObject(mesh);
             physics.add(physicsBody);
             this.physicsBody = physicsBody;
-
-            const positionOffset = new THREE.Vector3();
-            this.positionOffset = positionOffset;
-
-            const rotationOffset = new THREE.Euler();
-            rotationOffset.order = camera.rotation.order;
-            this.rotationOffset = rotationOffset;
           }
 
-          update() {
-            const {_index: index, mesh, positionOffset, rotationOffset} = this;
+          update(gamepadStatus) {
+            const {mesh} = this;
 
-            const cameraPosition = new THREE.Vector3();
-            const cameraRotation = new THREE.Quaternion();
-            const cameraScale = new THREE.Vector3();
-            camera.updateMatrixWorld();
-            camera.matrixWorld.decompose(cameraPosition, cameraRotation, cameraScale);
-
-            const outerMatrix = (() => {
-              const result = new THREE.Matrix4();
-
-              const position = cameraPosition.clone()
-                .add(
-                  new THREE.Vector3(
-                    0.2 * (index === 0 ? -1 : 1),
-                    -0.1,
-                    -0.2
-                  )
-                  .applyQuaternion(cameraRotation)
-                );
-              const rotation = cameraRotation;
-              const scale = cameraScale;
-
-              result.compose(position, rotation, scale);
-
-              return result;
-            })();
-            const innerMatrix = (() => {
-              const result = new THREE.Matrix4();
-
-              const position = positionOffset;
-              const rotation = new THREE.Quaternion().setFromEuler(rotationOffset);
-              const scale = new THREE.Vector3(1, 1, 1);
-
-              result.compose(position, rotation, scale);
-
-              return result;
-            })();
-
-            const worldMatrix = outerMatrix.clone().multiply(innerMatrix);
-            const position = new THREE.Vector3();
-            const rotation = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
-            worldMatrix.decompose(position, rotation, scale);
-            // outerMatrix.decompose(position, rotation, scale);
-
-            mesh.position.copy(position);
-            mesh.quaternion.copy(rotation);
-            mesh.scale.copy(scale);
-          }
-
-          move(x, y) {
-            const {positionOffset} = this;
-
-            const moveFactor = 0.001;
-            positionOffset.x += -x * moveFactor;
-            positionOffset.y += y * moveFactor;
-          }
-
-          rotate(x, y) {
-            const {rotationOffset} = this;
-
-            const moveFactor = 0.001 * (Math.PI * 2);
-            rotationOffset.y = Math.max(Math.min(rotationOffset.y + (x * moveFactor), Math.PI / 2), -Math.PI / 2);
-            rotationOffset.x = Math.max(Math.min(rotationOffset.x + (y * moveFactor), Math.PI / 2), -Math.PI / 2);
+            mesh.position.copy(gamepadStatus.position);
+            mesh.quaternion.copy(gamepadStatus.rotation);
+            mesh.scale.copy(gamepadStatus.scale);
           }
 
           destroy() {
@@ -307,64 +240,23 @@ class SinglePlayer {
           return result;
         })();
 
-        const mousewheel = e => {
-          if (window.document.pointerLockElement) {
-            e.preventDefault();
-
-            if (mode === 'left') {
-              const controller = controllers.left;
-
-              if (!e.shiftKey) {
-                controller.move(e.deltaX, e.deltaY);
-              } else {
-                controller.rotate(e.deltaX, e.deltaY);
-              }
-            } else if (mode === 'right') {
-              const controller = controllers.right;
-
-              if (!e.shiftKey) {
-                controller.move(e.deltaX, e.deltaY);
-              } else {
-                controller.rotate(e.deltaX, e.deltaY);
-              }
-            }
-          }
-        };
-
-        let mode = 'move';
-        const keydown = e => {
-          if (window.document.pointerLockElement) {
-            switch (e.keyCode) {
-              case 90: // Z
-                mode = 'left';
-                break;
-              case 88: // X
-                mode = 'move';
-                break;
-              case 67: // C
-                mode = 'right';
-                break;
-            }
-          }
-        };
-        window.addEventListener('mousewheel', mousewheel);
-        window.addEventListener('keydown', keydown);
-
         const _getPlayer = () => player;
         const _getControllers = () => controllers;
         const _getMode = () => mode;
-        const _update = () => { // XXX make update get worldTime from the zeo World for all plugins
+        const _update = () => {
           // update camera
           const status = webvr.getStatus();
           camera.position.copy(status.hmd.position);
           camera.quaternion.copy(status.hmd.rotation);
           camera.scale.copy(status.hmd.scale);
-          // camera.matrix.copy(status.hmd.matrix);
 
-          // move controllers
+          // update controllers
           for (let i = 0; i < controllers.length; i++) {
             const controller = controllers[i];
-            controller.update();
+            const gamepadStatus = status.gamepads[i === 0 ? 'left' : 'right'];
+            if (gamepadStatus) {
+              controller.update(gamepadStatus);
+            }
           }
 
           // emit updates
@@ -392,8 +284,6 @@ class SinglePlayer {
             const controller = controllers[i];
             controller.destroy();
           }
-
-          window.removeEventListener('keydown', keydown);
         };
 
         return {
