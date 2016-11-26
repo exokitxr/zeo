@@ -454,6 +454,20 @@ class WebVR {
                   };
                 }
 
+                resetPose() {
+                  this.position.set(0, 0, 0);
+                  const euler = new THREE.Euler().setFromQuaternion(this.rotation, camera.rotation.order);
+                  this.rotation.setFromEuler(new THREE.Euler(
+                    euler.x, // destinationRotation.x,
+                    0,
+                    euler.z, // destinationRotation.z,
+                    camera.rotation.order
+                  ));
+
+                  this.updateMatrix();
+                  this.updateGamepads();
+                }
+
                 submitFrame(pose) {
                   // nothing
                 }

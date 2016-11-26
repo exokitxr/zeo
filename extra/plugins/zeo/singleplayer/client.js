@@ -256,6 +256,7 @@ class SinglePlayer {
           camera.position.copy(status.hmd.position);
           camera.quaternion.copy(status.hmd.rotation);
           camera.scale.copy(status.hmd.scale);
+          camera.updateMatrixWorld();
 
           // update controllers
           for (let i = 0; i < controllers.length; i++) {

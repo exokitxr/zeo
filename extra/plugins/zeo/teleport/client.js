@@ -93,13 +93,12 @@ class Teleport {
               window.removeEventListener('keyup', keyup);
             };
 
-            const _getMatrixWorld = mesh => {
+            const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+            const _decomposeMatrix = matrix => {
               const position = new THREE.Vector3();
               const quaternion = new THREE.Quaternion();
               const scale = new THREE.Vector3();
-
-              mesh.matrixWorld.decompose(position, quaternion, scale);
-
+              matrix.decompose(position, quaternion, scale);
               return {
                 position,
                 quaternion,
@@ -113,8 +112,8 @@ class Teleport {
                 const rootMesh = controllers[side].mesh;
                 const tipMesh = rootMesh.tip;
 
-                const rootMatrixWorld = _getMatrixWorld(rootMesh);
-                const tipMatrixWorld = _getMatrixWorld(tipMesh);
+                const rootMatrixWorld = _decomposeObjectMatrixWorld(rootMesh);
+                const tipMatrixWorld = _decomposeObjectMatrixWorld(tipMesh);
                 const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
                 const controllerLine = new THREE.Line3(
                   rootMatrixWorld.position.clone(),
@@ -142,14 +141,18 @@ class Teleport {
                 }
               } else if (commitTeleporting) {
                 if (teleportPoint) {
-                  const destinationPoint = new THREE.Vector3(teleportPoint.x, teleportPoint.y + DEFAULT_USER_HEIGHT, teleportPoint.z);
-                  const cameraPosition = new THREE.Vector3();
-                  const cameraRotation = new THREE.Quaternion();
-                  const cameraScale = new THREE.Vector3();
-                  camera.matrixWorld.decompose(cameraPosition, cameraRotation, cameraScale);
-                  const positionDelta = destinationPoint.clone().sub(cameraPosition);
-                  const matrix = new THREE.Matrix4().makeTranslation(positionDelta.x, positionDelta.y, positionDelta.z);
-                  webvr.multiplyStageMatrix(matrix);
+                  const destinationPoint = teleportPoint.clone().add(new THREE.Vector3(0, DEFAULT_USER_HEIGHT, 0));
+                  const {position: cameraPosition} = _decomposeObjectMatrixWorld(camera);
+                  const positionDiff = destinationPoint.clone().sub(cameraPosition);
+
+                  const matrix = webvr.getStageMatrix();
+                  const {position, quaternion, scale} = _decomposeMatrix(matrix);
+                  position.add(positionDiff);
+                  matrix.compose(position, quaternion, scale);
+                  webvr.setStageMatrix(matrix);
+
+                  webvr.updateStatus();
+                  singleplayer.update();
 
                   teleportPoint = null;
                 }

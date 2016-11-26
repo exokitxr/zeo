@@ -62,6 +62,19 @@ class Portal {
           singleplayer,
         ]) => {
           if (live) {
+            const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+            const _decomposeMatrix = matrix => {
+              const position = new THREE.Vector3();
+              const quaternion = new THREE.Quaternion();
+              const scale = new THREE.Vector3();
+              matrix.decompose(position, quaternion, scale);
+              return {
+                position,
+                quaternion,
+                scale,
+              };
+            };
+
             const portalsMesh = (() => {
               const result = new THREE.Object3D();
 
@@ -209,11 +222,13 @@ class Portal {
               return result;
             })();
 
-            let lastCameraPosition = camera.position.clone();
+            let {position: lastCameraPosition} = _decomposeObjectMatrixWorld(camera);
 
             const _update = () => {
               const _getSourcePortalCameraPosition = (camera, sourcePortalMesh, targetPortalMesh) => {
-                const vectorToTarget = targetPortalMesh.position.clone().sub(camera.position);
+                const {position: cameraPosition, quaternion: cameraQuaternion} = _decomposeObjectMatrixWorld(camera);
+
+                const vectorToTarget = targetPortalMesh.position.clone().sub(cameraPosition);
                 const targetRotation = targetPortalMesh.rotation.toVector3();
                 const flippedSourceRotation = (() => {
                   const result = sourcePortalMesh.rotation.toVector3();
@@ -227,14 +242,15 @@ class Portal {
                     -rotationDelta.x,
                     -rotationDelta.y,
                     -rotationDelta.z,
-                    sourcePortalCamera.rotation.order
+                    camera.rotation.order
                   ));
+                const cameraEuler = new THREE.Euler().setFromQuaternion(cameraQuaternion, camera.rotation.order);
 
                 const position = sourcePortalMesh.position.clone().sub(rotatedVectorToTarget);
                 const rotation = new THREE.Euler(
-                  camera.rotation.x - rotationDelta.x,
-                  camera.rotation.y - rotationDelta.y,
-                  camera.rotation.z - rotationDelta.z,
+                  cameraEuler.x - rotationDelta.x,
+                  cameraEuler.y - rotationDelta.y,
+                  cameraEuler.z - rotationDelta.z,
                   camera.rotation.order
                 );
                 return {
@@ -242,19 +258,27 @@ class Portal {
                   rotation,
                 };
               };
-              const _getSourcePortalToTargetPortalMatrix = (camera, sourcePortalMesh, targetPortalMesh) => {
-                const {position, rotation} = _getSourcePortalCameraPosition(camera, sourcePortalMesh, targetPortalMesh);
+              const _getTeleportMatrix = (camera, sourcePortalMesh, targetPortalMesh) => {
+                const {position: destinationPoint, rotation: destinationRotation} = _getSourcePortalCameraPosition(camera, sourcePortalMesh, targetPortalMesh);
 
-                return new THREE.Matrix4().compose(
-                  position,
-                  new THREE.Quaternion().setFromEuler(rotation),
-                  camera.scale
-                )
-                .multiply(new THREE.Matrix4().getInverse(camera.matrixWorld));
+                const matrix = webvr.getStageMatrix();
+                const {position, quaternion, scale} = _decomposeMatrix(matrix);
+                position.copy(destinationPoint);
+                const display = webvr.getDisplay();
+                const {position: cameraPosition, quaternion: cameraQuaternion, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
+                const cameraRotation = new THREE.Euler().setFromQuaternion(cameraQuaternion, camera.rotation.order);
+                quaternion.setFromEuler(new THREE.Euler(
+                  destinationRotation.x - cameraRotation.x,
+                  destinationRotation.y,
+                  destinationRotation.z - cameraRotation.z,
+                  camera.rotation.order
+                ));
+                matrix.compose(position, quaternion, scale);
+                return matrix;
               };
 
               const _checkTeleport = () => {
-                const currentCameraPosition = camera.position.clone();
+                const {position: currentCameraPosition} = _decomposeObjectMatrixWorld(camera);
                 const cameraMoveLine = new THREE.Line3(lastCameraPosition, currentCameraPosition);
 
                 const {meshes: portalMeshes} = portalsMesh;
@@ -280,8 +304,11 @@ class Portal {
                         const targetPortalMesh = portalMesh;
                         const sourcePortalMesh = a[i === 0 ? 1 : 0];
 
-                        const matrix = _getSourcePortalToTargetPortalMatrix(camera, sourcePortalMesh, targetPortalMesh);
-                        webvr.multiplyStageMatrix(matrix);
+                        const matrix = _getTeleportMatrix(camera, sourcePortalMesh, targetPortalMesh);
+                        webvr.setStageMatrix(matrix);
+
+                        const display = webvr.getDisplay();
+                        display.resetPose();
 
                         // apply the camera change this frame
                         webvr.updateStatus();
