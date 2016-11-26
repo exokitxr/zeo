@@ -16,7 +16,12 @@ require('webvr-polyfill');
 const events = require('events');
 const EventEmitter = events.EventEmitter;
 
+const VREffect = require('./lib/three-extra/VREffect');
+
 const DEFAULT_USER_HEIGHT = 1.6;
+const DEFAULT_USER_IPD = 62 / 1000;
+const DEFAULT_USER_FOV = 110;
+
 const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
@@ -45,6 +50,8 @@ class WebVR {
         const {THREE, scene, camera, renderer} = three;
         const {domElement} = renderer;
 
+        VREffect(THREE);
+
         class WebvrInstance extends EventEmitter {
           constructor() {
             super();
@@ -52,6 +59,8 @@ class WebVR {
             this.display = null;
             this.isOpen = false;
             this.isOpening = false;
+
+            this.effect = null;
 
             this.stageMatrix = new THREE.Matrix4();
 
@@ -73,9 +82,33 @@ class WebVR {
             };
           }
 
-          open(display) {
+          open(display, opts = {}) {
             this.display = display;
             this.isOpen = true;
+
+            if (opts.stereoscopic) {
+              const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
+              navigator.getVRDisplays = null;
+              const effect = new THREE.VREffect(renderer);
+              navigator.getVRDisplays = getVRDisplays;
+
+              effect.setVRDisplay(display);
+              effect.isPresenting = true;
+              effect.autoSubmitFrame = false;
+
+              const resize = () => {
+                effect.setSize(window.innerWidth, window.innerHeight);
+              };
+              window.addEventListener('resize', resize);
+              effect.destroy = () => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(window.devicePixelRatio);
+
+                window.removeEventListener('resize', resize);
+              };
+
+              this.effect = effect;
+            }
 
             const stageMatrix = (() => {
               if (display.stageParameters) {
@@ -92,6 +125,11 @@ class WebVR {
           close() {
             this.display = null;
             this.isOpen = false;
+
+            if (this.effect) {
+              this.effect.destroy();
+              this.effect = null;
+            }
 
             this.emit('close');
           }
@@ -206,6 +244,16 @@ class WebVR {
 
           endOpening() {
             this.isOpening = false;
+          }
+
+          render() {
+            const {effect} = this;
+
+            if (effect) {
+              effect.render(scene, camera);
+            } else {
+              renderer.render(scene, camera);
+            }
           }
 
           getDisplay() {
@@ -468,6 +516,30 @@ class WebVR {
                   this.updateGamepads();
                 }
 
+                getEyeParameters(side) {
+                  return {
+                    offset: [(DEFAULT_USER_IPD / 2) * (side === 'left' ? -1 : 1), 0, 0],
+                    fieldOfView: {
+                      upDegrees: DEFAULT_USER_FOV / 2,
+                      rightDegrees: DEFAULT_USER_FOV / 2,
+                      downDegrees: DEFAULT_USER_FOV / 2,
+                      leftDegrees: DEFAULT_USER_FOV / 2,
+                    },
+                    renderWidth: 1080,
+                    renderHeight: 1200,
+                  };
+                }
+
+                getLayers() {
+                  return [
+                    {
+                      leftBounds: [0.0, 0.0, 0.5, 1.0],
+                      rightBounds: [0.5, 0.0, 0.5, 1.0],
+                      source: null,
+                    },
+                  ];
+                }
+
                 submitFrame(pose) {
                   // nothing
                 }
@@ -650,7 +722,9 @@ class WebVR {
                 };
 
                 const _open = () => {
-                  webvrInstance.open(display);
+                  webvrInstance.open(display, {
+                    stereoscopic: true,
+                  });
 
                   let animationFrame = null;
                   const _recurse = () => {
@@ -659,6 +733,7 @@ class WebVR {
 
                       const status = webvrInstance.updateStatus();
                       webvrInstance.tick();
+                      webvrInstance.render();
 
                       _submitFrame(status.hmd.pose);
 

@@ -59,9 +59,6 @@ class Zeo {
                       plugin.update();
                     }
                   });
-
-                  // render
-                  renderer.render(scene, camera);
                 };
                 let cleanups = [];
                 const _cleanup = () => {
@@ -78,6 +75,9 @@ class Zeo {
                       animationFrame = null;
 
                       _tick();
+
+                      // non-vr rendering
+                      renderer.render(scene, camera);
 
                       _recurse();
                     });
