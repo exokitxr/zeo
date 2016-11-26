@@ -96,8 +96,108 @@ class WebVR {
             this.emit('close');
           }
 
-          update() {
-            this.emit('update');
+          updateStatus() {
+            const {display, stageMatrix} = this;
+
+            const _getMatrixFromPose = (pose, stageMatrix) => {
+              const position = pose.position !== null ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
+              const rotation = pose.orientation !== null ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
+              const scale = new THREE.Vector3(1, 1, 1);
+              const matrix = stageMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
+              return matrix;
+            };
+            const _getPropertiesFromMatrix = matrix => {
+              const position = new THREE.Vector3();
+              const rotation = new THREE.Quaternion();
+              const scale = new THREE.Vector3();
+              matrix.decompose(position, rotation, scale);
+
+              return {
+                position,
+                rotation,
+                scale,
+              };
+            };
+            const _getHmdStatus = ({stageMatrix}) => {
+              const pose = display.getPose();
+
+              const matrix = _getMatrixFromPose(pose, stageMatrix);
+              const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
+
+              return {
+                pose,
+                matrix,
+                position,
+                rotation,
+                scale,
+              };
+            };
+            const _getGamepadsStatus = ({stageMatrix}) => {
+              const gamepads = (() => {
+                if (display.getGamepads) {
+                  return display.getGamepads();
+                } else {
+                  return navigator.getGamepads();
+                }
+              })();
+              const leftGamepad = gamepads[0];
+              const rightGamepad = gamepads[1];
+
+              const _isGamepadAvailable = gamepad => gamepad !== undefined && gamepad.pose !== null && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
+              const _getGamepadPose = gamepad => {
+                const {pose, buttons: [padButton, triggerButton, gripButton, menuButton]} = gamepad;
+
+                const _getGamepadButtonStatus = button => {
+                  if (button) {
+                    const {touched, pressed, axes: [x, y], value} = button;
+                    return {
+                      touched,
+                      pressed,
+                      x,
+                      y,
+                      value,
+                    };
+                  } else {
+                    return null;
+                  }
+                };
+
+                const matrix = _getMatrixFromPose(pose, stageMatrix);
+                const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
+                const buttons = {
+                  pad: _getGamepadButtonStatus(padButton),
+                  trigger: _getGamepadButtonStatus(triggerButton),
+                  grip: _getGamepadButtonStatus(gripButton),
+                  menu: _getGamepadButtonStatus(menuButton),
+                };
+
+                return {
+                  pose,
+                  matrix,
+                  position,
+                  rotation,
+                  scale,
+                  buttons,
+                };
+              };
+
+              return {
+                left: _isGamepadAvailable(leftGamepad) ? _getGamepadPose(leftGamepad) : null,
+                right: _isGamepadAvailable(rightGamepad) ? _getGamepadPose(rightGamepad) : null,
+              };
+            };
+
+            const status = {
+              hmd: _getHmdStatus({stageMatrix}),
+              gamepads: _getGamepadsStatus({stageMatrix}),
+            };
+            this.setStatus(status);
+
+            return status;
+          }
+
+          tick() {
+            this.emit('tick');
           }
 
           startOpening() {
@@ -116,16 +216,16 @@ class WebVR {
             return this.status;
           }
 
+          setStatus(status) {
+            this.status = status;
+          }
+
           getStageMatrix() {
             return this.stageMatrix.clone();
           }
 
           setStageMatrix(stageMatrix) {
             this.stageMatrix.copy(stageMatrix);
-          }
-
-          setStatus(status) {
-            this.status = status;
           }
         }
 
@@ -523,93 +623,6 @@ class WebVR {
                   source: domElement,
                 }
               ]).then(() => {
-                const _getMatrixFromPose = (pose, stageMatrix) => {
-                  const position = pose.position !== null ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
-                  const rotation = pose.orientation !== null ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
-                  const scale = new THREE.Vector3(1, 1, 1);
-                  const matrix = stageMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
-                  return matrix;
-                };
-                const _getPropertiesFromMatrix = matrix => {
-                  const position = new THREE.Vector3();
-                  const rotation = new THREE.Quaternion();
-                  const scale = new THREE.Vector3();
-                  matrix.decompose(position, rotation, scale);
-
-                  return {
-                    position,
-                    rotation,
-                    scale,
-                  };
-                };
-                const _getHmdStatus = ({stageMatrix}) => {
-                  const pose = display.getPose();
-
-                  const matrix = _getMatrixFromPose(pose, stageMatrix);
-                  const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
-
-                  return {
-                    pose,
-                    matrix,
-                    position,
-                    rotation,
-                    scale,
-                  };
-                };
-                const _getGamepadsStatus = ({stageMatrix}) => {
-                  const gamepads = (() => {
-                    if (display instanceof FakeVRDisplay) {
-                      return display.getGamepads();
-                    } else {
-                      navigator.getGamepads();
-                    }
-                  })();
-                  const leftGamepad = gamepads[0];
-                  const rightGamepad = gamepads[1];
-
-                  const _isGamepadAvailable = gamepad => gamepad !== undefined && gamepad.pose !== null && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
-                  const _getGamepadPose = gamepad => {
-                    const {pose, buttons: [padButton, triggerButton, gripButton, menuButton]} = gamepad;
-
-                    const _getGamepadButtonStatus = button => {
-                      if (button) {
-                        const {touched, pressed, axes: [x, y], value} = button;
-                        return {
-                          touched,
-                          pressed,
-                          x,
-                          y,
-                          value,
-                        };
-                      } else {
-                        return null;
-                      }
-                    };
-
-                    const matrix = _getMatrixFromPose(pose, stageMatrix);
-                    const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
-                    const buttons = {
-                      pad: _getGamepadButtonStatus(padButton),
-                      trigger: _getGamepadButtonStatus(triggerButton),
-                      grip: _getGamepadButtonStatus(gripButton),
-                      menu: _getGamepadButtonStatus(menuButton),
-                    };
-
-                    return {
-                      pose,
-                      matrix,
-                      position,
-                      rotation,
-                      scale,
-                      buttons,
-                    };
-                  };
-
-                  return {
-                    left: _isGamepadAvailable(leftGamepad) ? _getGamepadPose(leftGamepad) : null,
-                    right: _isGamepadAvailable(rightGamepad) ? _getGamepadPose(rightGamepad) : null,
-                  };
-                };
                 const _requestAnimationFrame = fn => display.isPresenting ? display.requestAnimationFrame(fn) : requestAnimationFrame(fn);
                 const _cancelAnimationFrame = animationFrame => display.isPresenting ? display.cancelAnimationFrame(animationFrame) : cancelAnimationFrame(animationFrame);
                 const _submitFrame = pose => {
@@ -626,13 +639,8 @@ class WebVR {
                     animationFrame = _requestAnimationFrame(() => {
                       animationFrame = null;
 
-                      const stageMatrix = webvrInstance.getStageMatrix();
-                      const status = {
-                        hmd: _getHmdStatus({stageMatrix}),
-                        gamepads: _getGamepadsStatus({stageMatrix}),
-                      };
-                      webvrInstance.setStatus(status);
-                      webvrInstance.update();
+                      const status = webvrInstance.updateStatus();
+                      webvrInstance.tick();
 
                       _submitFrame(status.hmd.pose);
 

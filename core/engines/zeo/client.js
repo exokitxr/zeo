@@ -92,13 +92,13 @@ class Zeo {
                   });
                 };
                 const _enterVr = () => {
-                  const update = () => {
+                  const tick = () => {
                     _tick();
                   };
-                  webvr.on('update', update);
+                  webvr.on('tick', tick);
 
                   cleanups.push(() => {
-                    webvr.removeListener('update', update);
+                    webvr.removeListener('tick', tick);
                   });
                 };
 
