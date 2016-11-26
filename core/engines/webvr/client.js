@@ -50,17 +50,12 @@ class WebVR {
             super();
 
             const _makeDefaultHmdStatus = () => {
-              const position = new THREE.Vector3(0, DEFAULT_USER_HEIGHT, 0);
-              const rotation = new THREE.Quaternion();
-              const scale = new THREE.Vector3(1, 1, 1);
-              const matrix = new THREE.Matrix4().compose(position, rotation, scale);
-
               return {
                 pose: null,
-                position,
-                rotation,
-                scale,
-                matrix,
+                position: camera.position.clone(),
+                rotation: camera.quaternion.clone(),
+                scale: camera.scale.clone(),
+                matrix: camera.matrix.clone(),
               };
             };
             this.status = {
@@ -93,11 +88,13 @@ class WebVR {
                   this.canPresent = true;
                   this.isPresenting = false;
 
-                  this.position = new THREE.Vector3();
-                  this.rotation = new THREE.Quaternion();
-                  this.scale = new THREE.Vector3();
+                  const sittingToStandingTransform = new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
+                  const standingToSittingTransform = new THREE.Matrix4().getInverse(sittingToStandingTransform);
+                  this.position = camera.position.clone().applyMatrix4(standingToSittingTransform);
+                  this.rotation = camera.quaternion.clone();
+                  this.scale = camera.scale.clone();
                   this.stageParameters = {
-                    sittingToStandingTransform: new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0).toArray(),
+                    sittingToStandingTransform: sittingToStandingTransform.toArray(),
                   };
 
                   // this.updateStageParameters();
