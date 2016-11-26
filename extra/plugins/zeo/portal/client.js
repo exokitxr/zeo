@@ -281,7 +281,7 @@ class Portal {
                         const sourcePortalMesh = a[i === 0 ? 1 : 0];
 
                         const matrix = _getSourcePortalToTargetPortalMatrix(camera, sourcePortalMesh, targetPortalMesh);
-                        webvr.setStageMatrix(webvr.getStageMatrix().multiply(matrix));
+                        webvr.multiplyStageMatrix(matrix);
 
                         // apply the camera change this frame
                         webvr.updateStatus();

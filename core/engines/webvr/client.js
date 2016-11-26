@@ -227,6 +227,10 @@ class WebVR {
           setStageMatrix(stageMatrix) {
             this.stageMatrix.copy(stageMatrix);
           }
+
+          multiplyStageMatrix(matrix) {
+            this.stageMatrix.multiply(matrix);
+          }
         }
 
         const webvrInstance = new WebvrInstance();
