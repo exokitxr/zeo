@@ -248,7 +248,7 @@ class Portal {
                 return new THREE.Matrix4().compose(
                   position,
                   new THREE.Quaternion().setFromEuler(rotation),
-                  new THREE.Vector3(1, 1, 1)
+                  camera.scale
                 )
                 .multiply(new THREE.Matrix4().getInverse(camera.matrixWorld));
               };

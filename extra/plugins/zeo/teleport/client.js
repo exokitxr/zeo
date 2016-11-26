@@ -1,4 +1,5 @@
 const TELEPORT_DISTANCE = 15;
+const DEFAULT_USER_HEIGHT = 1.6;
 
 class Teleport {
   constructor(archae) {
@@ -15,8 +16,10 @@ class Teleport {
 
     return archae.requestEngines([
       '/core/engines/zeo',
+      '/core/engines/webvr',
     ]).then(([
       zeo,
+      webvr,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
@@ -139,7 +142,14 @@ class Teleport {
                 }
               } else if (commitTeleporting) {
                 if (teleportPoint) {
-                  camera.position.set(teleportPoint.x, teleportPoint.y + 1.5, teleportPoint.z);
+                  const destinationPoint = new THREE.Vector3(teleportPoint.x, teleportPoint.y + DEFAULT_USER_HEIGHT, teleportPoint.z);
+                  const cameraPosition = new THREE.Vector3();
+                  const cameraRotation = new THREE.Quaternion();
+                  const cameraScale = new THREE.Vector3();
+                  camera.matrixWorld.decompose(cameraPosition, cameraRotation, cameraScale);
+                  const positionDelta = destinationPoint.clone().sub(cameraPosition);
+                  const matrix = new THREE.Matrix4().makeTranslation(positionDelta.x, positionDelta.y, positionDelta.z);
+                  webvr.multiplyStageMatrix(matrix);
 
                   teleportPoint = null;
                 }
