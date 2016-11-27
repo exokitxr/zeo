@@ -132,6 +132,7 @@ class Skybox {
         })();
         scene.add(moonSphere);
 
+        const _getSunSphere = () => sunSphere;
         const _update = () => {
           let worldTime = world.getWorldTime();
 
@@ -186,6 +187,7 @@ class Skybox {
         };
 
         return {
+          getSunSphere: _getSunSphere,
           update: _update,
         };
       }

@@ -79,6 +79,7 @@ archae.requestEngines([
           // '/extra/plugins/zeo/hmd',
           '/extra/plugins/zeo/physics',
           '/extra/plugins/zeo/multiplayer',
+          '/extra/plugins/zeo/fog',
           '/extra/plugins/zeo/skybox',
           '/extra/plugins/zeo/ocean',
           '/extra/plugins/zeo/models',

@@ -6,6 +6,7 @@ const CAMERA_ROTATION_ORDER = 'YXZ';
 class Three {
   mount() {
     const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xFFFFFF, 0);
 
     const camera = (() => {
       const result = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.001, 100000);
