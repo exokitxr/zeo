@@ -6,7 +6,7 @@
   "dependencies": {
     "get-random-port": "0.0.1",
     "http-proxy": "^1.15.2",
-    "pty.js": "^0.3.1",
-    "socket.io": "^1.7.0"
+    "socket.io": "^1.7.0",
+    "socket.io-client": "^1.7.0"
   }
 }

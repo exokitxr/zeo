@@ -1,7 +1,9 @@
 const htermAll = require('./lib/wetty/hterm_all');
 const {hterm, lib} = htermAll;
+const io = require('./node_modules/socket.io-client/dist/socket.io.js');
 
 hterm.defaultStorage = new lib.Storage.Local();
+lib.ensureRuntimeDependencies_ = () => {}; // HACK: elide the check, because it just checks for globals exposure
 
 class Shell {
   constructor(archae) {

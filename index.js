@@ -527,16 +527,20 @@ class ArchaeServer {
       upgradeHandlers.splice(upgradeHandlers.indexOf(upgradeHandler), 1);
     };
     server.on('upgrade', (req, socket, head) => {
+      let handled = false;
       for (let i = 0; i < upgradeHandlers.length; i++) {
         const upgradeHandler = upgradeHandlers[i];
         if (upgradeHandler(req, socket, head) === false) {
+          handled = true;
           break;
         }
       }
 
-      wss.handleUpgrade(req, socket, head, c => {
-        wss.emit('connection', c);
-      });
+      if (!handled) {
+        wss.handleUpgrade(req, socket, head, c => {
+          wss.emit('connection', c);
+        });
+      }
     });
 
     wss.on('connection', c => {
