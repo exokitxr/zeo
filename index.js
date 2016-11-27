@@ -23,7 +23,9 @@ class ArchaeServer {
   constructor({server, app, wss} = {}) {
     server = server || _getServer();
     app = app || express();
-    wss = wss || new ws.Server({ server });
+    wss = wss || new ws.Server({
+      noServer: true,
+    });
 
     this.server = server;
     this.app = app;
@@ -517,6 +519,26 @@ class ArchaeServer {
     app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
     server.on('request', app);
 
+    const upgradeHandlers = [];
+    server.addUpgradeHandler = upgradeHandler => {
+      upgradeHandlers.push(upgradeHandler);
+    };
+    server.removeUpgradeHandler = upgradeHandler => {
+      upgradeHandlers.splice(upgradeHandlers.indexOf(upgradeHandler), 1);
+    };
+    server.on('upgrade', (req, socket, head) => {
+      for (let i = 0; i < upgradeHandlers.length; i++) {
+        const upgradeHandler = upgradeHandlers[i];
+        if (upgradeHandler(req, socket, head) === false) {
+          break;
+        }
+      }
+
+      wss.handleUpgrade(req, socket, head, c => {
+        wss.emit('connection', c);
+      });
+    });
+
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
       if (url === '/archae/ws') {
@@ -729,7 +751,7 @@ const _addModule = (module, type, cb) => {
         if (code === 0) {
           cb();
         } else {
-          const err = new Error('yard install error: ' + code);
+          const err = new Error('yarn install error: ' + code);
           cb(err);
         }
 

@@ -1,0 +1,12 @@
+{
+  "name": "shell",
+  "version": "0.0.1",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "get-random-port": "0.0.1",
+    "http-proxy": "^1.15.2",
+    "pty.js": "^0.3.1",
+    "socket.io": "^1.7.0"
+  }
+}
