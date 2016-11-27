@@ -15,6 +15,7 @@ require('webvr-polyfill');
 
 const events = require('events');
 const EventEmitter = events.EventEmitter;
+const mod = require('mod-loop');
 
 const VREffect = require('./lib/three-extra/VREffect');
 
@@ -583,8 +584,8 @@ class WebVR {
                 const {rotation: quaternion} = this;
 
                 const rotation = new THREE.Euler().setFromQuaternion(quaternion, camera.rotation.order);
-                rotation.x += (-e.movementY * ROTATION_SPEED);
-                rotation.y += (-e.movementX * ROTATION_SPEED);
+                rotation.x = Math.max(Math.min(rotation.x - e.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
+                rotation.y = mod(rotation.y - e.movementX * ROTATION_SPEED, Math.PI * 2);
                 quaternion.setFromEuler(rotation);
 
                 this.updateMatrix();

@@ -5,6 +5,7 @@
   "server": "server.js",
   "dependencies": {
     "events": "",
+    "mod-loop": "0.0.2",
     "webvr-polyfill": "^0.9.23"
   }
 }
