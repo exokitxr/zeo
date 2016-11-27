@@ -23,18 +23,10 @@ class Clouds {
       live = false;
     };
 
-    return Promise.all([
-      archae.requestEngines([
-        '/core/engines/zeo',
-      ]),
-      archae.requestPlugins([
-        '/core/plugins/geometry-utils',
-        '/core/plugins/text-utils',
-        '/core/plugins/creature-utils',
-      ]),
+    return archae.requestEngines([
+      '/core/engines/zeo',
     ]).then(([
-      [zeo],
-      [geometryUtils, textUtils, creatureUtils],
+      zeo,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
