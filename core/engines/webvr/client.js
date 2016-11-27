@@ -29,8 +29,6 @@ const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
-const webvrIconSrc = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 90 90" enable-background="new 0 0 90 90" xml:space="preserve"><path d="M81.671,21.323c-2.085-2.084-72.503-1.553-74.054,0c-1.678,1.678-1.684,46.033,0,47.713  c0.558,0.559,12.151,0.896,26.007,1.012l3.068-8.486c0,0,1.987-8.04,7.92-8.04c6.257,0,8.99,9.675,8.99,9.675l2.555,6.848  c13.633-0.116,24.957-0.453,25.514-1.008C83.224,67.483,83.672,23.324,81.671,21.323z M24.572,54.582  c-6.063,0-10.978-4.914-10.978-10.979c0-6.063,4.915-10.978,10.978-10.978s10.979,4.915,10.979,10.978  C35.551,49.668,30.635,54.582,24.572,54.582z M64.334,54.582c-6.063,0-10.979-4.914-10.979-10.979  c0-6.063,4.916-10.978,10.979-10.978c6.062,0,10.978,4.915,10.978,10.978C75.312,49.668,70.396,54.582,64.334,54.582z"/></svg>`;
-
 class WebVR {
   constructor(archae) {
     this._archae = archae;
@@ -84,7 +82,7 @@ class WebVR {
             };
           }
 
-          requestRenderLoop({display, stereoscopic, update, updateEye}) {
+          requestRenderLoop({display = null, stereoscopic = false, update = () => {}, updateEye = () => {}}) {
             let cleanups = [];
             const _destroy = () => {
               for (let i = 0; i < cleanups.length; i++) {
@@ -146,79 +144,31 @@ class WebVR {
 
                   const _renderLoop = () => {
                     const _updateStatus = () => {
-                      const stageMatrix = this.getStageMatrix();
-
-                      const _getMatrixFromPose = (pose, stageMatrix) => {
-                        const position = pose.position !== null ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
-                        const rotation = pose.orientation !== null ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
-                        const scale = new THREE.Vector3(1, 1, 1);
-                        const matrix = stageMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
-                        return matrix;
-                      };
-                      const _getPropertiesFromMatrix = matrix => {
-                        const position = new THREE.Vector3();
-                        const rotation = new THREE.Quaternion();
-                        const scale = new THREE.Vector3();
-                        matrix.decompose(position, rotation, scale);
-
-                        return {
-                          position,
-                          rotation,
-                          scale,
+                      if (display) {
+                        const _getMatrixFromPose = (pose, stageMatrix) => {
+                          const position = pose.position !== null ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
+                          const rotation = pose.orientation !== null ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
+                          const scale = new THREE.Vector3(1, 1, 1);
+                          const matrix = stageMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
+                          return matrix;
                         };
-                      };
-                      const _getHmdStatus = ({stageMatrix}) => {
-                        const pose = display.getPose();
+                        const _getPropertiesFromMatrix = matrix => {
+                          const position = new THREE.Vector3();
+                          const rotation = new THREE.Quaternion();
+                          const scale = new THREE.Vector3();
+                          matrix.decompose(position, rotation, scale);
 
-                        const matrix = _getMatrixFromPose(pose, stageMatrix);
-                        const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
-
-                        return {
-                          pose,
-                          matrix,
-                          position,
-                          rotation,
-                          scale,
-                        };
-                      };
-                      const _getGamepadsStatus = ({stageMatrix}) => {
-                        const gamepads = (() => {
-                          if (display.getGamepads) {
-                            return display.getGamepads();
-                          } else {
-                            return navigator.getGamepads();
-                          }
-                        })();
-                        const leftGamepad = gamepads[0];
-                        const rightGamepad = gamepads[1];
-
-                        const _isGamepadAvailable = gamepad => gamepad !== undefined && gamepad.pose !== null && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
-                        const _getGamepadPose = gamepad => {
-                          const {pose, buttons: [padButton, triggerButton, gripButton, menuButton]} = gamepad;
-
-                          const _getGamepadButtonStatus = button => {
-                            if (button) {
-                              const {touched, pressed, axes: [x, y], value} = button;
-                              return {
-                                touched,
-                                pressed,
-                                x,
-                                y,
-                                value,
-                              };
-                            } else {
-                              return null;
-                            }
+                          return {
+                            position,
+                            rotation,
+                            scale,
                           };
+                        };
+                        const _getHmdStatus = ({stageMatrix}) => {
+                          const pose = display.getPose();
 
                           const matrix = _getMatrixFromPose(pose, stageMatrix);
                           const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
-                          const buttons = {
-                            pad: _getGamepadButtonStatus(padButton),
-                            trigger: _getGamepadButtonStatus(triggerButton),
-                            grip: _getGamepadButtonStatus(gripButton),
-                            menu: _getGamepadButtonStatus(menuButton),
-                          };
 
                           return {
                             pose,
@@ -226,23 +176,74 @@ class WebVR {
                             position,
                             rotation,
                             scale,
-                            buttons,
+                          };
+                        };
+                        const _getGamepadsStatus = ({stageMatrix}) => {
+                          const gamepads = (() => {
+                            if (display.getGamepads) {
+                              return display.getGamepads();
+                            } else {
+                              return navigator.getGamepads();
+                            }
+                          })();
+                          const leftGamepad = gamepads[0];
+                          const rightGamepad = gamepads[1];
+
+                          const _isGamepadAvailable = gamepad => gamepad !== undefined && gamepad.pose !== null && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
+                          const _getGamepadPose = gamepad => {
+                            const {pose, buttons: [padButton, triggerButton, gripButton, menuButton]} = gamepad;
+
+                            const _getGamepadButtonStatus = button => {
+                              if (button) {
+                                const {touched, pressed, axes: [x, y], value} = button;
+                                return {
+                                  touched,
+                                  pressed,
+                                  x,
+                                  y,
+                                  value,
+                                };
+                              } else {
+                                return null;
+                              }
+                            };
+
+                            const matrix = _getMatrixFromPose(pose, stageMatrix);
+                            const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
+                            const buttons = {
+                              pad: _getGamepadButtonStatus(padButton),
+                              trigger: _getGamepadButtonStatus(triggerButton),
+                              grip: _getGamepadButtonStatus(gripButton),
+                              menu: _getGamepadButtonStatus(menuButton),
+                            };
+
+                            return {
+                              pose,
+                              matrix,
+                              position,
+                              rotation,
+                              scale,
+                              buttons,
+                            };
+                          };
+
+                          return {
+                            left: _isGamepadAvailable(leftGamepad) ? _getGamepadPose(leftGamepad) : null,
+                            right: _isGamepadAvailable(rightGamepad) ? _getGamepadPose(rightGamepad) : null,
                           };
                         };
 
-                        return {
-                          left: _isGamepadAvailable(leftGamepad) ? _getGamepadPose(leftGamepad) : null,
-                          right: _isGamepadAvailable(rightGamepad) ? _getGamepadPose(rightGamepad) : null,
+                        const stageMatrix = this.getStageMatrix();
+                        const status = {
+                          hmd: _getHmdStatus({stageMatrix}),
+                          gamepads: _getGamepadsStatus({stageMatrix}),
                         };
-                      };
+                        this.setStatus(status);
 
-                      const status = {
-                        hmd: _getHmdStatus({stageMatrix}),
-                        gamepads: _getGamepadsStatus({stageMatrix}),
-                      };
-                      this.setStatus(status);
-
-                      return status;
+                        return status;
+                      } else {
+                        return this.getStatus();
+                      }
                     };
                     const _render = () => {
                       update(); // update plugins
@@ -255,10 +256,16 @@ class WebVR {
                       }
                     };
 
-                    const _requestAnimationFrame = fn => display.isPresenting ? display.requestAnimationFrame(fn) : requestAnimationFrame(fn);
-                    const _cancelAnimationFrame = animationFrame => display.isPresenting ? display.cancelAnimationFrame(animationFrame) : cancelAnimationFrame(animationFrame);
+                    const _requestAnimationFrame = fn => (display && display.isPresenting) ?
+                      display.requestAnimationFrame(fn)
+                    :
+                      requestAnimationFrame(fn);
+                    const _cancelAnimationFrame = animationFrame => (display && display.isPresenting) ?
+                      display.cancelAnimationFrame(animationFrame)
+                    :
+                      cancelAnimationFrame(animationFrame);
                     const _submitFrame = pose => {
-                      if (display.isPresenting) {
+                      if (display && display.isPresenting) {
                         display.submitFrame(pose);
                       }
                     };
@@ -303,7 +310,7 @@ class WebVR {
             return result;
           };
 
-          requestEnterVR({update, updateEye, onExit}) {
+          requestEnterVR({update = () => {}, updateEye = () => {}, onExit = () => {}}) {
             const _startOpening = () => {
               this.isOpening = true;
             };
@@ -343,61 +350,62 @@ class WebVR {
                   {
                     source: domElement,
                   }
-                ]).then(() => new Promise((accept, reject) => {
-                  const _listen = () => {
-                    if (display instanceof FakeVRDisplay) {
-                      const fullscreenchange = () => {
-                        const {isPresenting} = display;
-                        if (!isPresenting) {
-                          _destroy();
+                ])
+                  .then(() => new Promise((accept, reject) => {
+                    const _listen = () => {
+                      if (display instanceof FakeVRDisplay) {
+                        const fullscreenchange = () => {
+                          const {isPresenting} = display;
+                          if (!isPresenting) {
+                            _destroy();
 
-                          onExit();
-                        }
-                      };
-                      // document.addEventListener('fullscreenchange', fullscreenchange);
-                      document.addEventListener('webkitfullscreenchange', fullscreenchange);
+                            onExit();
+                          }
+                        };
+                        // document.addEventListener('fullscreenchange', fullscreenchange);
+                        document.addEventListener('webkitfullscreenchange', fullscreenchange);
+
+                        cleanups.push(() => {
+                          display.destroy();
+
+                          // document.removeEventListener('fullscreenchange', fullscreenchange);
+                          document.removeEventListener('webkitfullscreenchange', fullscreenchange);
+                        });
+                      } else {
+                        const vrdisplaypresentchange = () => {
+                          const {isPresenting} = display;
+                          if (!isPresenting) {
+                            _destroy();
+
+                            onExit();
+                          }
+                        };
+                        document.addEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
+
+                        cleanups.push(() => {
+                          document.removeEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
+                        });
+                      }
+                    };
+                    const _requestRenderLoop = () => {
+                      const renderLoopPromise = this.requestRenderLoop({
+                        display,
+                        stereoscopic: true,
+                        update,
+                        updateEye,
+                      });
 
                       cleanups.push(() => {
-                        display.destroy();
-
-                        // document.removeEventListener('fullscreenchange', fullscreenchange);
-                        document.removeEventListener('webkitfullscreenchange', fullscreenchange);
+                        renderLoopPromise.destroy();
                       });
-                    } else {
-                      const vrdisplaypresentchange = () => {
-                        const {isPresenting} = display;
-                        if (!isPresenting) {
-                          _destroy();
 
-                          onExit();
-                        }
-                      };
-                      document.addEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
+                      return renderLoopPromise;
+                    };
 
-                      cleanups.push(() => {
-                        document.removeEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
-                      });
-                    }
-                  };
-                  const _requestRenderLoop = () => {
-                    const renderLoopPromise = this.requestRenderLoop({
-                      display,
-                      stereoscopic: true,
-                      update,
-                      updateEye,
-                    });
+                    _listen();
 
-                    cleanups.push(() => {
-                      renderLoopPromise.destroy();
-                    });
-
-                    return renderLoopPromise;
-                  };
-
-                  _listen();
-
-                  return _requestRenderLoop();
-                });
+                    return _requestRenderLoop();
+                  }));
               })
               .then(() => {
                 _stopOpening();
@@ -873,63 +881,7 @@ class WebVR {
         }
 
         const webvrInstance = new WebvrInstance();
-
-        const _requestAnchor = () => new Promise((accept, reject) => {
-          const img = new Image();
-          img.src = webvrIconSrc;
-          img.onload = () => {
-            const a = document.createElement('a');
-            a.style.cssText = `\
-position: absolute;
-bottom: 0;
-right: 0;
-width: 100px;
-height: 100px;
-background-color: rgba(255, 255, 255, 0.5);
-cursor: pointer;
-`;
-            a.appendChild(img);
-            document.body.appendChild(a);
-
-            const click = e => {
-              // XXX replace with webvr.requestEnterVR();
-              if (!webvrInstance.isOpen && !webvrInstance.isOpening) {
-                _enterVr()
-                  .then(() => {
-                    console.log('success!');
-                  })
-                  .catch(err => {
-                    console.log('failure', err);
-                  });
-              }
-            };
-            domElement.addEventListener('click', click);
-
-            const _destroy = () => {
-              document.body.removeChild(a);
-
-              domElement.removeEventListener('click', click);
-            };
-
-            accept({
-              destroy: _destroy,
-            });
-          };
-          img.onerror = err => {
-            reject(err);
-          };
-        });
-
-        return _requestAnchor()
-          .then(({destroy: destroyAnchor}) => {
-            if (live) {
-              this._cleanup = () => {
-                destroyAnchor();
-              };
-
-              return webvrInstance;
-            }
-          });
+        return webvrInstance;
       }
     });
   }
