@@ -2,7 +2,5 @@
   "name": "skybox",
   "version": "0.0.1",
   "client": "client.js",
-  "dependencies": {
-    "alea": "^0.0.9"
-  }
+  "dependencies": {}
 }

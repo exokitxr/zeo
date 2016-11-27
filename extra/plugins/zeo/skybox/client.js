@@ -1,4 +1,3 @@
-const Alea = require('alea');
 const SkyShader = require('./lib/three-extra/SkyShader');
 
 class Skybox {

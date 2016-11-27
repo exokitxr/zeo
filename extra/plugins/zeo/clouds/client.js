@@ -3,8 +3,12 @@ const indev = require('indev');
 
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
+const DEFAULT_SEED = 'zeo';
+
 const CLOUD_RATE = 0.00001;
 const CLOUD_SPEED = 2;
+
+const NUM_CELLS = 64;
 
 class Clouds {
   constructor(archae) {
@@ -46,7 +50,7 @@ class Clouds {
           ]) => {
             if (live) {
 
-              const rng = new Alea(DEFAULT_SEED);
+              const rng = new Alea();
               const generator = indev({
                 random: rng,
               });
@@ -84,21 +88,9 @@ class Clouds {
                   Math.floor(position.x / 8) * 8,
                   Math.floor(position.y / 8) * 8,
                   Math.floor(position.z / 8) * 8
-                  );
-
-                const nextWorldTime = _getWorldTime();
-                const nextPosition = _getPosition();
-                const prevWorldTime = lastWorldTime;
-                const prevPosition = lastPosition;
-                if (
-                  _getSnappedWorldTime(nextWorldTime) !== _getSnappedWorldTime(prevWorldTime) ||
-                  !_getSnappedPosition(nextPosition).equals(_getSnappedPosition(prevPosition))
-                ) {
-                  _setCloudMesh(nextPositionSnap, nextWorldTimeSnap);
-                }
+                );
 
                 const _setCloudMeshFrame = worldTime => {
-                  const {cloudsMesh} = scene;
                   const {cloudMeshes} = cloudsMesh;
 
                   cloudMeshes.forEach(cloudMesh => {
@@ -107,14 +99,12 @@ class Clouds {
                     cloudMesh.position.x = basePosition[0] - ((timeDiff / 1000) * CLOUD_SPEED);
                   });
                 };
-
                 const _setCloudMesh = (position, worldTime) => {
                   const clouds = (() => {
                     const result = [];
 
-                    const {cloudNoise} = scene;
-                    for (let y = -(NUM_CELLS * 2); y < NUM_CELLS * 2; y++) {
-                      for (let x = -(NUM_CELLS * 2); x < NUM_CELLS * 2; x++) {
+                    for (let y = -NUM_CELLS; y < NUM_CELLS; y++) {
+                      for (let x = -NUM_CELLS; x < NUM_CELLS; x++) {
                         const bx = position.x + x;
                         const by = position.y + y;
                         const ax = bx + Math.floor((worldTime / 1000) * CLOUD_SPEED);
@@ -196,6 +186,23 @@ class Clouds {
 
                   cloudsMesh.cloudMeshes = newCloudMeshes;
                 };
+
+                const nextWorldTime = _getWorldTime();
+                const nextPosition = _getPosition();
+                const prevWorldTime = lastWorldTime;
+                const prevPosition = lastPosition;
+
+                if (nextWorldTime !== prevWorldTime) {
+                  _setCloudMeshFrame(nextWorldTime);
+                }
+
+                const nextWorldTimeSnapped = _getSnappedWorldTime(nextWorldTime);
+                const prevWorldTimeSnapped = _getSnappedWorldTime(prevWorldTime);
+                const nextPositionSnapped = _getSnappedPosition(nextPosition);
+                const prevPositionSnapped = _getSnappedPosition(prevPosition);
+                if (nextWorldTimeSnapped !== prevWorldTimeSnapped || !nextPositionSnapped.equals(prevPositionSnapped)) {
+                  _setCloudMesh(nextPositionSnapped, nextWorldTimeSnapped);
+                }
               };
 
               this._cleanup = () => {

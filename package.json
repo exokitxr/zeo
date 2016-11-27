@@ -13,6 +13,7 @@
     "cryptoutils": "0.0.2",
     "express": "^4.14.0",
     "fs-extra": "^1.0.0",
+    "json-loader": "^0.5.4",
     "mkdirp": "^0.5.1",
     "multimutex": "0.0.1",
     "nedb": "^1.8.0",

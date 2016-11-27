@@ -14,6 +14,13 @@ const config = {
         query: {
           presets: ['es2015']
         }
+      },
+      {
+        test: /\.json$/,
+        loader: 'json',
+        query: {
+          presets: ['es2015']
+        }
       }
     ]
   }
