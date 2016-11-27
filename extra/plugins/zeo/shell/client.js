@@ -37,6 +37,37 @@ const _connect = () => {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
 
+  let lastSrc = '';
+  let lastDimensions = [window.innerWidth, window.innerHeight];
+  const _render = (src, dimensions, cb) => {
+    if (src !== lastSrc || dimensions[0] !== lastDimensions[0] || dimensions[1] !== lastDimensions[1]) {
+      const img = new Image();
+      img.src = 'data:image/svg+xml;charset=utf-8,' +
+      '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + (window.innerWidth) + '\' height=\'' + (window.innerHeight) + '\'>' +
+        '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+          '<style>' +
+            'x-row { display: block; }' +
+            'x-row:empty::before { content: \' \'; }' +
+          '</style>' +
+          src.replace(/^<body/, '<div').replace(/<\/body>$/, '</div>') +
+        '</foreignObject>' +
+      '</svg>';
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
+
+        cb && cb();
+      };
+      img.onerror = err => {
+        console.warn(err);
+      };
+
+      prevSrc = src;
+      prevDimensions = dimensions;
+    } else {
+      cb && cb();
+    }
+  };
+
   const _updateCanvasDimensions = () => {
     canvas.width = window.innerWidth * window.devicePixelRatio;
     canvas.height = window.innerHeight * window.devicePixelRatio;
@@ -46,7 +77,7 @@ const _connect = () => {
   _updateCanvasDimensions();
   window.addEventListener('resize', () => {
     _updateCanvasDimensions();
-    _render();
+    _render(lastSrc, [window.innerWidth, window.innerHeight]);
   });
 
   const terminalBuffer = (() => {
@@ -119,40 +150,13 @@ const _connect = () => {
           const html = terminalBuffer.childNodes[0].contentWindow.document.childNodes[0];
           const body = html.childNodes[1];
 
-          let prevSrc = '';
-          const _render = cb => {
-            const serializedBody = new XMLSerializer().serializeToString(body).replace(/^<body/, '<div').replace(/<\/body>$/, '</div>');
-            const nextSrc = 'data:image/svg+xml;charset=utf-8,' +
-              '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + (window.innerWidth) + '\' height=\'' + (window.innerHeight) + '\'>' +
-                '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                  '<style>' +
-                    'x-row { display: block; }' +
-                    'x-row:empty::before { content: \' \'; }' +
-                  '</style>' +
-                  serializedBody +
-                '</foreignObject>' +
-              '</svg>';
-
-            if (nextSrc !== prevSrc) {
-              const img = new Image();
-              img.src = nextSrc;
-              img.onload = () => {
-                ctx.drawImage(img, 0, 0, window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
-
-                cb && cb();
-              };
-              img.onerror = err => {
-                console.warn(err);
-              };
-
-              prevSrc = nextSrc;
-            } else {
-              cb && cb();
-            }
-          };
           const _animate = () => {
             requestAnimationFrame(() => {
-              _render(_animate);
+              _render(
+                new XMLSerializer().serializeToString(body),
+                [window.innerWidth, window.innerHeight],
+                _animate
+              );
             });
           };
 
