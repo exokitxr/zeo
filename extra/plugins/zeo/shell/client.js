@@ -150,17 +150,38 @@ const _connect = () => {
           const html = terminalBuffer.childNodes[0].contentWindow.document.childNodes[0];
           const body = html.childNodes[1];
 
-          const _animate = () => {
-            requestAnimationFrame(() => {
-              _render(
-                new XMLSerializer().serializeToString(body),
-                [window.innerWidth, window.innerHeight],
-                _animate
-              );
+          let renderQueued = false;
+          const _queueRender = () => {
+            if (!renderQueued) {
+              renderQueued = true;
+
+              requestAnimationFrame(() => {
+                _doRender(() => {
+                  renderQueued = false;
+                });
+              });
+            }
+          };
+          const _doRender = cb => {
+            _render(
+              new XMLSerializer().serializeToString(body),
+              [window.innerWidth, window.innerHeight],
+              cb
+            );
+          };
+          const _listen = () => {
+            new MutationObserver(() => {
+              _queueRender();
+            }).observe(body, {
+              childList: true,
+              subtree: true,
+              attributes: true,
+              characterData: true,
             });
           };
 
-          _animate();
+          _doRender();
+          _listen();
       });
   });
 
