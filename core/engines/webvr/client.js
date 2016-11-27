@@ -21,6 +21,9 @@ const VREffect = require('./lib/three-extra/VREffect');
 const DEFAULT_USER_HEIGHT = 1.6;
 const DEFAULT_USER_IPD = 62 / 1000;
 const DEFAULT_USER_FOV = 110;
+const DEFAULT_WIDTH = 1200;
+const DEFAULT_HEIGHT = 1080;
+const DEFAULT_ASPECT_RATIO = DEFAULT_WIDTH / DEFAULT_HEIGHT;
 
 const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
@@ -524,6 +527,28 @@ class WebVR {
                   this.updateGamepads();
                 }
 
+                getFrameData(frameData) {
+                  const eyeCamera = camera.clone();
+                  eyeCamera.fov = DEFAULT_USER_FOV;
+                  eyeCamera.aspect = DEFAULT_ASPECT_RATIO;
+                  eyeCamera.updateProjectionMatrix();
+                  const eyeCameraProjectionMatrixArray = eyeCamera.projectionMatrix.toArray();
+
+                  frameData.leftViewMatrix.set(new THREE.Matrix4().compose(
+                    camera.position.clone().add(new THREE.Vector3(-(DEFAULT_USER_IPD / 2), 0, 0).applyQuaternion(camera.quaternion)),
+                    camera.quaternion,
+                    camera.scale
+                  ).toArray());
+                  frameData.leftProjectionMatrix.set(eyeCameraProjectionMatrixArray);
+
+                  frameData.rightViewMatrix.set(new THREE.Matrix4().compose(
+                    camera.position.clone().add(new THREE.Vector3(DEFAULT_USER_IPD / 2, 0, 0).applyQuaternion(camera.quaternion)),
+                    camera.quaternion,
+                    camera.scale
+                  ).toArray());
+                  frameData.rightProjectionMatrix.set(eyeCameraProjectionMatrixArray);
+                }
+
                 getEyeParameters(side) {
                   return {
                     offset: [(DEFAULT_USER_IPD / 2) * (side === 'left' ? -1 : 1), 0, 0],
@@ -533,8 +558,8 @@ class WebVR {
                       downDegrees: DEFAULT_USER_FOV / 2,
                       leftDegrees: DEFAULT_USER_FOV / 2,
                     },
-                    renderWidth: 1080,
-                    renderHeight: 1200,
+                    renderWidth: DEFAULT_WIDTH,
+                    renderHeight: DEFAULT_HEIGHT,
                   };
                 }
 
@@ -731,8 +756,8 @@ class WebVR {
 
                 const _open = () => {
                   webvrInstance.open(display, {
-                    // stereoscopic: true,
-                    stereoscopic: false,
+                    stereoscopic: true,
+                    // stereoscopic: false,
                   });
 
                   let animationFrame = null;

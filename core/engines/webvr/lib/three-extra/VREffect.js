@@ -230,11 +230,9 @@ THREE.VREffect = function ( renderer, onError ) {
 	// render
 
 	var cameraL = new THREE.PerspectiveCamera();
-  cameraL.eye = 'left';
 	cameraL.layers.enable( 1 );
 
 	var cameraR = new THREE.PerspectiveCamera();
-  cameraR.eye = 'right';
 	cameraR.layers.enable( 2 );
 
   this.onEye = null;
@@ -243,14 +241,14 @@ THREE.VREffect = function ( renderer, onError ) {
 
 		if ( vrDisplay && scope.isPresenting ) {
 
-			var autoUpdate = scene.autoUpdate;
+			/* var autoUpdate = scene.autoUpdate;
 
 			if ( autoUpdate ) {
 
 				scene.updateMatrixWorld();
 				scene.autoUpdate = false;
 
-			}
+			} */
 
 			var eyeParamsL = vrDisplay.getEyeParameters( 'left' );
 			var eyeParamsR = vrDisplay.getEyeParameters( 'right' );
@@ -339,9 +337,6 @@ THREE.VREffect = function ( renderer, onError ) {
 
 			}
 
-      cameraL.rotation.order = camera.rotation.order;
-      this.onEye && this.onEye(cameraL);
-
 			// render left eye
 			if ( renderTarget ) {
 
@@ -354,10 +349,10 @@ THREE.VREffect = function ( renderer, onError ) {
 				renderer.setScissor( renderRectL.x, renderRectL.y, renderRectL.width, renderRectL.height );
 
 			}
-			renderer.render( scene, cameraL, renderTarget, forceClear );
 
-      cameraR.rotation.order = camera.rotation.order;
-      this.onEye && this.onEye(cameraR);
+      cameraL.rotation.order = camera.rotation.order;
+      this.onEye && this.onEye(cameraL);
+			renderer.render( scene, cameraL, renderTarget, forceClear );
 
 			// render right eye
 			if ( renderTarget ) {
@@ -371,6 +366,9 @@ THREE.VREffect = function ( renderer, onError ) {
 				renderer.setScissor( renderRectR.x, renderRectR.y, renderRectR.width, renderRectR.height );
 
 			}
+
+      cameraR.rotation.order = camera.rotation.order;
+      this.onEye && this.onEye(cameraR);
 			renderer.render( scene, cameraR, renderTarget, forceClear );
 
 			if ( renderTarget ) {
@@ -387,11 +385,11 @@ THREE.VREffect = function ( renderer, onError ) {
 
 			}
 
-			if ( autoUpdate ) {
+			/* if ( autoUpdate ) {
 
 				scene.autoUpdate = true;
 
-			}
+			} */
 
 			if ( scope.autoSubmitFrame ) {
 

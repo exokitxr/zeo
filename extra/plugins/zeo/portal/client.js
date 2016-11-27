@@ -341,19 +341,12 @@ class Portal {
                     if (!sourcePortalCamera.parent) {
                       scene.add(sourcePortalCamera);
                     }
-                    sourcePortalCamera.fov = eyeCamera.fov * (eyeCamera.eye ? 2 : 1);
-                    sourcePortalCamera.aspect = eyeCamera.aspect;
-                    sourcePortalCamera.near = eyeCamera.near;
-                    sourcePortalCamera.far = eyeCamera.far;
-                    sourcePortalCamera.rotation.order = eyeCamera.rotation.order;
+                    sourcePortalCamera.projectionMatrix.copy(eyeCamera.projectionMatrix);
 
                     const sourcePortalCameraPosition = _getSourcePortalCameraPosition(eyeCamera, sourcePortalMesh, targetPortalMesh);
 
                     sourcePortalCamera.position.copy(sourcePortalCameraPosition.position);
                     sourcePortalCamera.rotation.copy(sourcePortalCameraPosition.rotation);
-
-                    // update portal camera matrices
-                    sourcePortalCamera.updateProjectionMatrix();
                   })();
 
                   // perform the render
