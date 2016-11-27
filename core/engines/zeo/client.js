@@ -112,7 +112,9 @@ cursor: pointer;
             document.body.appendChild(a);
 
             const click = e => {
-              _enterVR();
+              if (!webvr.display) {
+                _enterVR();
+              }
             };
             domElement.addEventListener('click', click);
 
