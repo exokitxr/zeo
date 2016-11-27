@@ -48,7 +48,7 @@ class Zeo {
                 const startTime = Date.now();
                 let worldTime = 0;
                 let animationFrame = null;
-                const _tick = () => {
+                const _update = () => {
                   // update state
                   const now = Date.now();
                   worldTime = now - startTime;
@@ -60,7 +60,7 @@ class Zeo {
                     }
                   });
                 };
-                const _eye = camera => {
+                const _updateEye = camera => {
                   // update plugins per eye
                   plugins.forEach(plugin => {
                     if (typeof plugin.updateEye === 'function') {
@@ -68,6 +68,11 @@ class Zeo {
                     }
                   });
                 };
+
+                webvr.requestRenderLoop({
+                  update: _update,
+                  update: _updateEye,
+                });
 
                 let cleanups = [];
                 const _cleanup = () => {
