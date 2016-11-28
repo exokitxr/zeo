@@ -122,13 +122,7 @@ class Shell {
 }
 
 const _connect = ({update = () => {}}) => {
-  /* const canvas = document.createElement('canvas');
-  canvas.width = WIDTH * window.devicePixelRatio;
-  canvas.height = HEIGHT * window.devicePixelRatio;
-  canvas.style.width = WIDTH + 'px';
-  canvas.style.height = HEIGHT + 'px';
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = true; */
+  let cleanups = [];
 
   let lastSrc = '';
   const _render = (src, cb) => {
@@ -145,8 +139,6 @@ const _connect = ({update = () => {}}) => {
         '</foreignObject>' +
       '</svg>';
       img.onload = () => {
-        // ctx.drawImage(img, 0, 0, window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
-
         update(img);
 
         cb && cb();
@@ -161,22 +153,20 @@ const _connect = ({update = () => {}}) => {
     }
   };
 
-  /* window.addEventListener('resize', () => {
-    _render(lastSrc);
-  }); */
-
   const terminalBuffer = (() => {
     const result = document.createElement('div');
-    result.style = 'position: absolute; top: 0; bottom: 0; left: 0; right: 0; overflow: hidden; visibility: hidden;';
+    result.style = 'position: absolute; top: 0; bottom: 0; width: ' + WIDTH + 'px; height: ' + HEIGHT + 'px; overflow: hidden; visibility: hidden;';
     return result;
   })();
-  window.document.body.appendChild(terminalBuffer);
+  document.body.appendChild(terminalBuffer);
 
   const term = (() => {
     const result = new hterm.Terminal();
     result.prefs_.set('audible-bell-sound', '');
     result.prefs_.set('font-size', 14);
     result.prefs_.set('cursor-color', '#FFFFFF');
+
+    result.scrollPort_.onResize = () => {}; // HACK: do not actualy listen for window resizes
     result.decorate(terminalBuffer);
 
     result.setCursorPosition(0, 0);
@@ -251,13 +241,17 @@ const _connect = ({update = () => {}}) => {
             _render(new XMLSerializer().serializeToString(body), cb);
           };
           const _listen = () => {
-            new MutationObserver(() => {
+            const observer = new MutationObserver(() => {
               _queueRender();
             }).observe(body, {
               childList: true,
               subtree: true,
               attributes: true,
               characterData: true,
+            });
+
+            cleanups.push(() => {
+              observer.disconnect();
             });
           };
 
@@ -278,8 +272,16 @@ const _connect = ({update = () => {}}) => {
     console.log("Socket.io connection closed");
   });
 
-  const _destroy = () => {
+  cleanups.push(() => {
     socket.disconnect();
+  });
+
+  const _destroy = () => {
+    for (let i = 0; i < cleanups.length; i++) {
+      const cleanup = cleanups[i];
+      cleanup();
+    }
+    cleanups = [];
   };
 
   return {
