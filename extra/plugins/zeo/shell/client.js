@@ -5,6 +5,19 @@ const io = require('./node_modules/socket.io-client/dist/socket.io.js');
 hterm.defaultStorage = new lib.Storage.Local();
 lib.ensureRuntimeDependencies_ = () => {}; // HACK: elide the check, because it just checks for globals exposure
 
+const WIDTH = 1280;
+const HEIGHT = 1024;
+const ASPECT_RATIO = WIDTH / HEIGHT;
+const MESH_WIDTH = 1;
+const MESH_HEIGHT = MESH_WIDTH / ASPECT_RATIO;
+
+const transparentImg = (() => {
+  const img = new Image();
+  img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  img.update = () => {};
+  return img;
+})();
+
 class Shell {
   constructor(archae) {
     this._archae = archae;
@@ -24,26 +37,105 @@ class Shell {
       zeo,
     ]) => {
       if (live) {
-        const canvas = _connect();
+        const {THREE, scene} = zeo;
 
-        window.document.body.appendChild(canvas);
+        let cleanups = [];
+        this._cleanup = () => {
+          for (let i = 0; i < cleanups.length; i++) {
+            const cleanup = cleanups[i];
+            cleanup();
+          }
+          cleanups = [];
+        };
+
+        const shellMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(MESH_WIDTH, MESH_HEIGHT, 1, 1);
+          const texture = (() => {
+            const texture = new THREE.Texture(
+              transparentImg,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.LinearFilter,
+              THREE.LinearFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              16
+            );
+            texture.needsUpdate = true;
+
+            const term = _connect({
+              update: (img) => {
+                texture.image = img;
+                texture.needsUpdate = true;
+              },
+            });
+
+            cleanups.push(() => {
+              term.destroy();
+            });
+
+            return texture;
+          })();
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.x = 0.5;
+          mesh.position.y = 1.5;
+          mesh.position.z = 0;
+          mesh.rotation.y = -(Math.PI / 2);
+          return mesh;
+        })();
+        scene.add(shellMesh);
+
+        const boxMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(MESH_WIDTH, MESH_HEIGHT, 0.1);
+          const material = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            wireframe: true,
+            opacity: 0.5,
+            transparent: true,
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.x = 0.5;
+          mesh.position.y = 1.5;
+          mesh.position.z = 0;
+          mesh.rotation.y = -(Math.PI / 2);
+          return mesh;
+        })();
+        scene.add(boxMesh);
+
+        cleanups.push(() => {
+          scene.remove(shellMesh);
+          scene.remove(boxMesh);
+        });
       }
     });
   }
+
+  unmount() {
+    this._cleanup();
+  }
 }
 
-const _connect = () => {
-  const canvas = document.createElement('canvas');
+const _connect = ({update = () => {}}) => {
+  /* const canvas = document.createElement('canvas');
+  canvas.width = WIDTH * window.devicePixelRatio;
+  canvas.height = HEIGHT * window.devicePixelRatio;
+  canvas.style.width = WIDTH + 'px';
+  canvas.style.height = HEIGHT + 'px';
   const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = true; */
 
   let lastSrc = '';
-  let lastDimensions = [window.innerWidth, window.innerHeight];
-  const _render = (src, dimensions, cb) => {
-    if (src !== lastSrc || dimensions[0] !== lastDimensions[0] || dimensions[1] !== lastDimensions[1]) {
+  const _render = (src, cb) => {
+    if (src !== lastSrc) {
       const img = new Image();
       img.src = 'data:image/svg+xml;charset=utf-8,' +
-      '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + (window.innerWidth) + '\' height=\'' + (window.innerHeight) + '\'>' +
+      '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + WIDTH + '\' height=\'' + HEIGHT + '\'>' +
         '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
           '<style>' +
             'x-row { display: block; }' +
@@ -53,7 +145,9 @@ const _connect = () => {
         '</foreignObject>' +
       '</svg>';
       img.onload = () => {
-        ctx.drawImage(img, 0, 0, window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
+        // ctx.drawImage(img, 0, 0, window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
+
+        update(img);
 
         cb && cb();
       };
@@ -62,23 +156,14 @@ const _connect = () => {
       };
 
       prevSrc = src;
-      prevDimensions = dimensions;
     } else {
       cb && cb();
     }
   };
 
-  const _updateCanvasDimensions = () => {
-    canvas.width = window.innerWidth * window.devicePixelRatio;
-    canvas.height = window.innerHeight * window.devicePixelRatio;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-  };
-  _updateCanvasDimensions();
-  window.addEventListener('resize', () => {
-    _updateCanvasDimensions();
-    _render(lastSrc, [window.innerWidth, window.innerHeight]);
-  });
+  /* window.addEventListener('resize', () => {
+    _render(lastSrc);
+  }); */
 
   const terminalBuffer = (() => {
     const result = document.createElement('div');
@@ -103,11 +188,11 @@ const _connect = () => {
     return result;
   })();
 
-  const _focus = () => {
-    term.focus();
-  };
-  canvas.addEventListener('click', _focus);
-  setTimeout(_focus);
+  window.addEventListener('keydown', e => {
+    if (e.keyCode === 192) {
+      term.focus();
+    }
+  });
 
   const socket = io(window.location.origin, {
     path: '/archae/shell/socket.io',
@@ -115,22 +200,22 @@ const _connect = () => {
   let buf = '';
 
   function Wetty(argv) {
-      this.argv_ = argv;
-      this.io = null;
-      this.pid_ = -1;
+    this.argv_ = argv;
+    this.io = null;
+    this.pid_ = -1;
   }
   Wetty.prototype.run = function() {
-      this.io = this.argv_.io.push();
+    this.io = this.argv_.io.push();
 
-      this.io.onVTKeystroke = this.sendString_.bind(this);
-      this.io.sendString = this.sendString_.bind(this);
-      this.io.onTerminalResize = this.onTerminalResize.bind(this);
+    this.io.onVTKeystroke = this.sendString_.bind(this);
+    this.io.sendString = this.sendString_.bind(this);
+    this.io.onTerminalResize = this.onTerminalResize.bind(this);
   }
   Wetty.prototype.sendString_ = function(str) {
-      socket.emit('input', str);
+    socket.emit('input', str);
   };
   Wetty.prototype.onTerminalResize = function(col, row) {
-      socket.emit('resize', { col: col, row: row });
+    socket.emit('resize', { col: col, row: row });
   };
 
   socket.on('connect', function() {
@@ -163,11 +248,7 @@ const _connect = () => {
             }
           };
           const _doRender = cb => {
-            _render(
-              new XMLSerializer().serializeToString(body),
-              [window.innerWidth, window.innerHeight],
-              cb
-            );
+            _render(new XMLSerializer().serializeToString(body), cb);
           };
           const _listen = () => {
             new MutationObserver(() => {
@@ -186,18 +267,24 @@ const _connect = () => {
   });
 
   socket.on('output', function(data) {
-      if (!term) {
-          buf += data;
-          return;
-      }
-      term.io.writeUTF16(data);
+    if (!term) {
+      buf += data;
+      return;
+    }
+    term.io.writeUTF16(data);
   });
 
   socket.on('disconnect', function() {
-      console.log("Socket.io connection closed");
+    console.log("Socket.io connection closed");
   });
 
-  return canvas;
+  const _destroy = () => {
+    socket.disconnect();
+  };
+
+  return {
+    destroy: _destroy,
+  };
 };
 
 module.exports = Shell;

@@ -210,8 +210,9 @@ class Youtube {
             const height = controlsHeight;
             const depth = controlsHeight / 4;
             const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+            const material = wireframeMaterial;
 
-            const mesh = new THREE.Mesh(geometry, wireframeMaterial);
+            const mesh = new THREE.Mesh(geometry, material);
             mesh.visible = false;
             mesh.renderOrder = -1;
             mesh.visible = false;
