@@ -11,6 +11,8 @@ const ASPECT_RATIO = WIDTH / HEIGHT;
 const MESH_WIDTH = 1;
 const MESH_HEIGHT = MESH_WIDTH / ASPECT_RATIO;
 
+const TILDE_KEY_CODE = 192;
+
 const transparentImg = (() => {
   const img = new Image();
   img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -178,11 +180,34 @@ const _connect = ({update = () => {}}) => {
     return result;
   })();
 
-  window.addEventListener('keydown', e => {
-    if (e.keyCode === 192) {
+  const windowKeydown = e => {
+    if (e.keyCode === TILDE_KEY_CODE) {
       term.focus();
     }
+  };
+  window.addEventListener('keydown', windowKeydown);
+  const screenKeydown = e => {
+    if (e.keyCode === TILDE_KEY_CODE) {
+      if (document.activeElement === term.scrollPort_.iframe_) {
+        document.activeElement.blur();
+
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+  };
+  term.scrollPort_.screen_.addEventListener('keydown', screenKeydown, true);
+
+  cleanups.push(() => {
+    window.removeEventListener('keydown', windowKeydown);
+    term.scrollPort_.screen_.removeEventListener('keydown', screenKeydown);
   });
+
+  cleanups.push(() => {
+    window.removeEventListener('keydown', keydown);
+  });
+
+  term.screen_.addEventListener
 
   const socket = io(window.location.origin, {
     path: '/archae/shell/socket.io',
