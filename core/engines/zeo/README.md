@@ -1,8 +1,10 @@
 # zeo.sh
 
-JavaScript modules in WebVR.
+JavaScript `npm` plugins in WebVR.
 
-Zeo.sh lets you run `npm` modules in VR, from your browser. Under the hood it's a `Three.js` / `WebVR` rendering engine that polyfills all of the complexity of getting things working, so you can write a JS file and see it running in VR. Everything is loosely glued together by the [`archae`]() `npm` module loader.
+Zeo.sh lets you run `npm` modules in VR, from your browser. Under the hood it's a `Three.js` / `WebVR` rendering engine that polyfills the complexity of getting things working, so you can write a JS file and (literally) experience it running. Everything is nicely glued together by the [`archae`]() `npm` module loader.
+
+:warning: Heavy development, expect things to be broken.
 
 ## Features
 
@@ -16,8 +18,10 @@ Zeo.sh lets you run `npm` modules in VR, from your browser. Under the hood it's 
   - Positional audio tracking
   - Youtube player
   - VR `bash` shell
-  - Everything is JS
-- More stuff in progress:
+  - Everything is JS and hackable
+
+## In progress
+
   - A menu UI infrastructure
   - Plugin management without leaving VR
   - Voice controls and reading backed by Watson
