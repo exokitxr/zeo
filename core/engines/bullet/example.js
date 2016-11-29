@@ -1,15 +1,15 @@
-const Antikyth = require('.');
+const Bullet = require('.');
 
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
 const SET_TIME = 1000 * 2;
 
-const antikyth = new Antikyth();
+const bullet = new Bullet();
 
 const world = (() => {
-  const result = new Antikyth.World();
+  const result = new Bullet.World();
 
-  const floor = new Antikyth.Plane({
+  const floor = new Bullet.Plane({
     position: [0, 0, 0],
     dimensions: [0, 1, 0],
     mass: 0,
@@ -17,7 +17,7 @@ const world = (() => {
   result.add(floor);
   result.floor = floor;
 
-  const box = new Antikyth.Box({
+  const box = new Bullet.Box({
     position: [0, 2, 0],
     rotation: [Math.PI / 8, 0, 0, 1],
     dimensions: [1, 1, 1],
@@ -29,7 +29,7 @@ const world = (() => {
   result.add(box);
   result.box = box;
 
-  const sphere = new Antikyth.Sphere({
+  const sphere = new Bullet.Sphere({
     position: [10, 2, 10],
     size: 1,
     mass: 1,
@@ -40,7 +40,7 @@ const world = (() => {
   result.add(sphere);
   result.sphere = sphere;
 
-  const triangleMesh = new Antikyth.TriangleMesh({
+  const triangleMesh = new Bullet.TriangleMesh({
     position: [10, 0, 10],
     rotation: [0, 0, 0],
     scale: [0.5, 0.5, 0.5],
@@ -56,7 +56,7 @@ const world = (() => {
 
   return result;
 })();
-antikyth.add(world);
+bullet.add(world);
 
 // main loop
 
@@ -69,4 +69,4 @@ setInterval(() => {
   box.setRotation(Math.PI / 8, 0, 0, 1);
 }, SET_TIME);
 
-antikyth.start();
+bullet.start();

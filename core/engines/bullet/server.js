@@ -1,4 +1,4 @@
-const Antikyth = require('antikyth');
+const Bullet = require('bullet');
 
 const OPEN = 1; // ws.OPEN
 const engineKey = null;
@@ -9,7 +9,7 @@ class Context {
     this.updateIndex = new Map(); // engineId -> clientId
     this.childIndex = new Map(); // parentId -> [childId]
 
-    const engine = new Antikyth();
+    const engine = new Bullet();
     this.setEngine(engine);
   }
 
@@ -33,25 +33,25 @@ class Context {
       return false;
     };
 
-    return _hasInstanceOf(Antikyth.World) && _hasInstanceOf(Antikyth.Body);
+    return _hasInstanceOf(Bullet.World) && _hasInstanceOf(Bullet.Body);
   }
 
   create(type, id, opts) {
     const object = (() => {
       switch (type) {
-        case 'world': return new Antikyth.World(opts);
-        case 'plane': return new Antikyth.Plane(opts);
-        case 'box': return new Antikyth.Box(opts);
-        case 'sphere': return new Antikyth.Sphere(opts);
-        case 'convexHull': return new Antikyth.ConvexHull(opts);
-        case 'triangleMesh': return new Antikyth.TriangleMesh(opts);
-        case 'compound': return new Antikyth.Compound(opts);
+        case 'world': return new Bullet.World(opts);
+        case 'plane': return new Bullet.Plane(opts);
+        case 'box': return new Bullet.Box(opts);
+        case 'sphere': return new Bullet.Sphere(opts);
+        case 'convexHull': return new Bullet.ConvexHull(opts);
+        case 'triangleMesh': return new Bullet.TriangleMesh(opts);
+        case 'compound': return new Bullet.Compound(opts);
         case 'constraint': {
           const {bodyAId, bodyBId, pivotA, pivotB} = opts;
           const bodyA = this.objects.get(bodyAId);
           const bodyB = this.objects.get(bodyBId);
 
-          return new Antikyth.Constraint({
+          return new Bullet.Constraint({
             bodyA,
             bodyB,
             pivotA,
@@ -222,7 +222,7 @@ class Context {
   }
 }
 
-class AntikythServer {
+class BulletServer {
   constructor(archae) {
     this._archae = archae;
   }
@@ -238,7 +238,7 @@ class AntikythServer {
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
 
-      if (url === '/archae/antikythWs') {
+      if (url === '/archae/bulletWs') {
         c.on('message', s => {
           const m = JSON.parse(s);
           if (typeof m === 'object' && m && typeof m.method === 'string' && typeof m.id === 'string' && Array.isArray(m.args)) {
@@ -359,4 +359,4 @@ class AntikythServer {
   }
 }
 
-module.exports = AntikythServer;
+module.exports = BulletServer;

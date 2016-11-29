@@ -1,6 +1,6 @@
 {
-  "name": "antikyth",
-  "version": "0.0.2",
+  "name": "bullet",
+  "version": "0.0.1",
   "main": "index.js",
   "client": "client.js",
   "server": "server.js",

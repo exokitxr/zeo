@@ -24,13 +24,13 @@ class Zeo {
       '/core/engines/webvr',
       '/core/engines/three',
       '/core/engines/somnifer',
-      '/core/engines/antikyth',
+      '/core/engines/bullet',
       '/core/engines/heartlink',
     ]).then(([
       webvr,
       three,
       somnifer,
-      antikyth,
+      bullet,
       heartlink,
     ]) => {
       if (live) {
@@ -151,7 +151,7 @@ cursor: pointer;
 
                   accept(world);
                 } else {
-                  antikyth.requestWorld(worldName)
+                  bullet.requestWorld(worldName)
                     .then(physics => {
                       const player = heartlink.getPlayer(); // XXX make this per-world
 
@@ -225,7 +225,7 @@ cursor: pointer;
                 }
               });
               const _requestDeleteWorld = worldName => new Promise((accept, reject) => {
-                antikyth.releaseWorld(worldName)
+                bullet.releaseWorld(worldName)
                   .then(() => {
                     worlds.delete(worldName);
 
