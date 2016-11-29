@@ -4,12 +4,12 @@ const modelsPath = '/archae/models/models/';
 
 const MODELS = {
   cloud: {
-    path: 'cloud/cloud.json',
+    path: 'https://cdn.rawgit.com/modulesio/zeo-data/8a67c22f91517e457ddadd9241f594ed5180077f/models/cloud/cloud.json',
     position: [-1, 1, -1],
     rotation: [0, Math.PI, 0],
     scale: [0.5, 0.5, 0.5],
   },
-  lightning: {
+  /* lightning: {
     path: 'lightning/lightning.json',
     position: [0, 0.75, -1],
     rotation: [0, Math.PI, 0],
@@ -32,7 +32,7 @@ const MODELS = {
     position: [0, 0, -1],
     rotation: [0, Math.PI, 0],
     scale: [0.025, 0.025, 0.025],
-  },
+  }, */
 };
 
 const modelName = 'cloud';
@@ -109,7 +109,14 @@ class Models {
   }
 }
 
-const _getModelPath = model => modelsPath + model.path;
+const _getModelPath = model  => {
+  const {path} = model;
+  if (/^.*?:\/\//.test(path)) {
+    return path;
+  } else {
+    return modelsPath + path;
+  }
+};
 const _getTexturePath = url => url.substring(0, url.lastIndexOf('/') + 1);
 
 module.exports = Models;
