@@ -1,3 +1,22 @@
+const env = (() => {
+  const webworker = typeof window === 'undefined';
+  const root = !webworker;
+
+  return {
+    root,
+    webworker,
+  };
+})();
+const global = (() => {
+  if (env.root) {
+    return window;
+  } else if (env.webworker) {
+    return self;
+  } else {
+    return null;
+  }
+})();
+
 // begin inline
 
 class MultiMutex {
@@ -243,31 +262,22 @@ class ArchaeClient {
 
   loadModule(module, type, exports, cb) {
     if (!exports[module]) {
-      window.module = {};
+      global.module = {};
 
-      const script = document.createElement('script');
-      script.src = '/archae/' + type + '/' + module + '.js';
-      script.async = true;
-      script.onload = () => {
-        console.log('module loaded:', type + '/' + module);
+      _loadScript('/archae/' + type + '/' + module + '.js')
+        .then() => {
+          console.log('module loaded:', type + '/' + module);
 
-        exports[module] = window.module.exports;
-        window.module = {};
+          exports[module] = global.module.exports;
+          global.module = {};
 
-        cb(null, {
-          loaded: true,
+          cb(null, {
+            loaded: true,
+          });
+        })
+        .catch(err => {
+          cb(err);
         });
-        cleanup();
-      };
-      script.onerror = err => { // XXX handle the no client script case
-        cb(err);
-        cleanup();
-      };
-
-      document.body.appendChild(script);
-      const cleanup = () => {
-        document.body.removeChild(script);
-      };
     } else {
       cb(null, {
         loaded: false,
@@ -454,7 +464,53 @@ const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/
 
 const _makeId = () => Math.random().toString(36).substring(7);
 
+const _loadScript = (() => {
+  if (env.root) {
+    return src => new Promise((accept, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = () => {
+        accept();
+        _cleanup();
+      };
+      script.onerror = err => {
+        reject(err);
+        _cleanup();
+      };
+      document.body.appendChild(script);
+
+      const _cleanup = () => {
+        document.body.removeChild(script);
+      };
+    });
+  } else if (env.webworker) {
+    return src => fetch(src)
+      .then(res => res.text()
+        .then(s => _asyncEval(s))
+      )
+  } else {
+    return () => {
+      throw new Error('unimplemented: cannot load scripts');
+    };
+  }
+})();
+const _asyncEval = s => new Promise((accept, reject) => {
+  let error = null;
+  try {
+    eval(s);
+  } catch(err) {
+    error = err;
+  }
+
+  if (!error) {
+    accept();
+  } else {
+    reject(error);
+  }
+});
+
 const archae = new ArchaeClient();
 archae.bootstrap();
 
-window.archae = archae;
+global.archae = archae;
