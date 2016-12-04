@@ -299,7 +299,7 @@ class ArchaeClient {
             const worker = new Worker('/archae/worker.js');
             worker.postMessage({
               method: 'init',
-              [ type, name ],
+              [ type, name, name + '-worker' ],
             });
             worker.onmessage = onmessage;
             worker.onerror = onerror;
@@ -318,6 +318,12 @@ class ArchaeClient {
         const fakeWorker = {
           postMessage(m) {
             _getNextWorker().postMessage(m);
+          },
+          terminate() {
+            for (let i = 0; i < count; i++) {
+              const worker = workers[i];
+              worker.terminate();
+            }
           },
           onmessage: null,
           request(method, args = []) {
