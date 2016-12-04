@@ -316,8 +316,8 @@ class ArchaeClient {
         }
 
         const fakeWorker = {
-          postMessage(m) {
-            _getNextWorker().postMessage(m);
+          postMessage(m, transfers) {
+            _getNextWorker().postMessage(m, transfers);
           },
           terminate() {
             for (let i = 0; i < count; i++) {
@@ -326,7 +326,7 @@ class ArchaeClient {
             }
           },
           onmessage: null,
-          request(method, args = []) {
+          request(method, args = [], transfers) {
             return new Promise((accept, reject) => {
               const id = _makeId();
 
@@ -334,7 +334,7 @@ class ArchaeClient {
                 method,
                 args,
                 id,
-              });
+              }, transfers);
 
               responseListeners.set(id, (err, result) => {
                 if (!err) {

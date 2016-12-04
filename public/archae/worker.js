@@ -10,12 +10,12 @@ self.onmessage = e => {
       const {data} = e;
       const {method, args, id} = data;
 
-      const cb = (error = null, result = null) => {
+      const cb = (error = null, result = null, transfers) => {
         self.postMessage({
           id,
           error,
           result,
-        });
+        }, transfers);
       };
 
       if (self.onrequest) {
