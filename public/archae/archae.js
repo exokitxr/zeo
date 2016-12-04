@@ -102,6 +102,8 @@ class ArchaeClient {
     this.pluginInstances = {};
     this.pluginApis = {};
 
+    this.moduleInstances = new Map();
+
     this.enginesMutex = new MultiMutex();
     this.pluginsMutex = new MultiMutex();
   }
@@ -256,15 +258,115 @@ class ArchaeClient {
     });
   }
 
+  requestWorker(moduleInstance, options = {}) {
+    return new Promise((accept, reject) => {
+      const moduleInstanceSpec = this.moduleInstances.get(moduleInstance);
+
+      if (moduleInstanceSpec) {
+        const {type, name} = moduleInstanceSpec;
+        const {count = 1} = options;
+
+        const responseListeners = new Map();
+        const onmessage = e => {
+          const {onmessage: fakeWorkerOnMessage} = fakeWorker;
+
+          if (fakeWorkerOnMessage) {
+            fakeWorkerOnMessage(e);
+          } else {
+            const {data} = e;
+            if (data && typeof data == 'object' && !Array.isArray(data)) {
+              const {id} = data;
+
+              if (typeof id === 'string') {
+                const responseListener = responseListeners.get(id);
+
+                if (responseListener) {
+                  const {error, result} = data;
+                  responseListener(error, result);
+
+                  responseListeners.delete(id);
+                }
+              }
+            }
+          }
+        };
+        const onerror = err => {
+          console.warn(err);
+        };
+        const workers = (() => {
+          const result = [];
+          for (let i = 0; i < count; i++) {
+            const worker = new Worker('/archae/worker.js');
+            worker.postMessage({
+              method: 'init',
+              [ type, name ],
+            });
+            worker.onmessage = onmessage;
+            worker.onerror = onerror;
+            result.push(worker);
+          }
+          return result;
+        })();
+
+        let workerIndex = 0;
+        const _getNextWorker = () => {
+          const worker = workers[workerIndex];
+          workerIndex = (workerIndex + 1) % count;
+          return worker;
+        }
+
+        const fakeWorker = {
+          postMessage(m) {
+            _getNextWorker().postMessage(m);
+          },
+          onmessage: null,
+          request(method, args = []) {
+            return new Promise((accept, reject) => {
+              const id = _makeId();
+
+              _getNextWorker().postMessage({
+                method,
+                args,
+                id,
+              });
+
+              responseListeners.set(id, (err, result) => {
+                if (!err) {
+                  accept(result);
+                } else {
+                  reject(err);
+                }
+              });
+            });
+          },
+        };
+        accept(fakeWorker);
+      } else {
+        const err = new Error('no such module');
+        reject(err);
+      }
+
+      this.request('removePlugin', {
+        plugin,
+      }, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    });
+  }
+
   bootstrap() {
     this.connect();
   }
 
-  loadModule(module, type, exports, cb) {
+  loadModule(module, type, target, exports, cb) {
     if (!exports[module]) {
       global.module = {};
 
-      _loadScript('/archae/' + type + '/' + module + '/' + module + '.js')
+      _loadScript('/archae/' + type + '/' + module + '/' + target + '.js')
         .then(() => {
           console.log('module loaded:', type + '/' + module);
 
@@ -286,7 +388,7 @@ class ArchaeClient {
   }
 
   loadEngine(engine, cb) {
-    this.loadModule(engine, 'engines', this.engines, cb);
+    this.loadModule(engine, 'engines', engine, this.engines, cb);
   }
 
   mountEngine(engine, cb) {
@@ -296,6 +398,10 @@ class ArchaeClient {
       Promise.resolve(_instantiate(engineModule, this))
         .then(engineInstance => {
           this.engineInstances[engine] = engineInstance;
+          this.moduleInstances.set(pluginInstance, {
+            type: 'engine',
+            name: engine,
+          });
 
           Promise.resolve(engineInstance.mount())
             .then(engineApi => {
@@ -331,7 +437,7 @@ class ArchaeClient {
   }
 
   loadPlugin(plugin, cb) {
-    this.loadModule(plugin, 'plugins', this.plugins, cb);
+    this.loadModule(plugin, 'plugins', plugin, this.plugins, cb);
   }
 
   mountPlugin(plugin, cb) {
@@ -341,6 +447,10 @@ class ArchaeClient {
       Promise.resolve(_instantiate(pluginModule, this))
         .then(pluginInstance => {
           this.pluginInstances[plugin] = pluginInstance;
+          this.moduleInstances.set(pluginInstance, {
+            type: 'plugin',
+            name: plugin,
+          });
 
           Promise.resolve(pluginInstance.mount())
             .then(pluginApi => {
@@ -509,6 +619,7 @@ const _asyncEval = s => new Promise((accept, reject) => {
     reject(error);
   }
 });
+const _makeId = () => Math.random().toString(36).substring(7);
 
 const archae = new ArchaeClient();
 archae.bootstrap();
