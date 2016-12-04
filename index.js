@@ -825,12 +825,42 @@ const _addModule = (module, type, cb) => {
     }
   };
   const _buildModule = (module, type, cb) => {
-    const moduleClientPath = _getModuleClientPath(module, type);
-    const moduleBuildPath = _getModuleBuildPath(module, type);
+    let pending = 0;
+    let error = null;
+    function pend(err) {
+      if (err) {
+        error = err;
+      }
 
+      if (--pending === 0) {
+        cb(error);
+      }
+    }
+
+    if (module.client) {
+      const moduleClientPath = path.join(_getModulePath(module, type), module.client);
+      const moduleClientBuildPath = _getModuleBuildPath(module, type, module.name);
+      _buildModuleFile(moduleClientPath, moduleClientBuildPath, pend);
+
+      pending++;
+    }
+
+    if (module.worker) {
+      const moduleWorkerPath = path.join(_getModulePath(module, type), module.worker);
+      const moduleWorkerBuildPath = _getModuleBuildPath(module, type, module.name + '-worker');
+      _buildModuleFile(moduleWorkerPath, moduleWorkerBuildPath, pend);
+
+      pending++;
+    }
+
+    if (pending === 0) {
+      cb();
+    }
+  };
+  const _buildModuleFile = (srcPath, dstPath, cb) => {
     const webpack = child_process.spawn(
       path.join(__dirname, 'node_modules', 'webpack', 'bin', 'webpack.js'),
-      [ moduleClientPath, moduleBuildPath ],
+      [ srcPath, dstPath ],
       {
         cwd: __dirname,
       }
@@ -858,11 +888,7 @@ const _addModule = (module, type, cb) => {
               if (typeof module === 'string') {
                 _downloadModule(module, type, (err, packageJson) => {
                   if (!err) {
-                    if (packageJson.client) {
-                      _buildModule(packageJson, type, cb);
-                    } else {
-                      cb();
-                    }
+                    _buildModule(packageJson, type, cb);
                   } else {
                     cb(err);
                   }
@@ -872,11 +898,7 @@ const _addModule = (module, type, cb) => {
 
                 _dumpPlugin(packageJson, type, err => {
                   if (!err) {
-                    if (packageJson.client) {
-                      _buildModule(packageJson, type, cb);
-                    } else {
-                      cb();
-                    }
+                    _buildModule(packageJson, type, cb);
                   } else {
                     cb(err);
                   }
@@ -981,7 +1003,7 @@ const _removeModule = (module, type, cb) => {
 
     rimraf(modulePath, err => {
       if (!err) {
-        const moduleBuildPath = _getModuleBuildPath(module, type);
+        const moduleBuildPath = _getModuleBuildDirectory(module, type);
 
         rimraf(moduleBuildPath, cb);
       } else {
@@ -990,7 +1012,7 @@ const _removeModule = (module, type, cb) => {
     });
   } else if (typeof module ==='object') {
     if (module && typeof module.name === 'string') {
-      const moduleBuildPath = _getModuleBuildPath(module.name);
+      const moduleBuildPath = _getModuleBuildDirectory(module.name, type);
 
       rimraf(moduleBuildPath, cb);
     } else {
@@ -1064,19 +1086,8 @@ const _getModulePackageJsonPath = (module, type) => {
     return path.join(_getModulePath(moduleName, type), 'package.json');
   }
 };
-const _getModuleClientPath = (module, type) => {
-  const modulePath = _getModulePath(module, type);
-
-  if (typeof module === 'string') {
-    return modulePath;
-  } else if (_isValidModuleSpec(module)) {
-    const clientFileName = module.client;
-    return path.join(modulePath, clientFileName);
-  } else {
-    return null;
-  }
-};
-const _getModuleBuildPath = (module, type) => path.join(__dirname, type, 'build', _getModuleName(module) + '.js');
+const _getModuleBuildDirectory = (module, type) => path.join(__dirname, type, 'build', _getModuleName(module));
+const _getModuleBuildPath = (module, type, target) => path.join(_getModuleBuildDirectory(module, type), target + '.js');
 
 const _isValidModule = module => typeof module === 'string' || _isValidModuleSpec(module);
 const _isValidModuleSpec = module => {

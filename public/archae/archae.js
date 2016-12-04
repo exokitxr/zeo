@@ -264,8 +264,8 @@ class ArchaeClient {
     if (!exports[module]) {
       global.module = {};
 
-      _loadScript('/archae/' + type + '/' + module + '.js')
-        .then() => {
+      _loadScript('/archae/' + type + '/' + module + '/' + module + '.js')
+        .then(() => {
           console.log('module loaded:', type + '/' + module);
 
           exports[module] = global.module.exports;
