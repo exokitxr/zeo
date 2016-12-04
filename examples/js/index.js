@@ -92,6 +92,7 @@ archae.requestEngines([
           '/extra/plugins/zeo/lens',
           '/extra/plugins/zeo/portal',
           '/extra/plugins/zeo/camera',
+          '/extra/plugins/zeo/build',
         ])
       )
     )

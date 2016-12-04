@@ -200,6 +200,7 @@ cursor: pointer;
                         const modPromises = modSpecs.map(_requestMod);
                         return Promise.all(modPromises);
                       };
+                      const _requestWorker = (module, options) => archae.requestWorker(module, options);
                       const _destroy = () => {
                         if (animationFrame) {
                           cancelAnimationFrame(animationFrame);
@@ -211,6 +212,7 @@ cursor: pointer;
                         getWorldTime: _getWorldTime,
                         requestMod: _requestMod,
                         requestMods: _requestMods,
+                        requestWorker: _requestWorker,
                         physics,
                         player,
                         destroy: _destroy,

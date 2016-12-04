@@ -299,7 +299,7 @@ class ArchaeClient {
             const worker = new Worker('/archae/worker.js');
             worker.postMessage({
               method: 'init',
-              [ type, name, name + '-worker' ],
+              args: [ type, name, name + '-worker' ],
             });
             worker.onmessage = onmessage;
             worker.onerror = onerror;
@@ -404,8 +404,8 @@ class ArchaeClient {
       Promise.resolve(_instantiate(engineModule, this))
         .then(engineInstance => {
           this.engineInstances[engine] = engineInstance;
-          this.moduleInstances.set(pluginInstance, {
-            type: 'engine',
+          this.moduleInstances.set(engineInstance, {
+            type: 'engines',
             name: engine,
           });
 
@@ -454,7 +454,7 @@ class ArchaeClient {
         .then(pluginInstance => {
           this.pluginInstances[plugin] = pluginInstance;
           this.moduleInstances.set(pluginInstance, {
-            type: 'plugin',
+            type: 'plugins',
             name: plugin,
           });
 
@@ -625,7 +625,6 @@ const _asyncEval = s => new Promise((accept, reject) => {
     reject(error);
   }
 });
-const _makeId = () => Math.random().toString(36).substring(7);
 
 const archae = new ArchaeClient();
 archae.bootstrap();

@@ -360,7 +360,7 @@ class ArchaeServer {
     fs.readFile(path.join(__dirname, 'engines', 'node_modules', engine, 'package.json'), 'utf8', (err, s) => {
       if (!err) {
         const j = JSON.parse(s);
-        const {client: clientFileName, server: serverFileName} = j;
+        const {server: serverFileName} = j;
         if (serverFileName) {
           const engineModule = require(path.join(__dirname, 'engines', 'node_modules', engine, serverFileName));
 
@@ -421,7 +421,7 @@ class ArchaeServer {
     fs.readFile(path.join(__dirname, 'plugins', 'node_modules', plugin, 'package.json'), 'utf8', (err, s) => {
       if (!err) {
         const j = JSON.parse(s);
-        const {client: clientFileName, server: serverFileName} = j;
+        const {server: serverFileName} = j;
         if (serverFileName) {
           const pluginModule = require(path.join(__dirname, 'plugins', 'node_modules', plugin, serverFileName));
 
@@ -764,7 +764,7 @@ const _addModule = (module, type, cb) => {
     });
   };
   const _dumpPlugin = (module, type, cb) => {
-    const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', files} = module;
+    const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', worker = 'worker.js', files} = module;
 
     if (_isValidModuleSpec(module)) {
       const modulePath = _getModulePath(module.name, type);
@@ -777,6 +777,7 @@ const _addModule = (module, type, cb) => {
             dependencies,
             client,
             server,
+            worker,
           };
           const packageJsonString = JSON.stringify(packageJson, null, 2);
 
