@@ -1,9 +1,11 @@
 const WIDTH = 2 * 1024;
 const HEIGHT = WIDTH / 1.5;
-const ZOOM = 4;
 const ASPECT_RATIO = WIDTH / HEIGHT;
 
 const MENU_SIZE = 2;
+const WORLD_WIDTH = MENU_SIZE;
+const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
+const WORLD_DEPTH = MENU_SIZE / 50;
 
 const MAX_NUM_TEXTURES = 3;
 
@@ -65,38 +67,41 @@ class Menu {
       zeo,
       biolumi,
     ]) => {
-      const {THREE, scene} = zeo;
+      const {THREE, scene, camera} = zeo;
       const transparentImg = biolumi.getTransparentImg();
 
       return biolumi.requestUi({
         width: WIDTH,
         height: HEIGHT,
-        zoom: ZOOM,
       }).then(ui => {
         ui.pushPage({
-          src: '<h1>lol</h1><a onclick="lol">Click here</a>',
+          src: '<h1 style="font-size: 100px;">lol</h1><a onclick="lol"><p style="font-size: 32px;">Click here</p></a>',
         });
 
         const pages = ui.getPages();
+
+        const solidMaterial = new THREE.MeshBasicMaterial({
+          color: 0xFFFFFF,
+          opacity: 0.5,
+          transparent: true,
+          // alphaTest: 0.5,
+          depthWrite: false,
+        });
+        const wireframeMaterial = new THREE.MeshBasicMaterial({
+          color: 0x0000FF,
+          wireframe: true,
+          opacity: 0.5,
+          transparent: true,
+        });
+        const pointsMaterial = new THREE.PointsMaterial({
+          color: 0x000000,
+          size: 0.01,
+        });
 
         const menuMesh = (() => {
           const result = new THREE.Object3D();
           result.position.y = 1.5;
           result.position.z = -1;
-
-          const wireframeMaterial = new THREE.MeshBasicMaterial({
-            color: 0x000000,
-            wireframe: true,
-            opacity: 0.5,
-            transparent: true,
-          });
-          const solidMaterial = new THREE.MeshBasicMaterial({
-            color: 0xFFFFFF,
-            opacity: 0.5,
-            transparent: true,
-            // alphaTest: 0.5,
-            depthWrite: false,
-          });
 
           const imageMaterial = (() => {
             const shaderUniforms = THREE.UniformsUtils.clone(IMAGE_SHADER.uniforms);
@@ -145,9 +150,9 @@ class Menu {
           })();
 
           const planeMesh = (() => {
-            const width = MENU_SIZE;
-            const height = MENU_SIZE / ASPECT_RATIO;
-            const depth = MENU_SIZE / 20;
+            const width = WORLD_WIDTH;
+            const height = WORLD_HEIGHT;
+            const depth = WORLD_DEPTH;
 
             const geometry = new THREE.PlaneBufferGeometry(width, height, depth);
             const textureUvsArray = (() => {
@@ -174,42 +179,137 @@ class Menu {
           result.add(planeMesh);
           result.planeMesh = planeMesh;
 
-          /* const boxMesh = (() => {
-            const width = menuSize;
-            const height = menuSize / menuItems.length;
-            const depth = menuSize / 10;
-            const geometry = new THREE.BoxBufferGeometry(width, height, depth);
-            geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (menuSize / 2) - (height / 2), 0));
-
-            const mesh = new THREE.Mesh(geometry, wireframeMaterial);
-            mesh.visible = false;
-            mesh.renderOrder = -1;
-            return mesh;
-          })();
-          result.add(boxMesh);
-          result.boxMesh = boxMesh; */
-
           return result;
         })();
         scene.add(menuMesh);
 
+        const boxMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+
+          const mesh = new THREE.Mesh(geometry, wireframeMaterial);
+          mesh.visible = false;
+          // mesh.renderOrder = -1;
+          return mesh;
+        })();
+        scene.add(boxMesh);
+
+        const dotMesh = (() => {
+          const geometry = new THREE.BufferGeometry();
+          geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
+
+          const mesh = new THREE.Points(geometry, pointsMaterial);
+          return mesh;
+        })();
+        scene.add(dotMesh);
+
         const _update = () => {
-          const {planeMesh: {imageMaterial}} = menuMesh;
-          const {uniforms: {texture, textures, validTextures, textureUvs}} = imageMaterial;
+          const _updateMenuMesh = () => {
+            const {planeMesh: {imageMaterial}} = menuMesh;
+            const {uniforms: {texture, textures, validTextures, textureUvs}} = imageMaterial;
 
-          for (let i = 0; i < pages.length; i++) {
-            const page = pages[i];
+            for (let i = 0; i < pages.length; i++) {
+              const page = pages[i];
 
-            if (textures.value[i].image !== page.img) {
-              textures.value[i].image = page.img;
-              textures.value[i].needsUpdate = true;
+              if (textures.value[i].image !== page.img) {
+                textures.value[i].image = page.img;
+                textures.value[i].needsUpdate = true;
+              }
+
+              validTextures.value[i] = page.valid ? 1 : 0;
+
+              textureUvs.value[(i * 2) + 0] = page.x;
+              textureUvs.value[(i * 2) + 1] = page.y;
             }
+          };
+          const _updateAnchors = () => {
+            const cameraPosition = new THREE.Vector3();
+            const cameraRotation = new THREE.Quaternion();
+            const cameraScale = new THREE.Vector3();
+            camera.matrixWorld.decompose(cameraPosition, cameraRotation, cameraScale);
 
-            validTextures.value[i] = page.valid ? 1 : 0;
+            const ray = new THREE.Vector3(0, 0, -1)
+              .applyQuaternion(cameraRotation);
+            const cameraLine = new THREE.Line3(
+              cameraPosition.clone(),
+              cameraPosition.clone().add(ray.clone().multiplyScalar(15))
+            );
 
-            textureUvs.value[(i * 2) + 0] = page.x;
-            textureUvs.value[(i * 2) + 1] = page.y;
-          }
+            const menuPosition = new THREE.Vector3();
+            const menuRotation = new THREE.Quaternion();
+            const menuScale = new THREE.Vector3();
+            menuMesh.matrixWorld.decompose(menuPosition, menuRotation, menuScale);
+            const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
+
+            const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
+            const intersectionPoint = menuPlane.intersectLine(cameraLine);
+            if (intersectionPoint) {
+              const anchorBounds = (() => {
+                const _getPlanePoint = (x, y, z) => menuPosition.clone()
+                  .add(
+                    new THREE.Vector3(
+                      -WORLD_WIDTH / 2,
+                      WORLD_HEIGHT / 2,
+                      0
+                    )
+                    .add(
+                      new THREE.Vector3(
+                        (x / WIDTH) * WORLD_WIDTH,
+                        (-y / HEIGHT) * WORLD_HEIGHT,
+                        z
+                      )
+                    ).applyQuaternion(menuRotation)
+                  );
+
+                const result = [];
+                for (let i = 0; i < pages.length; i++) {
+                  const page = pages[i];
+                  const {anchors} = page;
+
+                  for (let j = 0; j < anchors.length; j++) {
+                    const anchor = anchors[j];
+                    const {rect} = anchor;
+
+                    const anchorBound = new THREE.Box3().setFromPoints([
+                      _getPlanePoint(rect.left, rect.top, -WORLD_DEPTH),
+                      _getPlanePoint(rect.right, rect.bottom, WORLD_DEPTH)
+                    ]);
+
+                    result.push(anchorBound);
+                  }
+                }
+                return result;
+              })();
+              const anchorBound = (() => {
+                for (let i = 0; i < anchorBounds.length; i++) {
+                  const anchorBound = anchorBounds[i];
+                  if (anchorBound.containsPoint(intersectionPoint)) {
+                    return anchorBound;
+                  }
+                }
+
+                return null;
+              })();
+
+              // render
+              dotMesh.position.copy(intersectionPoint);
+
+              if (anchorBound) {
+                boxMesh.position.copy(anchorBound.min.clone().add(anchorBound.max).divideScalar(2));
+                boxMesh.scale.copy(anchorBound.max.clone().sub(anchorBound.min));
+
+                if (!boxMesh.visible) {
+                  boxMesh.visible = true;
+                }
+              } else {
+                if (boxMesh.visible) {
+                  boxMesh.visible = false;
+                }
+              }
+            }
+          };
+
+          _updateMenuMesh();
+          _updateAnchors();
         };
 
         return {

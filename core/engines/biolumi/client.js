@@ -53,13 +53,13 @@ class Biolumi {
         transparentImg,
       ]) => {
         if (live) {
-          const _requestUi = ({width, height, zoom = 1}) => new Promise((accept, reject) => {
+          const _requestUi = ({width, height}) => new Promise((accept, reject) => {
             const pages = [];
 
             class Page {
               constructor() {
                 this.img = null;
-                this.anchors = null;
+                this.anchors = [];
                 this.valid = true;
                 this.x = 0;
                 this.y = 0;
@@ -74,13 +74,14 @@ class Biolumi {
             }
 
             const _getPages = () => pages;
-
             const _pushPage = ({src}) => {
+              const rootCss = 'margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ' + FONTS + '; font-weight: 300; overflow: hidden; user-select: none;';
+
               const img = new Image();
               img.src = 'data:image/svg+xml;charset=utf-8,' +
               '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
                 '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                  '<div xmlns="http://www.w3.org/1999/xhtml" style=\'margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ' + FONTS + '; font-weight: 300; zoom: ' + zoom + '; overflow: hidden; user-select: none;\'>' +
+                  '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
                     src +
                   '</div>' +
                 '</foreignObject>' +
@@ -94,13 +95,13 @@ class Biolumi {
 
               const anchors = (() => {
                 const el = document.createElement('div');
-                el.innerHTML = src;
+                el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
+                el.innerHTML = '<div style=\'' + rootCss + '\'>' + src + '</div>';
 
                 const as = el.querySelectorAll('a');
                 const numAs = as.length;
                 const result = Array(numAs);
                 if (numAs > 0) {
-                  el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px; visibility: hidden;';
                   document.body.appendChild(el);
 
                   for (let i = 0; i < numAs; i++) {
