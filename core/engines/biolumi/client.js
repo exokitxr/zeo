@@ -80,12 +80,6 @@ class Biolumi {
               img.src = 'data:image/svg+xml;charset=utf-8,' +
               '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
                 '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                  '<style>' +
-                     // '@import url(https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800);' +
-                     /* 'h1 {' +
-                        'font-size: ;' +
-                     '}' + */
-                  '</style>' +
                   '<div xmlns="http://www.w3.org/1999/xhtml" style=\'margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ' + FONTS + '; font-weight: 300; zoom: ' + zoom + '; overflow: hidden; user-select: none;\'>' +
                     src +
                   '</div>' +
