@@ -5,9 +5,6 @@ const bezier = BezierEasing(0, 1, 0, 1);
 
 const dotCursorCss = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AsGEDMxMbgZlQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAFUlEQVQI12NkYGD4z4AEmBjQAGEBAEEUAQeL0gY8AAAAAElFTkSuQmCC") 2 2, auto'; */
 
-const WIDTH = 1024;
-const HEIGHT = WIDTH / 2;
-
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 class Biolumi {
@@ -18,6 +15,11 @@ class Biolumi {
     canvas.style.width = (WIDTH / window.devicePixelRatio) + 'px';
     canvas.style.height = (HEIGHT / window.devicePixelRatio) + 'px';
     const ctx = canvas.getContext('2d'); */
+
+    let live = true;
+    this._cleanup = () => {
+      live = false;
+    };
 
     const _requestFont = () => {
       const link = document.createElement('link');
@@ -49,7 +51,7 @@ class Biolumi {
         transparentImg,
       ]) => {
         if (live) {
-          const _requestUi = ({width = WIDTH, height = HEIGHT} = {}) => new Promise((accept, reject) => {
+          const _requestUi = ({width, height}) => new Promise((accept, reject) => {
             const pages = [];
 
             class Page {
@@ -80,14 +82,16 @@ class Biolumi {
                     'x-row { display: block; }' +
                     'x-row:empty::before { content: \' \'; }' +
                   '</style>' + */
-                  '<div>' + src + '</div>' +
+                  '<div xmlns="http://www.w3.org/1999/xhtml" style="margin: 0px; padding: 0px; height: 100%; width: 100%; overflow: hidden; user-select: none;">' +
+                    src +
+                  '</div>' +
                 '</foreignObject>' +
               '</svg>';
               img.onload = () => {
                 page.img = img;
               };
               img.onerror = err => {
-                console.warn(err);
+                console.warn('biolumi image load error', err);
               };
 
               const anchors = (() => {
@@ -96,11 +100,11 @@ class Biolumi {
 
                 const as = el.querySelectorAll('a');
                 const numAs = as.length;
+                const result = Array(numAs);
                 if (numAs > 0) {
                   el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px; visibility: hidden;';
                   document.body.appendChild(el);
 
-                  const result = Array(numAs);
                   for (let i = 0; i < numAs; i++) {
                     const a = as[i];
 
@@ -135,8 +139,7 @@ class Biolumi {
             getTransparentImg: _getTransparentImg,
           };
         }
-      })
-    });
+      });
   }
 
   unmount() {

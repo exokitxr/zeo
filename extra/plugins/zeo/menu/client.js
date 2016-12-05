@@ -1,5 +1,5 @@
-const WIDTH = 1024;
-const HEIGHT = WIDTH / 2;
+const WIDTH = 2 * 1024;
+const HEIGHT = WIDTH / 1.5;
 const ASPECT_RATIO = WIDTH / HEIGHT;
 
 const MENU_SIZE = 2;
@@ -8,6 +8,10 @@ const MAX_NUM_TEXTURES = 3;
 
 const IMAGE_SHADER = {
   uniforms: {
+    /* texture: {
+      type: 't',
+      value: null,
+    }, */
     textures: {
       type: 'tv',
       value: null,
@@ -22,30 +26,30 @@ const IMAGE_SHADER = {
     },
   },
   vertexShader: [
-    "attribute vec2 uv;",
-    "attribute vec2 textureUvs[" + MAX_NUM_TEXTURES + "];",
-    "varying vec2 vUv[" + MAX_NUM_TEXTURES + "];",
+    "varying vec2 vUv;",
     "void main() {",
-    "  for (int i = 0; i < " + MAX_NUM_TEXTURES + "; i++) {",
-    "    vUv[i] = vec2(uv[i].x + textureUvs[i].x, uv[i].y + textureUvs[i].y);",
-    "  }",
+    "  vUv = uv;",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
     "}"
   ].join("\n"),
   fragmentShader: [
+    // "uniform sampler2D texture;",
     "uniform sampler2D textures[" + MAX_NUM_TEXTURES + "];",
     "uniform int validTextures[" + MAX_NUM_TEXTURES + "];",
+    "uniform vec2 textureUvs[" + MAX_NUM_TEXTURES + "];",
     "varying vec2 vUv;",
     "void main() {",
-    "  vec3 diffuse = vec4(0, 0, 0);",
+    // "  gl_FragColor = texture2D(texture, vUv);",
+    "  vec4 diffuse = vec4(0, 0, 0, 0);",
     "  int numValidTextures = 0;",
     "  for (int i = 0; i < " + MAX_NUM_TEXTURES + "; i++) {",
-    "    if (validTextures[i]) {",
-    "      diffuse += texture2D(textures[i], vUv[i]);",
+    "    if (validTextures[i] != 0) {",
+    "      diffuse += texture2D(textures[i], vUv + textureUvs[i]);",
     "      numValidTextures++;",
     "    }",
     "  }",
-    "  diffuse /= numValidTextures;",
-    "  gl_FragColor = vec4(diffuse, 1);",
+    "  diffuse /= float(numValidTextures);",
+    "  gl_FragColor = diffuse;",
     "}"
   ].join("\n")
 };
@@ -66,15 +70,15 @@ class Menu {
       zeo,
       biolumi,
     ]) => {
-      const {THREE} = zeo;
+      const {THREE, scene} = zeo;
       const transparentImg = biolumi.getTransparentImg();
 
-      return biolumi.requestUI({
+      return biolumi.requestUi({
         width: WIDTH,
         height: HEIGHT,
       }).then(ui => {
         ui.pushPage({
-          src: '<h1>lol</h1><a onclick=lol>Click here</a>',
+          src: '<h1>lol</h1><a onclick="lol">Click here</a>',
         });
 
         const pages = ui.getPages();
@@ -99,27 +103,23 @@ class Menu {
           });
 
           const imageMaterial = (() => {
-            const texture = (() => {
-              const texture = new THREE.Texture(
-                transparentImg,
-                THREE.UVMapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.LinearFilter,
-                THREE.LinearFilter,
-                THREE.RGBAFormat,
-                THREE.UnsignedByteType,
-                16
-              );
-              // texture.needsUpdate = true;
-              return texture;
-            })();
-
             const shaderUniforms = THREE.UniformsUtils.clone(IMAGE_SHADER.uniforms);
+            /* shaderUniforms.texture.value = new THREE.Texture(
+              transparentImg,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.LinearFilter,
+              THREE.LinearFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              16
+            ); */
             shaderUniforms.textures.value = (() => {
               const result = Array(MAX_NUM_TEXTURES);
               for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                const texture = new THREE.Texture({
+                const texture = new THREE.Texture(
+                  transparentImg,
                   THREE.UVMapping,
                   THREE.ClampToEdgeWrapping,
                   THREE.ClampToEdgeWrapping,
@@ -128,8 +128,8 @@ class Menu {
                   THREE.RGBAFormat,
                   THREE.UnsignedByteType,
                   16
-                });
-                texture.needsUpdate = true;
+                );
+                // texture.needsUpdate = true;
 
                 result[i] = texture;
               }
@@ -154,8 +154,14 @@ class Menu {
               uniforms: shaderUniforms,
               vertexShader: IMAGE_SHADER.vertexShader,
               fragmentShader: IMAGE_SHADER.fragmentShader,
+              transparent: true,
             });
             return shaderMaterial;
+            /* const material = new THREE.MeshBasicMaterial({
+              map: shaderUniforms.texture.value,
+              transparent: true,
+            });
+            return material; */
           })();
 
           const planeMesh = (() => {
@@ -164,9 +170,6 @@ class Menu {
             const depth = MENU_SIZE / 20;
 
             const geometry = new THREE.PlaneBufferGeometry(width, height, depth);
-            // geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-            // geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
-
             const textureUvsArray = (() => {
               const numPositions = 8;
               const numTextures = MAX_NUM_TEXTURES;
@@ -182,7 +185,9 @@ class Menu {
             })();
             geometry.addAttribute('textureUvs', new THREE.BufferAttribute(textureUvsArray, 2 * MAX_NUM_TEXTURES));
 
-            const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, [solidMaterial, imageMaterial]);
+            const materials = [solidMaterial, imageMaterial];
+
+            const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
             mesh.imageMaterial = imageMaterial;
             return mesh;
           })();
@@ -209,14 +214,27 @@ class Menu {
         scene.add(menuMesh);
 
         const _update = () => {
-          const {planeMesh: {imageMaterial: {uniforms: {textures, validTextures, textureUvs}}}} = menuMesh;
+          const {planeMesh: {imageMaterial}} = menuMesh;
+          const {uniforms: {texture, textures, validTextures, textureUvs}} = imageMaterial;
 
           for (let i = 0; i < pages.length; i++) {
             const page = pages[i];
 
-            if (textures.value[i].image !== img) {
+            /* if (imageMaterial.map.image !== page.img) {
+              imageMaterial.map.image = page.img;
+              imageMaterial.map.needsUpdate = true;
+            } */
+
+            /* if (texture.value.image !== page.img) {
+              texture.value.image = page.img;
+              texture.value.needsUpdate = true;
+              imageMaterial.needsUpdate = true;
+            } */
+
+            if (textures.value[i].image !== page.img) {
               textures.value[i].image = page.img;
               textures.value[i].needsUpdate = true;
+              imageMaterial.needsUpdate = true;
             }
 
             validTextures.value[i] = page.valid ? 1 : 0;
