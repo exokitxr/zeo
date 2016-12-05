@@ -77,6 +77,7 @@ archae.requestEngines([
           '/extra/plugins/zeo/teleport',
           // '/extra/plugins/zeo/light',
           // '/extra/plugins/zeo/hmd',
+          '/extra/plugins/zeo/menu',
           '/extra/plugins/zeo/physics',
           '/extra/plugins/zeo/multiplayer',
           '/extra/plugins/zeo/fog',
@@ -92,7 +93,7 @@ archae.requestEngines([
           '/extra/plugins/zeo/lens',
           '/extra/plugins/zeo/portal',
           '/extra/plugins/zeo/camera',
-          '/extra/plugins/zeo/build',
+          // '/extra/plugins/zeo/build',
         ])
       )
     )

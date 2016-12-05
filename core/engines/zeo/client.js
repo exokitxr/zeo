@@ -23,12 +23,14 @@ class Zeo {
     return archae.requestEngines([
       '/core/engines/webvr',
       '/core/engines/three',
+      '/core/engines/biolumi',
       '/core/engines/somnifer',
       '/core/engines/bullet',
       '/core/engines/heartlink',
     ]).then(([
       webvr,
       three,
+      biolumi,
       somnifer,
       bullet,
       heartlink,
