@@ -8,10 +8,6 @@ const MAX_NUM_TEXTURES = 3;
 
 const IMAGE_SHADER = {
   uniforms: {
-    /* texture: {
-      type: 't',
-      value: null,
-    }, */
     textures: {
       type: 'tv',
       value: null,
@@ -33,13 +29,11 @@ const IMAGE_SHADER = {
     "}"
   ].join("\n"),
   fragmentShader: [
-    // "uniform sampler2D texture;",
     "uniform sampler2D textures[" + MAX_NUM_TEXTURES + "];",
     "uniform int validTextures[" + MAX_NUM_TEXTURES + "];",
     "uniform vec2 textureUvs[" + MAX_NUM_TEXTURES + "];",
     "varying vec2 vUv;",
     "void main() {",
-    // "  gl_FragColor = texture2D(texture, vUv);",
     "  vec4 diffuse = vec4(0, 0, 0, 0);",
     "  int numValidTextures = 0;",
     "  for (int i = 0; i < " + MAX_NUM_TEXTURES + "; i++) {",
@@ -104,17 +98,6 @@ class Menu {
 
           const imageMaterial = (() => {
             const shaderUniforms = THREE.UniformsUtils.clone(IMAGE_SHADER.uniforms);
-            /* shaderUniforms.texture.value = new THREE.Texture(
-              transparentImg,
-              THREE.UVMapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.LinearFilter,
-              THREE.LinearFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              16
-            ); */
             shaderUniforms.textures.value = (() => {
               const result = Array(MAX_NUM_TEXTURES);
               for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
@@ -157,11 +140,6 @@ class Menu {
               transparent: true,
             });
             return shaderMaterial;
-            /* const material = new THREE.MeshBasicMaterial({
-              map: shaderUniforms.texture.value,
-              transparent: true,
-            });
-            return material; */
           })();
 
           const planeMesh = (() => {
@@ -220,21 +198,9 @@ class Menu {
           for (let i = 0; i < pages.length; i++) {
             const page = pages[i];
 
-            /* if (imageMaterial.map.image !== page.img) {
-              imageMaterial.map.image = page.img;
-              imageMaterial.map.needsUpdate = true;
-            } */
-
-            /* if (texture.value.image !== page.img) {
-              texture.value.image = page.img;
-              texture.value.needsUpdate = true;
-              imageMaterial.needsUpdate = true;
-            } */
-
             if (textures.value[i].image !== page.img) {
               textures.value[i].image = page.img;
               textures.value[i].needsUpdate = true;
-              imageMaterial.needsUpdate = true;
             }
 
             validTextures.value[i] = page.valid ? 1 : 0;
