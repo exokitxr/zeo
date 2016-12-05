@@ -7,6 +7,8 @@ const dotCursorCss = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAA
 
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
+const FONTS = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"';
+
 class Biolumi {
   mount() {
     /* const canvas = document.createElement('canvas');
@@ -51,7 +53,7 @@ class Biolumi {
         transparentImg,
       ]) => {
         if (live) {
-          const _requestUi = ({width, height}) => new Promise((accept, reject) => {
+          const _requestUi = ({width, height, zoom = 1}) => new Promise((accept, reject) => {
             const pages = [];
 
             class Page {
@@ -78,11 +80,13 @@ class Biolumi {
               img.src = 'data:image/svg+xml;charset=utf-8,' +
               '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
                 '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                  /* '<style>' +
-                    'x-row { display: block; }' +
-                    'x-row:empty::before { content: \' \'; }' +
-                  '</style>' + */
-                  '<div xmlns="http://www.w3.org/1999/xhtml" style="margin: 0px; padding: 0px; height: 100%; width: 100%; overflow: hidden; user-select: none;">' +
+                  '<style>' +
+                     // '@import url(https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800);' +
+                     /* 'h1 {' +
+                        'font-size: ;' +
+                     '}' + */
+                  '</style>' +
+                  '<div xmlns="http://www.w3.org/1999/xhtml" style=\'margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ' + FONTS + '; font-weight: 300; zoom: ' + zoom + '; overflow: hidden; user-select: none;\'>' +
                     src +
                   '</div>' +
                 '</foreignObject>' +

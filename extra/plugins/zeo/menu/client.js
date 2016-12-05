@@ -1,5 +1,6 @@
 const WIDTH = 2 * 1024;
 const HEIGHT = WIDTH / 1.5;
+const ZOOM = 4;
 const ASPECT_RATIO = WIDTH / HEIGHT;
 
 const MENU_SIZE = 2;
@@ -70,6 +71,7 @@ class Menu {
       return biolumi.requestUi({
         width: WIDTH,
         height: HEIGHT,
+        zoom: ZOOM,
       }).then(ui => {
         ui.pushPage({
           src: '<h1>lol</h1><a onclick="lol">Click here</a>',
