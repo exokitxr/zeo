@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
+    "bezier-easing": "^2.0.3",
     "fontfaceobserver": "^2.0.7"
   }
 }

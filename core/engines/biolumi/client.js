@@ -1,9 +1,11 @@
 const FontFaceObserver = require('fontfaceobserver');
-/* const BezierEasing = require('bezier-easing');
+const BezierEasing = require('bezier-easing');
 
-const bezier = BezierEasing(0, 1, 0, 1);
+const bezierEasing = BezierEasing(0, 1, 0, 1);
 
-const dotCursorCss = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AsGEDMxMbgZlQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAFUlEQVQI12NkYGD4z4AEmBjQAGEBAEEUAQeL0gY8AAAAAElFTkSuQmCC") 2 2, auto'; */
+const TRANSITION_TIME = 300;
+
+/* const dotCursorCss = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AsGEDMxMbgZlQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAFUlEQVQI12NkYGD4z4AEmBjQAGEBAEEUAQeL0gY8AAAAAElFTkSuQmCC") 2 2, auto'; */
 
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
@@ -72,6 +74,88 @@ class Biolumi {
                 this.onclick = onclick;
               }
             }
+
+            let animation = null;
+            const _animate = ({pages, direction}) => {
+              if (animation) {
+                animation.cancel();
+                animation = null;
+              }
+
+              let animationFrame = null;
+              const startTime = Date.now();
+              const endTime = startTime + TRANSITION_TIME;
+              const pageSchedule = (() => {
+                if (direction === 'right') {
+                  return [
+                    {
+                      start: 0,
+                      end: -1,
+                    },
+                    {
+                      start: 1,
+                      end: 0,
+                    },
+                  ];
+                } else if (direction === 'left') {
+                  return [
+                    {
+                      start: -1,
+                      end: 0,
+                    },
+                    {
+                      start: 0,
+                      end: 1,
+                    },
+                  ];
+                } else {
+                  return null;
+                }
+              })();
+              const _applyPagePositions = (pages, pagePositions) => {
+                for (let i = 0; i < pages.length; i++) {
+                  const page = pages[i];
+                  const {x, y} = pagePositions[i];
+                  page.x = x;
+                  page.y = y;
+                }
+              };
+              const _recurse = () => {
+                animationFrame = requestAnimationFrame(() => {
+                  const now = Date.now();
+                  const timeFactor = bezierEasing(Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0));
+                  const pagePositions = pageSchedule.map(pageScheduleSpec => {
+                    const {start, end} = pageScheduleSpec;
+
+                    return {
+                      x: start + (timeFactor * (end - start)),
+                      y: 0,
+                    };
+                  });
+
+                  _applyPagePositions(pages, pagePositions);
+
+                  _recurse();
+                });
+              };
+              const _cancel = () => {
+                const endPagePositions = pageSchedule.map(pageScheduleSpec => {
+                  const {end} = pageScheduleSpec;
+                  return {
+                    x: end,
+                    y: 0,
+                  };
+                });
+
+                _applyPagePositions(pages, endPagePositions);
+
+                clearAnimationFrame(animationFrame);
+                animationFrame = null;
+              }
+              animation = {
+                cancel: _cancel,
+              };
+            };
 
             const _getPages = () => pages;
             const _pushPage = ({src}) => {
