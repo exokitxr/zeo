@@ -1,3 +1,28 @@
+const OCEAN_SHADER = {
+  uniforms: {
+    worldTime: {
+      type: 'f',
+      value: 0,
+    },
+  },
+  vertexShader: [
+    "uniform float worldTime;",
+    "attribute vec4 wave;",
+    "void main() {",
+    "  float y = wave[0];",
+    "  float ang = wave[1];",
+    "  float amp = wave[2];",
+    "  float speed = wave[3];",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, y + ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "void main() {",
+    "  gl_FragColor = vec4(0.2, 0.2, 0.2, 0.25);",
+    "}"
+  ].join("\n")
+};
+
 class Ocean {
   constructor(archae) {
     this._archae = archae;
@@ -20,10 +45,19 @@ class Ocean {
         geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
         geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
 
-        const material = new THREE.MeshBasicMaterial({
+        /* const material = new THREE.MeshBasicMaterial({
           color: 0x000000,
           wireframe: true,
           opacity: 0.25,
+          transparent: true,
+        }); */
+        const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
+        const material = new THREE.ShaderMaterial({
+          uniforms,
+          vertexShader: OCEAN_SHADER.vertexShader,
+          fragmentShader: OCEAN_SHADER.fragmentShader,
+          wireframe: true,
+          // opacity: 0.25,
           transparent: true,
         });
 
@@ -40,42 +74,28 @@ class Ocean {
         speedVariance: 2,
       };
 
-      const waves = [];
-      const positions = planeMesh.geometry.getAttribute('position').array;
-      const numPositions = positions.length / 3;
-      for (let i = 0; i < numPositions; i++) {
-        const v = new THREE.Vector3(
-          positions[(i * 3) + 0],
-          positions[(i * 3) + 1],
-          positions[(i * 3) + 2]
-        );
-        waves.push({
-          y: v.y,
-          ang: Math.random() * Math.PI * 2,
-          amp: data.amplitude + Math.random() * data.amplitudeVariance,
-          speed: (data.speed + Math.random() * data.speedVariance) / 1000 // radians / frame
-        });
-      }
+      const {geometry: planeMeshGeometry, material: planeMeshMaterial} = planeMesh;
+      const wavesAttributeArray = (() => {
+        const positions = planeMeshGeometry.getAttribute('position').array;
+        const numPositions = positions.length / 3;
+
+        const result = new Float32Array(numPositions * 4);
+        for (let i = 0; i < numPositions; i++) {
+          const y = positions[(i * 3) + 1];
+
+          const baseIndex = i * 4;
+          result[baseIndex + 0] = y; // y
+          result[baseIndex + 1] = Math.random() * Math.PI * 2; // ang
+          result[baseIndex + 2] = data.amplitude + Math.random() * data.amplitudeVariance; // amp
+          result[baseIndex + 3] = (data.speed + Math.random() * data.speedVariance) / 1000; // speed
+        }
+        return result;
+      })();
+      planeMeshGeometry.addAttribute('wave', new THREE.BufferAttribute(wavesAttributeArray, 4));
 
       const _update = () => {
         const worldTime = world.getWorldTime();
-
-        const positionAttribute = planeMesh.geometry.getAttribute('position');
-        const positions = positionAttribute.array;
-        const numPositions = positions.length / 3;
-        for (let i = 0; i < numPositions; i++) {
-          /* const v = new THREE.Vector3(
-            positions[(i * 3] + 0],
-            positions[(i * 3] + 1],
-            positions[(i * 3] + 2]
-          ); */
-          const vprops = waves[i];
-          // v.y = vprops.y + Math.sin(vprops.ang) * vprops.amp;
-          const angValue = Math.sin(vprops.ang + (vprops.speed * worldTime));
-          positions[(i * 3) + 1] = vprops.y + angValue * vprops.amp;
-          // vprops.ang += vprops.speed;
-        }
-        positionAttribute.needsUpdate = true;
+        planeMeshMaterial.uniforms.worldTime.value = worldTime;
       };
 
       return {
