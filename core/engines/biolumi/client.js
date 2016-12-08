@@ -3,7 +3,8 @@ const BezierEasing = require('bezier-easing');
 
 const bezierEasing = BezierEasing(0, 1, 0, 1);
 
-const TRANSITION_TIME = 300;
+// const TRANSITION_TIME = 300;
+const TRANSITION_TIME = 1000;
 
 /* const dotCursorCss = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AsGEDMxMbgZlQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAFUlEQVQI12NkYGD4z4AEmBjQAGEBAEEUAQeL0gY8AAAAAElFTkSuQmCC") 2 2, auto'; */
 
@@ -76,7 +77,7 @@ class Biolumi {
             }
 
             let animation = null;
-            const _animate = ({pages, direction}) => {
+            const _animate = ({pages, direction}, cb = () => {}) => {
               if (animation) {
                 animation.cancel();
                 animation = null;
@@ -122,6 +123,8 @@ class Biolumi {
               };
               const _recurse = () => {
                 animationFrame = requestAnimationFrame(() => {
+                  animationFrame = null;
+
                   const now = Date.now();
                   const timeFactor = bezierEasing(Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0));
                   const pagePositions = pageSchedule.map(pageScheduleSpec => {
@@ -135,23 +138,33 @@ class Biolumi {
 
                   _applyPagePositions(pages, pagePositions);
 
-                  _recurse();
+                  if (timeFactor < 1) {
+                    _recurse();
+                  } else {
+                    cb();
+                  }
                 });
               };
+              _recurse();
+
               const _cancel = () => {
-                const endPagePositions = pageSchedule.map(pageScheduleSpec => {
-                  const {end} = pageScheduleSpec;
-                  return {
-                    x: end,
-                    y: 0,
-                  };
-                });
+                if (animationFrame) {
+                  const endPagePositions = pageSchedule.map(pageScheduleSpec => {
+                    const {end} = pageScheduleSpec;
+                    return {
+                      x: end,
+                      y: 0,
+                    };
+                  });
 
-                _applyPagePositions(pages, endPagePositions);
+                  _applyPagePositions(pages, endPagePositions);
 
-                clearAnimationFrame(animationFrame);
-                animationFrame = null;
-              }
+                  cancelAnimationFrame(animationFrame);
+                  animationFrame = null;
+
+                  cb();
+                }
+              };
               animation = {
                 cancel: _cancel,
               };
@@ -172,6 +185,15 @@ class Biolumi {
               '</svg>';
               img.onload = () => {
                 page.img = img;
+
+                pages.push(page);
+
+                if (pages.length > 1) {
+                  _animate({
+                    pages: pages.slice(-2),
+                    direction: 'right',
+                  });
+                }
               };
               img.onerror = err => {
                 console.warn('biolumi image load error', err);
@@ -207,12 +229,31 @@ class Biolumi {
               const page = new Page();
               page.img = transparentImg;
               page.anchors = anchors;
-              pages.push(page);
+            };
+            const _popPage = () => {
+              if (pages.length > 1) {
+                _animate({
+                  pages: pages.slice(-2),
+                  direction: 'left',
+                }, () => {
+                  pages.pop();
+                });
+              } else {
+                pages.pop();
+              }
+            };
+            const _cancelAnimation = () => {
+              if (animation) {
+                animation.cancel();
+                animation = null;
+              }
             };
 
             accept({
               getPages: _getPages,
               pushPage: _pushPage,
+              popPage: _popPage,
+              cancelAnimation: _cancelAnimation,
             });
           });
           const _getTransparentImg = () => transparentImg;

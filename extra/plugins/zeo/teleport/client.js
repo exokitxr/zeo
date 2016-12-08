@@ -57,7 +57,7 @@ class Teleport {
             let teleporting = false;
             let commitTeleporting = false;
             let teleportPoint = null;
-            const keydown = e => {
+            const keydown = e => { // XXX move this to engines/webvr and plugins/singleplayer
               if (window.document.pointerLockElement) {
                 switch (e.keyCode) {
                   case 88: // X
