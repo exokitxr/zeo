@@ -729,41 +729,46 @@ class Weapons {
               })();
 
               const _update = () => {
-                const worldTime = world.getWorldTime();
+                const _updateHud = () => {
+                  const hudWeaponMeshes = [weaponMeshes.left, weaponMeshes.right].filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
 
-                const hudWeaponMeshes = [weaponMeshes.left, weaponMeshes.right]
-                  .filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
+                  if (hudWeaponMeshes.length > 0) {
+                    const worldTime = world.getWorldTime();
 
-                const _updateHudMeshIcon = () => {
-                  const frameIndex = Math.floor(worldTime / 200) % 2;
+                    const _updateHudMeshIcon = () => {
+                      const frameIndex = Math.floor(worldTime / 200) % 2;
 
-                  hudWeaponMeshes.forEach(weaponMesh => {
-                    const {upperRightMesh: {iconMeshes}} = weaponMesh;
+                      hudWeaponMeshes.forEach(weaponMesh => {
+                        const {upperRightMesh: {iconMeshes}} = weaponMesh;
 
-                    iconMeshes.forEach((iconMesh, i) => {
-                      const {visible: oldVisible} = iconMesh;
-                      const newVisible = i === frameIndex;
-                      if (newVisible !== oldVisible) {
-                        iconMesh.visible = newVisible;
-                      }
-                    });
-                  });
+                        iconMeshes.forEach((iconMesh, i) => {
+                          const {visible: oldVisible} = iconMesh;
+                          const newVisible = i === frameIndex;
+                          if (newVisible !== oldVisible) {
+                            iconMesh.visible = newVisible;
+                          }
+                        });
+                      });
+                    };
+                    const _updateHubMiniMap = () => {
+                      hudWeaponMeshes.forEach(weaponMesh => {
+                        weaponMesh.visible = false;
+                      });
+
+                      renderer.render(scene, miniMapCamera, miniMapRenderTarget);
+                      renderer.setRenderTarget(null);
+
+                      hudWeaponMeshes.forEach(weaponMesh => {
+                        weaponMesh.visible = true;
+                      });
+                    };
+
+                    _updateHudMeshIcon();
+                    _updateHubMiniMap();
+                  }
                 };
-                const _updateMiniMap = () => {
-                  hudWeaponMeshes.forEach(weaponMesh => {
-                    weaponMesh.visible = false;
-                  });
 
-                  renderer.render(scene, miniMapCamera, miniMapRenderTarget);
-                  renderer.setRenderTarget(null);
-
-                  hudWeaponMeshes.forEach(weaponMesh => {
-                    weaponMesh.visible = true;
-                  });
-                };
-
-                _updateHudMeshIcon();
-                _updateMiniMap();
+                _updateHud();
               };
 
               this._cleanup = () => {
