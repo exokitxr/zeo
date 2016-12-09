@@ -52,6 +52,10 @@ class Menu {
               type: 'v2v',
               value: null,
             },
+            textureDimensions: {
+              type: 'v2v',
+              value: null,
+            },
           },
           vertexShader: [
             "varying vec2 vUv;",
@@ -64,6 +68,7 @@ class Menu {
             "uniform sampler2D textures[" + maxNumTextures + "];",
             "uniform int validTextures[" + maxNumTextures + "];",
             "uniform vec2 textureUvs[" + maxNumTextures + "];",
+            "uniform vec2 textureDimensions[" + maxNumTextures + "];",
             "varying vec2 vUv;",
             "void main() {",
             "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
@@ -72,7 +77,10 @@ class Menu {
             "  int numAlpha = 0;",
             "  for (int i = 0; i < " + maxNumTextures + "; i++) {",
             "    if (validTextures[i] != 0) {",
-            "      vec4 sample = texture2D(textures[i], vUv - textureUvs[i]);",
+            "      vec4 sample = texture2D(textures[i], vec2(",
+            "        (vUv.x - textureUvs[i].x) / textureDimensions[i].x,",
+            "        1.0 - (((1.0 - vUv.y) - textureUvs[i].y) / textureDimensions[i].y)",
+            "      ));",
             "      diffuse += sample.xyz;",
             "      numDiffuse++;",
             "",
@@ -100,8 +108,11 @@ class Menu {
               {
                 type: 'image',
                 // XXX support animations
-                // XXX support offsets
                 img: creatureUtils.makeCreature()[0],
+                x: 200,
+                y: 0,
+                w: 300,
+                h: 300,
               }
             ]);
 
@@ -138,8 +149,8 @@ class Menu {
                       THREE.UVMapping,
                       THREE.ClampToEdgeWrapping,
                       THREE.ClampToEdgeWrapping,
-                      THREE.LinearFilter,
-                      THREE.LinearFilter,
+                      THREE.NearestFilter,
+                      THREE.NearestFilter,
                       THREE.RGBAFormat,
                       THREE.UnsignedByteType,
                       16
@@ -158,6 +169,14 @@ class Menu {
                   return result;
                 })();
                 shaderUniforms.textureUvs.value = (() => {
+                  const result = Array(2 * maxNumTextures);
+                  for (let i = 0; i < maxNumTextures; i++) {
+                    result[(i * 2) + 0] = 0;
+                    result[(i * 2) + 1] = 0;
+                  }
+                  return result;
+                })();
+                shaderUniforms.textureDimensions.value = (() => {
                   const result = Array(2 * maxNumTextures);
                   for (let i = 0; i < maxNumTextures; i++) {
                     result[(i * 2) + 0] = 0;
@@ -233,6 +252,10 @@ class Menu {
                       {
                         type: 'image',
                         img: creatureUtils.makeCreature()[0],
+                        x: 200,
+                        y: 0,
+                        w: 300,
+                        h: 300,
                       }
                     ]);
                   } else {
@@ -254,7 +277,7 @@ class Menu {
             const _update = () => {
               const _updateMenuMesh = () => {
                 const {planeMesh: {imageMaterial}} = menuMesh;
-                const {uniforms: {texture, textures, validTextures, textureUvs}} = imageMaterial;
+                const {uniforms: {texture, textures, validTextures, textureUvs, textureDimensions}} = imageMaterial;
 
                 const layers = ui.getLayers();
                 for (let i = 0; i < layers.length; i++) {
@@ -271,6 +294,8 @@ class Menu {
                     const position = layer.getPosition();
                     textureUvs.value[(i * 2) + 0] = position.x;
                     textureUvs.value[(i * 2) + 1] = position.y;
+                    textureDimensions.value[(i * 2) + 0] = position.w;
+                    textureDimensions.value[(i * 2) + 1] = position.h;
                   } else {
                     validTextures.value[i] = 0;
                   }

@@ -52,6 +52,7 @@ class Biolumi {
             class Page {
               constructor() {
                 this.layers = [];
+
                 this.x = 0;
                 this.y = 0;
               }
@@ -64,8 +65,11 @@ class Biolumi {
                 this.img = null;
                 this.anchors = [];
                 this.valid = true;
+
                 this.x = 0;
                 this.y = 0;
+                this.w = width;
+                this.h = height;
               }
 
               getPosition() {
@@ -74,6 +78,8 @@ class Biolumi {
                 return {
                   x: parent.x + (this.x / width),
                   y: parent.y + (this.y / height),
+                  w: this.w / width,
+                  h: this.h / height,
                 };
               }
 
@@ -301,8 +307,12 @@ class Biolumi {
                       })();
                       layer.anchors = anchors;
                     } else if (type === 'image') {
-                      const {img} = layerSpec;
+                      const {img, x = 0, y = 0, w = width, h = height} = layerSpec;
                       layer.img = img;
+                      layer.x = x;
+                      layer.y = y;
+                      layer.w = w;
+                      layer.h = h;
 
                       setTimeout(pend);
                     } else {
