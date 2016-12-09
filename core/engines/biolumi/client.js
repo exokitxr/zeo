@@ -3,24 +3,14 @@ const BezierEasing = require('bezier-easing');
 
 const bezierEasing = BezierEasing(0, 1, 0, 1);
 
-// const TRANSITION_TIME = 300;
+const MAX_NUM_TEXTURES = 8;
 const TRANSITION_TIME = 1000;
 
-/* const dotCursorCss = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AsGEDMxMbgZlQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAFUlEQVQI12NkYGD4z4AEmBjQAGEBAEEUAQeL0gY8AAAAAElFTkSuQmCC") 2 2, auto'; */
-
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
-const FONTS = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"';
+const fonts = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"';
 
 class Biolumi {
   mount() {
-    /* const canvas = document.createElement('canvas');
-    canvas.width = WIDTH;
-    canvas.height = HEIGHT;
-    canvas.style.width = (WIDTH / window.devicePixelRatio) + 'px';
-    canvas.style.height = (HEIGHT / window.devicePixelRatio) + 'px';
-    const ctx = canvas.getContext('2d'); */
-
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -61,11 +51,53 @@ class Biolumi {
 
             class Page {
               constructor() {
+                this.layers = [];
+                this.x = 0;
+                this.y = 0;
+              }
+            }
+
+            class Layer {
+              constructor(parent) {
+                this.parent = parent;
+
                 this.img = null;
                 this.anchors = [];
                 this.valid = true;
                 this.x = 0;
                 this.y = 0;
+              }
+
+              getPosition() {
+                const {parent} = this;
+
+                return {
+                  x: parent.x + (this.x / width),
+                  y: parent.y + (this.y / height),
+                };
+              }
+
+              getAnchors() {
+                const position = this.getPosition();
+                const px = position.x * width;
+                const py = position.y * height;
+
+                const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+
+                return this.anchors.map(anchor => {
+                  const {rect, onclick} = anchor;
+                  const {top, bottom, left, right} = rect;
+
+                  return new Anchor(
+                    new Rect(
+                      clamp(py + top, 0, height),
+                      clamp(py + bottom, 0, height),
+                      clamp(px + left, 0, width),
+                      clamp(px + right, 0, width)
+                    ),
+                    onclick
+                  );
+                });
               }
             }
 
@@ -76,11 +108,20 @@ class Biolumi {
               }
             }
 
-            let animation = null;
-            const _animate = ({pages, direction}, cb = () => {}) => {
-              if (animation) {
-                animation.cancel();
-                animation = null;
+            class Rect {
+              constructor(top, bottom, left, right) {
+                this.top = top;
+                this.bottom = bottom;
+                this.left = left;
+                this.right = right;
+              }
+            }
+
+            let transition = null;
+            const _transition = ({pages, direction}, cb = () => {}) => {
+              if (transition) {
+                transition.cancel();
+                transition = null;
               }
 
               let animationFrame = null;
@@ -165,74 +206,118 @@ class Biolumi {
                   cb();
                 }
               };
-              animation = {
+              transition = {
                 cancel: _cancel,
               };
             };
 
             const _getPages = () => pages;
-            const _pushPage = ({src}) => {
-              const rootCss = 'margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ' + FONTS + '; font-weight: 300; overflow: hidden; user-select: none;';
+            const _getLayers = () => {
+              const result = [];
+              for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const {layers} = page;
+                result.push.apply(result, layers);
+              }
+              return result;
+            };
+            const _pushPage = layersSpec => {
+              const page = new Page();
+              const {layers} = page;
 
-              const img = new Image();
-              img.src = 'data:image/svg+xml;charset=utf-8,' +
-              '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
-                '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                  '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
-                    src +
-                  '</div>' +
-                '</foreignObject>' +
-              '</svg>';
-              img.onload = () => {
-                page.img = img;
-
+              const done = () => {
                 pages.push(page);
 
                 if (pages.length > 1) {
-                  _animate({
+                  _transition({
                     pages: pages.slice(-2),
                     direction: 'right',
                   });
                 }
               };
-              img.onerror = err => {
-                console.warn('biolumi image load error', err);
-              };
 
-              const anchors = (() => {
-                const el = document.createElement('div');
-                el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
-                el.innerHTML = '<div style=\'' + rootCss + '\'>' + src + '</div>';
-
-                const as = el.querySelectorAll('a');
-                const numAs = as.length;
-                const result = Array(numAs);
-                if (numAs > 0) {
-                  document.body.appendChild(el);
-
-                  for (let i = 0; i < numAs; i++) {
-                    const a = as[i];
-
-                    const rect = a.getBoundingClientRect();
-                    const onclick = a.getAttribute('onclick');
-
-                    const anchor = new Anchor(rect, onclick);
-                    result[i] = anchor;
+              if (layersSpec.length > 0) {
+                let pending = layersSpec.length;
+                const pend = () => {
+                  if (--pending === 0) {
+                    done();
                   }
+                };
 
-                  document.body.removeChild(el);
+                for (let i = 0; i < layersSpec.length; i++) {
+                  const layerSpec = layersSpec[i];
+                  const {type} = layerSpec;
+
+                  const layer = (() => {
+                    const layer = new Layer(page);
+                    
+                    if (type === 'html') {
+                      const {src} = layerSpec;
+
+                      const rootCss = 'margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ' + fonts + '; font-weight: 300; overflow: hidden; user-select: none;';
+                      const img = new Image();
+                      img.src = 'data:image/svg+xml;charset=utf-8,' +
+                      '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
+                        '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                          '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
+                            src +
+                          '</div>' +
+                        '</foreignObject>' +
+                      '</svg>';
+                      img.onload = () => {
+                        layer.img = img;
+
+                        pend();
+                      };
+                      img.onerror = err => {
+                        console.warn('biolumi image load error', err);
+                      };
+
+                      const anchors = (() => {
+                        const el = document.createElement('div');
+                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
+                        el.innerHTML = '<div style=\'' + rootCss + '\'>' + src + '</div>';
+
+                        const as = el.querySelectorAll('a');
+                        const numAs = as.length;
+                        const result = Array(numAs);
+                        if (numAs > 0) {
+                          document.body.appendChild(el);
+
+                          for (let i = 0; i < numAs; i++) {
+                            const a = as[i];
+
+                            const rect = a.getBoundingClientRect();
+                            const onclick = a.getAttribute('onclick');
+
+                            const anchor = new Anchor(rect, onclick);
+                            result[i] = anchor;
+                          }
+
+                          document.body.removeChild(el);
+                        }
+
+                        return result;
+                      })();
+                      layer.anchors = anchors;
+                    } else if (type === 'image') {
+                      const {img} = layerSpec;
+                      layer.img = img;
+
+                      setTimeout(pend);
+                    } else {
+                      throw new Error('unknown layer type: ' + type);
+                    }
+
+                    return layer;
+                  })();
+                  layers.push(layer);                 
                 }
-
-                return result;
-              })();
-
-              const page = new Page();
-              page.img = transparentImg;
-              page.anchors = anchors;
+              }
             };
             const _popPage = () => {
               if (pages.length > 1) {
-                _animate({
+                _transition({
                   pages: pages.slice(-2),
                   direction: 'left',
                 }, () => {
@@ -242,25 +327,28 @@ class Biolumi {
                 pages.pop();
               }
             };
-            const _cancelAnimation = () => {
-              if (animation) {
-                animation.cancel();
-                animation = null;
+            const _cancelTransition = () => {
+              if (transition) {
+                transition.cancel();
+                transition = null;
               }
             };
 
             accept({
               getPages: _getPages,
+              getLayers: _getLayers,
               pushPage: _pushPage,
               popPage: _popPage,
-              cancelAnimation: _cancelAnimation,
+              cancelTransition: _cancelTransition,
             });
           });
           const _getTransparentImg = () => transparentImg;
+          const _getMaxNumTextures = () => MAX_NUM_TEXTURES;
 
           return {
             requestUi: _requestUi,
             getTransparentImg: _getTransparentImg,
+            getMaxNumTextures: _getMaxNumTextures,
           };
         }
       });

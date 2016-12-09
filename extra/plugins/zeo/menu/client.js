@@ -7,59 +7,6 @@ const WORLD_WIDTH = MENU_SIZE;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 const WORLD_DEPTH = MENU_SIZE / 50;
 
-const MAX_NUM_TEXTURES = 3;
-
-const PAGE_SRC = '<h1 style="font-size: 100px;">lol</h1><a onclick="lol"><p style="font-size: 32px;">Click here</p></a>';
-
-const IMAGE_SHADER = {
-  uniforms: {
-    textures: {
-      type: 'tv',
-      value: null,
-    },
-    validTextures: {
-      type: 'iv1',
-      value: null,
-    },
-    textureUvs: {
-      type: 'v2v',
-      value: null,
-    },
-  },
-  vertexShader: [
-    "varying vec2 vUv;",
-    "void main() {",
-    "  vUv = uv;",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
-    "}"
-  ].join("\n"),
-  fragmentShader: [
-    "uniform sampler2D textures[" + MAX_NUM_TEXTURES + "];",
-    "uniform int validTextures[" + MAX_NUM_TEXTURES + "];",
-    "uniform vec2 textureUvs[" + MAX_NUM_TEXTURES + "];",
-    "varying vec2 vUv;",
-    "void main() {",
-    "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
-    "  float alpha = 0.0;",
-    "  int numDiffuse = 0;",
-    "  int numAlpha = 0;",
-    "  for (int i = 0; i < " + MAX_NUM_TEXTURES + "; i++) {",
-    "    if (validTextures[i] != 0) {",
-    "      vec4 sample = texture2D(textures[i], vUv - textureUvs[i]);",
-    "      diffuse += sample.xyz;",
-    "      numDiffuse++;",
-    "",
-    "      if (sample.w > 0.0) {",
-    "        alpha += sample.w;",
-    "        numAlpha++;",
-    "      }",
-    "    }",
-    "  }",
-    "  gl_FragColor = vec4(diffuse / float(numDiffuse), alpha / float(numAlpha));",
-    "}"
-  ].join("\n")
-};
-
 class Menu {
   constructor(archae) {
     this._archae = archae;
@@ -73,27 +20,90 @@ class Menu {
       live = false;
     };
 
-    return archae.requestEngines([
-      '/core/engines/zeo',
-      '/core/engines/biolumi',
+    return Promise.all([
+      archae.requestEngines([
+        '/core/engines/zeo',
+        '/core/engines/biolumi',
+      ]),
+      archae.requestPlugins([
+        '/core/plugins/creature-utils',
+      ]),
     ]).then(([
-      zeo,
-      biolumi,
+      [zeo, biolumi],
+      [creatureUtils],
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
         const transparentImg = biolumi.getTransparentImg();
+        const maxNumTextures = biolumi.getMaxNumTextures();
+
+        const pageSrc = '<h1 style="font-size: 100px;">lol</h1><a onclick="lol"><p style="font-size: 32px;">Click here</p></a>';
+        const imageShader = {
+          uniforms: {
+            textures: {
+              type: 'tv',
+              value: null,
+            },
+            validTextures: {
+              type: 'iv1',
+              value: null,
+            },
+            textureUvs: {
+              type: 'v2v',
+              value: null,
+            },
+          },
+          vertexShader: [
+            "varying vec2 vUv;",
+            "void main() {",
+            "  vUv = uv;",
+            "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+            "}"
+          ].join("\n"),
+          fragmentShader: [
+            "uniform sampler2D textures[" + maxNumTextures + "];",
+            "uniform int validTextures[" + maxNumTextures + "];",
+            "uniform vec2 textureUvs[" + maxNumTextures + "];",
+            "varying vec2 vUv;",
+            "void main() {",
+            "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
+            "  float alpha = 0.0;",
+            "  int numDiffuse = 0;",
+            "  int numAlpha = 0;",
+            "  for (int i = 0; i < " + maxNumTextures + "; i++) {",
+            "    if (validTextures[i] != 0) {",
+            "      vec4 sample = texture2D(textures[i], vUv - textureUvs[i]);",
+            "      diffuse += sample.xyz;",
+            "      numDiffuse++;",
+            "",
+            "      if (sample.w > 0.0) {",
+            "        alpha += sample.w;",
+            "        numAlpha++;",
+            "      }",
+            "    }",
+            "  }",
+            "  gl_FragColor = vec4(diffuse / float(numDiffuse), alpha / float(numAlpha));",
+            "}"
+          ].join("\n")
+        };
 
         return biolumi.requestUi({
           width: WIDTH,
           height: HEIGHT,
         }).then(ui => {
           if (live) {
-            ui.pushPage({
-              src: PAGE_SRC,
-            });
-
-            const pages = ui.getPages();
+            ui.pushPage([
+              {
+                type: 'html',
+                src: pageSrc,
+              },
+              {
+                type: 'image',
+                // XXX support animations
+                // XXX support offsets
+                img: creatureUtils.makeCreature()[0],
+              }
+            ]);
 
             const solidMaterial = new THREE.MeshBasicMaterial({
               color: 0xFFFFFF,
@@ -119,10 +129,10 @@ class Menu {
               result.position.z = -1;
 
               const imageMaterial = (() => {
-                const shaderUniforms = THREE.UniformsUtils.clone(IMAGE_SHADER.uniforms);
+                const shaderUniforms = THREE.UniformsUtils.clone(imageShader.uniforms);
                 shaderUniforms.textures.value = (() => {
-                  const result = Array(MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                  const result = Array(maxNumTextures);
+                  for (let i = 0; i < maxNumTextures; i++) {
                     const texture = new THREE.Texture(
                       transparentImg,
                       THREE.UVMapping,
@@ -141,15 +151,15 @@ class Menu {
                   return result;
                 })();
                 shaderUniforms.validTextures.value = (() => {
-                  const result = Array(MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                  const result = Array(maxNumTextures);
+                  for (let i = 0; i < maxNumTextures; i++) {
                     result[i] = 0;
                   }
                   return result;
                 })();
                 shaderUniforms.textureUvs.value = (() => {
-                  const result = Array(2 * MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                  const result = Array(2 * maxNumTextures);
+                  for (let i = 0; i < maxNumTextures; i++) {
                     result[(i * 2) + 0] = 0;
                     result[(i * 2) + 1] = 0;
                   }
@@ -157,8 +167,8 @@ class Menu {
                 })();
                 const shaderMaterial = new THREE.ShaderMaterial({
                   uniforms: shaderUniforms,
-                  vertexShader: IMAGE_SHADER.vertexShader,
-                  fragmentShader: IMAGE_SHADER.fragmentShader,
+                  vertexShader: imageShader.vertexShader,
+                  fragmentShader: imageShader.fragmentShader,
                   transparent: true,
                 });
                 // shaderMaterial.polygonOffset = true;
@@ -212,12 +222,19 @@ class Menu {
                 if (onclick) {
                   console.log('clicking', onclick);
 
-                  ui.cancelAnimation();
+                  ui.cancelTransition();
 
-                  if (pages.length < 3) {
-                    ui.pushPage({
-                      src: PAGE_SRC,
-                    });
+                  if (ui.getPages().length < 3) {
+                    ui.pushPage([
+                      {
+                        type: 'html',
+                        src: pageSrc,
+                      },
+                      {
+                        type: 'image',
+                        img: creatureUtils.makeCreature()[0],
+                      }
+                    ]);
                   } else {
                     ui.popPage();
                   }
@@ -239,18 +256,24 @@ class Menu {
                 const {planeMesh: {imageMaterial}} = menuMesh;
                 const {uniforms: {texture, textures, validTextures, textureUvs}} = imageMaterial;
 
-                for (let i = 0; i < pages.length; i++) {
-                  const page = pages[i];
+                const layers = ui.getLayers();
+                for (let i = 0; i < layers.length; i++) {
+                  const layer = layers[i];
 
-                  if (textures.value[i].image !== page.img) {
-                    textures.value[i].image = page.img;
-                    textures.value[i].needsUpdate = true;
+                  if (layer.valid) {
+                    validTextures.value[i] = 1;
+
+                    if (textures.value[i].image !== layer.img) {
+                      textures.value[i].image = layer.img;
+                      textures.value[i].needsUpdate = true;
+                    }
+
+                    const position = layer.getPosition();
+                    textureUvs.value[(i * 2) + 0] = position.x;
+                    textureUvs.value[(i * 2) + 1] = position.y;
+                  } else {
+                    validTextures.value[i] = 0;
                   }
-
-                  validTextures.value[i] = page.valid ? 1 : 0;
-
-                  textureUvs.value[(i * 2) + 0] = page.x;
-                  textureUvs.value[(i * 2) + 1] = page.y;
                 }
               };
               const _updateAnchors = () => {
@@ -275,7 +298,7 @@ class Menu {
                 const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
                 const intersectionPoint = menuPlane.intersectLine(cameraLine);
                 if (intersectionPoint) {
-                  const anchorBounds = (() => {
+                  const anchorBoxes = (() => {
                     const _getPlanePoint = (x, y, z) => menuPosition.clone()
                       .add(
                         new THREE.Vector3(
@@ -293,30 +316,31 @@ class Menu {
                       );
 
                     const result = [];
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {anchors} = page;
+                    const layers = ui.getLayers();
+                    for (let i = 0; i < layers.length; i++) {
+                      const layer = layers[i];
+                      const anchors = layer.getAnchors();
 
                       for (let j = 0; j < anchors.length; j++) {
                         const anchor = anchors[j];
                         const {rect} = anchor;
 
-                        const anchorBound = new THREE.Box3().setFromPoints([
+                        const anchorBox = new THREE.Box3().setFromPoints([
                           _getPlanePoint(rect.left, rect.top, -WORLD_DEPTH),
                           _getPlanePoint(rect.right, rect.bottom, WORLD_DEPTH)
                         ]);
-                        anchorBound.anchor = anchor;
+                        anchorBox.anchor = anchor;
 
-                        result.push(anchorBound);
+                        result.push(anchorBox);
                       }
                     }
                     return result;
                   })();
-                  const anchorBound = (() => {
-                    for (let i = 0; i < anchorBounds.length; i++) {
-                      const anchorBound = anchorBounds[i];
-                      if (anchorBound.containsPoint(intersectionPoint)) {
-                        return anchorBound;
+                  const anchorBox = (() => {
+                    for (let i = 0; i < anchorBoxes.length; i++) {
+                      const anchorBox = anchorBoxes[i];
+                      if (anchorBox.containsPoint(intersectionPoint)) {
+                        return anchorBox;
                       }
                     }
 
@@ -326,10 +350,10 @@ class Menu {
                   // render
                   dotMesh.position.copy(intersectionPoint);
 
-                  if (anchorBound) {
-                    boxMesh.position.copy(anchorBound.min.clone().add(anchorBound.max).divideScalar(2));
-                    boxMesh.scale.copy(anchorBound.max.clone().sub(anchorBound.min));
-                    boxMesh.anchor = anchorBound.anchor;
+                  if (anchorBox) {
+                    boxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
+                    boxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
+                    boxMesh.anchor = anchorBox.anchor;
 
                     if (!boxMesh.visible) {
                       boxMesh.visible = true;
