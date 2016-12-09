@@ -75,12 +75,12 @@ class Biolumi {
               getPosition() {
                 const {parent} = this;
 
-                return {
-                  x: parent.x + (this.x / width),
-                  y: parent.y + (this.y / height),
-                  w: this.w / width,
-                  h: this.h / height,
-                };
+                return new Position(
+                  parent.x + (this.x / width),
+                  parent.y + (this.y / height),
+                  this.w / width,
+                  this.h / height
+                );
               }
 
               getAnchors() {
@@ -111,6 +111,15 @@ class Biolumi {
               constructor(rect, onclick) {
                 this.rect = rect;
                 this.onclick = onclick;
+              }
+            }
+
+            class Position {
+              constructor(x, y, w, h) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
               }
             }
 
