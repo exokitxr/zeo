@@ -42,10 +42,11 @@ class Menu {
 <h1 style="font-size: 100px;">lol</h1>
 <a onclick="next"><p style="font-size: 32px;">Click here</p></a>
 <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
-  <a style="display: block; position: relative; height: 100px;" onclick="input">
+  <a style="display: block; position: relative; height: 100px; font-size: 72px; line-height: 1.4;" onclick="input">
     <div style="position: absolute; top: 0; bottom: 0; left: 40px; right: 40px; background-color: #FFF;">
-      <div style="position: absolute; top: 0; bottom: 10px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
-      <div style="position: absolute; top: 0; bottom: 10px; left: 600px; margin-left: -1px; width: 2px; background-color: #333;"></div>
+      <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
+      <div style="position: absolute; top: 0; bottom: 20px; left: 600px; margin-left: -1px; width: 2px; background-color: #333;"></div>
+      <div>Hello, world! This is some text! I hope you enjoy it!</div>
     </div>
   </a>
   <a style="display: block; position: relative; height: 100px;" onclick="resolution">
