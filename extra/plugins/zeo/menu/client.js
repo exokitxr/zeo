@@ -38,7 +38,15 @@ class Menu {
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
 
-        const pageSrc = '<h1 style="font-size: 100px;">lol</h1><a onclick="lol"><p style="font-size: 32px;">Click here</p></a>';
+        const pageSrc = `\
+<h1 style="font-size: 100px;">lol</h1>
+<a onclick="next"><p style="font-size: 32px;">Click here</p></a>
+<a style="display: block; position: absolute; bottom: 0; left: 0; right: 0; height: 100px;" onclick="resolution">
+  <div style="position: absolute; top: 40px; left: 40px; right: 40px; height: 20px; background-color: #CCC;">
+    <div style="position: absolute; top: -40px; bottom: -40px; left: 500px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
+  </div>
+</a>
+`;
         const imageShader = {
           uniforms: {
             textures: {
@@ -240,31 +248,37 @@ class Menu {
 
             const click = () => {
               const {anchor} = boxMesh;
+
               if (anchor) {
                 const {onclick} = anchor;
+
                 if (onclick) {
-                  console.log('clicking', onclick);
+                  if (onclick === 'next') {
+                    ui.cancelTransition();
 
-                  ui.cancelTransition();
+                    if (ui.getPages().length < 3) {
+                      ui.pushPage([
+                        {
+                          type: 'html',
+                          src: pageSrc,
+                        },
+                        {
+                          type: 'image',
+                          img: creatureUtils.makeCreature(),
+                          x: 200,
+                          y: 0,
+                          w: 300,
+                          h: 300,
+                          frameTime: 300,
+                        }
+                      ]);
+                    } else {
+                      ui.popPage();
+                    }
+                  } else if (onclick === 'resolution') {
+                    const {value} = boxMesh;
 
-                  if (ui.getPages().length < 3) {
-                    ui.pushPage([
-                      {
-                        type: 'html',
-                        src: pageSrc,
-                      },
-                      {
-                        type: 'image',
-                        img: creatureUtils.makeCreature(),
-                        x: 200,
-                        y: 0,
-                        w: 300,
-                        h: 300,
-                        frameTime: 300,
-                      }
-                    ]);
-                  } else {
-                    ui.popPage();
+                    console.log('set resolution', value);
                   }
                 }
               }
@@ -329,23 +343,23 @@ class Menu {
                 const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
                 const intersectionPoint = menuPlane.intersectLine(cameraLine);
                 if (intersectionPoint) {
-                  const anchorBoxes = (() => {
-                    const _getPlanePoint = (x, y, z) => menuPosition.clone()
+                  const _getPlanePoint = (x, y, z) => menuPosition.clone()
+                    .add(
+                      new THREE.Vector3(
+                        -WORLD_WIDTH / 2,
+                        WORLD_HEIGHT / 2,
+                        0
+                      )
                       .add(
                         new THREE.Vector3(
-                          -WORLD_WIDTH / 2,
-                          WORLD_HEIGHT / 2,
-                          0
+                          (x / WIDTH) * WORLD_WIDTH,
+                          (-y / HEIGHT) * WORLD_HEIGHT,
+                          z
                         )
-                        .add(
-                          new THREE.Vector3(
-                            (x / WIDTH) * WORLD_WIDTH,
-                            (-y / HEIGHT) * WORLD_HEIGHT,
-                            z
-                          )
-                        ).applyQuaternion(menuRotation)
-                      );
+                      ).applyQuaternion(menuRotation)
+                    );
 
+                  const anchorBoxes = (() => {
                     const result = [];
                     const layers = ui.getLayers();
                     for (let i = 0; i < layers.length; i++) {
@@ -358,7 +372,7 @@ class Menu {
 
                         const anchorBox = new THREE.Box3().setFromPoints([
                           _getPlanePoint(rect.left, rect.top, -WORLD_DEPTH),
-                          _getPlanePoint(rect.right, rect.bottom, WORLD_DEPTH)
+                          _getPlanePoint(rect.right, rect.bottom, WORLD_DEPTH),
                         ]);
                         anchorBox.anchor = anchor;
 
@@ -384,7 +398,18 @@ class Menu {
                   if (anchorBox) {
                     boxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
                     boxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
-                    boxMesh.anchor = anchorBox.anchor;
+
+                    const {anchor} = anchorBox;
+                    boxMesh.anchor = anchor;
+                    boxMesh.value = (() => {
+                      const {rect} = anchor;
+                      const horizontalLine = new THREE.Line3(
+                        _getPlanePoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                        _getPlanePoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                      );
+                      const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
+                      return new THREE.Line3(horizontalLine.start, closestHorizontalPoint).distance() / horizontalLine.distance();
+                    })();
 
                     if (!boxMesh.visible) {
                       boxMesh.visible = true;
