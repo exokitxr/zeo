@@ -41,11 +41,19 @@ class Menu {
         const pageSrc = `\
 <h1 style="font-size: 100px;">lol</h1>
 <a onclick="next"><p style="font-size: 32px;">Click here</p></a>
-<a style="display: block; position: absolute; bottom: 0; left: 0; right: 0; height: 100px;" onclick="resolution">
-  <div style="position: absolute; top: 40px; left: 40px; right: 40px; height: 20px; background-color: #CCC;">
-    <div style="position: absolute; top: -40px; bottom: -40px; left: 500px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
-  </div>
-</a>
+<div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
+  <a style="display: block; position: relative; height: 100px;" onclick="input">
+    <div style="position: absolute; top: 0; bottom: 0; left: 40px; right: 40px; background-color: #FFF;">
+      <div style="position: absolute; top: 0; bottom: 10px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
+      <div style="position: absolute; top: 0; bottom: 10px; left: 600px; margin-left: -1px; width: 2px; background-color: #333;"></div>
+    </div>
+  </a>
+  <a style="display: block; position: relative; height: 100px;" onclick="resolution">
+    <div style="position: absolute; top: 40px; left: 40px; right: 40px; height: 10px; background-color: #CCC;">
+      <div style="position: absolute; top: -40px; bottom: -40px; left: 600px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
+    </div>
+  </a>
+</div>
 `;
         const imageShader = {
           uniforms: {
@@ -275,6 +283,10 @@ class Menu {
                     } else {
                       ui.popPage();
                     }
+                  } else if (onclick === 'input') {
+                    const {value} = boxMesh;
+
+                    console.log('click input', value);
                   } else if (onclick === 'resolution') {
                     const {value} = boxMesh;
 
