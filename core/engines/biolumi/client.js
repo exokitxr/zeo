@@ -3,7 +3,7 @@ const BezierEasing = require('bezier-easing');
 
 const bezierEasing = BezierEasing(0, 1, 0, 1);
 
-const MAX_NUM_TEXTURES = 8;
+const MAX_NUM_TEXTURES = 16;
 const TRANSITION_TIME = 1000;
 
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -64,12 +64,26 @@ class Biolumi {
 
                 this.img = null;
                 this.anchors = [];
-                this.valid = true;
 
                 this.x = 0;
                 this.y = 0;
                 this.w = width;
                 this.h = height;
+                this.numFrames = 1;
+                this.frameIndex = 0;
+                this.frameTime = 0;
+              }
+
+              getValid({worldTime}) {
+                const {numFrames} = this;
+
+                if (numFrames > 1) {
+                  const {parent, frameIndex, frameTime} = this;
+                  const currentFrameIndex = Math.floor(worldTime / frameTime) % numFrames;
+                  return currentFrameIndex === frameIndex;
+                } else {
+                  return true; // XXX optimize this
+                }
               }
 
               getPosition() {
@@ -262,75 +276,85 @@ class Biolumi {
                 for (let i = 0; i < layersSpec.length; i++) {
                   const layerSpec = layersSpec[i];
                   const {type} = layerSpec;
-
-                  const layer = (() => {
-                    const layer = new Layer(page);
                     
-                    if (type === 'html') {
-                      const {src} = layerSpec;
+                  if (type === 'html') {
+                    const {src} = layerSpec;
 
-                      const rootCss = 'margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ' + fonts + '; font-weight: 300; overflow: hidden; user-select: none;';
-                      const img = new Image();
-                      img.src = 'data:image/svg+xml;charset=utf-8,' +
-                      '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
-                        '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                          '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
-                            src +
-                          '</div>' +
-                        '</foreignObject>' +
-                      '</svg>';
-                      img.onload = () => {
-                        layer.img = img;
+                    const rootCss = 'margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ' + fonts + '; font-weight: 300; overflow: hidden; user-select: none;';
+                    const img = new Image();
+                    img.src = 'data:image/svg+xml;charset=utf-8,' +
+                    '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
+                      '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                        '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
+                          src +
+                        '</div>' +
+                      '</foreignObject>' +
+                    '</svg>';
+                    img.onload = () => {
+                      layer.img = img;
 
-                        pend();
-                      };
-                      img.onerror = err => {
-                        console.warn('biolumi image load error', err);
-                      };
+                      pend();
+                    };
+                    img.onerror = err => {
+                      console.warn('biolumi image load error', err);
+                    };
 
-                      const anchors = (() => {
-                        const el = document.createElement('div');
-                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
-                        el.innerHTML = '<div style=\'' + rootCss + '\'>' + src + '</div>';
+                    const anchors = (() => {
+                      const el = document.createElement('div');
+                      el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
+                      el.innerHTML = '<div style=\'' + rootCss + '\'>' + src + '</div>';
 
-                        const as = el.querySelectorAll('a');
-                        const numAs = as.length;
-                        const result = Array(numAs);
-                        if (numAs > 0) {
-                          document.body.appendChild(el);
+                      const as = el.querySelectorAll('a');
+                      const numAs = as.length;
+                      const result = Array(numAs);
+                      if (numAs > 0) {
+                        document.body.appendChild(el);
 
-                          for (let i = 0; i < numAs; i++) {
-                            const a = as[i];
+                        for (let i = 0; i < numAs; i++) {
+                          const a = as[i];
 
-                            const rect = a.getBoundingClientRect();
-                            const onclick = a.getAttribute('onclick');
+                          const rect = a.getBoundingClientRect();
+                          const onclick = a.getAttribute('onclick');
 
-                            const anchor = new Anchor(rect, onclick);
-                            result[i] = anchor;
-                          }
-
-                          document.body.removeChild(el);
+                          const anchor = new Anchor(rect, onclick);
+                          result[i] = anchor;
                         }
 
-                        return result;
-                      })();
-                      layer.anchors = anchors;
-                    } else if (type === 'image') {
-                      const {img, x = 0, y = 0, w = width, h = height} = layerSpec;
+                        document.body.removeChild(el);
+                      }
+
+                      return result;
+                    })();
+
+                    const layer = new Layer(page);
+                    layer.anchors = anchors;
+                    layers.push(layer);
+                  } else if (type === 'image') {
+                    let {img: imgs} = layerSpec;
+                    if (!Array.isArray(imgs)) {
+                      imgs = [imgs];
+                    }
+                    const {x = 0, y = 0, w = width, h = height, frameTime = 300} = layerSpec;
+
+                    setTimeout(pend);
+
+                    for (let j = 0; j < imgs.length; j++) {
+                      const img = imgs[j];
+
+                      const layer = new Layer(page);
                       layer.img = img;
                       layer.x = x;
                       layer.y = y;
                       layer.w = w;
                       layer.h = h;
-
-                      setTimeout(pend);
-                    } else {
-                      throw new Error('unknown layer type: ' + type);
+                      layer.numFrames = imgs.length;
+                      layer.frameIndex = j;
+                      layer.frameTime = frameTime;
+                      layers.push(layer);
                     }
-
-                    return layer;
-                  })();
-                  layers.push(layer);                 
+                  } else {
+                    throw new Error('unknown layer type: ' + type);
+                  }
                 }
               }
             };

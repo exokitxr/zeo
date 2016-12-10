@@ -34,6 +34,7 @@ class Menu {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
+        const world = zeo.getCurrentWorld();
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
 
@@ -77,16 +78,19 @@ class Menu {
             "  int numAlpha = 0;",
             "  for (int i = 0; i < " + maxNumTextures + "; i++) {",
             "    if (validTextures[i] != 0) {",
-            "      vec4 sample = texture2D(textures[i], vec2(",
+            "      vec2 uv = vec2(",
             "        (vUv.x - textureUvs[i].x) / textureDimensions[i].x,",
             "        1.0 - (((1.0 - vUv.y) - textureUvs[i].y) / textureDimensions[i].y)",
-            "      ));",
-            "      diffuse += sample.xyz;",
-            "      numDiffuse++;",
+            "      );",
+            "      if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
+            "        vec4 sample = texture2D(textures[i], uv);",
+            "        diffuse += sample.xyz;",
+            "        numDiffuse++;",
             "",
-            "      if (sample.w > 0.0) {",
-            "        alpha += sample.w;",
-            "        numAlpha++;",
+            "        if (sample.w > 0.0) {",
+            "          alpha += sample.w;",
+            "          numAlpha++;",
+            "        }",
             "      }",
             "    }",
             "  }",
@@ -107,12 +111,12 @@ class Menu {
               },
               {
                 type: 'image',
-                // XXX support animations
-                img: creatureUtils.makeCreature()[0],
+                img: creatureUtils.makeCreature(),
                 x: 200,
                 y: 0,
                 w: 300,
                 h: 300,
+                frameTime: 300,
               }
             ]);
 
@@ -251,11 +255,12 @@ class Menu {
                       },
                       {
                         type: 'image',
-                        img: creatureUtils.makeCreature()[0],
+                        img: creatureUtils.makeCreature(),
                         x: 200,
                         y: 0,
                         w: 300,
                         h: 300,
+                        frameTime: 300,
                       }
                     ]);
                   } else {
@@ -280,10 +285,11 @@ class Menu {
                 const {uniforms: {texture, textures, validTextures, textureUvs, textureDimensions}} = imageMaterial;
 
                 const layers = ui.getLayers();
+                const worldTime = world.getWorldTime();
                 for (let i = 0; i < layers.length; i++) {
                   const layer = layers[i];
 
-                  if (layer.valid) {
+                  if (layer.getValid({worldTime})) {
                     validTextures.value[i] = 1;
 
                     if (textures.value[i].image !== layer.img) {
