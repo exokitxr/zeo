@@ -49,14 +49,14 @@ class Menu {
 <h1 style='font-size: 100px;'>lol</h1>
 <a onclick="next"><p style="font-size: 32px;">Click here</p></a>
 <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
-  <div style='position: relative; height: 100px; font-size: ${fontSize}px; line-height: ${lineHeight};' onclick="input">
+  <div style='position: relative; height: 100px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
     <a style='display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px; background-color: #FFF;' onclick="input">
       <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
       <div style="position: absolute; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (40 + 40))}px; margin-left: -1px; width: 2px; background-color: #333;"></div>
       <div>${inputText}</div>
     </a>
   </div>
-  <div style="position: relative; height: 100px;" onclick="input">
+  <div style="position: relative; height: 100px;">
     <a style="display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px;" onclick="resolution">
       <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
         <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (40 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
