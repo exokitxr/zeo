@@ -79,20 +79,11 @@ Alternatively see [how to build the library yourself](https://github.com/mrdoob/
 
 This code creates a scene, a camera, and a geometric cube, and it adds the cube to the scene. It then creates a `WebGL` renderer for the scene and camera, and it adds that viewport to the document.body element. Finally it animates the cube within the scene for the camera.
 */})).replace(/&mdash;/g, '-').replace(/\n+/g, ' ')}`;
-        const getMainPageSrc = ({mods, inputValue, sliderValue}) => `\
-<h1 style="height: 150px; margin: 0; border-bottom: 2px solid #333; font-size: 107px; clear: both; line-height: 1.4;">
-  <a style="display: inline-block; width: 150px; float: left; text-align: center;" onclick="back">❮</a>
-  <span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
-  <span style="display: inline-block;">zeo</span>
-</h1>
+        const getMainPageSrc = ({inputValue, sliderValue}) => `\
+${getHeaderSrc('zeo.sh', '', false)}
 <div style="height: ${HEIGHT - (150 + 2 + 200)}px;">
   <div style="display: flex;">
-    <div style="width: 500px; padding: 0 40px; font-size: 36px;">
-      <a onclick="next"><p>Change world</p></a>
-      <a onclick="next"><p>Configure plugins</p></a>
-      <a onclick="next"><p>Delete world</p></a>
-      <a onclick="next"><p>Preferences</p></a>
-    </div>
+    ${getMainSidebarSrc()}
     <div style="width: ${WIDTH - 500}px;">
       ${readme}
     </div>
@@ -115,34 +106,81 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
   </div>
 </div>
 `;
-        const getModsPageSrc = ({mods, inputValue, sliderValue}) => `\
-<h1 style="height: 150px; margin: 0; border-bottom: 2px solid #333; font-size: 107px; clear: both; line-height: 1.4;">
-  <a style="display: inline-block; width: 150px; float: left; text-align: center;" onclick="back">❮</a>
-  <span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
-  <span style="display: inline-block; float: left;">zeo</span>
-</h1>
+        const getModsPageSrc = ({mods}) => {
+          const installedMods = mods.filter(mod => mod.installed);
+          const availableMods = mods.filter(mod => !mod.installed);
+
+          const getModSrc = mod => `\
+<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;" onclick="mod:${mod.name}:${mod.version}">
+  <img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" style="width: 100px; height: 100px; height: 100px; image-rendering: pixelated;" />
+  <div style="position: relative; display: block; width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
+    <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</div>
+    <div style="font-size: 20px; max-width: 100%; max-height: 100px; overflow: hidden;">${mod.description}</div>
+  </div>
+</a>`;
+          const getModsSrc = mods => `\
+<div style="width: inherit; float: left; clear: both;">
+  ${mods.map(getModSrc).join('\n')}
+</div>
+`;
+
+          return `\
+${getHeaderSrc('mods', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
-    <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-      <a onclick="next"><p>Change world</p></a>
-      <a onclick="next"><p>Configure plugins</p></a>
-      <a onclick="next"><p>Delete world</p></a>
-      <a onclick="next"><p>Preferences</p></a>
-    </div>
+    ${getModsSidebarSrc()}
     <div style="width: ${WIDTH - 500}px; clear: both;">
-      ${mods.map(mod =>
-        `<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;">
-          <img src="${creatureUtils.makeStaticCreature(mod)}" style="width: 100px; height: 100px; height: 100px; image-rendering: pixelated;" />
-          <div style="position: relative; display: block; width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
-            <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod}</div>
-            <div style="font-size: 20px; max-width: 100%; max-height: 100px; overflow: hidden;">Here is a description of this mod. It is a very good mod that you should definitely download.</div>
-          </div>
-        </a>`
-      ).join('\n')}
+      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
+      ${getModsSrc(installedMods)}
+      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
+      ${getModsSrc(availableMods)}
     </div>
   </div>
 </div>
 `;
+        };
+        const getModPageSrc = ({name, version}) => `\
+${getHeaderSrc(name, 'v' + version, true)}
+<div style="height: ${HEIGHT - (150 + 2)}px;">
+  <div style="display: flex;">
+    ${getModSidebarSrc()}
+    <div style="width: ${WIDTH - 500}px;">
+      <h1>${name}</h1>
+      ${readme}
+    </div>
+  </div>
+</div>
+`;
+
+        const getHeaderSrc = (text, subtext, backButton) => `\
+<div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
+  ${backButton ? `<a style="display: inline-block; width: 150px; float: left; text-align: center;" onclick="back">❮</a>` : ''}
+  <span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
+  <h1 style="display: inline-block; margin: 0; float: left; font-size: inherit; line-height: inherit;">${text}</h1>
+  ${subtext ? `<div style="display: inline-flex; height: 150px; margin-left: 20px; float: left; align-items: flex-end;">
+    <h2 style="margin: 0; font-size: 60px; line-height: 110px;">${subtext}</h2>
+  </div>` : ''}
+</div>`;
+        const getMainSidebarSrc = () => `\
+<div style="width: 500px; padding: 0 40px; font-size: 36px;">
+  <a onclick="next"><p>Change world</p></a>
+  <a onclick="next"><p>Add/Remove Mods</p></a>
+  <a onclick="next"><p>Preferences</p></a>
+  <a onclick="next"><p>About</p></a>
+</div>`;
+        const getModsSidebarSrc = () => `\
+<div style="width: 500px; padding: 0 40px; font-size: 36px;">
+  <a onclick="next"><p>Installed mod</p></a>
+  <a onclick="next"><p>Available mods</p></a>
+  <a onclick="next"><p>Search mods</p></a>
+</div>`;
+        const getModSidebarSrc = () => `\
+<div style="width: 500px; padding: 0 40px; font-size: 36px;">
+  <a onclick="next"><p>Install mod</p></a>
+  <a onclick="next"><p>Remove mod</p></a>
+  <a onclick="next"><p>Configure mod</p></a>
+</div>`;
+
         const imageShader = {
           uniforms: {
             textures: {
@@ -208,7 +246,7 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
             width: WIDTH,
             height: HEIGHT,
           }),
-          world.requestModsList(),
+          world.requestModsStatus(),
         ]).then(([
           ui,
           mods,
@@ -225,12 +263,12 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
             ui.pushPage([
               {
                 type: 'html',
-                src: getMainPageSrc({mods, inputValue, sliderValue}),
+                src: getMainPageSrc({inputValue, sliderValue}),
               },
               {
                 type: 'image',
-                img: creatureUtils.makeAnimatedCreature(),
-                x: 150,
+                img: creatureUtils.makeAnimatedCreature('zeo.sh'),
+                x: 0,
                 y: 0,
                 w: 150,
                 h: 150,
@@ -367,11 +405,12 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
                     ui.replacePage([
                       {
                         type: 'html',
-                        src: getMainPageSrc({mods, inputValue, sliderValue}),
+                        src: getMainPageSrc({inputValue, sliderValue}),
                       },
                     ]);
                   };
 
+                  let match;
                   if (onclick === 'back') {
                     if (ui.getPages().length > 1) {
                       ui.popPage();
@@ -383,11 +422,36 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
                       ui.pushPage([
                         {
                           type: 'html',
-                          src: getModsPageSrc({mods, inputValue, sliderValue}),
+                          src: getModsPageSrc({mods}),
                         },
                         {
                           type: 'image',
-                          img: creatureUtils.makeAnimatedCreature(),
+                          img: creatureUtils.makeAnimatedCreature('mods'),
+                          x: 150,
+                          y: 0,
+                          w: 150,
+                          h: 150,
+                          frameTime: 300,
+                        }
+                      ]);
+                    } else {
+                      ui.popPage();
+                    }
+                  } else if (match = onclick.match(/^mod:(.+):(.+)$/)) {
+                    const name = match[1];
+                    const version = match[2];
+
+                    ui.cancelTransition();
+
+                    if (ui.getPages().length < 3) {
+                      ui.pushPage([
+                        {
+                          type: 'html',
+                          src: getModPageSrc({name, version}),
+                        },
+                        {
+                          type: 'image',
+                          img: creatureUtils.makeAnimatedCreature('mod:' + name),
                           x: 150,
                           y: 0,
                           w: 150,

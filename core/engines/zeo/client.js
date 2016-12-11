@@ -230,7 +230,7 @@ height: 100px;
                       const plugins = new Map();
 
                       const _getWorldTime = () => worldTime;
-                      const _requestModsList = () => fetch('/archae/zeo/mods').then(res => res.json());
+                      const _requestModsStatus = () => fetch('/archae/zeo/mods/status').then(res => res.json());
                       const _requestMod = modSpec => new Promise((accept, reject) => {
                         archae.requestPlugin(modSpec)
                           .then(plugin => {
@@ -255,7 +255,7 @@ height: 100px;
                       const world = {
                         name: worldName,
                         getWorldTime: _getWorldTime,
-                        requestModsList: _requestModsList,
+                        requestModsStatus: _requestModsStatus,
                         requestMod: _requestMod,
                         requestMods: _requestMods,
                         requestWorker: _requestWorker,
