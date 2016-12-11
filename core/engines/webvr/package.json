@@ -2,7 +2,6 @@
   "name": "webvr",
   "version": "0.0.1",
   "client": "client.js",
-  "server": "server.js",
   "dependencies": {
     "events": "",
     "mod-loop": "0.0.2",

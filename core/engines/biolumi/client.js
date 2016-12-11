@@ -329,7 +329,7 @@ class Biolumi {
                           const a = as[i];
 
                           const rect = a.getBoundingClientRect();
-                          const onclick = a.getAttribute('onclick');
+                          const onclick = a.getAttribute('onclick') || null;
 
                           const anchor = new Anchor(rect, onclick);
                           result[i] = anchor;

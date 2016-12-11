@@ -1,3 +1,7 @@
+const heredoc = require('heredoc');
+const showdown = require('showdown');
+const showdownConverter = new showdown.Converter();
+
 const WIDTH = 2 * 1024;
 const HEIGHT = WIDTH / 1.5;
 const ASPECT_RATIO = WIDTH / HEIGHT;
@@ -45,9 +49,51 @@ class Menu {
         const inputText = 'Hello, world! This is some text!';
         let inputValue = 0.4;
         let sliderValue = 0.5;
-        const getPageSrc = ({inputValue, sliderValue}) => `\
-<h1 style='font-size: 100px;'>lol</h1>
-<a onclick="next"><p style="font-size: 32px;">Click here</p></a>
+        const readme = `${showdownConverter.makeHtml(heredoc.strip(() => {/*
+three.js
+========
+
+[![Latest NPM release][npm-badge]][npm-badge-url]
+[![License][license-badge]][license-badge-url]
+[![Dependencies][dependencies-badge]][dependencies-badge-url]
+[![Dev Dependencies][devDependencies-badge]][devDependencies-badge-url]
+
+#### JavaScript 3D library ####
+
+The aim of the project is to create an easy to use, lightweight, 3D library. The library provides &lt;canvas&gt;, &lt;svg&gt;, CSS3D and WebGL renderers.
+
+[Examples](http://threejs.org/examples/) &mdash;
+[Documentation](http://threejs.org/docs/) &mdash;
+[Wiki](https://github.com/mrdoob/three.js/wiki) &mdash;
+[Migrating](https://github.com/mrdoob/three.js/wiki/Migration) &mdash;
+[Help](http://stackoverflow.com/questions/tagged/three.js)
+
+### Usage ###
+
+Download the [minified library](http://threejs.org/build/three.min.js) and include it in your html.
+Alternatively see [how to build the library yourself](https://github.com/mrdoob/three.js/wiki/Build-instructions).
+
+```html
+<script src="js/three.min.js"></script>
+```
+
+This code creates a scene, a camera, and a geometric cube, and it adds the cube to the scene. It then creates a `WebGL` renderer for the scene and camera, and it adds that viewport to the document.body element. Finally it animates the cube within the scene for the camera.
+*/})).replace(/&mdash;/g, '-').replace(/\n+/g, ' ')}`;
+window.readme = readme;
+        const getPageSrc = ({mods, inputValue, sliderValue}) => `\
+<div style="height: ${HEIGHT - 200}px;">
+  <div style="display: flex; height: ${HEIGHT - 200}px;">
+    <div style="width: 500px; padding: 0 40px; font-size: 32px;">
+      <a onclick="next"><p>Change world</p></a>
+      <a onclick="next"><p>Configure plugins</p></a>
+      <a onclick="next"><p>Delete world</p></a>
+      <a onclick="next"><p>Preferences</p></a>
+    </div>
+    <div style="width: ${WIDTH - 500}px;">
+      ${readme}
+    </div>
+  </div>
+</div>
 <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
   <div style='position: relative; height: 100px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
     <a style='display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px; background-color: #FFF;' onclick="input">
@@ -125,10 +171,16 @@ class Menu {
           ].join("\n")
         };
 
-        return biolumi.requestUi({
-          width: WIDTH,
-          height: HEIGHT,
-        }).then(ui => {
+        return Promise.all([
+          biolumi.requestUi({
+            width: WIDTH,
+            height: HEIGHT,
+          }),
+          world.requestModsList(),
+        ]).then(([
+          ui,
+          mods,
+        ]) => {
           if (live) {
             const measureText = (() => {
               const canvas = document.createElement('canvas');
@@ -141,7 +193,7 @@ class Menu {
             ui.pushPage([
               {
                 type: 'html',
-                src: getPageSrc({inputValue, sliderValue}),
+                src: getPageSrc({mods, inputValue, sliderValue}),
               },
               {
                 type: 'image',
@@ -283,7 +335,7 @@ class Menu {
                     ui.replacePage([
                       {
                         type: 'html',
-                        src: getPageSrc({inputValue, sliderValue}),
+                        src: getPageSrc({mods, inputValue, sliderValue}),
                       },
                     ]);
                   };
@@ -295,7 +347,7 @@ class Menu {
                       ui.pushPage([
                         {
                           type: 'html',
-                          src: getPageSrc({inputValue, sliderValue}),
+                          src: getPageSrc({mods, inputValue, sliderValue}),
                         },
                         {
                           type: 'image',
