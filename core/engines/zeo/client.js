@@ -103,13 +103,37 @@ class Zeo {
           img.onload = () => {
             const a = document.createElement('a');
             a.style.cssText = `\
+position: relative;
 width: 100px;
 height: 100px;
-background-color: rgba(255, 255, 255, 0.5);
-cursor: pointer;
+background-color: #FFF;
+`;
+            const border = document.createElement('a');
+            border.style.cssText = `\
+position: absolute;
+left: 0;
+right: 0;
+bottom: 0;
+height: 5px;
+background-color: #F00;
+visibility: hidden;
 `;
             a.appendChild(img);
+            a.appendChild(border);
+
             a.addEventListener('click', click);
+            a.addEventListener('mouseenter', e => {
+              a.style.cursor = 'pointer';
+              border.style.visibility = 'visible';
+            });
+            a.addEventListener('mouseleave', e => {
+              a.style.cursor = 'auto';
+              border.style.visibility = 'hidden';
+            });
+            a.addEventListener('mousemove', e => {
+              e.preventDefault();
+              e.stopPropagation();
+            });
 
             accept(a);
           };
