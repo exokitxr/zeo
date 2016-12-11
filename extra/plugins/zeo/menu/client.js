@@ -59,7 +59,7 @@ class Menu {
   <div style="position: relative; height: 100px;" onclick="input">
     <a style="display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px;" onclick="resolution">
       <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
-        <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * WIDTH}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
+        <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (40 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
       </div>
     </a>
   </div>
@@ -279,6 +279,15 @@ class Menu {
                 const {onclick} = anchor;
 
                 if (onclick) {
+                  const _updatePage = () => {
+                    ui.replacePage([
+                      {
+                        type: 'html',
+                        src: getPageSrc({inputValue, sliderValue}),
+                      },
+                    ]);
+                  };
+
                   if (onclick === 'next') {
                     ui.cancelTransition();
 
@@ -324,16 +333,13 @@ class Menu {
 
                     inputValue = closestValuePx / (WIDTH - (40 + 40));
 
-                    ui.replacePage([
-                      {
-                        type: 'html',
-                        src: getPageSrc({inputValue, sliderValue}),
-                      },
-                    ]);
+                    _updatePage();
                   } else if (onclick === 'resolution') {
                     const {value} = boxMesh;
 
-                    console.log('set resolution', value);
+                    sliderValue = value;
+
+                    _updatePage();
                   }
                 }
               }
