@@ -61,7 +61,7 @@ const client = archae => ({
       const _makePage = () => {
         return {
           header: {
-            img: creatureUtils.makeCreature(),
+            img: creatureUtils.makeAnimatedCreature(),
             text: textUtils.makePlanetName(),
             onclick: biolumi.getPages().length > 0 ? () => {
               biolumi.pop();

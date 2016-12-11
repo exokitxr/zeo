@@ -6,7 +6,7 @@ const _2_32 = Math.pow(2, 32);
 
 const creatureUtils = () => ({
   mount() {
-    function makeCreature(seed) {
+    function makeCreature(seed, {static}) {
       seed = seed || String(Math.random());
 
       const rng = new Alea(seed);
@@ -176,8 +176,6 @@ const creatureUtils = () => ({
         }
 
         mirror(ctx);
-
-        return ctx.getImageData(0, 0, w, h);
       }
 
       function renderAltFrame(ctx) {
@@ -208,8 +206,14 @@ const creatureUtils = () => ({
         }
 
         mirror(ctx);
-
+      }
+      function getFrame(ctx) {
+        const w = SIZE;
+        const h = SIZE;
         return ctx.getImageData(0, 0, w, h);
+      }
+      function getDataUrl(canvas) {
+        return canvas.toDataURL('image/png');
       }
 
       const canvas = document.createElement('canvas');
@@ -220,14 +224,24 @@ const creatureUtils = () => ({
       canvas.style.imageRendering = 'pixelated';
       const ctx = canvas.getContext('2d');
 
-      const mainFrame = renderMainFrame(ctx);
-      const altFrame = renderAltFrame(ctx);
+      renderMainFrame(ctx);
+      const mainFrame = getFrame(ctx);
 
-      return [mainFrame, altFrame];
+      if (!static) {
+        renderAltFrame(ctx)
+        const altFrame = getFrame(ctx);
+
+        return [mainFrame, altFrame];
+      } else {
+        return getDataUrl(canvas);
+      }
     }
+    const makeAnimatedCreature = seed => makeCreature(seed, {static: false});
+    const makeStaticCreature = seed => makeCreature(seed, {static: true});
 
     return {
-      makeCreature,
+      makeAnimatedCreature,
+      makeStaticCreature,
     };
   },
   unmount() {},

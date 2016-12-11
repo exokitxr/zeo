@@ -79,9 +79,9 @@ Alternatively see [how to build the library yourself](https://github.com/mrdoob/
 
 This code creates a scene, a camera, and a geometric cube, and it adds the cube to the scene. It then creates a `WebGL` renderer for the scene and camera, and it adds that viewport to the document.body element. Finally it animates the cube within the scene for the camera.
 */})).replace(/&mdash;/g, '-').replace(/\n+/g, ' ')}`;
-        const getPageSrc = ({mods, inputValue, sliderValue}) => `\
+        const getMainPageSrc = ({mods, inputValue, sliderValue}) => `\
 <div style="height: ${HEIGHT - 200}px;">
-  <div style="display: flex; height: ${HEIGHT - 200}px;">
+  <div style="display: flex;">
     <div style="width: 500px; padding: 0 40px; font-size: 32px;">
       <a onclick="next"><p>Change world</p></a>
       <a onclick="next"><p>Configure plugins</p></a>
@@ -107,6 +107,29 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
         <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (40 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
       </div>
     </a>
+  </div>
+</div>
+`;
+        const getModsPageSrc = ({mods, inputValue, sliderValue}) => `\
+<div style="height: ${HEIGHT}px;">
+  <div style="display: flex;">
+    <div style="width: 500px; padding: 0 40px; font-size: 32px; box-sizing: border-box;">
+      <a onclick="next"><p>Change world</p></a>
+      <a onclick="next"><p>Configure plugins</p></a>
+      <a onclick="next"><p>Delete world</p></a>
+      <a onclick="next"><p>Preferences</p></a>
+    </div>
+    <div style="width: ${WIDTH - 500}px;">
+      ${mods.map(mod =>
+        `<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;">
+          <img src="${creatureUtils.makeStaticCreature(mod)}" style="width: 100px; height: 100px; height: 100px; image-rendering: pixelated;" />
+          <div style="position: relative; display: block; width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
+            <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod}</div>
+            <div style="font-size: 20px; max-width: 100%; max-height: 100px; overflow: hidden;">Here is a description of this mod. It is a very good mod that you should definitely download.</div>
+          </div>
+        </a>`
+      ).join('\n')}
+    </div>
   </div>
 </div>
 `;
@@ -192,11 +215,11 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
             ui.pushPage([
               {
                 type: 'html',
-                src: getPageSrc({mods, inputValue, sliderValue}),
+                src: getMainPageSrc({mods, inputValue, sliderValue}),
               },
               {
                 type: 'image',
-                img: creatureUtils.makeCreature(),
+                img: creatureUtils.makeAnimatedCreature(),
                 x: 200,
                 y: 0,
                 w: 300,
@@ -334,7 +357,7 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
                     ui.replacePage([
                       {
                         type: 'html',
-                        src: getPageSrc({mods, inputValue, sliderValue}),
+                        src: getMainPageSrc({mods, inputValue, sliderValue}),
                       },
                     ]);
                   };
@@ -346,11 +369,11 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
                       ui.pushPage([
                         {
                           type: 'html',
-                          src: getPageSrc({mods, inputValue, sliderValue}),
+                          src: getModsPageSrc({mods, inputValue, sliderValue}),
                         },
                         {
                           type: 'image',
-                          img: creatureUtils.makeCreature(),
+                          img: creatureUtils.makeAnimatedCreature(),
                           x: 200,
                           y: 0,
                           w: 300,

@@ -320,7 +320,7 @@ class Weapons {
                 const upperRightMesh = (() => {
                   const result = new THREE.Object3D();
 
-                  const frames = creatureUtils.makeCreature();
+                  const frames = creatureUtils.makeAnimatedCreature();
 
                   const _makeIconMaterial = img => {
                     const texture = (() => {
