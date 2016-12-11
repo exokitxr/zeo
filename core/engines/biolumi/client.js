@@ -261,7 +261,7 @@ class Biolumi {
               }
               return result;
             };
-            const _pushPage = (layersSpec, {immediate = false} = {}) => {
+            const _pushPage = (layersSpec, {immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
               if (immediate) {
                 _cancelTransition();
               }
@@ -270,13 +270,17 @@ class Biolumi {
               const {layers} = page;
 
               const done = () => {
+                preCb();
+
                 pages.push(page);
 
                 if (!immediate && pages.length > 1) {
                   _transition({
                     pages: pages.slice(-2),
                     direction: 'right',
-                  });
+                  }, postCb);
+                } else {
+                  postCb();
                 }
               };
 
@@ -373,26 +377,35 @@ class Biolumi {
                 }
               }
             };
-            const _popPage = ({immediate = false} = {}) => {
+            const _popPage = ({immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
+              preCb();
+
               if (!immediate && pages.length > 1) {
                 _transition({
                   pages: pages.slice(-2),
                   direction: 'left',
                 }, () => {
                   pages.pop();
+
+                  postCb();
                 });
               } else {
                 _cancelTransition();
 
                 pages.pop();
+
+                postCb();
               }
             };
             const _replacePage = layersSpec => {
-              _popPage({
-                immediate: true,
-              });
               _pushPage(layersSpec, {
                 immediate: true,
+              }, {
+                preCb: () => {
+                  _popPage({
+                    immediate: true,
+                  });
+                }
               });
             };
             const _cancelTransition = () => {
