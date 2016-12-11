@@ -361,10 +361,10 @@ class Menu {
 
                 const layers = ui.getLayers();
                 const worldTime = world.getWorldTime();
-                for (let i = 0; i < layers.length; i++) {
-                  const layer = layers[i];
+                for (let i = 0; i < maxNumTextures; i++) {
+                  const layer = i < layers.length ? layers[i] : null;
 
-                  if (layer.getValid({worldTime})) {
+                  if (layer && layer.getValid({worldTime})) {
                     validTextures.value[i] = 1;
 
                     if (textures.value[i].image !== layer.img) {
