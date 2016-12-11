@@ -101,7 +101,8 @@ class Biolumi {
                       const anchors = (() => {
                         const el = document.createElement('div');
                         el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
-                        el.innerHTML = '<div style=\'' + rootCss + '\'>' + src + '</div>';
+                        const cleanSrc = src.replace(/(<img\s+(?:(?!src=)[^>])*)(src=\S+)/g, '$1'); // optimization: do not perform expensive image loading
+                        el.innerHTML = '<div style=\'' + rootCss + '\'>' + cleanSrc + '</div>';
 
                         const as = el.querySelectorAll('a');
                         const numAs = as.length;
