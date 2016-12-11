@@ -47,11 +47,114 @@ class Biolumi {
             const pages = [];
 
             class Page {
-              constructor() {
+              constructor(spec) {
+                this.spec = spec;
+
                 this.layers = [];
 
                 this.x = 0;
                 this.y = 0;
+              }
+
+              update(state = null, cb = () => {}) {
+                const {spec} = this;
+
+                const layers = [];
+                const layersSpec = typeof spec === 'function' ? spec(state) : spec;
+                if (layersSpec.length > 0) {
+                  let pending = layersSpec.length;
+                  const pend = () => {
+                    if (--pending === 0) {
+                      this.layers = layers;
+
+                      cb();
+                    }
+                  };
+
+                  for (let i = 0; i < layersSpec.length; i++) {
+                    const layerSpec = layersSpec[i];
+                    const {type} = layerSpec;
+
+                    if (type === 'html') {
+                      const {src} = layerSpec;
+
+                      const img = new Image();
+                      img.src = 'data:image/svg+xml;charset=utf-8,' +
+                      '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
+                        styleTag +
+                        '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                          '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
+                            src +
+                          '</div>' +
+                        '</foreignObject>' +
+                      '</svg>';
+                      img.onload = () => {
+                        layer.img = img;
+
+                        pend();
+                      };
+                      img.onerror = err => {
+                        console.warn('biolumi image load error', err);
+                      };
+
+                      const anchors = (() => {
+                        const el = document.createElement('div');
+                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
+                        el.innerHTML = '<div style=\'' + rootCss + '\'>' + src + '</div>';
+
+                        const as = el.querySelectorAll('a');
+                        const numAs = as.length;
+                        const result = Array(numAs);
+                        if (numAs > 0) {
+                          document.body.appendChild(el);
+
+                          for (let i = 0; i < numAs; i++) {
+                            const a = as[i];
+
+                            const rect = a.getBoundingClientRect();
+                            const onclick = a.getAttribute('onclick') || null;
+
+                            const anchor = new Anchor(rect, onclick);
+                            result[i] = anchor;
+                          }
+
+                          document.body.removeChild(el);
+                        }
+
+                        return result;
+                      })();
+
+                      const layer = new Layer(this);
+                      layer.anchors = anchors;
+                      layers.push(layer);
+                    } else if (type === 'image') {
+                      let {img: imgs} = layerSpec;
+                      if (!Array.isArray(imgs)) {
+                        imgs = [imgs];
+                      }
+                      const {x = 0, y = 0, w = width, h = height, frameTime = 300} = layerSpec;
+
+                      setTimeout(pend);
+
+                      for (let j = 0; j < imgs.length; j++) {
+                        const img = imgs[j];
+
+                        const layer = new Layer(this);
+                        layer.img = img;
+                        layer.x = x;
+                        layer.y = y;
+                        layer.w = w;
+                        layer.h = h;
+                        layer.numFrames = imgs.length;
+                        layer.frameIndex = j;
+                        layer.frameTime = frameTime;
+                        layers.push(layer);
+                      }
+                    } else {
+                      throw new Error('unknown layer type: ' + type);
+                    }
+                  }
+                }
               }
             }
 
@@ -261,15 +364,13 @@ class Biolumi {
               }
               return result;
             };
-            const _pushPage = (layersSpec, {immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
+            const _pushPage = (spec, {state = null, immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
               if (immediate) {
                 _cancelTransition();
               }
 
-              const page = new Page();
-              const {layers} = page;
-
-              const done = () => {
+              const page = new Page(spec);
+              page.update(state, () => {
                 preCb();
 
                 pages.push(page);
@@ -282,100 +383,7 @@ class Biolumi {
                 } else {
                   postCb();
                 }
-              };
-
-              if (layersSpec.length > 0) {
-                let pending = layersSpec.length;
-                const pend = () => {
-                  if (--pending === 0) {
-                    done();
-                  }
-                };
-
-                for (let i = 0; i < layersSpec.length; i++) {
-                  const layerSpec = layersSpec[i];
-                  const {type} = layerSpec;
-                    
-                  if (type === 'html') {
-                    const {src} = layerSpec;
-
-                    const img = new Image();
-                    img.src = 'data:image/svg+xml;charset=utf-8,' +
-                    '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
-                      styleTag +
-                      '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                        '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
-                          src +
-                        '</div>' +
-                      '</foreignObject>' +
-                    '</svg>';
-                    img.onload = () => {
-                      layer.img = img;
-
-                      pend();
-                    };
-                    img.onerror = err => {
-                      console.warn('biolumi image load error', err);
-                    };
-
-                    const anchors = (() => {
-                      const el = document.createElement('div');
-                      el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
-                      el.innerHTML = '<div style=\'' + rootCss + '\'>' + src + '</div>';
-
-                      const as = el.querySelectorAll('a');
-                      const numAs = as.length;
-                      const result = Array(numAs);
-                      if (numAs > 0) {
-                        document.body.appendChild(el);
-
-                        for (let i = 0; i < numAs; i++) {
-                          const a = as[i];
-
-                          const rect = a.getBoundingClientRect();
-                          const onclick = a.getAttribute('onclick') || null;
-
-                          const anchor = new Anchor(rect, onclick);
-                          result[i] = anchor;
-                        }
-
-                        document.body.removeChild(el);
-                      }
-
-                      return result;
-                    })();
-
-                    const layer = new Layer(page);
-                    layer.anchors = anchors;
-                    layers.push(layer);
-                  } else if (type === 'image') {
-                    let {img: imgs} = layerSpec;
-                    if (!Array.isArray(imgs)) {
-                      imgs = [imgs];
-                    }
-                    const {x = 0, y = 0, w = width, h = height, frameTime = 300} = layerSpec;
-
-                    setTimeout(pend);
-
-                    for (let j = 0; j < imgs.length; j++) {
-                      const img = imgs[j];
-
-                      const layer = new Layer(page);
-                      layer.img = img;
-                      layer.x = x;
-                      layer.y = y;
-                      layer.w = w;
-                      layer.h = h;
-                      layer.numFrames = imgs.length;
-                      layer.frameIndex = j;
-                      layer.frameTime = frameTime;
-                      layers.push(layer);
-                    }
-                  } else {
-                    throw new Error('unknown layer type: ' + type);
-                  }
-                }
-              }
+              });
             };
             const _popPage = ({immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
               preCb();

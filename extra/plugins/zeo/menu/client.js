@@ -111,7 +111,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
           const availableMods = mods.filter(mod => !mod.installed);
 
           const getModSrc = mod => `\
-<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;" onclick="mod:${mod.name}:${mod.version}:${mod.installed}">
+<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;" onclick="mod:${mod.name}">
   <img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" style="width: 100px; height: 100px; height: 100px; image-rendering: pixelated;" />
   <div style="position: relative; display: block; width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
     <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</div>
@@ -186,10 +186,10 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
         const getGetButtonSrc = (name, installed) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   ${installed ?
-    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF;" onclick="getmod:name">+ Get</a>`
-  :
     `<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
-    <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f;" onclick="removemod:name">× Remove</a>`
+    <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f;" onclick="removemod:${name}">× Remove</a>`
+  :
+    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF;" onclick="getmod:${name}">+ Get</a>`
   }
 </div>`;
 
@@ -451,15 +451,14 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                     } else {
                       ui.popPage();
                     }
-                  } else if (match = onclick.match(/^mod:(.+):(.+):(.+)$/)) {
+                  } else if (match = onclick.match(/^mod:(.+)$/)) {
                     const name = match[1];
-                    const version = match[2];
-                    const installed = match[3] === 'true';
+                    const mod = mods.find(m => m.name === name);
 
                     ui.cancelTransition();
 
                     if (ui.getPages().length < 3) {
-                      ui.pushPage([
+                      ui.pushPage(({mod: {name, version, installed}}) => ([
                         {
                           type: 'html',
                           src: getModPageSrc({name, version, installed}),
@@ -473,10 +472,30 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                           h: 150,
                           frameTime: 300,
                         }
-                      ]);
+                      ]), {
+                        state: {
+                          mod,
+                        },
+                      });
                     } else {
                       ui.popPage();
                     }
+                  } else if (match = onclick.match(/^getmod:(.+)$/)) {
+                    const name = match[1];
+                    const mod = mods.find(m => m.name === name);
+                    mod.installed = false;
+
+                    const pages = ui.getPages();
+                    const lastPage = pages[pages.length - 1];
+                    lastPage.update({mod});
+                  } else if (match = onclick.match(/^removemod:(.+)$/)) {
+                    const name = match[1];
+                    const mod = mods.find(m => m.name === name);
+                    mod.installed = true;
+
+                    const pages = ui.getPages();
+                    const lastPage = pages[pages.length - 1];
+                    lastPage.update({mod});
                   } else if (onclick === 'input') {
                     const {value} = boxMesh;
                     const valuePx = value * (WIDTH - (40 + 40));
