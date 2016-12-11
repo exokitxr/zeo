@@ -35,19 +35,19 @@ class Menu {
       if (live) {
         const {THREE, scene, camera} = zeo;
         const world = zeo.getCurrentWorld();
+        const fonts = biolumi.getFonts();
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
 
-        const fonts = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"';
         const fontSize = 72;
         const inputValue = 0.4;
         const inputText = 'Hello, world! This is some text! I hope you enjoy it!';
         const sliderValue = 0.5;
         const pageSrc = `\
-<h1 style='font-size: 100px; font-family: ${fonts};'>lol</h1>
+<h1 style='font-size: 100px;'>lol</h1>
 <a onclick="next"><p style="font-size: 32px;">Click here</p></a>
 <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
-  <div style='position: relative; height: 100px; font-family: ${fonts}; font-size: ${fontSize}px; line-height: 1.4;' onclick="input">
+  <div style='position: relative; height: 100px; font-size: ${fontSize}px; line-height: 1.4;' onclick="input">
     <a style='display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px; background-color: #FFF;' onclick="input">
       <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
       <div style="position: absolute; top: 0; bottom: 20px; left: ${inputValue * WIDTH}px; margin-left: -1px; width: 2px; background-color: #333;"></div>
