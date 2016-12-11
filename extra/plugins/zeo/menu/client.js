@@ -36,21 +36,22 @@ class Menu {
         const {THREE, scene, camera} = zeo;
         const world = zeo.getCurrentWorld();
         const fonts = biolumi.getFonts();
+        const fontWeight = biolumi.getFontWeight();
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
 
         const fontSize = 72;
-        const inputValue = 0.4;
-        const inputText = 'Hello, world! This is some text! I hope you enjoy it!';
-        const sliderValue = 0.5;
-        const pageSrc = `\
+        const inputText = 'Hello, world! This is some text!';
+        let inputValue = 0.4;
+        let sliderValue = 0.5;
+        const getPageSrc = ({inputValue, sliderValue}) => `\
 <h1 style='font-size: 100px;'>lol</h1>
 <a onclick="next"><p style="font-size: 32px;">Click here</p></a>
 <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
   <div style='position: relative; height: 100px; font-size: ${fontSize}px; line-height: 1.4;' onclick="input">
     <a style='display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px; background-color: #FFF;' onclick="input">
       <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
-      <div style="position: absolute; top: 0; bottom: 20px; left: ${inputValue * WIDTH}px; margin-left: -1px; width: 2px; background-color: #333;"></div>
+      <div style="position: absolute; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (40 + 40))}px; margin-left: -1px; width: 2px; background-color: #333;"></div>
       <div>${inputText}</div>
     </a>
   </div>
@@ -123,22 +124,43 @@ class Menu {
           ].join("\n")
         };
 
-        const measureCtx = (() => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          ctx.font = `${fontSize}px ${fonts}`;
-          return ctx;
-        })();
-
         return biolumi.requestUi({
           width: WIDTH,
           height: HEIGHT,
         }).then(ui => {
           if (live) {
+            const measureText = (() => {
+              const div = document.createElement('div');
+              div.style.cssText = `\
+position: absolute;
+top: 0;
+left: 0;
+font-family: ${fonts};
+font-size: ${fontSize};
+font-weight: 300;
+line-height: 1.4;
+white-space: pre;
+visibility: hidden;
+`;
+window.div = div;
+              document.body.appendChild(div);
+
+              const result = text => {
+                div.innerText = text;
+                const width = div.offsetWidth;
+                div.innerText = '';
+                return width;
+              };
+              result.destroy = () => {
+                document.body.removeChild(div);
+              };
+              return result;
+            })();
+
             ui.pushPage([
               {
                 type: 'html',
-                src: pageSrc,
+                src: getPageSrc({inputValue, sliderValue}),
               },
               {
                 type: 'image',
@@ -172,7 +194,7 @@ class Menu {
             const menuMesh = (() => {
               const result = new THREE.Object3D();
               result.position.y = 1.5;
-              result.position.z = -1;
+              result.position.z = -0.5;
 
               const imageMaterial = (() => {
                 const shaderUniforms = THREE.UniformsUtils.clone(imageShader.uniforms);
@@ -283,7 +305,7 @@ class Menu {
                       ui.pushPage([
                         {
                           type: 'html',
-                          src: pageSrc,
+                          src: getPageSrc({inputValue, sliderValue}),
                         },
                         {
                           type: 'image',
@@ -300,26 +322,33 @@ class Menu {
                     }
                   } else if (onclick === 'input') {
                     const {value} = boxMesh;
-                    const valuePx = value * WIDTH;
+                    const valuePx = value * (WIDTH - (40 + 40));
 
-                    const slice = (() => {
-                      const slices = (() => {
-                        const result = [];
-                        for (let i = 0; i <= inputText.length; i++) {
-                          const slice = inputText.slice(0, i);
-                          result.push(slice);
-                        }
-                        return result;
-                      })();
-                      const widths = slices.map(slice => measureCtx.measureText(slice).width);
-                      const distances = widths.map(width => Math.abs(valuePx - width));
-                      const index = distances
-                        .map((distance, index) => ([distance, index]))
-                        .sort(([aDistance], [bDistance]) => (aDistance - bDistance))[0][1];
-                      return slices[index];
+                    const slices = (() => {
+                      const result = [];
+                      for (let i = 0; i <= inputText.length; i++) {
+                        const slice = inputText.slice(0, i);
+                        result.push(slice);
+                      }
+                      return result;
                     })();
+                    const widths = slices.map(slice => measureText(slice));
+                    const distances = widths.map(width => Math.abs(valuePx - width));
+                    const sortedDistances = distances
+                      .map((distance, index) => ([distance, index]))
+                      .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
+                    const index = sortedDistances[0][1];
+                    const closestValuePx = widths[index];
+                    // const slice = slices[index];
 
-                    console.log('click input', {value, slice});
+                    inputValue = closestValuePx / (WIDTH - (40 + 40));
+
+                    ui.replacePage([
+                      {
+                        type: 'html',
+                        src: getPageSrc({inputValue, sliderValue}),
+                      },
+                    ]);
                   } else if (onclick === 'resolution') {
                     const {value} = boxMesh;
 
@@ -331,6 +360,8 @@ class Menu {
             window.addEventListener('click', click);
 
             this._cleanup = () => {
+              measureText.destroy();
+
               scene.remove(menuMesh);
               scene.remove(boxMesh);
               scene.remove(dotMesh);
@@ -453,7 +484,7 @@ class Menu {
                         _getPlanePoint(rect.right, (rect.top + rect.bottom) / 2, 0)
                       );
                       const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
-                      return new THREE.Line3(horizontalLine.start, closestHorizontalPoint).distance() / horizontalLine.distance();
+                      return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
                     })();
 
                     if (!boxMesh.visible) {

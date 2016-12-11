@@ -16,11 +16,11 @@ class Biolumi {
     const _requestFont = () => {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800';
+      link.href = 'https://fonts.googleapis.com/css?family=Open+Sans:300';
       document.head.appendChild(link);
 
       return new FontFaceObserver('Open Sans', {
-        weight: 400,
+        weight: 300,
       }).load();
     };
     const _requestTransparentImg = () => new Promise((accept, reject) => {
@@ -247,7 +247,11 @@ class Biolumi {
               }
               return result;
             };
-            const _pushPage = layersSpec => {
+            const _pushPage = (layersSpec, {immediate = false} = {}) => {
+              if (immediate) {
+                _cancelTransition();
+              }
+
               const page = new Page();
               const {layers} = page;
 
@@ -355,8 +359,8 @@ class Biolumi {
                 }
               }
             };
-            const _popPage = () => {
-              if (pages.length > 1) {
+            const _popPage = ({immediate = false} = {}) => {
+              if (!immediate && pages.length > 1) {
                 _transition({
                   pages: pages.slice(-2),
                   direction: 'left',
@@ -364,8 +368,18 @@ class Biolumi {
                   pages.pop();
                 });
               } else {
+                _cancelTransition();
+
                 pages.pop();
               }
+            };
+            const _replacePage = layersSpec => {
+              _popPage({
+                immediate: true,
+              });
+              _pushPage(layersSpec, {
+                immediate: true,
+              });
             };
             const _cancelTransition = () => {
               if (transition) {
@@ -379,16 +393,19 @@ class Biolumi {
               getLayers: _getLayers,
               pushPage: _pushPage,
               popPage: _popPage,
+              replacePage: _replacePage,
               cancelTransition: _cancelTransition,
             });
           });
           const _getFonts = () => fonts;
+          const _getFontWeight = () => fontWeight;
           const _getTransparentImg = () => transparentImg;
           const _getMaxNumTextures = () => MAX_NUM_TEXTURES;
 
           return {
             requestUi: _requestUi,
             getFonts: _getFonts,
+            getFontWeight: _getFontWeight,
             getTransparentImg: _getTransparentImg,
             getMaxNumTextures: _getMaxNumTextures,
           };
@@ -423,6 +440,7 @@ const _scaleImageData = (imageData, {width, height}) => {
 }; */
 
 const fonts = '"Open Sans"';
+const fontWeight = 300;
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const styleTag = `\
 <style>
@@ -435,6 +453,6 @@ const styleTag = `\
 }
 </style>
 `;
-const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: 300; overflow: hidden; user-select: none;`;
+const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: hidden; user-select: none;`;
 
 module.exports = Biolumi;
