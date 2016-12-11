@@ -212,7 +212,7 @@ class WebVR {
             return result;
           };
 
-          requestEnterVR({update = () => {}, updateEye = () => {}, onExit = () => {}}) {
+          requestEnterVR({stereoscopic = true, update = () => {}, updateEye = () => {}, onExit = () => {}}) {
             const _startOpening = () => {
               this.isOpening = true;
 
@@ -305,7 +305,7 @@ class WebVR {
                     const _requestRenderLoop = () => {
                       const renderLoopPromise = this.requestRenderLoop({
                         display,
-                        stereoscopic: true,
+                        stereoscopic,
                         update,
                         updateEye,
                       });
