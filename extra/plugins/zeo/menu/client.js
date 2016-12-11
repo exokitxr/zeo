@@ -80,7 +80,7 @@ Alternatively see [how to build the library yourself](https://github.com/mrdoob/
 This code creates a scene, a camera, and a geometric cube, and it adds the cube to the scene. It then creates a `WebGL` renderer for the scene and camera, and it adds that viewport to the document.body element. Finally it animates the cube within the scene for the camera.
 */})).replace(/&mdash;/g, '-').replace(/\n+/g, ' ')}`;
         const getMainPageSrc = ({inputValue, sliderValue}) => `\
-${getHeaderSrc('zeo.sh', '', false)}
+${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2 + 200)}px;">
   <div style="display: flex;">
     ${getMainSidebarSrc()}
@@ -111,7 +111,7 @@ ${getHeaderSrc('zeo.sh', '', false)}
           const availableMods = mods.filter(mod => !mod.installed);
 
           const getModSrc = mod => `\
-<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;" onclick="mod:${mod.name}:${mod.version}">
+<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;" onclick="mod:${mod.name}:${mod.version}:${mod.installed}">
   <img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" style="width: 100px; height: 100px; height: 100px; image-rendering: pixelated;" />
   <div style="position: relative; display: block; width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
     <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</div>
@@ -125,7 +125,7 @@ ${getHeaderSrc('zeo.sh', '', false)}
 `;
 
           return `\
-${getHeaderSrc('mods', '', true)}
+${getHeaderSrc('mods', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModsSidebarSrc()}
@@ -139,8 +139,8 @@ ${getHeaderSrc('mods', '', true)}
 </div>
 `;
         };
-        const getModPageSrc = ({name, version}) => `\
-${getHeaderSrc(name, 'v' + version, true)}
+        const getModPageSrc = ({name, version, installed}) => `\
+${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModSidebarSrc()}
@@ -152,13 +152,16 @@ ${getHeaderSrc(name, 'v' + version, true)}
 </div>
 `;
 
-        const getHeaderSrc = (text, subtext, backButton) => `\
+        const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
   ${backButton ? `<a style="display: inline-block; width: 150px; float: left; text-align: center;" onclick="back">❮</a>` : ''}
   <span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
   <h1 style="display: inline-block; margin: 0; float: left; font-size: inherit; line-height: inherit;">${text}</h1>
   ${subtext ? `<div style="display: inline-flex; height: 150px; margin-left: 20px; float: left; align-items: flex-end;">
     <h2 style="margin: 0; font-size: 60px; line-height: 110px;">${subtext}</h2>
+  </div>` : ''}
+  ${getButtonSrc ? `<div style="float: right;">
+    ${getButtonSrc}
   </div>` : ''}
 </div>`;
         const getMainSidebarSrc = () => `\
@@ -179,6 +182,15 @@ ${getHeaderSrc(name, 'v' + version, true)}
   <a onclick="next"><p>Install mod</p></a>
   <a onclick="next"><p>Remove mod</p></a>
   <a onclick="next"><p>Configure mod</p></a>
+</div>`;
+        const getGetButtonSrc = (name, installed) => `\
+<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
+  ${installed ?
+    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF;" onclick="getmod:name">+ Get</a>`
+  :
+    `<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
+    <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f;" onclick="removemod:name">× Remove</a>`
+  }
 </div>`;
 
         const imageShader = {
@@ -412,6 +424,8 @@ ${getHeaderSrc(name, 'v' + version, true)}
 
                   let match;
                   if (onclick === 'back') {
+                    ui.cancelTransition();
+
                     if (ui.getPages().length > 1) {
                       ui.popPage();
                     }
@@ -437,9 +451,10 @@ ${getHeaderSrc(name, 'v' + version, true)}
                     } else {
                       ui.popPage();
                     }
-                  } else if (match = onclick.match(/^mod:(.+):(.+)$/)) {
+                  } else if (match = onclick.match(/^mod:(.+):(.+):(.+)$/)) {
                     const name = match[1];
                     const version = match[2];
+                    const installed = match[3] === 'true';
 
                     ui.cancelTransition();
 
@@ -447,7 +462,7 @@ ${getHeaderSrc(name, 'v' + version, true)}
                       ui.pushPage([
                         {
                           type: 'html',
-                          src: getModPageSrc({name, version}),
+                          src: getModPageSrc({name, version, installed}),
                         },
                         {
                           type: 'image',
