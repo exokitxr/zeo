@@ -47,8 +47,9 @@ class Biolumi {
             const pages = [];
 
             class Page {
-              constructor(spec) {
+              constructor(spec, type) {
                 this.spec = spec;
+                this.type = type;
 
                 this.layers = [];
 
@@ -364,12 +365,12 @@ class Biolumi {
               }
               return result;
             };
-            const _pushPage = (spec, {state = null, immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
+            const _pushPage = (spec, {type = null, state = null, immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
               if (immediate) {
                 _cancelTransition();
               }
 
-              const page = new Page(spec);
+              const page = new Page(spec, type);
               page.update(state, () => {
                 preCb();
 

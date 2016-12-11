@@ -173,15 +173,15 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
 </div>`;
         const getModsSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px;">
-  <a onclick="next"><p>Installed mod</p></a>
-  <a onclick="next"><p>Available mods</p></a>
-  <a onclick="next"><p>Search mods</p></a>
+  <a onclick="blank"><p>Installed mod</p></a>
+  <a onclick="blank"><p>Available mods</p></a>
+  <a onclick="blank"><p>Search mods</p></a>
 </div>`;
         const getModSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px;">
-  <a onclick="next"><p>Install mod</p></a>
-  <a onclick="next"><p>Remove mod</p></a>
-  <a onclick="next"><p>Configure mod</p></a>
+  <a onclick="blank"><p>Install mod</p></a>
+  <a onclick="blank"><p>Remove mod</p></a>
+  <a onclick="blank"><p>Configure mod</p></a>
 </div>`;
         const getGetButtonSrc = (name, installed) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
@@ -286,7 +286,9 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                 h: 150,
                 frameTime: 300,
               }
-            ]);
+            ], {
+              type: 'main',
+            });
 
             const solidMaterial = new THREE.MeshBasicMaterial({
               color: 0xFFFFFF,
@@ -433,7 +435,7 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                     ui.cancelTransition();
 
                     if (ui.getPages().length < 3) {
-                      ui.pushPage([
+                      ui.pushPage(({mods}) => ([
                         {
                           type: 'html',
                           src: getModsPageSrc({mods}),
@@ -447,7 +449,12 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                           h: 150,
                           frameTime: 300,
                         }
-                      ]);
+                      ]), {
+                        type: 'mods',
+                        state: {
+                          mods,
+                        },
+                      });
                     } else {
                       ui.popPage();
                     }
@@ -473,6 +480,7 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                           frameTime: 300,
                         }
                       ]), {
+                        type: 'mod:' + name,
                         state: {
                           mod,
                         },
@@ -483,19 +491,33 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                   } else if (match = onclick.match(/^getmod:(.+)$/)) {
                     const name = match[1];
                     const mod = mods.find(m => m.name === name);
-                    mod.installed = false;
-
-                    const pages = ui.getPages();
-                    const lastPage = pages[pages.length - 1];
-                    lastPage.update({mod});
-                  } else if (match = onclick.match(/^removemod:(.+)$/)) {
-                    const name = match[1];
-                    const mod = mods.find(m => m.name === name);
                     mod.installed = true;
 
                     const pages = ui.getPages();
-                    const lastPage = pages[pages.length - 1];
-                    lastPage.update({mod});
+                    for (let i = 0; i < pages.length; i++) {
+                      const page = pages[i];
+                      const {type} = page;
+                      if (type === 'mod:' + name) {
+                        page.update({mod});
+                      } else if (type === 'mods') {
+                        page.update({mods});
+                      }
+                    }
+                  } else if (match = onclick.match(/^removemod:(.+)$/)) {
+                    const name = match[1];
+                    const mod = mods.find(m => m.name === name);
+                    mod.installed = false;
+
+                    const pages = ui.getPages();
+                    for (let i = 0; i < pages.length; i++) {
+                      const page = pages[i];
+                      const {type} = page;
+                      if (type === 'mod:' + name) {
+                        page.update({mod});
+                      } else if (type === 'mods') {
+                        page.update({mods});
+                      }
+                    }
                   } else if (onclick === 'input') {
                     const {value} = boxMesh;
                     const valuePx = value * (WIDTH - (40 + 40));
