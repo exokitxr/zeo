@@ -41,6 +41,7 @@ class Menu {
         const maxNumTextures = biolumi.getMaxNumTextures();
 
         const fontSize = 72;
+        const lineHeight = 1.4;
         const inputText = 'Hello, world! This is some text!';
         let inputValue = 0.4;
         let sliderValue = 0.5;
@@ -48,7 +49,7 @@ class Menu {
 <h1 style='font-size: 100px;'>lol</h1>
 <a onclick="next"><p style="font-size: 32px;">Click here</p></a>
 <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
-  <div style='position: relative; height: 100px; font-size: ${fontSize}px; line-height: 1.4;' onclick="input">
+  <div style='position: relative; height: 100px; font-size: ${fontSize}px; line-height: ${lineHeight};' onclick="input">
     <a style='display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px; background-color: #FFF;' onclick="input">
       <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
       <div style="position: absolute; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (40 + 40))}px; margin-left: -1px; width: 2px; background-color: #333;"></div>
@@ -130,31 +131,11 @@ class Menu {
         }).then(ui => {
           if (live) {
             const measureText = (() => {
-              const div = document.createElement('div');
-              div.style.cssText = `\
-position: absolute;
-top: 0;
-left: 0;
-font-family: ${fonts};
-font-size: ${fontSize};
-font-weight: 300;
-line-height: 1.4;
-white-space: pre;
-visibility: hidden;
-`;
-window.div = div;
-              document.body.appendChild(div);
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              ctx.font = `normal ${fontWeight} ${fontSize}px/${lineHeight} ${fonts}`;
 
-              const result = text => {
-                div.innerText = text;
-                const width = div.offsetWidth;
-                div.innerText = '';
-                return width;
-              };
-              result.destroy = () => {
-                document.body.removeChild(div);
-              };
-              return result;
+              return text => ctx.measureText(text).width;
             })();
 
             ui.pushPage([
@@ -360,8 +341,6 @@ window.div = div;
             window.addEventListener('click', click);
 
             this._cleanup = () => {
-              measureText.destroy();
-
               scene.remove(menuMesh);
               scene.remove(boxMesh);
               scene.remove(dotMesh);
