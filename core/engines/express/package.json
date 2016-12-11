@@ -1,5 +1,6 @@
 {
   "name": "express",
+  "description": "Exposes an express web server to the zeo core.",
   "version": "0.0.1",
   "server": "server.js",
   "dependencies": {

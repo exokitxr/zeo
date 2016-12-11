@@ -1,5 +1,6 @@
 {
   "name": "skybox",
+  "description": "Render a simulated realtime skybox with a day/night cycle and simulated sun, moon, and stars.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {}

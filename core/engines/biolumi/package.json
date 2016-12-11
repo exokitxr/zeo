@@ -1,5 +1,6 @@
 {
   "name": "biolumi",
+  "description": "Provides a menu interface rendering for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {

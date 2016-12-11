@@ -1,6 +1,7 @@
 {
   "name": "fog",
   "version": "0.0.1",
+  "description": "Render distance-based fog that applies to all objects in the world.",
   "client": "client.js",
   "dependencies": {}
 }

@@ -1,5 +1,6 @@
 {
   "name": "lens",
+  "description": "Play with different kinds of shader effects that filter your view of the world.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {}

@@ -1,5 +1,6 @@
 {
   "name": "rain",
+  "description": "A shader-based rain effect at the world origin.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {}

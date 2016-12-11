@@ -1,5 +1,6 @@
 {
   "name": "youtube",
+  "description": "Load and render arbitrary Youtube videos in the world.",
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",

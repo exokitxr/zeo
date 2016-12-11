@@ -1,5 +1,6 @@
 {
   "name": "teleport",
+  "description": "Teleport the stage aroudn the world by pointing with your controller.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {}

@@ -1,5 +1,6 @@
 {
   "name": "portal",
+  "description": "Create 3D portals that you can walk through.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {}

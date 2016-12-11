@@ -1,5 +1,6 @@
 {
   "name": "hmd",
+  "description": "Render a virtual head-mounted display at your camera position.",
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",

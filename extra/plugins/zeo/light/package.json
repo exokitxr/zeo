@@ -1,5 +1,6 @@
 {
   "name": "light",
+  "description": "Add a basic light source to the world.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {}

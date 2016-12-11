@@ -1,6 +1,7 @@
 {
   "name": "keyboard",
   "version": "0.0.1",
+  "description": "Enter arbitrary text with a fully sized virtual keyboard.",
   "client": "client.js",
   "dependencies": {}
 }
