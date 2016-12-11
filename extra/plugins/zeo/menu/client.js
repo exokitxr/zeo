@@ -477,6 +477,7 @@ class Menu {
                     }
                   } else {
                     boxMesh.anchor = null;
+                    boxMesh.value = 0;
 
                     if (boxMesh.visible) {
                       boxMesh.visible = false;

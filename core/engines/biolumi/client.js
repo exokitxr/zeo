@@ -143,12 +143,32 @@ class Biolumi {
               }
             }
 
+            const _applyPagePositions = (pages, pagePositions) => {
+              for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const {x, y} = pagePositions[i];
+                page.x = x;
+                page.y = y;
+              }
+            };
+            const _validatePages = pages => {
+              for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                page.valid = true;
+              }
+            };
+            const _invalidatePages = pages => {
+              for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                page.valid = false;
+              }
+            };
+
             let transition = null;
             const _transition = ({pages, direction}, cb = () => {}) => {
-              if (transition) {
-                transition.cancel();
-                transition = null;
-              }
+              _cancelTransition();
+
+              _validatePages(pages);
 
               let animationFrame = null;
               const startTime = Date.now();
@@ -180,14 +200,6 @@ class Biolumi {
                   return null;
                 }
               })();
-              const _applyPagePositions = (pages, pagePositions) => {
-                for (let i = 0; i < pages.length; i++) {
-                  const page = pages[i];
-                  const {x, y} = pagePositions[i];
-                  page.x = x;
-                  page.y = y;
-                }
-              };
               const _recurse = () => {
                 animationFrame = requestAnimationFrame(() => {
                   animationFrame = null;
@@ -208,6 +220,8 @@ class Biolumi {
                   if (timeFactor < 1) {
                     _recurse();
                   } else {
+                    _invalidatePages(pages.slice(0, -1));
+
                     cb();
                   }
                 });
@@ -258,7 +272,7 @@ class Biolumi {
               const done = () => {
                 pages.push(page);
 
-                if (pages.length > 1) {
+                if (!immediate && pages.length > 1) {
                   _transition({
                     pages: pages.slice(-2),
                     direction: 'right',
