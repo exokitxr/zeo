@@ -166,7 +166,7 @@ class Zeo {
                       }
                     });
                   });
-                  const _getPluginPackageJson = ({plugin}) => new Promise(accept, reject) => {
+                  const _getPluginPackageJson = ({plugin}) => new Promise((accept, reject) => {
                     fs.readFile(path.join(pluginsPath, plugin, 'package.json'), 'utf8', (err, s) => {
                       if (!err) {
                         const j = JSON.parse(s);

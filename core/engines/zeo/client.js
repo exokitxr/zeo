@@ -203,7 +203,7 @@ height: 100px;
                     body: JSON.stringify({
                       world: worldName,
                     }),
-                  })).then(res => res.json());
+                  }).then(res => res.json());
 
                   Promise.all([
                     _requestModsStatus(),
