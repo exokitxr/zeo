@@ -79,7 +79,7 @@ Alternatively see [how to build the library yourself](https://github.com/mrdoob/
 
 This code creates a scene, a camera, and a geometric cube, and it adds the cube to the scene. It then creates a `WebGL` renderer for the scene and camera, and it adds that viewport to the document.body element. Finally it animates the cube within the scene for the camera.
 */})).replace(/&mdash;/g, '-').replace(/\n+/g, ' ')}`;
-        const getMainPageSrc = ({inputValue, sliderValue}) => `\
+        const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
@@ -97,16 +97,16 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
   <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onclick="input">
     <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
-    <div style="position: absolute; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (40 + 40))}px; margin-left: -1px; width: 2px;"></div>
+    <div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>
     <div>${inputText}</div>
   </a>
 </div>
 `;
         const getSliderSrc = sliderValue => `\
-<div style="position: relative; height: 100px; width ${WIDTH - (500 + 40)}px;">
+<div style="position: relative; width ${WIDTH - (500 + 40)}px; height: 100px;">
   <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="resolution">
     <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
-      <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (40 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
+      <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
     </div>
   </a>
 </div>
@@ -154,7 +154,7 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
 </div>
 `;
         const getConfigPageSrc = () => `\
-${getHeaderSrc('mods', '', '', true)}
+${getHeaderSrc('preferences', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getConfigSidebarSrc()}
@@ -163,7 +163,7 @@ ${getHeaderSrc('mods', '', '', true)}
 </div>
 `;
         const getConfigPageContentSrc = ({inputText, inputValue, sliderValue}) => `\
-<div style="width: ${WIDTH - 500}px; height: ${HEIGHT - (150 + 2)}px;">
+<div style="width: ${WIDTH - (500 + 40)}px; height: ${HEIGHT - (150 + 2)}px; padding-right: 40px;">
   ${getInputSrc(inputText, inputValue)}
   ${getSliderSrc(sliderValue)}
 </div>

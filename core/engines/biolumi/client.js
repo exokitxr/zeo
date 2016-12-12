@@ -81,7 +81,7 @@ class Biolumi {
 
                       const img = new Image();
                       img.src = 'data:image/svg+xml;charset=utf-8,' +
-                      '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + width + '\' height=\'' + height + '\'>' +
+                      '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
                         styleTag +
                         '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
                           '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
@@ -100,7 +100,7 @@ class Biolumi {
 
                       const anchors = (() => {
                         const el = document.createElement('div');
-                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + width + 'px; height: ' + height + 'px;';
+                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px; height: ' + h + 'px;';
                         const cleanSrc = src.replace(/(<img\s+(?:(?!src=)[^>])*)(src=\S+)/g, '$1'); // optimization: do not perform expensive image loading
                         el.innerHTML = '<div style=\'' + rootCss + '\'>' + cleanSrc + '</div>';
 window.el = el;
@@ -214,10 +214,10 @@ window.el = el;
 
                   return new Anchor(
                     new Rect(
-                      clamp((py * height) + (top * ph), 0, height),
-                      clamp((py * height) + (bottom * ph), 0, height),
-                      clamp((px * width) + (left * pw), 0, width),
-                      clamp((px * width) + (right * pw), 0, width)
+                      clamp((py * height) + top, 0, height),
+                      clamp((py * height) + bottom, 0, height),
+                      clamp((px * width) + left, 0, width),
+                      clamp((px * width) + right, 0, width)
                     ),
                     onclick
                   );
