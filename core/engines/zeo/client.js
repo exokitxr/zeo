@@ -23,14 +23,15 @@ class Zeo {
     return archae.requestEngines([
       '/core/engines/webvr',
       '/core/engines/three',
-      '/core/engines/biolumi',
       '/core/engines/rend',
+      '/core/engines/biolumi',
       '/core/engines/somnifer',
       '/core/engines/bullet',
       '/core/engines/heartlink',
     ]).then(([
       webvr,
       three,
+      rend,
       biolumi,
       somnifer,
       bullet,
@@ -338,7 +339,7 @@ height: 100px;
                 });
               };
 
-              return {
+              const api = {
                 THREE,
                 scene,
                 camera,
@@ -348,6 +349,14 @@ height: 100px;
                 requestChangeWorld: _requestChangeWorld,
                 requestDeleteWorld: _requestDeleteWorld,
               };
+
+              return Promise.all([
+                rend.initialize(api),
+              ]).then(([
+                rend,
+              ]) => {
+                return api;
+              });
             }
           });
       }
