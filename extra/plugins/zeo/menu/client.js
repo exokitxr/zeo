@@ -557,7 +557,7 @@ ${getHeaderSrc('preferences', '', '', true)}
                       },
                       {
                         type: 'image',
-                        img: creatureUtils.makeAnimatedCreature('zeo.sh'),
+                        img: creatureUtils.makeAnimatedCreature('preferences'),
                         x: 150,
                         y: 0,
                         w: 150,
