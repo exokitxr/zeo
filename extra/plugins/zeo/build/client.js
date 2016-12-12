@@ -19,12 +19,14 @@ class Build {
 
     return archae.requestEngines([
       '/core/engines/zeo',
+      '/core/engines/rend',
     ]).then(([
       zeo,
+      rend,
     ]) => {
       if (live) {
         const {THREE} = zeo;
-        const world = zeo.getCurrentWorld();
+        const world = rend.getCurrentWorld();
 
         const polygonMeshMaterial = new THREE.MeshPhongMaterial({
           color: 0xFF0000,

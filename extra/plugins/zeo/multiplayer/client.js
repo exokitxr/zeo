@@ -18,12 +18,14 @@ class Multiplayer {
 
     return archae.requestEngines([
       '/core/engines/zeo',
+      '/core/engines/rend',
     ]).then(([
       zeo,
+      rend,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
-        const world = zeo.getCurrentWorld();
+        const world = rend.getCurrentWorld();
         const {player} = world;
 
         const _requestMesh = modelPath => new Promise((accept, reject) => {

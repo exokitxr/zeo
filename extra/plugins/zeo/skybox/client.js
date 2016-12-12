@@ -16,17 +16,18 @@ class Skybox {
     return Promise.all([
       archae.requestEngines([
         '/core/engines/zeo',
+        '/core/engines/rend',
       ]),
       archae.requestPlugins([
         '/core/plugins/geometry-utils',
       ]),
     ]).then(([
-      [zeo],
+      [zeo, rend],
       [geometryUtils]
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
-        const world = zeo.getCurrentWorld();
+        const world = rend.getCurrentWorld();
 
         SkyShader(THREE);
 

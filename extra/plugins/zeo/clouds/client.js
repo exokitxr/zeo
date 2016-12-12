@@ -25,15 +25,17 @@ class Clouds {
 
     return archae.requestEngines([
       '/core/engines/zeo',
+      '/core/engines/rend',
     ]).then(([
       zeo,
+      rend,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
-
         ConvexGeometry(THREE);
 
-        const world = zeo.getCurrentWorld();
+        const world = rend.getCurrentWorld();
+
         return world.requestMods([
           '/extra/plugins/zeo/singleplayer'
         ])

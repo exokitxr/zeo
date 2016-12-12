@@ -17,6 +17,7 @@ class Weapons {
     return Promise.all([
       archae.requestEngines([
         '/core/engines/zeo',
+        '/core/engines/rend',
       ]),
       archae.requestPlugins([
         '/core/plugins/geometry-utils',
@@ -24,13 +25,13 @@ class Weapons {
         '/core/plugins/creature-utils',
       ]),
     ]).then(([
-      [zeo],
+      [zeo, rend],
       [geometryUtils, textUtils, creatureUtils],
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
+        const world = rend.getCurrentWorld();
 
-        const world = zeo.getCurrentWorld();
         return world.requestMods([
           '/extra/plugins/zeo/singleplayer'
         ])

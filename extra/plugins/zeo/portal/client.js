@@ -44,17 +44,18 @@ class Portal {
       archae.requestEngines([
         '/core/engines/zeo',
         '/core/engines/webvr',
+        '/core/engines/rend',
       ]),
       archae.requestPlugins([
         '/core/plugins/geometry-utils',
       ]),
     ]).then(([
-      [zeo, webvr],
+      [zeo, webvr, rend],
       [geometryUtils]
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
-        const world = zeo.getCurrentWorld();
+        const world = rend.getCurrentWorld();
 
         return world.requestMods([
           '/extra/plugins/zeo/singleplayer',

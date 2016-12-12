@@ -3,8 +3,12 @@
   "description": "Renders the zeo core menu interface.",
   "version": "0.0.1",
   "client": "client.js",
+  "server": "server.js",
   "dependencies": {
+    "body-parser": "^1.15.2",
     "heredoc": "^1.3.1",
+    "mkdirp": "^0.5.1",
+    "multimutex": "0.0.1",
     "showdown": "^1.5.1"
   }
 }

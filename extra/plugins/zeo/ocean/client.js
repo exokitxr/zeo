@@ -34,11 +34,13 @@ class Ocean {
 
     return archae.requestEngines([
       '/core/engines/zeo',
+      '/core/engines/rend',
     ]).then(([
       zeo,
+      rend,
     ]) => {
       const {THREE, scene} = zeo;
-      const world = zeo.getCurrentWorld();
+      const world = rend.getCurrentWorld();
 
       const planeMesh = (() => {
         const geometry = new THREE.PlaneBufferGeometry(200, 200, 200 / 2, 200 / 2);

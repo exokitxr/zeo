@@ -6,22 +6,22 @@ const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 const MultiMutex = require('multimutex');
 
-class Zeo {
+class Rend {
   constructor(archae) {
     this._archae = archae;
-
-    this.worldModJsons = new Map();
-    this.worldModMutex = new MultiMutex();
   }
 
   mount() {
-    const {_archae: archae, worldModJsons, worldModMutex} = this;
+    const {_archae: archae} = this;
     const {app} = archae.getCore();
 
-    let live = false;
+    let live = true;
     this._cleanup = () => {
       live = false;
     };
+
+    const worldModJsons = new Map();
+    const worldModMutex = new MultiMutex();
 
     const worldModJsonsPath = path.join(__dirname, '..', '..', '..', 'data', 'worlds');
     const _ensureWorldsDirectory = () => new Promise((accept, reject) => {
@@ -38,7 +38,7 @@ class Zeo {
       .then(() => {
         if (live) {
           const _getWorldModJson = ({world}) => new Promise((accept, reject) => {
-            const entry = worldModJsons.get(key);
+            const entry = worldModJsons.get(world);
 
             if (entry) {
               accept(entry);
@@ -48,13 +48,13 @@ class Zeo {
               fs.readFile(worldModJsonPath, 'utf8', (err, s) => {
                 if (!err) {
                   const entry = JSON.parse(s);
-                  worldModJsons.set(key, entry);
+                  worldModJsons.set(world, entry);
                   accept(entry);
                 } else if (err.code === 'ENOENT') {
                   const entry = {
                     mods: [],
                   };
-                  worldModJsons.set(key, entry);
+                  worldModJsons.set(world, entry);
                   accept(entry);
                 } else {
                   reject(err);
@@ -144,7 +144,7 @@ class Zeo {
           };
 
           function serveModsStatus(req, res, next) {
-            bodyParserJson(req, res, (req, res, next) => {
+            bodyParserJson(req, res, () => {
               const {body: data} = req;
 
               const _respondInvalid = () => {
@@ -152,7 +152,7 @@ class Zeo {
                 res.send();
               };
 
-              if (typeof data === 'object' && object !== null) {
+              if (typeof data === 'object' && data !== null) {
                 const {world} = data;
 
                 if (typeof world === 'string') {
@@ -238,9 +238,9 @@ class Zeo {
               }
             });
           }
-          app.use('/archae/zeo/mods/status', serveModsStatus);
+          app.post('/archae/rend/mods/status', serveModsStatus);
           function serveModsAdd(req, res, next) {
-            bodyParserJson(req, res, (req, res, next) => {
+            bodyParserJson(req, res, () => {
               const {body: data} = req;
 
               const _respondInvalid = () => {
@@ -271,9 +271,9 @@ class Zeo {
               }
             });
           }
-          app.post('/archae/zeo/mods/add', serveModsAdd);
+          app.post('/archae/rend/mods/add', serveModsAdd);
           function serveModsRemove(req, res, next) {
-            bodyParserJson(req, res, (req, res, next) => {
+            bodyParserJson(req, res, () => {
               const {body: data} = req;
 
               const _respondInvalid = () => {
@@ -304,7 +304,7 @@ class Zeo {
               }
             });
           }
-          app.post('/archae/zeo/mods/remove', serveModsRemove);
+          app.post('/archae/rend/mods/remove', serveModsRemove);
 
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
@@ -330,4 +330,4 @@ class Zeo {
   }
 }
 
-module.exports = Zeo;
+module.exports = Rend;

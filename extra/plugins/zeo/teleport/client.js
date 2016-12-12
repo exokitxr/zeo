@@ -17,14 +17,16 @@ class Teleport {
     return archae.requestEngines([
       '/core/engines/zeo',
       '/core/engines/webvr',
+      '/core/engines/rend',
     ]).then(([
       zeo,
       webvr,
+      rend,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
+        const world = rend.getCurrentWorld();
 
-        const world = zeo.getCurrentWorld();
         return world.requestMods([
           '/extra/plugins/zeo/singleplayer'
         ])

@@ -45,16 +45,10 @@ class Zeo {
         const updates = [];
         const updateEyes = [];
         const _update = () => {
-          for (let i = 0; i < updates.length; i++) {
-            const update = updates[i];
-            update();
-          }
+          rend.update();
         };
         const _updateEye = camera => {
-          for (let i = 0; i < updateEyes.length; i++) {
-            const updateEye = updateEyes[i];
-            updateEye(camera);
-          }
+          rend.updateEye(camera);
         };
 
         const _enterNormal = () => {
@@ -186,178 +180,17 @@ height: 100px;
             }
           })
           .then(() => {
-            if (live) {
-              const worlds = new Map();
-              let currentWorld = null;
+            this._cleanup = () => {
+              _stopRenderLoop();
+            };
 
-              const _getCurrentWorld = () => currentWorld;
-              const _requestChangeWorld = worldName => new Promise((accept, reject) => {
-                const world = worlds.get(worldName);
-
-                if (world) {
-                  currentWorld = world;
-
-                  accept(world);
-                } else {
-                  const _requestModsStatus = () => fetch('/archae/zeo/mods/status', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      world: worldName,
-                    }),
-                  }).then(res => res.json());
-
-                  Promise.all([
-                    _requestModsStatus(),
-                    bullet.requestWorld(worldName),
-                  ])
-                    .then(([
-                      mods,
-                      physics,
-                    ]) => {
-                      const player = heartlink.getPlayer(); // XXX make this per-world
-
-                      // main render loop
-                      const startTime = Date.now();
-                      let worldTime = 0;
-                      let animationFrame = null;
-                      updates.push(() => {
-                        // update state
-                        const now = Date.now();
-                        worldTime = now - startTime;
-
-                        // update plugins
-                        plugins.forEach(plugin => {
-                          if (typeof plugin.update === 'function') {
-                            plugin.update();
-                          }
-                        });
-                      });
-                      updateEyes.push(camera => {
-                        // update plugins per eye
-                        plugins.forEach(plugin => {
-                          if (typeof plugin.updateEye === 'function') {
-                            plugin.updateEye(camera);
-                          }
-                        });
-                      });
-
-                      // plugin management
-                      const plugins = new Map();
-
-                      const _getWorldTime = () => worldTime;
-                      const _getModsStatus = () => mods;
-                      const _requestAddMod = mod => fetch('/archae/zeo/mods/add', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                          world: worldName,
-                          mod: mod,
-                        }),
-                      }).then(res => res.text()
-                        .then(() => {
-                          const m = mods.find(m => m.name === mod);
-                          m.installed = true;
-                        })
-                        .then(() => archae.requestPlugin('/extra/plugins/zeo/' + mod)
-                          .then(plugin => {
-                            const pluginName = archae.getName(plugin);
-                            plugins.set(pluginName, plugin);
-
-                            return plugin;
-                          })
-                        )
-                      );
-                      const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
-                      const _requestRemoveMod = mod => fetch('/archae/zeo/mods/remove', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                          world: worldName,
-                          mod: mod,
-                        }),
-                      }).then(res => res.text()
-                        .then(() => {
-                          const m = mods.find(m => m.name === mod);
-                          m.installed = false;
-                        })
-                        /* .then(() => archae.requestPlugin('/extra/plugins/zeo/' + mod) // XXX perform the backend removal here
-                          .then(plugin => {
-                            const pluginName = archae.getName(plugin);
-                            plugins.set(pluginName, plugin);
-
-                            return plugin;
-                          })
-                        ) */
-                      );
-                      const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
-                      const _requestWorker = (module, options) => archae.requestWorker(module, options);
-                      const _destroy = () => {
-                        if (animationFrame) {
-                          cancelAnimationFrame(animationFrame);
-                        }
-                      };
-
-                      const world = {
-                        name: worldName,
-                        getWorldTime: _getWorldTime,
-                        getModsStatus: _getModsStatus,
-                        requestAddMod: _requestAddMod,
-                        requestAddMods: _requestAddMods,
-                        requestRemoveMod: _requestRemoveMod,
-                        requestRemoveMods: _requestRemoveMods,
-                        requestWorker: _requestWorker,
-                        physics,
-                        player,
-                        destroy: _destroy,
-                      };
-
-                      worlds.set(worldName, world);
-                      currentWorld = world;
-
-                      accept(world);
-                    })
-                    .catch(reject);
-                }
-              });
-              const _requestDeleteWorld = worldName => new Promise((accept, reject) => {
-                bullet.releaseWorld(worldName)
-                  .then(() => {
-                    worlds.delete(worldName);
-
-                    if (currentWorld && currentWorld.name === worldName) {
-                      currentWorld = null;
-                    }
-
-                    accept();
-                  })
-                  .catch(reject);
-              });
-
-              this._cleanup = () => {
-                _stopRenderLoop();
-
-                worlds.forEach(world => {
-                  world.destroy();
-                });
-              };
-
-              const api = {
-                THREE,
-                scene,
-                camera,
-                renderer,
-                sound,
-                getCurrentWorld: _getCurrentWorld,
-                requestChangeWorld: _requestChangeWorld,
-                requestDeleteWorld: _requestDeleteWorld,
-              };
-
-              return Promise.all([
-                rend.initialize(api),
-              ]).then(([
-                rend,
-              ]) => {
-                return api;
-              });
-            }
+            return {
+              THREE,
+              scene,
+              camera,
+              renderer,
+              sound,
+            };
           });
       }
     });

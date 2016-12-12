@@ -20,13 +20,15 @@ class SinglePlayer {
     return archae.requestEngines([
       '/core/engines/zeo',
       '/core/engines/webvr',
+      '/core/engines/rend',
     ])
       .then(([
         zeo,
         webvr,
+        rend,
       ]) => {
         const {THREE, scene, camera, renderer} = zeo;
-        const world = zeo.getCurrentWorld();
+        const world = rend.getCurrentWorld();
         const {physics} = world;
 
         class Player extends EventEmitter {

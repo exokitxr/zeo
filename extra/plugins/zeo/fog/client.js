@@ -15,13 +15,15 @@ class Fog {
 
     return archae.requestEngines([
       '/core/engines/zeo',
+      '/core/engines/rend',
     ]).then(([
       zeo,
+      rend,
     ]) => {
       if (live) {
         const {scene} = zeo;
+        const world = rend.getCurrentWorld();
 
-        const world = zeo.getCurrentWorld();
         return world.requestMods([
           '/extra/plugins/zeo/skybox',
         ]).then(([
