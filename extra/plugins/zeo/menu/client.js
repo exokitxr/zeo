@@ -115,10 +115,10 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 
           const getModSrc = mod => `\
 <a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;" onclick="mod:${mod.name}">
-  <img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" style="width: 100px; height: 100px; height: 100px; image-rendering: pixelated;" />
-  <div style="position: relative; display: block; width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
+  <img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" style="width: 100px; height: 100px; image-rendering: pixelated;" />
+  <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
     <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</div>
-    <div style="font-size: 20px; max-width: 100%; max-height: 100px; overflow: hidden;">${mod.description}</div>
+    <div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${mod.description}</div>
   </div>
 </a>`;
           const getModsSrc = mods => `\
