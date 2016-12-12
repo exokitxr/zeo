@@ -165,20 +165,20 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
   </div>` : ''}
 </div>`;
         const getMainSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px;">
+<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
   <a onclick="next"><p>Change world</p></a>
   <a onclick="next"><p>Add/Remove Mods</p></a>
   <a onclick="next"><p>Preferences</p></a>
   <a onclick="next"><p>About</p></a>
 </div>`;
         const getModsSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px;">
+<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
   <a onclick="blank"><p>Installed mod</p></a>
   <a onclick="blank"><p>Available mods</p></a>
   <a onclick="blank"><p>Search mods</p></a>
 </div>`;
         const getModSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px;">
+<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
   <a onclick="blank"><p>Install mod</p></a>
   <a onclick="blank"><p>Remove mod</p></a>
   <a onclick="blank"><p>Configure mod</p></a>
