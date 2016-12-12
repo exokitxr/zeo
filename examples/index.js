@@ -16,9 +16,9 @@ a.requestEngines([
   // '/core/engines/ws',
   // '/core/engines/bus',
   // '/core/engines/three',
-  '/core/engines/nedb',
-  '/core/engines/biolumi',
-  '/core/engines/heartlink',
+  // '/core/engines/nedb',
+  // '/core/engines/biolumi',
+  // '/core/engines/heartlink',
 ])
   .then(() => {
     console.log('request engines ok');
