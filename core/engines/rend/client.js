@@ -275,17 +275,13 @@ ${getHeaderSrc('preferences', '', '', true)}
           ].join("\n")
         };
 
-        return Promise.all([
-          biolumi.requestUi({
-            width: WIDTH,
-            height: HEIGHT,
-          }),
-          world.requestModsStatus(),
-        ]).then(([
-          ui,
-          mods,
-        ]) => {
+        return biolumi.requestUi({
+          width: WIDTH,
+          height: HEIGHT,
+        }).then(ui => {
           if (live) {
+            const mods = world.getModsStatus();
+
             const measureText = (() => {
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
@@ -512,20 +508,26 @@ ${getHeaderSrc('preferences', '', '', true)}
                     }
                   } else if (match = onclick.match(/^getmod:(.+)$/)) {
                     const name = match[1];
-                    const mod = mods.find(m => m.name === name);
-                    mod.installed = true;
 
-                    const pages = ui.getPages();
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {type} = page;
-                      if (type === 'mod:' + name) {
-                        page.update({mod});
-                      } else if (type === 'mods') {
-                        page.update({mods});
-                      }
-                    }
-                  } else if (match = onclick.match(/^removemod:(.+)$/)) {
+                    world.requestAddMod(name)
+                      .then(() => {
+                        const mod = mods.find(m => m.name === name);
+
+                        const pages = ui.getPages();
+                        for (let i = 0; i < pages.length; i++) {
+                          const page = pages[i];
+                          const {type} = page;
+                          if (type === 'mod:' + name) {
+                            page.update({mod});
+                          } else if (type === 'mods') {
+                            page.update({mods});
+                          }
+                        }
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+                  } else if (match = onclick.match(/^removemod:(.+)$/)) { // XXX make this perform an actual removal
                     const name = match[1];
                     const mod = mods.find(m => m.name === name);
                     mod.installed = false;

@@ -198,8 +198,21 @@ height: 100px;
 
                   accept(world);
                 } else {
-                  bullet.requestWorld(worldName)
-                    .then(physics => {
+                  const _requestModsStatus = () => fetch('/archae/zeo/mods/status', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      world: worldName,
+                    }),
+                  })).then(res => res.json());
+
+                  Promise.all([
+                    _requestModsStatus(),
+                    bullet.requestWorld(worldName),
+                  ])
+                    .then(([
+                      mods,
+                      physics,
+                    ]) => {
                       const player = heartlink.getPlayer(); // XXX make this per-world
 
                       // main render loop
@@ -231,20 +244,19 @@ height: 100px;
                       const plugins = new Map();
 
                       const _getWorldTime = () => worldTime;
-                      const _requestModsStatus = () => fetch('/archae/zeo/mods/status', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                          world: worldName,
-                        }),
-                      })).then(res => res.json());
-                      const _requestMod = mod => fetch('/archae/zeo/mods/add', {
+                      const _getModsStatus = () => mods;
+                      const _requestAddMod = mod => fetch('/archae/zeo/mods/add', {
                         method: 'POST',
                         body: JSON.stringify({
                           world: worldName,
                           mod: mod,
                         }),
                       }).then(res => res.text()
-                        .then(() => archae.requestPlugin(mod)
+                        .then(() => {
+                          const m = mods.find(m => m.name === mod);
+                          m.installed = true;
+                        })
+                        .then(() => archae.requestPlugin('/extra/plugins/zeo/' + mod)
                           .then(plugin => {
                             const pluginName = archae.getName(plugin);
                             plugins.set(pluginName, plugin);
@@ -253,7 +265,7 @@ height: 100px;
                           })
                         )
                       );
-                      const _requestMods = mods => Promise.all(mods.map(_requestMod));
+                      const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
                       const _requestWorker = (module, options) => archae.requestWorker(module, options);
                       const _destroy = () => {
                         if (animationFrame) {
@@ -264,9 +276,9 @@ height: 100px;
                       const world = {
                         name: worldName,
                         getWorldTime: _getWorldTime,
-                        requestModsStatus: _requestModsStatus,
-                        requestMod: _requestMod,
-                        requestMods: _requestMods,
+                        getModsStatus: _getModsStatus,
+                        requestAddMod: _requestAddMod,
+                        requestAddMods: _requestAddMods,
                         requestWorker: _requestWorker,
                         physics,
                         player,
