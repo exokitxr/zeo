@@ -205,10 +205,7 @@ class Biolumi {
 
               getAnchors() {
                 const position = this.getPosition();
-                const px = position.x * width;
-                const py = position.y * height;
-
-                const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+                const {x: px, y: py, w: pw, h: ph} = position;
 
                 return this.anchors.map(anchor => {
                   const {rect, onclick} = anchor;
@@ -216,10 +213,10 @@ class Biolumi {
 
                   return new Anchor(
                     new Rect(
-                      clamp(py + top, 0, height),
-                      clamp(py + bottom, 0, height),
-                      clamp(px + left, 0, width),
-                      clamp(px + right, 0, width)
+                      clamp((py * height) + (top * ph), 0, height),
+                      clamp((py * height) + (bottom * ph), 0, height),
+                      clamp((px * width) + (left * pw), 0, width),
+                      clamp((px * width) + (right * pw), 0, width)
                     ),
                     onclick
                   );
@@ -495,5 +492,7 @@ const styleTag = `\
 </style>
 `;
 const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: hidden; user-select: none;`;
+
+const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
 module.exports = Biolumi;
