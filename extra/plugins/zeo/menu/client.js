@@ -47,7 +47,7 @@ class Menu {
         const fontSize = 72;
         const lineHeight = 1.4;
         const inputText = 'Hello, world! This is some text!';
-        let inputValue = 0.4;
+        let inputValue = 0;
         let sliderValue = 0.5;
         const readme = `${showdownConverter.makeHtml(heredoc.strip(() => {/*
 three.js
@@ -81,32 +81,34 @@ This code creates a scene, a camera, and a geometric cube, and it adds the cube 
 */})).replace(/&mdash;/g, '-').replace(/\n+/g, ' ')}`;
         const getMainPageSrc = ({inputValue, sliderValue}) => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
-<div style="height: ${HEIGHT - (150 + 2 + 200)}px;">
+<div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getMainSidebarSrc()}
     <div style="width: ${WIDTH - 500}px;"></div>
   </div>
 </div>
-<div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
-  <div style='position: relative; height: 100px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
-    <a style='display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px; background-color: #FFF;' onclick="input">
-      <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
-      <div style="position: absolute; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (40 + 40))}px; margin-left: -1px; width: 2px; background-color: #333;"></div>
-      <div>${inputText}</div>
-    </a>
-  </div>
-  <div style="position: relative; height: 100px;">
-    <a style="display: block; position: absolute; top: 0; bottom: 0; left: 40px; right: 40px;" onclick="resolution">
-      <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
-        <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (40 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
-      </div>
-    </a>
-  </div>
-</div>
 `;
         const getReadmeSrc = () => `\
-<div style="width: ${WIDTH - 500}px;">
+<div style="width: ${WIDTH - 500}px; height: ${HEIGHT - (150 + 2)}px;">
   ${readme}
+</div>
+`;
+        const getInputSrc = (inputText, inputValue) => `\
+<div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
+  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onclick="input">
+    <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
+    <div style="position: absolute; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (40 + 40))}px; margin-left: -1px; width: 2px;"></div>
+    <div>${inputText}</div>
+  </a>
+</div>
+`;
+        const getSliderSrc = sliderValue => `\
+<div style="position: relative; height: 100px; width ${WIDTH - (500 + 40)}px;">
+  <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="resolution">
+    <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
+      <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (40 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
+    </div>
+  </a>
 </div>
 `;
         const getModsPageSrc = ({mods}) => {
@@ -151,6 +153,21 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
   </div>
 </div>
 `;
+        const getConfigPageSrc = () => `\
+${getHeaderSrc('mods', '', '', true)}
+<div style="height: ${HEIGHT - (150 + 2)}px;">
+  <div style="display: flex;">
+    ${getConfigSidebarSrc()}
+    <div style="width: ${WIDTH - 500}px;"></div>
+  </div>
+</div>
+`;
+        const getConfigPageContentSrc = ({inputText, inputValue, sliderValue}) => `\
+<div style="width: ${WIDTH - 500}px; height: ${HEIGHT - (150 + 2)}px;">
+  ${getInputSrc(inputText, inputValue)}
+  ${getSliderSrc(sliderValue)}
+</div>
+`;
 
         const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
@@ -168,8 +185,8 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
   <a onclick="next"><p>Change world</p></a>
   <a onclick="next"><p>Add/Remove Mods</p></a>
-  <a onclick="next"><p>Preferences</p></a>
-  <a onclick="next"><p>About</p></a>
+  <a onclick="config"><p>Preferences</p></a>
+  <a onclick="blank"><p>About</p></a>
 </div>`;
         const getModsSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
@@ -182,6 +199,11 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
   <a onclick="blank"><p>Install mod</p></a>
   <a onclick="blank"><p>Remove mod</p></a>
   <a onclick="blank"><p>Configure mod</p></a>
+</div>`;
+        const getConfigSidebarSrc = () => `\
+<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
+  <a onclick="blank"><p>Preferences</p></a>
+  <a onclick="blank"><p>About</p></a>
 </div>`;
         const getGetButtonSrc = (name, installed) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
@@ -283,7 +305,7 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                 x: 500,
                 y: 150 + 2,
                 w: WIDTH - 500,
-                h: HEIGHT - (150 + 2 + 200),
+                h: HEIGHT - (150 + 2),
                 scroll: true,
               },
               {
@@ -424,15 +446,6 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                 const {onclick} = anchor;
 
                 if (onclick) {
-                  const _updatePage = () => {
-                    ui.replacePage([
-                      {
-                        type: 'html',
-                        src: getMainPageSrc({inputValue, sliderValue}),
-                      },
-                    ]);
-                  };
-
                   let match;
                   if (onclick === 'back') {
                     ui.cancelTransition();
@@ -527,9 +540,37 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                         page.update({mods});
                       }
                     }
+                  } else if (onclick === 'config') {
+                    ui.pushPage(({inputText, inputValue, sliderValue}) => ([
+                      {
+                        type: 'html',
+                        src: getConfigPageSrc(),
+                      },
+                      {
+                        type: 'html',
+                        src: getConfigPageContentSrc({inputText, inputValue, sliderValue}),
+                        x: 500,
+                        y: 150 + 2,
+                        w: WIDTH - 500,
+                        h: HEIGHT - (150 + 2),
+                        scroll: true,
+                      },
+                      {
+                        type: 'image',
+                        img: creatureUtils.makeAnimatedCreature('zeo.sh'),
+                        x: 150,
+                        y: 0,
+                        w: 150,
+                        h: 150,
+                        frameTime: 300,
+                      }
+                    ]), {
+                      type: 'config',
+                      state: {inputText, inputValue, sliderValue},
+                    });
                   } else if (onclick === 'input') {
                     const {value} = boxMesh;
-                    const valuePx = value * (WIDTH - (40 + 40));
+                    const valuePx = value * (WIDTH - (500 + 40));
 
                     const slices = (() => {
                       const result = [];
@@ -548,15 +589,29 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
                     const closestValuePx = widths[index];
                     // const slice = slices[index];
 
-                    inputValue = closestValuePx / (WIDTH - (40 + 40));
+                    inputValue = closestValuePx / (WIDTH - (500 + 40));
 
-                    _updatePage();
+                    const pages = ui.getPages();
+                    for (let i = 0; i < pages.length; i++) {
+                      const page = pages[i];
+                      const {type} = page;
+                      if (type === 'config') {
+                        page.update({inputText, inputValue, sliderValue});
+                      }
+                    }
                   } else if (onclick === 'resolution') {
                     const {value} = boxMesh;
 
                     sliderValue = value;
 
-                    _updatePage();
+                    const pages = ui.getPages();
+                    for (let i = 0; i < pages.length; i++) {
+                      const page = pages[i];
+                      const {type} = page;
+                      if (type === 'config') {
+                        page.update({inputText, inputValue, sliderValue});
+                      }
+                    }
                   }
                 }
               }
