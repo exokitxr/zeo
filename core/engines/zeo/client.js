@@ -24,6 +24,7 @@ class Zeo {
       '/core/engines/webvr',
       '/core/engines/three',
       '/core/engines/biolumi',
+      '/core/engines/rend',
       '/core/engines/somnifer',
       '/core/engines/bullet',
       '/core/engines/heartlink',

@@ -11,7 +11,7 @@ const WORLD_WIDTH = MENU_SIZE;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 const WORLD_DEPTH = MENU_SIZE / 50;
 
-class Menu {
+class Rend {
   constructor(archae) {
     this._archae = archae;
   }
@@ -776,4 +776,4 @@ ${getHeaderSrc('preferences', '', '', true)}
   }
 }
 
-module.exports = Menu;
+module.exports = Rend;

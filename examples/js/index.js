@@ -77,7 +77,6 @@ archae.requestEngines([
           '/extra/plugins/zeo/teleport',
           // '/extra/plugins/zeo/light',
           // '/extra/plugins/zeo/hmd',
-          '/extra/plugins/zeo/menu',
           '/extra/plugins/zeo/physics',
           '/extra/plugins/zeo/multiplayer',
           '/extra/plugins/zeo/fog',
