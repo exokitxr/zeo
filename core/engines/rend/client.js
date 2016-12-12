@@ -834,7 +834,7 @@ ${installed ?
                   window.removeEventListener('click', click);
                 });
 
-                const _update = () => {
+                updates.push(() => {
                   const _updateMenuMesh = () => {
                     const {planeMesh: {imageMaterial}} = menuMesh;
                     const {uniforms: {texture, textures, validTextures, textureUvs, textureDimensions}} = imageMaterial;
@@ -968,11 +968,7 @@ ${installed ?
 
                   _updateMenuMesh();
                   _updateAnchors();
-                };
-
-                return {
-                  update: _update,
-                };
+                });
               }
             });
           }
