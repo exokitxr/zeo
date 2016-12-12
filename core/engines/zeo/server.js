@@ -107,6 +107,41 @@ class Zeo {
                 cb(err);
               });
           };
+          const _removeWorldMod = ({world, mod}, cb) => {
+            const key = world + ':' + mod;
+
+            worldModMutex.lock(key)
+              .then(unlock => {
+                cb = (cb => err => {
+                  cb(err);
+
+                  unlock();
+                })(cb);
+
+                _getWorldModJson({world})
+                  .then(worldModJson => {
+                    const {mods} = worldModJson;
+                    const index = mods.indexOf(mod);
+                    if (index !== -1) {
+                      mods.splice(index, 1);
+                    }
+                    
+                    _setWorldModJson({world, worldModJson})
+                      .then(() => {
+                        cb();
+                      })
+                      .catch(err => {
+                        cb(err);
+                      });
+                  })
+                  .catch(err => {
+                    cb(err);
+                  });
+              })
+              .catch(err => {
+                cb(err);
+              });
+          };
 
           function serveModsStatus(req, res, next) {
             bodyParserJson(req, res, (req, res, next) => {
@@ -237,10 +272,47 @@ class Zeo {
             });
           }
           app.post('/archae/zeo/mods/add', serveModsAdd);
+          function serveModsRemove(req, res, next) {
+            bodyParserJson(req, res, (req, res, next) => {
+              const {body: data} = req;
+
+              const _respondInvalid = () => {
+                res.status(400);
+                res.send();
+              };
+
+              if (typeof data === 'object' && data !== null) {
+                const {world, mod} = data;
+
+                if (typeof world === 'string' && typeof mod === 'string') {
+                  _removeWorldMod({
+                    world,
+                    mod,
+                  }, err => {
+                    if (!err) {
+                      res.send();
+                    } else {
+                      res.status(500);
+                      res.send(err.stack);
+                    }
+                  });
+                } else {
+                  _respondInvalid();
+                }
+              } else {
+                _respondInvalid();
+              }
+            });
+          }
+          app.post('/archae/zeo/mods/remove', serveModsRemove);
 
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
-              if (route.handle.name === 'serveModsStatus' || route.handle.name === 'serveModsAdd') {
+              if (
+                route.handle.name === 'serveModsStatus' ||
+                route.handle.name === 'serveModsAdd' ||
+                route.handle.name === 'serveModsRemove'
+              ) {
                 routes.splice(i, 1);
               }
               if (route.route) {
