@@ -527,21 +527,27 @@ ${getHeaderSrc('preferences', '', '', true)}
                       .catch(err => {
                         console.warn(err);
                       });
-                  } else if (match = onclick.match(/^removemod:(.+)$/)) { // XXX make this perform an actual removal
+                  } else if (match = onclick.match(/^removemod:(.+)$/)) {
                     const name = match[1];
-                    const mod = mods.find(m => m.name === name);
-                    mod.installed = false;
 
-                    const pages = ui.getPages();
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {type} = page;
-                      if (type === 'mod:' + name) {
-                        page.update({mod});
-                      } else if (type === 'mods') {
-                        page.update({mods});
-                      }
-                    }
+                    world.requestRemoveMod(name)
+                      .then(() => {
+                        const mod = mods.find(m => m.name === name);
+
+                        const pages = ui.getPages();
+                        for (let i = 0; i < pages.length; i++) {
+                          const page = pages[i];
+                          const {type} = page;
+                          if (type === 'mod:' + name) {
+                            page.update({mod});
+                          } else if (type === 'mods') {
+                            page.update({mods});
+                          }
+                        }
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
                   } else if (onclick === 'config') {
                     ui.pushPage(({inputText, inputValue, sliderValue}) => ([
                       {

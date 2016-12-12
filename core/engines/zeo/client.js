@@ -266,6 +266,27 @@ height: 100px;
                         )
                       );
                       const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
+                      const _requestRemoveMod = mod => fetch('/archae/zeo/mods/remove', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          world: worldName,
+                          mod: mod,
+                        }),
+                      }).then(res => res.text()
+                        .then(() => {
+                          const m = mods.find(m => m.name === mod);
+                          m.installed = false;
+                        })
+                        /* .then(() => archae.requestPlugin('/extra/plugins/zeo/' + mod) // XXX perform the backend removal here
+                          .then(plugin => {
+                            const pluginName = archae.getName(plugin);
+                            plugins.set(pluginName, plugin);
+
+                            return plugin;
+                          })
+                        ) */
+                      );
+                      const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
                       const _requestWorker = (module, options) => archae.requestWorker(module, options);
                       const _destroy = () => {
                         if (animationFrame) {
@@ -279,6 +300,8 @@ height: 100px;
                         getModsStatus: _getModsStatus,
                         requestAddMod: _requestAddMod,
                         requestAddMods: _requestAddMods,
+                        requestRemoveMod: _requestRemoveMod,
+                        requestRemoveMods: _requestRemoveMods,
                         requestWorker: _requestWorker,
                         physics,
                         player,
