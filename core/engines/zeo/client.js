@@ -230,7 +230,12 @@ height: 100px;
                       const plugins = new Map();
 
                       const _getWorldTime = () => worldTime;
-                      const _requestModsStatus = () => fetch('/archae/zeo/mods/status').then(res => res.json());
+                      const _requestModsStatus = () => fetch('/archae/zeo/mods/status', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          world: worldName,
+                        }),
+                      })).then(res => res.json());
                       const _requestMod = mod => fetch('/archae/zeo/mods/add', {
                         method: 'POST',
                         body: JSON.stringify({
