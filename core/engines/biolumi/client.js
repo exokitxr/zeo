@@ -77,7 +77,7 @@ class Biolumi {
                     const {type} = layerSpec;
 
                     if (type === 'html') {
-                      const {src} = layerSpec;
+                      const {src, x = 0, y = 0, w = width, h = height, scroll = false} = layerSpec;
 
                       const img = new Image();
                       img.src = 'data:image/svg+xml;charset=utf-8,' +
@@ -128,6 +128,10 @@ class Biolumi {
 
                       const layer = new Layer(this);
                       layer.anchors = anchors;
+                      layer.x = x;
+                      layer.y = y;
+                      layer.w = w;
+                      layer.h = h;
                       layers.push(layer);
                     } else if (type === 'image') {
                       let {img: imgs} = layerSpec;

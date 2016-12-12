@@ -84,9 +84,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2 + 200)}px;">
   <div style="display: flex;">
     ${getMainSidebarSrc()}
-    <div style="width: ${WIDTH - 500}px;">
-      ${readme}
-    </div>
+    <div style="width: ${WIDTH - 500}px;"></div>
   </div>
 </div>
 <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 200px;">
@@ -104,6 +102,11 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
       </div>
     </a>
   </div>
+</div>
+`;
+        const getReadmeSrc = () => `\
+<div style="width: ${WIDTH - 500}px;">
+  ${readme}
 </div>
 `;
         const getModsPageSrc = ({mods}) => {
@@ -144,10 +147,7 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModSidebarSrc()}
-    <div style="width: ${WIDTH - 500}px;">
-      <h1>${name}</h1>
-      ${readme}
-    </div>
+    ${getReadmeSrc()}
   </div>
 </div>
 `;
@@ -276,6 +276,15 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
               {
                 type: 'html',
                 src: getMainPageSrc({inputValue, sliderValue}),
+              },
+              {
+                type: 'html',
+                src: getReadmeSrc(),
+                x: 500,
+                y: 150 + 2,
+                w: WIDTH - 500,
+                h: HEIGHT - (150 + 2 + 200),
+                scroll: true,
               },
               {
                 type: 'image',
