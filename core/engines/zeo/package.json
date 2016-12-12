@@ -4,5 +4,9 @@
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",
-  "dependencies": {}
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "mkdirp": "^0.5.1",
+    "multimutex": "0.0.1"
+  }
 }

@@ -231,20 +231,23 @@ height: 100px;
 
                       const _getWorldTime = () => worldTime;
                       const _requestModsStatus = () => fetch('/archae/zeo/mods/status').then(res => res.json());
-                      const _requestMod = modSpec => new Promise((accept, reject) => {
-                        archae.requestPlugin(modSpec)
+                      const _requestMod = mod => fetch('/archae/zeo/mods/add', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          world: worldName,
+                          mod: mod,
+                        }),
+                      }).then(res => res.text()
+                        .then(() => archae.requestPlugin(mod)
                           .then(plugin => {
                             const pluginName = archae.getName(plugin);
                             plugins.set(pluginName, plugin);
 
-                            accept(plugin);
+                            return plugin;
                           })
-                          .catch(reject);
-                      });
-                      const _requestMods = modSpecs => {
-                        const modPromises = modSpecs.map(_requestMod);
-                        return Promise.all(modPromises);
-                      };
+                        )
+                      );
+                      const _requestMods = mods => Promise.all(mods.map(_requestMod));
                       const _requestWorker = (module, options) => archae.requestWorker(module, options);
                       const _destroy = () => {
                         if (animationFrame) {
