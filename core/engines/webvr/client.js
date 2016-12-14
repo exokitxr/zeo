@@ -625,8 +625,14 @@ class WebVR {
           }
 
           requestPresent([{source}]) {
-            source.webkitRequestFullscreen();
+            // source.webkitRequestFullscreen();
             domElement.requestPointerLock();
+            this.isPresenting = true;
+            const els = document.getElementsByTagName('a');
+            els[0].style.display = 'none';
+            els[1].style.display = 'none';
+            els[2].style.display = 'none';
+            els[3].style.display = 'none';
 
             return Promise.resolve();
           }
