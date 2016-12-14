@@ -13,7 +13,7 @@ const transparentImg = (() => {
   img.update = () => {};
   return img;
 })();
-const videoUrl = 'https://www.youtube.com/watch?v=5jvZClFYX9Y';
+const videoUrl = 'https://www.youtube.com/watch?v=AOZtqDhQP44';
 
 class Youtube {
   constructor(archae) {
