@@ -16,11 +16,14 @@ Zeo.sh lets you run `npm` modules in VR, from your browser. Under the hood it's 
   - Multi-world management with a backing database
   - _Server-side_ physics with JavaScript bindings to Bullet
   - Multiplayer support, which plays nicely with the physics server
-  - A model loader
-  - Positional audio tracking
+  - Model loader
+  - Positional audio
+  - VR `bash` shell so you can hack while jacked
   - Youtube player
-  - VR `bash` shell
-  - Everything is JS and hackable
+  - Portals you can walk through
+  - Weather effects
+  - Skybox with Rayleigh scattering, sun, moon, and stars
+  - Everything is plain JS!
 
 ## In progress
 
