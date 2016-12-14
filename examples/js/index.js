@@ -21,7 +21,7 @@ archae.requestEngines([
       '/extra/plugins/zeo/models',
       '/extra/plugins/zeo/keyboard',
       // '/extra/plugins/zeo/shell',
-      // '/extra/plugins/zeo/clouds',
+      '/extra/plugins/zeo/clouds',
       '/extra/plugins/zeo/rain',
       '/extra/plugins/zeo/weapons',
       '/extra/plugins/zeo/youtube',
