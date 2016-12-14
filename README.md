@@ -2,7 +2,9 @@
 
 JavaScript `npm` plugins in WebVR.
 
-Zeo.sh lets you run `npm` modules in VR, from your browser. Under the hood it's a `Three.js` / `WebVR` rendering engine that polyfills the complexity of getting things working, so you can write a JS file and (literally) experience it running. Everything is nicely glued together by the [`archae`]() `npm` module loader.
+Zeo.sh lets you run `npm` modules in VR, from your browser. Under the hood it's a `Three.js` / `WebVR` rendering engine that polyfills the complexity of getting things working, so you can write a JS file and (literally) experience it running. Everything is nicely glued together by the [`archae`](https://github.com/modulesio/archae) `npm` module loader.
+
+<img src="/screencap.gif?raw=true" width="512px">
 
 :warning: Heavy development, expect things to be broken.
 
