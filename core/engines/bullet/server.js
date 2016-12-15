@@ -37,37 +37,39 @@ class Context {
   }
 
   create(type, id, opts) {
-    const object = (() => {
-      switch (type) {
-        case 'world': return new Bullet.World(opts);
-        case 'plane': return new Bullet.Plane(opts);
-        case 'box': return new Bullet.Box(opts);
-        case 'sphere': return new Bullet.Sphere(opts);
-        case 'convexHull': return new Bullet.ConvexHull(opts);
-        case 'triangleMesh': return new Bullet.TriangleMesh(opts);
-        case 'compound': return new Bullet.Compound(opts);
-        case 'constraint': {
-          const {bodyAId, bodyBId, pivotA, pivotB} = opts;
-          const bodyA = this.objects.get(bodyAId);
-          const bodyB = this.objects.get(bodyBId);
+    if (!this.objects.has(id)) {
+      const object = (() => {
+        switch (type) {
+          case 'world': return new Bullet.World(opts);
+          case 'plane': return new Bullet.Plane(opts);
+          case 'box': return new Bullet.Box(opts);
+          case 'sphere': return new Bullet.Sphere(opts);
+          case 'convexHull': return new Bullet.ConvexHull(opts);
+          case 'triangleMesh': return new Bullet.TriangleMesh(opts);
+          case 'compound': return new Bullet.Compound(opts);
+          case 'constraint': {
+            const {bodyAId, bodyBId, pivotA, pivotB} = opts;
+            const bodyA = this.objects.get(bodyAId);
+            const bodyB = this.objects.get(bodyBId);
 
-          return new Bullet.Constraint({
-            bodyA,
-            bodyB,
-            pivotA,
-            pivotB,
-          });
+            return new Bullet.Constraint({
+              bodyA,
+              bodyB,
+              pivotA,
+              pivotB,
+            });
+          }
+          default: return null;
         }
-        default: return null;
+      })();
+
+      this.objects.set(id, object);
+      this.updateIndex.set(object.id, id);
+
+      const engine = this.getEngine();
+      if (!engine.running && this.hasRunnableObjects()) {
+        engine.start();
       }
-    })();
-
-    this.objects.set(id, object);
-    this.updateIndex.set(object.id, id);
-
-    const engine = this.getEngine();
-    if (!engine.running && this.hasRunnableObjects()) {
-      engine.start();
     }
   }
 
