@@ -6,7 +6,7 @@ const DEBUG = true;
 
 const engineKey = null;
 
-class AnyikythClient {
+class BulletClient {
   constructor(archae) {
     this._archae = archae;
   }
@@ -745,4 +745,4 @@ const _warnError = err => {
   }
 };
 
-module.exports = AnyikythClient;
+module.exports = BulletClient;
