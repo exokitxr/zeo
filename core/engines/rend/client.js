@@ -216,7 +216,8 @@ class Rend {
           }
         });
         const _requestDeleteWorld = worldName => new Promise((accept, reject) => {
-          bullet.releaseWorld(worldName)
+          accept();
+          /* bullet.releaseWorld(worldName)
             .then(() => {
               worlds.delete(worldName);
               mods.delete(worldName);
@@ -228,7 +229,7 @@ class Rend {
 
               accept();
             })
-            .catch(reject);
+            .catch(reject); */
         });
 
         const worldName = 'proteus';
