@@ -295,6 +295,8 @@ class Cyborg {
             player.snapshotStatus();
           };
 
+          world.addUpdate(_update);
+
           this._cleanup = () => {
             for (let i = 0; i < controllers.length; i++) {
               const controller = controllers[i];

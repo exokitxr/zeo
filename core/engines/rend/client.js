@@ -103,7 +103,14 @@ class Rend {
 
                 const startTime = Date.now();
                 let worldTime = 0;
-                updates.push(() => {
+                const _addUpdate = update => {
+                  updates.push(update);
+                };
+                const _addUpdateEye = updateEye => {
+                  updateEyes.push(updateEye);
+                };
+
+                _addUpdate(() => {
                   // update state
                   const now = Date.now();
                   worldTime = now - startTime;
@@ -115,7 +122,7 @@ class Rend {
                     }
                   });
                 });
-                updateEyes.push(camera => {
+                _addUpdateEye(camera => {
                   // update plugins per eye
                   plugins.forEach(plugin => {
                     if (typeof plugin.updateEye === 'function') {
@@ -200,6 +207,8 @@ class Rend {
                   requestReleaseMod: _requestReleaseMod,
                   requestReleaseMods: _requestReleaseMods,
                   requestWorker: _requestWorker,
+                  addUpdate: _addUpdate,
+                  addUpdateEye: _addUpdateEye,
                   physics,
                   player,
                   destroy: _destroy,
