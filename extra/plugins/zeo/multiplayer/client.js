@@ -19,9 +19,11 @@ class Multiplayer {
     return archae.requestEngines([
       '/core/engines/zeo',
       '/core/engines/rend',
+      '/core/engines/cyborg',
     ]).then(([
       zeo,
       rend,
+      cyborg,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
@@ -56,13 +58,9 @@ class Multiplayer {
         const _requestControllerMesh = () => _requestMesh(controllerModelPath);
 
         return Promise.all([
-          world.requestMods([
-            '/extra/plugins/zeo/singleplayer',
-          ]),
           _requestHmdMesh(),
           _requestControllerMesh(),
         ]).then(([
-          [singleplayer],
           hmdMesh,
           controllerMesh,
         ]) => {
@@ -135,7 +133,7 @@ class Multiplayer {
           player.on('playerEnter', playerEnter);
           player.on('playerLeave', playerLeave);
 
-          const singlePlayerInstance = singleplayer.getPlayer();
+          const singlePlayerInstance = cyborg.getPlayer();
           const initialLocalStatus = singlePlayerInstance.getStatus();
           const localStatus = {
             hmd: {

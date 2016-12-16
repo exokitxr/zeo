@@ -9,7 +9,6 @@ archae.requestEngines([
     const world = rend.getCurrentWorld();
 
     world.requestMods([
-      '/extra/plugins/zeo/singleplayer',
       '/extra/plugins/zeo/teleport',
       // '/extra/plugins/zeo/light',
       // '/extra/plugins/zeo/hmd',
