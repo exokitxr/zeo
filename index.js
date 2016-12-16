@@ -950,12 +950,10 @@ const _loadCerts = () => {
       }
     };
 
-    const publicKey = _getFile('public.pem');
     const privateKey = _getFile('private.pem');
     const cert = _getFile('cert.pem');
-    if (publicKey && privateKey && cert) {
+    if (privateKey && cert) {
       return {
-        publicKey,
         privateKey,
         cert,
       };
@@ -986,7 +984,6 @@ const _loadCerts = () => {
     _setFile('cert.pem', cert);
 
     return {
-      publicKey,
       privateKey,
       cert,
     };
