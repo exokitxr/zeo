@@ -200,8 +200,8 @@ THREE.ConvexGeometry = function( vertices ) {
 	// Compute flat vertex normals
 	for ( var i = 0; i < this.faces.length; i ++ ) {
 
-		var face = this.faces[ i ];
-		var normal = face.normal;
+		const face = this.faces[ i ];
+		const normal = face.normal;
 
 		face.vertexNormals[ 0 ] = normal.clone();
 		face.vertexNormals[ 1 ] = normal.clone();
