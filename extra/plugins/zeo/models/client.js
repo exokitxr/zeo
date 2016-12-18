@@ -1,5 +1,3 @@
-const asyncJsonParse = require('async-json-parse');
-
 const modelsPath = '/archae/models/models/';
 
 const MODELS = {
@@ -62,7 +60,7 @@ class Models {
         const _requestModelJson = model => {
           const modelPath = _getModelPath(model);
 
-          return fetch(modelPath).then(res => res.text().then(s => asyncJsonParse(s)));
+          return fetch(modelPath).then(res => res.text().then(s => _asyncJsonParse(s)));
         };
         const _requestModelMeshFromSpec = (modelJson, texturePath) => new Promise((accept, reject) => {
           const loader = new THREE.ObjectLoader();
@@ -109,6 +107,7 @@ class Models {
   }
 }
 
+const _asyncJsonParse = s => new Response(s).json();
 const _getModelPath = model  => {
   const {path} = model;
   if (/^.*?:\/\//.test(path)) {

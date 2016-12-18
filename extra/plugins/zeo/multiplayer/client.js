@@ -1,5 +1,3 @@
-const asyncJsonParse = require('async-json-parse');
-
 const hmdModelPath = '/archae/models/hmd/hmd.json';
 const controllerModelPath = '/archae/models/controller/controller.json';
 
@@ -34,7 +32,7 @@ class Multiplayer {
           fetch(modelPath)
             .then(res =>
               res.text()
-                .then(s => asyncJsonParse(s))
+                .then(s => _asyncJsonParse(s))
                 .then(modelJson => new Promise((accept, reject) => {
                   const loader = new THREE.ObjectLoader();
                   loader.parse(modelJson, accept);
@@ -191,5 +189,7 @@ class Multiplayer {
     this._cleanup();
   }
 }
+
+const _asyncJsonParse = s => new Response(s).json();
 
 module.exports = Multiplayer;

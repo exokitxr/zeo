@@ -5,6 +5,6 @@
   "client": "client.js",
   "dependencies": {
     "alea": "^0.0.9",
-    "lru-cache": "^4.0.2"
+    "cache-lru": "^1.0.14"
   }
 }

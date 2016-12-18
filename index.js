@@ -7,6 +7,10 @@ const express = require('express');
 const ws = require('ws');
 const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
+const rollup = require('rollup');
+const rollupPluginNodeResolve = require('rollup-plugin-node-resolve');
+const rollupPluginCommonJs = require('rollup-plugin-commonjs');
+const rollupPluginJson = require('rollup-plugin-json');
 const cryptoutils = require('cryptoutils');
 const MultiMutex = require('multimutex');
 
@@ -17,6 +21,7 @@ const defaultConfig = {
 };
 
 const yarnBin = path.join(__dirname, 'node_modules', 'yarn', 'bin', 'yarn.js');
+
 const nameSymbol = Symbol();
 
 class ArchaeServer {
@@ -492,19 +497,13 @@ class ArchaeServer {
     return moduleApi ? moduleApi[nameSymbol] : null;
   }
 
-  /* broadcast(message) {
-    const messageString = JSON.stringify(message);
-
-    for (let i = 0; i < this.connections.length; i++) {
-      const connection = this.connections[i];
-      connection.send(messageString);
-    }
-  } */
-
   mountApp() {
     const {server, app, wss} = this;
 
+    // public
     app.use('/', express.static(path.join(__dirname, 'public')));
+
+    // lists
     app.use('/archae/modules.json', (req, res, next) => {
       this.getClientModules((err, modules) => {
         if (!err) {
@@ -515,8 +514,60 @@ class ArchaeServer {
         }
       });
     });
-    app.use('/archae/engines', express.static(path.join(__dirname, 'engines', 'build')));
-    app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
+
+    // bundles
+    const bundleCache = {};
+    app.get(/^\/archae\/(engines|plugins)\/([^\/]+?)\/([^\/]+?)(-worker)?\.js$/, (req, res, next) => {
+      const {params} = req;
+      const type = params[0];
+      const module = params[1];
+      const target = params[2];
+      const worker = params[3];
+
+      if (module === target) {
+        const _respondOk = s => {
+          res.type('application/javascript');
+          res.send(s);
+        };
+
+        const entry = bundleCache[module];
+        if (entry !== undefined) {
+          _respondOk(entry);
+        } else {
+          rollup.rollup({
+            entry: __dirname + '/' + type + '/node_modules/' + module + '/' + (!worker ? 'client' : 'worker') + '.js',
+            plugins: [
+              rollupPluginNodeResolve({
+                main: true,
+                preferBuiltins: false,
+              }),
+              rollupPluginCommonJs(),
+              rollupPluginJson(),
+            ],
+          }).then(bundle => {
+            const result = bundle.generate({
+              moduleName: module,
+              format: 'cjs',
+              useStrict: false,
+            });
+            const {code} = result;
+            const wrappedCode = '(function() {\n' + code + '\n})();\n';
+
+            bundleCache[module] = wrappedCode;
+
+            _respondOk(wrappedCode);
+          })
+          .catch(err => {
+            res.status(500);
+            res.send(err.stack);
+          });
+        }
+      } else {
+        next();
+      }
+    });
+
+    // mount on server
     server.on('request', app);
 
     const upgradeHandlers = [];
@@ -670,7 +721,7 @@ const _addModule = (module, type, cb) => {
             if (exists) {
               _yarnInstall(moduleName, type, err => {
                 if (!err) {
-                  cb(null, j);
+                  cb();
                 } else {
                   cb(err);
                 }
@@ -681,7 +732,7 @@ const _addModule = (module, type, cb) => {
                 if (!err) {
                   _yarnInstall(moduleName, type, err => {
                     if (!err) {
-                      cb(null, j);
+                      cb();
                     } else {
                       cb(err);
                     }
@@ -825,58 +876,6 @@ const _addModule = (module, type, cb) => {
       cb(err);
     }
   };
-  const _buildModule = (module, type, cb) => {
-    let pending = 0;
-    let error = null;
-    function pend(err) {
-      if (err) {
-        error = err;
-      }
-
-      if (--pending === 0) {
-        cb(error);
-      }
-    }
-
-    if (module.client) {
-      const moduleClientPath = path.join(_getModulePath(module, type), module.client);
-      const moduleClientBuildPath = _getModuleBuildPath(module, type, module.name);
-      _buildModuleFile(moduleClientPath, moduleClientBuildPath, pend);
-
-      pending++;
-    }
-
-    if (module.worker) {
-      const moduleWorkerPath = path.join(_getModulePath(module, type), module.worker);
-      const moduleWorkerBuildPath = _getModuleBuildPath(module, type, module.name + '-worker');
-      _buildModuleFile(moduleWorkerPath, moduleWorkerBuildPath, pend);
-
-      pending++;
-    }
-
-    if (pending === 0) {
-      cb();
-    }
-  };
-  const _buildModuleFile = (srcPath, dstPath, cb) => {
-    const webpack = child_process.spawn(
-      path.join(__dirname, 'node_modules', 'webpack', 'bin', 'webpack.js'),
-      [ srcPath, dstPath ],
-      {
-        cwd: __dirname,
-      }
-    );
-    webpack.stdout.pipe(process.stdout);
-    webpack.stderr.pipe(process.stderr);
-    webpack.on('exit', code => {
-      if (code === 0) {
-        cb();
-      } else {
-        const err = new Error('webpack error: ' + code);
-        cb(err);
-      }
-    });
-  };
 
   mkdirp(path.join(__dirname, type), err => {
     if (!err) {
@@ -887,23 +886,9 @@ const _addModule = (module, type, cb) => {
           fs.exists(modulePath, exists => {
             if (!exists) {
               if (typeof module === 'string') {
-                _downloadModule(module, type, (err, packageJson) => {
-                  if (!err) {
-                    _buildModule(packageJson, type, cb);
-                  } else {
-                    cb(err);
-                  }
-                });
+                _downloadModule(module, type, cb);
               } else if (typeof module === 'object') {
-                const packageJson = module;
-
-                _dumpPlugin(packageJson, type, err => {
-                  if (!err) {
-                    _buildModule(packageJson, type, cb);
-                  } else {
-                    cb(err);
-                  }
-                });
+                _dumpPlugin(module, type, cb);
               } else {
                 const err = new Error('invalid module format');
                 cb(err);

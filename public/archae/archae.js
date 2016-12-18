@@ -377,6 +377,7 @@ class ArchaeClient {
           console.log('module loaded:', type + '/' + module);
 
           exports[module] = global.module.exports;
+
           global.module = {};
 
           cb(null, {
