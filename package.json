@@ -20,6 +20,6 @@
     "rimraf": "^2.5.4",
     "spdy": "git://github.com/anandsuresh/node-spdy.git#fix/agentGoAway",
     "ws": "^1.1.1",
-    "yarn": "^0.17.8"
+    "yarn": "^0.18.1"
   }
 }
