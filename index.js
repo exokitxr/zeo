@@ -373,23 +373,7 @@ class ArchaeServer {
   }
 
   loadEngine(engine, cb) {
-    fs.readFile(path.join(__dirname, 'engines', 'node_modules', engine, 'package.json'), 'utf8', (err, s) => {
-      if (!err) {
-        const j = JSON.parse(s);
-        const {server: serverFileName} = j;
-        if (serverFileName) {
-          const engineModule = require(path.join(__dirname, 'engines', 'node_modules', engine, serverFileName));
-
-          this.engines[engine] = engineModule;
-        } else {
-          this.engines[engine] = null;
-        }
-
-        cb();
-      } else {
-        cb(err);
-      }
-    });
+    this.loadModule(engine, 'engines', 'server', this.engines, cb);
   }
 
   mountEngine(engine, cb) {
@@ -434,23 +418,7 @@ class ArchaeServer {
   }
 
   loadPlugin(plugin, cb) {
-    fs.readFile(path.join(__dirname, 'plugins', 'node_modules', plugin, 'package.json'), 'utf8', (err, s) => {
-      if (!err) {
-        const j = JSON.parse(s);
-        const {server: serverFileName} = j;
-        if (serverFileName) {
-          const pluginModule = require(path.join(__dirname, 'plugins', 'node_modules', plugin, serverFileName));
-
-          this.plugins[plugin] = pluginModule;
-        } else {
-          this.plugins[plugin] = null;
-        }
-
-        cb();
-      } else {
-        cb(err);
-      }
-    });
+    this.loadModule(plugin, 'plugins', 'client', this.plugins, cb);
   }
 
   mountPlugin(plugin, cb) {
@@ -492,6 +460,26 @@ class ArchaeServer {
 
       cb();
     }
+  }
+
+  loadModule(module, type, packageJsonFileNameKey, exports, cb) {
+    fs.readFile(path.join(__dirname, type, 'node_modules', module, 'package.json'), 'utf8', (err, s) => {
+      if (!err) {
+        const j = JSON.parse(s);
+        const fileName = j[packageJsonFileNameKey];
+        if (fileName) {
+          const moduleRequire = require(path.join(__dirname, 'engines', 'node_modules', engine, fileName));
+
+          exports[engine] = moduleRequire;
+        } else {
+          exports[engine] = null;
+        }
+
+        cb();
+      } else {
+        cb(err);
+      }
+    });
   }
 
   getCore() {
