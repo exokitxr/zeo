@@ -193,7 +193,8 @@ class Rend {
                   }
                 };
 
-                _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/zeo/' + mod.name))
+                Promise.resolve()
+                  .then(() => _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/zeo/' + mod.name)))
                   .then(() => {
                     console.log('initial mods loaded');
                   })
