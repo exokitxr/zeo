@@ -381,7 +381,7 @@ class ArchaeServer {
   }
 
   loadPlugin(plugin, cb) {
-    this.loadModule(plugin, 'plugins', 'client', this.plugins, cb);
+    this.loadModule(plugin, 'plugins', 'server', this.plugins, cb);
   }
 
   mountPlugin(plugin, cb) {
