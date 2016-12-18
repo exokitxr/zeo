@@ -670,7 +670,7 @@ const _addModule = (module, type, cb) => {
             if (exists) {
               _yarnInstall(moduleName, type, err => {
                 if (!err) {
-                  cb(null, j);
+                  cb();
                 } else {
                   cb(err);
                 }
@@ -681,7 +681,7 @@ const _addModule = (module, type, cb) => {
                 if (!err) {
                   _yarnInstall(moduleName, type, err => {
                     if (!err) {
-                      cb(null, j);
+                      cb();
                     } else {
                       cb(err);
                     }
@@ -825,58 +825,6 @@ const _addModule = (module, type, cb) => {
       cb(err);
     }
   };
-  const _buildModule = (module, type, cb) => {
-    let pending = 0;
-    let error = null;
-    function pend(err) {
-      if (err) {
-        error = err;
-      }
-
-      if (--pending === 0) {
-        cb(error);
-      }
-    }
-
-    if (module.client) {
-      const moduleClientPath = path.join(_getModulePath(module, type), module.client);
-      const moduleClientBuildPath = _getModuleBuildPath(module, type, module.name);
-      _buildModuleFile(moduleClientPath, moduleClientBuildPath, pend);
-
-      pending++;
-    }
-
-    if (module.worker) {
-      const moduleWorkerPath = path.join(_getModulePath(module, type), module.worker);
-      const moduleWorkerBuildPath = _getModuleBuildPath(module, type, module.name + '-worker');
-      _buildModuleFile(moduleWorkerPath, moduleWorkerBuildPath, pend);
-
-      pending++;
-    }
-
-    if (pending === 0) {
-      cb();
-    }
-  };
-  const _buildModuleFile = (srcPath, dstPath, cb) => {
-    const webpack = child_process.spawn(
-      path.join(__dirname, 'node_modules', 'webpack', 'bin', 'webpack.js'),
-      [ srcPath, dstPath ],
-      {
-        cwd: __dirname,
-      }
-    );
-    webpack.stdout.pipe(process.stdout);
-    webpack.stderr.pipe(process.stderr);
-    webpack.on('exit', code => {
-      if (code === 0) {
-        cb();
-      } else {
-        const err = new Error('webpack error: ' + code);
-        cb(err);
-      }
-    });
-  };
 
   mkdirp(path.join(__dirname, type), err => {
     if (!err) {
@@ -887,23 +835,9 @@ const _addModule = (module, type, cb) => {
           fs.exists(modulePath, exists => {
             if (!exists) {
               if (typeof module === 'string') {
-                _downloadModule(module, type, (err, packageJson) => {
-                  if (!err) {
-                    _buildModule(packageJson, type, cb);
-                  } else {
-                    cb(err);
-                  }
-                });
+                _downloadModule(module, type, cb);
               } else if (typeof module === 'object') {
-                const packageJson = module;
-
-                _dumpPlugin(packageJson, type, err => {
-                  if (!err) {
-                    _buildModule(packageJson, type, cb);
-                  } else {
-                    cb(err);
-                  }
-                });
+                _dumpPlugin(module, type, cb);
               } else {
                 const err = new Error('invalid module format');
                 cb(err);

@@ -3,23 +3,22 @@
   "main": "index.js",
   "version": "0.0.1",
   "scripts": {
+    "postinstall": "node scripts/postinstall.js",
     "start": "node ./examples/index.js",
     "clean": "rm -Rf ./engines ./plugins"
   },
   "dependencies": {
-    "babel-core": "^6.18.2",
-    "babel-loader": "^6.2.7",
-    "babel-preset-es2015": "^6.18.0",
     "cryptoutils": "0.0.2",
     "express": "^4.14.0",
     "fs-extra": "^1.0.0",
-    "json-loader": "^0.5.4",
+    "http-proxy": "^1.16.2",
     "mkdirp": "^0.5.1",
     "multimutex": "0.0.1",
     "nedb": "^1.8.0",
+    "react": "^15.4.1",
+    "react-native": "^0.39.2",
     "rimraf": "^2.5.4",
     "spdy": "git://github.com/anandsuresh/node-spdy.git#fix/agentGoAway",
-    "webpack": "^1.13.3",
     "ws": "^1.1.1",
     "yarn": "^0.17.8"
   }
