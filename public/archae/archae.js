@@ -370,10 +370,7 @@ class ArchaeClient {
 
   loadModule(module, type, target, exports, cb) {
     if (!exports[module]) {
-      global.exports = {};
-      global.module = {
-        exports: global.exports,
-      };
+      global.module = {};
 
       _loadScript('/archae/' + type + '/' + module + '/' + target + '.js')
         .then(() => {
@@ -381,10 +378,7 @@ class ArchaeClient {
 
           exports[module] = global.module.exports;
 
-          global.exports = {};
-          global.module = {
-            exports: global.exports,
-          };
+          global.module = {};
 
           cb(null, {
             loaded: true,
