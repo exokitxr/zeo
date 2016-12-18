@@ -20,3 +20,12 @@ const fileContents = fs.readFileSync(resolver, 'utf8').replace(
   "'parse', 'react-vr', 'react-vr-web',"
 );
 fs.writeFileSync(resolver, fileContents);
+
+// ARCHAE
+const jhm = require.resolve('jest-haste-map');
+
+const fileContents2 = fs.readFileSync(jhm, 'utf8').replace(
+  "if (this._options.retainAllFiles && this._isNodeModulesDir(filePath))",
+  "if (false)"
+)
+fs.writeFileSync(jhm, fileContents2);
