@@ -537,7 +537,7 @@ class ArchaeServer {
             entry: __dirname + '/' + type + '/node_modules/' + module + '/' + (!worker ? 'client' : 'worker') + '.js',
             plugins: [
               nodeResolve({
-                jsnext: true,
+                // jsnext: true,
                 main: true,
                 preferBuiltins: false,
               }),
