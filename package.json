@@ -3,7 +3,6 @@
   "main": "index.js",
   "version": "0.0.1",
   "scripts": {
-    "postinstall": "node scripts/postinstall.js",
     "start": "node ./examples/index.js",
     "clean": "rm -Rf ./engines ./plugins"
   },
@@ -14,8 +13,6 @@
     "mkdirp": "^0.5.1",
     "multimutex": "0.0.1",
     "nedb": "^1.8.0",
-    "react": "^15.4.1",
-    "react-native": "^0.39.2",
     "rimraf": "^2.5.4",
     "rollup": "^0.37.0",
     "rollup-plugin-node-resolve": "^2.0.0",
