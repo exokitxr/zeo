@@ -377,44 +377,7 @@ class ArchaeServer {
   }
 
   mountEngine(engine, cb) {
-    const engineModule = this.engines[engine];
-
-    if (engineModule !== null) {
-      Promise.resolve(_instantiate(engineModule, this))
-        .then(engineInstance => {
-          this.engineInstances[engine] = engineInstance;
-
-          Promise.resolve(engineInstance.mount())
-            .then(engineApi => {
-              if (typeof engineApi !== 'object' || engineApi === null) {
-                engineApi = {};
-              }
-              engineApi[nameSymbol] = engine;
-
-              this.engineApis[engine] = engineApi;
-
-              cb();
-            })
-            .catch(err => {
-              /* this.engineApis[engine] = null; */
-
-              cb(err);
-            });
-        })
-        .catch(err => {
-          /* this.engineInstances[engine] = null;
-          this.engineApis[engine] = null; */
-
-          cb(err);
-        });
-    } else {
-      this.engineInstances[engine] = {};
-      this.engineApis[engine] = {
-        [nameSymbol]: engine,
-      };
-
-      cb();
-    }
+    this.mountModule(engine, this.engines, this.engineInstances, this.engineApis, cb);
   }
 
   loadPlugin(plugin, cb) {
@@ -422,44 +385,7 @@ class ArchaeServer {
   }
 
   mountPlugin(plugin, cb) {
-    const pluginModule = this.plugins[plugin];
-
-    if (pluginModule !== null) {
-      Promise.resolve(_instantiate(pluginModule, this))
-        .then(pluginInstance => {
-          this.pluginInstances[plugin] = pluginInstance;
-
-          Promise.resolve(pluginInstance.mount())
-            .then(pluginApi => {
-              if (typeof pluginApi !== 'object' || pluginApi === null) {
-                pluginApi = {};
-              }
-              pluginApi[nameSymbol] = plugin;
-
-              this.pluginApis[plugin] = pluginApi;
-
-              cb();
-            })
-            .catch(err => {
-              /* this.pluginApis[plugin] = null; */
-
-              cb(err);
-            });
-        })
-        .catch(err => {
-          /* this.pluginInstances[plugin] = null;
-          this.pluginApis[plugin] = null; */
-
-          cb(err);
-        });
-    } else {
-      this.pluginInstances[plugin] = null;
-      this.pluginApis[plugin] = {
-        [nameSymbol]: plugin,
-      };
-
-      cb();
-    }
+    this.mountModule(plugin, this.plugins, this.pluginInstances, this.pluginApis, cb);
   }
 
   loadModule(module, type, packageJsonFileNameKey, exports, cb) {
@@ -468,11 +394,11 @@ class ArchaeServer {
         const j = JSON.parse(s);
         const fileName = j[packageJsonFileNameKey];
         if (fileName) {
-          const moduleRequire = require(path.join(__dirname, 'engines', 'node_modules', engine, fileName));
+          const moduleRequire = require(path.join(__dirname, type, 'node_modules', module, fileName));
 
-          exports[engine] = moduleRequire;
+          exports[module] = moduleRequire;
         } else {
-          exports[engine] = null;
+          exports[module] = null;
         }
 
         cb();
@@ -480,6 +406,43 @@ class ArchaeServer {
         cb(err);
       }
     });
+  }
+
+  mountModule(module, exports, exportInstances, exportApis, cb) {
+    const moduleRequire = exports[module];
+
+    if (moduleRequire !== null) {
+      Promise.resolve(_instantiate(moduleRequire, this))
+        .then(moduleInstance => {
+          exportInstances[module] = moduleInstance;
+
+          Promise.resolve(moduleInstance.mount())
+            .then(moduleApi => {
+              if (typeof moduleApi !== 'object' || moduleApi === null) {
+                moduleApi = {};
+              }
+              moduleApi[nameSymbol] = module;
+
+              exportApis[module] = moduleApi;
+
+              cb();
+            })
+            .catch(err => {
+              cb(err);
+            });
+        })
+        .catch(err => {
+
+          cb(err);
+        });
+    } else {
+      exportInstances[module] = {};
+      exportApis[module] = {
+        [nameSymbol]: module,
+      };
+
+      cb();
+    }
   }
 
   getCore() {
