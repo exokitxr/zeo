@@ -370,14 +370,11 @@ class ArchaeClient {
 
   loadModule(module, type, target, exports, cb) {
     if (!exports[module]) {
-      global.module = {};
-
-      _loadScript('/archae/' + type + '/' + module + '/' + target + '.js')
-        .then(() => {
+      _loadModuleScript('/archae/' + type + '/' + module + '/' + target + '.js')
+        .then(m => {
           console.log('module loaded:', type + '/' + module);
 
-          exports[module] = global.module.exports;
-          global.module = {};
+          exports[module] = m;
 
           cb(null, {
             loaded: true,
@@ -580,47 +577,21 @@ const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/
 
 const _makeId = () => Math.random().toString(36).substring(7);
 
-const _loadScript = (() => {
-  if (env.root) {
-    return src => new Promise((accept, reject) => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      script.onload = () => {
-        accept();
-        _cleanup();
-      };
-      script.onerror = err => {
-        reject(err);
-        _cleanup();
-      };
-      document.body.appendChild(script);
-
-      const _cleanup = () => {
-        document.body.removeChild(script);
-      };
-    });
-  } else if (env.webworker) {
-    return src => fetch(src)
-      .then(res => res.text()
-        .then(s => _asyncEval(s))
-      )
-  } else {
-    return () => {
-      throw new Error('unimplemented: cannot load scripts');
-    };
-  }
-})();
+const _loadModuleScript = src => fetch(src)
+  .then(res => res.text()
+    .then(s => _asyncEval(s))
+  );
 const _asyncEval = s => new Promise((accept, reject) => {
   let error = null;
+  let result;
   try {
-    eval(s);
+    result = eval(s);
   } catch(err) {
     error = err;
   }
 
   if (!error) {
-    accept();
+    accept(result);
   } else {
     reject(error);
   }
