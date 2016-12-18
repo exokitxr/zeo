@@ -178,15 +178,13 @@ class Rend {
                   .then(() => _requestReleaseMod('/extra/plugins/zeo/' + mod))
                 );
                 const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
-                const _requestReleaseMod = mod => Promise.accept();
-                /* .then(() => archae.requestPlugin(mod) // XXX perform the backend removal here
-                    .then(plugin => {
-                      const pluginName = archae.getName(plugin);
-                      plugins.set(pluginName, plugin);
+                const _requestReleaseMod = mod => archae.releasePlugin(mod)
+                  .then(plugin => {
+                    const pluginName = archae.getName(plugin);
+                    plugins.delete(pluginName);
 
-                      return plugin;
-                    })
-                  ) */
+                    return plugin;
+                  });
                 const _requestReleaseMods = mods => Promise.all(mods.map(_requestReleaseMod));
                 const _requestWorker = (module, options) => archae.requestWorker(module, options);
                 const _destroy = () => {

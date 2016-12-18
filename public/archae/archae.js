@@ -244,13 +244,16 @@ class ArchaeClient {
     return Promise.all(requestPluginPromises);
   }
 
-  removePlugin(plugin) {
+  releasePlugin(plugin) {
     return new Promise((accept, reject) => {
-      this.request('removePlugin', {
+      this.request('releasePlugin', { // XXX implement this
         plugin,
-      }, err => {
+      }, (err, result) => {
         if (!err) {
-          accept();
+          const {pluginName} = result;
+
+          this.unmountPlugin(pluginName);
+          this.unloadPlugin(pluginName);
         } else {
           reject(err);
         }
@@ -394,6 +397,10 @@ class ArchaeClient {
     }
   }
 
+  unloadModule(module, exports) {
+    delete exports[module];
+  }
+
   loadEngine(engine, cb) {
     this.loadModule(engine, 'engines', engine, this.engines, cb);
   }
@@ -447,6 +454,10 @@ class ArchaeClient {
     this.loadModule(plugin, 'plugins', plugin, this.plugins, cb);
   }
 
+  unloadPlugin(plugin) {
+    this.unloadModule(plugin, this.plugins);
+  }
+
   mountPlugin(plugin, cb) {
     const pluginModule = this.plugins[plugin];
 
@@ -475,8 +486,8 @@ class ArchaeClient {
             });
         })
         .catch(err => {
-          this.pluginInstances[plugin] = null;
-          this.pluginApis[plugin] = null;
+          /* this.pluginInstances[plugin] = null;
+          this.pluginApis[plugin] = null; */
 
           cb(err);
         });
@@ -488,6 +499,14 @@ class ArchaeClient {
 
       cb();
     }
+  }
+
+  unmountPlugin() {
+    const pluginInstance = this.pluginInstances[plugin];
+
+    delete this.pluginInstances[plugin];
+    delete this.pluginApis[plugin];
+    this.moduleInstances.delete(pluginInstance);
   }
 
   getCore() {

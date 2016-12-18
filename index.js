@@ -130,7 +130,7 @@ class ArchaeServer {
     return Promise.all(requestEnginePromises);
   }
 
-  removeEngine(engine, opts = {}) {
+  releaseEngine(engine) {
     return new Promise((accept, reject) => {
       _removeModule(engine, 'engines', err => {
         if (!err) {
@@ -140,6 +140,11 @@ class ArchaeServer {
         }
       });
     });
+  }
+
+  releaseEngines(engines) {
+    const releaseEnginePromises = engines.map(engine => this.releaseEngine(engine));
+    return Promise.all(releaseEnginePromises);
   }
 
   requestPlugin(plugin, opts = {}) {
@@ -221,7 +226,7 @@ class ArchaeServer {
     return Promise.all(requestPluginPromises);
   }
 
-  removePlugin(plugin, opts = {}) {
+  releasePlugin(plugin) {
     return new Promise((accept, reject) => {
       _removeModule(plugin, 'plugins', err => {
         if (!err) {
@@ -231,6 +236,11 @@ class ArchaeServer {
         }
       });
     });
+  }
+
+  releasePlugins(plugins, opts = {}) {
+    const releasePluginPromises = plugins.map(plugin => this.releasePlugin(plugin, opts));
+    return Promise.all(releasePluginPromises);
   }
 
   getClientModules(cb) {
@@ -673,11 +683,11 @@ class ArchaeServer {
                 const err = new Error('invalid plugin spec');
                 cb(err);
               }
-            } else if (method === 'removePlugin') {
+            } else if (method === 'releasePlugin') {
               const {plugin} = args;
 
               if (_isValidModule(plugin)) {
-                this.removePlugin(engine)
+                this.releasePlugin(engine)
                   .then(() => {
                     cb();
                   })
@@ -982,7 +992,7 @@ const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/
 
 const _removeModule = (module, type, cb) => {
   if (typeof module === 'string') {
-    const modulePath = _getModulePath(module, type); // XXX fix package json removal here
+    const modulePath = _getModulePath(module, type); // XXX add module literal removal support
 
     rimraf(modulePath, err => {
       if (!err) {
