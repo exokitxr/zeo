@@ -370,14 +370,21 @@ class ArchaeClient {
 
   loadModule(module, type, target, exports, cb) {
     if (!exports[module]) {
-      global.module = {};
+      global.exports = {};
+      global.module = {
+        exports: global.exports,
+      };
 
       _loadScript('/archae/' + type + '/' + module + '/' + target + '.js')
         .then(() => {
           console.log('module loaded:', type + '/' + module);
 
           exports[module] = global.module.exports;
-          global.module = {};
+
+          global.exports = {};
+          global.module = {
+            exports: global.exports,
+          };
 
           cb(null, {
             loaded: true,

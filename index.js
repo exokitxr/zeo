@@ -9,6 +9,7 @@ const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
 const rollup = require('rollup');
 const nodeResolve = require('rollup-plugin-node-resolve');
+const commonJs = require('rollup-plugin-commonjs');
 const cryptoutils = require('cryptoutils');
 const MultiMutex = require('multimutex');
 
@@ -19,10 +20,6 @@ const defaultConfig = {
 };
 
 const yarnBin = path.join(__dirname, 'node_modules', 'yarn', 'bin', 'yarn.js');
-
-const reactNativeCliBin = path.join(__dirname, 'node_modules', 'react-native', 'local-cli', 'cli.js');
-const reactNativePort = 8081;
-const reactNativeCliArgs = [ 'start', '--root', '.', '--port', String(reactNativePort), '--reset-cache' ];
 
 const nameSymbol = Symbol();
 
@@ -538,16 +535,26 @@ class ArchaeServer {
         } else {
           rollup.rollup({
             entry: __dirname + '/' + type + '/node_modules/' + module + '/' + (!worker ? 'client' : 'worker') + '.js',
-            plugins: [ nodeResolve({ jsnext: true, main: true }) ]
+            plugins: [
+              nodeResolve({
+                jsnext: true,
+                main: true,
+                preferBuiltins: false,
+              }),
+              commonJs(),
+            ],
           }).then(bundle => {
             const result = bundle.generate({
-              format: 'iife',
+              moduleName: module,
+              format: 'cjs',
+              useStrict: false,
             });
             const {code} = result;
+            const wrappedCode = '(function() {\n' + code + '\n})();\n';
 
-            bundleCache[module] = code;
+            bundleCache[module] = wrappedCode;
 
-            _respondOk(code);
+            _respondOk(wrappedCode);
           })
           .catch(err => {
             res.status(500);

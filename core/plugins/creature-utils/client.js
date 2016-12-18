@@ -1,7 +1,7 @@
 const Alea = require('alea');
-const LRU = require('lru-cache');
+const CacheLru = require('cache-lru');
 
-const cache = LRU({
+const cache = new CacheLru({
   max: 128,
 });
 
