@@ -195,6 +195,14 @@ class Rend {
                   }
                 };
 
+                _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/zeo/' + mod.name))
+                  .then(() => {
+                    console.log('initial mods loaded');
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+
                 const world = {
                   name: worldName,
                   getWorldTime: _getWorldTime,

@@ -6,7 +6,7 @@ archae.requestEngines([
     zeo,
     rend,
   ]) => {
-    const world = rend.getCurrentWorld();
+    /* const world = rend.getCurrentWorld();
 
     world.requestMods([
       '/extra/plugins/zeo/teleport',
@@ -28,7 +28,7 @@ archae.requestEngines([
       '/extra/plugins/zeo/portal',
       '/extra/plugins/zeo/camera',
       // '/extra/plugins/zeo/build',
-    ]);
+    ]); */
   })
   .then(() => {
     console.log('app started');
