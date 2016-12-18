@@ -21,7 +21,7 @@ const yarnBin = path.join(__dirname, 'node_modules', 'yarn', 'bin', 'yarn.js');
 
 const reactNativeCliBin = path.join(__dirname, 'node_modules', 'react-native', 'local-cli', 'cli.js');
 const reactNativePort = 8081;
-const reactNativeCliArgs = [ 'start', '--root', '.', './engines/node_modules/rend/', '--port', String(reactNativePort) ];
+const reactNativeCliArgs = [ 'start', '--root', '.', '--port', String(reactNativePort), '--reset-cache' ];
 
 const nameSymbol = Symbol();
 
@@ -517,7 +517,9 @@ class ArchaeServer {
     });
 
     // bundles
-    child_process.fork(reactNativeCliBin, reactNativeCliArgs);
+    child_process.fork(reactNativeCliBin, reactNativeCliArgs, {
+      // stdio: ['pipe', 'pipe', 'ignore', 'ipc'],
+    });
 
     const reactNativeProxy = httpProxy.createProxyServer({
       target: 'http://localhost:' + reactNativePort,
