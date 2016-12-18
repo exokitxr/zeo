@@ -11,10 +11,10 @@ const _2_32 = Math.pow(2, 32);
 
 const creatureUtils = () => ({
   mount() {
-    function makeCreature(seed, {static = false}) {
+    function makeCreature(seed, {single = false}) {
       seed = seed || String(Math.random());
 
-      const key = seed + ':' + static;
+      const key = seed + ':' + single;
       const entry = cache.get(key);
       if (entry) {
         return entry;
@@ -238,7 +238,7 @@ const creatureUtils = () => ({
           renderMainFrame(ctx);
           const mainFrame = getFrame(ctx);
 
-          if (!static) {
+          if (!single) {
             renderAltFrame(ctx)
             const altFrame = getFrame(ctx);
 
@@ -253,8 +253,8 @@ const creatureUtils = () => ({
         return entry;
       }
     }
-    const makeAnimatedCreature = seed => makeCreature(seed, {static: false});
-    const makeStaticCreature = seed => makeCreature(seed, {static: true});
+    const makeAnimatedCreature = seed => makeCreature(seed, {single: false});
+    const makeStaticCreature = seed => makeCreature(seed, {single: true});
 
     return {
       makeAnimatedCreature,
