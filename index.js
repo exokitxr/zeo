@@ -8,8 +8,9 @@ const ws = require('ws');
 const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
 const rollup = require('rollup');
-const nodeResolve = require('rollup-plugin-node-resolve');
-const commonJs = require('rollup-plugin-commonjs');
+const rollupPluginNodeResolve = require('rollup-plugin-node-resolve');
+const rollupPluginCommonJs = require('rollup-plugin-commonjs');
+const rollupPluginJson = require('rollup-plugin-json');
 const cryptoutils = require('cryptoutils');
 const MultiMutex = require('multimutex');
 
@@ -536,12 +537,12 @@ class ArchaeServer {
           rollup.rollup({
             entry: __dirname + '/' + type + '/node_modules/' + module + '/' + (!worker ? 'client' : 'worker') + '.js',
             plugins: [
-              nodeResolve({
-                // jsnext: true,
+              rollupPluginNodeResolve({
                 main: true,
                 preferBuiltins: false,
               }),
-              commonJs(),
+              rollupPluginCommonJs(),
+              rollupPluginJson(),
             ],
           }).then(bundle => {
             const result = bundle.generate({
