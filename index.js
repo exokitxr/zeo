@@ -5,6 +5,7 @@ const child_process = require('child_process');
 const spdy = require('spdy');
 const express = require('express');
 const ws = require('ws');
+const httpProxy = require('http-proxy');
 const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
 const cryptoutils = require('cryptoutils');
@@ -17,6 +18,11 @@ const defaultConfig = {
 };
 
 const yarnBin = path.join(__dirname, 'node_modules', 'yarn', 'bin', 'yarn.js');
+
+const reactNativeCliBin = path.join(__dirname, 'node_modules', 'react-native', 'local-cli', 'cli.js');
+const reactNativePort = 8081;
+const reactNativeCliArgs = [ 'start', '--root', '.', './engines/node_modules/rend/', '--port', String(reactNativePort) ];
+
 const nameSymbol = Symbol();
 
 class ArchaeServer {
@@ -492,19 +498,13 @@ class ArchaeServer {
     return moduleApi ? moduleApi[nameSymbol] : null;
   }
 
-  /* broadcast(message) {
-    const messageString = JSON.stringify(message);
-
-    for (let i = 0; i < this.connections.length; i++) {
-      const connection = this.connections[i];
-      connection.send(messageString);
-    }
-  } */
-
   mountApp() {
     const {server, app, wss} = this;
 
+    // public
     app.use('/', express.static(path.join(__dirname, 'public')));
+
+    // lists
     app.use('/archae/modules.json', (req, res, next) => {
       this.getClientModules((err, modules) => {
         if (!err) {
@@ -515,8 +515,36 @@ class ArchaeServer {
         }
       });
     });
-    app.use('/archae/engines', express.static(path.join(__dirname, 'engines', 'build')));
-    app.use('/archae/plugins', express.static(path.join(__dirname, 'plugins', 'build')));
+
+    // bundles
+    child_process.fork(reactNativeCliBin, reactNativeCliArgs);
+
+    const reactNativeProxy = httpProxy.createProxyServer({
+      target: 'http://localhost:' + reactNativePort,
+    });
+
+    app.get(/^\/archae\/(engines|plugins)\/([^\/]+?)\/([^\/]+?)(-worker)?\.js$/, (req, res, next) => {
+      const {params} = req;
+      const type = params[0];
+      const module = params[1];
+      const target = params[2];
+      const worker = params[3];
+
+      if (module === target) {
+        req.url = '/' + type + '/node_modules/' + module + '/' + (!worker ? 'client' : 'worker') + '.bundle?platform=vr';
+        reactNativeProxy.web(req, res);
+      } else {
+        next();
+      }
+    });
+    app.get('/debug', (req, res, next) => {
+      reactNativeProxy.web(req, res);
+    });
+    app.get('/debug/bundles', (req, res, next) => {
+      reactNativeProxy.web(req, res);
+    });
+
+    // mount on server
     server.on('request', app);
 
     const upgradeHandlers = [];
