@@ -5,9 +5,10 @@ const child_process = require('child_process');
 const spdy = require('spdy');
 const express = require('express');
 const ws = require('ws');
-const httpProxy = require('http-proxy');
 const mkdirp = require('mkdirp');
 const rimraf = require('rimraf');
+const rollup = require('rollup');
+const nodeResolve = require('rollup-plugin-node-resolve');
 const cryptoutils = require('cryptoutils');
 const MultiMutex = require('multimutex');
 
@@ -517,14 +518,7 @@ class ArchaeServer {
     });
 
     // bundles
-    child_process.fork(reactNativeCliBin, reactNativeCliArgs, {
-      // stdio: ['pipe', 'pipe', 'ignore', 'ipc'],
-    });
-
-    const reactNativeProxy = httpProxy.createProxyServer({
-      target: 'http://localhost:' + reactNativePort,
-    });
-
+    const bundleCache = {};
     app.get(/^\/archae\/(engines|plugins)\/([^\/]+?)\/([^\/]+?)(-worker)?\.js$/, (req, res, next) => {
       const {params} = req;
       const type = params[0];
@@ -533,17 +527,36 @@ class ArchaeServer {
       const worker = params[3];
 
       if (module === target) {
-        req.url = '/' + type + '/node_modules/' + module + '/' + (!worker ? 'client' : 'worker') + '.bundle?platform=vr';
-        reactNativeProxy.web(req, res);
+        const _respondOk = s => {
+          res.type('application/javascript');
+          res.send(s);
+        };
+
+        const entry = bundleCache[module];
+        if (entry !== undefined) {
+          _respondOk(entry);
+        } else {
+          rollup.rollup({
+            entry: __dirname + '/' + type + '/node_modules/' + module + '/' + (!worker ? 'client' : 'worker') + '.js',
+            plugins: [ nodeResolve({ jsnext: true, main: true }) ]
+          }).then(bundle => {
+            const result = bundle.generate({
+              format: 'iife',
+            });
+            const {code} = result;
+
+            bundleCache[module] = code;
+
+            _respondOk(code);
+          })
+          .catch(err => {
+            res.status(500);
+            res.send(err.stack);
+          });
+        }
       } else {
         next();
       }
-    });
-    app.get('/debug', (req, res, next) => {
-      reactNativeProxy.web(req, res);
-    });
-    app.get('/debug/bundles', (req, res, next) => {
-      reactNativeProxy.web(req, res);
     });
 
     // mount on server
