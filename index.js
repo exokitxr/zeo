@@ -228,6 +228,7 @@ class ArchaeServer {
 
   releasePlugin(plugin) {
     return new Promise((accept, reject) => {
+      _unmount
       _removeModule(plugin, 'plugins', err => {
         if (!err) {
           accept();
@@ -411,14 +412,14 @@ class ArchaeServer {
               cb();
             })
             .catch(err => {
-              this.engineApis[engine] = null;
+              /* this.engineApis[engine] = null; */
 
               cb(err);
             });
         })
         .catch(err => {
-          this.engineInstances[engine] = null;
-          this.engineApis[engine] = null;
+          /* this.engineInstances[engine] = null;
+          this.engineApis[engine] = null; */
 
           cb(err);
         });
@@ -472,14 +473,14 @@ class ArchaeServer {
               cb();
             })
             .catch(err => {
-              this.pluginApis[plugin] = null;
+              /* this.pluginApis[plugin] = null; */
 
               cb(err);
             });
         })
         .catch(err => {
-          this.pluginInstances[plugin] = null;
-          this.pluginApis[plugin] = null;
+          /* this.pluginInstances[plugin] = null;
+          this.pluginApis[plugin] = null; */
 
           cb(err);
         });
