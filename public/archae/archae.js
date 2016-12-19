@@ -429,15 +429,10 @@ class ArchaeClient {
               cb();
             })
             .catch(err => {
-              this.engineApis[engine] = null;
-
               cb(err);
             });
         })
         .catch(err => {
-          this.engineInstances[engine] = null;
-          this.engineApis[engine] = null;
-
           cb(err);
         });
     } else {
@@ -486,9 +481,6 @@ class ArchaeClient {
             });
         })
         .catch(err => {
-          /* this.pluginInstances[plugin] = null;
-          this.pluginApis[plugin] = null; */
-
           cb(err);
         });
     } else {
