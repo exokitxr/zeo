@@ -293,7 +293,7 @@ class ArchaeServer {
           });
         })
         .catch(err => {
-          unlockCb(err);
+          cb(err);
         });
     });
   }
@@ -717,7 +717,7 @@ class ArchaeServer {
               const {plugin} = args;
 
               if (_isValidModule(plugin)) {
-                this.releasePlugin(engine)
+                this.releasePlugin(plugin)
                   .then(() => {
                     cb();
                   })
