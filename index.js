@@ -689,7 +689,9 @@ class ArchaeServer {
 
               if (_isValidModule(engine)) {
                 this.releaseEngine(engine)
-                  .then(engineName => {
+                  .then(result => {
+                    const {engineName} = result;
+
                     cb(null, {
                       engineName,
                     });
@@ -724,7 +726,9 @@ class ArchaeServer {
 
               if (_isValidModule(plugin)) {
                 this.releasePlugin(plugin)
-                  .then(pluginName => {
+                  .then(result => {
+                    const {pluginName} = result;
+
                     cb(null, {
                       pluginName,
                     });
