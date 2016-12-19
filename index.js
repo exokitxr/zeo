@@ -132,43 +132,45 @@ class ArchaeServer {
 
   releaseEngine(engine) {
     return new Promise((accept, reject) => {
-      const cb = err => {
+      const cb = (err, result) => {
         if (!err) {
-          accept();
+          accept(result);
         } else {
           reject(err);
         }
       };
 
-      this.enginesMutex.lock(engine) // XXX fetch the plugin name first
-        .then(unlock => {
-          const unlockCb = (cb => (err, result) => {
-            cb(err, result);
+      _getModuleRealName(engine, 'engines', (err, engineName) => {
+        this.enginesMutex.lock(engineName)
+          .then(unlock => {
+            const unlockCb = (cb => (err, result) => {
+              cb(err, result);
 
-            unlock();
-          })(cb);
+              unlock();
+            })(cb);
 
-          this.unmountModule(engine, this.engineInstances, this.engineApis, err => {
-            if (!err) {
-              this.unloadModule(engine, this.engines);
+            this.unmountModule(engineName, this.engineInstances, this.engineApis, err => {
+              if (!err) {
+                this.unloadModule(engineName, this.engines);
 
-              _removeModule(engine, 'engines', () => {
-                if (!err) {
-                  unlockCb(null, {
-                    engineName: engine,
-                  });
-                } else {
-                  unlockCb(err);
-                }
-              });
-            } else {
-              unlockCb(err);
-            }
+                _removeModule(engineName, 'engines', () => {
+                  if (!err) {
+                    unlockCb(null, {
+                      engineName,
+                    });
+                  } else {
+                    unlockCb(err);
+                  }
+                });
+              } else {
+                unlockCb(err);
+              }
+            });
+          })
+          .catch(err => {
+            unlockCb(err);
           });
-        })
-        .catch(err => {
-          unlockCb(err);
-        });
+      });
     });
   }
 
@@ -258,43 +260,45 @@ class ArchaeServer {
 
   releasePlugin(plugin) {
     return new Promise((accept, reject) => {
-      const cb = err => {
+      const cb = (err, result) => {
         if (!err) {
-          accept();
+          accept(result);
         } else {
           reject(err);
         }
       };
 
-      this.pluginsMutex.lock(plugin) // XXX fetch the plugin name first
-        .then(unlock => {
-          const unlockCb = (cb => (err, result) => {
-            cb(err, result);
+      _getModuleRealName(plugin, 'plugins', (err, pluginName) => {
+        this.pluginsMutex.lock(pluginName)
+          .then(unlock => {
+            const unlockCb = (cb => (err, result) => {
+              cb(err, result);
 
-            unlock();
-          })(cb);
+              unlock();
+            })(cb);
 
-          this.unmountModule(plugin, this.pluginInstances, this.pluginApis, err => {
-            if (!err) {
-              this.unloadModule(plugin, this.plugins);
+            this.unmountModule(pluginName, this.pluginInstances, this.pluginApis, err => {
+              if (!err) {
+                this.unloadModule(pluginName, this.plugins);
 
-              _removeModule(plugin, 'plugins', err => {
-                if (!err) {
-                  unlockCb(null, {
-                    pluginName: plugin,
-                  });
-                } else {
-                  unlockCb(err);
-                }
-              });
-            } else {
-              unlockCb(err);
-            }
+                _removeModule(pluginName, 'plugins', err => {
+                  if (!err) {
+                    unlockCb(null, {
+                      pluginName,
+                    });
+                  } else {
+                    unlockCb(err);
+                  }
+                });
+              } else {
+                unlockCb(err);
+              }
+            });
+          })
+          .catch(err => {
+            cb(err);
           });
-        })
-        .catch(err => {
-          cb(err);
-        });
+      });
     });
   }
 
@@ -685,8 +689,10 @@ class ArchaeServer {
 
               if (_isValidModule(engine)) {
                 this.releaseEngine(engine)
-                  .then(() => {
-                    cb();
+                  .then(engineName => {
+                    cb(null, {
+                      engineName,
+                    });
                   })
                   .catch(err => {
                     cb(err);
@@ -718,8 +724,10 @@ class ArchaeServer {
 
               if (_isValidModule(plugin)) {
                 this.releasePlugin(plugin)
-                  .then(() => {
-                    cb();
+                  .then(pluginName => {
+                    cb(null, {
+                      pluginName,
+                    });
                   })
                   .catch(err => {
                     cb(err);
