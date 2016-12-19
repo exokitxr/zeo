@@ -252,8 +252,15 @@ class ArchaeClient {
         if (!err) {
           const {pluginName} = result;
 
-          this.unmountPlugin(pluginName);
-          this.unloadPlugin(pluginName);
+          this.unmountPlugin(pluginName, err => {
+            if (err) {
+              console.warn(err);
+            }
+
+            this.unloadPlugin(pluginName);
+
+            accept();
+          });
         } else {
           reject(err);
         }
@@ -493,12 +500,20 @@ class ArchaeClient {
     }
   }
 
-  unmountPlugin() {
+  unmountPlugin(plugin, cb) {
     const pluginInstance = this.pluginInstances[plugin];
 
-    delete this.pluginInstances[plugin];
-    delete this.pluginApis[plugin];
-    this.moduleInstances.delete(pluginInstance);
+    Promise.resolve(typeof pluginInstance.unmount === 'function' ? pluginInstance.unmount() : null)
+      .then(() => {
+        delete this.pluginInstances[plugin];
+        delete this.pluginApis[plugin];
+        this.moduleInstances.delete(pluginInstance);
+
+        cb();
+      })
+      .catch(err => {
+        cb(err);
+      });
   }
 
   getCore() {
