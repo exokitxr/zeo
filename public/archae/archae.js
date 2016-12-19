@@ -102,7 +102,7 @@ class ArchaeClient {
     this.pluginInstances = {};
     this.pluginApis = {};
 
-    this.moduleInstances = new Map();
+    this.moduleDescriptors = new Map();
 
     this.enginesMutex = new MultiMutex();
     this.pluginsMutex = new MultiMutex();
@@ -170,13 +170,23 @@ class ArchaeClient {
     return Promise.all(requestEnginePromises);
   }
 
-  removeEngine(engine) {
+  releaseEngine(engine) {
     return new Promise((accept, reject) => {
-      this.request('removeEngine', {
+      this.request('releaseEngine', {
         engine,
-      }, err => {
+      }, (err, result) => {
         if (!err) {
-          accept();
+          const {engineName} = result;
+
+          this.unmountEngine(engineName, err => {
+            if (err) {
+              console.warn(err);
+            }
+
+            this.unloadEngine(engineName);
+
+            accept();
+          });
         } else {
           reject(err);
         }
@@ -270,10 +280,10 @@ class ArchaeClient {
 
   requestWorker(moduleInstance, options = {}) {
     return new Promise((accept, reject) => {
-      const moduleInstanceSpec = this.moduleInstances.get(moduleInstance);
+      const moduleDescriptor = this.moduleDescriptors.get(moduleInstance);
 
-      if (moduleInstanceSpec) {
-        const {type, name} = moduleInstanceSpec;
+      if (moduleDescriptor) {
+        const {type, name} = moduleDescriptor;
         const {count = 1} = options;
 
         const responseListeners = new Map();
@@ -378,38 +388,12 @@ class ArchaeClient {
     this.connect();
   }
 
-  loadModule(module, type, target, exports, cb) {
-    if (!exports[module]) {
-      global.module = {};
-
-      _loadScript('/archae/' + type + '/' + module + '/' + target + '.js')
-        .then(() => {
-          console.log('module loaded:', type + '/' + module);
-
-          exports[module] = global.module.exports;
-
-          global.module = {};
-
-          cb(null, {
-            loaded: true,
-          });
-        })
-        .catch(err => {
-          cb(err);
-        });
-    } else {
-      cb(null, {
-        loaded: false,
-      });
-    }
-  }
-
-  unloadModule(module, exports) {
-    delete exports[module];
-  }
-
   loadEngine(engine, cb) {
     this.loadModule(engine, 'engines', engine, this.engines, cb);
+  }
+
+  unloadEngine(engine) {
+    this.unloadModule(engine, this.engines);
   }
 
   mountEngine(engine, cb) {
@@ -419,7 +403,7 @@ class ArchaeClient {
       Promise.resolve(_instantiate(engineModule, this))
         .then(engineInstance => {
           this.engineInstances[engine] = engineInstance;
-          this.moduleInstances.set(engineInstance, {
+          this.moduleDescriptors.set(engineInstance, {
             type: 'engines',
             name: engine,
           });
@@ -452,6 +436,10 @@ class ArchaeClient {
     }
   }
 
+  unmountEngine(engine, cb) {
+    this.unmountModule(engine, engineInstances, engineApis, this.moduleDescriptors, cb);
+  }
+
   loadPlugin(plugin, cb) {
     this.loadModule(plugin, 'plugins', plugin, this.plugins, cb);
   }
@@ -467,7 +455,7 @@ class ArchaeClient {
       Promise.resolve(_instantiate(pluginModule, this))
         .then(pluginInstance => {
           this.pluginInstances[plugin] = pluginInstance;
-          this.moduleInstances.set(pluginInstance, {
+          this.moduleDescriptors.set(pluginInstance, {
             type: 'plugins',
             name: plugin,
           });
@@ -501,13 +489,49 @@ class ArchaeClient {
   }
 
   unmountPlugin(plugin, cb) {
-    const pluginInstance = this.pluginInstances[plugin];
+    this.unmountModule(plugin, pluginInstances, pluginApis, this.moduleDescriptors, cb);
+  }
 
-    Promise.resolve(typeof pluginInstance.unmount === 'function' ? pluginInstance.unmount() : null)
+  loadModule(module, type, target, exports, cb) {
+    if (!exports[module]) {
+      global.module = {};
+
+      _loadScript('/archae/' + type + '/' + module + '/' + target + '.js')
+        .then(() => {
+          console.log('module loaded:', type + '/' + module);
+
+          exports[module] = global.module.exports;
+
+          global.module = {};
+
+          cb(null, {
+            loaded: true,
+          });
+        })
+        .catch(err => {
+          cb(err);
+        });
+    } else {
+      cb(null, {
+        loaded: false,
+      });
+    }
+  }
+
+  unloadModule(module, exports) {
+    delete exports[module];
+  }
+
+  // XXX port mountMoudule()
+
+  unmountModule(module, moduleInstances, moduleApis, moduleDescriptors, cb) {
+    const moduleInstance = this.pluginInstances[plugin];
+
+    Promise.resolve(typeof moduleInstance.unmount === 'function' ? moduleInstance.unmount() : null)
       .then(() => {
-        delete this.pluginInstances[plugin];
-        delete this.pluginApis[plugin];
-        this.moduleInstances.delete(pluginInstance);
+        delete moduleInstances[module];
+        delete moduleApis[module];
+        moduleDescriptors.delete(moduleInstance);
 
         cb();
       })

@@ -140,7 +140,7 @@ class ArchaeServer {
         }
       };
 
-      this.enginesMutex.lock(engine)
+      this.enginesMutex.lock(engine) // XXX fetch the plugin name first
         .then(unlock => {
           const unlockCb = (cb => (err, result) => {
             cb(err, result);
@@ -152,7 +152,15 @@ class ArchaeServer {
             if (!err) {
               this.unloadModule(engine, this.engines);
 
-              _removeModule(engine, 'engines', unlockCb);
+              _removeModule(engine, 'engines', () => {
+                if (!err) {
+                  unlockCb(null, {
+                    engineName: engine,
+                  });
+                } else {
+                  unlockCb(err);
+                }
+              });
             } else {
               unlockCb(err);
             }
@@ -258,7 +266,7 @@ class ArchaeServer {
         }
       };
 
-      this.pluginsMutex.lock(plugin)
+      this.pluginsMutex.lock(plugin) // XXX fetch the plugin name first
         .then(unlock => {
           const unlockCb = (cb => (err, result) => {
             cb(err, result);
@@ -270,7 +278,15 @@ class ArchaeServer {
             if (!err) {
               this.unloadModule(plugin, this.plugins);
 
-              _removeModule(plugin, 'plugins', unlockCb);
+              _removeModule(plugin, 'plugins', err => {
+                if (!err) {
+                  unlockCb(null, {
+                    pluginName: plugin,
+                  });
+                } else {
+                  unlockCb(err);
+                }
+              });
             } else {
               unlockCb(err);
             }
