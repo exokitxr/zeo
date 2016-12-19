@@ -132,21 +132,35 @@ class ArchaeServer {
 
   releaseEngine(engine) {
     return new Promise((accept, reject) => {
-      this.unmountModule(engine, this.engineInstances, this.engineApis, err => {
+      const cb = err => {
         if (!err) {
-          this.unloadModule(engine, this.engines);
-
-          _removeModule(engine, 'engines', err => {
-            if (!err) {
-              accept();
-            } else {
-              reject(err);
-            }
-          });
+          accept();
         } else {
           reject(err);
         }
-      });
+      };
+
+      this.enginesMutex.lock(engine)
+        .then(unlock => {
+          const unlockCb = (cb => (err, result) => {
+            cb(err, result);
+
+            unlock();
+          })(cb);
+
+          this.unmountModule(engine, this.engineInstances, this.engineApis, err => {
+            if (!err) {
+              this.unloadModule(engine, this.engines);
+
+              _removeModule(engine, 'engines', unlockCb);
+            } else {
+              unlockCb(err);
+            }
+          });
+        })
+        .catch(err => {
+          unlockCb(err);
+        });
     });
   }
 
@@ -236,21 +250,35 @@ class ArchaeServer {
 
   releasePlugin(plugin) {
     return new Promise((accept, reject) => {
-      this.unmountModule(plugin, this.pluginInstances, this.pluginApis, err => {
+      const cb = err => {
         if (!err) {
-          this.unloadModule(plugin, this.plugins);
-
-          _removeModule(plugin, 'plugins', err => {
-            if (!err) {
-              accept();
-            } else {
-              reject(err);
-            }
-          });
+          accept();
         } else {
           reject(err);
         }
-      });
+      };
+
+      this.pluginsMutex.lock(plugin)
+        .then(unlock => {
+          const unlockCb = (cb => (err, result) => {
+            cb(err, result);
+
+            unlock();
+          })(cb);
+
+          this.unmountModule(plugin, this.pluginInstances, this.pluginApis, err => {
+            if (!err) {
+              this.unloadModule(plugin, this.plugins);
+
+              _removeModule(plugin, 'plugins', unlockCb);
+            } else {
+              unlockCb(err);
+            }
+          });
+        })
+        .catch(err => {
+          unlockCb(err);
+        });
     });
   }
 
