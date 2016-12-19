@@ -132,9 +132,17 @@ class ArchaeServer {
 
   releaseEngine(engine) {
     return new Promise((accept, reject) => {
-      _removeModule(engine, 'engines', err => {
+      this.unmountModule(engine, this.engineInstances, this.engineApis, err => {
         if (!err) {
-          accept();
+          this.unloadModule(engine, this.engines);
+
+          _removeModule(engine, 'engines', err => {
+            if (!err) {
+              accept();
+            } else {
+              reject(err);
+            }
+          });
         } else {
           reject(err);
         }
@@ -228,10 +236,17 @@ class ArchaeServer {
 
   releasePlugin(plugin) {
     return new Promise((accept, reject) => {
-      _unmount
-      _removeModule(plugin, 'plugins', err => {
+      this.unmountModule(plugin, this.pluginInstances, this.pluginApis, err => {
         if (!err) {
-          accept();
+          this.unloadModule(plugin, this.plugins);
+
+          _removeModule(plugin, 'plugins', err => {
+            if (!err) {
+              accept();
+            } else {
+              reject(err);
+            }
+          });
         } else {
           reject(err);
         }
@@ -408,6 +423,10 @@ class ArchaeServer {
     });
   }
 
+  unloadModule(module, exports) {
+    delete exports[module];
+  }
+
   mountModule(module, exports, exportInstances, exportApis, cb) {
     const moduleRequire = exports[module];
 
@@ -443,6 +462,21 @@ class ArchaeServer {
 
       cb();
     }
+  }
+
+  unmountModule(module, exportInstances, exportApis, cb) {
+    const moduleInstance = exportInstances[module];
+
+    Promise.resolve(typeof moduleInstance.unmount === 'function' ? moduleInstance.unmount : null)
+      .then(() => {
+        delete exportInstances[module];
+        delete exportApis[module];
+
+        cb();
+      })
+      .catch(err => {
+        cb(err);
+      });
   }
 
   getCore() {
@@ -602,11 +636,11 @@ class ArchaeServer {
                 const err = new Error('invalid engine spec');
                 cb(err);
               }
-            } else if (method === 'removeEngine') {
+            } else if (method === 'releaseEngine') {
               const {engine} = args;
 
               if (_isValidModule(engine)) {
-                this.removeEngine(engine)
+                this.releaseEngine(engine)
                   .then(() => {
                     cb();
                   })
@@ -940,6 +974,7 @@ const _loadCerts = () => {
 };
 
 const _instantiate = (fn, arg) => _isConstructible(fn) ? new fn(arg) : fn(arg);
+const _uninstantiate = api => (typeof api.unmount === 'function') ? api.unmount() : null;
 const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/.test(fn.toString());
 
 const _removeModule = (module, type, cb) => {
