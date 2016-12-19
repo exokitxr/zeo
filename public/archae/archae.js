@@ -246,7 +246,7 @@ class ArchaeClient {
 
   releasePlugin(plugin) {
     return new Promise((accept, reject) => {
-      this.request('releasePlugin', { // XXX implement this
+      this.request('releasePlugin', {
         plugin,
       }, (err, result) => {
         if (!err) {
