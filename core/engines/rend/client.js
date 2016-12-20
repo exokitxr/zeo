@@ -263,36 +263,7 @@ class Rend {
             let inputValue = 0;
             let sliderValue = 0.5;
 
-            const readme = `${showdownConverter.makeHtml(heredoc.strip(() => {/*
-three.js
-========
-
-[![Latest NPM release][npm-badge]][npm-badge-url]
-[![License][license-badge]][license-badge-url]
-[![Dependencies][dependencies-badge]][dependencies-badge-url]
-[![Dev Dependencies][devDependencies-badge]][devDependencies-badge-url]
-
-#### JavaScript 3D library ####
-
-The aim of the project is to create an easy to use, lightweight, 3D library. The library provides &lt;canvas&gt;, &lt;svg&gt;, CSS3D and WebGL renderers.
-
-[Examples](http://threejs.org/examples/) &mdash;
-[Documentation](http://threejs.org/docs/) &mdash;
-[Wiki](https://github.com/mrdoob/three.js/wiki) &mdash;
-[Migrating](https://github.com/mrdoob/three.js/wiki/Migration) &mdash;
-[Help](http://stackoverflow.com/questions/tagged/three.js)
-
-### Usage ###
-
-Download the [minified library](http://threejs.org/build/three.min.js) and include it in your html.
-Alternatively see [how to build the library yourself](https://github.com/mrdoob/three.js/wiki/Build-instructions).
-
-```html
-<script src="js/three.min.js"></script>
-```
-
-This code creates a scene, a camera, and a geometric cube, and it adds the cube to the scene. It then creates a `WebGL` renderer for the scene and camera, and it adds that viewport to the document.body element. Finally it animates the cube within the scene for the camera.
-*/})).replace(/&mdash;/g, '-').replace(/\n+/g, ' ')}`;
+            const readme = `${_renderMarkdown(readmeText)/*.replace(/<code /g, '<code style="display: block; white-space: pre-wrap; width: 300px; overflow: hidden;" ')*/}`;
             const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
@@ -439,12 +410,20 @@ ${installed ?
                   type: 'iv1',
                   value: null,
                 },
-                textureUvs: {
+                texturePositions: {
                   type: 'v2v',
                   value: null,
                 },
                 textureDimensions: {
                   type: 'v2v',
+                  value: null,
+                },
+                textureOffsets: {
+                  type: 'fv1',
+                  value: null,
+                },
+                textureClips: {
+                  type: 'fv1',
                   value: null,
                 },
               },
@@ -458,8 +437,10 @@ ${installed ?
               fragmentShader: [
                 "uniform sampler2D textures[" + maxNumTextures + "];",
                 "uniform int validTextures[" + maxNumTextures + "];",
-                "uniform vec2 textureUvs[" + maxNumTextures + "];",
+                "uniform vec2 texturePositions[" + maxNumTextures + "];",
                 "uniform vec2 textureDimensions[" + maxNumTextures + "];",
+                "uniform float textureOffsets[" + maxNumTextures + "];",
+                "uniform float textureClips[" + maxNumTextures + "];",
                 "varying vec2 vUv;",
                 "void main() {",
                 "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
@@ -469,8 +450,8 @@ ${installed ?
                 "  for (int i = 0; i < " + maxNumTextures + "; i++) {",
                 "    if (validTextures[i] != 0) {",
                 "      vec2 uv = vec2(",
-                "        (vUv.x - textureUvs[i].x) / textureDimensions[i].x,",
-                "        1.0 - (((1.0 - vUv.y) - textureUvs[i].y) / textureDimensions[i].y)",
+                "        (vUv.x - texturePositions[i].x) / textureDimensions[i].x,",
+                "        1.0 - (((1.0 - vUv.y) - texturePositions[i].y) / textureDimensions[i].y)",
                 "      );",
                 "      if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
                 "        vec4 sample = texture2D(textures[i], uv);",
@@ -581,7 +562,7 @@ ${installed ?
                       }
                       return result;
                     })();
-                    shaderUniforms.textureUvs.value = (() => {
+                    shaderUniforms.texturePositions.value = (() => {
                       const result = Array(2 * maxNumTextures);
                       for (let i = 0; i < maxNumTextures; i++) {
                         result[(i * 2) + 0] = 0;
@@ -594,6 +575,20 @@ ${installed ?
                       for (let i = 0; i < maxNumTextures; i++) {
                         result[(i * 2) + 0] = 0;
                         result[(i * 2) + 1] = 0;
+                      }
+                      return result;
+                    })();
+                    shaderUniforms.textureOffsets.value = (() => {
+                      const result = Array(maxNumTextures);
+                      for (let i = 0; i < maxNumTextures; i++) {
+                        result[i] = 0;
+                      }
+                      return result;
+                    })();
+                    shaderUniforms.textureClips.value = (() => {
+                      const result = Array(maxNumTextures);
+                      for (let i = 0; i < maxNumTextures; i++) {
+                        result[i] = 0;
                       }
                       return result;
                     })();
@@ -854,7 +849,7 @@ ${installed ?
                 updates.push(() => {
                   const _updateMenuMesh = () => {
                     const {planeMesh: {imageMaterial}} = menuMesh;
-                    const {uniforms: {texture, textures, validTextures, textureUvs, textureDimensions}} = imageMaterial;
+                    const {uniforms: {texture, textures, validTextures, texturePositions, textureDimensions, textureOffsets, textureClips}} = imageMaterial;
 
                     const layers = ui.getLayers();
                     const worldTime = currentWorld.getWorldTime();
@@ -870,10 +865,12 @@ ${installed ?
                         }
 
                         const position = layer.getPosition();
-                        textureUvs.value[(i * 2) + 0] = position.x;
-                        textureUvs.value[(i * 2) + 1] = position.y;
+                        texturePositions.value[(i * 2) + 0] = position.x;
+                        texturePositions.value[(i * 2) + 1] = position.y;
                         textureDimensions.value[(i * 2) + 0] = position.w;
                         textureDimensions.value[(i * 2) + 1] = position.h;
+                        textureOffsets.value[i] = position.st;
+                        textureClips.value[i] = position.ch;
                       } else {
                         validTextures.value[i] = 0;
                       }
@@ -1022,5 +1019,98 @@ ${installed ?
     this._cleanup();
   }
 }
+
+const readmeText = heredoc.strip(() => {/*
+three.js
+========
+
+[![Latest NPM release][npm-badge]][npm-badge-url]
+[![License][license-badge]][license-badge-url]
+[![Dependencies][dependencies-badge]][dependencies-badge-url]
+[![Dev Dependencies][devDependencies-badge]][devDependencies-badge-url]
+
+#### JavaScript 3D library ####
+
+The aim of the project is to create an easy to use, lightweight, 3D library. The library provides &lt;canvas&gt;, &lt;svg&gt;, CSS3D and WebGL renderers.
+
+[Examples](http://threejs.org/examples/) &mdash;
+[Documentation](http://threejs.org/docs/) &mdash;
+[Wiki](https://github.com/mrdoob/three.js/wiki) &mdash;
+[Migrating](https://github.com/mrdoob/three.js/wiki/Migration) &mdash;
+[Help](http://stackoverflow.com/questions/tagged/three.js)
+
+### Usage ###
+
+Download the [minified library](http://threejs.org/build/three.min.js) and include it in your html.
+Alternatively see [how to build the library yourself](https://github.com/mrdoob/three.js/wiki/Build-instructions).
+
+```html
+<script src="js/three.min.js"></script>
+```
+
+This code creates a scene, a camera, and a geometric cube, and it adds the cube to the scene. It then creates a `WebGL` renderer for the scene and camera, and it adds that viewport to the document.body element. Finally it animates the cube within the scene for the camera.
+
+```javascript
+var scene, camera, renderer;
+var geometry, material, mesh;
+
+init();
+animate();
+
+function init() {
+
+	scene = new THREE.Scene();
+
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+	camera.position.z = 1000;
+
+	geometry = new THREE.BoxGeometry( 200, 200, 200 );
+	material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+
+	mesh = new THREE.Mesh( geometry, material );
+	scene.add( mesh );
+
+	renderer = new THREE.WebGLRenderer();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+	document.body.appendChild( renderer.domElement );
+
+}
+
+function animate() {
+
+	requestAnimationFrame( animate );
+
+	mesh.rotation.x += 0.01;
+	mesh.rotation.y += 0.02;
+
+	renderer.render( scene, camera );
+
+}
+```
+
+If everything went well you should see [this](http://jsfiddle.net/hfj7gm6t/).
+
+### Change log ###
+
+[releases](https://github.com/mrdoob/three.js/releases)
+
+
+
+[npm-badge]: https://img.shields.io/npm/v/three.svg
+[npm-badge-url]: https://www.npmjs.com/package/three
+[license-badge]: https://img.shields.io/npm/l/three.svg
+[license-badge-url]: ./LICENSE
+[dependencies-badge]: https://img.shields.io/david/mrdoob/three.js.svg
+[dependencies-badge-url]: https://david-dm.org/mrdoob/three.js
+[devDependencies-badge]: https://img.shields.io/david/dev/mrdoob/three.js.svg
+[devDependencies-badge-url]: https://david-dm.org/mrdoob/three.js#info=devDependencies
+*/});
+const _renderMarkdown = s =>
+  showdownConverter
+    .makeHtml(s)
+    .replace(/&mdash;/g, '-')
+    .replace(/(<code\s*[^>]*?>)([^>]*?)(<\/code>)/g, (all, start, mid, end) => start + mid.replace(/\n/g, '<br/>') + end)
+    .replace(/\n+/g, ' ');
 
 module.exports = Rend;
