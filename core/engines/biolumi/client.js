@@ -98,7 +98,9 @@ class Biolumi {
                         const as = el.querySelectorAll('a');
                         for (let i = 0; i < as.length; i++) {
                           const a = as[i];
-                          a.style.textDecoration = 'underline';
+                          if (!a.style.textDecoration) {
+                            a.style.textDecoration = 'underline';
+                          }
                         }
                         return new XMLSerializer().serializeToString(el);
                       })();
