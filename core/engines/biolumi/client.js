@@ -90,11 +90,22 @@ class Biolumi {
                     if (type === 'html') {
                       const {src, x = 0, y = 0, w = width, h = height, scroll = false} = layerSpec;
 
+                      const decoratedSrc = (() => {
+                        const el = document.createElement('div');
+                        el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+                        el.setAttribute('style', rootCss);
+                        el.innerHTML = src;
+                        const as = el.querySelectorAll('a');
+                        for (let i = 0; i < as.length; i++) {
+                          const a = as[i];
+                          a.style.textDecoration = 'underline';
+                        }
+                        return new XMLSerializer().serializeToString(el);
+                      })();
+
                       const svgInnerSrc = '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
                         styleTag +
-                        '<div xmlns="http://www.w3.org/1999/xhtml" style=\'' + rootCss + '\'>' +
-                          src +
-                        '</div>' +
+                        decoratedSrc +
                       '</foreignObject>';
                       const el = (() => {
                         const el = document.createElement('svg');
