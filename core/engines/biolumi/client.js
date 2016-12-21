@@ -85,7 +85,7 @@ class Biolumi {
 
                   for (let i = 0; i < layersSpec.length; i++) {
                     const layerSpec = layersSpec[i];
-                    const {type} = layerSpec;
+                    const {type = 'html'} = layerSpec;
 
                     if (type === 'html') {
                       const {src, x = 0, y = 0, w = width, h = height, scroll = false} = layerSpec;
@@ -163,7 +163,7 @@ class Biolumi {
                       layer.w = w;
                       layer.h = h;
                       layer.scrollHeight = scrollHeight;
-                      layer.scrollTop = 0;
+                      layer.scroll = scroll;
                       layers.push(layer);
                     } else if (type === 'image') {
                       let {img: imgs} = layerSpec;
@@ -184,7 +184,6 @@ class Biolumi {
                         layer.w = w;
                         layer.h = h;
                         layer.scrollHeight = h;
-                        layer.scrollTop = 0;
                         layer.numFrames = imgs.length;
                         layer.frameIndex = j;
                         layer.frameTime = frameTime;
@@ -210,6 +209,7 @@ class Biolumi {
                 this.w = width;
                 this.h = height;
                 this.scrollHeight = height;
+                this.scroll = false;
                 this.scrollTop = 0;
                 this.numFrames = 1;
                 this.frameIndex = 0;
@@ -236,8 +236,20 @@ class Biolumi {
                   parent.y + (this.y / height),
                   this.w / width,
                   this.scrollHeight / height,
-                  this.scrollTop / height,
-                  this.h / height
+                  this.scrollTop / height/*,
+                  this.h / height */
+                );
+              }
+
+              getRect() {
+                const position = this.getPosition();
+                const {x: px, y: py, w: pw, h: ph} = position;
+
+                return new Rect(
+                  clamp(py * height, 0, height),
+                  clamp((py + ph) * height, 0, height),
+                  clamp(px * width, 0, width),
+                  clamp((px + pw) * width, 0, width)
                 );
               }
 
@@ -274,13 +286,13 @@ class Biolumi {
             }
 
             class Position {
-              constructor(x, y, w, h, st, ch) {
+              constructor(x, y, w, h, st/*, ch*/) {
                 this.x = x; // x position
                 this.y = y; // y position
                 this.w = w; // texture data width
                 this.h = h; // texture data height
                 this.st = st; // scroll top
-                this.ch = ch; // clip height
+                // this.ch = ch; // clip height
               }
             }
 

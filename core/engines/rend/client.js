@@ -636,6 +636,7 @@ ${getHeaderSrc('preferences', '', '', true)}
                   const mesh = new THREE.Mesh(geometry, wireframeMaterial);
                   mesh.visible = false;
                   // mesh.renderOrder = -1;
+                  mesh.scrollLayer = null;
                   mesh.anchor = null;
                   return mesh;
                 })();
@@ -860,6 +861,24 @@ ${getHeaderSrc('preferences', '', '', true)}
                   }
                 };
                 window.addEventListener('click', click);
+                const mousedown = () => {
+                  const {scrollLayer} = boxMesh;
+                  if (scrollLayer) {
+                    console.log('mousedown scroll layer', scrollLayer);
+                  } else {
+                    console.log('mousedown no scroll layer');
+                  }
+                };
+                window.addEventListener('mousedown', mousedown);
+                const mouseup = () => {
+                  const {scrollLayer} = boxMesh;
+                  if (scrollLayer) {
+                    console.log('mouseup scroll layer', scrollLayer);
+                  } else {
+                    console.log('mouseup no scroll layer');
+                  }
+                };
+                window.addEventListener('mouseup', mouseup);
 
                 cleanups.push(() => {
                   scene.remove(menuMesh);
@@ -867,6 +886,8 @@ ${getHeaderSrc('preferences', '', '', true)}
                   scene.remove(dotMesh);
 
                   window.removeEventListener('click', click);
+                  window.removeEventListener('mousedown', mousedown);
+                  window.removeEventListener('mouseup', mouseup);
                 });
 
                 updates.push(() => {
@@ -937,6 +958,32 @@ ${getHeaderSrc('preferences', '', '', true)}
                           ).applyQuaternion(menuRotation)
                         );
 
+                      const scrollLayerBoxes = ui.getLayers()
+                        .filter(layer => layer.scroll)
+                        .map(layer => {
+                          const rect = layer.getRect();
+                          const layerBox = new THREE.Box3().setFromPoints([
+                            _getPlanePoint(rect.left, rect.top, -WORLD_DEPTH),
+                            _getPlanePoint(rect.right, rect.bottom, WORLD_DEPTH),
+                          ]);
+                          layerBox.layer = layer;
+                          return layerBox;
+                        });
+                      const scrollLayerBox = (() => {
+                        for (let i = 0; i < scrollLayerBoxes.length; i++) {
+                          const layerBox = scrollLayerBoxes[i];
+                          if (layerBox.containsPoint(intersectionPoint)) {
+                            return layerBox;
+                          }
+                        }
+                        return null;
+                      })();
+                      if (scrollLayerBox) {
+                        boxMesh.scrollLayer = scrollLayerBox.layer;
+                      } else {
+                        boxMesh.scrollLayer = null;
+                      }
+
                       const anchorBoxes = (() => {
                         const result = [];
                         const layers = ui.getLayers();
@@ -966,13 +1013,8 @@ ${getHeaderSrc('preferences', '', '', true)}
                             return anchorBox;
                           }
                         }
-
                         return null;
                       })();
-
-                      // render
-                      dotMesh.position.copy(intersectionPoint);
-
                       if (anchorBox) {
                         boxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
                         boxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
@@ -1000,6 +1042,8 @@ ${getHeaderSrc('preferences', '', '', true)}
                           boxMesh.visible = false;
                         }
                       }
+
+                      dotMesh.position.copy(intersectionPoint);
                     }
                   };
 
