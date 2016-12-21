@@ -267,33 +267,33 @@ class Rend {
             const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
-<div style="display: flex;">
-${getMainSidebarSrc()}
-<div style="width: ${WIDTH - 500}px;"></div>
-</div>
+  <div style="display: flex;">
+    ${getMainSidebarSrc()}
+    <div style="width: ${WIDTH - 500}px;"></div>
+  </div>
 </div>
 `;
             const getReadmeSrc = () => `\
 <div style="width: ${WIDTH - 500}px; height: ${HEIGHT - (150 + 2)}px;">
-${readme}
+  ${readme}
 </div>
 `;
             const getInputSrc = (inputText, inputValue) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
-<a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onclick="input">
-<div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
-<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>
-<div>${inputText}</div>
-</a>
+  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onclick="input">
+    <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
+    <div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>
+    <div>${inputText}</div>
+  </a>
 </div>
 `;
             const getSliderSrc = sliderValue => `\
 <div style="position: relative; width ${WIDTH - (500 + 40)}px; height: 100px;">
-<a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="resolution">
-<div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
-<div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
-</div>
-</a>
+  <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="resolution">
+    <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
+    <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
+    </div>
+  </a>
 </div>
 `;
             const getModsPageSrc = ({mods}) => {
@@ -302,102 +302,105 @@ ${readme}
 
               const getModSrc = mod => `\
 <a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;" onclick="mod:${mod.name}">
-<img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" style="width: 100px; height: 100px; image-rendering: pixelated;" />
-<div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
-<div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</div>
-<div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${mod.description}</div>
-</div>
+  <img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" style="width: 100px; height: 100px; image-rendering: pixelated;" />
+  <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
+    <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</div>
+    <div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${mod.description}</div>
+  </div>
 </a>`;
               const getModsSrc = mods => `\
 <div style="width: inherit; float: left; clear: both;">
-${mods.map(getModSrc).join('\n')}
+  ${mods.map(getModSrc).join('\n')}
 </div>
 `;
 
               return `\
 ${getHeaderSrc('mods', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
-<div style="display: flex;">
-${getModsSidebarSrc()}
-<div style="width: ${WIDTH - 500}px; clear: both;">
-<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
-${getModsSrc(installedMods)}
-<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
-${getModsSrc(availableMods)}
-</div>
-</div>
+  <div style="display: flex;">
+    ${getModsSidebarSrc()}
+    <div style="width: ${WIDTH - 500}px; clear: both;">
+      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
+      ${getModsSrc(installedMods)}
+      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
+      ${getModsSrc(availableMods)}
+    </div>
+  </div>
 </div>
 `;
             };
             const getModPageSrc = ({name, version, installed}) => `\
 ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
+<div style="position: absolute; top: 0; right: 0; height: 50px; width: 50px; background-color: red;"></div>
+<div style="position: absolute; top: 0; right: 50px; height: 100px; width: 50px; background-color: red;"></div>
+<div style="position: absolute; top: 0; right: 100px; height: 150px; width: 50px; background-color: red;"></div>
 <div style="height: ${HEIGHT - (150 + 2)}px;">
-<div style="display: flex;">
-${getModSidebarSrc()}
-${getReadmeSrc()}
-</div>
+  <div style="display: flex;">
+    ${getModSidebarSrc()}
+    ${getReadmeSrc()}
+  </div>
 </div>
 `;
             const getConfigPageSrc = () => `\
 ${getHeaderSrc('preferences', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
-<div style="display: flex;">
-${getConfigSidebarSrc()}
-<div style="width: ${WIDTH - 500}px;"></div>
-</div>
+  <div style="display: flex;">
+    ${getConfigSidebarSrc()}
+    <div style="width: ${WIDTH - 500}px;"></div>
+  </div>
 </div>
 `;
             const getConfigPageContentSrc = ({inputText, inputValue, sliderValue}) => `\
 <div style="width: ${WIDTH - (500 + 40)}px; height: ${HEIGHT - (150 + 2)}px; padding-right: 40px;">
-${getInputSrc(inputText, inputValue)}
-${getSliderSrc(sliderValue)}
+  ${getInputSrc(inputText, inputValue)}
+  ${getSliderSrc(sliderValue)}
 </div>
 `;
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
-${backButton ? `<a style="display: inline-block; width: 150px; float: left; text-align: center;" onclick="back">❮</a>` : ''}
-<span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
-<h1 style="display: inline-block; margin: 0; float: left; font-size: inherit; line-height: inherit;">${text}</h1>
-${subtext ? `<div style="display: inline-flex; height: 150px; margin-left: 20px; float: left; align-items: flex-end;">
-<h2 style="margin: 0; font-size: 60px; line-height: 110px;">${subtext}</h2>
-</div>` : ''}
-${getButtonSrc ? `<div style="float: right;">
-${getButtonSrc}
-</div>` : ''}
+  ${backButton ? `<a style="display: inline-block; width: 150px; float: left; text-align: center;" onclick="back">❮</a>` : ''}
+  <span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
+  <h1 style="display: inline-block; margin: 0; float: left; font-size: inherit; line-height: inherit;">${text}</h1>
+  ${subtext ? `<div style="display: inline-flex; height: 150px; margin-left: 20px; float: left; align-items: flex-end;">
+    <h2 style="margin: 0; font-size: 60px; line-height: 110px;">${subtext}</h2>
+  </div>` : ''}
+  ${getButtonSrc ? `<div style="float: right;">
+    ${getButtonSrc}
+  </div>` : ''}
 </div>`;
             const getMainSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-<a onclick="next"><p>Change world</p></a>
-<a onclick="next"><p>Add/Remove Mods</p></a>
-<a onclick="config"><p>Preferences</p></a>
-<a onclick="blank"><p>About</p></a>
+  <a onclick="next"><p>Change world</p></a>
+  <a onclick="next"><p>Add/Remove Mods</p></a>
+  <a onclick="config"><p>Preferences</p></a>
+  <a onclick="blank"><p>About</p></a>
 </div>`;
             const getModsSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-<a onclick="blank"><p>Installed mod</p></a>
-<a onclick="blank"><p>Available mods</p></a>
-<a onclick="blank"><p>Search mods</p></a>
+  <a onclick="blank"><p>Installed mod</p></a>
+  <a onclick="blank"><p>Available mods</p></a>
+  <a onclick="blank"><p>Search mods</p></a>
 </div>`;
             const getModSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-<a onclick="blank"><p>Install mod</p></a>
-<a onclick="blank"><p>Remove mod</p></a>
-<a onclick="blank"><p>Configure mod</p></a>
+  <a onclick="blank"><p>Install mod</p></a>
+  <a onclick="blank"><p>Remove mod</p></a>
+  <a onclick="blank"><p>Configure mod</p></a>
 </div>`;
             const getConfigSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-<a onclick="blank"><p>Preferences</p></a>
-<a onclick="blank"><p>About</p></a>
+  <a onclick="blank"><p>Preferences</p></a>
+  <a onclick="blank"><p>About</p></a>
 </div>`;
            const getGetButtonSrc = (name, installed) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-${installed ?
-`<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
-<a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f;" onclick="removemod:${name}">× Remove</a>`
-:
-`<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF;" onclick="getmod:${name}">+ Get</a>`
-}
+  ${installed ?
+   `<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
+    <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f;" onclick="removemod:${name}">× Remove</a>`
+  :
+    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF;" onclick="getmod:${name}">+ Get</a>`
+  }
 </div>`;
 
             const imageShader = {
@@ -454,13 +457,16 @@ ${installed ?
                 "        1.0 - (((1.0 - vUv.y) - texturePositions[i].y) / textureDimensions[i].y)",
                 "      );",
                 "      if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
-                "        vec4 sample = texture2D(textures[i], uv);",
-                "        diffuse += sample.xyz;",
-                "        numDiffuse++;",
+                "        uv.y -= textureOffsets[i] / textureDimensions[i].y;",
+                "        if (uv.y > 0.0) {",
+                "          vec4 sample = texture2D(textures[i], uv);",
+                "          diffuse += sample.xyz;",
+                "          numDiffuse++;",
                 "",
-                "        if (sample.w > 0.0) {",
-                "          alpha += sample.w;",
-                "          numAlpha++;",
+                "          if (sample.w > 0.0) {",
+                "            alpha += sample.w;",
+                "            numAlpha++;",
+                "          }",
                 "        }",
                 "      }",
                 "    }",
@@ -711,6 +717,12 @@ ${installed ?
                             type: 'mod:' + name,
                             state: {
                               mod,
+                            },
+                          }, {
+                            postCb: () => {
+                              const layers = ui.getLayers();
+                              const readmeLayer = layers[layers.length - 3];
+                              readmeLayer.scrollTo(100);
                             },
                           });
                         } else {

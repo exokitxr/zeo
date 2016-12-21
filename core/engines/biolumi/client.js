@@ -260,6 +260,10 @@ class Biolumi {
                   );
                 });
               }
+
+              scrollTo(scrollTop) {
+                this.scrollTop = scrollTop;
+              }
             }
 
             class Anchor {
