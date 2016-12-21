@@ -426,11 +426,11 @@ ${getHeaderSrc('preferences', '', '', true)}
                 textureOffsets: {
                   type: 'fv1',
                   value: null,
-                },
+                }/* ,
                 textureClips: {
                   type: 'fv1',
                   value: null,
-                },
+                }, */
               },
               vertexShader: [
                 "varying vec2 vUv;",
@@ -445,7 +445,7 @@ ${getHeaderSrc('preferences', '', '', true)}
                 "uniform vec2 texturePositions[" + maxNumTextures + "];",
                 "uniform vec2 textureDimensions[" + maxNumTextures + "];",
                 "uniform float textureOffsets[" + maxNumTextures + "];",
-                "uniform float textureClips[" + maxNumTextures + "];",
+                "// uniform float textureClips[" + maxNumTextures + "];",
                 "varying vec2 vUv;",
                 "void main() {",
                 "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
@@ -593,13 +593,13 @@ ${getHeaderSrc('preferences', '', '', true)}
                       }
                       return result;
                     })();
-                    shaderUniforms.textureClips.value = (() => {
+                    /* shaderUniforms.textureClips.value = (() => {
                       const result = Array(maxNumTextures);
                       for (let i = 0; i < maxNumTextures; i++) {
                         result[i] = 0;
                       }
                       return result;
-                    })();
+                    })(); */
                     const shaderMaterial = new THREE.ShaderMaterial({
                       uniforms: shaderUniforms,
                       vertexShader: imageShader.vertexShader,
@@ -893,7 +893,7 @@ ${getHeaderSrc('preferences', '', '', true)}
                 updates.push(() => {
                   const _updateMenuMesh = () => {
                     const {planeMesh: {imageMaterial}} = menuMesh;
-                    const {uniforms: {texture, textures, validTextures, texturePositions, textureDimensions, textureOffsets, textureClips}} = imageMaterial;
+                    const {uniforms: {texture, textures, validTextures, texturePositions, textureDimensions, textureOffsets/* , textureClips*/}} = imageMaterial;
 
                     const layers = ui.getLayers();
                     const worldTime = currentWorld.getWorldTime();
@@ -914,7 +914,7 @@ ${getHeaderSrc('preferences', '', '', true)}
                         textureDimensions.value[(i * 2) + 0] = position.w;
                         textureDimensions.value[(i * 2) + 1] = position.h;
                         textureOffsets.value[i] = position.st;
-                        textureClips.value[i] = position.ch;
+                        // textureClips.value[i] = position.ch;
                       } else {
                         validTextures.value[i] = 0;
                       }
