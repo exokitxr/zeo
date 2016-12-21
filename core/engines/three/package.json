@@ -4,6 +4,6 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "three": "0.82.1"
+    "three": "0.83.0"
   }
 }
