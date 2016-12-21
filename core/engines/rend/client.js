@@ -340,7 +340,8 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
             const getModPageReadmeSrc = () => `\
 <div style="position: absolute; top: 0; right: 0; height: 50px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 50px; height: 100px; width: 50px; background-color: red;"></div>
-<div style="position: absolute; top: 0; right: 100px; height: 150px; width: 50px; background-color: red;"></div>
+<div style="position: absolute; top: 0; right: 100px; height: 125px; width: 50px; background-color: red;"></div>
+<div style="position: absolute; top: 0; right: 150px; height: 150px; width: 50px; background-color: red;"></div>
 ${getReadmeSrc()}
 `;
             const getConfigPageSrc = () => `\
@@ -709,7 +710,7 @@ ${getHeaderSrc('preferences', '', '', true)}
                             },
                             {
                               type: 'html',
-                              src: getReadmeSrc(),
+                              src: getModPageReadmeSrc(),
                               x: 500,
                               y: 150 + 2,
                               w: WIDTH - 500,
