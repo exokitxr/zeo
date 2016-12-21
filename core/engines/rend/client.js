@@ -331,15 +331,17 @@ ${getHeaderSrc('mods', '', '', true)}
             };
             const getModPageSrc = ({name, version, installed}) => `\
 ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
-<div style="position: absolute; top: 0; right: 0; height: 50px; width: 50px; background-color: red;"></div>
-<div style="position: absolute; top: 0; right: 50px; height: 100px; width: 50px; background-color: red;"></div>
-<div style="position: absolute; top: 0; right: 100px; height: 150px; width: 50px; background-color: red;"></div>
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModSidebarSrc()}
-    ${getReadmeSrc()}
   </div>
 </div>
+`;
+            const getModPageReadmeSrc = () => `\
+<div style="position: absolute; top: 0; right: 0; height: 50px; width: 50px; background-color: red;"></div>
+<div style="position: absolute; top: 0; right: 50px; height: 100px; width: 50px; background-color: red;"></div>
+<div style="position: absolute; top: 0; right: 100px; height: 150px; width: 50px; background-color: red;"></div>
+${getReadmeSrc()}
 `;
             const getConfigPageSrc = () => `\
 ${getHeaderSrc('preferences', '', '', true)}
@@ -703,6 +705,15 @@ ${getHeaderSrc('preferences', '', '', true)}
                             {
                               type: 'html',
                               src: getModPageSrc({name, version, installed}),
+                            },
+                            {
+                              type: 'html',
+                              src: getReadmeSrc(),
+                              x: 500,
+                              y: 150 + 2,
+                              w: WIDTH - 500,
+                              h: HEIGHT - (150 + 2),
+                              scroll: true,
                             },
                             {
                               type: 'image',
