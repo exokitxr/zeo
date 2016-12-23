@@ -1062,8 +1062,8 @@ ${getHeaderSrc('preferences', '', '', true)}
                             const {rect} = anchor;
 
                             const anchorBox = new THREE.Box3().setFromPoints([
-                              _getMenuMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
-                              _getMenuMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
+                              _getMenuMeshPoint(rect.left, rect.top - layer.scrollTop, -WORLD_DEPTH),
+                              _getMenuMeshPoint(rect.right, rect.bottom - layer.scrollTop, WORLD_DEPTH),
                             ]);
                             anchorBox.anchor = anchor;
 
