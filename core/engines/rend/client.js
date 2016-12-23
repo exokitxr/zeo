@@ -359,6 +359,29 @@ ${getHeaderSrc('preferences', '', '', true)}
   ${getSliderSrc(sliderValue)}
 </div>
 `;
+            const getElementsPageSrc = () => `\
+${getHeaderSrc('elements', '', '', true)}
+<div style="height: ${HEIGHT - (150 + 2)}px;">
+  <div style="display: flex;">
+    ${getElementsSidebarSrc()}
+    <div style="width: ${WIDTH - 500}px;"></div>
+  </div>
+</div>
+`;
+            const getElementsPageContentSrc = () => `\
+<div style="width: ${WIDTH - (500 + 40)}px; height: ${HEIGHT - (150 + 2)}px; padding-right: 40px;">
+  <ul style="padding: 0; list-style-type: none; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">
+<li>
+<div style="color: #a894a6;">&lt;archae&gt;Hello, world! This is the main tag.&gt;</pre>
+<div style="color: #994500;">&nbsp;&nbsp;&lt;div&gt;This is a nested tag.&lt;/div&gt;</pre>
+<div style="color: #a894a6;">&lt;/archae&gt;</pre>
+</li>
+<li>
+<div style="color: #1a1aa6;">&lt;text&gt;This is a secondary tag.&lt;/text&gt;</pre>
+</li>
+  </ul>
+</div>
+`;
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
@@ -377,7 +400,7 @@ ${getHeaderSrc('preferences', '', '', true)}
   <a onclick="next"><p>Change world</p></a>
   <a onclick="next"><p>Add/Remove Mods</p></a>
   <a onclick="config"><p>Preferences</p></a>
-  <a onclick="blank"><p>About</p></a>
+  <a onclick="elements"><p>About</p></a>
 </div>`;
             const getModsSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
@@ -396,7 +419,13 @@ ${getHeaderSrc('preferences', '', '', true)}
   <a onclick="blank"><p>Preferences</p></a>
   <a onclick="blank"><p>About</p></a>
 </div>`;
-           const getGetButtonSrc = (name, installed) => `\
+            const getElementsSidebarSrc = () => `\
+<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
+  <a onclick="blank"><p>Tree</p></a>
+  <a onclick="blank"><p>Zoom in</p></a>
+  <a onclick="blank"><p>Zoom out</p></a>
+</div>`;
+            const getGetButtonSrc = (name, installed) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   ${installed ?
    `<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
@@ -810,6 +839,33 @@ ${getHeaderSrc('preferences', '', '', true)}
                         ]), {
                           type: 'config',
                           state: {inputText, inputValue, sliderValue},
+                        });
+                     } else if (onclick === 'elements') {
+                        ui.pushPage(() => ([
+                          {
+                            type: 'html',
+                            src: getElementsPageSrc({inputValue, sliderValue}),
+                          },
+                          {
+                            type: 'html',
+                            src: getElementsPageContentSrc(),
+                            x: 500,
+                            y: 150 + 2,
+                            w: WIDTH - 500,
+                            h: HEIGHT - (150 + 2),
+                            scroll: true,
+                          },
+                          {
+                            type: 'image',
+                            img: creatureUtils.makeAnimatedCreature('preferences'),
+                            x: 150,
+                            y: 0,
+                            w: 150,
+                            h: 150,
+                            frameTime: 300,
+                          }
+                        ]), {
+                          type: 'elements',
                         });
                       } else if (onclick === 'input') {
                         const {value} = boxMesh;
