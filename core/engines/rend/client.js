@@ -729,13 +729,13 @@ ${getHeaderSrc('preferences', '', '', true)}
                             state: {
                               mod,
                             },
-                          }, {
+                          }/*, {
                             postCb: () => {
                               const layers = ui.getLayers();
                               const readmeLayer = layers[layers.length - 3];
                               readmeLayer.scrollTo(100);
                             },
-                          });
+                          } */);
                         } else {
                           ui.popPage();
                         }
@@ -868,24 +868,38 @@ ${getHeaderSrc('preferences', '', '', true)}
                     const {position: menuPosition, rotation: menuRotation} = _decomposeMenuMesh();
                     const _getMenuMeshCoordinate = _makeMenuMeshCoordinateGetter({menuPosition, menuRotation});
                     const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
+                    hoverState.mousedownScrollLayer = scrollLayer;
                     hoverState.mousedownStartCoord = mousedownStartCoord;
+                    hoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
                   }
                 };
                 window.addEventListener('mousedown', mousedown);
+
+                const _setLayerScrollTop = () => {
+                  const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = hoverState;
+
+                  const {position: menuPosition, rotation: menuRotation} = _decomposeMenuMesh();
+                  const _getMenuMeshCoordinate = _makeMenuMeshCoordinateGetter({menuPosition, menuRotation});
+                  const mousedownCurCoord = _getMenuMeshCoordinate(intersectionPoint);
+                  const mousedownCoordDiff = mousedownCurCoord.clone()
+                    .sub(mousedownStartCoord)
+                    .multiply(new THREE.Vector2(WIDTH / WORLD_WIDTH, HEIGHT / WORLD_HEIGHT));
+
+                  mousedownScrollLayer.scrollTo(mousedownStartScrollTop - mousedownCoordDiff.y);
+                };
+                const mousemove = () => {
+                  const {mousedownStartCoord} = hoverState;
+                  if (mousedownStartCoord) {
+                    _setLayerScrollTop();
+                  }
+                };
+                window.addEventListener('mousemove', mousemove);
                 const mouseup = () => {
-                  const {scrollLayer} = hoverState;
-                  if (scrollLayer) {
-                    const {intersectionPoint, mousedownStartCoord} = hoverState;
+                  const {mousedownStartCoord} = hoverState;
+                  if (mousedownStartCoord) {
+                    _setLayerScrollTop();
 
-                    const {position: menuPosition, rotation: menuRotation} = _decomposeMenuMesh();
-                    const _getMenuMeshCoordinate = _makeMenuMeshCoordinateGetter({menuPosition, menuRotation});
-                    const mousedownCurCoord = _getMenuMeshCoordinate(intersectionPoint);
-                    const mousedownCoordDiff = mousedownCurCoord.clone()
-                      .sub(mousedownStartCoord)
-                      .multiply(new THREE.Vector2(WIDTH, HEIGHT));
-
-                    console.log('got diff', [mousedownCoordDiff.x, mousedownCoordDiff.y]);
-
+                    hoverState.mousedownScrollLayer = null;
                     hoverState.mousedownStartCoord = null;
                   }
                 };
@@ -898,6 +912,7 @@ ${getHeaderSrc('preferences', '', '', true)}
 
                   window.removeEventListener('click', click);
                   window.removeEventListener('mousedown', mousedown);
+                  window.removeEventListener('mousemove', mousemove);
                   window.removeEventListener('mouseup', mouseup);
                 });
 
@@ -952,7 +967,9 @@ ${getHeaderSrc('preferences', '', '', true)}
                   scrollLayer: null,
                   anchor: null,
                   value: 0,
-                  mousedownCurCoord: null,
+                  mousedownScrollLayer: null,
+                  mousedownStartCoord: null,
+                  mousedownStartScrollTop: null,
                 };
                 updates.push(() => {
                   const _updateMenuMesh = () => {
