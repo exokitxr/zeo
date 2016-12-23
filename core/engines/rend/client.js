@@ -280,7 +280,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 `;
             const getInputSrc = (inputText, inputValue) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
-  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onclick="input">
+  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onfclick="input">
     <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
     <div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>
     <div>${inputText}</div>
@@ -637,8 +637,6 @@ ${getHeaderSrc('preferences', '', '', true)}
                   const mesh = new THREE.Mesh(geometry, wireframeMaterial);
                   mesh.visible = false;
                   // mesh.renderOrder = -1;
-                  mesh.scrollLayer = null;
-                  mesh.anchor = null;
                   return mesh;
                 })();
                 scene.add(boxMesh);
@@ -653,7 +651,7 @@ ${getHeaderSrc('preferences', '', '', true)}
                 scene.add(dotMesh);
 
                 const click = () => {
-                  const {anchor} = boxMesh;
+                  const {anchor} = hoverState;
 
                   if (anchor) {
                     const {onclick} = anchor;
@@ -863,20 +861,32 @@ ${getHeaderSrc('preferences', '', '', true)}
                 };
                 window.addEventListener('click', click);
                 const mousedown = () => {
-                  const {scrollLayer} = boxMesh;
+                  const {scrollLayer} = hoverState;
                   if (scrollLayer) {
-                    console.log('mousedown scroll layer', scrollLayer);
-                  } else {
-                    console.log('mousedown no scroll layer');
+                    const {intersectionPoint} = hoverState;
+
+                    const {position: menuPosition, rotation: menuRotation} = _decomposeMenuMesh();
+                    const _getMenuMeshCoordinate = _makeMenuMeshCoordinateGetter({menuPosition, menuRotation});
+                    const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
+                    hoverState.mousedownStartCoord = mousedownStartCoord;
                   }
                 };
                 window.addEventListener('mousedown', mousedown);
                 const mouseup = () => {
-                  const {scrollLayer} = boxMesh;
+                  const {scrollLayer} = hoverState;
                   if (scrollLayer) {
-                    console.log('mouseup scroll layer', scrollLayer);
-                  } else {
-                    console.log('mouseup no scroll layer');
+                    const {intersectionPoint, mousedownStartCoord} = hoverState;
+
+                    const {position: menuPosition, rotation: menuRotation} = _decomposeMenuMesh();
+                    const _getMenuMeshCoordinate = _makeMenuMeshCoordinateGetter({menuPosition, menuRotation});
+                    const mousedownCurCoord = _getMenuMeshCoordinate(intersectionPoint);
+                    const mousedownCoordDiff = mousedownCurCoord.clone()
+                      .sub(mousedownStartCoord)
+                      .multiply(new THREE.Vector2(WIDTH, HEIGHT));
+
+                    console.log('got diff', [mousedownCoordDiff.x, mousedownCoordDiff.y]);
+
+                    hoverState.mousedownStartCoord = null;
                   }
                 };
                 window.addEventListener('mouseup', mouseup);
@@ -891,6 +901,59 @@ ${getHeaderSrc('preferences', '', '', true)}
                   window.removeEventListener('mouseup', mouseup);
                 });
 
+                const _decomposeMenuMesh = () => {
+                  const position = new THREE.Vector3();
+                  const rotation = new THREE.Quaternion();
+                  const scale = new THREE.Vector3();
+                  menuMesh.matrixWorld.decompose(position, rotation, scale);
+                  return {position, rotation, scale};
+                };
+                const _makeMenuMeshPointGetter = ({menuPosition, menuRotation}) => (x, y, z) => menuPosition.clone()
+                  .add(
+                    new THREE.Vector3(
+                      -WORLD_WIDTH / 2,
+                      WORLD_HEIGHT / 2,
+                      0
+                    )
+                    .add(
+                      new THREE.Vector3(
+                        (x / WIDTH) * WORLD_WIDTH,
+                        (-y / HEIGHT) * WORLD_HEIGHT,
+                        z
+                      )
+                    ).applyQuaternion(menuRotation)
+                  );
+                const _makeMenuMeshCoordinateGetter = ({menuPosition, menuRotation}) => {
+                  const _getMenuMeshPoint = _makeMenuMeshPointGetter({menuPosition, menuRotation});
+
+                  return intersectionPoint => {
+                    const x = (() => {
+                      const horizontalLine = new THREE.Line3(
+                        _getMenuMeshPoint(0, 0, 0),
+                        _getMenuMeshPoint(WIDTH, 0, 0)
+                      );
+                      const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
+                      return horizontalLine.start.distanceTo(closestHorizontalPoint);
+                    })();
+                    const y = (() => {
+                      const verticalLine = new THREE.Line3(
+                        _getMenuMeshPoint(0, 0, 0),
+                        _getMenuMeshPoint(0, HEIGHT, 0)
+                      );
+                      const closestVerticalPoint = verticalLine.closestPointToPoint(intersectionPoint, true);
+                      return verticalLine.start.distanceTo(closestVerticalPoint);
+                    })();
+                    return new THREE.Vector2(x, y);
+                  };
+                };
+
+                const hoverState = {
+                  intersectionPoint: null,
+                  scrollLayer: null,
+                  anchor: null,
+                  value: 0,
+                  mousedownCurCoord: null,
+                };
                 updates.push(() => {
                   const _updateMenuMesh = () => {
                     const {planeMesh: {imageMaterial}} = menuMesh;
@@ -934,38 +997,23 @@ ${getHeaderSrc('preferences', '', '', true)}
                       cameraPosition.clone().add(ray.clone().multiplyScalar(15))
                     );
 
-                    const menuPosition = new THREE.Vector3();
-                    const menuRotation = new THREE.Quaternion();
-                    const menuScale = new THREE.Vector3();
-                    menuMesh.matrixWorld.decompose(menuPosition, menuRotation, menuScale);
+                    const {position: menuPosition, rotation: menuRotation} = _decomposeMenuMesh();
                     const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
 
                     const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
                     const intersectionPoint = menuPlane.intersectLine(cameraLine);
                     if (intersectionPoint) {
-                      const _getPlanePoint = (x, y, z) => menuPosition.clone()
-                        .add(
-                          new THREE.Vector3(
-                            -WORLD_WIDTH / 2,
-                            WORLD_HEIGHT / 2,
-                            0
-                          )
-                          .add(
-                            new THREE.Vector3(
-                              (x / WIDTH) * WORLD_WIDTH,
-                              (-y / HEIGHT) * WORLD_HEIGHT,
-                              z
-                            )
-                          ).applyQuaternion(menuRotation)
-                        );
+                      hoverState.intersectionPoint = intersectionPoint;
+
+                      const _getMenuMeshPoint = _makeMenuMeshPointGetter({menuPosition, menuRotation});
 
                       const scrollLayerBoxes = ui.getLayers()
                         .filter(layer => layer.scroll)
                         .map(layer => {
                           const rect = layer.getRect();
                           const layerBox = new THREE.Box3().setFromPoints([
-                            _getPlanePoint(rect.left, rect.top, -WORLD_DEPTH),
-                            _getPlanePoint(rect.right, rect.bottom, WORLD_DEPTH),
+                            _getMenuMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
+                            _getMenuMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
                           ]);
                           layerBox.layer = layer;
                           return layerBox;
@@ -980,9 +1028,9 @@ ${getHeaderSrc('preferences', '', '', true)}
                         return null;
                       })();
                       if (scrollLayerBox) {
-                        boxMesh.scrollLayer = scrollLayerBox.layer;
+                        hoverState.scrollLayer = scrollLayerBox.layer;
                       } else {
-                        boxMesh.scrollLayer = null;
+                        hoverState.scrollLayer = null;
                       }
 
                       const anchorBoxes = (() => {
@@ -997,8 +1045,8 @@ ${getHeaderSrc('preferences', '', '', true)}
                             const {rect} = anchor;
 
                             const anchorBox = new THREE.Box3().setFromPoints([
-                              _getPlanePoint(rect.left, rect.top, -WORLD_DEPTH),
-                              _getPlanePoint(rect.right, rect.bottom, WORLD_DEPTH),
+                              _getMenuMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
+                              _getMenuMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
                             ]);
                             anchorBox.anchor = anchor;
 
@@ -1021,12 +1069,12 @@ ${getHeaderSrc('preferences', '', '', true)}
                         boxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
 
                         const {anchor} = anchorBox;
-                        boxMesh.anchor = anchor;
-                        boxMesh.value = (() => {
+                        hoverState.anchor = anchor;
+                        hoverState.value = (() => {
                           const {rect} = anchor;
                           const horizontalLine = new THREE.Line3(
-                            _getPlanePoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                            _getPlanePoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                            _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                            _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
                           );
                           const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
                           return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
@@ -1036,8 +1084,8 @@ ${getHeaderSrc('preferences', '', '', true)}
                           boxMesh.visible = true;
                         }
                       } else {
-                        boxMesh.anchor = null;
-                        boxMesh.value = 0;
+                        hoverState.anchor = null;
+                        hoverState.value = 0;
 
                         if (boxMesh.visible) {
                           boxMesh.visible = false;
@@ -1045,6 +1093,15 @@ ${getHeaderSrc('preferences', '', '', true)}
                       }
 
                       dotMesh.position.copy(intersectionPoint);
+                    } else {
+                      hoverState.intersectionPoint = null;
+                      hoverState.scrollLayer = null;
+                      hoverState.anchor = null;
+                      hoverState.value = 0;
+
+                      if (boxMesh.visible) {
+                        boxMesh.visible = false;
+                      }
                     }
                   };
 
