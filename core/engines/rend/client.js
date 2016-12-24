@@ -801,6 +801,8 @@ ${getHeaderSrc('elements', '', '', true)}
                             console.warn(err);
                           });
                       } else if (onclick === 'config') {
+                        ui.cancelTransition();
+
                         ui.pushPage(({inputText, inputValue, sliderValue}) => ([
                           {
                             type: 'html',
@@ -829,6 +831,8 @@ ${getHeaderSrc('elements', '', '', true)}
                           state: {inputText, inputValue, sliderValue},
                         });
                      } else if (onclick === 'elements') {
+                        ui.cancelTransition();
+
                         ui.pushPage(() => ([
                           {
                             type: 'html',
