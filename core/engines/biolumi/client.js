@@ -236,8 +236,7 @@ class Biolumi {
                   parent.y + (this.y / height),
                   this.w / width,
                   this.scrollHeight / height,
-                  this.scrollTop / height/*,
-                  this.h / height */
+                  this.scrollTop / height
                 );
               }
 
@@ -286,13 +285,12 @@ class Biolumi {
             }
 
             class Position {
-              constructor(x, y, w, h, st/*, ch*/) {
+              constructor(x, y, w, h, st) {
                 this.x = x; // x position
                 this.y = y; // y position
                 this.w = w; // texture data width
                 this.h = h; // texture data height
                 this.st = st; // scroll top
-                // this.ch = ch; // clip height
               }
             }
 

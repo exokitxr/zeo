@@ -263,7 +263,7 @@ class Rend {
             let inputValue = 0;
             let sliderValue = 0.5;
 
-            const readme = `${_renderMarkdown(readmeText)/*.replace(/<code /g, '<code style="display: block; white-space: pre-wrap; width: 300px; overflow: hidden;" ')*/}`;
+            const readme = `${_renderMarkdown(readmeText)}`;
             const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
@@ -456,11 +456,7 @@ ${getHeaderSrc('elements', '', '', true)}
                 textureOffsets: {
                   type: 'fv1',
                   value: null,
-                }/* ,
-                textureClips: {
-                  type: 'fv1',
-                  value: null,
-                }, */
+                },
               },
               vertexShader: [
                 "varying vec2 vUv;",
@@ -475,7 +471,6 @@ ${getHeaderSrc('elements', '', '', true)}
                 "uniform vec2 texturePositions[" + maxNumTextures + "];",
                 "uniform vec2 textureDimensions[" + maxNumTextures + "];",
                 "uniform float textureOffsets[" + maxNumTextures + "];",
-                "// uniform float textureClips[" + maxNumTextures + "];",
                 "varying vec2 vUv;",
                 "void main() {",
                 "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
@@ -620,13 +615,6 @@ ${getHeaderSrc('elements', '', '', true)}
                       }
                       return result;
                     })();
-                    /* shaderUniforms.textureClips.value = (() => {
-                      const result = Array(maxNumTextures);
-                      for (let i = 0; i < maxNumTextures; i++) {
-                        result[i] = 0;
-                      }
-                      return result;
-                    })(); */
                     const shaderMaterial = new THREE.ShaderMaterial({
                       uniforms: shaderUniforms,
                       vertexShader: imageShader.vertexShader,
@@ -755,13 +743,7 @@ ${getHeaderSrc('elements', '', '', true)}
                             state: {
                               mod,
                             },
-                          }/*, {
-                            postCb: () => {
-                              const layers = ui.getLayers();
-                              const readmeLayer = layers[layers.length - 3];
-                              readmeLayer.scrollTo(100);
-                            },
-                          } */);
+                          });
                         } else {
                           ui.popPage();
                         }
@@ -1027,7 +1009,7 @@ ${getHeaderSrc('elements', '', '', true)}
                 updates.push(() => {
                   const _updateMenuMesh = () => {
                     const {planeMesh: {imageMaterial}} = menuMesh;
-                    const {uniforms: {texture, textures, validTextures, texturePositions, textureDimensions, textureOffsets/* , textureClips*/}} = imageMaterial;
+                    const {uniforms: {texture, textures, validTextures, texturePositions, textureDimensions, textureOffsets}} = imageMaterial;
 
                     const layers = ui.getLayers();
                     const worldTime = currentWorld.getWorldTime();
@@ -1048,7 +1030,6 @@ ${getHeaderSrc('elements', '', '', true)}
                         textureDimensions.value[(i * 2) + 0] = position.w;
                         textureDimensions.value[(i * 2) + 1] = position.h;
                         textureOffsets.value[i] = position.st;
-                        // textureClips.value[i] = position.ch;
                       } else {
                         validTextures.value[i] = 0;
                       }
