@@ -133,7 +133,7 @@ class Biolumi {
                       const {scrollHeight} = divEl;
 
                       const anchors = (() => {
-                        const as = el.querySelectorAll('a');
+                        const as = divEl.querySelectorAll('a');
                         const numAs = as.length;
 
                         const result = Array(numAs);
