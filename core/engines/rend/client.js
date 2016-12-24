@@ -365,7 +365,7 @@ ${getHeaderSrc('elements', '', '', true)}
 </div>
 `;
             const getElementsPageContentSrc = () => `\
-<div style="width: ${WIDTH - (500 + 40)}px; height: ${HEIGHT - (150 + 2)}px; padding-right: 40px;">
+<div style="width: ${WIDTH - (500 + 40)}px;">
   <ul style="padding: 0; list-style-type: none; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">
 <li>
 <div style="color: #a894a6;">&lt;archae&gt;Hello, world! This is the main tag.&gt;</pre>
