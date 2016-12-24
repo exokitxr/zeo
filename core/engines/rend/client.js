@@ -262,6 +262,30 @@ class Rend {
             const inputText = 'Hello, world! This is some text!';
             let inputValue = 0;
             let sliderValue = 0.5;
+            const elements = [
+              {
+                element: 'archae',
+                attributes: {
+                  position: [1, 2, 3].join(' '),
+                },
+                children: [
+                  {
+                    element: 'sub',
+                    attributes: {
+                      rotation: [0, Math.PI, 0].join(' '),
+                    },
+                    children: 'Hello, World!',
+                  },
+                ],
+              },
+              {
+                element: 'sub',
+                attributes: {
+                  lol: 'zol',
+                },
+                children: 'Here is some text content',
+              },
+            ];
 
             const readme = `${_renderMarkdown(readmeText)}`;
             const getMainPageSrc = () => `\
@@ -364,20 +388,43 @@ ${getHeaderSrc('elements', '', '', true)}
   </div>
 </div>
 `;
-            const getElementsPageContentSrc = () => `\
-<div style="width: ${WIDTH - (500 + 40)}px;">
-  <ul style="padding: 0; list-style-type: none; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">
-<li>
-<div style="color: #a894a6;">&lt;archae&gt;Hello, world! This is the main tag.&gt;</pre>
-<div style="color: #994500;">&nbsp;&nbsp;&lt;div&gt;This is a nested tag.&lt;/div&gt;</pre>
-<div style="color: #a894a6;">&lt;/archae&gt;</pre>
-</li>
-<li>
-<div style="color: #1a1aa6;">&lt;text&gt;This is a secondary tag.&lt;/text&gt;</pre>
-</li>
-  </ul>
-</div>
-`;
+            const getElementsPageContentSrc = ({elements}) => {
+              const head = (element, depth) => `<span style="color: #a894a6;">${spaces(depth)}&lt;${element.element}${attributes(element)}&gt;</span>`;
+              const tail = (element, depth) => `<span style="color: #a894a6;">${spaces(depth)}&lt;/${element.element}&gt;</span>`;
+              const attributes = element => {
+                const {attributes} = element;
+
+                const acc = [];
+                for (const k in attributes) {
+                  const v = attributes[k];
+                  acc.push(`<span style="color: #994500;">${k}</span>=<span style="color: #1a1aa6;">${JSON.stringify(v)}</span>`);
+                }
+                return acc.length > 0 ? (' ' + acc.join(' ')) : '';
+              };
+
+              const outerElements = (elements, depth = 0) => `<div style="margin: 0; padding: 0; list-style-type: none;">${innerElements(elements, depth)}</div>`;
+              const spaces = depth => Array(depth + 1).join('&nbsp;&nbsp;');
+              const innerElements = (elements, depth = 0) => elements.map(element => {
+                let result = `<div>${head(element, depth)}`;
+
+                const {children} = element;
+                if (Array.isArray(children)) {
+                  result += `<div>${outerElements(children, depth + 1)}</div>`;
+                } else if (typeof children === 'string') {
+                  result += children;
+                }
+
+                result += `${tail(element, Array.isArray(children) ? depth : 0)}</div>`;
+
+                return result;
+              }).join('\n');
+
+              const result = `<div style="width: ${WIDTH - (500 + 40)}px; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">${outerElements(elements)}</div>`;
+              window.lol = document.createElement('div');
+              window.lol.innerHTML = result;
+              window.document.body.appendChild(lol);
+              return result;
+            };
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
@@ -840,7 +887,7 @@ ${getHeaderSrc('elements', '', '', true)}
                           },
                           {
                             type: 'html',
-                            src: getElementsPageContentSrc(),
+                            src: getElementsPageContentSrc({elements}),
                             x: 500,
                             y: 150 + 2,
                             w: WIDTH - 500,
@@ -858,6 +905,7 @@ ${getHeaderSrc('elements', '', '', true)}
                           }
                         ]), {
                           type: 'elements',
+                          state: {elements},
                         });
                       } else if (onclick === 'input') {
                         const {value} = boxMesh;
