@@ -273,11 +273,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
   </div>
 </div>
 `;
-            const getReadmeSrc = () => `\
-<div style="width: ${WIDTH - 500}px; height: ${HEIGHT - (150 + 2)}px;">
-  ${readme}
-</div>
-`;
+            const getReadmeSrc = () => readme;
             const getInputSrc = (inputText, inputValue) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
   <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onfclick="input">
@@ -449,11 +445,15 @@ ${getHeaderSrc('elements', '', '', true)}
                   type: 'v2v',
                   value: null,
                 },
-                textureDimensions: {
+                textureLimits: {
                   type: 'v2v',
                   value: null,
                 },
                 textureOffsets: {
+                  type: 'fv1',
+                  value: null,
+                },
+                textureDimensions: {
                   type: 'fv1',
                   value: null,
                 },
@@ -469,8 +469,9 @@ ${getHeaderSrc('elements', '', '', true)}
                 "uniform sampler2D textures[" + maxNumTextures + "];",
                 "uniform int validTextures[" + maxNumTextures + "];",
                 "uniform vec2 texturePositions[" + maxNumTextures + "];",
-                "uniform vec2 textureDimensions[" + maxNumTextures + "];",
+                "uniform vec2 textureLimits[" + maxNumTextures + "];",
                 "uniform float textureOffsets[" + maxNumTextures + "];",
+                "uniform float textureDimensions[" + maxNumTextures + "];",
                 "varying vec2 vUv;",
                 "void main() {",
                 "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
@@ -480,10 +481,11 @@ ${getHeaderSrc('elements', '', '', true)}
                 "  for (int i = 0; i < " + maxNumTextures + "; i++) {",
                 "    if (validTextures[i] != 0) {",
                 "      vec2 uv = vec2(",
-                "        (vUv.x - texturePositions[i].x) / textureDimensions[i].x,",
-                "        1.0 - ((1.0 - vUv.y - texturePositions[i].y + textureOffsets[i]) / textureDimensions[i].y)",
+                "        (vUv.x - texturePositions[i].x) / textureLimits[i].x,",
+                "        1.0 - ((1.0 - vUv.y - texturePositions[i].y) / textureLimits[i].y)",
                 "      );",
                 "      if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
+                "        uv.y = 1.0 - ((1.0 - vUv.y - texturePositions[i].y + textureOffsets[i]) / textureDimensions[i]);",
                 "        vec4 sample = texture2D(textures[i], uv);",
                 "        diffuse += sample.xyz;",
                 "        numDiffuse++;",
@@ -600,7 +602,7 @@ ${getHeaderSrc('elements', '', '', true)}
                       }
                       return result;
                     })();
-                    shaderUniforms.textureDimensions.value = (() => {
+                    shaderUniforms.textureLimits.value = (() => {
                       const result = Array(2 * maxNumTextures);
                       for (let i = 0; i < maxNumTextures; i++) {
                         result[(i * 2) + 0] = 0;
@@ -609,6 +611,13 @@ ${getHeaderSrc('elements', '', '', true)}
                       return result;
                     })();
                     shaderUniforms.textureOffsets.value = (() => {
+                      const result = Array(maxNumTextures);
+                      for (let i = 0; i < maxNumTextures; i++) {
+                        result[i] = 0;
+                      }
+                      return result;
+                    })();
+                    shaderUniforms.textureDimensions.value = (() => {
                       const result = Array(maxNumTextures);
                       for (let i = 0; i < maxNumTextures; i++) {
                         result[i] = 0;
@@ -919,8 +928,18 @@ ${getHeaderSrc('elements', '', '', true)}
                   const mousedownCoordDiff = mousedownCurCoord.clone()
                     .sub(mousedownStartCoord)
                     .multiply(new THREE.Vector2(WIDTH / WORLD_WIDTH, HEIGHT / WORLD_HEIGHT));
+                  const scrollTop = Math.max(
+                    Math.min(
+                      mousedownStartScrollTop - mousedownCoordDiff.y,
+                      (mousedownScrollLayer.scrollHeight > mousedownScrollLayer.h) ?
+                        (mousedownScrollLayer.scrollHeight - mousedownScrollLayer.h)
+                      :
+                        0
+                    ),
+                    0
+                  );
 
-                  mousedownScrollLayer.scrollTo(mousedownStartScrollTop - mousedownCoordDiff.y);
+                  mousedownScrollLayer.scrollTo(scrollTop);
                 };
                 const mousemove = () => {
                   const {mousedownStartCoord} = hoverState;
@@ -1009,7 +1028,7 @@ ${getHeaderSrc('elements', '', '', true)}
                 updates.push(() => {
                   const _updateMenuMesh = () => {
                     const {planeMesh: {imageMaterial}} = menuMesh;
-                    const {uniforms: {texture, textures, validTextures, texturePositions, textureDimensions, textureOffsets}} = imageMaterial;
+                    const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = imageMaterial;
 
                     const layers = ui.getLayers();
                     const worldTime = currentWorld.getWorldTime();
@@ -1027,9 +1046,10 @@ ${getHeaderSrc('elements', '', '', true)}
                         const position = layer.getPosition();
                         texturePositions.value[(i * 2) + 0] = position.x;
                         texturePositions.value[(i * 2) + 1] = position.y;
-                        textureDimensions.value[(i * 2) + 0] = position.w;
-                        textureDimensions.value[(i * 2) + 1] = position.h;
+                        textureLimits.value[(i * 2) + 0] = position.w;
+                        textureLimits.value[(i * 2) + 1] = position.h;
                         textureOffsets.value[i] = position.st;
+                        textureDimensions.value[i] = position.sh;
                       } else {
                         validTextures.value[i] = 0;
                       }
@@ -1232,6 +1252,26 @@ var geometry, material, mesh;
 
 init();
 animate();
+
+function init() {
+
+	scene = new THREE.Scene();
+
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+	camera.position.z = 1000;
+
+	geometry = new THREE.BoxGeometry( 200, 200, 200 );
+	material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+
+	mesh = new THREE.Mesh( geometry, material );
+	scene.add( mesh );
+
+	renderer = new THREE.WebGLRenderer();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+	document.body.appendChild( renderer.domElement );
+
+}
 
 function init() {
 

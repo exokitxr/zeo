@@ -95,33 +95,42 @@ class Biolumi {
                         el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
                         el.setAttribute('style', rootCss);
                         el.innerHTML = src;
+
+                        const imgs = el.querySelectorAll('img');
+                        for (let i = 0; i < imgs.length; i++) {
+                          const img = imgs[i];
+                          if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
+                            img.parentNode.removeChild(img);
+                          }
+                        }
+
                         const as = el.querySelectorAll('a');
                         for (let i = 0; i < as.length; i++) {
                           const a = as[i];
-                          if (!a.style.textDecoration) {
-                            a.style.textDecoration = 'underline';
+                          if (a.childNodes.length > 0) {
+                            if (!a.style.textDecoration) {
+                              a.style.textDecoration = 'underline';
+                            }
+                          } else {
+                            a.parentNode.removeChild(a);
                           }
                         }
+
                         return new XMLSerializer().serializeToString(el);
                       })();
 
-                      const svgInnerSrc = '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                        styleTag +
-                        decoratedSrc +
-                      '</foreignObject>';
-                      const el = (() => {
-                        const el = document.createElement('svg');
-                        el.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                        el.setAttribute('width', String(w));
-                        el.style.cssText = 'position: absolute; top: 0; left: 0;';
-                        el.innerHTML = svgInnerSrc
+                      const innerSrc = styleTag + decoratedSrc;
+                      const divEl = (() => {
+                        const el = document.createElement('div');
+                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                        el.innerHTML = innerSrc
                           .replace(/(<img\s+(?:(?!src=)[^>])*)(src=\S+)/g, '$1'); // optimization: do not perform expensive image loading
 
                         return el;
                       })();
-                      document.body.appendChild(el);
+                      document.body.appendChild(divEl);
 
-                      const {scrollHeight} = el;
+                      const {scrollHeight} = divEl;
 
                       const anchors = (() => {
                         const as = el.querySelectorAll('a');
@@ -141,11 +150,13 @@ class Biolumi {
                         return result;
                       })();
 
-                      document.body.removeChild(el);
+                      document.body.removeChild(divEl);
 
                       const img = new Image();
                       img.src = 'data:image/svg+xml;charset=utf-8,' + '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + scrollHeight + '\'>' +
-                        svgInnerSrc +
+                        '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                          innerSrc +
+                        '</foreignObject>' +
                       '</svg>';
                       img.onload = () => {
                         layer.img = img;
@@ -235,8 +246,9 @@ class Biolumi {
                   parent.x + (this.x / width),
                   parent.y + (this.y / height),
                   this.w / width,
-                  this.scrollHeight / height,
-                  this.scrollTop / height
+                  this.h / height,
+                  this.scrollTop / height,
+                  this.scrollHeight / height
                 );
               }
 
@@ -285,12 +297,13 @@ class Biolumi {
             }
 
             class Position {
-              constructor(x, y, w, h, st) {
+              constructor(x, y, w, h, st, sh) {
                 this.x = x; // x position
                 this.y = y; // y position
                 this.w = w; // texture data width
                 this.h = h; // texture data height
                 this.st = st; // scroll top
+                this.sh = sh; // scroll height
               }
             }
 
