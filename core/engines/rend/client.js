@@ -303,7 +303,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
             const getMainPageReamdeSrc = ({mainReadme}) => mainReadme;
             const getInputSrc = (inputText, inputValue) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
-  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onfclick="input">
+  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onclick="input">
     <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
     <div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>
     <div>${inputText}</div>
@@ -911,7 +911,7 @@ ${getHeaderSrc('elements', '', '', true)}
                           state: {elements},
                         });
                       } else if (onclick === 'input') {
-                        const {value} = boxMesh;
+                        const {value} = hoverState;
                         const valuePx = value * (WIDTH - (500 + 40));
 
                         const slices = (() => {
@@ -942,7 +942,7 @@ ${getHeaderSrc('elements', '', '', true)}
                           }
                         }
                       } else if (onclick === 'resolution') {
-                        const {value} = boxMesh;
+                        const {value} = hoverState;
 
                         sliderValue = value;
 
