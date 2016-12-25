@@ -1,4 +1,4 @@
-const heredoc = require('heredoc');
+import whatkey from 'whatkey';
 
 const WIDTH = 2 * 1024;
 const HEIGHT = WIDTH / 1.5;
@@ -43,7 +43,13 @@ class Rend {
         '/core/plugins/creature-utils',
       ]),
     ]).then(([
-      [input, three, biolumi, bullet, heartlink],
+      [
+        input,
+        three,
+        biolumi,
+        bullet,
+        heartlink,
+      ],
       [creatureUtils],
     ]) => {
       if (live) {
@@ -270,12 +276,14 @@ class Rend {
             const modsState = {
               inputText: '',
               inputPlaceholder: 'Search npm',
+              inputIndex: 0,
               inputValue: 0,
               mods: currentMods,
             };
             const configState = {
               inputText: 'Hello, world! This is some text!',
               inputPlaceholder: '',
+              inputIndex: 0,
               inputValue: 0,
               sliderValue: 0.5,
             };
@@ -948,6 +956,7 @@ ${getHeaderSrc('elements', '', '', true)}
                       const index = sortedDistances[0][1];
                       const closestValuePx = widths[index];
 
+                      modsState.inputIndex = index;
                       modsState.inputValue = closestValuePx / (WIDTH - (500 + 40));
                       focusState.type = 'mods';
 
@@ -972,6 +981,7 @@ ${getHeaderSrc('elements', '', '', true)}
                       const index = sortedDistances[0][1];
                       const closestValuePx = widths[index];
 
+                      configState.inputIndex = index;
                       configState.inputValue = closestValuePx / (WIDTH - (500 + 40));
                       focusState.type = 'config';
 
@@ -1043,6 +1053,42 @@ ${getHeaderSrc('elements', '', '', true)}
                 };
                 input.addEventListener('mouseup', mouseup);
 
+                const keydown = e => {
+                  const {type} = focusState;
+                  if (type) {
+                    e.stopImmediatePropagation();
+                  }
+                };
+                input.addEventListener('keydown', keydown, {
+                  priority: 1,
+                });
+                const keypress = e => {
+                  const {type} = focusState;
+
+                  if (type === 'mods') {
+                    const {inputText, inputIndex} = modsState;
+
+                    modsState.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
+                    modsState.inputIndex++;
+
+                    // XXX update inputValue here also
+
+                    _updatePages();
+
+                    e.stopImmediatePropagation();
+                  } else if (type === 'config') {
+                    const {inputText, inputIndex} = configState;
+
+                    configState.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
+                    configState.inputIndex++;
+
+                    _updatePages();
+
+                    e.stopImmediatePropagation();
+                  }
+                };
+                input.addEventListener('keypress', keypress);
+
                 cleanups.push(() => {
                   scene.remove(menuMesh);
                   scene.remove(boxMesh);
@@ -1052,6 +1098,8 @@ ${getHeaderSrc('elements', '', '', true)}
                   input.removeEventListener('mousedown', mousedown);
                   input.removeEventListener('mousemove', mousemove);
                   input.removeEventListener('mouseup', mouseup);
+                  input.addEventListener('keydown', keydown);
+                  input.addEventListener('keypress', keypress);
                 });
 
                 const _decomposeMenuMesh = () => {
