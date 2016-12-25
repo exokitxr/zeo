@@ -28,7 +28,7 @@ class Npm {
       https.get({
         hostname: 'api.npms.io',
         path: '/v2/search?' + querystring.stringify({
-          q: q + '+keywords:http',
+          q: q// + '+keywords:http',
         }),
       }, proxyRes => {
         if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {

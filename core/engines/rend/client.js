@@ -36,6 +36,7 @@ class Rend {
         '/core/engines/input',
         '/core/engines/three',
         '/core/engines/biolumi',
+        '/core/engines/npm',
         '/core/engines/bullet',
         '/core/engines/heartlink',
       ]),
@@ -47,6 +48,7 @@ class Rend {
         input,
         three,
         biolumi,
+        npm,
         bullet,
         heartlink,
       ],
@@ -268,6 +270,8 @@ class Rend {
           });
         const _initializeMenu = () => {
           if (live) {
+            const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
+
             const fontSize = 72;
             const lineHeight = 1.4;
             const focusState = {
@@ -278,7 +282,7 @@ class Rend {
               inputPlaceholder: 'Search npm',
               inputIndex: 0,
               inputValue: 0,
-              mods: currentMods,
+              mods: _cleanMods(currentMods),
             };
             const configState = {
               inputText: 'Hello, world! This is some text!',
@@ -1064,43 +1068,76 @@ ${getHeaderSrc('elements', '', '', true)}
                     state.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
                     state.inputIndex++;
                     state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+
+                    return true;
                   } else if (e.keyCode === 13) { // enter
                     focusState.type = null;
+
+                    return true;
                   } else if (e.keyCode === 8) { // backspace
                     if (inputIndex > 0) {
                       state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
                       state.inputIndex--;
                       state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+
+                      return true;
+                    } else {
+                      return false;
                     }
                   } else if (e.keyCode === 37) { // left
                     state.inputIndex = Math.max(state.inputIndex - 1, 0);
                     state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+
+                    return true;
                   } else if (e.keyCode === 39) { // right
                     state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
                     state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+
+                    return true;
                   } else if (e.keyCode === 38) { // up
                     state.inputIndex = 0;
                     state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+
+                    return true;
                   } else if (e.keyCode === 40) { // down
                     state.inputIndex = inputText.length;
                     state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+
+                    return true;
+                  } else {
+                    return false;
                   }
                 };
                 const keydown = e => {
                   const {type} = focusState;
 
                   if (type === 'mods') {
-                    _applyStateEvent(modsState, e);
+                    if (_applyStateEvent(modsState, e)) {
+                      if (modsState.inputText.length > 0) {
+                        // XXX cancel duplicate searches
+                        npm.requestSearch(modsState.inputText)
+                          .then(mods => {
+                            modsState.mods = _cleanMods(mods),
 
-                    _updatePages();
+                            _updatePages();
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
+                      } else {
+                        modsState.mods = _cleanMods(currentMods);
+                      }
 
-                    e.stopImmediatePropagation();
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
                   } else if (type === 'config') {
-                    _applyStateEvent(configState, e);
+                    if (_applyStateEvent(configState, e)) {
+                      _updatePages();
 
-                    _updatePages();
-
-                    e.stopImmediatePropagation();
+                      e.stopImmediatePropagation();
+                    }
                   }
                 };
                 input.addEventListener('keydown', keydown, {
