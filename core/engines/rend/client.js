@@ -308,7 +308,7 @@ class Rend {
                 ],
               },
               {
-                element: 'sub',
+                element: 'text',
                 attributes: {
                   lol: 'zol',
                 },
@@ -337,7 +337,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
             const getSliderSrc = sliderValue => `\
 <div style="position: relative; width ${WIDTH - (500 + 40)}px; height: 100px;">
   <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="config:resolution">
-    <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCCCCC;">
+    <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
     <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
     </div>
   </a>
@@ -416,8 +416,10 @@ ${getHeaderSrc('elements', '', '', true)}
 </div>
 `;
             const getElementsPageContentSrc = ({elements}) => {
-              const head = (element, depth) => `<span style="color: #a894a6;">${spaces(depth)}&lt;${element.element}${attributes(element)}&gt;</span>`;
-              const tail = (element, depth) => `<span style="color: #a894a6;">${spaces(depth)}&lt;/${element.element}&gt;</span>`;
+              const head = (element, keyPath, depth) => `<a style="${anchorStyle(element)} color: #a894a6; " onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;${element.element}${attributes(element)}&gt;</a>`;
+              const tail = (element, keyPath, depth) => `<a style="${anchorStyle(element)} color: #a894a6;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
+              const anchorStyle = element => `display: inline-block; ${element.dragging ? `background-color: #CCC; border-radius: 5px;` : ''} text-decoration: none;`;
+              const anchorOnclick = keyPath => `element:${keyPath.join(':')}`;
               const attributes = element => {
                 const {attributes} = element;
 
@@ -429,24 +431,27 @@ ${getHeaderSrc('elements', '', '', true)}
                 return acc.length > 0 ? (' ' + acc.join(' ')) : '';
               };
 
-              const outerElements = (elements, depth = 0) => `<div style="margin: 0; padding: 0; list-style-type: none;">${innerElements(elements, depth)}</div>`;
+              const outerElements = (elements, keyPath) => `<div style="display: flex; flex-direction: column;;">${innerElements(elements, keyPath)}</div>`;
               const spaces = depth => Array(depth + 1).join('&nbsp;&nbsp;');
-              const innerElements = (elements, depth = 0) => elements.map(element => {
-                let result = `<div>${head(element, depth)}`;
+              const innerElements = (elements, keyPath) => elements.map((element, i) => {
+                const depth = keyPath.length;
+                const childKeyPath = keyPath.concat(i);
+
+                let result = `<div>${head(element, childKeyPath, depth)}`;
 
                 const {children} = element;
                 if (Array.isArray(children)) {
-                  result += `<div>${outerElements(children, depth + 1)}</div>`;
+                  result += `<div>${outerElements(children, childKeyPath)}</div>`;
                 } else if (typeof children === 'string') {
                   result += children;
                 }
 
-                result += `${tail(element, Array.isArray(children) ? depth : 0)}</div>`;
+                result += `${tail(element, childKeyPath, Array.isArray(children) ? depth : 0)}</div>`;
 
                 return result;
               }).join('\n');
 
-              return `<div style="width: ${WIDTH - (500 + 40)}px; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">${outerElements(elements)}</div>`;
+              return `<div style="width: ${WIDTH - (500 + 40)}px; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">${outerElements(elements, [])}</div>`;
             };
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
@@ -961,6 +966,22 @@ ${getHeaderSrc('elements', '', '', true)}
                         type: 'elements',
                         state: {elements},
                       });
+                    } else if (match = onclick.match(/^element:((?:[0-9]+:)*[0-9]+)$/)) {
+                      const keyPath = match[1].split(':').map(k => parseInt(k, 10));
+
+                      const _getKeyPath = (root, keyPath) => {
+                        const _recurse = (root, i) => {
+                          if (i === keyPath.length) {
+                            return root;
+                          } else {
+                            return _recurse(root.children[keyPath[i]], i + 1);
+                          }
+                        };
+                        return _recurse(root, 0);
+                      };
+
+                      const element = _getKeyPath({children: elements}, keyPath);
+                      console.log('click element', element); // XXX
                     } else if (onclick === 'mods:input') {
                       const {value} = hoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
