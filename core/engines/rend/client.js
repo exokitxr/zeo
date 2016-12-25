@@ -291,30 +291,33 @@ class Rend {
               inputValue: 0,
               sliderValue: 0.5,
             };
-            const elements = [
-              {
-                element: 'archae',
-                attributes: {
-                  position: [1, 2, 3].join(' '),
-                },
-                children: [
-                  {
-                    element: 'sub',
-                    attributes: {
-                      rotation: [0, Math.PI, 0].join(' '),
-                    },
-                    children: 'Hello, World!',
+            const elementsState = {
+              elements: [
+                {
+                  element: 'archae',
+                  attributes: {
+                    position: [1, 2, 3].join(' '),
                   },
-                ],
-              },
-              {
-                element: 'text',
-                attributes: {
-                  lol: 'zol',
+                  children: [
+                    {
+                      element: 'sub',
+                      attributes: {
+                        rotation: [0, Math.PI, 0].join(' '),
+                      },
+                      children: 'Hello, World!',
+                    },
+                  ],
                 },
-                children: 'Here is some text content',
-              },
-            ];
+                {
+                  element: 'text',
+                  attributes: {
+                    lol: 'zol',
+                  },
+                  children: 'Here is some text content',
+                },
+              ],
+              draggingKeyPath: [],
+            };
 
             const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
@@ -415,10 +418,14 @@ ${getHeaderSrc('elements', '', '', true)}
   </div>
 </div>
 `;
-            const getElementsPageContentSrc = ({elements}) => {
-              const head = (element, keyPath, depth) => `<a style="${anchorStyle(element)} color: #a894a6; " onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;${element.element}${attributes(element)}&gt;</a>`;
-              const tail = (element, keyPath, depth) => `<a style="${anchorStyle(element)} color: #a894a6;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
-              const anchorStyle = element => `display: inline-block; ${element.dragging ? `background-color: #CCC; border-radius: 5px;` : ''} text-decoration: none;`;
+            const getElementsPageContentSrc = ({elements, draggingKeyPath}) => {
+              const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
+                const bi = b[i];
+                return ai === bi;
+              });
+              const head = (element, keyPath, depth) => `<a style="${anchorStyle(keyPath)} color: #a894a6; " onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;${element.element}${attributes(element)}&gt;</a>`;
+              const tail = (element, keyPath, depth) => `<a style="${anchorStyle(keyPath)} color: #a894a6;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
+              const anchorStyle = keyPath => `display: inline-block; ${_keyPathEquals(keyPath, draggingKeyPath) ? `background-color: #EEE; border-radius: 5px;` : ''} text-decoration: none;`;
               const anchorOnclick = keyPath => `element:${keyPath.join(':')}`;
               const attributes = element => {
                 const {attributes} = element;
@@ -794,6 +801,8 @@ ${getHeaderSrc('elements', '', '', true)}
                         config: configState,
                         focus: focusState,
                       });
+                    } else if (type === 'elements') {
+                      page.update(elementsState);
                     }
                   }
                 };
@@ -939,14 +948,14 @@ ${getHeaderSrc('elements', '', '', true)}
                    } else if (onclick === 'elements') {
                       ui.cancelTransition();
 
-                      ui.pushPage(() => ([
+                      ui.pushPage(({elements, draggingKeyPath}) => ([
                         {
                           type: 'html',
                           src: getElementsPageSrc(),
                         },
                         {
                           type: 'html',
-                          src: getElementsPageContentSrc({elements}),
+                          src: getElementsPageContentSrc({elements, draggingKeyPath}),
                           x: 500,
                           y: 150 + 2,
                           w: WIDTH - 500,
@@ -964,7 +973,7 @@ ${getHeaderSrc('elements', '', '', true)}
                         }
                       ]), {
                         type: 'elements',
-                        state: {elements},
+                        state: elementsState,
                       });
                     } else if (match = onclick.match(/^element:((?:[0-9]+:)*[0-9]+)$/)) {
                       const keyPath = match[1].split(':').map(k => parseInt(k, 10));
@@ -980,8 +989,12 @@ ${getHeaderSrc('elements', '', '', true)}
                         return _recurse(root, 0);
                       };
 
-                      const element = _getKeyPath({children: elements}, keyPath);
+                      const element = _getKeyPath({children: elementsState.elements}, keyPath);
                       console.log('click element', element); // XXX
+
+                      elementsState.draggingKeyPath = keyPath;
+
+                      _updatePages();
                     } else if (onclick === 'mods:input') {
                       const {value} = hoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
