@@ -461,10 +461,28 @@ ${getHeaderSrc('elements', '', '', true)}
 `;
             const getElementsPageSubcontentSrc = ({availableElements, clipboardElements, draggingKeyPath}) => `\
 <div style="display: flex; flex-direction: column; width: 600px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; box-sizing: border-box;">
-  <h1 style="margin: 10px 0; font-size: 40px;">Installed</h1>
+  <div style="margin: 10px 0;">
+    <div style="display: inline-block; float: left;">
+      <h1 style="margin: 0; font-size: 40px;">Installed</h1>
+    </div>
+    <div style="float: right;">
+      <div style="display: flex; height: 40px; margin: 6px 0; align-items: center;">
+        <a style="padding: 5px 10px; background-color: #5cb85c; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">More</a>
+      </div>
+    </div>
+  </div>
   ${getElementsSrc(availableElements, draggingKeyPath)}
   <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
-  <h1 style="margin: 10px 0; font-size: 40px;">Clipboard</h1>
+  <div style="margin: 10px 0;">
+    <div style="display: inline-block; float: left;">
+      <h1 style="margin: 0; font-size: 40px;">Clipboard</h1>
+    </div>
+    <div style="float: right;">
+      <div style="display: flex; height: 40px; margin: 6px 0; align-items: center;">
+        <a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>
+      </div>
+    </div>
+  </div>
   ${getElementsSrc(clipboardElements, draggingKeyPath)}
 </div>
 `;
