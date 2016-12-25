@@ -1053,41 +1053,58 @@ ${getHeaderSrc('elements', '', '', true)}
                 };
                 input.addEventListener('mouseup', mouseup);
 
+                const _isPrintableKeycode = keyCode =>
+                  (keyCode > 47 && keyCode < 58) || // number keys
+                  (keyCode == 32) || // spacebar & return key(s) (if you want to allow carriage returns)
+                  (keyCode > 64 && keyCode < 91) || // letter keys
+                  (keyCode > 95 && keyCode < 112) || // numpad keys
+                  (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
+                  (keyCode > 218 && keyCode < 223); // [\]' (in order)\
+                const _applyStateEvent = (state, e) => {
+                  const {inputText, inputIndex} = state;
+
+                  if (_isPrintableKeycode(e.keyCode)) {
+                    state.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
+                    state.inputIndex++;
+                  } else if (e.keyCode === 13) { // enter
+                    focusState.type = null;
+                  } else if (e.keyCode === 8) { // backspace
+                    if (inputIndex > 0) {
+                      state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
+                      state.inputIndex--;
+                    }
+                  } else if (e.keyCode === 37) { // left
+                    state.inputIndex = Math.max(state.inputIndex - 1, 0);
+                  } else if (e.keyCode === 39) { // right
+                    state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
+                  } else if (e.keyCode === 38) { // up
+                    state.inputIndex = 0;
+                  } else if (e.keyCode === 40) { // down
+                    state.inputIndex = inputText.length;
+                  }
+
+                  // XXX update inputValue here also
+                };
                 const keydown = e => {
                   const {type} = focusState;
-                  if (type) {
+
+                  if (type === 'mods') {
+                    _applyStateEvent(modsState, e);
+
+                    _updatePages();
+
+                    e.stopImmediatePropagation();
+                  } else if (type === 'config') {
+                    _applyStateEvent(configState, e);
+
+                    _updatePages();
+
                     e.stopImmediatePropagation();
                   }
                 };
                 input.addEventListener('keydown', keydown, {
                   priority: 1,
                 });
-                const keypress = e => {
-                  const {type} = focusState;
-
-                  if (type === 'mods') {
-                    const {inputText, inputIndex} = modsState;
-
-                    modsState.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
-                    modsState.inputIndex++;
-
-                    // XXX update inputValue here also
-
-                    _updatePages();
-
-                    e.stopImmediatePropagation();
-                  } else if (type === 'config') {
-                    const {inputText, inputIndex} = configState;
-
-                    configState.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
-                    configState.inputIndex++;
-
-                    _updatePages();
-
-                    e.stopImmediatePropagation();
-                  }
-                };
-                input.addEventListener('keypress', keypress);
 
                 cleanups.push(() => {
                   scene.remove(menuMesh);
@@ -1099,7 +1116,6 @@ ${getHeaderSrc('elements', '', '', true)}
                   input.removeEventListener('mousemove', mousemove);
                   input.removeEventListener('mouseup', mouseup);
                   input.addEventListener('keydown', keydown);
-                  input.addEventListener('keypress', keypress);
                 });
 
                 const _decomposeMenuMesh = () => {
