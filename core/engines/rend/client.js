@@ -316,6 +316,41 @@ class Rend {
                   children: 'Here is some text content',
                 },
               ],
+              availableElements: [
+                {
+                  element: 'model',
+                  attributes: {
+                    position: [1, 2, 3].join(' '),
+                    rotation: [0, Math.PI, 0].join(' '),
+                    url: 'cloud.mdl',
+                  },
+                },
+                {
+                  element: 'model',
+                  attributes: {
+                    position: [1, 2, 3].join(' '),
+                    rotation: [0, Math.PI, 0].join(' '),
+                    url: 'lightning.mdl',
+                  },
+                },
+              ],
+              clipboardElements: [
+                {
+                  element: 'model',
+                  attributes: {
+                    position: [1, 2, 3].join(' '),
+                    rotation: [0, Math.PI, 0].join(' '),
+                  },
+                  children: [
+                    {
+                      element: 'submodel',
+                      attributes: {
+                        url: 'cloud.mdl',
+                      },
+                    },
+                  ],
+                },
+              ],
               draggingKeyPath: [],
             };
 
@@ -418,7 +453,21 @@ ${getHeaderSrc('elements', '', '', true)}
   </div>
 </div>
 `;
-            const getElementsPageContentSrc = ({elements, draggingKeyPath}) => {
+            const getElementsPageContentSrc = ({elements, draggingKeyPath}) => `\
+<div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px;">
+  <h1 style="border-bottom: 2px solid #333; font-size: 50px;">World elements</h1>
+  ${getElementsSrc(elements, draggingKeyPath)}
+</div>
+`;
+            const getElementsPageSubcontentSrc = ({availableElements, clipboardElements, draggingKeyPath}) => `\
+<div style="display: flex; flex-direction: column; width: 600px;">
+  <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed</h1>
+  ${getElementsSrc(availableElements, draggingKeyPath)}
+  <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Clipboard</h1>
+  ${getElementsSrc(clipboardElements, draggingKeyPath)}
+</div>
+`;
+            const getElementsSrc = (elements, draggingKeyPath) => {
               const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
                 const bi = b[i];
                 return ai === bi;
@@ -458,7 +507,7 @@ ${getHeaderSrc('elements', '', '', true)}
                 return result;
               }).join('\n');
 
-              return `<div style="width: ${WIDTH - (500 + 40)}px; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">${outerElements(elements, [])}</div>`;
+              return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, [])}</div>`;
             };
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
@@ -950,7 +999,7 @@ ${getHeaderSrc('elements', '', '', true)}
                    } else if (onclick === 'elements') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({elements, draggingKeyPath}) => ([
+                      ui.pushPage(({elements, availableElements, clipboardElements, draggingKeyPath}) => ([
                         {
                           type: 'html',
                           src: getElementsPageSrc(),
@@ -960,7 +1009,16 @@ ${getHeaderSrc('elements', '', '', true)}
                           src: getElementsPageContentSrc({elements, draggingKeyPath}),
                           x: 500,
                           y: 150 + 2,
-                          w: WIDTH - 500,
+                          w: WIDTH - (500 + 600),
+                          h: HEIGHT - (150 + 2),
+                          scroll: true,
+                        },
+                        {
+                          type: 'html',
+                          src: getElementsPageSubcontentSrc({availableElements, clipboardElements, draggingKeyPath}),
+                          x: 500 + (WIDTH - (500 + 600)),
+                          y: 150 + 2,
+                          w: 600,
                           h: HEIGHT - (150 + 2),
                           scroll: true,
                         },
