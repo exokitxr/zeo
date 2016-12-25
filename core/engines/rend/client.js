@@ -423,9 +423,9 @@ ${getHeaderSrc('elements', '', '', true)}
                 const bi = b[i];
                 return ai === bi;
               });
-              const head = (element, keyPath, depth) => `<a style="${anchorStyle(keyPath)} color: #a894a6; " onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;${element.element}${attributes(element)}&gt;</a>`;
-              const tail = (element, keyPath, depth) => `<a style="${anchorStyle(keyPath)} color: #a894a6;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
-              const anchorStyle = keyPath => `display: inline-block; ${_keyPathEquals(keyPath, draggingKeyPath) ? `background-color: #EEE; border-radius: 5px;` : ''} text-decoration: none;`;
+              const head = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;${element.element}${attributes(element)}&gt;</a>`;
+              const tail = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
+              const anchorStyle = keyPath => `display: inline-block; ${_keyPathEquals(keyPath, draggingKeyPath) ? `background-color: #EEE; border-radius: 5px;` : ''}`;
               const anchorOnclick = keyPath => `element:${keyPath.join(':')}`;
               const attributes = element => {
                 const {attributes} = element;
@@ -444,7 +444,7 @@ ${getHeaderSrc('elements', '', '', true)}
                 const depth = keyPath.length;
                 const childKeyPath = keyPath.concat(i);
 
-                let result = `<div>${head(element, childKeyPath, depth)}`;
+                let result = `<div style="${anchorStyle(childKeyPath)}">${head(element, childKeyPath, depth)}`;
 
                 const {children} = element;
                 if (Array.isArray(children)) {
