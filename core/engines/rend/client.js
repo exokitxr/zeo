@@ -473,7 +473,14 @@ ${getHeaderSrc('elements', '', '', true)}
                 const bi = b[i];
                 return ai === bi;
               });
-              const head = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;${element.element}${attributes(element)}&gt;</a>`;
+              const head = (element, keyPath, depth) => `\
+<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">\
+${spaces(depth)}&lt;\
+<img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
+${element.element}\
+${attributes(element)}&gt;\
+</a>\
+`;
               const tail = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
               const anchorStyle = keyPath => `display: inline-block; ${_keyPathEquals(keyPath, draggingKeyPath) ? `background-color: #EEE; border-radius: 5px;` : ''}`;
               const anchorOnclick = keyPath => `element:${keyPath.join(':')}`;
