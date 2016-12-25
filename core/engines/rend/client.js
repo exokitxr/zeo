@@ -916,13 +916,12 @@ ${getHeaderSrc('elements', '', '', true)}
                         });
                       } else if (onclick === 'mods:input') {
                         const {value} = hoverState;
-console.log('click value', value);
-                        /* const valuePx = value * (WIDTH - (500 + 40));
+                        const valuePx = value * (WIDTH - (500 + 40));
 
                         const slices = (() => {
                           const result = [];
-                          for (let i = 0; i <= inputText.length; i++) {
-                            const slice = inputText.slice(0, i);
+                          for (let i = 0; i <= modsState.inputText.length; i++) {
+                            const slice = modsState.inputText.slice(0, i);
                             result.push(slice);
                           }
                           return result;
@@ -935,16 +934,16 @@ console.log('click value', value);
                         const index = sortedDistances[0][1];
                         const closestValuePx = widths[index];
 
-                        configState.inputValue = closestValuePx / (WIDTH - (500 + 40));
+                        modsState.inputValue = closestValuePx / (WIDTH - (500 + 40));
 
                         const pages = ui.getPages();
                         for (let i = 0; i < pages.length; i++) {
                           const page = pages[i];
                           const {type} = page;
-                          if (type === 'config') {
-                            page.update(configState);
+                          if (type === 'mods') {
+                            page.update(modsState);
                           }
-                        } */
+                        }
                       } else if (onclick === 'config:input') {
                         const {value} = hoverState;
                         const valuePx = value * (WIDTH - (500 + 40));
