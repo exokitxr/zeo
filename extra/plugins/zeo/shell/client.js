@@ -185,7 +185,7 @@ const _connect = ({update = () => {}}) => {
       term.focus();
     }
   };
-  window.addEventListener('keydown', windowKeydown);
+  zeo.addEventListener('keydown', windowKeydown);
   const screenKeydown = e => {
     if (e.keyCode === TILDE_KEY_CODE) {
       if (document.activeElement === term.scrollPort_.iframe_) {
@@ -199,15 +199,9 @@ const _connect = ({update = () => {}}) => {
   term.scrollPort_.screen_.addEventListener('keydown', screenKeydown, true);
 
   cleanups.push(() => {
-    window.removeEventListener('keydown', windowKeydown);
+    zeo.removeEventListener('keydown', windowKeydown);
     term.scrollPort_.screen_.removeEventListener('keydown', screenKeydown);
   });
-
-  cleanups.push(() => {
-    window.removeEventListener('keydown', keydown);
-  });
-
-  term.screen_.addEventListener
 
   const socket = io(window.location.origin, {
     path: '/archae/shell/socket.io',

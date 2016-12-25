@@ -167,7 +167,7 @@ class Physics {
                   });
 
                   const keydown = e => {
-                    if (e.ctrlKey && e.keyCode === 82) { // ctrl-r
+                    if (e.keyCode === 82) { // R
                       boxPhysicsBodies.forEach(physicsBody => {
                         physicsBody.setPosition(_getRandomPosition().toArray());
                         physicsBody.setRotation(zeroQuaternion.toArray());
@@ -179,7 +179,7 @@ class Physics {
                       e.stopImmediatePropagation();
                     }
                   };
-                  window.addEventListener('keydown', keydown);
+                  zeo.addEventListener('keydown', keydown);
 
                   this._cleanup = () => {
                     boxMeshes.forEach(boxMesh => {
@@ -190,7 +190,7 @@ class Physics {
                       physics.remove(physicsBody);
                     });
 
-                    window.removeEventListener('keydown', keydown);
+                    zeo.removeEventListener('keydown', keydown);
                   };
                 }
               });

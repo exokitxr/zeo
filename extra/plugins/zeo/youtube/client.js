@@ -364,10 +364,10 @@ class Youtube {
             e.stopImmediatePropagation();
           }
         };
-        window.addEventListener('click', click);
+        zeo.addEventListener('click', click);
 
         this._cleanup = () => {
-          window.removeEventListener('click', click);
+          zeo.removeEventListener('click', click);
         };
 
         const _update = () => {

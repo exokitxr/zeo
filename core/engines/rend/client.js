@@ -986,7 +986,7 @@ ${getHeaderSrc('elements', '', '', true)}
                     }
                   }
                 };
-                window.addEventListener('click', click);
+                zeo.addEventListener('click', click);
                 const mousedown = () => {
                   const {scrollLayer} = hoverState;
                   if (scrollLayer) {
@@ -1000,7 +1000,7 @@ ${getHeaderSrc('elements', '', '', true)}
                     hoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
                   }
                 };
-                window.addEventListener('mousedown', mousedown);
+                zeo.addEventListener('mousedown', mousedown);
 
                 const _setLayerScrollTop = () => {
                   const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = hoverState;
@@ -1030,7 +1030,7 @@ ${getHeaderSrc('elements', '', '', true)}
                     _setLayerScrollTop();
                   }
                 };
-                window.addEventListener('mousemove', mousemove);
+                zeo.addEventListener('mousemove', mousemove);
                 const mouseup = () => {
                   const {mousedownStartCoord} = hoverState;
                   if (mousedownStartCoord) {
@@ -1040,17 +1040,17 @@ ${getHeaderSrc('elements', '', '', true)}
                     hoverState.mousedownStartCoord = null;
                   }
                 };
-                window.addEventListener('mouseup', mouseup);
+                zeo.addEventListener('mouseup', mouseup);
 
                 cleanups.push(() => {
                   scene.remove(menuMesh);
                   scene.remove(boxMesh);
                   scene.remove(dotMesh);
 
-                  window.removeEventListener('click', click);
-                  window.removeEventListener('mousedown', mousedown);
-                  window.removeEventListener('mousemove', mousemove);
-                  window.removeEventListener('mouseup', mouseup);
+                  zeo.removeEventListener('click', click);
+                  zeo.removeEventListener('mousedown', mousedown);
+                  zeo.removeEventListener('mousemove', mousemove);
+                  zeo.removeEventListener('mouseup', mouseup);
                 });
 
                 const _decomposeMenuMesh = () => {

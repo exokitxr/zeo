@@ -91,12 +91,12 @@ class Teleport {
             }
           }
         };
-        window.addEventListener('keydown', keydown);
-        window.addEventListener('keyup', keyup);
+        zeo.addEventListener('keydown', keydown);
+        zeo.addEventListener('keyup', keyup);
 
         this._cleanup = () => {
-          window.removeEventListener('keydown', keydown);
-          window.removeEventListener('keyup', keyup);
+          zeo.removeEventListener('keydown', keydown);
+          zeo.removeEventListener('keyup', keyup);
         };
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);

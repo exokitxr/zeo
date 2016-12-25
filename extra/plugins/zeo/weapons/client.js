@@ -149,7 +149,7 @@ class Weapons {
             }
           }
         };
-        window.addEventListener('keydown', keydown);
+        zeo.addEventListener('keydown', keydown);
         const hmdUpdate = update => {
           ['left', 'right'].forEach(_syncWeaponSide);
         };
@@ -767,7 +767,7 @@ class Weapons {
         };
 
         this._cleanup = () => {
-          window.removeEventListener('keydown', keydown);
+          zeo.removeEventListener('keydown', keydown);
           player.removeEventListener('hmdUpdate', hmdUpdate);
           player.removeEventListener('controllerUpdate', controllerUpdate);
         };

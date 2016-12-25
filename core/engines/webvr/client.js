@@ -602,11 +602,11 @@ class WebVR {
 
               console.warn('pointer lock error', err);
             };
-            document.addEventListener('keydown', keydown);
-            document.addEventListener('keyup', keyup);
-            document.addEventListener('mousemove', mousemove);
-            document.addEventListener('pointerlockchange', pointerlockchange);
-            document.addEventListener('pointerlockerror', pointerlockerror);
+            zeo.addEventListener('keydown', keydown);
+            zeo.addEventListener('keyup', keyup);
+            zeo.addEventListener('mousemove', mousemove);
+            zeo.addEventListener('pointerlockchange', pointerlockchange);
+            zeo.addEventListener('pointerlockerror', pointerlockerror);
 
             this._cleanup = () => {
               for (let i = 0; i < gamepads.length; i++) {
@@ -616,11 +616,12 @@ class WebVR {
 
               // document.removeEventListener('fullscreenchange', fullscreenchange);
               document.removeEventListener('webkitfullscreenchange', fullscreenchange);
-              document.removeEventListener('keydown', keydown);
-              document.removeEventListener('keyup', keyup);
-              document.removeEventListener('mousemove', mousemove);
-              document.removeEventListener('pointerlockchange', pointerlockchange);
-              document.removeEventListener('pointerlockerror', pointerlockerror);
+
+              zeo.removeEventListener('keydown', keydown);
+              zeo.removeEventListener('keyup', keyup);
+              zeo.removeEventListener('mousemove', mousemove);
+              zeo.removeEventListener('pointerlockchange', pointerlockchange);
+              zeo.removeEventListener('pointerlockerror', pointerlockerror);
             };
           }
 
@@ -839,10 +840,10 @@ class WebVR {
                 }
               }
             };
-            document.addEventListener('mousewheel', mousewheel);
+            zeo.addEventListener('mousewheel', mousewheel);
 
             this._cleanup = () => {
-              document.removeEventListener('mousewheel', mousewheel);
+              zeo.removeEventListener('mousewheel', mousewheel);
             };
           }
 
