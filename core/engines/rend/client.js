@@ -381,12 +381,11 @@ ${getHeaderSrc('preferences', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getConfigSidebarSrc()}
-    <div style="width: ${WIDTH - 500}px;"></div>
   </div>
 </div>
 `;
             const getConfigPageContentSrc = ({inputText, inputPlaceholder, inputValue, sliderValue}) => `\
-<div style="width: ${WIDTH - (500 + 40)}px; height: ${HEIGHT - (150 + 2)}px; padding-right: 40px;">
+<div style="width: ${WIDTH - (500 + 40)}px; margin: 40px 0; padding-right: 40px;">
   ${getInputSrc(inputText, inputPlaceholder, inputValue, 'config:input')}
   ${getSliderSrc(sliderValue)}
 </div>
@@ -535,8 +534,7 @@ ${getHeaderSrc('elements', '', '', true)}
                 "void main() {",
                 "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
                 "  float alpha = 0.0;",
-                "  int numDiffuse = 0;",
-                "  int numAlpha = 0;",
+                "  int numValid = 0;",
                 "  for (int i = 0; i < " + maxNumTextures + "; i++) {",
                 "    if (validTextures[i] != 0) {",
                 "      vec2 uv = vec2(",
@@ -546,17 +544,16 @@ ${getHeaderSrc('elements', '', '', true)}
                 "      if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
                 "        uv.y = 1.0 - ((1.0 - vUv.y - texturePositions[i].y + textureOffsets[i]) / textureDimensions[i]);",
                 "        vec4 sample = texture2D(textures[i], uv);",
-                "        diffuse += sample.xyz;",
-                "        numDiffuse++;",
+                "        diffuse += sample.rgb;",
                 "",
-                "        if (sample.w > 0.0) {",
-                "          alpha += sample.w;",
-                "          numAlpha++;",
+                "        if (sample.a > 0.0) {",
+                "          alpha += sample.a;",
+                "          numValid++;",
                 "        }",
                 "      }",
                 "    }",
                 "  }",
-                "  gl_FragColor = vec4(diffuse / float(numDiffuse), alpha / float(numAlpha));",
+                "  gl_FragColor = vec4(diffuse / float(numValid), alpha / float(numValid));",
                 "}"
               ].join("\n")
             };
