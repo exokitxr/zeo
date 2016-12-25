@@ -454,16 +454,17 @@ ${getHeaderSrc('elements', '', '', true)}
 </div>
 `;
             const getElementsPageContentSrc = ({elements, draggingKeyPath}) => `\
-<div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px;">
-  <h1 style="border-bottom: 2px solid #333; font-size: 50px;">World elements</h1>
+<div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; border-left: 2px solid #333; border-right: 2px solid #333; box-sizing: border-box;">
+  <h1 style="margin: 10px 0; font-size: 40px;">World</h1>
   ${getElementsSrc(elements, draggingKeyPath)}
 </div>
 `;
             const getElementsPageSubcontentSrc = ({availableElements, clipboardElements, draggingKeyPath}) => `\
-<div style="display: flex; flex-direction: column; width: 600px;">
-  <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed</h1>
+<div style="display: flex; flex-direction: column; width: 600px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; box-sizing: border-box;">
+  <h1 style="margin: 10px 0; font-size: 40px;">Installed</h1>
   ${getElementsSrc(availableElements, draggingKeyPath)}
-  <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Clipboard</h1>
+  <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
+  <h1 style="margin: 10px 0; font-size: 40px;">Clipboard</h1>
   ${getElementsSrc(clipboardElements, draggingKeyPath)}
 </div>
 `;
