@@ -446,11 +446,7 @@ ${getHeaderSrc('elements', '', '', true)}
                 return result;
               }).join('\n');
 
-              const result = `<div style="width: ${WIDTH - (500 + 40)}px; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">${outerElements(elements)}</div>`;
-              window.lol = document.createElement('div');
-              window.lol.innerHTML = result;
-              window.document.body.appendChild(lol);
-              return result;
+              return `<div style="width: ${WIDTH - (500 + 40)}px; font-family: Menlo; font-size: 32px; line-height: 1.4; white-space: pre;">${outerElements(elements)}</div>`;
             };
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
