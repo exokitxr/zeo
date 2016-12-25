@@ -743,6 +743,7 @@ ${getHeaderSrc('elements', '', '', true)}
                       const name = match[1];
                       const mods = currentMods;
                       const mod = mods.find(m => m.name === name);
+
                       page.update({mod});
                     } else if (type === 'mods') {
                       page.update({
@@ -758,233 +759,230 @@ ${getHeaderSrc('elements', '', '', true)}
                   }
                 };
                 const click = () => {
-                  const {intersectionPoint, anchor} = hoverState;
+                  const {intersectionPoint} = hoverState;
 
                   if (intersectionPoint) {
-                    if (anchor) {
-                      const {onclick} = anchor;
+                    const {anchor} = hoverState;
+                    const onclick = (anchor && anchor.onclick) || '';
 
-                      if (onclick) {
-                        let match;
-                        if (onclick === 'back') {
-                          ui.cancelTransition();
+                    focusState.type = null;
 
-                          if (ui.getPages().length > 1) {
-                            ui.popPage();
-                          }
-                        } else if (onclick === 'next') {
-                          ui.cancelTransition();
+                    let match;
+                    if (onclick === 'back') {
+                      ui.cancelTransition();
 
-                          if (ui.getPages().length < 3) {
-                            const mods = currentMods;
-
-                            ui.pushPage(({mods: {inputText, inputPlaceholder, inputValue, mods}, focus: {type: focusType}}) => ([
-                              {
-                                type: 'html',
-                                src: getModsPageSrc({inputText, inputPlaceholder, inputValue, focusType === 'mods', mods}),
-                              },
-                              {
-                                type: 'image',
-                                img: creatureUtils.makeAnimatedCreature('mods'),
-                                x: 150,
-                                y: 0,
-                                w: 150,
-                                h: 150,
-                                frameTime: 300,
-                              }
-                            ]), {
-                              type: 'mods',
-                              state: {
-                                mods: modsState,
-                                focus: focusState,
-                              },
-                            });
-                          } else {
-                            ui.popPage();
-                          }
-                        } else if (match = onclick.match(/^mod:(.+)$/)) {
-                          const name = match[1];
-                          const mods = currentMods;
-                          const mod = mods.find(m => m.name === name);
-
-                          ui.cancelTransition();
-
-                          if (ui.getPages().length < 3) {
-                            ui.pushPage(({mod: {name, version, installed, readme}}) => ([
-                              {
-                                type: 'html',
-                                src: getModPageSrc({name, version, installed}),
-                              },
-                              {
-                                type: 'html',
-                                src: getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
-                                x: 500,
-                                y: 150 + 2,
-                                w: WIDTH - 500,
-                                h: HEIGHT - (150 + 2),
-                                scroll: true,
-                              },
-                              {
-                                type: 'image',
-                                img: creatureUtils.makeAnimatedCreature('mod:' + name),
-                                x: 150,
-                                y: 0,
-                                w: 150,
-                                h: 150,
-                                frameTime: 300,
-                              }
-                            ]), {
-                              type: 'mod:' + name,
-                              state: {
-                                mod,
-                              },
-                            });
-                          } else {
-                            ui.popPage();
-                          }
-                        } else if (match = onclick.match(/^getmod:(.+)$/)) {
-                          const name = match[1];
-
-                          currentWorld.requestAddMod(name)
-                            .then(() => {
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (match = onclick.match(/^removemod:(.+)$/)) {
-                          const name = match[1];
-
-                          currentWorld.requestRemoveMod(name)
-                            .then(() => {
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (onclick === 'config') {
-                          ui.cancelTransition();
-
-                          ui.pushPage(({config: {inputText, inputPlaceholder, inputValue, sliderValue}, focus: {type: focusType}}) => ([
-                            {
-                              type: 'html',
-                              src: getConfigPageSrc(),
-                            },
-                            {
-                              type: 'html',
-                              src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, focusType === 'config', sliderValue}),
-                              x: 500,
-                              y: 150 + 2,
-                              w: WIDTH - 500,
-                              h: HEIGHT - (150 + 2),
-                              scroll: true,
-                            },
-                            {
-                              type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('preferences'),
-                              x: 150,
-                              y: 0,
-                              w: 150,
-                              h: 150,
-                              frameTime: 300,
-                            }
-                          ]), {
-                            type: 'config',
-                            state: {
-                              config: configState,
-                              focus: focusState,
-                            }
-                          });
-                       } else if (onclick === 'elements') {
-                          ui.cancelTransition();
-
-                          ui.pushPage(() => ([
-                            {
-                              type: 'html',
-                              src: getElementsPageSrc(),
-                            },
-                            {
-                              type: 'html',
-                              src: getElementsPageContentSrc({elements}),
-                              x: 500,
-                              y: 150 + 2,
-                              w: WIDTH - 500,
-                              h: HEIGHT - (150 + 2),
-                              scroll: true,
-                            },
-                            {
-                              type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('preferences'),
-                              x: 150,
-                              y: 0,
-                              w: 150,
-                              h: 150,
-                              frameTime: 300,
-                            }
-                          ]), {
-                            type: 'elements',
-                            state: {elements},
-                          });
-                        } else if (onclick === 'mods:input') {
-                          const {value} = hoverState;
-                          const valuePx = value * (WIDTH - (500 + 40));
-
-                          const slices = (() => {
-                            const result = [];
-                            for (let i = 0; i <= modsState.inputText.length; i++) {
-                              const slice = modsState.inputText.slice(0, i);
-                              result.push(slice);
-                            }
-                            return result;
-                          })();
-                          const widths = slices.map(slice => measureText(slice));
-                          const distances = widths.map(width => Math.abs(valuePx - width));
-                          const sortedDistances = distances
-                            .map((distance, index) => ([distance, index]))
-                            .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
-                          const index = sortedDistances[0][1];
-                          const closestValuePx = widths[index];
-
-                          modsState.inputValue = closestValuePx / (WIDTH - (500 + 40));
-                          focusState.type = 'mods';
-
-                          _updatePages();
-                        } else if (onclick === 'config:input') {
-                          const {value} = hoverState;
-                          const valuePx = value * (WIDTH - (500 + 40));
-
-                          const slices = (() => {
-                            const result = [];
-                            for (let i = 0; i <= configState.inputText.length; i++) {
-                              const slice = configState.inputText.slice(0, i);
-                              result.push(slice);
-                            }
-                            return result;
-                          })();
-                          const widths = slices.map(slice => measureText(slice));
-                          const distances = widths.map(width => Math.abs(valuePx - width));
-                          const sortedDistances = distances
-                            .map((distance, index) => ([distance, index]))
-                            .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
-                          const index = sortedDistances[0][1];
-                          const closestValuePx = widths[index];
-
-                          configState.inputValue = closestValuePx / (WIDTH - (500 + 40));
-                          focusState.type = 'config';
-
-                          _updatePages();
-                        } else if (onclick === 'config:resolution') {
-                          const {value} = hoverState;
-
-                          configState.sliderValue = value;
-
-                          _updatePages();
-                        } else {
-                          focusState.type = null;
-
-                          _updatePages();
-                        }
+                      if (ui.getPages().length > 1) {
+                        ui.popPage();
                       }
+                    } else if (onclick === 'next') {
+                      ui.cancelTransition();
+
+                      if (ui.getPages().length < 3) {
+                        const mods = currentMods;
+
+                        ui.pushPage(({mods: {inputText, inputPlaceholder, inputValue, mods}, focus: {type: focusType}}) => ([
+                          {
+                            type: 'html',
+                            src: getModsPageSrc({inputText, inputPlaceholder, inputValue, focus: focusType === 'mods', mods}),
+                          },
+                          {
+                            type: 'image',
+                            img: creatureUtils.makeAnimatedCreature('mods'),
+                            x: 150,
+                            y: 0,
+                            w: 150,
+                            h: 150,
+                            frameTime: 300,
+                          }
+                        ]), {
+                          type: 'mods',
+                          state: {
+                            mods: modsState,
+                            focus: focusState,
+                          },
+                        });
+                      } else {
+                        ui.popPage();
+                      }
+                    } else if (match = onclick.match(/^mod:(.+)$/)) {
+                      const name = match[1];
+                      const mods = currentMods;
+                      const mod = mods.find(m => m.name === name);
+
+                      ui.cancelTransition();
+
+                      if (ui.getPages().length < 3) {
+                        ui.pushPage(({mod: {name, version, installed, readme}}) => ([
+                          {
+                            type: 'html',
+                            src: getModPageSrc({name, version, installed}),
+                          },
+                          {
+                            type: 'html',
+                            src: getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
+                            x: 500,
+                            y: 150 + 2,
+                            w: WIDTH - 500,
+                            h: HEIGHT - (150 + 2),
+                            scroll: true,
+                          },
+                          {
+                            type: 'image',
+                            img: creatureUtils.makeAnimatedCreature('mod:' + name),
+                            x: 150,
+                            y: 0,
+                            w: 150,
+                            h: 150,
+                            frameTime: 300,
+                          }
+                        ]), {
+                          type: 'mod:' + name,
+                          state: {
+                            mod,
+                          },
+                        });
+                      } else {
+                        ui.popPage();
+                      }
+                    } else if (match = onclick.match(/^getmod:(.+)$/)) {
+                      const name = match[1];
+
+                      currentWorld.requestAddMod(name)
+                        .then(() => {
+                          _updatePages();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    } else if (match = onclick.match(/^removemod:(.+)$/)) {
+                      const name = match[1];
+
+                      currentWorld.requestRemoveMod(name)
+                        .then(() => {
+                          _updatePages();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    } else if (onclick === 'config') {
+                      ui.cancelTransition();
+
+                      ui.pushPage(({config: {inputText, inputPlaceholder, inputValue, sliderValue}, focus: {type: focusType}}) => ([
+                        {
+                          type: 'html',
+                          src: getConfigPageSrc(),
+                        },
+                        {
+                          type: 'html',
+                          src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, focus: focusType === 'config', sliderValue}),
+                          x: 500,
+                          y: 150 + 2,
+                          w: WIDTH - 500,
+                          h: HEIGHT - (150 + 2),
+                          scroll: true,
+                        },
+                        {
+                          type: 'image',
+                          img: creatureUtils.makeAnimatedCreature('preferences'),
+                          x: 150,
+                          y: 0,
+                          w: 150,
+                          h: 150,
+                          frameTime: 300,
+                        }
+                      ]), {
+                        type: 'config',
+                        state: {
+                          config: configState,
+                          focus: focusState,
+                        }
+                      });
+                   } else if (onclick === 'elements') {
+                      ui.cancelTransition();
+
+                      ui.pushPage(() => ([
+                        {
+                          type: 'html',
+                          src: getElementsPageSrc(),
+                        },
+                        {
+                          type: 'html',
+                          src: getElementsPageContentSrc({elements}),
+                          x: 500,
+                          y: 150 + 2,
+                          w: WIDTH - 500,
+                          h: HEIGHT - (150 + 2),
+                          scroll: true,
+                        },
+                        {
+                          type: 'image',
+                          img: creatureUtils.makeAnimatedCreature('preferences'),
+                          x: 150,
+                          y: 0,
+                          w: 150,
+                          h: 150,
+                          frameTime: 300,
+                        }
+                      ]), {
+                        type: 'elements',
+                        state: {elements},
+                      });
+                    } else if (onclick === 'mods:input') {
+                      const {value} = hoverState;
+                      const valuePx = value * (WIDTH - (500 + 40));
+
+                      const slices = (() => {
+                        const result = [];
+                        for (let i = 0; i <= modsState.inputText.length; i++) {
+                          const slice = modsState.inputText.slice(0, i);
+                          result.push(slice);
+                        }
+                        return result;
+                      })();
+                      const widths = slices.map(slice => measureText(slice));
+                      const distances = widths.map(width => Math.abs(valuePx - width));
+                      const sortedDistances = distances
+                        .map((distance, index) => ([distance, index]))
+                        .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
+                      const index = sortedDistances[0][1];
+                      const closestValuePx = widths[index];
+
+                      modsState.inputValue = closestValuePx / (WIDTH - (500 + 40));
+                      focusState.type = 'mods';
+
+                      _updatePages();
+                    } else if (onclick === 'config:input') {
+                      const {value} = hoverState;
+                      const valuePx = value * (WIDTH - (500 + 40));
+
+                      const slices = (() => {
+                        const result = [];
+                        for (let i = 0; i <= configState.inputText.length; i++) {
+                          const slice = configState.inputText.slice(0, i);
+                          result.push(slice);
+                        }
+                        return result;
+                      })();
+                      const widths = slices.map(slice => measureText(slice));
+                      const distances = widths.map(width => Math.abs(valuePx - width));
+                      const sortedDistances = distances
+                        .map((distance, index) => ([distance, index]))
+                        .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
+                      const index = sortedDistances[0][1];
+                      const closestValuePx = widths[index];
+
+                      configState.inputValue = closestValuePx / (WIDTH - (500 + 40));
+                      focusState.type = 'config';
+
+                      _updatePages();
+                    } else if (onclick === 'config:resolution') {
+                      const {value} = hoverState;
+
+                      configState.sliderValue = value;
+
+                      _updatePages();
+                    } else {
+                      _updatePages();
                     }
                   }
                 };

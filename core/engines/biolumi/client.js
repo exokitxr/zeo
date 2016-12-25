@@ -66,147 +66,156 @@ class Biolumi {
 
                 this.x = 0;
                 this.y = 0;
+
+                this._lastStateJson = '';
               }
 
               update(state = null, cb = () => {}) {
-                const {spec} = this;
+                const stateJson = JSON.stringify(state);
+                const {_lastStateJson: lastStateJson} = this;
 
-                const layers = [];
-                const layersSpec = typeof spec === 'function' ? spec(state) : spec;
-                if (layersSpec.length > 0) {
-                  let pending = layersSpec.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      this.layers = layers;
+                if (stateJson !== lastStateJson) {
+                  const {spec} = this;
 
-                      cb();
-                    }
-                  };
+                  const layers = [];
+                  const layersSpec = typeof spec === 'function' ? spec(state) : spec;
+                  if (layersSpec.length > 0) {
+                    let pending = layersSpec.length;
+                    const pend = () => {
+                      if (--pending === 0) {
+                        this.layers = layers;
 
-                  for (let i = 0; i < layersSpec.length; i++) {
-                    const layerSpec = layersSpec[i];
-                    const {type = 'html'} = layerSpec;
-
-                    if (type === 'html') {
-                      const {src, x = 0, y = 0, w = width, h = height, scroll = false} = layerSpec;
-
-                      const decoratedSrc = (() => {
-                        const el = document.createElement('div');
-                        el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-                        el.setAttribute('style', rootCss);
-                        el.innerHTML = src
-                          .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
-
-                        const imgs = el.querySelectorAll('img');
-
-                        // do not load images without an explicit width + height
-                        for (let i = 0; i < imgs.length; i++) {
-                          const img = imgs[i];
-                          if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
-                            img.parentNode.removeChild(img);
-                          }
-                        }
-
-                        // remove empty anchors
-                        const as = el.querySelectorAll('a');
-                        for (let i = 0; i < as.length; i++) {
-                          const a = as[i];
-                          if (a.childNodes.length > 0) {
-                            if (!a.style.textDecoration) {
-                              a.style.textDecoration = 'underline';
-                            }
-                          } else {
-                            a.parentNode.removeChild(a);
-                          }
-                        }
-
-                        return new XMLSerializer().serializeToString(el);
-                      })();
-
-                      const innerSrc = styleTag + decoratedSrc;
-                      const divEl = (() => {
-                        const el = document.createElement('div');
-                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                        el.innerHTML = innerSrc;
-
-                        return el;
-                      })();
-                      document.body.appendChild(divEl);
-
-                      const {scrollHeight} = divEl;
-
-                      const anchors = (() => {
-                        const as = divEl.querySelectorAll('a');
-                        const numAs = as.length;
-
-                        const result = Array(numAs);
-                        for (let i = 0; i < numAs; i++) {
-                          const a = as[i];
-
-                          const rect = a.getBoundingClientRect();
-                          const onclick = a.getAttribute('onclick') || null;
-
-                          const anchor = new Anchor(rect, onclick);
-                          result[i] = anchor;
-                        }
-
-                        return result;
-                      })();
-
-                      document.body.removeChild(divEl);
-
-                      const img = new Image();
-                      img.src = 'data:image/svg+xml;charset=utf-8,' + '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + scrollHeight + '\'>' +
-                        '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                          innerSrc +
-                        '</foreignObject>' +
-                      '</svg>';
-                      img.onload = () => {
-                        layer.img = img;
-
-                        pend();
-                      };
-                      img.onerror = err => {
-                        console.warn('biolumi image load error', err);
-                      };
-
-                      const layer = new Layer(this);
-                      layer.anchors = anchors;
-                      layer.x = x;
-                      layer.y = y;
-                      layer.w = w;
-                      layer.h = h;
-                      layer.scrollHeight = scrollHeight;
-                      layer.scroll = scroll;
-                      layers.push(layer);
-                    } else if (type === 'image') {
-                      let {img: imgs} = layerSpec;
-                      if (!Array.isArray(imgs)) {
-                        imgs = [imgs];
+                        cb();
                       }
-                      const {x = 0, y = 0, w = width, h = height, frameTime = 300} = layerSpec;
+                    };
 
-                      setTimeout(pend);
+                    for (let i = 0; i < layersSpec.length; i++) {
+                      const layerSpec = layersSpec[i];
+                      const {type = 'html'} = layerSpec;
 
-                      for (let j = 0; j < imgs.length; j++) {
-                        const img = imgs[j];
+                      if (type === 'html') {
+                        const {src, x = 0, y = 0, w = width, h = height, scroll = false} = layerSpec;
+
+                        const decoratedSrc = (() => {
+                          const el = document.createElement('div');
+                          el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+                          el.setAttribute('style', rootCss);
+                          el.innerHTML = src
+                            .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
+
+                          const imgs = el.querySelectorAll('img');
+
+                          // do not load images without an explicit width + height
+                          for (let i = 0; i < imgs.length; i++) {
+                            const img = imgs[i];
+                            if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
+                              img.parentNode.removeChild(img);
+                            }
+                          }
+
+                          // remove empty anchors
+                          const as = el.querySelectorAll('a');
+                          for (let i = 0; i < as.length; i++) {
+                            const a = as[i];
+                            if (a.childNodes.length > 0) {
+                              if (!a.style.textDecoration) {
+                                a.style.textDecoration = 'underline';
+                              }
+                            } else {
+                              a.parentNode.removeChild(a);
+                            }
+                          }
+
+                          return new XMLSerializer().serializeToString(el);
+                        })();
+
+                        const innerSrc = styleTag + decoratedSrc;
+                        const divEl = (() => {
+                          const el = document.createElement('div');
+                          el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                          el.innerHTML = innerSrc;
+
+                          return el;
+                        })();
+                        document.body.appendChild(divEl);
+
+                        const {scrollHeight} = divEl;
+
+                        const anchors = (() => {
+                          const as = divEl.querySelectorAll('a');
+                          const numAs = as.length;
+
+                          const result = Array(numAs);
+                          for (let i = 0; i < numAs; i++) {
+                            const a = as[i];
+
+                            const rect = a.getBoundingClientRect();
+                            const onclick = a.getAttribute('onclick') || null;
+
+                            const anchor = new Anchor(rect, onclick);
+                            result[i] = anchor;
+                          }
+
+                          return result;
+                        })();
+
+                        document.body.removeChild(divEl);
+
+                        const img = new Image();
+                        img.src = 'data:image/svg+xml;charset=utf-8,' + '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + scrollHeight + '\'>' +
+                          '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                            innerSrc +
+                          '</foreignObject>' +
+                        '</svg>';
+                        img.onload = () => {
+                          layer.img = img;
+
+                          pend();
+                        };
+                        img.onerror = err => {
+                          console.warn('biolumi image load error', err);
+                        };
 
                         const layer = new Layer(this);
-                        layer.img = img;
+                        layer.anchors = anchors;
                         layer.x = x;
                         layer.y = y;
                         layer.w = w;
                         layer.h = h;
-                        layer.scrollHeight = h;
-                        layer.numFrames = imgs.length;
-                        layer.frameIndex = j;
-                        layer.frameTime = frameTime;
+                        layer.scrollHeight = scrollHeight;
+                        layer.scroll = scroll;
                         layers.push(layer);
+                      } else if (type === 'image') {
+                        let {img: imgs} = layerSpec;
+                        if (!Array.isArray(imgs)) {
+                          imgs = [imgs];
+                        }
+                        const {x = 0, y = 0, w = width, h = height, frameTime = 300} = layerSpec;
+
+                        setTimeout(pend);
+
+                        for (let j = 0; j < imgs.length; j++) {
+                          const img = imgs[j];
+
+                          const layer = new Layer(this);
+                          layer.img = img;
+                          layer.x = x;
+                          layer.y = y;
+                          layer.w = w;
+                          layer.h = h;
+                          layer.scrollHeight = h;
+                          layer.numFrames = imgs.length;
+                          layer.frameIndex = j;
+                          layer.frameTime = frameTime;
+                          layers.push(layer);
+                        }
+                      } else {
+                        throw new Error('unknown layer type: ' + type);
                       }
-                    } else {
-                      throw new Error('unknown layer type: ' + type);
                     }
                   }
+
+                  this._lastStateJson = stateJson;
                 }
               }
             }
