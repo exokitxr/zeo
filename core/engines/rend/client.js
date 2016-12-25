@@ -311,8 +311,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 `;
             const getInputSrc = (inputText, inputPlaceholder, inputValue, onclick) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
-  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; text-decoration: none;' onclick="${onclick}">
-    <div style="position: absolute; top: 0; bottom: 20px; left: 0; right: 0; border-bottom: 5px solid #333; box-sizing: border-box;"></div>
+  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #F0F0F0; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
     <div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>
     <div>${inputText}</div>
     ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
@@ -322,7 +321,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
             const getSliderSrc = sliderValue => `\
 <div style="position: relative; width ${WIDTH - (500 + 40)}px; height: 100px;">
   <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="config:resolution">
-    <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
+    <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCCCCC;">
     <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
     </div>
   </a>
