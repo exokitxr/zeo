@@ -94,9 +94,12 @@ class Biolumi {
                         const el = document.createElement('div');
                         el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
                         el.setAttribute('style', rootCss);
-                        el.innerHTML = src;
+                        el.innerHTML = src
+                          .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
 
                         const imgs = el.querySelectorAll('img');
+
+                        // do not load images without an explicit width + height
                         for (let i = 0; i < imgs.length; i++) {
                           const img = imgs[i];
                           if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
@@ -104,6 +107,7 @@ class Biolumi {
                           }
                         }
 
+                        // remove empty anchors
                         const as = el.querySelectorAll('a');
                         for (let i = 0; i < as.length; i++) {
                           const a = as[i];
@@ -123,8 +127,7 @@ class Biolumi {
                       const divEl = (() => {
                         const el = document.createElement('div');
                         el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                        el.innerHTML = innerSrc
-                          .replace(/(<img\s+(?:(?!src=)[^>])*)(src=\S+)/g, '$1'); // optimization: do not perform expensive image loading
+                        el.innerHTML = innerSrc;
 
                         return el;
                       })();
