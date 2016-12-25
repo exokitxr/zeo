@@ -4,6 +4,8 @@ const fs = require('fs');
 const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
+const showdown = require('showdown');
+const showdownConverter = new showdown.Converter();
 const MultiMutex = require('multimutex');
 
 class Rend {
@@ -143,6 +145,19 @@ class Rend {
               });
           };
 
+          function serveReadme(req, res, next) {
+            fs.readFile(path.join(__dirname, '..', 'zeo', 'README.md'), 'utf8', (err, s) => {
+              if (!err) {
+                res.send(_renderMarkdown(s));
+              } else if (err.code === 'ENOENT') {
+                res.send('');
+              } else {
+                res.status(500);
+                res.send(err.stack);
+              }
+            });
+          }
+          app.get('/archae/rend/readme', serveReadme);
           function serveModsStatus(req, res, next) {
             bodyParserJson(req, res, () => {
               const {body: data} = req;
@@ -176,6 +191,32 @@ class Rend {
                       }
                     });
                   });
+                  const _getPluginReadmeMd = ({plugin}) => new Promise((accept, reject) => {
+                    const pluginPath = path.join(pluginsPath, plugin);
+                    fs.readdir(pluginPath, (err, files) => {
+                      if (!err) {
+                        const readmeFiles = files.filter(f => /^README\.md$/i.test());
+
+                        if (readmeFiles.length > 0) {
+                          const readmeFilePath = readmeFiles.sort((a, b) => a.localeCompare(b))[0];
+
+                          fs.readFile(path.join(pluginPath, readmeFilePath), 'utf8', (err, s) => {
+                            if (!err) {
+                              accept(_renderMarkdown(s));
+                            } else {
+                              reject(err);
+                            }
+                          });
+                        } else {
+                          accept('');
+                        }
+                      } else if (err.code === 'ENOENT') {
+                        accept('');
+                      } else {
+                        reject(err);
+                      }
+                    });
+                  });
 
                   Promise.all([
                     _getWorldModJson({world}),
@@ -202,16 +243,23 @@ class Rend {
                         for (let i = 0; i < plugins.length; i++) {
                           const plugin = plugins[i];
 
-                          _getPluginPackageJson({plugin})
-                            .then(j => {
+                          Promise.all([
+                            _getPluginPackageJson({plugin}),
+                            _getPluginReadmeMd({plugin}),
+                          ])
+                            .then(([
+                              packageJson,
+                              readmeMd,
+                            ]) => {
                               result.push({
                                 name: plugin,
-                                version: j.version,
-                                description: j.description || null,
-                                hasClient: Boolean(j.client),
-                                hasServer: Boolean(j.server),
-                                hasWorker: Boolean(j.worker),
+                                version: packageJson.version,
+                                description: packageJson.description || null,
+                                hasClient: Boolean(packageJson.client),
+                                hasServer: Boolean(packageJson.server),
+                                hasWorker: Boolean(packageJson.worker),
                                 installed: mods.includes(plugin),
+                                reamde: readmeMd,
                               });
 
                               pend();
@@ -309,6 +357,7 @@ class Rend {
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
               if (
+                route.handle.name === 'serveReadme' ||
                 route.handle.name === 'serveModsStatus' ||
                 route.handle.name === 'serveModsAdd' ||
                 route.handle.name === 'serveModsRemove'
@@ -329,5 +378,11 @@ class Rend {
     this._cleanup();
   }
 }
+
+const _renderMarkdown = s => showdownConverter
+    .makeHtml(s)
+    .replace(/&mdash;/g, '-')
+    .replace(/(<code\s*[^>]*?>)([^>]*?)(<\/code>)/g, (all, start, mid, end) => start + mid.replace(/\n/g, '<br/>') + end)
+    .replace(/\n+/g, ' ');
 
 module.exports = Rend;

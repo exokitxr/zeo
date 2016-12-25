@@ -1,6 +1,4 @@
 const heredoc = require('heredoc');
-const showdown = require('showdown');
-const showdownConverter = new showdown.Converter();
 
 const WIDTH = 2 * 1024;
 const HEIGHT = WIDTH / 1.5;
@@ -59,6 +57,7 @@ class Rend {
         let currentWorld = null;
         const mods = new Map();
         let currentMods = null;
+        let currentMainReadme = null;
 
         cleanups.push(() => {
           worlds.forEach(world => {
@@ -76,6 +75,7 @@ class Rend {
 
             accept();
           } else {
+            const _requestMainReadme = worldName => fetch('/archae/rend/readme').then(res => res.text());
             const _requestModsStatus = worldName => fetch('/archae/rend/mods/status', {
               method: 'POST',
               headers: (() => {
@@ -89,10 +89,12 @@ class Rend {
             }).then(res => res.json());
 
             Promise.all([
+              _requestMainReadme(),
               _requestModsStatus(worldName),
               bullet.requestWorld(worldName),
             ])
               .then(([
+                mainReadme,
                 modsStatus,
                 physics,
               ]) => {
@@ -227,6 +229,8 @@ class Rend {
                 mods.set(worldName, modsStatus);
                 currentMods = modsStatus;
 
+                currentMainReadme = mainReadme;
+
                 accept();
               });
           }
@@ -287,7 +291,6 @@ class Rend {
               },
             ];
 
-            const readme = `${_renderMarkdown(readmeText)}`;
             const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
@@ -297,7 +300,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
   </div>
 </div>
 `;
-            const getReadmeSrc = () => readme;
+            const getMainPageReamdeSrc = ({mainReadme}) => mainReadme;
             const getInputSrc = (inputText, inputValue) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
   <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;' onfclick="input">
@@ -357,12 +360,12 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
   </div>
 </div>
 `;
-            const getModPageReadmeSrc = () => `\
+            const getModPageReadmeSrc = ({readme}) => `\
 <div style="position: absolute; top: 0; right: 0; height: 50px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 50px; height: 100px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 100px; height: 125px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 150px; height: 150px; width: 50px; background-color: red;"></div>
-${getReadmeSrc()}
+${readme}
 `;
             const getConfigPageSrc = () => `\
 ${getHeaderSrc('preferences', '', '', true)}
@@ -569,7 +572,7 @@ ${getHeaderSrc('elements', '', '', true)}
                   },
                   {
                     type: 'html',
-                    src: getReadmeSrc(),
+                    src: getMainPageReamdeSrc({mainReadme: currentMainReadme}),
                     x: 500,
                     y: 150 + 2,
                     w: WIDTH - 500,
@@ -771,14 +774,14 @@ ${getHeaderSrc('elements', '', '', true)}
                         ui.cancelTransition();
 
                         if (ui.getPages().length < 3) {
-                          ui.pushPage(({mod: {name, version, installed}}) => ([
+                          ui.pushPage(({mod: {name, version, installed, readme}}) => ([
                             {
                               type: 'html',
                               src: getModPageSrc({name, version, installed}),
                             },
                             {
                               type: 'html',
-                              src: getModPageReadmeSrc(),
+                              src: getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
                               x: 500,
                               y: 150 + 2,
                               w: WIDTH - 500,
@@ -1374,11 +1377,5 @@ If everything went well you should see [this](http://jsfiddle.net/hfj7gm6t/).
 [devDependencies-badge]: https://img.shields.io/david/dev/mrdoob/three.js.svg
 [devDependencies-badge-url]: https://david-dm.org/mrdoob/three.js#info=devDependencies
 */});
-const _renderMarkdown = s =>
-  showdownConverter
-    .makeHtml(s)
-    .replace(/&mdash;/g, '-')
-    .replace(/(<code\s*[^>]*?>)([^>]*?)(<\/code>)/g, (all, start, mid, end) => start + mid.replace(/\n/g, '<br/>') + end)
-    .replace(/\n+/g, ' ');
 
 module.exports = Rend;
