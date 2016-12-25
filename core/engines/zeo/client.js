@@ -26,6 +26,7 @@ class Zeo {
       '/core/engines/cyborg',
       '/core/engines/rend',
       '/core/engines/biolumi',
+      '/core/engines/npm',
       '/core/engines/somnifer',
       '/core/engines/bullet',
       '/core/engines/heartlink',
