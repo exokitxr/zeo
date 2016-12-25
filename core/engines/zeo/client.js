@@ -21,6 +21,7 @@ class Zeo {
     });
 
     return archae.requestEngines([
+      '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/three',
       '/core/engines/cyborg',
@@ -31,6 +32,7 @@ class Zeo {
       '/core/engines/bullet',
       '/core/engines/heartlink',
     ]).then(([
+      input,
       webvr,
       three,
       cyborg,
@@ -221,74 +223,19 @@ height: 100px;
 
                 return result;
               };
-              const eventListeners = (() => {
-                const result = {};
-                [
-                  'click',
-                  'mousedown',
-                  'mouseup',
-                  'mousemove',
-                  'mousewheel',
-                  'keypress',
-                  'keydown',
-                  'keyup',
-                ].forEach(event => {
-                  result[event] = _makeEventListener();
-                });
-                return result;
-              })();
-              window.addEventListener('click', eventListeners.click);
-              window.addEventListener('mousedown', eventListeners.mousedown);
-              window.addEventListener('mouseup', eventListeners.mouseup);
-              window.addEventListener('mousemove', eventListeners.mousemove);
-              window.addEventListener('mousewheel', eventListeners.mousewheel);
-              window.addEventListener('keypress', eventListeners.keypress);
-              window.addEventListener('keydown', eventListeners.keydown);
-              window.addEventListener('keyup', eventListeners.keyup);
 
-              cleanups.push(() => {
-                document.body.removeChild(anchors);
+              this._cleanup = () => {
+                _stopRenderLoop();
+              };
 
-                window.removeEventListener('click', eventListeners.click);
-                window.removeEventListener('mousedown', eventListeners.mousedown);
-                window.removeEventListener('mouseup', eventListeners.mouseup);
-                window.removeEventListener('mousemove', eventListeners.mousemove);
-                window.removeEventListener('keypress', eventListeners.keypress);
-                window.removeEventListener('keydown', eventListeners.keydown);
-                window.removeEventListener('keyup', eventListeners.keyup);
-              });
+              return {
+                THREE,
+                scene,
+                camera,
+                renderer,
+                sound,
+              };
             }
-
-            this._cleanup = () => {
-              _stopRenderLoop();
-            };
-
-            const _addEventListener = (event, handler, {priority = 0} = {}) => {
-              const eventListener = eventListeners[event];
-              if (eventListener) {
-                eventListener.add(handler, {
-                  priority,
-                });
-              }
-            };
-            const _removeEventListener = (event, handler) => {
-              const eventListener = eventListeners[event];
-              if (eventListener) {
-                eventListener.remove(handler);
-              }
-            };
-
-console.log('returning');
-
-            return {
-              THREE,
-              scene,
-              camera,
-              renderer,
-              sound,
-              addEventListener: _addEventListener,
-              removeEventListener: _removeEventListener,
-            };
           })
       }
     });

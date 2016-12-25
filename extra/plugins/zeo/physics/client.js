@@ -12,10 +12,10 @@ class Physics {
     };
 
     return archae.requestEngines([
-      '/core/engines/zeo',
+      '/core/engines/input',
       '/core/engines/rend',
     ]).then(([
-      zeo,
+      input,
       rend,
     ]) => {
       if (live) {
@@ -179,7 +179,7 @@ class Physics {
                       e.stopImmediatePropagation();
                     }
                   };
-                  zeo.addEventListener('keydown', keydown);
+                  input.addEventListener('keydown', keydown);
 
                   this._cleanup = () => {
                     boxMeshes.forEach(boxMesh => {
@@ -190,7 +190,7 @@ class Physics {
                       physics.remove(physicsBody);
                     });
 
-                    zeo.removeEventListener('keydown', keydown);
+                    input.removeEventListener('keydown', keydown);
                   };
                 }
               });

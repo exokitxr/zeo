@@ -30,8 +30,10 @@ class Youtube {
 
     return archae.requestEngines([
       '/core/engines/zeo',
+      '/core/engines/input',
     ]).then(([
       zeo,
+      input,
     ]) => {
       if (live) {
         const {THREE, scene, camera, sound} = zeo;
@@ -364,10 +366,10 @@ class Youtube {
             e.stopImmediatePropagation();
           }
         };
-        zeo.addEventListener('click', click);
+        input.addEventListener('click', click);
 
         this._cleanup = () => {
-          zeo.removeEventListener('click', click);
+          input.removeEventListener('click', click);
         };
 
         const _update = () => {

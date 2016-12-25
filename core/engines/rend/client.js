@@ -33,6 +33,7 @@ class Rend {
 
     return Promise.all([
       archae.requestEngines([
+        '/core/engines/input',
         '/core/engines/three',
         '/core/engines/biolumi',
         '/core/engines/bullet',
@@ -42,7 +43,7 @@ class Rend {
         '/core/plugins/creature-utils',
       ]),
     ]).then(([
-      [three, biolumi, bullet, heartlink],
+      [input, three, biolumi, bullet, heartlink],
       [creatureUtils],
     ]) => {
       if (live) {
@@ -986,7 +987,7 @@ ${getHeaderSrc('elements', '', '', true)}
                     }
                   }
                 };
-                zeo.addEventListener('click', click);
+                input.addEventListener('click', click);
                 const mousedown = () => {
                   const {scrollLayer} = hoverState;
                   if (scrollLayer) {
@@ -1000,7 +1001,7 @@ ${getHeaderSrc('elements', '', '', true)}
                     hoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
                   }
                 };
-                zeo.addEventListener('mousedown', mousedown);
+                input.addEventListener('mousedown', mousedown);
 
                 const _setLayerScrollTop = () => {
                   const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = hoverState;
@@ -1030,7 +1031,7 @@ ${getHeaderSrc('elements', '', '', true)}
                     _setLayerScrollTop();
                   }
                 };
-                zeo.addEventListener('mousemove', mousemove);
+                input.addEventListener('mousemove', mousemove);
                 const mouseup = () => {
                   const {mousedownStartCoord} = hoverState;
                   if (mousedownStartCoord) {
@@ -1040,17 +1041,17 @@ ${getHeaderSrc('elements', '', '', true)}
                     hoverState.mousedownStartCoord = null;
                   }
                 };
-                zeo.addEventListener('mouseup', mouseup);
+                input.addEventListener('mouseup', mouseup);
 
                 cleanups.push(() => {
                   scene.remove(menuMesh);
                   scene.remove(boxMesh);
                   scene.remove(dotMesh);
 
-                  zeo.removeEventListener('click', click);
-                  zeo.removeEventListener('mousedown', mousedown);
-                  zeo.removeEventListener('mousemove', mousemove);
-                  zeo.removeEventListener('mouseup', mouseup);
+                  input.removeEventListener('click', click);
+                  input.removeEventListener('mousedown', mousedown);
+                  input.removeEventListener('mousemove', mousemove);
+                  input.removeEventListener('mouseup', mouseup);
                 });
 
                 const _decomposeMenuMesh = () => {

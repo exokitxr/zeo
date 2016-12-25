@@ -17,6 +17,7 @@ class Weapons {
     return Promise.all([
       archae.requestEngines([
         '/core/engines/zeo',
+        '/core/engines/input',
         '/core/engines/rend',
         '/core/engines/cyborg',
       ]),
@@ -26,7 +27,7 @@ class Weapons {
         '/core/plugins/creature-utils',
       ]),
     ]).then(([
-      [zeo, rend, cyborg],
+      [zeo, input, rend, cyborg],
       [geometryUtils, textUtils, creatureUtils],
     ]) => {
       if (live) {
@@ -149,7 +150,7 @@ class Weapons {
             }
           }
         };
-        zeo.addEventListener('keydown', keydown);
+        input.addEventListener('keydown', keydown);
         const hmdUpdate = update => {
           ['left', 'right'].forEach(_syncWeaponSide);
         };
@@ -767,7 +768,7 @@ class Weapons {
         };
 
         this._cleanup = () => {
-          zeo.removeEventListener('keydown', keydown);
+          input.removeEventListener('keydown', keydown);
           player.removeEventListener('hmdUpdate', hmdUpdate);
           player.removeEventListener('controllerUpdate', controllerUpdate);
         };

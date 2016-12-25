@@ -16,11 +16,13 @@ class Teleport {
 
     return archae.requestEngines([
       '/core/engines/zeo',
+      '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/rend',
       '/core/engines/cyborg',
     ]).then(([
       zeo,
+      input,
       webvr,
       rend,
       cyborg,
@@ -91,12 +93,12 @@ class Teleport {
             }
           }
         };
-        zeo.addEventListener('keydown', keydown);
-        zeo.addEventListener('keyup', keyup);
+        input.addEventListener('keydown', keydown);
+        input.addEventListener('keyup', keyup);
 
         this._cleanup = () => {
-          zeo.removeEventListener('keydown', keydown);
-          zeo.removeEventListener('keyup', keyup);
+          input.removeEventListener('keydown', keydown);
+          input.removeEventListener('keyup', keyup);
         };
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
