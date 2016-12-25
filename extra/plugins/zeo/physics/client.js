@@ -167,7 +167,7 @@ class Physics {
                   });
 
                   const keydown = e => {
-                    if (e.keyCode === 82) { // R
+                    if (e.ctrlKey && e.keyCode === 82) { // ctrl-r
                       boxPhysicsBodies.forEach(physicsBody => {
                         physicsBody.setPosition(_getRandomPosition().toArray());
                         physicsBody.setRotation(zeroQuaternion.toArray());
@@ -175,6 +175,8 @@ class Physics {
                         physicsBody.setAngularVelocity(zeroVector.toArray());
                         physicsBody.activate();
                       });
+
+                      e.stopImmediatePropagation();
                     }
                   };
                   window.addEventListener('keydown', keydown);
