@@ -346,26 +346,28 @@ class Youtube {
         })();
         scene.add(menuMesh);
 
-        const keypress = e => {
-          if (e.keyCode === 32) { // space
-            const {video} = videoMesh;
-            const {boxMesh} = menuMesh;
+        const click = e => {
+          const {video} = videoMesh;
+          const {boxMesh} = menuMesh;
 
-            if (boxMesh.target === 'play') {
-              if (video.paused) {
-                video.play();
-              } else {
-                video.pause();
-              }
-            } else if (boxMesh.target === 'track') {
-              video.currentTime = boxMesh.value * video.duration;
+          if (boxMesh.target === 'play') {
+            if (video.paused) {
+              video.play();
+            } else {
+              video.pause();
             }
+
+            e.stopImmediatePropagation();
+          } else if (boxMesh.target === 'track') {
+            video.currentTime = boxMesh.value * video.duration;
+
+            e.stopImmediatePropagation();
           }
         };
-        window.addEventListener('keypress', keypress);
+        window.addEventListener('click', click);
 
         this._cleanup = () => {
-          window.removeEventListener('keypress', keypress);
+          window.removeEventListener('click', click);
         };
 
         const _update = () => {

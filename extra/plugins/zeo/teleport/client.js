@@ -58,15 +58,20 @@ class Teleport {
         const keydown = e => { // XXX move this to webvr/cyborg engines
           if (window.document.pointerLockElement) {
             switch (e.keyCode) {
-              case 88: // X
+              case 88: { // X
                 teleporting = false;
                 commitTeleporting = false;
                 teleportPoint = null;
+
+                e.stopImmediatePropagation();
                 break;
+              }
               case 32: { // space
                 const mode = cyborg.getMode();
                 if (mode !== 'move') {
                   teleporting = true;
+
+                  e.stopImmediatePropagation();
                 }
                 break;
               }
@@ -76,10 +81,13 @@ class Teleport {
         const keyup = e => {
           if (window.document.pointerLockElement) {
             switch (e.keyCode) {
-              case 32: // space
+              case 32: { // space
                 teleporting = false;
                 commitTeleporting = true;
+
+                e.stopImmediatePropagation();
                 break;
+              }
             }
           }
         };
