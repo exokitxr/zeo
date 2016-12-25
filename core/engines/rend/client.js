@@ -263,18 +263,19 @@ class Rend {
           if (live) {
             const fontSize = 72;
             const lineHeight = 1.4;
+            const focusState = {
+              type: null,
+            };
             const modsState = {
               inputText: '',
               inputPlaceholder: 'Search npm',
               inputValue: 0,
-              inputFocus: false,
               mods: currentMods,
             };
             const configState = {
               inputText: 'Hello, world! This is some text!',
               inputPlaceholder: '',
               inputValue: 0,
-              inputFocus: false,
               sliderValue: 0.5,
             };
             const elements = [
@@ -311,10 +312,10 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
   </div>
 </div>
 `;
-            const getInputSrc = (inputText, inputPlaceholder, inputValue, inputFocus, onclick) => `\
+            const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
   <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #F0F0F0; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
-  ${inputFocus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>` : ''}
+  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>` : ''}
     <div>${inputText}</div>
     ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
   </a>
@@ -329,7 +330,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
   </a>
 </div>
 `;
-            const getModsPageSrc = ({inputText, inputPlaceholder, inputValue, inputFocus, mods}) => {
+            const getModsPageSrc = ({inputText, inputPlaceholder, inputValue, focus, mods}) => {
               const installedMods = mods.filter(mod => mod.installed);
               const availableMods = mods.filter(mod => !mod.installed);
 
@@ -353,7 +354,7 @@ ${getHeaderSrc('mods', '', '', true)}
   <div style="display: flex;">
     ${getModsSidebarSrc()}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
-      ${getInputSrc(inputText, inputPlaceholder, inputValue, inputFocus, 'mods:input')}
+      ${getInputSrc(inputText, inputPlaceholder, inputValue, focus, 'mods:input')}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
       ${getModsSrc(installedMods)}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
@@ -386,9 +387,9 @@ ${getHeaderSrc('preferences', '', '', true)}
   </div>
 </div>
 `;
-            const getConfigPageContentSrc = ({inputText, inputPlaceholder, inputValue, inputFocus, sliderValue}) => `\
+            const getConfigPageContentSrc = ({inputText, inputPlaceholder, inputValue, focus, sliderValue}) => `\
 <div style="width: ${WIDTH - (500 + 40)}px; margin: 40px 0; padding-right: 40px;">
-  ${getInputSrc(inputText, inputPlaceholder, inputValue, inputFocus, 'config:input')}
+  ${getInputSrc(inputText, inputPlaceholder, inputValue, focus, 'config:input')}
   ${getSliderSrc(sliderValue)}
 </div>
 `;
@@ -731,13 +732,35 @@ ${getHeaderSrc('elements', '', '', true)}
                 })();
                 scene.add(dotMesh);
 
+                const _updatePages = () => {
+                  const pages = ui.getPages();
+                  for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    const {type} = page;
+
+                    let match;
+                    if (match = type.match(/^mod:(.+)$/)) {
+                      const name = match[1];
+                      const mods = currentMods;
+                      const mod = mods.find(m => m.name === name);
+                      page.update({mod});
+                    } else if (type === 'mods') {
+                      page.update({
+                        mods: modsState,
+                        focus: focusState,
+                      });
+                    } else if (type === 'config') {
+                      page.update({
+                        config: configState,
+                        focus: focusState,
+                      });
+                    }
+                  }
+                };
                 const click = () => {
                   const {intersectionPoint, anchor} = hoverState;
 
                   if (intersectionPoint) {
-                    modsState.inputFocus = false;
-                    configState.inputFocus = false;
-
                     if (anchor) {
                       const {onclick} = anchor;
 
@@ -755,10 +778,10 @@ ${getHeaderSrc('elements', '', '', true)}
                           if (ui.getPages().length < 3) {
                             const mods = currentMods;
 
-                            ui.pushPage(({inputText, inputPlaceholder, inputValue, inputFocus, mods}) => ([
+                            ui.pushPage(({mods: {inputText, inputPlaceholder, inputValue, mods}, focus: {type: focusType}}) => ([
                               {
                                 type: 'html',
-                                src: getModsPageSrc({inputText, inputPlaceholder, inputValue, inputFocus, mods}),
+                                src: getModsPageSrc({inputText, inputPlaceholder, inputValue, focusType === 'mods', mods}),
                               },
                               {
                                 type: 'image',
@@ -771,7 +794,10 @@ ${getHeaderSrc('elements', '', '', true)}
                               }
                             ]), {
                               type: 'mods',
-                              state: modsState,
+                              state: {
+                                mods: modsState,
+                                focus: focusState,
+                              },
                             });
                           } else {
                             ui.popPage();
@@ -821,19 +847,7 @@ ${getHeaderSrc('elements', '', '', true)}
 
                           currentWorld.requestAddMod(name)
                             .then(() => {
-                              const mods = currentMods;
-                              const mod = mods.find(m => m.name === name);
-
-                              const pages = ui.getPages();
-                              for (let i = 0; i < pages.length; i++) {
-                                const page = pages[i];
-                                const {type} = page;
-                                if (type === 'mod:' + name) {
-                                  page.update({mod});
-                                } else if (type === 'mods') {
-                                  page.update(modsState);
-                                }
-                              }
+                              _updatePages();
                             })
                             .catch(err => {
                               console.warn(err);
@@ -843,19 +857,7 @@ ${getHeaderSrc('elements', '', '', true)}
 
                           currentWorld.requestRemoveMod(name)
                             .then(() => {
-                              const mods = currentMods;
-                              const mod = mods.find(m => m.name === name);
-
-                              const pages = ui.getPages();
-                              for (let i = 0; i < pages.length; i++) {
-                                const page = pages[i];
-                                const {type} = page;
-                                if (type === 'mod:' + name) {
-                                  page.update({mod});
-                                } else if (type === 'mods') {
-                                  page.update(modsState);
-                                }
-                              }
+                              _updatePages();
                             })
                             .catch(err => {
                               console.warn(err);
@@ -863,14 +865,14 @@ ${getHeaderSrc('elements', '', '', true)}
                         } else if (onclick === 'config') {
                           ui.cancelTransition();
 
-                          ui.pushPage(({inputText, inputPlaceholder, inputValue, inputFocus, sliderValue}) => ([
+                          ui.pushPage(({config: {inputText, inputPlaceholder, inputValue, sliderValue}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: getConfigPageSrc(),
                             },
                             {
                               type: 'html',
-                              src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, inputFocus, sliderValue}),
+                              src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, focusType === 'config', sliderValue}),
                               x: 500,
                               y: 150 + 2,
                               w: WIDTH - 500,
@@ -888,7 +890,10 @@ ${getHeaderSrc('elements', '', '', true)}
                             }
                           ]), {
                             type: 'config',
-                            state: configState,
+                            state: {
+                              config: configState,
+                              focus: focusState,
+                            }
                           });
                        } else if (onclick === 'elements') {
                           ui.cancelTransition();
@@ -941,16 +946,9 @@ ${getHeaderSrc('elements', '', '', true)}
                           const closestValuePx = widths[index];
 
                           modsState.inputValue = closestValuePx / (WIDTH - (500 + 40));
-                          modsState.inputFocus = true;
+                          focusState.type = 'mods';
 
-                          const pages = ui.getPages();
-                          for (let i = 0; i < pages.length; i++) {
-                            const page = pages[i];
-                            const {type} = page;
-                            if (type === 'mods') {
-                              page.update(modsState);
-                            }
-                          }
+                          _updatePages();
                         } else if (onclick === 'config:input') {
                           const {value} = hoverState;
                           const valuePx = value * (WIDTH - (500 + 40));
@@ -972,29 +970,19 @@ ${getHeaderSrc('elements', '', '', true)}
                           const closestValuePx = widths[index];
 
                           configState.inputValue = closestValuePx / (WIDTH - (500 + 40));
-                          configState.inputFocus = true;
+                          focusState.type = 'config';
 
-                          const pages = ui.getPages();
-                          for (let i = 0; i < pages.length; i++) {
-                            const page = pages[i];
-                            const {type} = page;
-                            if (type === 'config') {
-                              page.update(configState);
-                            }
-                          }
+                          _updatePages();
                         } else if (onclick === 'config:resolution') {
                           const {value} = hoverState;
 
                           configState.sliderValue = value;
 
-                          const pages = ui.getPages();
-                          for (let i = 0; i < pages.length; i++) {
-                            const page = pages[i];
-                            const {type} = page;
-                            if (type === 'config') {
-                              page.update(configState);
-                            }
-                          }
+                          _updatePages();
+                        } else {
+                          focusState.type = null;
+
+                          _updatePages();
                         }
                       }
                     }
