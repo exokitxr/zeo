@@ -263,17 +263,19 @@ class Rend {
           if (live) {
             const fontSize = 72;
             const lineHeight = 1.4;
-            const configState = {
-              inputText: 'Hello, world! This is some text!',
-              inputPlaceholder: '',
-              inputValue: 0,
-              sliderValue: 0.5,
-            };
             const modsState = {
               inputText: '',
               inputPlaceholder: 'Search npm',
               inputValue: 0,
+              inputFocus: false,
               mods: currentMods,
+            };
+            const configState = {
+              inputText: 'Hello, world! This is some text!',
+              inputPlaceholder: '',
+              inputValue: 0,
+              inputFocus: false,
+              sliderValue: 0.5,
             };
             const elements = [
               {
@@ -309,10 +311,10 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
   </div>
 </div>
 `;
-            const getInputSrc = (inputText, inputPlaceholder, inputValue, onclick) => `\
+            const getInputSrc = (inputText, inputPlaceholder, inputValue, inputFocus, onclick) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
   <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #F0F0F0; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
-    <div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>
+  ${inputFocus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>` : ''}
     <div>${inputText}</div>
     ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
   </a>
@@ -327,7 +329,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
   </a>
 </div>
 `;
-            const getModsPageSrc = ({inputText, inputPlaceholder, inputValue, mods}) => {
+            const getModsPageSrc = ({inputText, inputPlaceholder, inputValue, inputFocus, mods}) => {
               const installedMods = mods.filter(mod => mod.installed);
               const availableMods = mods.filter(mod => !mod.installed);
 
@@ -351,7 +353,7 @@ ${getHeaderSrc('mods', '', '', true)}
   <div style="display: flex;">
     ${getModsSidebarSrc()}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
-      ${getInputSrc(inputText, inputPlaceholder, inputValue, 'mods:input')}
+      ${getInputSrc(inputText, inputPlaceholder, inputValue, inputFocus, 'mods:input')}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
       ${getModsSrc(installedMods)}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
@@ -384,9 +386,9 @@ ${getHeaderSrc('preferences', '', '', true)}
   </div>
 </div>
 `;
-            const getConfigPageContentSrc = ({inputText, inputPlaceholder, inputValue, sliderValue}) => `\
+            const getConfigPageContentSrc = ({inputText, inputPlaceholder, inputValue, inputFocus, sliderValue}) => `\
 <div style="width: ${WIDTH - (500 + 40)}px; margin: 40px 0; padding-right: 40px;">
-  ${getInputSrc(inputText, inputPlaceholder, inputValue, 'config:input')}
+  ${getInputSrc(inputText, inputPlaceholder, inputValue, inputFocus, 'config:input')}
   ${getSliderSrc(sliderValue)}
 </div>
 `;
@@ -730,62 +732,145 @@ ${getHeaderSrc('elements', '', '', true)}
                 scene.add(dotMesh);
 
                 const click = () => {
-                  const {anchor} = hoverState;
+                  const {intersectionPoint, anchor} = hoverState;
 
-                  if (anchor) {
-                    const {onclick} = anchor;
+                  if (intersectionPoint) {
+                    modsState.inputFocus = false;
+                    configState.inputFocus = false;
 
-                    if (onclick) {
-                      let match;
-                      if (onclick === 'back') {
-                        ui.cancelTransition();
+                    if (anchor) {
+                      const {onclick} = anchor;
 
-                        if (ui.getPages().length > 1) {
-                          ui.popPage();
-                        }
-                      } else if (onclick === 'next') {
-                        ui.cancelTransition();
+                      if (onclick) {
+                        let match;
+                        if (onclick === 'back') {
+                          ui.cancelTransition();
 
-                        if (ui.getPages().length < 3) {
+                          if (ui.getPages().length > 1) {
+                            ui.popPage();
+                          }
+                        } else if (onclick === 'next') {
+                          ui.cancelTransition();
+
+                          if (ui.getPages().length < 3) {
+                            const mods = currentMods;
+
+                            ui.pushPage(({inputText, inputPlaceholder, inputValue, inputFocus, mods}) => ([
+                              {
+                                type: 'html',
+                                src: getModsPageSrc({inputText, inputPlaceholder, inputValue, inputFocus, mods}),
+                              },
+                              {
+                                type: 'image',
+                                img: creatureUtils.makeAnimatedCreature('mods'),
+                                x: 150,
+                                y: 0,
+                                w: 150,
+                                h: 150,
+                                frameTime: 300,
+                              }
+                            ]), {
+                              type: 'mods',
+                              state: modsState,
+                            });
+                          } else {
+                            ui.popPage();
+                          }
+                        } else if (match = onclick.match(/^mod:(.+)$/)) {
+                          const name = match[1];
                           const mods = currentMods;
+                          const mod = mods.find(m => m.name === name);
 
-                          ui.pushPage(({inputText, inputPlaceholder, inputValue, mods}) => ([
+                          ui.cancelTransition();
+
+                          if (ui.getPages().length < 3) {
+                            ui.pushPage(({mod: {name, version, installed, readme}}) => ([
+                              {
+                                type: 'html',
+                                src: getModPageSrc({name, version, installed}),
+                              },
+                              {
+                                type: 'html',
+                                src: getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
+                                x: 500,
+                                y: 150 + 2,
+                                w: WIDTH - 500,
+                                h: HEIGHT - (150 + 2),
+                                scroll: true,
+                              },
+                              {
+                                type: 'image',
+                                img: creatureUtils.makeAnimatedCreature('mod:' + name),
+                                x: 150,
+                                y: 0,
+                                w: 150,
+                                h: 150,
+                                frameTime: 300,
+                              }
+                            ]), {
+                              type: 'mod:' + name,
+                              state: {
+                                mod,
+                              },
+                            });
+                          } else {
+                            ui.popPage();
+                          }
+                        } else if (match = onclick.match(/^getmod:(.+)$/)) {
+                          const name = match[1];
+
+                          currentWorld.requestAddMod(name)
+                            .then(() => {
+                              const mods = currentMods;
+                              const mod = mods.find(m => m.name === name);
+
+                              const pages = ui.getPages();
+                              for (let i = 0; i < pages.length; i++) {
+                                const page = pages[i];
+                                const {type} = page;
+                                if (type === 'mod:' + name) {
+                                  page.update({mod});
+                                } else if (type === 'mods') {
+                                  page.update(modsState);
+                                }
+                              }
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (match = onclick.match(/^removemod:(.+)$/)) {
+                          const name = match[1];
+
+                          currentWorld.requestRemoveMod(name)
+                            .then(() => {
+                              const mods = currentMods;
+                              const mod = mods.find(m => m.name === name);
+
+                              const pages = ui.getPages();
+                              for (let i = 0; i < pages.length; i++) {
+                                const page = pages[i];
+                                const {type} = page;
+                                if (type === 'mod:' + name) {
+                                  page.update({mod});
+                                } else if (type === 'mods') {
+                                  page.update(modsState);
+                                }
+                              }
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (onclick === 'config') {
+                          ui.cancelTransition();
+
+                          ui.pushPage(({inputText, inputPlaceholder, inputValue, inputFocus, sliderValue}) => ([
                             {
                               type: 'html',
-                              src: getModsPageSrc({inputText, inputPlaceholder, inputValue, mods}),
+                              src: getConfigPageSrc(),
                             },
                             {
-                              type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('mods'),
-                              x: 150,
-                              y: 0,
-                              w: 150,
-                              h: 150,
-                              frameTime: 300,
-                            }
-                          ]), {
-                            type: 'mods',
-                            state: modsState,
-                          });
-                        } else {
-                          ui.popPage();
-                        }
-                      } else if (match = onclick.match(/^mod:(.+)$/)) {
-                        const name = match[1];
-                        const mods = currentMods;
-                        const mod = mods.find(m => m.name === name);
-
-                        ui.cancelTransition();
-
-                        if (ui.getPages().length < 3) {
-                          ui.pushPage(({mod: {name, version, installed, readme}}) => ([
-                            {
                               type: 'html',
-                              src: getModPageSrc({name, version, installed}),
-                            },
-                            {
-                              type: 'html',
-                              src: getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
+                              src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, inputFocus, sliderValue}),
                               x: 500,
                               y: 150 + 2,
                               w: WIDTH - 500,
@@ -794,7 +879,7 @@ ${getHeaderSrc('elements', '', '', true)}
                             },
                             {
                               type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('mod:' + name),
+                              img: creatureUtils.makeAnimatedCreature('preferences'),
                               x: 150,
                               y: 0,
                               w: 150,
@@ -802,189 +887,113 @@ ${getHeaderSrc('elements', '', '', true)}
                               frameTime: 300,
                             }
                           ]), {
-                            type: 'mod:' + name,
-                            state: {
-                              mod,
+                            type: 'config',
+                            state: configState,
+                          });
+                       } else if (onclick === 'elements') {
+                          ui.cancelTransition();
+
+                          ui.pushPage(() => ([
+                            {
+                              type: 'html',
+                              src: getElementsPageSrc(),
                             },
-                          });
-                        } else {
-                          ui.popPage();
-                        }
-                      } else if (match = onclick.match(/^getmod:(.+)$/)) {
-                        const name = match[1];
-
-                        currentWorld.requestAddMod(name)
-                          .then(() => {
-                            const mods = currentMods;
-                            const mod = mods.find(m => m.name === name);
-
-                            const pages = ui.getPages();
-                            for (let i = 0; i < pages.length; i++) {
-                              const page = pages[i];
-                              const {type} = page;
-                              if (type === 'mod:' + name) {
-                                page.update({mod});
-                              } else if (type === 'mods') {
-                                page.update(modsState);
-                              }
+                            {
+                              type: 'html',
+                              src: getElementsPageContentSrc({elements}),
+                              x: 500,
+                              y: 150 + 2,
+                              w: WIDTH - 500,
+                              h: HEIGHT - (150 + 2),
+                              scroll: true,
+                            },
+                            {
+                              type: 'image',
+                              img: creatureUtils.makeAnimatedCreature('preferences'),
+                              x: 150,
+                              y: 0,
+                              w: 150,
+                              h: 150,
+                              frameTime: 300,
                             }
-                          })
-                          .catch(err => {
-                            console.warn(err);
+                          ]), {
+                            type: 'elements',
+                            state: {elements},
                           });
-                      } else if (match = onclick.match(/^removemod:(.+)$/)) {
-                        const name = match[1];
+                        } else if (onclick === 'mods:input') {
+                          const {value} = hoverState;
+                          const valuePx = value * (WIDTH - (500 + 40));
 
-                        currentWorld.requestRemoveMod(name)
-                          .then(() => {
-                            const mods = currentMods;
-                            const mod = mods.find(m => m.name === name);
-
-                            const pages = ui.getPages();
-                            for (let i = 0; i < pages.length; i++) {
-                              const page = pages[i];
-                              const {type} = page;
-                              if (type === 'mod:' + name) {
-                                page.update({mod});
-                              } else if (type === 'mods') {
-                                page.update(modsState);
-                              }
+                          const slices = (() => {
+                            const result = [];
+                            for (let i = 0; i <= modsState.inputText.length; i++) {
+                              const slice = modsState.inputText.slice(0, i);
+                              result.push(slice);
                             }
-                          })
-                          .catch(err => {
-                            console.warn(err);
-                          });
-                      } else if (onclick === 'config') {
-                        ui.cancelTransition();
+                            return result;
+                          })();
+                          const widths = slices.map(slice => measureText(slice));
+                          const distances = widths.map(width => Math.abs(valuePx - width));
+                          const sortedDistances = distances
+                            .map((distance, index) => ([distance, index]))
+                            .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
+                          const index = sortedDistances[0][1];
+                          const closestValuePx = widths[index];
 
-                        ui.pushPage(({inputText, inputPlaceholder, inputValue, sliderValue}) => ([
-                          {
-                            type: 'html',
-                            src: getConfigPageSrc(),
-                          },
-                          {
-                            type: 'html',
-                            src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, sliderValue}),
-                            x: 500,
-                            y: 150 + 2,
-                            w: WIDTH - 500,
-                            h: HEIGHT - (150 + 2),
-                            scroll: true,
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('preferences'),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
+                          modsState.inputValue = closestValuePx / (WIDTH - (500 + 40));
+                          modsState.inputFocus = true;
+
+                          const pages = ui.getPages();
+                          for (let i = 0; i < pages.length; i++) {
+                            const page = pages[i];
+                            const {type} = page;
+                            if (type === 'mods') {
+                              page.update(modsState);
+                            }
                           }
-                        ]), {
-                          type: 'config',
-                          state: configState,
-                        });
-                     } else if (onclick === 'elements') {
-                        ui.cancelTransition();
+                        } else if (onclick === 'config:input') {
+                          const {value} = hoverState;
+                          const valuePx = value * (WIDTH - (500 + 40));
 
-                        ui.pushPage(() => ([
-                          {
-                            type: 'html',
-                            src: getElementsPageSrc(),
-                          },
-                          {
-                            type: 'html',
-                            src: getElementsPageContentSrc({elements}),
-                            x: 500,
-                            y: 150 + 2,
-                            w: WIDTH - 500,
-                            h: HEIGHT - (150 + 2),
-                            scroll: true,
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('preferences'),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
+                          const slices = (() => {
+                            const result = [];
+                            for (let i = 0; i <= configState.inputText.length; i++) {
+                              const slice = configState.inputText.slice(0, i);
+                              result.push(slice);
+                            }
+                            return result;
+                          })();
+                          const widths = slices.map(slice => measureText(slice));
+                          const distances = widths.map(width => Math.abs(valuePx - width));
+                          const sortedDistances = distances
+                            .map((distance, index) => ([distance, index]))
+                            .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
+                          const index = sortedDistances[0][1];
+                          const closestValuePx = widths[index];
+
+                          configState.inputValue = closestValuePx / (WIDTH - (500 + 40));
+                          configState.inputFocus = true;
+
+                          const pages = ui.getPages();
+                          for (let i = 0; i < pages.length; i++) {
+                            const page = pages[i];
+                            const {type} = page;
+                            if (type === 'config') {
+                              page.update(configState);
+                            }
                           }
-                        ]), {
-                          type: 'elements',
-                          state: {elements},
-                        });
-                      } else if (onclick === 'mods:input') {
-                        const {value} = hoverState;
-                        const valuePx = value * (WIDTH - (500 + 40));
+                        } else if (onclick === 'config:resolution') {
+                          const {value} = hoverState;
 
-                        const slices = (() => {
-                          const result = [];
-                          for (let i = 0; i <= modsState.inputText.length; i++) {
-                            const slice = modsState.inputText.slice(0, i);
-                            result.push(slice);
-                          }
-                          return result;
-                        })();
-                        const widths = slices.map(slice => measureText(slice));
-                        const distances = widths.map(width => Math.abs(valuePx - width));
-                        const sortedDistances = distances
-                          .map((distance, index) => ([distance, index]))
-                          .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
-                        const index = sortedDistances[0][1];
-                        const closestValuePx = widths[index];
+                          configState.sliderValue = value;
 
-                        modsState.inputValue = closestValuePx / (WIDTH - (500 + 40));
-
-                        const pages = ui.getPages();
-                        for (let i = 0; i < pages.length; i++) {
-                          const page = pages[i];
-                          const {type} = page;
-                          if (type === 'mods') {
-                            page.update(modsState);
-                          }
-                        }
-                      } else if (onclick === 'config:input') {
-                        const {value} = hoverState;
-                        const valuePx = value * (WIDTH - (500 + 40));
-
-                        const slices = (() => {
-                          const result = [];
-                          for (let i = 0; i <= configState.inputText.length; i++) {
-                            const slice = configState.inputText.slice(0, i);
-                            result.push(slice);
-                          }
-                          return result;
-                        })();
-                        const widths = slices.map(slice => measureText(slice));
-                        const distances = widths.map(width => Math.abs(valuePx - width));
-                        const sortedDistances = distances
-                          .map((distance, index) => ([distance, index]))
-                          .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
-                        const index = sortedDistances[0][1];
-                        const closestValuePx = widths[index];
-
-                        configState.inputValue = closestValuePx / (WIDTH - (500 + 40));
-
-                        const pages = ui.getPages();
-                        for (let i = 0; i < pages.length; i++) {
-                          const page = pages[i];
-                          const {type} = page;
-                          if (type === 'config') {
-                            page.update(configState);
-                          }
-                        }
-                      } else if (onclick === 'config:resolution') {
-                        const {value} = hoverState;
-
-                        configState.sliderValue = value;
-
-                        const pages = ui.getPages();
-                        for (let i = 0; i < pages.length; i++) {
-                          const page = pages[i];
-                          const {type} = page;
-                          if (type === 'config') {
-                            page.update(configState);
+                          const pages = ui.getPages();
+                          for (let i = 0; i < pages.length; i++) {
+                            const page = pages[i];
+                            const {type} = page;
+                            if (type === 'config') {
+                              page.update(configState);
+                            }
                           }
                         }
                       }
