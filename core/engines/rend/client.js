@@ -324,7 +324,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
             const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
   <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #F0F0F0; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
-  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue * (WIDTH - (500 + 40))}px; background-color: #333;"></div>` : ''}
+  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${inputText}</div>
     ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
   </a>
@@ -582,6 +582,31 @@ ${getHeaderSrc('elements', '', '', true)}
 
                   return text => ctx.measureText(text).width;
                 })();
+                const getTextPropertiesFromCoord = (text, coordPx) => {
+                  const slices = (() => {
+                    const result = [];
+                    for (let i = 0; i <= text.length; i++) {
+                      const slice = text.slice(0, i);
+                      result.push(slice);
+                    }
+                    return result;
+                  })();
+                  const widths = slices.map(slice => measureText(slice));
+                  const distances = widths.map(width => Math.abs(coordPx - width));
+                  const sortedDistances = distances
+                    .map((distance, index) => ([distance, index]))
+                    .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
+
+                  const index = sortedDistances[0][1];
+                  const px = widths[index];
+
+                  return {index, px};
+                };
+                const getTextPropertiesFromIndex = (text, index) => {
+                  const slice = text.slice(0, index);
+                  const px = measureText(slice);
+                  return {index, px};
+                };
 
                 ui.pushPage([
                   {
@@ -940,24 +965,10 @@ ${getHeaderSrc('elements', '', '', true)}
                       const {value} = hoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
 
-                      const slices = (() => {
-                        const result = [];
-                        for (let i = 0; i <= modsState.inputText.length; i++) {
-                          const slice = modsState.inputText.slice(0, i);
-                          result.push(slice);
-                        }
-                        return result;
-                      })();
-                      const widths = slices.map(slice => measureText(slice));
-                      const distances = widths.map(width => Math.abs(valuePx - width));
-                      const sortedDistances = distances
-                        .map((distance, index) => ([distance, index]))
-                        .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
-                      const index = sortedDistances[0][1];
-                      const closestValuePx = widths[index];
+                      const {index, px} = getTextPropertiesFromCoord(modsState.inputText, valuePx);
 
                       modsState.inputIndex = index;
-                      modsState.inputValue = closestValuePx / (WIDTH - (500 + 40));
+                      modsState.inputValue = px;
                       focusState.type = 'mods';
 
                       _updatePages();
@@ -965,24 +976,10 @@ ${getHeaderSrc('elements', '', '', true)}
                       const {value} = hoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
 
-                      const slices = (() => {
-                        const result = [];
-                        for (let i = 0; i <= configState.inputText.length; i++) {
-                          const slice = configState.inputText.slice(0, i);
-                          result.push(slice);
-                        }
-                        return result;
-                      })();
-                      const widths = slices.map(slice => measureText(slice));
-                      const distances = widths.map(width => Math.abs(valuePx - width));
-                      const sortedDistances = distances
-                        .map((distance, index) => ([distance, index]))
-                        .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
-                      const index = sortedDistances[0][1];
-                      const closestValuePx = widths[index];
+                      const {index, px} = getTextPropertiesFromCoord(configState.inputText, valuePx);
 
                       configState.inputIndex = index;
-                      configState.inputValue = closestValuePx / (WIDTH - (500 + 40));
+                      configState.inputValue = px;
                       focusState.type = 'config';
 
                       _updatePages();
@@ -1066,24 +1063,28 @@ ${getHeaderSrc('elements', '', '', true)}
                   if (_isPrintableKeycode(e.keyCode)) {
                     state.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
                     state.inputIndex++;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
                   } else if (e.keyCode === 13) { // enter
                     focusState.type = null;
                   } else if (e.keyCode === 8) { // backspace
                     if (inputIndex > 0) {
                       state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
                       state.inputIndex--;
+                      state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
                     }
                   } else if (e.keyCode === 37) { // left
                     state.inputIndex = Math.max(state.inputIndex - 1, 0);
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
                   } else if (e.keyCode === 39) { // right
                     state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
                   } else if (e.keyCode === 38) { // up
                     state.inputIndex = 0;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
                   } else if (e.keyCode === 40) { // down
                     state.inputIndex = inputText.length;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
                   }
-
-                  // XXX update inputValue here also
                 };
                 const keydown = e => {
                   const {type} = focusState;
