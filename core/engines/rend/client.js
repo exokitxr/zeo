@@ -313,7 +313,7 @@ class Rend {
                   attributes: {
                     lol: 'zol',
                   },
-                  children: 'Here is some text content',
+                  children: null,//'Here is some text content',
                 },
               ],
               availableElements: [
@@ -375,6 +375,21 @@ class Rend {
                 return result;
               })();
               return _getKeyPath({children}, keyPath);
+            };
+            const _insertElementAtKeyPath = (root, keyPath) => {
+              const element = {
+                element: 'element',
+                attributes: {
+                  position: [1, 2, 3].join(' '),
+                },
+                children: null,
+              };
+
+              const targetElement = _getElementKeyPath(root, keyPath);
+              if (!Array.isArray(targetElement.children)) {
+                targetElement.children = [];
+              }
+              targetElement.children.push(element);
             };
 
             const getMainPageSrc = () => `\
@@ -481,7 +496,7 @@ ${getHeaderSrc('elements', '', '', true)}
   <h1 style="margin: 10px 0; font-size: 40px;">World</h1>
   ${getElementsSrc(elements, ['elements'], draggingKeyPath)}
   <div style="display: flex; height: 40px; margin: 20px 0; align-items: center;">
-    <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 24px; color: #d9534f; text-decoration: none;">+ Add</a>
+    <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 24px; color: #d9534f; text-decoration: none;" onclick="element:add">+ Add</a>
   </div>
   <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click one to adjust its properties. Drag to move. <a href="#">Add new element</a> or drag it in.</p>
 </div>
@@ -565,9 +580,9 @@ ${attributes(element)}&gt;\
                 const {children} = element;
                 if (Array.isArray(children)) {
                   result += `<div>${outerElements(children, childKeyPath)}</div>`;
-                } else if (typeof children === 'string') {
+                }/* else if (typeof children === 'string') {
                   result += children;
-                }
+                } */
 
                 result += `${tail(element, childKeyPath, Array.isArray(children) ? depth : 0)}</div>`;
 
@@ -1133,6 +1148,18 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       console.log('click element', element); // XXX
 
                       elementsState.draggingKeyPath = keyPath;
+
+                      _updatePages();
+                   } else if (onclick === 'element:add') {
+                      const {draggingKeyPath} = elementsState;
+
+                      _insertElementAtKeyPath({
+                        elements: elementsState.elements,
+                        availableElements: elementsState.availableElements,
+                        clipboardElements: elementsState.clipboardElements,
+                      }, draggingKeyPath.length > 0 ? draggingKeyPath : ['elements']);
+
+                      elementsState.draggingKeyPath = [];
 
                       _updatePages();
                     } else if (onclick === 'mods:input') {
