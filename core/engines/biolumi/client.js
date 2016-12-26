@@ -45,9 +45,6 @@ class Biolumi {
     return Promise.all([
       _requestFont(),
       _requestTransparentImg(),
-      new Promise((accept) => {
-        setTimeout(accept, 5000);
-      })
     ])
       .then(([
         font,
