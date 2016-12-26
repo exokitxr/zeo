@@ -632,11 +632,12 @@ ${attributes(element)}&gt;\
 
               return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, keyPath)}</div>`;
             };
-            const getDropHelperSrc = keyPath => `\
+            const getDropHelperSrc = keyPath => `<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onclick="element:move:${keyPath.join(':')}"><div></div></a>`;
+/* `\
 <a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onclick="element:move:${keyPath.join(':')}">\
 <div style="width: 100%; height: 2px; background-color: #0275d8;"></div>\
 </a>\
-`;
+`; */
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
