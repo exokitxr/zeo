@@ -457,6 +457,7 @@ ${getHeaderSrc('elements', '', '', true)}
 <div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; border-left: 2px solid #333; border-right: 2px solid #333; box-sizing: border-box;">
   <h1 style="margin: 10px 0; font-size: 40px;">World</h1>
   ${getElementsSrc(elements, draggingKeyPath)}
+  <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click an element to adjust its properties. Drag to move in the scene graph. <a href="#">Add new element</a> or drag it in.</p>
 </div>
 `;
             const getElementsPageSubcontentSrc = ({availableElements, clipboardElements, draggingKeyPath}) => `\
@@ -472,6 +473,7 @@ ${getHeaderSrc('elements', '', '', true)}
     </div>
   </div>
   ${getElementsSrc(availableElements, draggingKeyPath)}
+  <p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are installed and ready to add. Drag them in to the left. <a href="#">Install more elements</a></p>
   <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
   <div style="margin: 10px 0;">
     <div style="display: inline-block; float: left;">
@@ -484,6 +486,7 @@ ${getHeaderSrc('elements', '', '', true)}
     </div>
   </div>
   ${getElementsSrc(clipboardElements, draggingKeyPath)}
+  <p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">Drag-and-drop elements to the clipboad to temporarily save them. Drag inside the clipboard to copy.</p>
 </div>
 `;
             const getElementsSrc = (elements, draggingKeyPath) => {
