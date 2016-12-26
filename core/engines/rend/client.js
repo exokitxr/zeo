@@ -515,7 +515,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
             const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
   <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #F0F0F0; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
-  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${inputText}</div>
     ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
   </a>
@@ -612,7 +612,7 @@ ${getHeaderSrc('elements', '', '', true)}
   <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click one to adjust its properties. Drag to move. <a href="#">Add new element</a> or drag it in.</p>
 </div>
 `;
-            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath}) => {
+            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, focusAttribute}) => {
               const element = _getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
 
               return `\
@@ -627,7 +627,7 @@ ${element.element}&gt; properties\
 </span>\
 `,
       null,
-      getElementAttributesSrc(element),
+      getElementAttributesSrc(element, focusAttribute),
       ''
     )}
     <div style="margin-top: 30px; margin-left: -30px; border-bottom: 2px solid #333;"></div>`
@@ -650,24 +650,26 @@ ${element.element}&gt; properties\
 </div>
 `;
             };
-            const getElementAttributesSrc = element => {
+            const getElementAttributesSrc = (element, focusAttribute) => {
               let result = '';
 
               const {attributes} = element;
               for (const name in attributes) {
                 const attribute = attributes[name];
                 const {type, value, min, max, options} = attribute;
+                const focus = name === focusAttribute;
+
                 result += `\
 <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
-<div style="width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>\
-${getElementAttributeInput(name, type, value, min, max, options)}\
-</div>\
+  <div style="width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
+  ${getElementAttributeInput(name, type, value, min, max, options, focus)}
+</div>
 `;
               }
 
               return result;
             };
-            const getElementAttributeInput = (name, type, value, min, max, options) => {
+            const getElementAttributeInput = (name, type, value, min, max, options, focus) => {
               switch (type) {
                 case 'position': {
                   return `<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
@@ -675,7 +677,12 @@ ${getElementAttributeInput(name, type, value, min, max, options)}\
                   </div>`;
                 }
                 case 'text': {
-                  return `<div style="width: 400px; height: 40px; background-color: #EEE; border-radius: 5px;">${value}</div>`;
+                  return `\
+<a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}">
+  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
+  <div>${value}</div>
+</a>
+`;
                 }
                 case 'number': {
                   if (min === undefined) {
@@ -692,7 +699,10 @@ ${getElementAttributeInput(name, type, value, min, max, options)}\
     <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * (400 - (100 + 20))}px; margin-left: -1px; width: 2px; background-color: #F00;"></div>
   </div>
 </div>
-<div style="width: 100px; height: 40px; background-color: #EEE; border-radius: 5px;">${value}</div>
+<a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}">
+  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
+  <div>${value}</div>
+</a>
 `;
                 }
                 case 'select': {
@@ -711,7 +721,10 @@ ${getElementAttributeInput(name, type, value, min, max, options)}\
                   return `\
 <div style="display: flex; width: 400px; height: 40px; align-items: center;">
   <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${value};"></div>
-  <div style="width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px;">${value}</div>
+  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}">
+    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
+    <div>${value}</div>
+  </a>
 </div>
 `;
                 }
@@ -1163,7 +1176,10 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         focus: focusState,
                       });
                     } else if (type === 'elements') {
-                      page.update(elementsState);
+                      page.update({
+                        elements: elementsState,
+                        focus: focusState,
+                      });
                     }
                   }
                 };
@@ -1311,41 +1327,49 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                    } else if (onclick === 'elements') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({elements, availableElements, clipboardElements, selectedKeyPath}) => ([
-                        {
-                          type: 'html',
-                          src: getElementsPageSrc(),
-                        },
-                        {
-                          type: 'html',
-                          src: getElementsPageContentSrc({elements, selectedKeyPath}),
-                          x: 500,
-                          y: 150 + 2,
-                          w: WIDTH - (500 + 600),
-                          h: HEIGHT - (150 + 2),
-                          scroll: true,
-                        },
-                        {
-                          type: 'html',
-                          src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath}),
-                          x: 500 + (WIDTH - (500 + 600)),
-                          y: 150 + 2,
-                          w: 600,
-                          h: HEIGHT - (150 + 2),
-                          scroll: true,
-                        },
-                        {
-                          type: 'image',
-                          img: creatureUtils.makeAnimatedCreature('preferences'),
-                          x: 150,
-                          y: 0,
-                          w: 150,
-                          h: 150,
-                          frameTime: 300,
-                        }
-                      ]), {
+                      ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath}, focus: {type: focusType}}) => {
+                        const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
+                        const focusAttribute = match && match[1];
+
+                        return [
+                          {
+                            type: 'html',
+                            src: getElementsPageSrc(),
+                          },
+                          {
+                            type: 'html',
+                            src: getElementsPageContentSrc({elements, selectedKeyPath}),
+                            x: 500,
+                            y: 150 + 2,
+                            w: WIDTH - (500 + 600),
+                            h: HEIGHT - (150 + 2),
+                            scroll: true,
+                          },
+                          {
+                            type: 'html',
+                            src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, focusAttribute}),
+                            x: 500 + (WIDTH - (500 + 600)),
+                            y: 150 + 2,
+                            w: 600,
+                            h: HEIGHT - (150 + 2),
+                            scroll: true,
+                          },
+                          {
+                            type: 'image',
+                            img: creatureUtils.makeAnimatedCreature('preferences'),
+                            x: 150,
+                            y: 0,
+                            w: 150,
+                            h: 150,
+                            frameTime: 300,
+                          }
+                        ];
+                      }, {
                         type: 'elements',
-                        state: elementsState,
+                        state: {
+                          elements: elementsState,
+                          focus: focusState,
+                        },
                       });
                     } else if (match = onclick.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
                       const keyPath = _parseKeyPath(match[1]);
@@ -1394,7 +1418,9 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       const attribute = attributes[name];
                       const {type} = attribute;
 
-                      if (type === 'checkbox') {
+                      if (type === 'position' || type === 'text' || type === 'number' || type === 'color') {
+                        focusState.type = 'element:attribute:' + name;
+                      } else if (type === 'checkbox') {
                         attribute.value = !attribute.value;
                       }
 
