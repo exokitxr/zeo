@@ -581,11 +581,13 @@ ${element.element}&gt; properties\
 `;
             const getElementsSrc = (elements, keyPath, draggingKeyPath) => {
               const head = (element, keyPath, depth) => `\
+${spaces(depth)}\
 <a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">\
-${spaces(depth)}&lt;\
+&lt;\
 <img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
 ${element.element}\
-${attributes(element)}&gt;\
+${attributes(element)}\
+&gt;\
 </a>\
 `;
               const tail = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
