@@ -650,7 +650,7 @@ ${element.element}&gt; properties\
                 const attribute = attributes[k];
                 const {type, value, min, max, options} = attribute;
                 result += `\
-<div style="display: flex; margin-bottom: 3px; font-size: 28px; line-height: 1.4; align-items: center;">
+<div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
 <div style="width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${k}</div>\
 ${getElementAttributeInput(type, value, min, max, options)}\
 </div>\
@@ -661,9 +661,13 @@ ${getElementAttributeInput(type, value, min, max, options)}\
             };
             const getElementAttributeInput = (type, value, min, max, options) => {
               switch (type) {
-                case 'text':
-                case 'position': { // XXX
-                  return `<div style="width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; flex: 1;">${value}</div>`;
+                case 'position': {
+                  return `<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
+                    <div style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; align-items: center; box-sizing: border-box;">Set</div>
+                  </div>`;
+                }
+                case 'text': {
+                  return `<div style="width: 400px; height: 40px; background-color: #EEE; border-radius: 5px;">${value}</div>`;
                 }
                 case 'number': {
                   if (min === undefined) {
@@ -689,7 +693,7 @@ ${getElementAttributeInput(type, value, min, max, options)}\
                   }
 
                   return `\
-<div style="display: flex; width: 400px; height: 40px; border: 2px solid #333; box-sizing: border-box; align-items: center;">
+<div style="display: flex; width: 400px; height: 40px; border: 2px solid #333; align-items: center; box-sizing: border-box;">
   <div style="width: ${400 - 30}px">${value}</div>
   <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
 </div>
