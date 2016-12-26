@@ -465,32 +465,33 @@ ${getHeaderSrc('elements', '', '', true)}
 `;
             const getElementsPageSubcontentSrc = ({availableElements, clipboardElements, draggingKeyPath}) => `\
 <div style="display: flex; flex-direction: column; width: 600px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; box-sizing: border-box;">
-  <div style="margin: 10px 0;">
-    <div style="display: inline-block; float: left;">
-      <h1 style="margin: 0; font-size: 40px;">Installed</h1>
-    </div>
-    <div style="float: right;">
-      <div style="display: flex; height: 40px; margin: 6px 0; align-items: center;">
-        <a style="padding: 5px 10px; background-color: #5cb85c; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">More</a>
-      </div>
-    </div>
-  </div>
-  ${getElementsSrc(availableElements, draggingKeyPath)}
-  <p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are installed and ready to add. Drag them in to the left. <a href="#">Install more elements</a></p>
-  <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
-  <div style="margin: 10px 0;">
-    <div style="display: inline-block; float: left;">
-      <h1 style="margin: 0; font-size: 40px;">Clipboard</h1>
-    </div>
-    <div style="float: right;">
-      <div style="display: flex; height: 40px; margin: 6px 0; align-items: center;">
-        <a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>
-      </div>
-    </div>
-  </div>
-  ${getElementsSrc(clipboardElements, draggingKeyPath)}
-  <p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">Drag-and-drop elements to the clipboad to temporarily save them. Drag inside the clipboard to copy.</p>
+  ${getSubcontentSectionSrc(
+    'Installed',
+    `<a style="padding: 5px 10px; background-color: #5cb85c; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">More</a>`,
+    getElementsSrc(availableElements, draggingKeyPath),
+    `These elements are installed and ready to add. Drag them in to the left. <a href="#">Install more elements</a>`
+  )}
+  ${getSubcontentSectionSrc(
+    'Clipboard',
+    `<a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>`,
+    getElementsSrc(clipboardElements, draggingKeyPath),
+    `Drag-and-drop elements to the clipboad to temporarily save them. Drag inside the clipboard to copy.`
+  )}
 </div>
+`;
+            const getSubcontentSectionSrc = (headingSrc, buttonSrc, contentSrc, paragraphSrc) => `\
+<div style="margin: 10px 0;">
+  <div style="display: inline-block; float: left;">
+    <h1 style="margin: 0; font-size: 40px;">${headingSrc}</h1>
+  </div>
+  <div style="float: right;">
+    <div style="display: flex; height: 40px; margin: 6px 0; align-items: center;">
+      ${buttonSrc}
+    </div>
+  </div>
+</div>
+${contentSrc}
+<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>
 `;
             const getElementsSrc = (elements, draggingKeyPath) => {
               const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
