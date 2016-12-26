@@ -671,7 +671,7 @@ ${getElementAttributeInput(name, type, value, min, max, options)}\
               switch (type) {
                 case 'position': {
                   return `<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
-                    <div style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; align-items: center; box-sizing: border-box;">Set</div>
+                    <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; align-items: center; box-sizing: border-box;">Set</a>
                   </div>`;
                 }
                 case 'text': {
