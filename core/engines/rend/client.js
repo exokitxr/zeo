@@ -316,6 +316,10 @@ class Rend {
                         'extra',
                       ],
                     },
+                    color: {
+                      type: 'color',
+                      value: '#563d7c',
+                    },
                     enabled: {
                       type: 'checkbox',
                       value: true,
@@ -696,6 +700,14 @@ ${getElementAttributeInput(type, value, min, max, options)}\
 <div style="display: flex; width: 400px; height: 40px; border: 2px solid #333; align-items: center; box-sizing: border-box;">
   <div style="width: ${400 - 30}px">${value}</div>
   <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
+</div>
+`;
+                }
+                case 'color': {
+                  return `\
+<div style="display: flex; width: 400px; height: 40px; align-items: center;">
+  <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${value};"></div>
+  <div style="width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px;">${value}</div>
 </div>
 `;
                 }
