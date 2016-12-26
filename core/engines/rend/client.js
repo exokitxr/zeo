@@ -626,7 +626,7 @@ ${element.element}&gt; properties\
                 const attribute = attributes[k];
                 const {type, value: v} = attribute;
                 result += `\
-<div style="display: flex; font-size: 28px; line-height: 1.4; align-items: center;">
+<div style="display: flex; margin-bottom: 2px; font-size: 28px; line-height: 1.4; align-items: center;">
 <div style="max-width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${k}</div>\
 <div style="height: 40px; background-color: #EEE; border-radius: 5px; flex: 1;">${v}</div>\
 </div>\
