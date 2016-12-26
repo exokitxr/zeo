@@ -283,10 +283,10 @@ class Biolumi {
 
                   return new Anchor(
                     new Rect(
-                      clamp((py * height) + top, 0, height),
-                      clamp((py * height) + bottom, 0, height),
-                      clamp((px * width) + left, 0, width),
-                      clamp((px * width) + right, 0, width)
+                      clamp((py * height) + top, 0, (py + ph) * height),
+                      clamp((py * height) + bottom, 0, (py + ph) * height),
+                      clamp((px * width) + left, 0, (px + pw) * width),
+                      clamp((px * width) + right, 0, (px + pw) * width)
                     ),
                     onclick
                   );

@@ -529,7 +529,7 @@ ${getHeaderSrc('elements', '', '', true)}
 </div>
 `;
             const getElementsPageContentSrc = ({elements, draggingKeyPath}) => `\
-<div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; border-left: 2px solid #333; border-right: 2px solid #333; box-sizing: border-box;">
+<div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; border-left: 2px solid #333; border-right: 2px solid #333; overflow-x: hidden; overflow-y: visible; box-sizing: border-box;">
   <h1 style="margin: 10px 0; font-size: 40px;">World</h1>
   ${getElementsSrc(elements, ['elements'], draggingKeyPath)}
   <div style="display: flex; height: 40px; margin: 20px 0; align-items: center;">
