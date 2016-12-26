@@ -483,7 +483,7 @@ ${getHeaderSrc('elements', '', '', true)}
   <div style="display: flex; height: 40px; margin: 20px 0; align-items: center;">
     <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 24px; color: #d9534f; text-decoration: none;">+ Add</a>
   </div>
-  <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click an element to adjust its properties. Drag to move in the scene graph. <a href="#">Add new element</a> or drag it in.</p>
+  <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click one to adjust its properties. Drag to move. <a href="#">Add new element</a> or drag it in.</p>
 </div>
 `;
             const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, draggingKeyPath}) => {
@@ -496,7 +496,7 @@ ${getHeaderSrc('elements', '', '', true)}
       `\
 <span style="color: #a894a6;">\
 &lt;\
-<img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="40" height="40" style="display: inline-block; position: relative; top: 9px; image-rendering: pixelated;" />\
+<img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="40" height="40" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
 ${element.element}&gt; properties\
 </span>\
 `,
@@ -512,14 +512,14 @@ ${element.element}&gt; properties\
     'Installed',
     `<a style="padding: 5px 10px; background-color: #5cb85c; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">More</a>`,
     getElementsSrc(availableElements, ['availableElements'], draggingKeyPath),
-    `These elements are installed and ready to add. Drag them in to the left. <a href="#">Install more elements</a>`
+    `Installed and ready to add. Drag to the left.<br/><a href="#">Install more elements</a>`
   )}
   <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
   ${getSubcontentSectionSrc(
     'Clipboard',
     `<a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>`,
     getElementsSrc(clipboardElements, ['clipboardElements'], draggingKeyPath),
-    `Drag-and-drop elements to the clipboad to temporarily save them. Drag inside the clipboard to copy.`
+    `Drag-and-drop elements to the clipboad to save them. Drag inside the clipboard to copy.`
   )}
 </div>
 `;
