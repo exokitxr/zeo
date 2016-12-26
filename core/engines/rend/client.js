@@ -304,14 +304,14 @@ class Rend {
                       attributes: {
                         rotation: [0, Math.PI, 0].join(' '),
                       },
-                      children: null,
+                      children: [],
                     },
                     {
                       element: 'subsub',
                       attributes: {
                         rotation: [0, Math.PI, 0].join(' '),
                       },
-                      children: null,
+                      children: [],
                     },
                   ],
                 },
@@ -320,7 +320,7 @@ class Rend {
                   attributes: {
                     lol: 'zol',
                   },
-                  children: null,
+                  children: [],
                 },
               ],
               availableElements: [
@@ -331,6 +331,7 @@ class Rend {
                     rotation: [0, Math.PI, 0].join(' '),
                     url: 'cloud.mdl',
                   },
+                  children: [],
                 },
                 {
                   element: 'model',
@@ -339,6 +340,7 @@ class Rend {
                     rotation: [0, Math.PI, 0].join(' '),
                     url: 'lightning.mdl',
                   },
+                  children: [],
                 },
               ],
               clipboardElements: [
@@ -354,6 +356,7 @@ class Rend {
                       attributes: {
                         url: 'cloud.mdl',
                       },
+                      children: [],
                     },
                   ],
                 },
@@ -419,13 +422,10 @@ class Rend {
                 attributes: {
                   position: [1, 2, 3].join(' '),
                 },
-                children: null,
+                children: [],
               };
 
               const targetElement = _getElementKeyPath(root, keyPath);
-              if (!Array.isArray(targetElement.children)) {
-                targetElement.children = [];
-              }
               targetElement.children.push(element);
             };
 
@@ -622,11 +622,11 @@ ${attributes(element)}&gt;\
                   result += `<div style="${anchorStyle(childKeyPath)}">${head(element, childKeyPath, depth)}`;
 
                   const {children} = element;
-                  if (Array.isArray(children) && children.length > 0) {
+                  if (children.length > 0) {
                     result += `<div>${outerElements(children, childKeyPath)}</div>`;
                   }
 
-                  result += `${tail(element, childKeyPath, (Array.isArray(children) && children.length > 0) ? depth : 0)}</div>`;
+                  result += `${tail(element, childKeyPath, (children.length > 0) ? depth : 0)}</div>`;
 
                   return result;
                 }).join('\n');
@@ -1191,7 +1191,18 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                     } else if (match = onclick.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
                       const keyPath = _parseKeyPath(match[1]);
 
-                      elementsState.draggingKeyPath = keyPath;
+                      if (oldDraggingKeyPath && !_isSubKeyPath(keyPath, oldDraggingKeyPath)) {
+                        const spec = {
+                          elements: elementsState.elements,
+                          availableElements: elementsState.availableElements,
+                          clipboardElements: elementsState.clipboardElements,
+                        };
+                        const newParentElement = _getElementKeyPath(spec, keyPath);
+                        const newKeyPath = keyPath.concat(newParentElement.children.length);
+                        _moveElementKeyPath(spec, oldDraggingKeyPath, newKeyPath);
+                      } else {
+                        elementsState.draggingKeyPath = keyPath;
+                      }
 
                       _updatePages();
                     } else if (match = onclick.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
