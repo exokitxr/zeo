@@ -296,20 +296,29 @@ class Rend {
                 {
                   element: 'archae',
                   attributes: {
-                    position: [1, 2, 3].join(' '),
+                    position: {
+                      type: 'position',
+                      value: [1, 2, 3].join(' '),
+                    },
                   },
                   children: [
                     {
                       element: 'sub',
                       attributes: {
-                        rotation: [0, Math.PI, 0].join(' '),
+                        rotation: {
+                          type: 'position',
+                          value: [0, Math.PI, 0].join(' '),
+                        },
                       },
                       children: [],
                     },
                     {
                       element: 'subsub',
                       attributes: {
-                        rotation: [0, Math.PI, 0].join(' '),
+                        rotation: {
+                          type: 'position',
+                          value: [0, Math.PI, 0].join(' '),
+                        },
                       },
                       children: [],
                     },
@@ -318,7 +327,10 @@ class Rend {
                 {
                   element: 'text',
                   attributes: {
-                    lol: 'zol',
+                    lol: {
+                      type: 'text',
+                      value: 'zol',
+                    },
                   },
                   children: [],
                 },
@@ -327,18 +339,36 @@ class Rend {
                 {
                   element: 'model',
                   attributes: {
-                    position: [1, 2, 3].join(' '),
-                    rotation: [0, Math.PI, 0].join(' '),
-                    url: 'cloud.mdl',
+                    position: {
+                      type: 'position',
+                      value: [1, 2, 3].join(' '),
+                    },
+                    rotation: {
+                      type: 'position',
+                      value: [0, Math.PI, 0].join(' '),
+                    },
+                    url: {
+                      type: 'text',
+                      value: 'cloud.mdl',
+                    },
                   },
                   children: [],
                 },
                 {
                   element: 'model',
                   attributes: {
-                    position: [1, 2, 3].join(' '),
-                    rotation: [0, Math.PI, 0].join(' '),
-                    url: 'lightning.mdl',
+                    position: {
+                      type: 'position',
+                      value: [1, 2, 3].join(' '),
+                    },
+                    rotation: {
+                      type: 'position',
+                      value: [0, Math.PI, 0].join(' '),
+                    },
+                    url: {
+                      type: 'text',
+                      value: 'cloud.mdl',
+                    },
                   },
                   children: [],
                 },
@@ -347,14 +377,23 @@ class Rend {
                 {
                   element: 'model',
                   attributes: {
-                    position: [1, 2, 3].join(' '),
-                    rotation: [0, Math.PI, 0].join(' '),
+                    position: {
+                      type: 'position',
+                      value: [1, 2, 3].join(' '),
+                    },
+                    rotation: {
+                      type: 'position',
+                      value: [0, Math.PI, 0].join(' '),
+                    },
                   },
                   children: [
                     {
                       element: 'submodel',
                       attributes: {
-                        url: 'cloud.mdl',
+                        url: {
+                          type: 'text',
+                          value: 'cloud.mdl',
+                        },
                       },
                       children: [],
                     },
@@ -420,7 +459,10 @@ class Rend {
               const element = {
                 element: 'element',
                 attributes: {
-                  position: [1, 2, 3].join(' '),
+                  position: {
+                    type: 'position',
+                    value: [1, 2, 3].join(' '),
+                  },
                 },
                 children: [],
               };
@@ -553,8 +595,8 @@ ${element.element}&gt; properties\
 </span>\
 `,
       null,
-      getElementsPropertiesSrc(element),
-      ''// `These are the properties you can set for this element.`
+      getElementAttributesSrc(element),
+      ''
     )}
     <div style="margin-top: 30px; margin-left: -30px; border-bottom: 2px solid #333;"></div>`
   :
@@ -576,9 +618,23 @@ ${element.element}&gt; properties\
 </div>
 `;
             };
-            const getElementsPropertiesSrc = element => `\
-<div style="font-family: Menlo; font-size: 28px; line-height: 1.4;">Position</div>
+            const getElementAttributesSrc = element => {
+              let result = '';
+
+              const {attributes} = element;
+              for (const k in attributes) {
+                const attribute = attributes[k];
+                const {type, value: v} = attribute;
+                result += `\
+<div style="display: flex; font-size: 28px; line-height: 1.4; align-items: center;">
+<div style="max-width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${k}</div>\
+<div style="height: 40px; background-color: #EEE; border-radius: 5px; flex: 1;">${v}</div>\
+</div>\
 `;
+              }
+
+              return result;
+            };
             const getElementsSrc = (elements, keyPath, draggingKeyPath) => {
               const head = (element, keyPath, depth) => `\
 ${spaces(depth)}\
@@ -598,7 +654,8 @@ ${attributes(element)}\
 
                 const acc = [];
                 for (const k in attributes) {
-                  const v = attributes[k];
+                  const attribute = attributes[k];
+                  const {value: v} = attribute;
                   acc.push(`<span style="color: #994500;">${k}</span>=<span style="color: #1a1aa6;">${JSON.stringify(v)}</span>`);
                 }
                 return acc.length > 0 ? (' ' + acc.join(' ')) : '';
