@@ -712,11 +712,9 @@ ${element.element}&gt; properties\
 
                   if (!focus) {
                     return `\
-<a style="width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
-  <div style="display: flex; margin: 1px; padding: 2px; align-items: center;">
-    <div style="width: ${400 - 30}px">${value}</div>
-    <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
-  </div>
+<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
+  <div style="width: ${400 - 30}px">${value}</div>
+  <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
 </a>
 `;
                   } else {
@@ -724,7 +722,7 @@ ${element.element}&gt; properties\
 <div style="position: relative; width: 400px; height: 40px; z-index: 1;">
   <div style="display: flex; flex-direction: column; background-color: #FFF;">
     ${options.map((option, i, a) => {
-      const outerStyle = (() => {
+      const style = (() => {
         let result = '';
         if (i !== 0) {
           result += 'padding-top: 2px; border-top: 0;';
@@ -732,13 +730,13 @@ ${element.element}&gt; properties\
         if (i !== (a.length - 1)) {
           result += 'padding-bottom: 2px; border-bottom: 0;';
         }
+        if (option === value) {
+          result += 'background-color: #EEE;';
+        }
         return result;
       })();
-      return `<a style="width: 400px; height: 40px; border: 2px solid #333; ${outerStyle}; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}:set:${option}">
-        <div style="display: flex; position: relative; margin: 1px; padding: 2px; align-items: center;">
-          ${option === value ? `<div style="position: absolute; top: 1px; bottom: 8px; left: 1px; right: 1px; border: 2px solid #333;"></div>` : ''}
-          ${option}
-        </div>
+      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:set:${option}">
+        ${option}
       </a>`;
     }).join('\n')}
   </div>
