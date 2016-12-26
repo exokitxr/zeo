@@ -306,6 +306,16 @@ class Rend {
                       min: 0,
                       max: 10,
                     },
+                    type: {
+                      type: 'select',
+                      value: 'basic',
+                      options: [
+                        'basic',
+                        'advanced',
+                        'core',
+                        'extra',
+                      ],
+                    },
                   },
                   children: [
                     {
@@ -630,23 +640,30 @@ ${element.element}&gt; properties\
               const {attributes} = element;
               for (const k in attributes) {
                 const attribute = attributes[k];
-                const {type, value, min = 0, max = 10} = attribute;
+                const {type, value, min, max, options} = attribute;
                 result += `\
 <div style="display: flex; margin-bottom: 3px; font-size: 28px; line-height: 1.4; align-items: center;">
 <div style="width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${k}</div>\
-${getElementAttributeInput(type, value, min, max)}\
+${getElementAttributeInput(type, value, min, max, options)}\
 </div>\
 `;
               }
 
               return result;
             };
-            const getElementAttributeInput = (type, value, min, max) => {
+            const getElementAttributeInput = (type, value, min, max, options) => {
               switch (type) {
                 case 'text':
                 case 'position': // XXX
                   return `<div style="width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; flex: 1;">${value}</div>`;
                 case 'number': {
+                  if (min === undefined) {
+                    min = 0;
+                  }
+                  if (max === undefined) {
+                    max = 10;
+                  }
+
                   const factor = (value - min) / max;
                   return `\
 <div style="position: relative; width: ${400 - (100 + 20)}px; height: 40px; margin-right: 20px;">
@@ -655,6 +672,18 @@ ${getElementAttributeInput(type, value, min, max)}\
   </div>
 </div>
 <div style="width: 100px; height: 40px; background-color: #EEE; border-radius: 5px;">${value}</div>
+`;
+                }
+                case 'select': {
+                  if (options === undefined) {
+                    options = [''];
+                  }
+
+                  return `\
+<div style="display: flex; width: 400px; height: 40px; border: 2px solid #333; box-sizing: border-box; align-items: center;">
+  <div style="width: ${400 - 30}px">${value}</div>
+  <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
+</div>
 `;
                 }
                 default:
