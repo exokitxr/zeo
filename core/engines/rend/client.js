@@ -300,13 +300,17 @@ class Rend {
                       type: 'position',
                       value: [1, 2, 3].join(' '),
                     },
-                    value: {
+                    text: {
+                      type: 'text',
+                      value: 'Hello, world!',
+                    },
+                    number: {
                       type: 'number',
                       value: 2,
                       min: 0,
                       max: 10,
                     },
-                    type: {
+                    select: {
                       type: 'select',
                       value: 'basic',
                       options: [
