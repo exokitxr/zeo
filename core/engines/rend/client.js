@@ -304,7 +304,14 @@ class Rend {
                       attributes: {
                         rotation: [0, Math.PI, 0].join(' '),
                       },
-                      children: 'Hello, World!',
+                      children: null,//'Hello, World!',
+                    },
+                    {
+                      element: 'subsub',
+                      attributes: {
+                        rotation: [0, Math.PI, 0].join(' '),
+                      },
+                      children: null,//'Yup',
                     },
                   ],
                 },
@@ -517,7 +524,7 @@ ${element.element}&gt; properties\
 `,
       null,
       getElementsPropertiesSrc(element),
-      ''// `These are the properties you can set for this slement.`
+      ''// `These are the properties you can set for this element.`
     )}
     <div style="margin-top: 30px; margin-left: -30px; border-bottom: 2px solid #333;"></div>`
   :
@@ -569,28 +576,47 @@ ${attributes(element)}&gt;\
                 return acc.length > 0 ? (' ' + acc.join(' ')) : '';
               };
 
-              const outerElements = (elements, keyPath) => `<div style="display: flex; flex-direction: column;;">${innerElements(elements, keyPath)}</div>`;
+              const outerElements = (elements, keyPath) => `<div style="display: flex; flex-direction: column;">${innerElements(elements, keyPath)}</div>`;
               const spaces = depth => Array(depth + 1).join('&nbsp;&nbsp;');
-              const innerElements = (elements, keyPath) => elements.map((element, i) => {
-                const depth = keyPath.length - 1;
-                const childKeyPath = keyPath.concat(i);
+              const innerElements = (elements, keyPath) => {
+                let result = '';
 
-                let result = `<div style="${anchorStyle(childKeyPath)}">${head(element, childKeyPath, depth)}`;
+                result += elements.map((element, i) => {
+                  const depth = keyPath.length - 1;
+                  const childKeyPath = keyPath.concat(i);
 
-                const {children} = element;
-                if (Array.isArray(children)) {
-                  result += `<div>${outerElements(children, childKeyPath)}</div>`;
-                }/* else if (typeof children === 'string') {
-                  result += children;
-                } */
+                  let result = '';
 
-                result += `${tail(element, childKeyPath, Array.isArray(children) ? depth : 0)}</div>`;
+                  if (draggingKeyPath.length > 0) {
+                    result += getDropHelperSrc();
+                  }
+
+                  result += `<div style="${anchorStyle(childKeyPath)}">${head(element, childKeyPath, depth)}`;
+
+                  const {children} = element;
+                  if (Array.isArray(children)) {
+                    result += `<div>${outerElements(children, childKeyPath)}</div>`;
+                  }
+
+                  result += `${tail(element, childKeyPath, Array.isArray(children) ? depth : 0)}</div>`;
+
+                  return result;
+                }).join('\n');
+
+                if (draggingKeyPath.length > 0) {
+                  result += getDropHelperSrc();
+                }
 
                 return result;
-              }).join('\n');
+              };
 
               return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, keyPath)}</div>`;
             };
+            const getDropHelperSrc = () => `\
+<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;">\
+<div style="width: 100%; height: 2px; background-color: #0275d8;"></div>\
+</a>\
+`;
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
@@ -959,8 +985,10 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                   if (intersectionPoint) {
                     const {anchor} = hoverState;
                     const onclick = (anchor && anchor.onclick) || '';
+                    const {draggingKeyPath: oldDraggingKeyPath} = elementsState;
 
                     focusState.type = null;
+                    elementsState.draggingKeyPath = [];
 
                     let match;
                     if (onclick === 'back') {
@@ -1151,15 +1179,11 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
 
                       _updatePages();
                    } else if (onclick === 'element:add') {
-                      const {draggingKeyPath} = elementsState;
-
                       _insertElementAtKeyPath({
                         elements: elementsState.elements,
                         availableElements: elementsState.availableElements,
                         clipboardElements: elementsState.clipboardElements,
-                      }, draggingKeyPath.length > 0 ? draggingKeyPath : ['elements']);
-
-                      elementsState.draggingKeyPath = [];
+                      }, oldDraggingKeyPath.length > 0 ? oldDraggingKeyPath : ['elements']);
 
                       _updatePages();
                     } else if (onclick === 'mods:input') {
@@ -1510,13 +1534,16 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         return result;
                       })();
                       const anchorBox = (() => {
-                        for (let i = 0; i < anchorBoxes.length; i++) {
-                          const anchorBox = anchorBoxes[i];
-                          if (anchorBox.containsPoint(intersectionPoint)) {
-                            return anchorBox;
-                          }
+                        const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(intersectionPoint));
+
+                        if (interstectedAnchorBoxes.length > 0) {
+                          return interstectedAnchorBoxes.map(anchorBox => ({
+                            anchorBox,
+                            distance: anchorBox.getCenter().distanceTo(intersectionPoint),
+                          })).sort((a, b) => a.distance - b.distance)[0].anchorBox;
+                        } else {
+                          return null;
                         }
-                        return null;
                       })();
                       if (anchorBox) {
                         boxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
