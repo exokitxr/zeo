@@ -316,6 +316,14 @@ class Rend {
                         'extra',
                       ],
                     },
+                    enabled: {
+                      type: 'checkbox',
+                      value: true,
+                    },
+                    disabled: {
+                      type: 'checkbox',
+                      value: false,
+                    },
                   },
                   children: [
                     {
@@ -654,8 +662,9 @@ ${getElementAttributeInput(type, value, min, max, options)}\
             const getElementAttributeInput = (type, value, min, max, options) => {
               switch (type) {
                 case 'text':
-                case 'position': // XXX
+                case 'position': { // XXX
                   return `<div style="width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; flex: 1;">${value}</div>`;
+                }
                 case 'number': {
                   if (min === undefined) {
                     min = 0;
@@ -686,8 +695,24 @@ ${getElementAttributeInput(type, value, min, max, options)}\
 </div>
 `;
                 }
-                default:
+                case 'checkbox': {
+                  return `\
+<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end; align-items: center;">
+  ${value ?
+    `<div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
+      <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
+    </div>`
+  :
+    `<div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
+      <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
+    </div>`
+  }
+</div>
+`;
+                }
+                default: {
                   return '';
+                }
               }
             };
             const getElementsSrc = (elements, keyPath, draggingKeyPath) => {
