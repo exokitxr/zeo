@@ -678,7 +678,7 @@ ${element.element}&gt; properties\
                 }
                 case 'text': {
                   return `\
-<a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}">
+<a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
   <div>${value}</div>
 </a>
@@ -699,7 +699,7 @@ ${element.element}&gt; properties\
     <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * (400 - (100 + 20))}px; margin-left: -1px; width: 2px; background-color: #F00;"></div>
   </div>
 </div>
-<a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}">
+<a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
   <div>${value}</div>
 </a>
@@ -712,7 +712,7 @@ ${element.element}&gt; properties\
 
                   if (!focus) {
                     return `\
-<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; align-items: center; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}">
+<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; align-items: center; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
   <div style="width: ${400 - 30}px">${value}</div>
   <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
 </a>
@@ -732,7 +732,7 @@ ${element.element}&gt; properties\
         }
         return result;
       })();
-      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; align-items: center; text-decoration: none; box-sizing: border-box;">${option}</a>`;
+      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; align-items: center; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}:set:${option}">${option}</a>`;
     }).join('\n')}
   </div>
 </div>
@@ -743,7 +743,7 @@ ${element.element}&gt; properties\
                   return `\
 <div style="display: flex; width: 400px; height: 40px; align-items: center;">
   <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${value};"></div>
-  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}">
+  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
     <div>${value}</div>
   </a>
@@ -754,11 +754,11 @@ ${element.element}&gt; properties\
                   return `\
 <div style="display: flex; width: 400px; height: 40px; justify-content: flex-end; align-items: center;">
   ${value ?
-    `<a style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}">
+    `<a style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:toggle">
       <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
     </a>`
   :
-    `<a style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}">
+    `<a style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:toggle">
       <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
     </a>`
   }
@@ -1429,8 +1429,11 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       }, oldSelectedKeyPath.length > 0 ? oldSelectedKeyPath : ['elements']);
 
                       _updatePages();
-                    } else if (match = onclick.match(/^element:attribute:(.+)$/)) {
+                    } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|toggle)(?::(.+?))?$/)) {
                       const name = match[1];
+                      const action = match[2];
+                      const value = match[3];
+
                       const element = _getElementKeyPath({
                         elements: elementsState.elements,
                         availableElements: elementsState.availableElements,
@@ -1440,9 +1443,11 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       const attribute = attributes[name];
                       const {type} = attribute;
 
-                      if (type === 'position' || type === 'text' || type === 'number' || type === 'select' || type === 'color') {
+                      if (action === 'focus') {
                         focusState.type = 'element:attribute:' + name;
-                      } else if (type === 'checkbox') {
+                      } else if (action === 'set') {
+                        attribute.value = value;
+                      } else if (action === 'toggle') {
                         attribute.value = !attribute.value;
                       }
 
