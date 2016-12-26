@@ -300,6 +300,12 @@ class Rend {
                       type: 'position',
                       value: [1, 2, 3].join(' '),
                     },
+                    value: {
+                      type: 'number',
+                      value: 2,
+                      min: 0,
+                      max: 10,
+                    },
                   },
                   children: [
                     {
@@ -493,7 +499,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="position: relative; width ${WIDTH - (500 + 40)}px; height: 100px;">
   <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="config:resolution">
     <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
-    <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
+      <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
     </div>
   </a>
 </div>
@@ -624,16 +630,36 @@ ${element.element}&gt; properties\
               const {attributes} = element;
               for (const k in attributes) {
                 const attribute = attributes[k];
-                const {type, value: v} = attribute;
+                const {type, value, min = 0, max = 10} = attribute;
                 result += `\
-<div style="display: flex; margin-bottom: 2px; font-size: 28px; line-height: 1.4; align-items: center;">
-<div style="max-width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${k}</div>\
-<div style="height: 40px; background-color: #EEE; border-radius: 5px; flex: 1;">${v}</div>\
+<div style="display: flex; margin-bottom: 3px; font-size: 28px; line-height: 1.4; align-items: center;">
+<div style="width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${k}</div>\
+${getElementAttributeInput(type, value, min, max)}\
 </div>\
 `;
               }
 
               return result;
+            };
+            const getElementAttributeInput = (type, value, min, max) => {
+              switch (type) {
+                case 'text':
+                case 'position': // XXX
+                  return `<div style="width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; flex: 1;">${value}</div>`;
+                case 'number': {
+                  const factor = (value - min) / max;
+                  return `\
+<div style="position: relative; width: ${400 - (100 + 20)}px; height: 40px; margin-right: 20px;">
+  <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
+    <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * (400 - (100 + 20))}px; margin-left: -1px; width: 2px; background-color: #F00;"></div>
+  </div>
+</div>
+<div style="width: 100px; height: 40px; background-color: #EEE; border-radius: 5px;">${value}</div>
+`;
+                }
+                default:
+                  return '';
+              }
             };
             const getElementsSrc = (elements, keyPath, draggingKeyPath) => {
               const head = (element, keyPath, depth) => `\
