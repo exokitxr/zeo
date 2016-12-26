@@ -535,7 +535,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
               const availableMods = mods.filter(mod => !mod.installed);
 
               const getModSrc = mod => `\
-<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; overflow: hidden;" onclick="mod:${mod.name}">
+<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; text-decoration: none; overflow: hidden;" onclick="mod:${mod.name}">
   <img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" width="100" height="100" style="image-rendering: pixelated;" />
   <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
     <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</div>
@@ -848,7 +848,7 @@ ${attributes(element)}\
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
-  ${backButton ? `<a style="display: inline-block; width: 150px; float: left; text-align: center;" onclick="back">❮</a>` : ''}
+  ${backButton ? `<a style="display: inline-block; width: 150px; float: left; text-align: center; text-decoration: none;" onclick="back">❮</a>` : ''}
   <span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
   <h1 style="display: inline-block; margin: 0; float: left; font-size: inherit; line-height: inherit;">${text}</h1>
   ${subtext ? `<div style="display: inline-flex; height: 150px; margin-left: 20px; float: left; align-items: flex-end;">
@@ -874,41 +874,41 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
 `;
             const getMainSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a onclick="next"><p>Change world</p></a>
-  <a onclick="next"><p>Add/Remove Mods</p></a>
-  <a onclick="config"><p>Preferences</p></a>
-  <a onclick="elements"><p>About</p></a>
+  <a style="text-decoration: none;" onclick="next"><p>Change world</p></a>
+  <a style="text-decoration: none;" onclick="next"><p>Add/Remove Mods</p></a>
+  <a style="text-decoration: none;" onclick="config"><p>Preferences</p></a>
+  <a style="text-decoration: none;" onclick="elements"><p>About</p></a>
 </div>`;
             const getModsSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a onclick="blank"><p>Installed mod</p></a>
-  <a onclick="blank"><p>Available mods</p></a>
-  <a onclick="blank"><p>Search mods</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Installed mod</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Available mods</p></a>
+  <a style="text-decoration: none;"  onclick="blank"><p>Search mods</p></a>
 </div>`;
             const getModSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a onclick="blank"><p>Install mod</p></a>
-  <a onclick="blank"><p>Remove mod</p></a>
-  <a onclick="blank"><p>Configure mod</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Install mod</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Remove mod</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Configure mod</p></a>
 </div>`;
             const getConfigSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a onclick="blank"><p>Preferences</p></a>
-  <a onclick="blank"><p>About</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Preferences</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>About</p></a>
 </div>`;
             const getElementsSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a onclick="blank"><p>Tree</p></a>
-  <a onclick="blank"><p>Zoom in</p></a>
-  <a onclick="blank"><p>Zoom out</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Tree</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Zoom in</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Zoom out</p></a>
 </div>`;
             const getGetButtonSrc = (name, installed) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   ${installed ?
    `<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
-    <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f;" onclick="removemod:${name}">× Remove</a>`
+    <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="removemod:${name}">× Remove</a>`
   :
-    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF;" onclick="getmod:${name}">+ Get</a>`
+    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF; text-decoration: none;" onclick="getmod:${name}">+ Get</a>`
   }
 </div>`;
 
