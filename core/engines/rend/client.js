@@ -354,6 +354,29 @@ class Rend {
               draggingKeyPath: [],
             };
 
+            const _getKeyPath = (root, keyPath) => {
+              const _recurse = (root, i) => {
+                if (i === keyPath.length) {
+                  return root;
+                } else {
+                  return _recurse(root.children[keyPath[i]], i + 1);
+                }
+              };
+              return _recurse(root, 0);
+            };
+            const _getElementKeyPath = (spec, keyPath) => {
+              const children = (() => {
+                const result = {};
+                for (const k in spec) {
+                  result[k] = {
+                    children: spec[k],
+                  };
+                }
+                return result;
+              })();
+              return _getKeyPath({children}, keyPath);
+            };
+
             const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
@@ -463,14 +486,35 @@ ${getHeaderSrc('elements', '', '', true)}
   <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click an element to adjust its properties. Drag to move in the scene graph. <a href="#">Add new element</a> or drag it in.</p>
 </div>
 `;
-            const getElementsPageSubcontentSrc = ({availableElements, clipboardElements, draggingKeyPath}) => `\
+            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, draggingKeyPath}) => {
+              const element = _getElementKeyPath({elements, availableElements, clipboardElements}, draggingKeyPath);
+
+              return `\
 <div style="display: flex; flex-direction: column; width: 600px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; box-sizing: border-box;">
+  ${draggingKeyPath.length > 0 ?
+    `${getSubcontentSectionSrc(
+      `\
+<span style="color: #a894a6;">\
+&lt;\
+<img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="40" height="40" style="display: inline-block; position: relative; top: 9px; image-rendering: pixelated;" />\
+${element.element}&gt; properties\
+</span>\
+`,
+      null,
+      getElementsPropertiesSrc(element),
+      ''// `These are the properties you can set for this slement.`
+    )}
+    <div style="margin-top: 30px; margin-left: -30px; border-bottom: 2px solid #333;"></div>`
+  :
+    ''
+  }
   ${getSubcontentSectionSrc(
     'Installed',
     `<a style="padding: 5px 10px; background-color: #5cb85c; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">More</a>`,
     getElementsSrc(availableElements, ['availableElements'], draggingKeyPath),
     `These elements are installed and ready to add. Drag them in to the left. <a href="#">Install more elements</a>`
   )}
+  <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
   ${getSubcontentSectionSrc(
     'Clipboard',
     `<a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>`,
@@ -479,19 +523,9 @@ ${getHeaderSrc('elements', '', '', true)}
   )}
 </div>
 `;
-            const getSubcontentSectionSrc = (headingSrc, buttonSrc, contentSrc, paragraphSrc) => `\
-<div style="margin: 10px 0;">
-  <div style="display: inline-block; float: left;">
-    <h1 style="margin: 0; font-size: 40px;">${headingSrc}</h1>
-  </div>
-  <div style="float: right;">
-    <div style="display: flex; height: 40px; margin: 6px 0; align-items: center;">
-      ${buttonSrc}
-    </div>
-  </div>
-</div>
-${contentSrc}
-<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>
+            };
+            const getElementsPropertiesSrc = element => `\
+<div style="font-family: Menlo; font-size: 28px; line-height: 1.4;">Position</div>
 `;
             const getElementsSrc = (elements, keyPath, draggingKeyPath) => {
               const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
@@ -555,6 +589,20 @@ ${attributes(element)}&gt;\
     ${getButtonSrc}
   </div>` : ''}
 </div>`;
+            const getSubcontentSectionSrc = (headingSrc, buttonSrc, contentSrc, paragraphSrc) => `\
+<div style="margin: 10px 0;">
+  ${headingSrc ? `<div style="display: inline-block; float: left;">
+    <h1 style="margin: 0; font-size: 40px;">${headingSrc}</h1>
+  </div>` : ''}
+  ${buttonSrc ? `<div style="float: right;">
+    <div style="display: flex; height: 40px; margin: 6px 0; align-items: center;">
+      ${buttonSrc}
+    </div>
+  </div>` : ''}
+</div>
+${contentSrc}
+${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
+`;
             const getMainSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
   <a onclick="next"><p>Change world</p></a>
@@ -862,16 +910,6 @@ ${attributes(element)}&gt;\
                 })();
                 scene.add(dotMesh);
 
-                const _getKeyPath = (root, keyPath) => {
-                  const _recurse = (root, i) => {
-                    if (i === keyPath.length) {
-                      return root;
-                    } else {
-                      return _recurse(root.children[keyPath[i]], i + 1);
-                    }
-                  };
-                  return _recurse(root, 0);
-                };
                 const _updatePages = () => {
                   const pages = ui.getPages();
                   for (let i = 0; i < pages.length; i++) {
@@ -1058,7 +1096,7 @@ ${attributes(element)}&gt;\
                         },
                         {
                           type: 'html',
-                          src: getElementsPageSubcontentSrc({availableElements, clipboardElements, draggingKeyPath}),
+                          src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, draggingKeyPath}),
                           x: 500 + (WIDTH - (500 + 600)),
                           y: 150 + 2,
                           w: 600,
@@ -1087,18 +1125,10 @@ ${attributes(element)}&gt;\
                         }
                       });
 
-                      const element = _getKeyPath({
-                        children: {
-                          elements: {
-                            children: elementsState.elements
-                          },
-                          availableElements: {
-                            children: elementsState.availableElements,
-                          },
-                          clipboardElements: {
-                            children: elementsState.clipboardElements,
-                          },
-                        },
+                      const element = _getElementKeyPath({
+                        elements: elementsState.elements,
+                        availableElements: elementsState.availableElements,
+                        clipboardElements: elementsState.clipboardElements,
                       }, keyPath);
                       console.log('click element', element); // XXX
 
