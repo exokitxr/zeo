@@ -304,14 +304,14 @@ class Rend {
                       attributes: {
                         rotation: [0, Math.PI, 0].join(' '),
                       },
-                      children: null,//'Hello, World!',
+                      children: null,
                     },
                     {
                       element: 'subsub',
                       attributes: {
                         rotation: [0, Math.PI, 0].join(' '),
                       },
-                      children: null,//'Yup',
+                      children: null,
                     },
                   ],
                 },
@@ -320,7 +320,7 @@ class Rend {
                   attributes: {
                     lol: 'zol',
                   },
-                  children: null,//'Here is some text content',
+                  children: null,
                 },
               ],
               availableElements: [
@@ -383,6 +383,30 @@ class Rend {
               })();
               return _getKeyPath({children}, keyPath);
             };
+            const _moveElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
+              const oldKeyPathHead = oldKeyPath.slice(0, -1);
+              const oldKeyPathTail = oldKeyPath[oldKeyPath.length - 1];
+              const oldParentElement = _getElementKeyPath(spec, oldKeyPathHead);
+              const element = oldParentElement.children[oldKeyPathTail];
+
+              const newKeyPathHead = newKeyPath.slice(0, -1);
+              const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
+              const newParentElement = _getElementKeyPath(spec, newKeyPathHead);
+              newParentElement.children.splice(newKeyPathTail, 0, element);
+
+              oldParentElement.children.splice(oldKeyPathTail + ((_keyPathEquals(newKeyPathHead, oldKeyPathHead) && newKeyPathTail <= oldKeyPathTail) ? 1 : 0), 1);
+            };
+            const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
+              const bi = b[i];
+              return ai === bi;
+            });
+            const _parseKeyPath = s => s.split(':').map(p => {
+              if (/^[0-9]+$/.test(p)) {
+                return parseInt(p, 10);
+              } else {
+                return p;
+              }
+            });
             const _insertElementAtKeyPath = (root, keyPath) => {
               const element = {
                 element: 'element',
@@ -550,10 +574,6 @@ ${element.element}&gt; properties\
 <div style="font-family: Menlo; font-size: 28px; line-height: 1.4;">Position</div>
 `;
             const getElementsSrc = (elements, keyPath, draggingKeyPath) => {
-              const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
-                const bi = b[i];
-                return ai === bi;
-              });
               const head = (element, keyPath, depth) => `\
 <a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">\
 ${spaces(depth)}&lt;\
@@ -564,7 +584,7 @@ ${attributes(element)}&gt;\
 `;
               const tail = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
               const anchorStyle = keyPath => `display: inline-block; ${_keyPathEquals(keyPath, draggingKeyPath) ? `background-color: #EEE; border-radius: 5px;` : ''}`;
-              const anchorOnclick = keyPath => `element:${keyPath.join(':')}`;
+              const anchorOnclick = keyPath => `element:select:${keyPath.join(':')}`;
               const attributes = element => {
                 const {attributes} = element;
 
@@ -588,23 +608,23 @@ ${attributes(element)}&gt;\
                   let result = '';
 
                   if (draggingKeyPath.length > 0) {
-                    result += getDropHelperSrc();
+                    result += getDropHelperSrc(childKeyPath);
                   }
 
                   result += `<div style="${anchorStyle(childKeyPath)}">${head(element, childKeyPath, depth)}`;
 
                   const {children} = element;
-                  if (Array.isArray(children)) {
+                  if (Array.isArray(children) && children.length > 0) {
                     result += `<div>${outerElements(children, childKeyPath)}</div>`;
                   }
 
-                  result += `${tail(element, childKeyPath, Array.isArray(children) ? depth : 0)}</div>`;
+                  result += `${tail(element, childKeyPath, (Array.isArray(children) && children.length > 0) ? depth : 0)}</div>`;
 
                   return result;
                 }).join('\n');
 
                 if (draggingKeyPath.length > 0) {
-                  result += getDropHelperSrc();
+                  result += getDropHelperSrc(keyPath.concat(elements.length));
                 }
 
                 return result;
@@ -612,8 +632,8 @@ ${attributes(element)}&gt;\
 
               return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, keyPath)}</div>`;
             };
-            const getDropHelperSrc = () => `\
-<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;">\
+            const getDropHelperSrc = keyPath => `\
+<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onclick="element:move:${keyPath.join(':')}">\
 <div style="width: 100%; height: 2px; background-color: #0275d8;"></div>\
 </a>\
 `;
@@ -1159,26 +1179,24 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         type: 'elements',
                         state: elementsState,
                       });
-                    } else if (match = onclick.match(/^element:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                      const keyPath = match[1].split(':').map(p => {
-                        if (/^[0-9]+$/.test(p)) {
-                          return parseInt(p, 10);
-                        } else {
-                          return p;
-                        }
-                      });
-
-                      const element = _getElementKeyPath({
-                        elements: elementsState.elements,
-                        availableElements: elementsState.availableElements,
-                        clipboardElements: elementsState.clipboardElements,
-                      }, keyPath);
-                      console.log('click element', element); // XXX
+                    } else if (match = onclick.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                      const keyPath = _parseKeyPath(match[1]);
 
                       elementsState.draggingKeyPath = keyPath;
 
                       _updatePages();
-                   } else if (onclick === 'element:add') {
+                    } else if (match = onclick.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                      const newKeyPath = _parseKeyPath(match[1]);
+                      const oldKeyPath = oldDraggingKeyPath;
+
+                      _moveElementKeyPath({
+                        elements: elementsState.elements,
+                        availableElements: elementsState.availableElements,
+                        clipboardElements: elementsState.clipboardElements,
+                      }, oldKeyPath, newKeyPath);
+
+                      _updatePages();
+                    } else if (onclick === 'element:add') {
                       _insertElementAtKeyPath({
                         elements: elementsState.elements,
                         availableElements: elementsState.availableElements,
