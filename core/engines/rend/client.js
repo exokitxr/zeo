@@ -710,12 +710,34 @@ ${element.element}&gt; properties\
                     options = [''];
                   }
 
-                  return `\
-<div style="display: flex; width: 400px; height: 40px; border: 2px solid #333; align-items: center; box-sizing: border-box;">
+                  if (!focus) {
+                    return `\
+<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; align-items: center; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}">
   <div style="width: ${400 - 30}px">${value}</div>
   <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
+</a>
+`;
+                  } else {
+                    return `\
+<div style="position: relative; width: 400px; height: 40px; z-index: 1;">
+  <div style="display: flex; flex-direction: column; background-color: #FFF;">
+    ${options.map((option, i, a) => {
+      const style = (() => {
+        let result = '';
+        if (i !== 0) {
+          result += 'padding-top: 2px; border-top: 0;';
+        }
+        if (i !== (a.length - 1)) {
+          result += 'padding-bottom: 2px; border-bottom: 0;';
+        }
+        return result;
+      })();
+      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; align-items: center; text-decoration: none; box-sizing: border-box;">${option}</a>`;
+    }).join('\n')}
+  </div>
 </div>
 `;
+                  }
                 }
                 case 'color': {
                   return `\
@@ -1418,7 +1440,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       const attribute = attributes[name];
                       const {type} = attribute;
 
-                      if (type === 'position' || type === 'text' || type === 'number' || type === 'color') {
+                      if (type === 'position' || type === 'text' || type === 'number' || type === 'select' || type === 'color') {
                         focusState.type = 'element:attribute:' + name;
                       } else if (type === 'checkbox') {
                         attribute.value = !attribute.value;
