@@ -673,7 +673,7 @@ ${element.element}&gt; properties\
               switch (type) {
                 case 'position': {
                   return `<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
-                    <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; align-items: center; box-sizing: border-box;">Set</a>
+                    <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;">Set</a>
                   </div>`;
                 }
                 case 'text': {
@@ -712,9 +712,11 @@ ${element.element}&gt; properties\
 
                   if (!focus) {
                     return `\
-<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; align-items: center; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
-  <div style="width: ${400 - 30}px">${value}</div>
-  <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
+<a style="width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
+  <div style="display: flex; margin: 1px; padding: 2px; align-items: center;">
+    <div style="width: ${400 - 30}px">${value}</div>
+    <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
+  </div>
 </a>
 `;
                   } else {
@@ -722,7 +724,7 @@ ${element.element}&gt; properties\
 <div style="position: relative; width: 400px; height: 40px; z-index: 1;">
   <div style="display: flex; flex-direction: column; background-color: #FFF;">
     ${options.map((option, i, a) => {
-      const style = (() => {
+      const outerStyle = (() => {
         let result = '';
         if (i !== 0) {
           result += 'padding-top: 2px; border-top: 0;';
@@ -732,7 +734,12 @@ ${element.element}&gt; properties\
         }
         return result;
       })();
-      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; align-items: center; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}:set:${option}">${option}</a>`;
+      return `<a style="width: 400px; height: 40px; border: 2px solid #333; ${outerStyle}; text-decoration: none; box-sizing: border-box;" onclick="element:attribute:${name}:set:${option}">
+        <div style="display: flex; position: relative; margin: 1px; padding: 2px; align-items: center;">
+          ${option === value ? `<div style="position: absolute; top: 1px; bottom: 8px; left: 1px; right: 1px; border: 2px solid #333;"></div>` : ''}
+          ${option}
+        </div>
+      </a>`;
     }).join('\n')}
   </div>
 </div>
