@@ -400,6 +400,12 @@ class Rend {
               const bi = b[i];
               return ai === bi;
             });
+            const _isSubKeyPath = (a, b) => {
+              return a.length >= b.length && b.every((bi, i) => {
+                const ai = a[i];
+                return bi === ai;
+              });
+            };
             const _parseKeyPath = s => s.split(':').map(p => {
               if (/^[0-9]+$/.test(p)) {
                 return parseInt(p, 10);
@@ -601,13 +607,15 @@ ${attributes(element)}&gt;\
               const innerElements = (elements, keyPath) => {
                 let result = '';
 
+                const hasDropHelper = draggingKeyPath.length > 0 && !_isSubKeyPath(keyPath, draggingKeyPath);
+
                 result += elements.map((element, i) => {
                   const depth = keyPath.length - 1;
                   const childKeyPath = keyPath.concat(i);
 
                   let result = '';
 
-                  if (draggingKeyPath.length > 0) {
+                  if (hasDropHelper) {
                     result += getDropHelperSrc(childKeyPath);
                   }
 
@@ -623,7 +631,7 @@ ${attributes(element)}&gt;\
                   return result;
                 }).join('\n');
 
-                if (draggingKeyPath.length > 0) {
+                if (hasDropHelper) {
                   result += getDropHelperSrc(keyPath.concat(elements.length));
                 }
 
