@@ -456,7 +456,7 @@ ${getHeaderSrc('elements', '', '', true)}
             const getElementsPageContentSrc = ({elements, draggingKeyPath}) => `\
 <div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; border-left: 2px solid #333; border-right: 2px solid #333; box-sizing: border-box;">
   <h1 style="margin: 10px 0; font-size: 40px;">World</h1>
-  ${getElementsSrc(elements, draggingKeyPath)}
+  ${getElementsSrc(elements, ['elements'], draggingKeyPath)}
   <div style="display: flex; height: 40px; margin: 20px 0; align-items: center;">
     <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 24px; color: #d9534f; text-decoration: none;">+ Add</a>
   </div>
@@ -468,13 +468,13 @@ ${getHeaderSrc('elements', '', '', true)}
   ${getSubcontentSectionSrc(
     'Installed',
     `<a style="padding: 5px 10px; background-color: #5cb85c; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">More</a>`,
-    getElementsSrc(availableElements, draggingKeyPath),
+    getElementsSrc(availableElements, ['availableElements'], draggingKeyPath),
     `These elements are installed and ready to add. Drag them in to the left. <a href="#">Install more elements</a>`
   )}
   ${getSubcontentSectionSrc(
     'Clipboard',
     `<a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>`,
-    getElementsSrc(clipboardElements, draggingKeyPath),
+    getElementsSrc(clipboardElements, ['clipboardElements'], draggingKeyPath),
     `Drag-and-drop elements to the clipboad to temporarily save them. Drag inside the clipboard to copy.`
   )}
 </div>
@@ -493,7 +493,7 @@ ${getHeaderSrc('elements', '', '', true)}
 ${contentSrc}
 <p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>
 `;
-            const getElementsSrc = (elements, draggingKeyPath) => {
+            const getElementsSrc = (elements, keyPath, draggingKeyPath) => {
               const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
                 const bi = b[i];
                 return ai === bi;
@@ -523,7 +523,7 @@ ${attributes(element)}&gt;\
               const outerElements = (elements, keyPath) => `<div style="display: flex; flex-direction: column;;">${innerElements(elements, keyPath)}</div>`;
               const spaces = depth => Array(depth + 1).join('&nbsp;&nbsp;');
               const innerElements = (elements, keyPath) => elements.map((element, i) => {
-                const depth = keyPath.length;
+                const depth = keyPath.length - 1;
                 const childKeyPath = keyPath.concat(i);
 
                 let result = `<div style="${anchorStyle(childKeyPath)}">${head(element, childKeyPath, depth)}`;
@@ -540,7 +540,7 @@ ${attributes(element)}&gt;\
                 return result;
               }).join('\n');
 
-              return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, [])}</div>`;
+              return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, keyPath)}</div>`;
             };
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
@@ -862,6 +862,16 @@ ${attributes(element)}&gt;\
                 })();
                 scene.add(dotMesh);
 
+                const _getKeyPath = (root, keyPath) => {
+                  const _recurse = (root, i) => {
+                    if (i === keyPath.length) {
+                      return root;
+                    } else {
+                      return _recurse(root.children[keyPath[i]], i + 1);
+                    }
+                  };
+                  return _recurse(root, 0);
+                };
                 const _updatePages = () => {
                   const pages = ui.getPages();
                   for (let i = 0; i < pages.length; i++) {
@@ -1068,21 +1078,28 @@ ${attributes(element)}&gt;\
                         type: 'elements',
                         state: elementsState,
                       });
-                    } else if (match = onclick.match(/^element:((?:[0-9]+:)*[0-9]+)$/)) {
-                      const keyPath = match[1].split(':').map(k => parseInt(k, 10));
+                    } else if (match = onclick.match(/^element:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                      const keyPath = match[1].split(':').map(p => {
+                        if (/^[0-9]+$/.test(p)) {
+                          return parseInt(p, 10);
+                        } else {
+                          return p;
+                        }
+                      });
 
-                      const _getKeyPath = (root, keyPath) => {
-                        const _recurse = (root, i) => {
-                          if (i === keyPath.length) {
-                            return root;
-                          } else {
-                            return _recurse(root.children[keyPath[i]], i + 1);
-                          }
-                        };
-                        return _recurse(root, 0);
-                      };
-
-                      const element = _getKeyPath({children: elementsState.elements}, keyPath);
+                      const element = _getKeyPath({
+                        children: {
+                          elements: {
+                            children: elementsState.elements
+                          },
+                          availableElements: {
+                            children: elementsState.availableElements,
+                          },
+                          clipboardElements: {
+                            children: elementsState.clipboardElements,
+                          },
+                        },
+                      }, keyPath);
                       console.log('click element', element); // XXX
 
                       elementsState.draggingKeyPath = keyPath;
