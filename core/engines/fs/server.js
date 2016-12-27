@@ -88,9 +88,8 @@ class Fs {
                   } else {
                     res.json([]);
                   }
-                } else if (err.code === 'ENOENT') {
-                  res.status(404);
-                  res.send();
+                } else if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+                  res.json([]);
                 } else {
                   res.status(500);
                   res.send(err.stack);
