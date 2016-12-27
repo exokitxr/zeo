@@ -517,19 +517,46 @@ class Rend {
               const targetElement = _getElementKeyPath(root, keyPath);
               targetElement.children.push(element);
             };
-            const _castValueStringToValue = (s, type) => { // XXX make this account for number limits and validations
+            const _castValueStringToValue = (s, type, min, max, options) => {
               switch (type) {
                 case 'position':
-                case 'text':
-                case 'color':
-                case 'select':
+                case 'text': {
                   return s;
-                case 'number':
-                  return parseFloat(s);
-                case 'checkbox':
-                  return s === 'true';
-                default:
+                }
+                case 'color': {
+                  if (/^#?([a-f0-9]{3}(?:[a-f0-9]{3})?)$/i.test(s)) {
+                    return '#' + s;
+                  } else {
+                    return null;
+                  }
+                }
+                case 'select': {
+                  if (options.includes(s)) {
+                    return s;
+                  } else {
+                    return null;
+                  }
+                }
+                case 'number': {
+                  const n = parseFloat(s);
+                  if (!isNaN(n) && n >= min && n <= max) {
+                    return n;
+                  } else {
+                    return null;
+                  }
+                }
+                case 'checkbox': {
+                  if (s === 'true') {
+                    return true;
+                  } else if (s === 'false') {
+                    return false;
+                  } else {
+                    return null;
+                  }
+                }
+                default: {
                   return s;
+                }
               }
             };
             const _castValueValueToString = (s, type) => String(s);
@@ -701,7 +728,7 @@ ${element.element}&gt; properties\
               return result;
             };
             const getElementAttributeInput = (name, type, value, min, max, options, inputText, inputValue, focus) => {
-              const focusValue = !focus ? value : _castValueStringToValue(inputText, type);
+              const focusValue = !focus ? value : _castValueStringToValue(inputText, type, min, max, options);
 
               switch (type) {
                 case 'position': {
@@ -725,7 +752,8 @@ ${element.element}&gt; properties\
                     max = 10;
                   }
 
-                  const factor = (focusValue - min) / max;
+                  const factor = focusValue !== null ? ((focusValue - min) / max) : min;
+                  const string = focusValue !== null ? String(focusValue) : inputText;
                   return `\
 <a style="position: relative; width: ${400 - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="element:attribute:${name}:tweak">
   <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
@@ -734,7 +762,7 @@ ${element.element}&gt; properties\
 </a>
 <a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-  <div>${String(focusValue)}</div>
+  <div>${string}</div>
 </a>
 `;
                 }
@@ -778,12 +806,14 @@ ${element.element}&gt; properties\
                   }
                 }
                 case 'color': {
+                  const color = focusValue !== null ? focusValue : '#CCC';
+                  const string = focusValue !== null ? focusValue : inputText;
                   return `\
 <div style="display: flex; width: 400px; height: 40px; align-items: center;">
-  <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${focusValue};"></div>
+  <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${color};"></div>
   <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-    <div>${focusValue}</div>
+    <div>${string}</div>
   </a>
 </div>
 `;
@@ -1826,8 +1856,11 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         }, selectedKeyPath);
                         const {attributes} = element;
                         const attribute = attributes[name];
-                        const {type} = attribute;
-                        attribute.value = _castValueStringToValue(inputText, type);
+                        const {type, min, max, options} = attribute;
+                        const newValue = _castValueStringToValue(inputText, type, min, max, options);
+                        if (newValue !== null) {
+                          attribute.value = newValue;
+                        }
                       }
 
                       _updatePages();
