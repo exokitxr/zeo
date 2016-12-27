@@ -37,6 +37,7 @@ class Rend {
         '/core/engines/three',
         '/core/engines/biolumi',
         '/core/engines/npm',
+        '/core/engines/fs',
         '/core/engines/bullet',
         '/core/engines/heartlink',
       ]),
@@ -49,6 +50,7 @@ class Rend {
         three,
         biolumi,
         npm,
+        fs,
         bullet,
         heartlink,
       ],
@@ -450,6 +452,7 @@ class Rend {
               inputValue: 0,
             };
             const filesState = {
+              cwd: '/',
               files: [
                 {
                   name: 'lol.txt',
@@ -462,6 +465,8 @@ class Rend {
               ],
               inputText: '',
               inputValue: 0,
+              loaded: false,
+              loading: false,
             }
 
             const _getKeyPath = (root, keyPath) => {
@@ -973,15 +978,19 @@ ${attributes(element)}\
 ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
-            const getFilesPageSrc = ({files, inputText, inputValue, focus}) => `\
+            const getFilesPageSrc = ({cwd, files, inputText, inputValue, loading, focus}) => `\
 ${getHeaderSrc('files', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getFilesSidebarSrc()}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
-      ${getInputSrc(inputText, 'Search files', inputValue, focus, 'files:input')}
-      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local files</h1>
-      ${getItemsSrc(files, 'file')}
+      ${!loading ?
+        `${getInputSrc(inputText, 'Search files', inputValue, focus, 'files:input')}
+        <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
+        ${getItemsSrc(files, 'file')}`
+      :
+        `<h1 style="font-size: 50px;">Loading...</h1>`
+      }
     </div>
   </div>
 </div>
@@ -1547,10 +1556,27 @@ ${getHeaderSrc('files', '', '', true)}
                     } else if (onclick === 'files') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({files: {files, inputText, inputValue}, focus: {type: focusType}}) => ([
+                      const {loaded} = filesState;
+                      if (!loaded) {
+                        filesState.loading = true;
+
+                        const {cwd} = filesState;
+                        fs.getDirectory(cwd)
+                          .then(files => {
+                            filesState.files = files;
+                            filesState.loading = false;
+
+                            _updatePages();
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
+                      }
+
+                      ui.pushPage(({files: {cwd, files, inputText, inputValue, loading}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getFilesPageSrc({files, inputText, inputValue, focus: focusType === 'files'}),
+                          src: getFilesPageSrc({cwd, files, inputText, inputValue, loading, focus: focusType === 'files'}),
                         },
                         {
                           type: 'image',
