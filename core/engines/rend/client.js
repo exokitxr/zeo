@@ -445,6 +445,7 @@ class Rend {
               ],
               selectedKeyPath: [],
               draggingKeyPath: [],
+              inputText: '',
               inputIndex: 0,
               inputValue: 0,
             };
@@ -516,6 +517,22 @@ class Rend {
               const targetElement = _getElementKeyPath(root, keyPath);
               targetElement.children.push(element);
             };
+            const _castValueStringToValue = (s, type) => { // XXX make this account for number limits and validations
+              switch (type) {
+                case 'position':
+                case 'text':
+                case 'color':
+                case 'select':
+                  return s;
+                case 'number':
+                  return parseFloat(s);
+                case 'checkbox':
+                  return s === 'true';
+                default:
+                  return s;
+              }
+            };
+            const _castValueValueToString = (s, type) => String(s);
 
             const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
@@ -626,7 +643,7 @@ ${getHeaderSrc('elements', '', '', true)}
   <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click one to adjust its properties. Drag to move. <a href="#">Add new element</a> or drag it in.</p>
 </div>
 `;
-            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputValue, focusAttribute}) => {
+            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}) => {
               const element = _getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
 
               return `\
@@ -641,7 +658,7 @@ ${element.element}&gt; properties\
 </span>\
 `,
       null,
-      getElementAttributesSrc(element, inputValue, focusAttribute),
+      getElementAttributesSrc(element, inputText, inputValue, focusAttribute),
       ''
     )}
     <div style="margin-top: 30px; margin-left: -30px; border-bottom: 2px solid #333;"></div>`
@@ -664,7 +681,7 @@ ${element.element}&gt; properties\
 </div>
 `;
             };
-            const getElementAttributesSrc = (element, inputValue, focusAttribute) => {
+            const getElementAttributesSrc = (element, inputText, inputValue, focusAttribute) => {
               let result = '';
 
               const {attributes} = element;
@@ -676,14 +693,16 @@ ${element.element}&gt; properties\
                 result += `\
 <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
   <div style="width: ${200 - 30}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
-  ${getElementAttributeInput(name, type, value, min, max, options, inputValue, focus)}
+  ${getElementAttributeInput(name, type, value, min, max, options, inputText, inputValue, focus)}
 </div>
 `;
               }
 
               return result;
             };
-            const getElementAttributeInput = (name, type, value, min, max, options, inputValue, focus) => {
+            const getElementAttributeInput = (name, type, value, min, max, options, inputText, inputValue, focus) => {
+              const focusValue = !focus ? value : _castValueStringToValue(inputText, type);
+
               switch (type) {
                 case 'position': {
                   return `<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
@@ -694,7 +713,7 @@ ${element.element}&gt; properties\
                   return `\
 <a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-  <div>${value}</div>
+  <div>${focusValue}</div>
 </a>
 `;
                 }
@@ -706,7 +725,7 @@ ${element.element}&gt; properties\
                     max = 10;
                   }
 
-                  const factor = (value - min) / max;
+                  const factor = (focusValue - min) / max;
                   return `\
 <a style="position: relative; width: ${400 - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="element:attribute:${name}:tweak">
   <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
@@ -715,7 +734,7 @@ ${element.element}&gt; properties\
 </a>
 <a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-  <div>${String(value)}</div>
+  <div>${String(focusValue)}</div>
 </a>
 `;
                 }
@@ -727,7 +746,7 @@ ${element.element}&gt; properties\
                   if (!focus) {
                     return `\
 <a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
-  <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${value}</div>
+  <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${focusValue}</div>
   <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
 </a>
 `;
@@ -744,7 +763,7 @@ ${element.element}&gt; properties\
         if (i !== (a.length - 1)) {
           result += 'padding-bottom: 2px; border-bottom: 0;';
         }
-        if (option === value) {
+        if (option === focusValue) {
           result += 'background-color: #EEE;';
         }
         return result;
@@ -761,10 +780,10 @@ ${element.element}&gt; properties\
                 case 'color': {
                   return `\
 <div style="display: flex; width: 400px; height: 40px; align-items: center;">
-  <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${value};"></div>
+  <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${focusValue};"></div>
   <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-    <div>${value}</div>
+    <div>${focusValue}</div>
   </a>
 </div>
 `;
@@ -772,7 +791,7 @@ ${element.element}&gt; properties\
                 case 'checkbox': {
                   return `\
 <div style="display: flex; width: 400px; height: 40px; justify-content: flex-end; align-items: center;">
-  ${value ?
+  ${focusValue ?
     `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="element:attribute:${name}:toggle">
       <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
         <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
@@ -1413,7 +1432,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                     } else if (onclick === 'elements') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputValue}, focus: {type: focusType}}) => {
+                      ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue}, focus: {type: focusType}}) => {
                         const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
                         const focusAttribute = match && match[1];
 
@@ -1433,7 +1452,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                           },
                           {
                             type: 'html',
-                            src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputValue, focusAttribute}),
+                            src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}),
                             x: 500 + (WIDTH - (500 + 600)),
                             y: 150 + 2,
                             w: 600,
@@ -1485,18 +1504,19 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                           const {type} = attribute;
                           if (type === 'text') {
                             const valuePx = value * 400;
-                            return getTextPropertiesFromCoord(attribute.value, subcontentFontSpec, valuePx);
+                            return getTextPropertiesFromCoord(_castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
                           } else if (type === 'number') {
                             const valuePx = value * 100;
-                            return getTextPropertiesFromCoord(String(attribute.value), subcontentFontSpec, valuePx);
+                            return getTextPropertiesFromCoord(_castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
                           } else if (type === 'color') {
                             const valuePx = value * (400 - (40 + 4));
-                            return getTextPropertiesFromCoord(attribute.value, subcontentFontSpec, valuePx);
+                            return getTextPropertiesFromCoord(_castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
                           } else {
                             return null;
                           }
                         })();
                         if (textProperties) {
+                          elementsState.inputText = _castValueValueToString(attribute.value, attribute.type);
                           const {index, px} = textProperties;
                           elementsState.inputIndex = index;
                           elementsState.inputValue = px;
@@ -1709,58 +1729,67 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                   (keyCode > 95 && keyCode < 112) || // numpad keys
                   (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
                   (keyCode > 218 && keyCode < 223); // [\]' (in order)\
-                const _applyStateEvent = (state, e) => {
+                const _applyStateKeyEvent = (state, fontSpec, e) => {
                   const {inputText, inputIndex} = state;
+
+                  let change = false;
+                  let commit = false;
 
                   if (_isPrintableKeycode(e.keyCode)) {
                     state.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
                     state.inputIndex++;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
-                    return true;
+                    change = true;
                   } else if (e.keyCode === 13) { // enter
                     focusState.type = null;
 
-                    return true;
+                    commit = true;
                   } else if (e.keyCode === 8) { // backspace
                     if (inputIndex > 0) {
                       state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
                       state.inputIndex--;
-                      state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
+                      state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
-                      return true;
-                    } else {
-                      return false;
+                      change = true;
                     }
                   } else if (e.keyCode === 37) { // left
                     state.inputIndex = Math.max(state.inputIndex - 1, 0);
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
-                    return true;
+                    change = true;
                   } else if (e.keyCode === 39) { // right
                     state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
-                    return true;
+                    change = true;
                   } else if (e.keyCode === 38) { // up
                     state.inputIndex = 0;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
-                    return true;
+                    change = true;
                   } else if (e.keyCode === 40) { // down
                     state.inputIndex = inputText.length;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
-                    return true;
+                    change = true;
+                  }
+
+                  if (change || commit) {
+                    return {
+                      change,
+                      commit,
+                    };
                   } else {
-                    return false;
+                    return null;
                   }
                 };
                 const keydown = e => {
-                  const {type} = focusState;
+                  const type = focusState.type || '';
 
+                  let match;
                   if (type === 'mods') {
-                    if (_applyStateEvent(modsState, e)) {
+                    if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
                       if (modsState.inputText.length > 0) {
                         // XXX cancel duplicate searches
                         npm.requestSearch(modsState.inputText)
@@ -1780,8 +1809,33 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
 
                       e.stopImmediatePropagation();
                     }
+                  } else if (match = type.match(/^element:attribute:(.+)$/)) {
+                    const applySpec = _applyStateKeyEvent(elementsState, subcontentFontSpec, e);
+
+                    if (applySpec) {
+                      const {commit} = applySpec;
+
+                      if (commit) {
+                        const name = match[1];
+                        const {selectedKeyPath, inputText} = elementsState;
+
+                        const element = _getElementKeyPath({
+                          elements: elementsState.elements,
+                          availableElements: elementsState.availableElements,
+                          clipboardElements: elementsState.clipboardElements,
+                        }, selectedKeyPath);
+                        const {attributes} = element;
+                        const attribute = attributes[name];
+                        const {type} = attribute;
+                        attribute.value = _castValueStringToValue(inputText, type);
+                      }
+
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
                   } else if (type === 'config') {
-                    if (_applyStateEvent(configState, e)) {
+                    if (_applyStateKeyEvent(configState, mainFontSpec, e)) {
                       _updatePages();
 
                       e.stopImmediatePropagation();
