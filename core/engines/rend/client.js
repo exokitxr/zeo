@@ -794,17 +794,26 @@ ${element.element}&gt; properties\
               }
             };
             const getElementsSrc = (elements, keyPath, selectedKeyPath, draggingKeyPath) => {
-              const head = (element, keyPath, depth) => `\
+              const head = (element, keyPath, depth) => {
+                const tag = anchorTag(keyPath);
+
+                return `\
 ${spaces(depth)}\
-<a style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}">\
+<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">\
 &lt;\
 <img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
 ${element.element}\
 ${attributes(element)}\
 &gt;\
-</a>\
+</${tag}>\
 `;
-              const tail = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
+              };
+              const tail = (element, keyPath, depth) => {
+                const tag = anchorTag(keyPath);
+
+                return `<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</${tag}>`;
+              };
+              const anchorTag = keyPath => (draggingKeyPath.length > 0 && _isSubKeyPath(keyPath, draggingKeyPath)) ? 'span' : 'a';
               const anchorStyle = keyPath => {
                 const style = (() => {
                   if (_keyPathEquals(keyPath, selectedKeyPath)) {
@@ -823,6 +832,7 @@ ${attributes(element)}\
                 return `display: inline-block; ${style};`;
               };
               const anchorOnmousedown = keyPath => `element:select:${keyPath.join(':')}`;
+              const anchorOnmouseup = anchorOnmousedown;
               const attributes = element => {
                 const {attributes} = element;
 
@@ -874,11 +884,6 @@ ${attributes(element)}\
               return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, keyPath)}</div>`;
             };
             const getDropHelperSrc = keyPath => `<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onmouseup="element:move:${keyPath.join(':')}"><div></div></a>`;
-/* `\
-<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onmouseup="element:move:${keyPath.join(':')}">\
-<div style="width: 100%; height: 2px; background-color: #0275d8;"></div>\
-</a>\
-`; */
 
             const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
@@ -1630,7 +1635,6 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
 
                     if (intersectionPoint) {
                       const {anchor} = hoverState;
-                      const onmousedown = (anchor && anchor.onmousedown) || '';
                       const onmouseup = (anchor && anchor.onmouseup) || '';
                       const {draggingKeyPath: oldDraggingKeyPath} = elementsState;
 
@@ -1639,23 +1643,17 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         elementsState.draggingKeyPath = [];
 
                         let match;
-                        if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                        if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
                           const keyPath = _parseKeyPath(match[1]);
 
-                          if (!_isSubKeyPath(keyPath, oldDraggingKeyPath)) { // XXX do this check in conditional rendering instead
-                            const spec = {
-                              elements: elementsState.elements,
-                              availableElements: elementsState.availableElements,
-                              clipboardElements: elementsState.clipboardElements,
-                            };
-                            const newParentElement = _getElementKeyPath(spec, keyPath);
-                            const newKeyPath = keyPath.concat(newParentElement.children.length);
-                            _moveElementKeyPath(spec, oldDraggingKeyPath, newKeyPath);
-
-                            elementsState.selectedKeyPath = newKeyPath;
-                          } else {
-                            elementsState.selectedKeyPath = oldDraggingKeyPath;
-                          }
+                          const spec = {
+                            elements: elementsState.elements,
+                            availableElements: elementsState.availableElements,
+                            clipboardElements: elementsState.clipboardElements,
+                          };
+                          const newParentElement = _getElementKeyPath(spec, keyPath);
+                          const newKeyPath = keyPath.concat(newParentElement.children.length);
+                          _moveElementKeyPath(spec, oldDraggingKeyPath, newKeyPath);
                         } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
                           const newKeyPath = _parseKeyPath(match[1]);
                           const oldKeyPath = oldDraggingKeyPath;
@@ -1665,8 +1663,6 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                             availableElements: elementsState.availableElements,
                             clipboardElements: elementsState.clipboardElements,
                           }, oldKeyPath, newKeyPath);
-
-                          elementsState.selectedKeyPath = newKeyPath;
                         } else {
                           elementsState.selectedKeyPath = oldDraggingKeyPath;
                         }
