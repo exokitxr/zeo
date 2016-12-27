@@ -1646,23 +1646,33 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
                           const keyPath = _parseKeyPath(match[1]);
 
-                          const spec = {
-                            elements: elementsState.elements,
-                            availableElements: elementsState.availableElements,
-                            clipboardElements: elementsState.clipboardElements,
-                          };
-                          const newParentElement = _getElementKeyPath(spec, keyPath);
-                          const newKeyPath = keyPath.concat(newParentElement.children.length);
-                          _moveElementKeyPath(spec, oldDraggingKeyPath, newKeyPath);
+                          if (!_isSubKeyPath(keyPath, oldDraggingKeyPath)) {
+                            const spec = {
+                              elements: elementsState.elements,
+                              availableElements: elementsState.availableElements,
+                              clipboardElements: elementsState.clipboardElements,
+                            };
+                            const oldKeyPath = oldDraggingKeyPath;
+                            const newKeyPath = keyPath.concat(_getElementKeyPath(spec, keyPath).children.length);
+                            _moveElementKeyPath(spec, oldKeyPath, newKeyPath);
+                          } else {
+                            elementsState.selectedKeyPath = oldDraggingKeyPath;
+                          }
                         } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                          const newKeyPath = _parseKeyPath(match[1]);
-                          const oldKeyPath = oldDraggingKeyPath;
+                          const keyPath = _parseKeyPath(match[1]);
 
-                          _moveElementKeyPath({
-                            elements: elementsState.elements,
-                            availableElements: elementsState.availableElements,
-                            clipboardElements: elementsState.clipboardElements,
-                          }, oldKeyPath, newKeyPath);
+                          if (!_isSubKeyPath(keyPath, oldDraggingKeyPath)) {
+                            const spec = {
+                              elements: elementsState.elements,
+                              availableElements: elementsState.availableElements,
+                              clipboardElements: elementsState.clipboardElements,
+                            };
+                            const oldKeyPath = oldDraggingKeyPath;
+                            const newKeyPath = keyPath;
+                            _moveElementKeyPath(spec, oldKeyPath, newKeyPath);
+                          } else {
+                            elementsState.selectedKeyPath = oldDraggingKeyPath;
+                          }
                         } else {
                           elementsState.selectedKeyPath = oldDraggingKeyPath;
                         }
