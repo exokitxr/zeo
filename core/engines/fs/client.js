@@ -19,7 +19,7 @@ class Fs {
     const _createDirectory = () => fetch('/archae/fs' + p, {
       method: 'POST',
     }).then(res => res.blob().then(() => Promise.resolve()));
-    const _createDirectory = () => fetch('/archae/fs' + p, {
+    const _remove = () => fetch('/archae/fs' + p, {
       method: 'DELETE',
     }).then(res => res.blob().then(() => Promise.resolve()));
 
@@ -28,7 +28,7 @@ class Fs {
       getDirectory: _getDirectory,
       setFile: _setFile,
       createDirectory: _createDirectory,
-      remove: _setFile,
+      remove: _remove,
     };
   }
 
