@@ -59,7 +59,15 @@ class Fs {
                     let pending = files.length;
                     function pend() {
                       if (--pending === 0) {
-                        res.json(result);
+                        const sortedResult = result.sort((a, b) => {
+                          const diff = +(b.type === 'directory') - (a.type === 'directory');
+                          if (diff !== 0) {
+                            return diff;
+                          } else {
+                            return a.name.localeCompare(b.name);
+                          }
+                        });
+                        res.json(sortedResult);
                       }
                     }
 

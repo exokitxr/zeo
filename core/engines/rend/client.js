@@ -916,12 +916,7 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName, copiedNam
               }
             };
             const _castValueValueToString = (s, type) => String(s);
-            const _getFilesSpecs = files => files.sort((a, b) => {
-              const aIsDirectory = a.type === 'directory';
-              const bIsDirectory = b.type === 'directory';
-              return bIsDirectory - aIsDirectory;
-            }).map(_getFileSpec);
-            const _getFileSpec = file => {
+            const _getFilesSpecs = files => files.map(file => {
               const {name, type, size} = file;
               const description = (() => {
                 if (type === 'file') {
@@ -934,12 +929,13 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName, copiedNam
                   return 'Directory';
                 }
               })();
+
               return {
                 name,
                 type,
                 description,
               };
-            };
+            });
 
             const imageShader = {
               uniforms: {
