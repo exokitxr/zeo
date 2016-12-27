@@ -28,6 +28,7 @@ class Zeo {
       '/core/engines/rend',
       '/core/engines/biolumi',
       '/core/engines/npm',
+      '/core/engines/fs',
       '/core/engines/somnifer',
       '/core/engines/bullet',
       '/core/engines/heartlink',
