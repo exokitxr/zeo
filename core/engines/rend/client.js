@@ -454,18 +454,10 @@ class Rend {
             };
             const filesState = {
               cwd: '/',
-              files: [
-                /* {
-                  name: 'lol.txt',
-                  description: '100 KB',
-                },
-                {
-                  name: 'zeo.dat',
-                  description: '2.3 MB',
-                }, */
-              ],
+              files: [],
               inputText: '',
               inputValue: 0,
+              selectedName: '',
               loaded: false,
               loading: false,
             }
@@ -645,30 +637,36 @@ ${getHeaderSrc('mods', '', '', true)}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
       ${getInputSrc(inputText, inputPlaceholder, inputValue, focus, 'mods:input')}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
-      ${getItemsSrc(installedMods, 'mod')}
+      ${getItemsSrc(installedMods, '', 'mod')}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
-      ${getItemsSrc(availableMods, 'mod')}
+      ${getItemsSrc(availableMods, '', 'mod')}
     </div>
   </div>
 </div>
 `;
             };
-            const getItemsSrc = (items, prefix) =>
+            const getItemsSrc = (items, selectedName, prefix) =>
               (items.length > 0) ? `\
 <div style="width: inherit; float: left; clear: both;">
-  ${items.map(item => getItemSrc(item, prefix)).join('\n')}
+  ${items.map(item => getItemSrc(item, selectedName, prefix)).join('\n')}
 </div>
 `
               :
                 `<h2 style="font-size: 40px; color: #CCC;">Nothing here...</h2>`;
-            const getItemSrc = (item, prefix) => `\
-<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; text-decoration: none; overflow: hidden;" onclick="${prefix}:${item.name}">
-  <img src="${creatureUtils.makeStaticCreature('${prefix}:' + item.name)}" width="100" height="100" style="image-rendering: pixelated;" />
+            const getItemSrc = (item, selectedName, prefix) => {
+              const {name} = item;
+              const selected = name === selectedName;
+              const style = selected ? 'background-color: #EEE;' : '';
+
+              return `\
+<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; ${style}; text-decoration: none; overflow: hidden;" onclick="${prefix}:${name}">
+  <img src="${creatureUtils.makeStaticCreature('${prefix}:' + name)}" width="100" height="100" style="image-rendering: pixelated;" />
   <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
-    <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</div>
+    <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
     <div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${item.description}</div>
   </div>
 </a>`;
+            };
             const getModPageSrc = ({name, version, installed}) => `\
 ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
@@ -1007,7 +1005,7 @@ ${attributes(element)}\
 ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
-            const getFilesPageSrc = ({cwd, files, inputText, inputValue, loading, focus}) => `\
+            const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, loading, focus}) => `\
 ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
@@ -1022,12 +1020,12 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
               name: '..',
               description: '',
             }
-          ], 'file')}`
+          ], selectedName, 'file')}`
         :
           ''
         }
         <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
-        ${getItemsSrc(files, 'file')}`
+        ${getItemsSrc(files, selectedName, 'file')}`
       :
         `<h1 style="font-size: 50px;">Loading...</h1>`
       }
@@ -1420,6 +1418,7 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
                     const {selectedKeyPath: oldSelectedKeyPath} = elementsState;
 
                     focusState.type = null;
+                    filesState.selectedName = '';
 
                     let match;
                     if (onclick === 'back') {
@@ -1618,10 +1617,10 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
                           });
                       }
 
-                      ui.pushPage(({files: {cwd, files, inputText, inputValue, loading}, focus: {type: focusType}}) => ([
+                      ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, loading}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getFilesPageSrc({cwd, files, inputText, inputValue, loading, focus: focusType === 'files'}),
+                          src: getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, loading, focus: focusType === 'files'}),
                         },
                         {
                           type: 'image',
@@ -1666,7 +1665,11 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
                         const file = files.find(f => f.name === name);
                         const {type} = file;
 
-                        if (type === 'directory') {
+                        if (type === 'file') {
+                          filesState.selectedName = name;
+
+                          _updatePages();
+                        } else if (type === 'directory') {
                           const {cwd: oldCwd} = filesState;
                           const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
                           _chdir(newCwd);
