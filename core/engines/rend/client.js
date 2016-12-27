@@ -722,7 +722,7 @@ ${getItemsSrc(files, selectedName, 'file')}
                 }
               })();
               return `\
-${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName, copiedName), true)}
+${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, copiedName), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getFilesSidebarSrc()}
