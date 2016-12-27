@@ -661,7 +661,7 @@ ${element.element}&gt; properties\
 
                 result += `\
 <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
-  <div style="width: 200px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
+  <div style="width: ${200 - (30 + 30)}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
   ${getElementAttributeInput(name, type, value, min, max, options, focus)}
 </div>
 `;
@@ -678,7 +678,7 @@ ${element.element}&gt; properties\
                 }
                 case 'text': {
                   return `\
-<a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}:focus">
+<a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
   <div>${value}</div>
 </a>
@@ -694,12 +694,12 @@ ${element.element}&gt; properties\
 
                   const factor = (value - min) / max;
                   return `\
-<div style="position: relative; width: ${400 - (100 + 20)}px; height: 40px; margin-right: 20px;">
+<a style="position: relative; width: ${400 - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="element:attribute:${name}:tweak">
   <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
-    <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * (400 - (100 + 20))}px; margin-left: -1px; width: 2px; background-color: #F00;"></div>
+    <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
   </div>
-</div>
-<a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}:focus">
+</a>
+<a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
   <div>${value}</div>
 </a>
@@ -713,7 +713,7 @@ ${element.element}&gt; properties\
                   if (!focus) {
                     return `\
 <a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
-  <div style="width: ${400 - 30}px">${value}</div>
+  <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${value}</div>
   <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
 </a>
 `;
@@ -735,7 +735,7 @@ ${element.element}&gt; properties\
         }
         return result;
       })();
-      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:set:${option}">
+      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="element:attribute:${name}:set:${option}">
         ${option}
       </a>`;
     }).join('\n')}
@@ -748,7 +748,7 @@ ${element.element}&gt; properties\
                   return `\
 <div style="display: flex; width: 400px; height: 40px; align-items: center;">
   <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${value};"></div>
-  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none;" onclick="element:attribute:${name}:focus">
+  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
     <div>${value}</div>
   </a>
@@ -1434,7 +1434,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       }, oldSelectedKeyPath.length > 0 ? oldSelectedKeyPath : ['elements']);
 
                       _updatePages();
-                    } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|toggle)(?::(.+?))?$/)) {
+                    } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|tweak|toggle)(?::(.+?))?$/)) {
                       const name = match[1];
                       const action = match[2];
                       const value = match[3];
@@ -1452,6 +1452,11 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         focusState.type = 'element:attribute:' + name;
                       } else if (action === 'set') {
                         attribute.value = value;
+                      } else if (action === 'tweak') {
+                        const {value} = hoverState;
+                        const {min, max} = attribute;
+
+                        attribute.value = min + (value * (max - min));
                       } else if (action === 'toggle') {
                         attribute.value = !attribute.value;
                       }
