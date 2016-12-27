@@ -8,6 +8,7 @@
     "body-parser": "^1.15.2",
     "mkdirp": "^0.5.1",
     "multimutex": "0.0.1",
+    "pretty-bytes": "^4.0.2",
     "showdown": "^1.5.1",
     "whatkey": "^1.0.5"
   }

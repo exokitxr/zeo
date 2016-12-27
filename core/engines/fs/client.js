@@ -30,10 +30,10 @@ class Fs {
           method: 'PUT',
           body: blob,
         }).then(res => res.blob().then(() => Promise.resolve()));
-        const _createDirectory = () => fetch('/archae/fs' + p, {
+        const _createDirectory = p => fetch('/archae/fs' + p, {
           method: 'POST',
         }).then(res => res.blob().then(() => Promise.resolve()));
-        const _remove = () => fetch('/archae/fs' + p, {
+        const _remove = p => fetch('/archae/fs' + p, {
           method: 'DELETE',
         }).then(res => res.blob().then(() => Promise.resolve()));
 

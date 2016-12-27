@@ -1,4 +1,5 @@
 import whatkey from 'whatkey';
+import prettyBytes from 'pretty-bytes';
 
 const WIDTH = 2 * 1024;
 const HEIGHT = WIDTH / 1.5;
@@ -454,14 +455,14 @@ class Rend {
             const filesState = {
               cwd: '/',
               files: [
-                {
+                /* {
                   name: 'lol.txt',
                   description: '100 KB',
                 },
                 {
                   name: 'zeo.dat',
                   description: '2.3 MB',
-                },
+                }, */
               ],
               inputText: '',
               inputValue: 0,
@@ -579,6 +580,29 @@ class Rend {
               }
             };
             const _castValueValueToString = (s, type) => String(s);
+            const _getFilesSpecs = files => files.sort((a, b) => {
+              const aIsDirectory = a.type === 'directory';
+              const bIsDirectory = b.type === 'directory';
+              return bIsDirectory - aIsDirectory;
+            }).map(_getFileSpec);
+            const _getFileSpec = file => {
+              const {name, type, size} = file;
+              const description = (() => {
+                if (type === 'file') {
+                  if (size !== null) {
+                    return prettyBytes(size);
+                  } else {
+                    return '';
+                  }
+                } else {
+                  return 'Directory';
+                }
+              })();
+              return {
+                name,
+                description,
+              };
+            };
 
             const getMainPageSrc = () => `\
 ${getHeaderSrc('zeo.sh', '', '', false)}
@@ -952,7 +976,7 @@ ${attributes(element)}\
             };
             const getDropHelperSrc = keyPath => `<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onmouseup="element:move:${keyPath.join(':')}"><div></div></a>`;
 
-            const getHeaderSrc = (text, subtext, getButtonSrc, backButton) => `\
+            const getHeaderSrc = (text, subtext, rightText, backButton) => `\
 <div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
   ${backButton ? `<a style="display: inline-block; width: 150px; float: left; text-align: center; text-decoration: none;" onclick="back">❮</a>` : ''}
   <span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
@@ -960,8 +984,8 @@ ${attributes(element)}\
   ${subtext ? `<div style="display: inline-flex; height: 150px; margin-left: 20px; float: left; align-items: flex-end;">
     <h2 style="margin: 0; font-size: 60px; line-height: 110px;">${subtext}</h2>
   </div>` : ''}
-  ${getButtonSrc ? `<div style="float: right;">
-    ${getButtonSrc}
+  ${rightText ? `<div style="float: right;">
+    ${rightText}
   </div>` : ''}
 </div>`;
             const getSubcontentSectionSrc = (headingSrc, buttonSrc, contentSrc, paragraphSrc) => `\
@@ -979,7 +1003,7 @@ ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
             const getFilesPageSrc = ({cwd, files, inputText, inputValue, loading, focus}) => `\
-${getHeaderSrc('files', '', '', true)}
+${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getFilesSidebarSrc()}
@@ -993,6 +1017,11 @@ ${getHeaderSrc('files', '', '', true)}
       }
     </div>
   </div>
+</div>
+`;
+            const getCreateDirectoryButtonSrc = () => `\
+<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
+  <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="files:createdirectory">+ Directory</a>
 </div>
 `;
             const getMainSidebarSrc = () => `\
@@ -1563,7 +1592,7 @@ ${getHeaderSrc('files', '', '', true)}
                         const {cwd} = filesState;
                         fs.getDirectory(cwd)
                           .then(files => {
-                            filesState.files = files;
+                            filesState.files = _getFilesSpecs(files);
                             filesState.loading = false;
 
                             _updatePages();
@@ -1594,6 +1623,25 @@ ${getHeaderSrc('files', '', '', true)}
                           focus: focusState,
                         },
                       });
+                    } else if (onclick === 'files:createdirectory') {
+                      filesState.loading = true;
+
+                      _updatePages();
+
+                      const {cwd} = filesState;
+                      const name = 'New Directory';
+                      fs.createDirectory(cwd + '/' + name)
+                        .then(() => fs.getDirectory(cwd)
+                          .then(files => {
+                            filesState.files = _getFilesSpecs(files);
+                            filesState.loading = false;
+
+                            _updatePages();
+                          })
+                        )
+                        .catch(err => {
+                          console.warn(err);
+                        });
                     } else if (onclick === 'element:add') {
                       _insertElementAtKeyPath({
                         elements: elementsState.elements,
