@@ -43,9 +43,51 @@ class Fs {
             const p = req.params[0];
 
             if (req.get('Accept') === 'application/json') {
-              fs.readdir(path.join(fsPath, p), (err, files) => {
+              const requestPath = path.join(fsPath, p);
+
+              fs.readdir(requestPath, (err, files) => {
                 if (!err) {
-                  res.json(files); // XXX get file stats here
+                  if (files.length > 0) {
+                    const result = files.map(name => ({
+                      name,
+                      type: null,
+                      size: null,
+                    }));
+
+                    let pending = files.length;
+                    function pend() {
+                      if (--pending === 0) {
+                        res.json(result);
+                      }
+                    }
+
+                    files.forEach((file, i) => {
+                      fs.lstat(path.join(requestPath, file), (err, stats) => {
+                        if (!err) {
+                          const type = (() => {
+                            if (stats.isFile()) {
+                              return 'file';
+                            } else if (stats.isDirectory()) {
+                              return 'directory';
+                            } else {
+                              return null;
+                            }
+                          })();
+                          const {size} = stats;
+
+                          const fileSpec = result[i];
+                          fileSpec.type = type;
+                          fileSpec.size = size;
+                        } else {
+                          console.warn(err);
+                        }
+
+                        pend();
+                      });
+                    });
+                  } else {
+                    res.json([]);
+                  }
                 } else if (err.code === 'ENOENT') {
                   res.status(404);
                   res.send();
