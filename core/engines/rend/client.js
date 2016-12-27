@@ -675,7 +675,7 @@ ${element.element}&gt; properties\
 
                 result += `\
 <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
-  <div style="width: ${200 - (30 + 30)}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
+  <div style="width: ${200 - 30}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
   ${getElementAttributeInput(name, type, value, min, max, options, inputValue, focus)}
 </div>
 `;
