@@ -544,8 +544,9 @@ class Rend {
                   return s;
                 }
                 case 'color': {
-                  if (/^#?([a-f0-9]{3}(?:[a-f0-9]{3})?)$/i.test(s)) {
-                    return '#' + s;
+                  const match = s.match(/^#?([a-f0-9]{3}(?:[a-f0-9]{3})?)$/i);
+                  if (match) {
+                    return '#' + match[1];
                   } else {
                     return null;
                   }
