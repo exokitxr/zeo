@@ -33,6 +33,18 @@ class Fs {
         const _createDirectory = p => fetch('/archae/fs' + p, {
           method: 'POST',
         }).then(res => res.blob().then(() => Promise.resolve()));
+        const _copy = (src, dst) => fetch('/archae/fs' + src, {
+          method: 'COPY',
+          headers: {
+            'To': dst,
+          }
+        }).then(res => res.blob().then(() => Promise.resolve()));
+        const _move = (src, dst) => fetch('/archae/fs' + src, {
+          method: 'MOVE',
+          headers: {
+            'To': dst,
+          }
+        }).then(res => res.blob().then(() => Promise.resolve()));
         const _remove = p => fetch('/archae/fs' + p, {
           method: 'DELETE',
         }).then(res => res.blob().then(() => Promise.resolve()));
@@ -68,6 +80,8 @@ class Fs {
           getDirectory: _getDirectory,
           setFile: _setFile,
           createDirectory: _createDirectory,
+          copy: _copy,
+          move: _move,
           remove: _remove,
         };
       }

@@ -2,6 +2,8 @@ const path = require('path');
 const fs = require('fs');
 
 const mkdirp = require('mkdirp');
+const ncp = require('ncp');
+const mv = require('mv');
 const rimraf = require('rimraf');
 
 class Fs {
@@ -132,6 +134,34 @@ class Fs {
             });
           }
           app.post(/^\/archae\/fs(\/.*)$/, serveFsCreate);
+          function serveFsCopy(req, res, next) {
+            const src = req.params[0];
+            const dst = req.get('To');
+
+            ncp(path.join(fsPath, src), path.join(fsPath, dst), err => {
+              if (!err) {
+                res.send();
+              } else {
+                res.status(500);
+                res.send(err.stack);
+              }
+            });
+          }
+          app.copy(/^\/archae\/fs(\/.*)$/, serveFsCopy);
+          function serveFsMove(req, res, next) {
+            const src = req.params[0];
+            const dst = req.get('To');
+
+            mv(path.join(fsPath, src), path.join(fsPath, dst), err => {
+              if (!err) {
+                res.send();
+              } else {
+                res.status(500);
+                res.send(err.stack);
+              }
+            });
+          }
+          app.move(/^\/archae\/fs(\/.*)$/, serveFsMove);
           function serveFsDelete(req, res, next) {
             const p = req.params[0];
 
@@ -153,6 +183,8 @@ class Fs {
                 route.handle.name === 'serveFsStatic' ||
                 route.handle.name === 'serveFsUpload' ||
                 route.handle.name === 'serveFsCreate' ||
+                route.handle.name === 'serveFsCopy' ||
+                route.handle.name === 'serveFsMove' ||
                 route.handle.name === 'serveFsDelete'
               ) {
                 routes.splice(i, 1);
