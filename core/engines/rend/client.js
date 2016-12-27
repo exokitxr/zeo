@@ -460,6 +460,7 @@ class Rend {
               selectedName: '',
               loaded: false,
               loading: false,
+              uploading: false,
             }
 
             const _getKeyPath = (root, keyPath) => {
@@ -1005,34 +1006,44 @@ ${attributes(element)}\
 ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
-            const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, loading, focus}) => `\
+            const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, loading, uploading, focus}) => {
+              const content = (() => {
+                if (loading) {
+                  return `<h1 style="font-size: 50px;">Loading...</h1>`;
+                } else if (uploading) {
+                  return `<h1 style="font-size: 50px;">Uploading...</h1>`;
+                } else {
+                  return `\
+${getInputSrc(inputText, 'Search files', inputValue, focus, 'files:input')}
+${(cwd !== '/') ?
+  `<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Go back</h1>
+  ${getItemsSrc([
+    {
+      name: '..',
+      description: '',
+    }
+  ], selectedName, 'file')}`
+:
+  ''
+}
+<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
+${getItemsSrc(files, selectedName, 'file')}
+<p style="width: 100%; padding: 5px; float: left; clear: both; background-color: #EEE; border-radius: 5px; box-sizing: border-box;">Click a file to cut, copy, paste, rename, and remove. Click a directory to navigate.<br/>Drag files into the window to upload. Uploaded files will be placed in the current working directory.</p>
+`;
+                }
+              })();
+              return `\
 ${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getFilesSidebarSrc()}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
-      ${!loading ?
-        `${getInputSrc(inputText, 'Search files', inputValue, focus, 'files:input')}
-        ${(cwd !== '/') ?
-          `<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Go back</h1>
-          ${getItemsSrc([
-            {
-              name: '..',
-              description: '',
-            }
-          ], selectedName, 'file')}`
-        :
-          ''
-        }
-        <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
-        ${getItemsSrc(files, selectedName, 'file')}`
-      :
-        `<h1 style="font-size: 50px;">Loading...</h1>`
-      }
+      ${content}
     </div>
   </div>
 </div>
 `;
+            };
             const getCreateDirectoryButtonsSrc = selectedName => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   <a style="padding: 10px 40px; border: 3px solid #0275d8; border-radius: 5px; font-size: 50px; color: #0275d8; text-decoration: none;" onclick="files:createdirectory">+ Directory</a>
@@ -1618,10 +1629,10 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName), true)}
                           });
                       }
 
-                      ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, loading}, focus: {type: focusType}}) => ([
+                      ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, loading, uploading}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, loading, focus: focusType === 'files'}),
+                          src: getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, loading, uploading, focus: focusType === 'files'}),
                         },
                         {
                           type: 'image',
