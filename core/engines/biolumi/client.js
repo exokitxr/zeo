@@ -513,6 +513,7 @@ class Biolumi {
           });
           const _getFonts = () => fonts;
           const _getFontWeight = () => fontWeight;
+          const _getFontStyle = () => fontStyle;
           const _getTransparentImg = () => transparentImg;
           const _getMaxNumTextures = () => MAX_NUM_TEXTURES;
 
@@ -520,6 +521,7 @@ class Biolumi {
             requestUi: _requestUi,
             getFonts: _getFonts,
             getFontWeight: _getFontWeight,
+            getFontStyle: _getFontStyle,
             getTransparentImg: _getTransparentImg,
             getMaxNumTextures: _getMaxNumTextures,
           };
@@ -555,6 +557,7 @@ const _scaleImageData = (imageData, {width, height}) => {
 
 const fonts = '"Open Sans"';
 const fontWeight = 300;
+const fontStyle = 'normal';
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const styleTagSrc = `\
 @font-face {

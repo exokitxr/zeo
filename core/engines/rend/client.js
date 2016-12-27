@@ -57,8 +57,6 @@ class Rend {
       if (live) {
         const {THREE, scene, camera} = three;
 
-        const fonts = biolumi.getFonts();
-        const fontWeight = biolumi.getFontWeight();
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
 
@@ -272,8 +270,14 @@ class Rend {
           if (live) {
             const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
 
-            const fontSize = 72;
-            const lineHeight = 1.4;
+            const mainFontSpec = {
+              fonts: biolumi.getFonts(),
+              fontSize: 72,
+              lineHeight: 1.4,
+              fontWeight: biolumi.getFontWeight(),
+              fontStyle: biolumi.getFontStyle(),
+            };
+
             const focusState = {
               type: null,
             };
@@ -513,7 +517,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 </div>
 `;
             const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
-<div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${fontSize}px; line-height: ${lineHeight};'>
+<div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${mainFontSpec.fontSize}px; line-height: ${mainFontSpec.lineHeight};'>
   <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #F0F0F0; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${inputText}</div>
@@ -993,13 +997,34 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
             }).then(ui => {
               if (live) {
                 const measureText = (() => {
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  ctx.font = `normal ${fontWeight} ${fontSize}px/${lineHeight} ${fonts}`;
+                  const measureContexts = {};
 
-                  return text => ctx.measureText(text).width;
+                  const _makeMeasureContext = fontSpec => {
+                    const {fonts, fontSize, lineHeight, fontWeight, fontStyle} = fontSpec;
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight} ${fonts}`;
+
+                    return ctx;
+                  };
+                  const _getFontSpecKey = fontSpec => {
+                    const {fonts, fontSize, lineHeight, fontWeight, fontStyle} = fontSpec;
+                    return [fonts, fontSize, lineHeight, fontWeight, fontStyle].join(':');
+                  };
+                  const _getMeasureContext = fontSpec => {
+                    const key = _getFontSpecKey(fontSpec);
+                    let entry = measureContexts[key];
+                    if (!entry) {
+                      entry = _makeMeasureContext(fontSpec);
+                      measureContexts[key] = entry;
+                    }
+                    return entry;
+                  };
+
+                  return (text, fontSpec) => _getMeasureContext(fontSpec).measureText(text).width;
                 })();
-                const getTextPropertiesFromCoord = (text, coordPx) => {
+                const getTextPropertiesFromCoord = (text, fontSpec, coordPx) => {
                   const slices = (() => {
                     const result = [];
                     for (let i = 0; i <= text.length; i++) {
@@ -1008,7 +1033,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                     }
                     return result;
                   })();
-                  const widths = slices.map(slice => measureText(slice));
+                  const widths = slices.map(slice => measureText(slice, fontSpec));
                   const distances = widths.map(width => Math.abs(coordPx - width));
                   const sortedDistances = distances
                     .map((distance, index) => ([distance, index]))
@@ -1019,9 +1044,9 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
 
                   return {index, px};
                 };
-                const getTextPropertiesFromIndex = (text, index) => {
+                const getTextPropertiesFromIndex = (text, fontSpec, index) => {
                   const slice = text.slice(0, index);
-                  const px = measureText(slice);
+                  const px = measureText(slice, fontSpec);
                   return {index, px};
                 };
 
@@ -1472,7 +1497,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       const {value} = hoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
 
-                      const {index, px} = getTextPropertiesFromCoord(modsState.inputText, valuePx);
+                      const {index, px} = getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
 
                       modsState.inputIndex = index;
                       modsState.inputValue = px;
@@ -1483,7 +1508,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       const {value} = hoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
 
-                      const {index, px} = getTextPropertiesFromCoord(configState.inputText, valuePx);
+                      const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
 
                       configState.inputIndex = index;
                       configState.inputValue = px;
@@ -1570,7 +1595,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                   if (_isPrintableKeycode(e.keyCode)) {
                     state.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
                     state.inputIndex++;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
 
                     return true;
                   } else if (e.keyCode === 13) { // enter
@@ -1581,7 +1606,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                     if (inputIndex > 0) {
                       state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
                       state.inputIndex--;
-                      state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+                      state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
 
                       return true;
                     } else {
@@ -1589,22 +1614,22 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                     }
                   } else if (e.keyCode === 37) { // left
                     state.inputIndex = Math.max(state.inputIndex - 1, 0);
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
 
                     return true;
                   } else if (e.keyCode === 39) { // right
                     state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
 
                     return true;
                   } else if (e.keyCode === 38) { // up
                     state.inputIndex = 0;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
 
                     return true;
                   } else if (e.keyCode === 40) { // down
                     state.inputIndex = inputText.length;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, state.inputIndex).px;
+                    state.inputValue = getTextPropertiesFromIndex(state.inputText, mainFontSpec, state.inputIndex).px;
 
                     return true;
                   } else {
