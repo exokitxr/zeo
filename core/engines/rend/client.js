@@ -601,6 +601,7 @@ class Rend {
               })();
               return {
                 name,
+                type,
                 description,
               };
             };
@@ -1624,6 +1625,33 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
                           focus: focusState,
                         },
                       });
+                    } else if (match = onclick.match(/^file:(.+)$/)) {
+                      ui.cancelTransition();
+
+                      const {files} = filesState;
+                      const name = match[1];
+                      const file = files.find(f => f.name === name);
+                      const {type} = file;
+
+                      if (type === 'directory') {
+                        filesState.loading = true;
+
+                        const {cwd: oldCwd} = filesState;
+                        const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
+                        filesState.cwd = newCwd;
+                        fs.getDirectory(newCwd)
+                          .then(files => {
+                            filesState.files = _getFilesSpecs(files);
+                            filesState.loading = false;
+
+                            _updatePages();
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
+
+                        _updatePages();
+                      }
                     } else if (onclick === 'files:createdirectory') {
                       filesState.loading = true;
 
