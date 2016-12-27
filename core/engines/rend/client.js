@@ -653,11 +653,14 @@ ${getHeaderSrc('mods', '', '', true)}
 </div>
 `;
             };
-            const getItemsSrc = (items, prefix) => `\
+            const getItemsSrc = (items, prefix) =>
+              (items.length > 0) ? `\
 <div style="width: inherit; float: left; clear: both;">
   ${items.map(item => getItemSrc(item, prefix)).join('\n')}
 </div>
-`;
+`
+              :
+                `<h2 style="font-size: 40px; color: #CCC;">Nothing here...</h2>`;
             const getItemSrc = (item, prefix) => `\
 <a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; text-decoration: none; overflow: hidden;" onclick="${prefix}:${item.name}">
   <img src="${creatureUtils.makeStaticCreature('${prefix}:' + item.name)}" width="100" height="100" style="image-rendering: pixelated;" />
