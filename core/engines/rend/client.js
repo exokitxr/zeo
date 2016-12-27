@@ -449,6 +449,20 @@ class Rend {
               inputIndex: 0,
               inputValue: 0,
             };
+            const filesState = {
+              files: [
+                {
+                  name: 'lol.txt',
+                  description: '100 KB',
+                },
+                {
+                  name: 'zeo.dat',
+                  description: '2.3 MB',
+                },
+              ],
+              inputText: '',
+              inputValue: 0,
+            }
 
             const _getKeyPath = (root, keyPath) => {
               const _recurse = (root, i) => {
@@ -592,20 +606,6 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
               const installedMods = mods.filter(mod => mod.installed);
               const availableMods = mods.filter(mod => !mod.installed);
 
-              const getModSrc = mod => `\
-<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; text-decoration: none; overflow: hidden;" onclick="mod:${mod.name}">
-  <img src="${creatureUtils.makeStaticCreature('mod:' + mod.name)}" width="100" height="100" style="image-rendering: pixelated;" />
-  <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
-    <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</div>
-    <div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${mod.description}</div>
-  </div>
-</a>`;
-              const getModsSrc = mods => `\
-<div style="width: inherit; float: left; clear: both;">
-  ${mods.map(getModSrc).join('\n')}
-</div>
-`;
-
               return `\
 ${getHeaderSrc('mods', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
@@ -614,14 +614,27 @@ ${getHeaderSrc('mods', '', '', true)}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
       ${getInputSrc(inputText, inputPlaceholder, inputValue, focus, 'mods:input')}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
-      ${getModsSrc(installedMods)}
+      ${getItemsSrc(installedMods, 'mod')}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
-      ${getModsSrc(availableMods)}
+      ${getItemsSrc(availableMods, 'mod')}
     </div>
   </div>
 </div>
 `;
             };
+            const getItemsSrc = (items, prefix) => `\
+<div style="width: inherit; float: left; clear: both;">
+  ${items.map(item => getItemSrc(item, prefix)).join('\n')}
+</div>
+`;
+            const getItemSrc = (item, prefix) => `\
+<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; text-decoration: none; overflow: hidden;" onclick="${prefix}:${item.name}">
+  <img src="${creatureUtils.makeStaticCreature('${prefix}:' + item.name)}" width="100" height="100" style="image-rendering: pixelated;" />
+  <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
+    <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</div>
+    <div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${item.description}</div>
+  </div>
+</a>`;
             const getModPageSrc = ({name, version, installed}) => `\
 ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
@@ -960,12 +973,26 @@ ${attributes(element)}\
 ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
+            const getFilesPageSrc = ({files, inputText, inputValue, focus}) => `\
+${getHeaderSrc('files', '', '', true)}
+<div style="height: ${HEIGHT - (150 + 2)}px;">
+  <div style="display: flex;">
+    ${getFilesSidebarSrc()}
+    <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
+      ${getInputSrc(inputText, 'Search files', inputValue, focus, 'files:input')}
+      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local files</h1>
+      ${getItemsSrc(files, 'file')}
+    </div>
+  </div>
+</div>
+`;
             const getMainSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="next"><p>Change world</p></a>
-  <a style="text-decoration: none;" onclick="next"><p>Add/Remove Mods</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Change World</p></a>
+  <a style="text-decoration: none;" onclick="mods"><p>Mods</p></a>
+  <a style="text-decoration: none;" onclick="elements"><p>Elements</p></a>
+  <a style="text-decoration: none;" onclick="files"><p>Filesystem</p></a>
   <a style="text-decoration: none;" onclick="config"><p>Preferences</p></a>
-  <a style="text-decoration: none;" onclick="elements"><p>About</p></a>
 </div>`;
             const getModsSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
@@ -989,6 +1016,12 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
   <a style="text-decoration: none;" onclick="blank"><p>Tree</p></a>
   <a style="text-decoration: none;" onclick="blank"><p>Zoom in</p></a>
   <a style="text-decoration: none;" onclick="blank"><p>Zoom out</p></a>
+</div>`;
+            const getFilesSidebarSrc = () => `\
+<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
+  <a style="text-decoration: none;" onclick="blank"><p>Installed mod</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Available mods</p></a>
+  <a style="text-decoration: none;"  onclick="blank"><p>Search mods</p></a>
 </div>`;
             const getGetButtonSrc = (name, installed) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
@@ -1306,14 +1339,19 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         mods: modsState,
                         focus: focusState,
                       });
-                    } else if (type === 'config') {
-                      page.update({
-                        config: configState,
-                        focus: focusState,
-                      });
                     } else if (type === 'elements') {
                       page.update({
                         elements: elementsState,
+                        focus: focusState,
+                      });
+                    } else if (type === 'files') {
+                      page.update({
+                        files: filesState,
+                        focus: focusState,
+                      });
+                    } else if (type === 'config') {
+                      page.update({
+                        config: configState,
                         focus: focusState,
                       });
                     }
@@ -1336,7 +1374,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       if (ui.getPages().length > 1) {
                         ui.popPage();
                       }
-                    } else if (onclick === 'next') {
+                    } else if (onclick === 'mods') {
                       ui.cancelTransition();
 
                       if (ui.getPages().length < 3) {
@@ -1506,6 +1544,30 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                           focus: focusState,
                         },
                       });
+                    } else if (onclick === 'files') {
+                      ui.cancelTransition();
+
+                      ui.pushPage(({files: {files, inputText, inputValue}, focus: {type: focusType}}) => ([
+                        {
+                          type: 'html',
+                          src: getFilesPageSrc({files, inputText, inputValue, focus: focusType === 'files'}),
+                        },
+                        {
+                          type: 'image',
+                          img: creatureUtils.makeAnimatedCreature('files'),
+                          x: 150,
+                          y: 0,
+                          w: 150,
+                          h: 150,
+                          frameTime: 300,
+                        }
+                      ]), {
+                        type: 'files',
+                        state: {
+                          files: filesState,
+                          focus: focusState,
+                        },
+                      });
                     } else if (onclick === 'element:add') {
                       _insertElementAtKeyPath({
                         elements: elementsState.elements,
@@ -1576,6 +1638,17 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       modsState.inputIndex = index;
                       modsState.inputValue = px;
                       focusState.type = 'mods';
+
+                      _updatePages();
+                    } else if (onclick === 'files:input') {
+                      const {value} = hoverState;
+                      const valuePx = value * (WIDTH - (500 + 40));
+
+                      const {index, px} = getTextPropertiesFromCoord(filesState.inputText, mainFontSpec, valuePx);
+
+                      filesState.inputIndex = index;
+                      filesState.inputValue = px;
+                      focusState.type = 'files';
 
                       _updatePages();
                     } else if (onclick === 'config:input') {
@@ -1863,6 +1936,12 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                         }
                       }
 
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
+                  } else if (type === 'files') {
+                    if (_applyStateKeyEvent(filesState, mainFontSpec, e)) {
                       _updatePages();
 
                       e.stopImmediatePropagation();
