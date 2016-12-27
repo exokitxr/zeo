@@ -1027,7 +1027,7 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
 `;
             const getMainSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Change World</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>World</p></a>
   <a style="text-decoration: none;" onclick="mods"><p>Mods</p></a>
   <a style="text-decoration: none;" onclick="elements"><p>Elements</p></a>
   <a style="text-decoration: none;" onclick="files"><p>Filesystem</p></a>
