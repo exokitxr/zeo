@@ -1006,7 +1006,7 @@ ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
             const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, loading, focus}) => `\
-${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
+${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getFilesSidebarSrc()}
@@ -1033,9 +1033,10 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
   </div>
 </div>
 `;
-            const getCreateDirectoryButtonSrc = () => `\
+            const getCreateDirectoryButtonsSrc = selectedName => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-  <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="files:createdirectory">+ Directory</a>
+  <a style="padding: 10px 40px; border: 3px solid #0275d8; border-radius: 5px; font-size: 50px; color: #0275d8; text-decoration: none;" onclick="files:createdirectory">+ Directory</a>
+  ${selectedName ? `<a style="margin-left: 30px; padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="files:remove:${selectedName}">× Remove</a>` : ''}
 </div>
 `;
             const getMainSidebarSrc = () => `\
@@ -1694,6 +1695,25 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
                       const {cwd} = filesState;
                       const name = 'New Directory';
                       fs.createDirectory(cwd + '/' + name)
+                        .then(() => fs.getDirectory(cwd)
+                          .then(files => {
+                            filesState.files = _getFilesSpecs(files);
+                            filesState.loading = false;
+
+                            _updatePages();
+                          })
+                        )
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    } else if (match = onclick.match(/^files:remove:(.+)$/)) {
+                      filesState.loading = true;
+
+                      _updatePages();
+
+                      const {cwd} = filesState;
+                      const name = match[1];
+                      fs.remove(cwd + '/' + name)
                         .then(() => fs.getDirectory(cwd)
                           .then(files => {
                             filesState.files = _getFilesSpecs(files);
