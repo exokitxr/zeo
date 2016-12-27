@@ -20,6 +20,15 @@ class Fs {
         const {renderer} = three;
         const {domElement} = renderer;
 
+        let cwd = '/';
+        const _getCwd = () => cwd;
+        const _setCwd = c => {
+          cwd = c;
+        };
+
+        let numUploading = 0;
+        const _getUploading = () => numUploading > 0;
+
         const _getFile = p => fetch('/archae/fs' + p).then(res => res.blob());
         const _getDirectory = p => fetch('/archae/fs' + p, {
           headers: {
@@ -49,6 +58,30 @@ class Fs {
           method: 'DELETE',
         }).then(res => res.blob().then(() => Promise.resolve()));
 
+        const listeners = {
+          uploadStart: [],
+          uploadEnd: [],
+        }
+        const _addEventListener = (event, listener) => {
+          const eventListeners = listeners[event];
+          eventListeners.push(listener);
+        };
+        const _removeEventListener = (event, listener) => {
+          const eventListeners = listeners[event];
+          const index = eventListeners.indexOf(listener);
+          if (index !== -1) {
+            eventListeners.splice(index, 1);
+          }
+        };
+        const _triggerEvent = event => {
+          const eventListeners = listeners[event];
+
+          for (let i = 0; i < eventListeners.length; i++) {
+            const listener = eventListeners[i];
+            listener();
+          }
+        };
+
         const dragover = e => {
           e.preventDefault();
         };
@@ -60,12 +93,28 @@ class Fs {
           if (files.length > 0) {
             const file = files[0];
             const {name} = file;
-            _setFile('/' + name, file)
+
+            numUploading++;
+            if (numUploading === 1) {
+              _triggerEvent('uploadStart');
+            }
+
+            _setFile(cwd + (!/\/$/.test(cwd) ? '/' : '') + name, file)
               .then(() => {
                 console.log('file uploaded', name);
+
+                numUploading--;
+                if (numUploading === 0) {
+                  _triggerEvent('uploadEnd');
+                }
               })
               .catch(err => {
                 console.warn(err);
+
+                numUploading--;
+                if (numUploading === 0) {
+                  _triggerEvent('uploadEnd');
+                }
               });
           }
         };
@@ -76,6 +125,9 @@ class Fs {
         };
 
         return {
+          getCwd: _getCwd,
+          setCwd: _setCwd,
+          getUploading: _getUploading,
           getFile: _getFile,
           getDirectory: _getDirectory,
           setFile: _setFile,
@@ -83,6 +135,8 @@ class Fs {
           copy: _copy,
           move: _move,
           remove: _remove,
+          addEventListener: _addEventListener,
+          removeEventListener: _removeEventListener,
         };
       }
     });

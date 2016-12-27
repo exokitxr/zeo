@@ -271,8 +271,6 @@ class Rend {
           });
         const _initializeMenu = () => {
           if (live) {
-            const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
-
             const mainFontSpec = {
               fonts: biolumi.getFonts(),
               fontSize: 72,
@@ -286,317 +284,6 @@ class Rend {
               lineHeight: 1.4,
               fontWeight: biolumi.getFontWeight(),
               fontStyle: biolumi.getFontStyle(),
-            };
-
-            const focusState = {
-              type: null,
-            };
-            const modsState = {
-              inputText: '',
-              inputPlaceholder: 'Search npm',
-              inputIndex: 0,
-              inputValue: 0,
-              mods: _cleanMods(currentMods),
-            };
-            const configState = {
-              inputText: 'Hello, world! This is some text!',
-              inputPlaceholder: '',
-              inputIndex: 0,
-              inputValue: 0,
-              sliderValue: 0.5,
-            };
-            const elementsState = {
-              elements: [
-                {
-                  element: 'archae',
-                  attributes: {
-                    position: {
-                      type: 'position',
-                      value: [1, 2, 3].join(' '),
-                    },
-                    text: {
-                      type: 'text',
-                      value: 'Hello, world!',
-                    },
-                    number: {
-                      type: 'number',
-                      value: 2,
-                      min: 0,
-                      max: 10,
-                    },
-                    select: {
-                      type: 'select',
-                      value: 'basic',
-                      options: [
-                        'basic',
-                        'advanced',
-                        'core',
-                        'extra',
-                      ],
-                    },
-                    color: {
-                      type: 'color',
-                      value: '#563d7c',
-                    },
-                    enabled: {
-                      type: 'checkbox',
-                      value: true,
-                    },
-                    disabled: {
-                      type: 'checkbox',
-                      value: false,
-                    },
-                  },
-                  children: [
-                    {
-                      element: 'sub',
-                      attributes: {
-                        rotation: {
-                          type: 'position',
-                          value: [0, Math.PI, 0].join(' '),
-                        },
-                      },
-                      children: [],
-                    },
-                    {
-                      element: 'subsub',
-                      attributes: {
-                        rotation: {
-                          type: 'position',
-                          value: [0, Math.PI, 0].join(' '),
-                        },
-                      },
-                      children: [],
-                    },
-                  ],
-                },
-                {
-                  element: 'text',
-                  attributes: {
-                    lol: {
-                      type: 'text',
-                      value: 'zol',
-                    },
-                  },
-                  children: [],
-                },
-              ],
-              availableElements: [
-                {
-                  element: 'model',
-                  attributes: {
-                    position: {
-                      type: 'position',
-                      value: [1, 2, 3].join(' '),
-                    },
-                    rotation: {
-                      type: 'position',
-                      value: [0, Math.PI, 0].join(' '),
-                    },
-                    url: {
-                      type: 'text',
-                      value: 'cloud.mdl',
-                    },
-                  },
-                  children: [],
-                },
-                {
-                  element: 'model',
-                  attributes: {
-                    position: {
-                      type: 'position',
-                      value: [1, 2, 3].join(' '),
-                    },
-                    rotation: {
-                      type: 'position',
-                      value: [0, Math.PI, 0].join(' '),
-                    },
-                    url: {
-                      type: 'text',
-                      value: 'cloud.mdl',
-                    },
-                  },
-                  children: [],
-                },
-              ],
-              clipboardElements: [
-                {
-                  element: 'model',
-                  attributes: {
-                    position: {
-                      type: 'position',
-                      value: [1, 2, 3].join(' '),
-                    },
-                    rotation: {
-                      type: 'position',
-                      value: [0, Math.PI, 0].join(' '),
-                    },
-                  },
-                  children: [
-                    {
-                      element: 'submodel',
-                      attributes: {
-                        url: {
-                          type: 'text',
-                          value: 'cloud.mdl',
-                        },
-                      },
-                      children: [],
-                    },
-                  ],
-                },
-              ],
-              selectedKeyPath: [],
-              draggingKeyPath: [],
-              inputText: '',
-              inputIndex: 0,
-              inputValue: 0,
-            };
-            const filesState = {
-              cwd: '/',
-              files: [],
-              inputText: '',
-              inputValue: 0,
-              selectedName: '',
-              loaded: false,
-              loading: false,
-              uploading: false,
-            }
-
-            const _getKeyPath = (root, keyPath) => {
-              const _recurse = (root, i) => {
-                if (i === keyPath.length) {
-                  return root;
-                } else {
-                  return _recurse(root.children[keyPath[i]], i + 1);
-                }
-              };
-              return _recurse(root, 0);
-            };
-            const _getElementKeyPath = (spec, keyPath) => {
-              const children = (() => {
-                const result = {};
-                for (const k in spec) {
-                  result[k] = {
-                    children: spec[k],
-                  };
-                }
-                return result;
-              })();
-              return _getKeyPath({children}, keyPath);
-            };
-            const _moveElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
-              const oldKeyPathHead = oldKeyPath.slice(0, -1);
-              const oldKeyPathTail = oldKeyPath[oldKeyPath.length - 1];
-              const oldParentElement = _getElementKeyPath(spec, oldKeyPathHead);
-              const element = oldParentElement.children[oldKeyPathTail];
-
-              const newKeyPathHead = newKeyPath.slice(0, -1);
-              const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
-              const newParentElement = _getElementKeyPath(spec, newKeyPathHead);
-              newParentElement.children.splice(newKeyPathTail, 0, element);
-
-              oldParentElement.children.splice(oldKeyPathTail + ((_keyPathEquals(newKeyPathHead, oldKeyPathHead) && newKeyPathTail <= oldKeyPathTail) ? 1 : 0), 1);
-            };
-            const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
-              const bi = b[i];
-              return ai === bi;
-            });
-            const _isSubKeyPath = (a, b) => {
-              return a.length >= b.length && b.every((bi, i) => {
-                const ai = a[i];
-                return bi === ai;
-              });
-            };
-            const _parseKeyPath = s => s.split(':').map(p => {
-              if (/^[0-9]+$/.test(p)) {
-                return parseInt(p, 10);
-              } else {
-                return p;
-              }
-            });
-            const _insertElementAtKeyPath = (root, keyPath) => {
-              const element = {
-                element: 'element',
-                attributes: {
-                  position: {
-                    type: 'position',
-                    value: [1, 2, 3].join(' '),
-                  },
-                },
-                children: [],
-              };
-
-              const targetElement = _getElementKeyPath(root, keyPath);
-              targetElement.children.push(element);
-            };
-            const _castValueStringToValue = (s, type, min, max, options) => {
-              switch (type) {
-                case 'position':
-                case 'text': {
-                  return s;
-                }
-                case 'color': {
-                  const match = s.match(/^#?([a-f0-9]{3}(?:[a-f0-9]{3})?)$/i);
-                  if (match) {
-                    return '#' + match[1];
-                  } else {
-                    return null;
-                  }
-                }
-                case 'select': {
-                  if (options.includes(s)) {
-                    return s;
-                  } else {
-                    return null;
-                  }
-                }
-                case 'number': {
-                  const n = parseFloat(s);
-                  if (!isNaN(n) && n >= min && n <= max) {
-                    return n;
-                  } else {
-                    return null;
-                  }
-                }
-                case 'checkbox': {
-                  if (s === 'true') {
-                    return true;
-                  } else if (s === 'false') {
-                    return false;
-                  } else {
-                    return null;
-                  }
-                }
-                default: {
-                  return s;
-                }
-              }
-            };
-            const _castValueValueToString = (s, type) => String(s);
-            const _getFilesSpecs = files => files.sort((a, b) => {
-              const aIsDirectory = a.type === 'directory';
-              const bIsDirectory = b.type === 'directory';
-              return bIsDirectory - aIsDirectory;
-            }).map(_getFileSpec);
-            const _getFileSpec = file => {
-              const {name, type, size} = file;
-              const description = (() => {
-                if (type === 'file') {
-                  if (size !== null) {
-                    return prettyBytes(size);
-                  } else {
-                    return '';
-                  }
-                } else {
-                  return 'Directory';
-                }
-              })();
-              return {
-                name,
-                type,
-                description,
-              };
             };
 
             const getMainPageSrc = () => `\
@@ -1117,6 +804,143 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName, copiedNam
   }
 </div>`;
 
+            const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
+            const _getKeyPath = (root, keyPath) => {
+              const _recurse = (root, i) => {
+                if (i === keyPath.length) {
+                  return root;
+                } else {
+                  return _recurse(root.children[keyPath[i]], i + 1);
+                }
+              };
+              return _recurse(root, 0);
+            };
+            const _getElementKeyPath = (spec, keyPath) => {
+              const children = (() => {
+                const result = {};
+                for (const k in spec) {
+                  result[k] = {
+                    children: spec[k],
+                  };
+                }
+                return result;
+              })();
+              return _getKeyPath({children}, keyPath);
+            };
+            const _moveElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
+              const oldKeyPathHead = oldKeyPath.slice(0, -1);
+              const oldKeyPathTail = oldKeyPath[oldKeyPath.length - 1];
+              const oldParentElement = _getElementKeyPath(spec, oldKeyPathHead);
+              const element = oldParentElement.children[oldKeyPathTail];
+
+              const newKeyPathHead = newKeyPath.slice(0, -1);
+              const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
+              const newParentElement = _getElementKeyPath(spec, newKeyPathHead);
+              newParentElement.children.splice(newKeyPathTail, 0, element);
+
+              oldParentElement.children.splice(oldKeyPathTail + ((_keyPathEquals(newKeyPathHead, oldKeyPathHead) && newKeyPathTail <= oldKeyPathTail) ? 1 : 0), 1);
+            };
+            const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
+              const bi = b[i];
+              return ai === bi;
+            });
+            const _isSubKeyPath = (a, b) => {
+              return a.length >= b.length && b.every((bi, i) => {
+                const ai = a[i];
+                return bi === ai;
+              });
+            };
+            const _parseKeyPath = s => s.split(':').map(p => {
+              if (/^[0-9]+$/.test(p)) {
+                return parseInt(p, 10);
+              } else {
+                return p;
+              }
+            });
+            const _insertElementAtKeyPath = (root, keyPath) => {
+              const element = {
+                element: 'element',
+                attributes: {
+                  position: {
+                    type: 'position',
+                    value: [1, 2, 3].join(' '),
+                  },
+                },
+                children: [],
+              };
+
+              const targetElement = _getElementKeyPath(root, keyPath);
+              targetElement.children.push(element);
+            };
+            const _castValueStringToValue = (s, type, min, max, options) => {
+              switch (type) {
+                case 'position':
+                case 'text': {
+                  return s;
+                }
+                case 'color': {
+                  const match = s.match(/^#?([a-f0-9]{3}(?:[a-f0-9]{3})?)$/i);
+                  if (match) {
+                    return '#' + match[1];
+                  } else {
+                    return null;
+                  }
+                }
+                case 'select': {
+                  if (options.includes(s)) {
+                    return s;
+                  } else {
+                    return null;
+                  }
+                }
+                case 'number': {
+                  const n = parseFloat(s);
+                  if (!isNaN(n) && n >= min && n <= max) {
+                    return n;
+                  } else {
+                    return null;
+                  }
+                }
+                case 'checkbox': {
+                  if (s === 'true') {
+                    return true;
+                  } else if (s === 'false') {
+                    return false;
+                  } else {
+                    return null;
+                  }
+                }
+                default: {
+                  return s;
+                }
+              }
+            };
+            const _castValueValueToString = (s, type) => String(s);
+            const _getFilesSpecs = files => files.sort((a, b) => {
+              const aIsDirectory = a.type === 'directory';
+              const bIsDirectory = b.type === 'directory';
+              return bIsDirectory - aIsDirectory;
+            }).map(_getFileSpec);
+            const _getFileSpec = file => {
+              const {name, type, size} = file;
+              const description = (() => {
+                if (type === 'file') {
+                  if (size !== null) {
+                    return prettyBytes(size);
+                  } else {
+                    return '';
+                  }
+                } else {
+                  return 'Directory';
+                }
+              })();
+              return {
+                name,
+                type,
+                description,
+              };
+            };
+
             const imageShader = {
               uniforms: {
                 textures: {
@@ -1193,6 +1017,211 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName, copiedNam
               height: HEIGHT,
             }).then(ui => {
               if (live) {
+                const focusState = {
+                  type: null,
+                };
+                const modsState = {
+                  inputText: '',
+                  inputPlaceholder: 'Search npm',
+                  inputIndex: 0,
+                  inputValue: 0,
+                  mods: _cleanMods(currentMods),
+                };
+                const configState = {
+                  inputText: 'Hello, world! This is some text!',
+                  inputPlaceholder: '',
+                  inputIndex: 0,
+                  inputValue: 0,
+                  sliderValue: 0.5,
+                };
+                const elementsState = {
+                  elements: [
+                    {
+                      element: 'archae',
+                      attributes: {
+                        position: {
+                          type: 'position',
+                          value: [1, 2, 3].join(' '),
+                        },
+                        text: {
+                          type: 'text',
+                          value: 'Hello, world!',
+                        },
+                        number: {
+                          type: 'number',
+                          value: 2,
+                          min: 0,
+                          max: 10,
+                        },
+                        select: {
+                          type: 'select',
+                          value: 'basic',
+                          options: [
+                            'basic',
+                            'advanced',
+                            'core',
+                            'extra',
+                          ],
+                        },
+                        color: {
+                          type: 'color',
+                          value: '#563d7c',
+                        },
+                        enabled: {
+                          type: 'checkbox',
+                          value: true,
+                        },
+                        disabled: {
+                          type: 'checkbox',
+                          value: false,
+                        },
+                      },
+                      children: [
+                        {
+                          element: 'sub',
+                          attributes: {
+                            rotation: {
+                              type: 'position',
+                              value: [0, Math.PI, 0].join(' '),
+                            },
+                          },
+                          children: [],
+                        },
+                        {
+                          element: 'subsub',
+                          attributes: {
+                            rotation: {
+                              type: 'position',
+                              value: [0, Math.PI, 0].join(' '),
+                            },
+                          },
+                          children: [],
+                        },
+                      ],
+                    },
+                    {
+                      element: 'text',
+                      attributes: {
+                        lol: {
+                          type: 'text',
+                          value: 'zol',
+                        },
+                      },
+                      children: [],
+                    },
+                  ],
+                  availableElements: [
+                    {
+                      element: 'model',
+                      attributes: {
+                        position: {
+                          type: 'position',
+                          value: [1, 2, 3].join(' '),
+                        },
+                        rotation: {
+                          type: 'position',
+                          value: [0, Math.PI, 0].join(' '),
+                        },
+                        url: {
+                          type: 'text',
+                          value: 'cloud.mdl',
+                        },
+                      },
+                      children: [],
+                    },
+                    {
+                      element: 'model',
+                      attributes: {
+                        position: {
+                          type: 'position',
+                          value: [1, 2, 3].join(' '),
+                        },
+                        rotation: {
+                          type: 'position',
+                          value: [0, Math.PI, 0].join(' '),
+                        },
+                        url: {
+                          type: 'text',
+                          value: 'cloud.mdl',
+                        },
+                      },
+                      children: [],
+                    },
+                  ],
+                  clipboardElements: [
+                    {
+                      element: 'model',
+                      attributes: {
+                        position: {
+                          type: 'position',
+                          value: [1, 2, 3].join(' '),
+                        },
+                        rotation: {
+                          type: 'position',
+                          value: [0, Math.PI, 0].join(' '),
+                        },
+                      },
+                      children: [
+                        {
+                          element: 'submodel',
+                          attributes: {
+                            url: {
+                              type: 'text',
+                              value: 'cloud.mdl',
+                            },
+                          },
+                          children: [],
+                        },
+                      ],
+                    },
+                  ],
+                  selectedKeyPath: [],
+                  draggingKeyPath: [],
+                  inputText: '',
+                  inputIndex: 0,
+                  inputValue: 0,
+                };
+                const filesState = {
+                  cwd: fs.getCwd(),
+                  files: [],
+                  inputText: '',
+                  inputValue: 0,
+                  selectedName: '',
+                  loaded: false,
+                  loading: false,
+                  uploading: fs.getUploading(),
+                };
+
+                const uploadStart = () => {
+                  filesState.uploading = true;
+
+                  _updatePages();
+                }
+                fs.addEventListener('uploadStart', uploadStart);
+                const uploadEnd = () => {
+                  filesState.uploading = false;
+                  filesState.loading = true;
+
+                  const {cwd} = filesState;
+                  fs.getDirectory(cwd)
+                    .then(files => {
+                      filesState.files = _getFilesSpecs(files);
+                      filesState.loading = false;
+
+                      _updatePages();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+
+                  _updatePages();
+                }
+                fs.addEventListener('uploadEnd', uploadEnd);
+                cleanups.push(() => {
+                  fs.removeEventListener('uploadStart', uploadStart);
+                  fs.removeEventListener('uploadEnd', uploadEnd);
+                });
+
                 const measureText = (() => {
                   const measureContexts = {};
 
@@ -1677,6 +1706,7 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonsSrc(selectedName, copiedNam
                         filesState.loading = true;
 
                         filesState.cwd = newCwd;
+                        fs.setCwd(newCwd);
                         fs.getDirectory(newCwd)
                           .then(files => {
                             filesState.files = _getFilesSpecs(files);
