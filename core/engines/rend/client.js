@@ -277,6 +277,13 @@ class Rend {
               fontWeight: biolumi.getFontWeight(),
               fontStyle: biolumi.getFontStyle(),
             };
+            const subcontentFontSpec = {
+              fonts: biolumi.getFonts(),
+              fontSize: 28,
+              lineHeight: 1.4,
+              fontWeight: biolumi.getFontWeight(),
+              fontStyle: biolumi.getFontStyle(),
+            };
 
             const focusState = {
               type: null,
@@ -437,6 +444,8 @@ class Rend {
                 },
               ],
               selectedKeyPath: [],
+              inputIndex: 0,
+              inputValue: 0,
             };
 
             const _getKeyPath = (root, keyPath) => {
@@ -616,7 +625,7 @@ ${getHeaderSrc('elements', '', '', true)}
   <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click one to adjust its properties. Drag to move. <a href="#">Add new element</a> or drag it in.</p>
 </div>
 `;
-            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, focusAttribute}) => {
+            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, inputValue, focusAttribute}) => {
               const element = _getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
 
               return `\
@@ -631,7 +640,7 @@ ${element.element}&gt; properties\
 </span>\
 `,
       null,
-      getElementAttributesSrc(element, focusAttribute),
+      getElementAttributesSrc(element, inputValue, focusAttribute),
       ''
     )}
     <div style="margin-top: 30px; margin-left: -30px; border-bottom: 2px solid #333;"></div>`
@@ -654,7 +663,7 @@ ${element.element}&gt; properties\
 </div>
 `;
             };
-            const getElementAttributesSrc = (element, focusAttribute) => {
+            const getElementAttributesSrc = (element, inputValue, focusAttribute) => {
               let result = '';
 
               const {attributes} = element;
@@ -666,14 +675,14 @@ ${element.element}&gt; properties\
                 result += `\
 <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
   <div style="width: ${200 - (30 + 30)}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
-  ${getElementAttributeInput(name, type, value, min, max, options, focus)}
+  ${getElementAttributeInput(name, type, value, min, max, options, inputValue, focus)}
 </div>
 `;
               }
 
               return result;
             };
-            const getElementAttributeInput = (name, type, value, min, max, options, focus) => {
+            const getElementAttributeInput = (name, type, value, min, max, options, inputValue, focus) => {
               switch (type) {
                 case 'position': {
                   return `<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
@@ -683,7 +692,7 @@ ${element.element}&gt; properties\
                 case 'text': {
                   return `\
 <a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
-  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
+  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
   <div>${value}</div>
 </a>
 `;
@@ -704,8 +713,8 @@ ${element.element}&gt; properties\
   </div>
 </a>
 <a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
-  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
-  <div>${value}</div>
+  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+  <div>${String(value)}</div>
 </a>
 `;
                 }
@@ -753,7 +762,7 @@ ${element.element}&gt; properties\
 <div style="display: flex; width: 400px; height: 40px; align-items: center;">
   <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${value};"></div>
   <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
-    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: 0; background-color: #333;"></div>` : ''}
+    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${value}</div>
   </a>
 </div>
@@ -1383,7 +1392,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                    } else if (onclick === 'elements') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath}, focus: {type: focusType}}) => {
+                      ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, inputValue}, focus: {type: focusType}}) => {
                         const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
                         const focusAttribute = match && match[1];
 
@@ -1403,7 +1412,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                           },
                           {
                             type: 'html',
-                            src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, focusAttribute}),
+                            src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, inputValue, focusAttribute}),
                             x: 500 + (WIDTH - (500 + 600)),
                             y: 150 + 2,
                             w: 600,
@@ -1475,9 +1484,31 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                       }, oldSelectedKeyPath);
                       const {attributes} = element;
                       const attribute = attributes[name];
-                      const {type} = attribute;
 
                       if (action === 'focus') {
+                        const {value} = hoverState;
+
+                        const textProperties = (() => {
+                          const {type} = attribute;
+                          if (type === 'text') {
+                            const valuePx = value * 400;
+                            return getTextPropertiesFromCoord(attribute.value, subcontentFontSpec, valuePx);
+                          } else if (type === 'number') {
+                            const valuePx = value * 100;
+                            return getTextPropertiesFromCoord(String(attribute.value), subcontentFontSpec, valuePx);
+                          } else if (type === 'color') {
+                            const valuePx = value * (400 - (40 + 4));
+                            return getTextPropertiesFromCoord(attribute.value, subcontentFontSpec, valuePx);
+                          } else {
+                            return null;
+                          }
+                        })();
+                        if (textProperties) {
+                          const {index, px} = textProperties;
+                          elementsState.inputIndex = index;
+                          elementsState.inputValue = px;
+                        }
+
                         focusState.type = 'element:attribute:' + name;
                       } else if (action === 'set') {
                         attribute.value = value;
