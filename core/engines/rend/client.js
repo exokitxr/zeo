@@ -1015,6 +1015,17 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
       ${!loading ?
         `${getInputSrc(inputText, 'Search files', inputValue, focus, 'files:input')}
+        ${(cwd !== '/') ?
+          `<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Go back</h1>
+          ${getItemsSrc([
+            {
+              name: '..',
+              description: '',
+            }
+          ], 'file')}`
+        :
+          ''
+        }
         <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
         ${getItemsSrc(files, 'file')}`
       :
@@ -1631,16 +1642,9 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
                     } else if (match = onclick.match(/^file:(.+)$/)) {
                       ui.cancelTransition();
 
-                      const {files} = filesState;
-                      const name = match[1];
-                      const file = files.find(f => f.name === name);
-                      const {type} = file;
-
-                      if (type === 'directory') {
+                      const _chdir = newCwd => {
                         filesState.loading = true;
 
-                        const {cwd: oldCwd} = filesState;
-                        const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
                         filesState.cwd = newCwd;
                         fs.getDirectory(newCwd)
                           .then(files => {
@@ -1654,6 +1658,30 @@ ${getHeaderSrc('files', '', getCreateDirectoryButtonSrc(), true)}
                           });
 
                         _updatePages();
+                      };
+
+                      const name = match[1];
+                      if (name !== '..') {
+                        const {files} = filesState;
+                        const file = files.find(f => f.name === name);
+                        const {type} = file;
+
+                        if (type === 'directory') {
+                          const {cwd: oldCwd} = filesState;
+                          const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
+                          _chdir(newCwd);
+                        }
+                      } else {
+                        const {cwd: oldCwd} = filesState;
+                        const newCwd = (() => {
+                          const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
+                          if (replacedCwd !== '') {
+                            return replacedCwd;
+                          } else {
+                            return '/';
+                          }
+                        })();
+                        _chdir(newCwd);
                       }
                     } else if (onclick === 'files:createdirectory') {
                       filesState.loading = true;
