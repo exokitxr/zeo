@@ -444,6 +444,7 @@ class Rend {
                 },
               ],
               selectedKeyPath: [],
+              draggingKeyPath: [],
               inputIndex: 0,
               inputValue: 0,
             };
@@ -615,17 +616,17 @@ ${getHeaderSrc('elements', '', '', true)}
   </div>
 </div>
 `;
-            const getElementsPageContentSrc = ({elements, selectedKeyPath}) => `\
+            const getElementsPageContentSrc = ({elements, selectedKeyPath, draggingKeyPath}) => `\
 <div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; border-left: 2px solid #333; border-right: 2px solid #333; overflow-x: hidden; overflow-y: visible; box-sizing: border-box;">
   <h1 style="margin: 10px 0; font-size: 40px;">World</h1>
-  ${getElementsSrc(elements, ['elements'], selectedKeyPath)}
+  ${getElementsSrc(elements, ['elements'], selectedKeyPath, draggingKeyPath)}
   <div style="display: flex; height: 40px; margin: 20px 0; align-items: center;">
     <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 24px; color: #d9534f; text-decoration: none;" onclick="element:add">+ Add</a>
   </div>
   <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click one to adjust its properties. Drag to move. <a href="#">Add new element</a> or drag it in.</p>
 </div>
 `;
-            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, inputValue, focusAttribute}) => {
+            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputValue, focusAttribute}) => {
               const element = _getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
 
               return `\
@@ -650,14 +651,14 @@ ${element.element}&gt; properties\
   ${getSubcontentSectionSrc(
     'Installed',
     `<a style="padding: 5px 10px; background-color: #5cb85c; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">More</a>`,
-    getElementsSrc(availableElements, ['availableElements'], selectedKeyPath),
+    getElementsSrc(availableElements, ['availableElements'], selectedKeyPath, draggingKeyPath),
     `Installed and ready to add. Drag to the left.<br/><a href="#">Install more elements</a>`
   )}
   <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
   ${getSubcontentSectionSrc(
     'Clipboard',
     `<a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>`,
-    getElementsSrc(clipboardElements, ['clipboardElements'], selectedKeyPath),
+    getElementsSrc(clipboardElements, ['clipboardElements'], selectedKeyPath, draggingKeyPath),
     `Drag-and-drop elements to the clipboad to save them. Drag inside the clipboard to copy.`
   )}
 </div>
@@ -792,10 +793,10 @@ ${element.element}&gt; properties\
                 }
               }
             };
-            const getElementsSrc = (elements, keyPath, selectedKeyPath) => {
+            const getElementsSrc = (elements, keyPath, selectedKeyPath, draggingKeyPath) => {
               const head = (element, keyPath, depth) => `\
 ${spaces(depth)}\
-<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">\
+<a style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}">\
 &lt;\
 <img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
 ${element.element}\
@@ -803,9 +804,25 @@ ${attributes(element)}\
 &gt;\
 </a>\
 `;
-              const tail = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onclick="${anchorOnclick(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
-              const anchorStyle = keyPath => `display: inline-block; ${_keyPathEquals(keyPath, selectedKeyPath) ? `background-color: #EEE; border-radius: 5px;` : ''}`;
-              const anchorOnclick = keyPath => `element:select:${keyPath.join(':')}`;
+              const tail = (element, keyPath, depth) => `<a style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</a>`;
+              const anchorStyle = keyPath => {
+                const style = (() => {
+                  if (_keyPathEquals(keyPath, selectedKeyPath)) {
+                    const color = (() => {
+                      if (_keyPathEquals(keyPath, draggingKeyPath)) {
+                        return '#DDD';
+                      } else {
+                        return '#EEE';
+                      }
+                    })();
+                    return `background-color: ${color}; border-radius: 5px;`;
+                  } else {
+                    return '';
+                  }
+                })();
+                return `display: inline-block; ${style};`;
+              };
+              const anchorOnmousedown = keyPath => `element:select:${keyPath.join(':')}`;
               const attributes = element => {
                 const {attributes} = element;
 
@@ -823,7 +840,7 @@ ${attributes(element)}\
               const innerElements = (elements, keyPath) => {
                 let result = '';
 
-                const hasDropHelper = selectedKeyPath.length > 0 && !_isSubKeyPath(keyPath, selectedKeyPath);
+                const hasDropHelper = draggingKeyPath.length > 0 && !_isSubKeyPath(keyPath, draggingKeyPath);
 
                 result += elements.map((element, i) => {
                   const depth = keyPath.length - 1;
@@ -856,9 +873,9 @@ ${attributes(element)}\
 
               return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, keyPath)}</div>`;
             };
-            const getDropHelperSrc = keyPath => `<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onclick="element:move:${keyPath.join(':')}"><div></div></a>`;
+            const getDropHelperSrc = keyPath => `<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onmouseup="element:move:${keyPath.join(':')}"><div></div></a>`;
 /* `\
-<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onclick="element:move:${keyPath.join(':')}">\
+<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onmouseup="element:move:${keyPath.join(':')}">\
 <div style="width: 100%; height: 2px; background-color: #0275d8;"></div>\
 </a>\
 `; */
@@ -1257,7 +1274,6 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                     const {selectedKeyPath: oldSelectedKeyPath} = elementsState;
 
                     focusState.type = null;
-                    elementsState.selectedKeyPath = [];
 
                     let match;
                     if (onclick === 'back') {
@@ -1389,10 +1405,10 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                           focus: focusState,
                         }
                       });
-                   } else if (onclick === 'elements') {
+                    } else if (onclick === 'elements') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, inputValue}, focus: {type: focusType}}) => {
+                      ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputValue}, focus: {type: focusType}}) => {
                         const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
                         const focusAttribute = match && match[1];
 
@@ -1403,7 +1419,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                           },
                           {
                             type: 'html',
-                            src: getElementsPageContentSrc({elements, selectedKeyPath}),
+                            src: getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
                             x: 500,
                             y: 150 + 2,
                             w: WIDTH - (500 + 600),
@@ -1412,7 +1428,7 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                           },
                           {
                             type: 'html',
-                            src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, inputValue, focusAttribute}),
+                            src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputValue, focusAttribute}),
                             x: 500 + (WIDTH - (500 + 600)),
                             y: 150 + 2,
                             w: 600,
@@ -1436,34 +1452,6 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                           focus: focusState,
                         },
                       });
-                    } else if (match = onclick.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                      const keyPath = _parseKeyPath(match[1]);
-
-                      if (oldSelectedKeyPath && !_isSubKeyPath(keyPath, oldSelectedKeyPath)) {
-                        const spec = {
-                          elements: elementsState.elements,
-                          availableElements: elementsState.availableElements,
-                          clipboardElements: elementsState.clipboardElements,
-                        };
-                        const newParentElement = _getElementKeyPath(spec, keyPath);
-                        const newKeyPath = keyPath.concat(newParentElement.children.length);
-                        _moveElementKeyPath(spec, oldSelectedKeyPath, newKeyPath);
-                      } else {
-                        elementsState.selectedKeyPath = keyPath;
-                      }
-
-                      _updatePages();
-                    } else if (match = onclick.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                      const newKeyPath = _parseKeyPath(match[1]);
-                      const oldKeyPath = oldSelectedKeyPath;
-
-                      _moveElementKeyPath({
-                        elements: elementsState.elements,
-                        availableElements: elementsState.availableElements,
-                        clipboardElements: elementsState.clipboardElements,
-                      }, oldKeyPath, newKeyPath);
-
-                      _updatePages();
                     } else if (onclick === 'element:add') {
                       _insertElementAtKeyPath({
                         elements: elementsState.elements,
@@ -1559,17 +1547,51 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                 };
                 input.addEventListener('click', click);
                 const mousedown = () => {
-                  const {scrollLayer} = hoverState;
-                  if (scrollLayer) {
+                  const _doDrag = () => {
                     const {intersectionPoint} = hoverState;
 
-                    const {position: menuPosition, rotation: menuRotation} = _decomposeMenuMesh();
-                    const _getMenuMeshCoordinate = _makeMenuMeshCoordinateGetter({menuPosition, menuRotation});
-                    const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
-                    hoverState.mousedownScrollLayer = scrollLayer;
-                    hoverState.mousedownStartCoord = mousedownStartCoord;
-                    hoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
-                  }
+                    if (intersectionPoint) {
+                      const {anchor} = hoverState;
+                      const onmousedown = (anchor && anchor.onmousedown) || '';
+                      const {selectedKeyPath: oldSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
+
+                      let match;
+                      if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                        const keyPath = _parseKeyPath(match[1]);
+
+                        elementsState.selectedKeyPath = keyPath;
+                        elementsState.draggingKeyPath = keyPath;
+
+                        _updatePages();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  };
+                  const _doScroll = () => {
+                    const {scrollLayer} = hoverState;
+
+                    if (scrollLayer) {
+                      const {intersectionPoint} = hoverState;
+
+                      const {position: menuPosition, rotation: menuRotation} = _decomposeMenuMesh();
+                      const _getMenuMeshCoordinate = _makeMenuMeshCoordinateGetter({menuPosition, menuRotation});
+                      const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
+                      hoverState.mousedownScrollLayer = scrollLayer;
+                      hoverState.mousedownStartCoord = mousedownStartCoord;
+                      hoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  };
+
+                  _doDrag() || _doScroll();
                 };
                 input.addEventListener('mousedown', mousedown);
 
@@ -1602,14 +1624,75 @@ ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; backgroun
                   }
                 };
                 input.addEventListener('mousemove', mousemove);
-                const mouseup = () => {
-                  const {mousedownStartCoord} = hoverState;
-                  if (mousedownStartCoord) {
-                    _setLayerScrollTop();
+                const mouseup = e => {
+                  const _doDrag = () => {
+                    const {intersectionPoint} = hoverState;
 
-                    hoverState.mousedownScrollLayer = null;
-                    hoverState.mousedownStartCoord = null;
-                  }
+                    if (intersectionPoint) {
+                      const {anchor} = hoverState;
+                      const onmousedown = (anchor && anchor.onmousedown) || '';
+                      const onmouseup = (anchor && anchor.onmouseup) || '';
+                      const {draggingKeyPath: oldDraggingKeyPath} = elementsState;
+
+                      if (oldDraggingKeyPath.length > 0) {
+                        elementsState.selectedKeyPath = [];
+                        elementsState.draggingKeyPath = [];
+
+                        let match;
+                        if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                          const keyPath = _parseKeyPath(match[1]);
+
+                          if (!_isSubKeyPath(keyPath, oldDraggingKeyPath)) { // XXX do this check in conditional rendering instead
+                            const spec = {
+                              elements: elementsState.elements,
+                              availableElements: elementsState.availableElements,
+                              clipboardElements: elementsState.clipboardElements,
+                            };
+                            const newParentElement = _getElementKeyPath(spec, keyPath);
+                            const newKeyPath = keyPath.concat(newParentElement.children.length);
+                            _moveElementKeyPath(spec, oldDraggingKeyPath, newKeyPath);
+
+                            elementsState.selectedKeyPath = newKeyPath;
+                          } else {
+                            elementsState.selectedKeyPath = oldDraggingKeyPath;
+                          }
+                        } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                          const newKeyPath = _parseKeyPath(match[1]);
+                          const oldKeyPath = oldDraggingKeyPath;
+
+                          _moveElementKeyPath({
+                            elements: elementsState.elements,
+                            availableElements: elementsState.availableElements,
+                            clipboardElements: elementsState.clipboardElements,
+                          }, oldKeyPath, newKeyPath);
+
+                          elementsState.selectedKeyPath = newKeyPath;
+                        } else {
+                          elementsState.selectedKeyPath = oldDraggingKeyPath;
+                        }
+
+                        _updatePages();
+                      }
+                    }
+
+                    return false;
+                  };
+                  const _doScroll = () => {
+                    const {mousedownStartCoord} = hoverState;
+
+                    if (mousedownStartCoord) {
+                      _setLayerScrollTop();
+
+                      hoverState.mousedownScrollLayer = null;
+                      hoverState.mousedownStartCoord = null;
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  };
+
+                  _doDrag() || _doScroll();
                 };
                 input.addEventListener('mouseup', mouseup);
 

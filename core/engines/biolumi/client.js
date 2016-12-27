@@ -148,8 +148,10 @@ class Biolumi {
 
                             const rect = a.getBoundingClientRect();
                             const onclick = a.getAttribute('onclick') || null;
+                            const onmousedown = a.getAttribute('onmousedown') || null;
+                            const onmouseup = a.getAttribute('onmouseup') || null;
 
-                            const anchor = new Anchor(rect, onclick);
+                            const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
                             result[i] = anchor;
                           }
 
@@ -278,7 +280,7 @@ class Biolumi {
                 const {x: px, y: py, w: pw, h: ph} = position;
 
                 return this.anchors.map(anchor => {
-                  const {rect, onclick} = anchor;
+                  const {rect, onclick, onmousedown, onmouseup} = anchor;
                   const {top, bottom, left, right} = rect;
 
                   return new Anchor(
@@ -288,7 +290,9 @@ class Biolumi {
                       clamp((px * width) + left, 0, (px + pw) * width),
                       clamp((px * width) + right, 0, (px + pw) * width)
                     ),
-                    onclick
+                    onclick,
+                    onmousedown,
+                    onmouseup
                   );
                 });
               }
@@ -299,9 +303,11 @@ class Biolumi {
             }
 
             class Anchor {
-              constructor(rect, onclick) {
+              constructor(rect, onclick, onmousedown, onmouseup) {
                 this.rect = rect;
                 this.onclick = onclick;
+                this.onmousedown = onmousedown;
+                this.onmouseup = onmouseup;
               }
             }
 
