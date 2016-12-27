@@ -39,6 +39,8 @@ class Zeo {
       cyborg,
       rend,
       biolumi,
+      npm,
+      fs,
       somnifer,
       bullet,
       heartlink,
