@@ -759,12 +759,16 @@ ${element.element}&gt; properties\
                   return `\
 <div style="display: flex; width: 400px; height: 40px; justify-content: flex-end; align-items: center;">
   ${value ?
-    `<a style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:toggle">
-      <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
+    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="element:attribute:${name}:toggle">
+      <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
+        <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
+      </div>
     </a>`
   :
-    `<a style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:toggle">
-      <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
+    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="element:attribute:${name}:toggle">
+      <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
+        <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
+      </div>
     </a>`
   }
 </div>
