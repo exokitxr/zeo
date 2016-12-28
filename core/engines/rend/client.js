@@ -310,7 +310,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 `;
             const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
 <div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${mainFontSpec.fontSize}px; line-height: ${mainFontSpec.lineHeight};'>
-  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #F0F0F0; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
+  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #EEE; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${inputText}</div>
     ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
@@ -343,17 +343,23 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
   }
 </div>
 `;
-            const getWorldsPageSrc = ({worlds, selectedName, inputText, inputPlaceholder, inputValue, focus}) => `\
+            const getWorldsPageSrc = ({worlds, selectedName, inputText, inputValue, focusType}) => {
+              const renamingName = (() => {
+                const match = focusType.match(/^worlds:rename:(.+)$/);
+                return match ? match[1] : '';
+              })();
+
+              return `\
 ${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getWorldsSidebarSrc()}
     <div style="width: ${WIDTH - 500}px; clear: both;">
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local worlds</h1>
-      ${getItemsSrc(worlds, selectedName, 'world')}
+      ${getItemsSrc(worlds, selectedName, renamingName, inputText, inputValue, 'Enter new name', 'world')}
       <div style="display: flex; margin: 20px 0; float: left; clear: both; font-size: 32px; align-items: center;">
-        ${!focus ? `\
-<a style="display: flex; height: 60px; padding: 0 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="worlds:createworld">+ Create World</a>
+        ${focusType !== 'worlds:create' ? `\
+<a style="display: flex; height: 60px; padding: 0 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="worlds:create">+ Create World</a>
 `
         : `\
 <a style="display: flex; position: relative; width: ${(WIDTH - 500) / 3}px; height: 60px; background-color: #EEE; border-radius: 5px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
@@ -368,6 +374,7 @@ ${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
   </div>
 </div>
 `;
+            };
             const getWorldsButtonsSrc = selectedName => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   ${selectedName ? `\
@@ -379,7 +386,7 @@ ${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
   }
 </div>
 `;
-            const getModsPageSrc = ({mods, inputText, inputPlaceholder, inputValue, focus}) => {
+            const getModsPageSrc = ({mods, inputText, inputValue, focus}) => {
               const installedMods = mods.filter(mod => mod.installed);
               const availableMods = mods.filter(mod => !mod.installed);
 
@@ -389,35 +396,46 @@ ${getHeaderSrc('mods', '', '', true)}
   <div style="display: flex;">
     ${getModsSidebarSrc()}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
-      ${getInputSrc(inputText, inputPlaceholder, inputValue, focus, 'mods:input')}
+      ${getInputSrc(inputText, 'Search npm', inputValue, focus, 'mods:input')}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
-      ${getItemsSrc(installedMods, '', 'mod')}
+      ${getItemsSrc(installedMods, '', '', '', '', '', 'mod')}
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
-      ${getItemsSrc(availableMods, '', 'mod')}
+      ${getItemsSrc(availableMods, '', '', '', '', '', 'mod')}
     </div>
   </div>
 </div>
 `;
             };
-            const getItemsSrc = (items, selectedName, prefix) =>
+            const getItemsSrc = (items, selectedName, renamingName, inputText, inputValue, inputPlaceholder, prefix) =>
               (items.length > 0) ? `\
 <div style="width: inherit; float: left; clear: both;">
-  ${items.map(item => getItemSrc(item, selectedName, prefix)).join('\n')}
+  ${items.map(item => getItemSrc(item, selectedName, renamingName, inputText, inputValue, inputPlaceholder, prefix)).join('\n')}
 </div>
 `
               :
                 `<h2 style="font-size: 40px; color: #CCC;">Nothing here...</h2>`;
-            const getItemSrc = (item, selectedName, prefix) => {
+            const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inputPlaceholder, prefix) => {
               const {name} = item;
               const selected = name === selectedName;
               const style = selected ? 'background-color: #EEE;' : '';
+              const renaming = name === renamingName;
 
               return `\
 <a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; ${style}; text-decoration: none; overflow: hidden;" onclick="${prefix}:${name}">
   <img src="${creatureUtils.makeStaticCreature('${prefix}:' + name)}" width="100" height="100" style="image-rendering: pixelated;" />
   <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
-    <div style="font-size: 32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-    <div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${item.description}</div>
+    ${!renaming ? `\
+<div style="width: 100%; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+<div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${item.description}</div>
+`   :
+      `\
+<div style="position: relative; width: 100%; background-color: #EEE; border-radius: 5px; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+  <div>${inputText}</div>
+  ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
+  <div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>
+</div>
+`
+  }
   </div>
 </a>`;
             };
@@ -444,9 +462,9 @@ ${getHeaderSrc('preferences', '', '', true)}
   </div>
 </div>
 `;
-            const getConfigPageContentSrc = ({inputText, inputPlaceholder, inputValue, focus, sliderValue, checkboxValue}) => `\
+            const getConfigPageContentSrc = ({inputText, inputValue, focus, sliderValue, checkboxValue}) => `\
 <div style="width: ${WIDTH - (500 + 40)}px; margin: 40px 0; padding-right: 40px;">
-  ${getInputSrc(inputText, inputPlaceholder, inputValue, focus, 'config:input')}
+  ${getInputSrc(inputText, '', inputValue, focus, 'config:input')}
   ${getSliderSrc(sliderValue)}
   ${getCheckboxSrc(checkboxValue)}
 </div>
@@ -775,12 +793,12 @@ ${(cwd !== '/') ?
       name: '..',
       description: '',
     }
-  ], selectedName, 'file')}`
+  ], selectedName, '', '', '', '', 'file')}`
 :
   ''
 }
 <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
-${getItemsSrc(files, selectedName, 'file')}
+${getItemsSrc(files, selectedName, '', '', '', '', 'file')}
 <div style="display: flex; height: 50px; margin: 20px 0; float: left; clear: both; align-items: center;">
   <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 32px; color: #d9534f; text-decoration: none;" onclick="files:createdirectory">+ Directory</a>
 </div>
@@ -1107,20 +1125,17 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                   ],
                   selectedName: 'Proteus',
                   inputText: '',
-                  inputPlaceholder: '',
                   inputIndex: 0,
                   inputValue: 0,
                 };
                 const modsState = {
                   mods: _cleanMods(currentMods),
                   inputText: '',
-                  inputPlaceholder: 'Search npm',
                   inputIndex: 0,
                   inputValue: 0,
                 };
                 const configState = {
                   inputText: 'Hello, world! This is some text!',
-                  inputPlaceholder: '',
                   inputIndex: 0,
                   inputValue: 0,
                   sliderValue: 0.5,
@@ -1634,7 +1649,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                     const {selectedKeyPath: oldElementsSelectedKeyPath} = elementsState;
                     const {selectedName: oldFilesSelectedName} = filesState;
 
-                    focusState.type = null;
+                    focusState.type = '';
                     worldsState.selectedName = '';
                     filesState.selectedName = '';
 
@@ -1648,10 +1663,10 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                     } else if (onclick === 'worlds') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({worlds: {worlds, selectedName, inputText, inputPlaceholder, inputValue}, focus: {type: focusType}}) => ([
+                      ui.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getWorldsPageSrc({worlds, selectedName, inputText, inputPlaceholder, inputValue, focus: focusType === 'worlds'}),
+                          src: getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
                         },
                         {
                           type: 'image',
@@ -1676,7 +1691,14 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
 
                       _updatePages();
                     } else if (onclick === 'worlds:rename') {
-                      console.log('rename world', {oldWorldsSelectedName}); // XXX
+                      if (oldWorldsSelectedName) {
+                        worldsState.inputText = '';
+                        worldsState.inputValue = 0;
+
+                        focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
+
+                        _updatePages();
+                      }
                     } else if (onclick === 'worlds:remove') {
                       if (oldWorldsSelectedName) {
                         const {worlds} = worldsState;
@@ -1684,11 +1706,11 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
 
                         _updatePages();
                       }
-                    } else if (onclick === 'worlds:createworld') {
+                    } else if (onclick === 'worlds:create') {
                       worldsState.inputText = '';
                       worldsState.inputValue = 0;
                       
-                      focusState.type = 'worlds';
+                      focusState.type = 'worlds:create';
 
                       _updatePages();
                     } else if (onclick === 'mods') {
@@ -1696,10 +1718,10 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
 
                       const mods = currentMods;
 
-                      ui.pushPage(({mods: {inputText, inputPlaceholder, inputValue, mods}, focus: {type: focusType}}) => ([
+                      ui.pushPage(({mods: {inputText, inputValue, mods}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getModsPageSrc({mods, inputText, inputPlaceholder, inputValue, focus: focusType === 'mods'}),
+                          src: getModsPageSrc({mods, inputText, inputValue, focus: focusType === 'mods'}),
                         },
                         {
                           type: 'image',
@@ -1776,14 +1798,14 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                     } else if (onclick === 'config') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({config: {inputText, inputPlaceholder, inputValue, sliderValue, checkboxValue}, focus: {type: focusType}}) => ([
+                      ui.pushPage(({config: {inputText, inputValue, sliderValue, checkboxValue}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
                           src: getConfigPageSrc(),
                         },
                         {
                           type: 'html',
-                          src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, focus: focusType === 'config', sliderValue, checkboxValue}),
+                          src: getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, checkboxValue}),
                           x: 500,
                           y: 150 + 2,
                           w: WIDTH - 500,
@@ -2336,7 +2358,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
 
                     change = true;
                   } else if (e.keyCode === 13) { // enter
-                    focusState.type = null;
+                    focusState.type = '';
 
                     commit = true;
                   } else if (e.keyCode === 8) { // backspace
@@ -2379,7 +2401,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                   }
                 };
                 const keydown = e => {
-                  const type = focusState.type || '';
+                  const {type} = focusState;
 
                   let match;
                   if (type === 'worlds') {
@@ -2397,7 +2419,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                             description: '',
                           });
 
-                          focusState.type = null;
+                          focusState.type = '';
                         }
                       }
 
