@@ -344,9 +344,19 @@ ${getHeaderSrc('worlds', '', '', true)}
     <div style="width: ${WIDTH - 500}px; clear: both;">
       <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local worlds</h1>
       ${getItemsSrc(worlds, selectedName, 'world')}
-      <div style="display: flex; height: 50px; margin: 20px 0; float: left; clear: both; align-items: center;">
-        <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 32px; color: #d9534f; text-decoration: none;" onclick="worlds:createworld">Create World</a>
-      </div>
+      <div style="display: flex; margin: 20px 0; float: left; clear: both; font-size: 32px; align-items: center;">
+        ${!focus ? `\
+<a style="display: flex; height: 60px; padding: 0 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="worlds:createworld">+ Create World</a>
+`
+        : `\
+<a style="display: flex; position: relative; width: ${(WIDTH - 500) / 3}px; height: 60px; background-color: #EEE; border-radius: 5px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
+  <div style="position: absolute; width: 2px; top: 0; bottom: 12px; left: ${inputValue}px; background-color: #333;"></div>
+  <div>${inputText}</div>
+  ${!inputText ? `<div style="color: #CCC;">Enter world name</div>` : ''}
+</a>
+`
+      }
+    </div>
     </div>
   </div>
 </div>
@@ -1644,6 +1654,13 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                       const name = match[1];
 
                       worldsState.selectedName = name;
+
+                      _updatePages();
+                    } else if (onclick === 'worlds:createworld') {
+                      worldsState.inputText = '';
+                      worldsState.inputValue = 0;
+                      
+                      focusState.type = 'worlds';
 
                       _updatePages();
                     } else if (onclick === 'mods') {
