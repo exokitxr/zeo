@@ -336,7 +336,22 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
   }
 </div>
 `;
-            const getModsPageSrc = ({inputText, inputPlaceholder, inputValue, focus, mods}) => {
+            const getWorldsPageSrc = ({worlds, selectedName, inputText, inputPlaceholder, inputValue, focus}) => `\
+${getHeaderSrc('worlds', '', '', true)}
+<div style="height: ${HEIGHT - (150 + 2)}px;">
+  <div style="display: flex;">
+    ${getWorldsSidebarSrc()}
+    <div style="width: ${WIDTH - 500}px; clear: both;">
+      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local worlds</h1>
+      ${getItemsSrc(worlds, selectedName, 'world')}
+      <div style="display: flex; height: 50px; margin: 20px 0; float: left; clear: both; align-items: center;">
+        <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 32px; color: #d9534f; text-decoration: none;" onclick="worlds:createworld">Create World</a>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+            const getModsPageSrc = ({mods, inputText, inputPlaceholder, inputValue, focus}) => {
               const installedMods = mods.filter(mod => mod.installed);
               const availableMods = mods.filter(mod => !mod.installed);
 
@@ -783,17 +798,23 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
 `;
             const getMainSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>World</p></a>
+  <a style="text-decoration: none;" onclick="worlds"><p>World</p></a>
   <a style="text-decoration: none;" onclick="mods"><p>Mods</p></a>
   <a style="text-decoration: none;" onclick="elements"><p>Elements</p></a>
   <a style="text-decoration: none;" onclick="files"><p>Filesystem</p></a>
   <a style="text-decoration: none;" onclick="config"><p>Preferences</p></a>
 </div>`;
+            const getWorldsSidebarSrc = () => `\
+<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
+  <a style="text-decoration: none;" onclick="blank"><p>Create world</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Modify world</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Remove world</p></a>
+</div>`;
             const getModsSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
   <a style="text-decoration: none;" onclick="blank"><p>Installed mod</p></a>
   <a style="text-decoration: none;" onclick="blank"><p>Available mods</p></a>
-  <a style="text-decoration: none;"  onclick="blank"><p>Search mods</p></a>
+  <a style="text-decoration: none;" onclick="blank"><p>Search mods</p></a>
 </div>`;
             const getModSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
@@ -1041,12 +1062,33 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                 const focusState = {
                   type: null,
                 };
+                const worldsState = {
+                  worlds: [
+                    {
+                      name: 'Proteus',
+                      description: 'The default zeo.sh world',
+                    },
+                    {
+                      name: 'Midgar',
+                      description: 'Alternate zeo.sh world',
+                    },
+                    {
+                      name: 'Mako Reactor',
+                      description: 'Taken from Final Fantasy VII. Straight copy.',
+                    },
+                  ],
+                  selectedName: 'Proteus',
+                  inputText: '',
+                  inputPlaceholder: '',
+                  inputIndex: 0,
+                  inputValue: 0,
+                };
                 const modsState = {
+                  mods: _cleanMods(currentMods),
                   inputText: '',
                   inputPlaceholder: 'Search npm',
                   inputIndex: 0,
                   inputValue: 0,
-                  mods: _cleanMods(currentMods),
                 };
                 const configState = {
                   inputText: 'Hello, world! This is some text!',
@@ -1520,17 +1562,22 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                         },
                         stats: statsState,
                       });
+                    } else if (type === 'worlds') {
+                      page.update({
+                        worlds: worldsState,
+                        focus: focusState,
+                      });
+                    } else if (type === 'mods') {
+                      page.update({
+                        mods: modsState,
+                        focus: focusState,
+                      });
                     } else if (match = type.match(/^mod:(.+)$/)) {
                       const name = match[1];
                       const mods = currentMods;
                       const mod = mods.find(m => m.name === name);
 
                       page.update({mod});
-                    } else if (type === 'mods') {
-                      page.update({
-                        mods: modsState,
-                        focus: focusState,
-                      });
                     } else if (type === 'elements') {
                       page.update({
                         elements: elementsState,
@@ -1559,6 +1606,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                     const {selectedName: oldSelectedName} = filesState;
 
                     focusState.type = null;
+                    worldsState.selectedName = '';
                     filesState.selectedName = '';
 
                     let match;
@@ -1568,6 +1616,36 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                       if (ui.getPages().length > 1) {
                         ui.popPage();
                       }
+                    } else if (onclick === 'worlds') {
+                      ui.cancelTransition();
+
+                      ui.pushPage(({worlds: {worlds, selectedName, inputText, inputPlaceholder, inputValue}, focus: {type: focusType}}) => ([
+                        {
+                          type: 'html',
+                          src: getWorldsPageSrc({worlds, selectedName, inputText, inputPlaceholder, inputValue, focus: focusType === 'worlds'}),
+                        },
+                        {
+                          type: 'image',
+                          img: creatureUtils.makeAnimatedCreature('worlds'),
+                          x: 150,
+                          y: 0,
+                          w: 150,
+                          h: 150,
+                          frameTime: 300,
+                        }
+                      ]), {
+                        type: 'worlds',
+                        state: {
+                          worlds: worldsState,
+                          focus: focusState,
+                        },
+                      });
+                    } else if (match = onclick.match(/^world:(.+)$/)) {
+                      const name = match[1];
+
+                      worldsState.selectedName = name;
+
+                      _updatePages();
                     } else if (onclick === 'mods') {
                       ui.cancelTransition();
 
@@ -1576,7 +1654,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                       ui.pushPage(({mods: {inputText, inputPlaceholder, inputValue, mods}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getModsPageSrc({inputText, inputPlaceholder, inputValue, focus: focusType === 'mods', mods}),
+                          src: getModsPageSrc({mods, inputText, inputPlaceholder, inputValue, focus: focusType === 'mods'}),
                         },
                         {
                           type: 'image',
