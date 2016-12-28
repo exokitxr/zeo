@@ -320,17 +320,17 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 </div>
 `;
            const getCheckboxSrc = checkboxValue => `\
-<div style="display: flex; width: ${WIDTH - (500 + 40)}px; height: 100px; justify-content: flex-end; align-items: center;">
+<div style="display: flex; width: ${WIDTH - (500 + 40)}px; height: 100px; align-items: center;">
   ${checkboxValue ?
-    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="config:stats">
-      <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
-        <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
+    `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="config:stats">
+      <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
+        <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #333;"></div>
       </div>
     </a>`
   :
-    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="config:stats">
-      <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
-        <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
+    `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="config:stats">
+      <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
+        <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #CCC;"></div>
       </div>
     </a>`
   }
