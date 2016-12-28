@@ -1979,15 +1979,23 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                       if (!checkboxValue) {
                         const width = 0.0005;
                         const height = width * (48 / 80);
-                        const depth = -0.1;
+                        const depth = -0.001;
 
                         stats = new Stats();
                         stats.render = (() => {
                           let lastRenderTime = -Infinity;
 
-                          return () => {
-                            statsMesh.position.copy(new THREE.Vector3(-1, 1, depth).unproject(camera));
-                            statsMesh.quaternion.copy(camera.quaternion);
+                          return camera => {
+                            if (!camera.side || camera.side === 'left') {
+                              statsMesh.position.copy(new THREE.Vector3(-1, 1, depth).unproject(camera));
+                              const position = new THREE.Vector3();
+                              const rotation = new THREE.Quaternion();
+                              const scale = new THREE.Vector3();
+                              camera.matrixWorld.decompose(position, rotation, scale);
+                              statsMesh.quaternion.copy(rotation);
+                              statsMesh.updateMatrix();
+                              statsMesh.updateMatrixWorld();
+                            }
 
                             const now = Date.now();
                             const timeDiff = now - lastRenderTime;
@@ -2563,7 +2571,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
               }
 
               if (stats) {
-                stats.render();
+                stats.render(camera);
               }
             };
             const _updateEye = camera => {
@@ -2571,6 +2579,10 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                 const updateEye = updateEyes[i];
                 updateEye(camera);
               }
+
+              /* if (stats) {
+                stats.render(camera);
+              } */
             };
             const _updateStart = () => {
               if (stats) {
