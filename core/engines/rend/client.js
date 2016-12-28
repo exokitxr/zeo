@@ -78,8 +78,8 @@ class Rend {
           });
         });
 
-        let stats = null;
-        let statsMesh = null;
+        const stats = new Stats();
+        stats.render = () => {}; // overridden below
 
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
@@ -1056,6 +1056,9 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                   sliderValue: 0.5,
                   checkboxValue: false,
                 };
+                const statsState = {
+                  frame: 0,
+                };
                 const elementsState = {
                   elements: [
                     {
@@ -1300,6 +1303,38 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                   return {index, px};
                 };
 
+                ui.pushPage(({config: {checkboxValue}, stats: {frame}}) => {
+                  const img = (() => {
+                    if (checkboxValue) {
+                      const statsImg = stats.dom.childNodes[0];
+                      statsImg.needsUpdate = true;
+                      return statsImg;
+                    } else {
+                      return transparentImg;
+                    }
+                  })();
+
+                  return [
+                    {
+                      type: 'image',
+                      img,
+                      x: 0,
+                      y: HEIGHT - (500 * (48 / 80)),
+                      w: 500,
+                      h: 500 * (48 / 80),
+                    },
+                  ];
+                }, {
+                  type: 'stats',
+                  state: {
+                    config: {
+                      checkboxValue: configState.checkboxValue,
+                    },
+                    stats: statsState,
+                  },
+                  immediate: true,
+                });
+
                 ui.pushPage([
                   {
                     type: 'html',
@@ -1325,6 +1360,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                   }
                 ], {
                   type: 'main',
+                  immediate: true,
                 });
 
                 const solidMaterial = new THREE.MeshBasicMaterial({
@@ -1458,6 +1494,18 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                 })();
                 scene.add(dotMesh);
 
+                stats.render = (() => {
+                  return () => {
+                    const {frame: oldFrame} = statsState;
+                    const newFrame = Math.floor(Date.now() / STATS_REFRESH_RATE);
+                    if (newFrame !== oldFrame) {
+                      statsState.frame = newFrame;
+
+                      _updatePages();
+                    }
+                  };
+                })();
+
                 const _updatePages = () => {
                   const pages = ui.getPages();
                   for (let i = 0; i < pages.length; i++) {
@@ -1465,7 +1513,14 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                     const {type} = page;
 
                     let match;
-                    if (match = type.match(/^mod:(.+)$/)) {
+                    if (type === 'stats') {
+                      page.update({
+                        config: {
+                          checkboxValue: configState.checkboxValue,
+                        },
+                        stats: statsState,
+                      });
+                    } else if (match = type.match(/^mod:(.+)$/)) {
                       const name = match[1];
                       const mods = currentMods;
                       const mod = mods.find(m => m.name === name);
@@ -1516,33 +1571,29 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                     } else if (onclick === 'mods') {
                       ui.cancelTransition();
 
-                      if (ui.getPages().length < 3) {
-                        const mods = currentMods;
+                      const mods = currentMods;
 
-                        ui.pushPage(({mods: {inputText, inputPlaceholder, inputValue, mods}, focus: {type: focusType}}) => ([
-                          {
-                            type: 'html',
-                            src: getModsPageSrc({inputText, inputPlaceholder, inputValue, focus: focusType === 'mods', mods}),
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('mods'),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
-                          }
-                        ]), {
-                          type: 'mods',
-                          state: {
-                            mods: modsState,
-                            focus: focusState,
-                          },
-                        });
-                      } else {
-                        ui.popPage();
-                      }
+                      ui.pushPage(({mods: {inputText, inputPlaceholder, inputValue, mods}, focus: {type: focusType}}) => ([
+                        {
+                          type: 'html',
+                          src: getModsPageSrc({inputText, inputPlaceholder, inputValue, focus: focusType === 'mods', mods}),
+                        },
+                        {
+                          type: 'image',
+                          img: creatureUtils.makeAnimatedCreature('mods'),
+                          x: 150,
+                          y: 0,
+                          w: 150,
+                          h: 150,
+                          frameTime: 300,
+                        }
+                      ]), {
+                        type: 'mods',
+                        state: {
+                          mods: modsState,
+                          focus: focusState,
+                        },
+                      });
                     } else if (match = onclick.match(/^mod:(.+)$/)) {
                       const name = match[1];
                       const mods = currentMods;
@@ -1550,39 +1601,35 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
 
                       ui.cancelTransition();
 
-                      if (ui.getPages().length < 3) {
-                        ui.pushPage(({mod: {name, version, installed, readme}}) => ([
-                          {
-                            type: 'html',
-                            src: getModPageSrc({name, version, installed}),
-                          },
-                          {
-                            type: 'html',
-                            src: getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
-                            x: 500,
-                            y: 150 + 2,
-                            w: WIDTH - 500,
-                            h: HEIGHT - (150 + 2),
-                            scroll: true,
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('mod:' + name),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
-                          }
-                        ]), {
-                          type: 'mod:' + name,
-                          state: {
-                            mod,
-                          },
-                        });
-                      } else {
-                        ui.popPage();
-                      }
+                      ui.pushPage(({mod: {name, version, installed, readme}}) => ([
+                        {
+                          type: 'html',
+                          src: getModPageSrc({name, version, installed}),
+                        },
+                        {
+                          type: 'html',
+                          src: getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
+                          x: 500,
+                          y: 150 + 2,
+                          w: WIDTH - 500,
+                          h: HEIGHT - (150 + 2),
+                          scroll: true,
+                        },
+                        {
+                          type: 'image',
+                          img: creatureUtils.makeAnimatedCreature('mod:' + name),
+                          x: 150,
+                          y: 0,
+                          w: 150,
+                          h: 150,
+                          frameTime: 300,
+                        }
+                      ]), {
+                        type: 'mod:' + name,
+                        state: {
+                          mod,
+                        },
+                      });
                     } else if (match = onclick.match(/^getmod:(.+)$/)) {
                       const name = match[1];
 
@@ -1981,62 +2028,8 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                         const height = width * (48 / 80);
                         const depth = -0.001;
 
-                        stats = new Stats();
-                        stats.render = (() => {
-                          let lastRenderTime = -Infinity;
-
-                          return camera => {
-                            if (!camera.side || camera.side === 'left') {
-                              statsMesh.position.copy(new THREE.Vector3(-1, 1, depth).unproject(camera));
-                              const position = new THREE.Vector3();
-                              const rotation = new THREE.Quaternion();
-                              const scale = new THREE.Vector3();
-                              camera.matrixWorld.decompose(position, rotation, scale);
-                              statsMesh.quaternion.copy(rotation);
-                              statsMesh.updateMatrix();
-                              statsMesh.updateMatrixWorld();
-                            }
-
-                            const now = Date.now();
-                            const timeDiff = now - lastRenderTime;
-                            if (timeDiff >= STATS_REFRESH_RATE) {
-                              statsMesh.material.map.needsUpdate = true;
-
-                              lastRenderTime = now;
-                            }
-                          };
-                        })();
-                        statsMesh = (() => {
-                          const geometry = new THREE.PlaneBufferGeometry(width, height);
-                          geometry.applyMatrix(new THREE.Matrix4().makeTranslation(width / 2, -(height / 2), 0));
-                          const material = (() => {
-                            const texture = new THREE.Texture(
-                              stats.dom.childNodes[0],
-                              THREE.UVMapping,
-                              THREE.ClampToEdgeWrapping,
-                              THREE.ClampToEdgeWrapping,
-                              THREE.NearestFilter,
-                              THREE.NearestFilter,
-                              THREE.RGBFormat,
-                              THREE.UnsignedByteType,
-                              16
-                            );
-                            texture.needsUpdate = true;
-                            return new THREE.MeshBasicMaterial({
-                              map: texture,
-                            });
-                          })();
-                          return new THREE.Mesh(geometry, material);
-                        })();
-                        scene.add(statsMesh);
-
                         configState.checkboxValue = true;
                       } else {
-                        scene.remove(statsMesh);
-
-                        stats = null;
-                        statsMesh = null;
-
                         configState.checkboxValue = false;
                       }
 
@@ -2414,6 +2407,12 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                         if (textures.value[i].image !== layer.img) {
                           textures.value[i].image = layer.img;
                           textures.value[i].needsUpdate = true;
+
+                          layer.img.needsUpdate = false;
+                        } else if (layer.img.needsUpdate) {
+                          textures.value[i].needsUpdate = true;
+
+                          layer.img.needsUpdate = false;
                         }
 
                         const position = layer.getPosition();
@@ -2570,29 +2569,19 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                 update();
               }
 
-              if (stats) {
-                stats.render(camera);
-              }
+              stats.render();
             };
             const _updateEye = camera => {
               for (let i = 0; i < updateEyes.length; i++) {
                 const updateEye = updateEyes[i];
                 updateEye(camera);
               }
-
-              /* if (stats) {
-                stats.render(camera);
-              } */
             };
             const _updateStart = () => {
-              if (stats) {
-                stats.begin();
-              }
+              stats.begin();
             };
             const _updateEnd = () => {
-              if (stats) {
-                stats.end();
-              }
+              stats.end();
             };
 
             return {
