@@ -54,7 +54,7 @@ class WebVR {
         const {THREE, scene, camera, renderer} = three;
         const {domElement} = renderer;
 
-        VREffect(THREE);
+        const THREEVREffect = VREffect(THREE);
 
         class WebvrInstance extends EventEmitter {
           constructor() {
@@ -111,7 +111,7 @@ class WebVR {
                   if (display && stereoscopic) {
                     const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
                     navigator.getVRDisplays = null;
-                    effect = new THREE.VREffect(renderer);
+                    effect = new THREEVREffect(renderer);
                     navigator.getVRDisplays = getVRDisplays;
 
                     effect.setVRDisplay(display);

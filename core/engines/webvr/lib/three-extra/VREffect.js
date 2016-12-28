@@ -11,7 +11,7 @@ module.exports = THREE => {
  *
  */
 
-THREE.VREffect = function ( renderer, onError ) {
+return function THREEVREffect( renderer, onError ) {
 
 	var vrDisplay, vrDisplays;
 	var eyeTranslationL = new THREE.Vector3();
