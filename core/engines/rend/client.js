@@ -1819,16 +1819,20 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
 
                       _updatePages();
                     } else if (onclick === 'files:remove') {
-                      const {selectedName} = filesState;
-
-                      if (selectedName) {
+                      if (oldSelectedName) {
                         filesState.uploading = true;
 
                         const {cwd} = filesState;
-                        fs.remove(_pathJoin(cwd, selectedName))
+                        const p = _pathJoin(cwd, oldSelectedName);
+                        fs.remove(p)
                           .then(() => fs.getDirectory(cwd)
                             .then(files => {
                               filesState.files = _getFilesSpecs(files);
+                              const {clipboardPath} = filesState;
+                              if (clipboardPath === p) {
+                                filesState.clipboardType = null;
+                                filesState.clipboardPath = '';
+                              }
                               filesState.uploading = false;
 
                               _updatePages();
