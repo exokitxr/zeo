@@ -176,6 +176,78 @@ class Rain {
 
         return {
           update: _update,
+          elements: [
+            {
+              tag: 'rain',
+              attributes: {
+                position: {
+                  type: 'position',
+                  value: [0, 0, 0],
+                },
+                type: {
+                  type: 'select',
+                  value: 'rain',
+                  options: [
+                    'rain',
+                    'snow',
+                    'firefly',
+                  ],
+                },
+                drops: {
+                  type: 'number',
+                  value: 250,
+                  min: 1,
+                  max: 1000,
+                },
+                color: {
+                  type: 'color',
+                  value: '#3e5eb8',
+                },
+                enabled: {
+                  type: 'checkbox',
+                  value: true,
+                },
+              },
+            },
+            {
+              tag: 'rain:box',
+              attributes: {
+                position: {
+                  type: 'position',
+                  value: [0, 0, 0],
+                },
+                color: {
+                  type: 'color',
+                  value: '#CCC',
+                },
+                opacity: {
+                  type: 'number',
+                  value: 0.1,
+                  min: 0,
+                  max: 1,
+                },
+                enabled: {
+                  type: 'checkbox',
+                  value: true,
+                },
+              },
+            },
+          ],
+          templates: [
+            {
+              tag: 'rain',
+              attributes: {},
+              children: [
+                {
+                  tag: 'rain:box',
+                  attributes: {
+                    position: [0, 1.5, 0],
+                  },
+                  children: [],
+                },
+              ],
+            },
+          ],
         };
       }
     });
