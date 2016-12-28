@@ -10,6 +10,7 @@
     "multimutex": "0.0.1",
     "pretty-bytes": "^4.0.2",
     "showdown": "^1.5.1",
+    "stats.js": "^0.17.0",
     "whatkey": "^1.0.5"
   }
 }

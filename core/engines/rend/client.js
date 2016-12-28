@@ -1,3 +1,4 @@
+import Stats from 'stats.js';
 import whatkey from 'whatkey';
 import prettyBytes from 'pretty-bytes';
 
@@ -74,6 +75,9 @@ class Rend {
             world.destroy();
           });
         });
+
+        let stats = null;
+        let statsMesh = null;
 
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
@@ -305,12 +309,29 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 </div>
 `;
             const getSliderSrc = sliderValue => `\
-<div style="position: relative; width ${WIDTH - (500 + 40)}px; height: 100px;">
+<div style="position: relative; width: ${WIDTH - (500 + 40)}px; height: 100px;">
   <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="config:resolution">
     <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
       <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
     </div>
   </a>
+</div>
+`;
+           const getCheckboxSrc = checkboxValue => `\
+<div style="display: flex; width: ${WIDTH - (500 + 40)}px; height: 100px; justify-content: flex-end; align-items: center;">
+  ${checkboxValue ?
+    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="config:stats">
+      <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
+        <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
+      </div>
+    </a>`
+  :
+    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="config:stats">
+      <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
+        <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
+      </div>
+    </a>`
+  }
 </div>
 `;
             const getModsPageSrc = ({inputText, inputPlaceholder, inputValue, focus, mods}) => {
@@ -378,10 +399,11 @@ ${getHeaderSrc('preferences', '', '', true)}
   </div>
 </div>
 `;
-            const getConfigPageContentSrc = ({inputText, inputPlaceholder, inputValue, focus, sliderValue}) => `\
+            const getConfigPageContentSrc = ({inputText, inputPlaceholder, inputValue, focus, sliderValue, checkboxValue}) => `\
 <div style="width: ${WIDTH - (500 + 40)}px; margin: 40px 0; padding-right: 40px;">
   ${getInputSrc(inputText, inputPlaceholder, inputValue, focus, 'config:input')}
   ${getSliderSrc(sliderValue)}
+  ${getCheckboxSrc(checkboxValue)}
 </div>
 `;
             const getElementsPageSrc = () => `\
@@ -1030,6 +1052,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                   inputIndex: 0,
                   inputValue: 0,
                   sliderValue: 0.5,
+                  checkboxValue: false,
                 };
                 const elementsState = {
                   elements: [
@@ -1948,6 +1971,44 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                       configState.sliderValue = value;
 
                       _updatePages();
+                    } else if (onclick === 'config:stats') {
+                      const {checkboxValue} = configState;
+
+                      if (!checkboxValue) {
+                        stats = new Stats();
+                        statsMesh = (() => {
+                          const geometry = new THREE.PlaneBufferGeometry(0.01 * 80, 0.01 * 48);
+                          const material = (() => {
+                            const texture = new THREE.Texture(
+                              stats.dom.childNodes[0],
+                              THREE.UVMapping,
+                              THREE.ClampToEdgeWrapping,
+                              THREE.ClampToEdgeWrapping,
+                              THREE.NearestFilter,
+                              THREE.NearestFilter,
+                              THREE.RGBFormat,
+                              THREE.UnsignedByteType,
+                              16
+                            );
+                            return new THREE.MeshBasicMaterial({
+                              map: texture,
+                            });
+                          })();
+                          return new THREE.Mesh(geometry, material);
+                        })();
+                        scene.add(statsMesh);
+
+                        configState.checkboxValue = true;
+                      } else {
+                        scene.remove(statsMesh);
+
+                        stats = null;
+                        statsMesh = null;
+
+                        configState.checkboxValue = false;
+                      }
+
+                      _updatePages();
                     } else {
                       _updatePages();
                     }
@@ -2472,9 +2533,18 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
         return _initialize()
           .then(() => {
             const _update = () => {
+              if (stats) { // XXX
+                stats.begin();
+              }
+
               for (let i = 0; i < updates.length; i++) {
                 const update = updates[i];
                 update();
+              }
+
+              if (stats) {
+                stats.end();
+                statsMesh.material.map.needsUpdate = true;
               }
             };
             const _updateEye = camera => {
