@@ -2016,7 +2016,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                             filesState.uploading = true;
 
                             _updatePages();
-                          })
+                          });
 
                         _updatePages();
                       }
@@ -2443,6 +2443,8 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                         if (!worlds.some(world => world.name === newName && world.name !== oldName)) {
                           const world = worlds.find(world => world.name === oldName);
                           world.name = newName;
+
+                          worldsState.selectedName = newName;
                         }
                       }
 
@@ -2515,9 +2517,29 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                         const oldName = match[1];
                         const newName = inputText;
 
-                        if (!files.some(file => file.name === newName && file.name !== oldName)) { // XXX do an actual backend rename
-                          const file = files.find(file => file.name === oldName);
-                          file.name = newName;
+                        if (!files.some(file => file.name === newName && file.name !== oldName)) {
+                          filesState.uploading = true;
+
+                          const {cwd} = filesState;
+                          const src = _pathJoin(cwd, oldName);
+                          const dst = _pathJoin(cwd, newName);
+                          fs.move(src, dst)
+                            .then(() => fs.getDirectory(cwd)
+                              .then(files => {
+                                filesState.files = _getFilesSpecs(files);
+                                filesState.selectedName = newName;
+                                filesState.uploading = false;
+
+                                _updatePages();
+                              })
+                            )
+                            .catch(err => {
+                              console.warn(err);
+
+                              filesState.uploading = true;
+
+                              _updatePages();
+                            });
                         }
                       }
 
