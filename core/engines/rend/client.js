@@ -1977,11 +1977,18 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                       const {checkboxValue} = configState;
 
                       if (!checkboxValue) {
+                        const width = 0.0005;
+                        const height = width * (48 / 80);
+                        const depth = -0.1;
+
                         stats = new Stats();
                         stats.render = (() => {
-                          let lastRenderTime = Date.now();
+                          let lastRenderTime = -Infinity;
 
                           return () => {
+                            statsMesh.position.copy(new THREE.Vector3(-1, 1, depth).unproject(camera));
+                            statsMesh.quaternion.copy(camera.quaternion);
+
                             const now = Date.now();
                             const timeDiff = now - lastRenderTime;
                             if (timeDiff >= STATS_REFRESH_RATE) {
@@ -1992,7 +1999,8 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                           };
                         })();
                         statsMesh = (() => {
-                          const geometry = new THREE.PlaneBufferGeometry(0.01 * 80, 0.01 * 48);
+                          const geometry = new THREE.PlaneBufferGeometry(width, height);
+                          geometry.applyMatrix(new THREE.Matrix4().makeTranslation(width / 2, -(height / 2), 0));
                           const material = (() => {
                             const texture = new THREE.Texture(
                               stats.dom.childNodes[0],
@@ -2553,6 +2561,10 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                 const update = updates[i];
                 update();
               }
+
+              if (stats) {
+                stats.render();
+              }
             };
             const _updateEye = camera => {
               for (let i = 0; i < updateEyes.length; i++) {
@@ -2568,8 +2580,6 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
             const _updateEnd = () => {
               if (stats) {
                 stats.end();
-
-                stats.render();
               }
             };
 
