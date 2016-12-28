@@ -11,6 +11,8 @@ const WORLD_WIDTH = MENU_SIZE;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 const WORLD_DEPTH = MENU_SIZE / 50;
 
+const STATS_REFRESH_RATE = 1000;
+
 class Rend {
   constructor(archae) {
     this._archae = archae;
@@ -1604,14 +1606,14 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                     } else if (onclick === 'config') {
                       ui.cancelTransition();
 
-                      ui.pushPage(({config: {inputText, inputPlaceholder, inputValue, sliderValue}, focus: {type: focusType}}) => ([
+                      ui.pushPage(({config: {inputText, inputPlaceholder, inputValue, sliderValue, checkboxValue}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
                           src: getConfigPageSrc(),
                         },
                         {
                           type: 'html',
-                          src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, focus: focusType === 'config', sliderValue}),
+                          src: getConfigPageContentSrc({inputText, inputPlaceholder, inputValue, focus: focusType === 'config', sliderValue, checkboxValue}),
                           x: 500,
                           y: 150 + 2,
                           w: WIDTH - 500,
@@ -1976,6 +1978,19 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
 
                       if (!checkboxValue) {
                         stats = new Stats();
+                        stats.render = (() => {
+                          let lastRenderTime = Date.now();
+
+                          return () => {
+                            const now = Date.now();
+                            const timeDiff = now - lastRenderTime;
+                            if (timeDiff >= STATS_REFRESH_RATE) {
+                              statsMesh.material.map.needsUpdate = true;
+
+                              lastRenderTime = now;
+                            }
+                          };
+                        })();
                         statsMesh = (() => {
                           const geometry = new THREE.PlaneBufferGeometry(0.01 * 80, 0.01 * 48);
                           const material = (() => {
@@ -1990,6 +2005,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                               THREE.UnsignedByteType,
                               16
                             );
+                            texture.needsUpdate = true;
                             return new THREE.MeshBasicMaterial({
                               map: texture,
                             });
@@ -2533,18 +2549,9 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
         return _initialize()
           .then(() => {
             const _update = () => {
-              if (stats) { // XXX
-                stats.begin();
-              }
-
               for (let i = 0; i < updates.length; i++) {
                 const update = updates[i];
                 update();
-              }
-
-              if (stats) {
-                stats.end();
-                statsMesh.material.map.needsUpdate = true;
               }
             };
             const _updateEye = camera => {
@@ -2552,12 +2559,26 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                 const updateEye = updateEyes[i];
                 updateEye(camera);
               }
-            }
+            };
+            const _updateStart = () => {
+              if (stats) {
+                stats.begin();
+              }
+            };
+            const _updateEnd = () => {
+              if (stats) {
+                stats.end();
+
+                stats.render();
+              }
+            };
 
             return {
               getCurrentWorld: _getCurrentWorld,
               update: _update,
               updateEye: _updateEye,
+              updateStart: _updateStart,
+              updateEnd: _updateEnd,
             };
           });
       }

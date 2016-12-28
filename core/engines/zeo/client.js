@@ -58,6 +58,12 @@ class Zeo {
         const _updateEye = camera => {
           rend.updateEye(camera);
         };
+        const _updateStart = () => {
+          rend.updateStart();
+        };
+        const _updateEnd = () => {
+          rend.updateEnd();
+        };
 
         const _enterNormal = () => {
           _stopRenderLoop();
@@ -65,6 +71,8 @@ class Zeo {
           renderLoop = webvr.requestRenderLoop({
             update: _update,
             updateEye: _updateEye,
+            updateStart: _updateStart,
+            updateEnd: _updateEnd,
           });
 
           return renderLoop;
@@ -80,6 +88,8 @@ class Zeo {
             stereoscopic,
             update: _update,
             updateEye: _updateEye,
+            updateStart: _updateStart,
+            updateEnd: _updateEnd,
             onExit: _onExit,
           });
 

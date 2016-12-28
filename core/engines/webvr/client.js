@@ -85,7 +85,7 @@ class WebVR {
             };
           }
 
-          requestRenderLoop({display = null, stereoscopic = false, update = () => {}, updateEye = () => {}}) {
+          requestRenderLoop({display = null, stereoscopic = false, update = () => {}, updateEye = () => {}, updateStart = () => {}, updateEnd = () => {}}) {
             let cleanups = [];
             const _destroy = () => {
               for (let i = 0; i < cleanups.length; i++) {
@@ -150,6 +150,8 @@ class WebVR {
 
                   const _renderLoop = () => {
                     const _render = () => {
+                      updateStart(); // notify frame start
+
                       update(); // update plugins
 
                       if (effect) {
@@ -158,6 +160,8 @@ class WebVR {
                         updateEye(camera); // perform monocular eye render
                         renderer.render(scene, camera); // perform final render
                       }
+
+                      updateEnd(); // notify frame end
                     };
 
                     const _requestAnimationFrame = fn => (display && display.isPresenting) ?
@@ -214,7 +218,7 @@ class WebVR {
             return result;
           };
 
-          requestEnterVR({stereoscopic = true, update = () => {}, updateEye = () => {}, onExit = () => {}}) {
+          requestEnterVR({stereoscopic = true, update = () => {}, updateEye = () => {}, updateStart = () => {}, updateEnd = () => {}, onExit = () => {}}) {
             const _startOpening = () => {
               this.isOpening = true;
 
@@ -310,6 +314,8 @@ class WebVR {
                         stereoscopic,
                         update,
                         updateEye,
+                        updateStart,
+                        updateEnd,
                       });
 
                       cleanups.push(() => {
