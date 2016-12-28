@@ -66,10 +66,11 @@ class Rend {
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
 
+        // main state
         const worlds = new Map();
         let currentWorld = null;
-        const mods = new Map();
-        let currentMods = null;
+        const worldMods = new Map();
+        let currentWorldMods = null;
         let currentMainReadme = null;
 
         cleanups.push(() => {
@@ -87,7 +88,7 @@ class Rend {
 
           if (world) {
             currentWorld = world;
-            currentMods = mods.get(worldName);
+            currentWorldMods = worldMods.get(worldName);
 
             accept();
           } else {
@@ -116,8 +117,8 @@ class Rend {
               ]) => {
                 const player = heartlink.getPlayer(); // XXX make this per-world
 
-                // plugin managemnent
-                const plugins = new Map();
+                // mods management
+                const modApis = new Map();
 
                 const startTime = Date.now();
                 let worldTime = 0;
@@ -133,18 +134,18 @@ class Rend {
                   const now = Date.now();
                   worldTime = now - startTime;
 
-                  // update plugins
-                  plugins.forEach(plugin => {
-                    if (typeof plugin.update === 'function') {
-                      plugin.update();
+                  // update mods
+                  modApis.forEach(modApi => {
+                    if (typeof modApi.update === 'function') {
+                      modApi.update();
                     }
                   });
                 });
                 _addUpdateEye(camera => {
-                  // update plugins per eye
-                  plugins.forEach(plugin => {
-                    if (typeof plugin.updateEye === 'function') {
-                      plugin.updateEye(camera);
+                  // update mods per eye
+                  modApis.forEach(modApi => {
+                    if (typeof modApi.updateEye === 'function') {
+                      modApi.updateEye(camera);
                     }
                   });
                 });
@@ -170,11 +171,11 @@ class Rend {
                 );
                 const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
                 const _requestMod = mod => archae.requestPlugin(mod)
-                  .then(plugin => {
-                    const pluginName = archae.getName(plugin);
-                    plugins.set(pluginName, plugin);
+                  .then(mod => {
+                    const modName = archae.getName(mod);
+                    modApis.set(modName, mod);
 
-                    return plugin;
+                    return mod;
                   });
                 const _requestMods = mods => Promise.all(mods.map(_requestMod));
                 const _requestRemoveMod = mod => fetch('/archae/rend/mods/remove', {
@@ -197,11 +198,11 @@ class Rend {
                 );
                 const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
                 const _requestReleaseMod = mod => archae.releasePlugin(mod)
-                  .then(plugin => {
-                    const pluginName = archae.getName(plugin);
-                    plugins.delete(pluginName);
+                  .then(mod => {
+                    const modName = archae.getName(mod);
+                    modApis.delete(modName);
 
-                    return plugin;
+                    return mod;
                   });
                 const _requestReleaseMods = mods => Promise.all(mods.map(_requestReleaseMod));
                 const _requestWorker = (module, options) => archae.requestWorker(module, options);
@@ -211,10 +212,26 @@ class Rend {
                   }
                 };
 
+                // load world mods
+                // XXX make menu initialization return a first-class api, break this out into a separate world mods initialization step, and use the menu api to render the load
+                // elementsState.loading = true;
                 Promise.resolve()
                   .then(() => _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/zeo/' + mod.name)))
                   .then(() => {
-                    console.log('initial mods loaded');
+                    console.log('world mods loaded');
+
+                    /* const availableElements = (() => { // XXX
+                      const result = [];
+                      modApis.forEach((modApi, modName) => {
+                        const {templates} = modApi;
+                        result.push.apply(result, _clone(templates));
+                      });
+                      return result;
+                    })();
+                    elementsState.availableElements = availableElements;
+                    elementsState.loading = false;
+
+                    _updatePages(); */
                   })
                   .catch(err => {
                     console.warn(err);
@@ -242,8 +259,8 @@ class Rend {
                 worlds.set(worldName, world);
                 currentWorld = world;
 
-                mods.set(worldName, modsStatus);
-                currentMods = modsStatus;
+                worldMods.set(worldName, modsStatus);
+                currentWorldMods = modsStatus;
 
                 currentMainReadme = mainReadme;
 
@@ -256,11 +273,11 @@ class Rend {
           /* bullet.releaseWorld(worldName)
             .then(() => {
               worlds.delete(worldName);
-              mods.delete(worldName);
+              worldMods.delete(worldName);
 
               if (currentWorld && currentWorld.name === worldName) {
                 currentWorld = null;
-                currentMods = null;
+                currentWorldMods = null;
               }
 
               accept();
@@ -505,8 +522,8 @@ ${getHeaderSrc('elements', '', '', true)}
       `\
 <span style="color: #a894a6;">\
 &lt;\
-<img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="40" height="40" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
-${element.element}&gt; properties\
+<img src="${creatureUtils.makeStaticCreature('mod:' + element.tag)}" width="40" height="40" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
+${element.tag}&gt; properties\
 </span>\
 `,
       null,
@@ -675,8 +692,8 @@ ${element.element}&gt; properties\
 ${spaces(depth)}\
 <${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">\
 &lt;\
-<img src="${creatureUtils.makeStaticCreature('mod:' + element.element)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
-${element.element}\
+<img src="${creatureUtils.makeStaticCreature('mod:' + element.tag)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
+${element.tag}\
 ${attributes(element)}\
 &gt;\
 </${tag}>\
@@ -685,7 +702,7 @@ ${attributes(element)}\
               const tail = (element, keyPath, depth) => {
                 const tag = anchorTag(keyPath);
 
-                return `<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">${spaces(depth)}&lt;/${element.element}&gt;</${tag}>`;
+                return `<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">${spaces(depth)}&lt;/${element.tag}&gt;</${tag}>`;
               };
               const anchorTag = keyPath => (draggingKeyPath.length > 0 && _isSubKeyPath(keyPath, draggingKeyPath)) ? 'span' : 'a';
               const anchorStyle = keyPath => {
@@ -918,6 +935,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
 </div>`;
 
             const _pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
+            const _clone = o => JSON.parse(JSON.stringify(o));
             const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
             const _getKeyPath = (root, keyPath) => {
               const _recurse = (root, i) => {
@@ -1151,7 +1169,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                   inputValue: 0,
                 };
                 const modsState = {
-                  mods: _cleanMods(currentMods),
+                  mods: _cleanMods(currentWorldMods),
                   inputText: '',
                   inputIndex: 0,
                   inputValue: 0,
@@ -1169,7 +1187,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                 const elementsState = {
                   elements: [
                     {
-                      element: 'archae',
+                      tag: 'archae',
                       attributes: {
                         position: {
                           type: 'position',
@@ -1210,7 +1228,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       },
                       children: [
                         {
-                          element: 'sub',
+                          tag: 'sub',
                           attributes: {
                             rotation: {
                               type: 'position',
@@ -1220,7 +1238,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                           children: [],
                         },
                         {
-                          element: 'subsub',
+                          tag: 'subsub',
                           attributes: {
                             rotation: {
                               type: 'position',
@@ -1232,7 +1250,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       ],
                     },
                     {
-                      element: 'text',
+                      tag: 'text',
                       attributes: {
                         lol: {
                           type: 'text',
@@ -1243,8 +1261,8 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                     },
                   ],
                   availableElements: [
-                    {
-                      element: 'model',
+                    /* {
+                      tag: 'model',
                       attributes: {
                         position: {
                           type: 'position',
@@ -1262,7 +1280,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       children: [],
                     },
                     {
-                      element: 'model',
+                      tag: 'model',
                       attributes: {
                         position: {
                           type: 'position',
@@ -1278,11 +1296,11 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                         },
                       },
                       children: [],
-                    },
+                    }, */
                   ],
                   clipboardElements: [
                     {
-                      element: 'model',
+                      tag: 'model',
                       attributes: {
                         position: {
                           type: 'position',
@@ -1295,7 +1313,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       },
                       children: [
                         {
-                          element: 'submodel',
+                          tag: 'submodel',
                           attributes: {
                             url: {
                               type: 'text',
@@ -1312,6 +1330,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                   inputText: '',
                   inputIndex: 0,
                   inputValue: 0,
+                  loading: false,
                 };
                 const filesState = {
                   cwd: fs.getCwd(),
@@ -1640,7 +1659,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       });
                     } else if (match = type.match(/^mod:(.+)$/)) {
                       const name = match[1];
-                      const mods = currentMods;
+                      const mods = currentWorldMods;
                       const mod = mods.find(m => m.name === name);
 
                       page.update({mod});
@@ -1741,7 +1760,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                     } else if (onclick === 'mods') {
                       ui.cancelTransition();
 
-                      const mods = currentMods;
+                      const mods = currentWorldMods;
 
                       ui.pushPage(({mods: {inputText, inputValue, mods}, focus: {type: focusType}}) => ([
                         {
@@ -1766,7 +1785,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       });
                     } else if (match = onclick.match(/^mod:(.+)$/)) {
                       const name = match[1];
-                      const mods = currentMods;
+                      const mods = currentWorldMods;
                       const mod = mods.find(m => m.name === name);
 
                       ui.cancelTransition();
@@ -2464,7 +2483,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                             console.warn(err);
                           });
                       } else {
-                        modsState.mods = _cleanMods(currentMods);
+                        modsState.mods = _cleanMods(currentWorldMods);
                       }
 
                       _updatePages();
