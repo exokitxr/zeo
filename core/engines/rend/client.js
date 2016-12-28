@@ -344,7 +344,7 @@ ${getHeaderSrc('zeo.sh', '', '', false)}
 </div>
 `;
             const getWorldsPageSrc = ({worlds, selectedName, inputText, inputPlaceholder, inputValue, focus}) => `\
-${getHeaderSrc('worlds', '', '', true)}
+${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getWorldsSidebarSrc()}
@@ -366,6 +366,17 @@ ${getHeaderSrc('worlds', '', '', true)}
     </div>
     </div>
   </div>
+</div>
+`;
+            const getWorldsButtonsSrc = selectedName => `\
+<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
+  ${selectedName ? `\
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="worlds:rename">Rename</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="worlds:remove">Remove</a>
+`
+  :
+    ''
+  }
 </div>
 `;
             const getModsPageSrc = ({mods, inputText, inputPlaceholder, inputValue, focus}) => {
@@ -778,7 +789,7 @@ ${getItemsSrc(files, selectedName, 'file')}
                 }
               })();
               return `\
-${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clipboardPath), true)}
+${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getFilesSidebarSrc()}
@@ -789,7 +800,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
 </div>
 `;
             };
-            const getCreateDirectoryButtonsSrc = (selectedName, clipboardPath) => `\
+            const getFilesButtonsSrc = (selectedName, clipboardPath) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   ${selectedName ? `\
 <a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="files:cut">Cut</a>
@@ -1619,8 +1630,9 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                   if (intersectionPoint) {
                     const {anchor} = hoverState;
                     const onclick = (anchor && anchor.onclick) || '';
-                    const {selectedKeyPath: oldSelectedKeyPath} = elementsState;
-                    const {selectedName: oldSelectedName} = filesState;
+                    const {selectedName: oldWorldsSelectedName} = worldsState;
+                    const {selectedKeyPath: oldElementsSelectedKeyPath} = elementsState;
+                    const {selectedName: oldFilesSelectedName} = filesState;
 
                     focusState.type = null;
                     worldsState.selectedName = '';
@@ -1663,6 +1675,15 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                       worldsState.selectedName = name;
 
                       _updatePages();
+                    } else if (onclick === 'worlds:rename') {
+                      console.log('rename world', {oldWorldsSelectedName}); // XXX
+                    } else if (onclick === 'worlds:remove') {
+                      if (oldWorldsSelectedName) {
+                        const {worlds} = worldsState;
+                        worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
+
+                        _updatePages();
+                      }
                     } else if (onclick === 'worlds:createworld') {
                       worldsState.inputText = '';
                       worldsState.inputValue = 0;
@@ -1923,12 +1944,12 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                         _chdir(newCwd);
                       }
                     } else if (match = onclick.match(/^files:(cut|copy)$/)) {
-                      if (oldSelectedName) {
+                      if (oldFilesSelectedName) {
                         const type = match[1];
                         const {cwd} = filesState;
-                        const cutPath = _pathJoin(cwd, oldSelectedName);
+                        const cutPath = _pathJoin(cwd, oldFilesSelectedName);
 
-                        filesState.selectedName = oldSelectedName;
+                        filesState.selectedName = oldFilesSelectedName;
                         filesState.clipboardType = type;
                         filesState.clipboardPath = cutPath;
 
@@ -1992,12 +2013,14 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                         });
 
                       _updatePages();
+                    } else if (onclick === 'files:rename') {
+                      console.log('rename file', {oldFilesSelectedName}); // XXX
                     } else if (onclick === 'files:remove') {
-                      if (oldSelectedName) {
+                      if (oldFilesSelectedName) {
                         filesState.uploading = true;
 
                         const {cwd} = filesState;
-                        const p = _pathJoin(cwd, oldSelectedName);
+                        const p = _pathJoin(cwd, oldFilesSelectedName);
                         fs.remove(p)
                           .then(() => fs.getDirectory(cwd)
                             .then(files => {
@@ -2027,7 +2050,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                         elements: elementsState.elements,
                         availableElements: elementsState.availableElements,
                         clipboardElements: elementsState.clipboardElements,
-                      }, oldSelectedKeyPath.length > 0 ? oldSelectedKeyPath : ['elements']);
+                      }, oldElementsSelectedKeyPath.length > 0 ? oldElementsSelectedKeyPath : ['elements']);
 
                       _updatePages();
                     } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|tweak|toggle)(?::(.+?))?$/)) {
@@ -2039,7 +2062,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                         elements: elementsState.elements,
                         availableElements: elementsState.availableElements,
                         clipboardElements: elementsState.clipboardElements,
-                      }, oldSelectedKeyPath);
+                      }, oldElementsSelectedKeyPath);
                       const {attributes} = element;
                       const attribute = attributes[name];
 
@@ -2080,7 +2103,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                         attribute.value = !attribute.value;
                       }
 
-                      elementsState.selectedKeyPath = oldSelectedKeyPath;
+                      elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
 
                       _updatePages();
                     } else if (onclick === 'mods:input') {
@@ -2149,7 +2172,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                     if (intersectionPoint) {
                       const {anchor} = hoverState;
                       const onmousedown = (anchor && anchor.onmousedown) || '';
-                      const {selectedKeyPath: oldSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
+                      const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
 
                       let match;
                       if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
