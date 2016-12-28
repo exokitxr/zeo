@@ -368,7 +368,7 @@ ${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
   ${!inputText ? `<div style="color: #CCC;">Enter world name</div>` : ''}
 </a>
 `
-      }
+        }
     </div>
     </div>
   </div>
@@ -804,8 +804,18 @@ ${(cwd !== '/') ?
 }
 <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
 ${getItemsSrc(files, selectedName, renamingName, inputText, inputValue, 'Enter new name', 'file')}
-<div style="display: flex; height: 50px; margin: 20px 0; float: left; clear: both; align-items: center;">
-  <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 32px; color: #d9534f; text-decoration: none;" onclick="files:createdirectory">+ Directory</a>
+<div style="display: flex; margin: 20px 0; float: left; clear: both; font-size: 32px; align-items: center;">
+  ${focusType !== 'files:createdirectory' ? `\
+    <a style="display: flex; height: 60px; padding: 0 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="files:createdirectory">+ Directory</a>
+`
+  : `\
+    <a style="display: flex; position: relative; width: ${(WIDTH - 500) / 3}px; height: 60px; background-color: #EEE; border-radius: 5px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
+      <div style="position: absolute; width: 2px; top: 0; bottom: 12px; left: ${inputValue}px; background-color: #333;"></div>
+      <div>${inputText}</div>
+      ${!inputText ? `<div style="color: #CCC;">Enter directory name</div>` : ''}
+    </a>
+`
+  }
 </div>
 <p style="width: 100%; padding: 5px; float: left; clear: both; background-color: #EEE; border-radius: 5px; box-sizing: border-box;">Click a file to cut, copy, paste, rename, and remove. Click a directory to navigate.<br/>Drag files into the window to upload. Uploaded files will be placed in the current working directory.</p>
 `;
@@ -2021,26 +2031,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                         _updatePages();
                       }
                     } else if (onclick === 'files:createdirectory') {
-                      filesState.uploading = true;
-
-                      const {cwd} = filesState;
-                      const name = 'New Directory';
-                      fs.createDirectory(_pathJoin(cwd, name))
-                        .then(() => fs.getDirectory(cwd)
-                          .then(files => {
-                            filesState.files = _getFilesSpecs(files);
-                            filesState.uploading = false;
-
-                            _updatePages();
-                          })
-                        )
-                        .catch(err => {
-                          console.warn(err);
-
-                          filesState.uploading = false;
-
-                          _updatePages();
-                        });
+                      focusState.type = 'files:createdirectory';
 
                       _updatePages();
                     } else if (onclick === 'files:rename') {
@@ -2501,8 +2492,38 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
 
                       e.stopImmediatePropagation();
                     }
-                  } else if (type === 'files') {
-                    if (_applyStateKeyEvent(filesState, mainFontSpec, e)) {
+                  } else if (type === 'files:createdirectory') {
+                    const applySpec = _applyStateKeyEvent(filesState, itemsFontSpec, e);
+
+                    if (applySpec) {
+                      const {commit} = applySpec;
+
+                      if (commit) {
+                        filesState.uploading = true;
+
+                        const {files, inputText} = filesState;
+                        const name = inputText;
+                        if (!files.some(file => file.name === name)) {
+                          const {cwd} = filesState;
+                          fs.createDirectory(_pathJoin(cwd, name))
+                            .then(() => fs.getDirectory(cwd)
+                              .then(files => {
+                                filesState.files = _getFilesSpecs(files);
+                                filesState.uploading = false;
+
+                                _updatePages();
+                              })
+                            )
+                            .catch(err => {
+                              console.warn(err);
+
+                              filesState.uploading = false;
+
+                              _updatePages();
+                            });
+                        }
+                      }
+
                       _updatePages();
 
                       e.stopImmediatePropagation();
