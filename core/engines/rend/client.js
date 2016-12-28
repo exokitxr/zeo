@@ -267,6 +267,13 @@ class Rend {
             })
             .catch(reject); */
         });
+        const _requestGetElements = worldName => fetch('/archae/rend/worlds/' + worldName + '/elements.json').then(res => res.json().then(j => j.elements));
+        const _requestSetElements = (worldName, elements) => fetch('/archae/rend/worlds/' + worldName + '/elements.json', {
+          method: 'PUT',
+          body: JSON.stringify({
+            elements,
+          }, null, 2),
+        }).then(res => res.blob().then(() => {}));
 
         const worldName = 'proteus';
         const _initializeWorld = () => _requestDeleteWorld(worldName)

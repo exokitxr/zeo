@@ -25,9 +25,9 @@ class Rend {
     const worldModJsons = new Map();
     const worldModMutex = new MultiMutex();
 
-    const worldModJsonsPath = path.join(__dirname, '..', '..', '..', 'data', 'worlds');
+    const worldsPath = path.join(__dirname, '..', '..', '..', 'data', 'worlds');
     const _ensureWorldsDirectory = () => new Promise((accept, reject) => {
-      mkdirp(worldModJsonsPath, err => {
+      mkdirp(worldsPath, err => {
         if (!err) {
           accept();
         } else {
@@ -45,7 +45,7 @@ class Rend {
             if (entry) {
               accept(entry);
             } else {
-              const worldModJsonPath = path.join(worldModJsonsPath, world + '.json');
+              const worldModJsonPath = path.join(worldsPath, world, 'mods.json');
 
               fs.readFile(worldModJsonPath, 'utf8', (err, s) => {
                 if (!err) {
@@ -65,7 +65,8 @@ class Rend {
             }
           });
           const _setWorldModJson = ({world, worldModJson}) => new Promise((accept, reject) => {
-            const worldModJsonPath = path.join(worldModJsonsPath, world + '.json');
+            const worldModJsonPath = path.join(worldsPath, world, 'mods.json');
+
             fs.writeFile(worldModJsonPath, JSON.stringify(worldModJson, null, 2), 'utf8', err => {
               if (!err) {
                 accept();
@@ -353,6 +354,31 @@ class Rend {
             });
           }
           app.post('/archae/rend/mods/remove', serveModsRemove);
+          function serveElementsGet(req, res, next) {
+            const {world} = req.params;
+
+            const worldElementsJsonPath = path.join(worldsPath, world, 'elements.json');
+            const rs = fs.createReadStream(worldElementsJsonPath);
+            
+            res.type('application/json');
+            rs.pipe(res);
+            rs.on('error', err => {
+              res.status(500);
+              res.send(err.stack);
+            });
+          }
+          app.get('/archae/rend/worlds/:world/elements.json', serveElementsGet);
+          function serveElementsSet(req, res, next) {
+            const {world} = req.params;
+            const worldElementsJsonPath = path.join(worldsPath, world, 'elements.json');
+            const ws = fs.createWriteStream(worldElementsJsonPath);
+
+            req.pipe(ws);
+            ws.on('finish', () => {
+              res.send();
+            });
+          }
+          app.put('/archae/rend/worlds/:world/elements.json', serveElementsSet);
 
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
@@ -360,7 +386,9 @@ class Rend {
                 route.handle.name === 'serveReadme' ||
                 route.handle.name === 'serveModsStatus' ||
                 route.handle.name === 'serveModsAdd' ||
-                route.handle.name === 'serveModsRemove'
+                route.handle.name === 'serveModsRemove' ||
+                route.handle.name === 'serveElementsGet' ||
+                route.handle.name === 'serveElementsSet'
               ) {
                 routes.splice(i, 1);
               }
@@ -380,9 +408,9 @@ class Rend {
 }
 
 const _renderMarkdown = s => showdownConverter
-    .makeHtml(s)
-    .replace(/&mdash;/g, '-')
-    .replace(/(<code\s*[^>]*?>)([^>]*?)(<\/code>)/g, (all, start, mid, end) => start + mid.replace(/\n/g, '<br/>') + end)
-    .replace(/\n+/g, ' ');
+  .makeHtml(s)
+  .replace(/&mdash;/g, '-')
+  .replace(/(<code\s*[^>]*?>)([^>]*?)(<\/code>)/g, (all, start, mid, end) => start + mid.replace(/\n/g, '<br/>') + end)
+  .replace(/\n+/g, ' ');
 
 module.exports = Rend;
