@@ -284,6 +284,13 @@ class Rend {
               fontWeight: biolumi.getFontWeight(),
               fontStyle: biolumi.getFontStyle(),
             };
+            const itemsFontSpec = {
+              fonts: biolumi.getFonts(),
+              fontSize: 32,
+              lineHeight: 1.4,
+              fontWeight: biolumi.getFontWeight(),
+              fontStyle: biolumi.getFontStyle(),
+            };
             const subcontentFontSpec = {
               fonts: biolumi.getFonts(),
               fontSize: 28,
@@ -2352,7 +2359,30 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clip
                   const type = focusState.type || '';
 
                   let match;
-                  if (type === 'mods') {
+                  if (type === 'worlds') {
+                    const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
+
+                    if (applySpec) {
+                      const {commit} = applySpec;
+                      if (commit) {
+                        const {worlds, inputText} = worldsState;
+                        const name = inputText;
+
+                        if (!worlds.some(world => world.name === name)) {
+                          worldsState.worlds.push({
+                            name,
+                            description: '',
+                          });
+
+                          focusState.type = null;
+                        }
+                      }
+
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
+                  } else if (type === 'mods') {
                     if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
                       if (modsState.inputText.length > 0) {
                         // XXX cancel duplicate searches
