@@ -2418,8 +2418,26 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                             name,
                             description: '',
                           });
+                        }
+                      }
 
-                          focusState.type = '';
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
+                  } else if (match = type.match(/^worlds:rename:(.+)$/)) {
+                    const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
+
+                    if (applySpec) {
+                      const {commit} = applySpec;
+                      if (commit) {
+                        const {worlds, inputText} = worldsState;
+                        const oldName = match[1];
+                        const newName = inputText;
+
+                        if (!worlds.some(world => world.name === newName && world.name !== oldName)) {
+                          const world = worlds.find(world => world.name === oldName);
+                          world.name = newName;
                         }
                       }
 
