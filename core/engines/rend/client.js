@@ -693,7 +693,7 @@ ${attributes(element)}\
 ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
-            const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, copiedName, loading, uploading, focus}) => {
+            const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focus}) => {
               const content = (() => {
                 if (loading) {
                   return `<h1 style="font-size: 50px;">Loading...</h1>`;
@@ -722,7 +722,7 @@ ${getItemsSrc(files, selectedName, 'file')}
                 }
               })();
               return `\
-${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, copiedName), true)}
+${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, clipboardPath), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getFilesSidebarSrc()}
@@ -733,24 +733,24 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, copi
 </div>
 `;
             };
-            const getCreateDirectoryButtonsSrc = (selectedName, copiedName) => `\
+            const getCreateDirectoryButtonsSrc = (selectedName, clipboardPath) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   ${selectedName ? `\
-<a style="margin-left: 30px; padding: 10px 40px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 50px; color: #5cb85c; text-decoration: none;" onclick="files:cut:${selectedName}">Cut</a>
-<a style="margin-left: 30px; padding: 10px 40px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 50px; color: #5cb85c; text-decoration: none;" onclick="files:copy:${selectedName}">Copy</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="files:cut">Cut</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="files:copy">Copy</a>
 `
   :
     ''
   }
-  ${copiedName ? `\
-<a style="margin-left: 30px; padding: 10px 40px; border: 3px solid #0275d8; border-radius: 5px; font-size: 50px; color: #0275d8; text-decoration: none;" onclick="files:paste:${selectedName}">Paste</a>
+  ${clipboardPath ? `\
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="files:paste">Paste</a>
 `
   :
     ''
   }
   ${selectedName ? `\
-<a style="margin-left: 30px; padding: 10px 40px; border: 3px solid #0275d8; border-radius: 5px; font-size: 50px; color: #0275d8; text-decoration: none;" onclick="files:rename:${selectedName}">Rename</a>
-<a style="margin-left: 30px; padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="files:remove:${selectedName}">Remove</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="files:rename">Rename</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="files:remove">Remove</a>
 `
   :
     ''
@@ -804,6 +804,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, copi
   }
 </div>`;
 
+            const _pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
             const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
             const _getKeyPath = (root, keyPath) => {
               const _recurse = (root, i) => {
@@ -1183,6 +1184,8 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, copi
                   inputText: '',
                   inputValue: 0,
                   selectedName: '',
+                  clipboardType: null,
+                  clipboardPath: '',
                   loaded: false,
                   loading: false,
                   uploading: fs.getUploading(),
@@ -1473,6 +1476,7 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, copi
                     const {anchor} = hoverState;
                     const onclick = (anchor && anchor.onclick) || '';
                     const {selectedKeyPath: oldSelectedKeyPath} = elementsState;
+                    const {selectedName: oldSelectedName} = filesState;
 
                     focusState.type = null;
                     filesState.selectedName = '';
@@ -1674,10 +1678,10 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, copi
                           });
                       }
 
-                      ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, copiedName, loading, uploading}, focus: {type: focusType}}) => ([
+                      ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, copiedName, loading, uploading, focus: focusType === 'files'}),
+                          src: getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focus: focusType === 'files'}),
                         },
                         {
                           type: 'image',
@@ -1744,44 +1748,102 @@ ${getHeaderSrc('filesystem', '', getCreateDirectoryButtonsSrc(selectedName, copi
                         })();
                         _chdir(newCwd);
                       }
-                    } else if (onclick === 'files:createdirectory') {
-                      filesState.loading = true;
+                    } else if (match = onclick.match(/^files:(cut|copy)$/)) {
+                      if (oldSelectedName) {
+                        const type = match[1];
+                        const {cwd} = filesState;
+                        const cutPath = _pathJoin(cwd, oldSelectedName);
 
-                      _updatePages();
+                        filesState.selectedName = oldSelectedName;
+                        filesState.clipboardType = type;
+                        filesState.clipboardPath = cutPath;
+
+                        _updatePages();
+                      }
+                    } else if (onclick === 'files:paste') {
+                      const {clipboardPath} = filesState;
+
+                      if (clipboardPath) {
+                        filesState.uploading = true;
+
+                        const {cwd, clipboardType, clipboardPath} = filesState;
+
+                        const src = clipboardPath;
+                        const name = clipboardPath.match(/\/([^\/]*)$/)[1];
+                        const dst = _pathJoin(cwd, name);
+                        fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
+                          .then(() => fs.getDirectory(cwd)
+                            .then(files => {
+                              filesState.files = _getFilesSpecs(files);
+                              filesState.selectedName = name;
+                              filesState.uploading = false;
+                              if (clipboardType === 'cut') {
+                                filesState.clipboardType = 'copy';
+                                filesState.clipboardPath = dst;
+                              }
+
+                              _updatePages();
+                            })
+                          )
+                          .catch(err => {
+                            console.warn(err);
+
+                            filesState.uploading = true;
+
+                            _updatePages();
+                          })
+
+                        _updatePages();
+                      }
+                    } else if (onclick === 'files:createdirectory') {
+                      filesState.uploading = true;
 
                       const {cwd} = filesState;
                       const name = 'New Directory';
-                      fs.createDirectory(cwd + '/' + name)
+                      fs.createDirectory(_pathJoin(cwd, name))
                         .then(() => fs.getDirectory(cwd)
                           .then(files => {
                             filesState.files = _getFilesSpecs(files);
-                            filesState.loading = false;
+                            filesState.uploading = false;
 
                             _updatePages();
                           })
                         )
                         .catch(err => {
                           console.warn(err);
+
+                          filesState.uploading = false;
+
+                          _updatePages();
                         });
-                    } else if (match = onclick.match(/^files:remove:(.+)$/)) {
-                      filesState.loading = true;
 
                       _updatePages();
+                    } else if (onclick === 'files:remove') {
+                      const {selectedName} = filesState;
 
-                      const {cwd} = filesState;
-                      const name = match[1];
-                      fs.remove(cwd + '/' + name)
-                        .then(() => fs.getDirectory(cwd)
-                          .then(files => {
-                            filesState.files = _getFilesSpecs(files);
-                            filesState.loading = false;
+                      if (selectedName) {
+                        filesState.uploading = true;
+
+                        const {cwd} = filesState;
+                        fs.remove(_pathJoin(cwd, selectedName))
+                          .then(() => fs.getDirectory(cwd)
+                            .then(files => {
+                              filesState.files = _getFilesSpecs(files);
+                              filesState.uploading = false;
+
+                              _updatePages();
+                            })
+                          )
+                          .catch(err => {
+                            console.warn(err);
+
+                            filesState.uploading = false;
 
                             _updatePages();
-                          })
-                        )
-                        .catch(err => {
-                          console.warn(err);
-                        });
+                          });
+
+                        _updatePages();
+                      }
                     } else if (onclick === 'element:add') {
                       _insertElementAtKeyPath({
                         elements: elementsState.elements,
