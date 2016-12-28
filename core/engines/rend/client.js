@@ -778,13 +778,18 @@ ${attributes(element)}\
 ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
-            const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focus}) => {
+            const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}) => {
               const content = (() => {
                 if (loading) {
                   return `<h1 style="font-size: 50px;">Loading...</h1>`;
                 } else if (uploading) {
                   return `<h1 style="font-size: 50px;">Uploading...</h1>`;
                 } else {
+                  const renamingName = (() => {
+                    const match = focusType.match(/^files:rename:(.+)$/);
+                    return match ? match[1] : '';
+                  })();
+
                   return `\
 ${(cwd !== '/') ?
   `<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Go back</h1>
@@ -798,7 +803,7 @@ ${(cwd !== '/') ?
   ''
 }
 <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
-${getItemsSrc(files, selectedName, '', '', '', '', 'file')}
+${getItemsSrc(files, selectedName, renamingName, inputText, inputValue, 'Enter new name', 'file')}
 <div style="display: flex; height: 50px; margin: 20px 0; float: left; clear: both; align-items: center;">
   <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 32px; color: #d9534f; text-decoration: none;" onclick="files:createdirectory">+ Directory</a>
 </div>
@@ -1295,6 +1300,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                   cwd: fs.getCwd(),
                   files: [],
                   inputText: '',
+                  inputIndex: 0,
                   inputValue: 0,
                   selectedName: '',
                   clipboardType: null,
@@ -1693,6 +1699,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                     } else if (onclick === 'worlds:rename') {
                       if (oldWorldsSelectedName) {
                         worldsState.inputText = '';
+                        worldsState.inputIndex = 0;
                         worldsState.inputValue = 0;
 
                         focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
@@ -1708,6 +1715,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       }
                     } else if (onclick === 'worlds:create') {
                       worldsState.inputText = '';
+                      worldsState.inputIndex = 0;
                       worldsState.inputValue = 0;
                       
                       focusState.type = 'worlds:create';
@@ -1898,7 +1906,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focus: focusType === 'files'}),
+                          src: getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}),
                         },
                         {
                           type: 'image',
@@ -2036,7 +2044,15 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
 
                       _updatePages();
                     } else if (onclick === 'files:rename') {
-                      console.log('rename file', {oldFilesSelectedName}); // XXX
+                      if (oldFilesSelectedName) {
+                        filesState.inputText = '';
+                        filesState.inputIndex = 0;
+                        filesState.inputValue = 0;
+
+                        focusState.type = 'files:rename:' + oldFilesSelectedName;
+
+                        _updatePages();
+                      }
                     } else if (onclick === 'files:remove') {
                       if (oldFilesSelectedName) {
                         filesState.uploading = true;
@@ -2137,17 +2153,6 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       modsState.inputIndex = index;
                       modsState.inputValue = px;
                       focusState.type = 'mods';
-
-                      _updatePages();
-                    } else if (onclick === 'files:input') {
-                      const {value} = hoverState;
-                      const valuePx = value * (WIDTH - (500 + 40));
-
-                      const {index, px} = getTextPropertiesFromCoord(filesState.inputText, mainFontSpec, valuePx);
-
-                      filesState.inputIndex = index;
-                      filesState.inputValue = px;
-                      focusState.type = 'files';
 
                       _updatePages();
                     } else if (onclick === 'config:input') {
@@ -2496,6 +2501,26 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                     }
                   } else if (type === 'files') {
                     if (_applyStateKeyEvent(filesState, mainFontSpec, e)) {
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
+                  } else if (match = type.match(/^files:rename:(.+)$/)) {
+                    const applySpec = _applyStateKeyEvent(filesState, itemsFontSpec, e);
+
+                    if (applySpec) {
+                      const {commit} = applySpec;
+                      if (commit) {
+                        const {files, inputText} = filesState;
+                        const oldName = match[1];
+                        const newName = inputText;
+
+                        if (!files.some(file => file.name === newName && file.name !== oldName)) { // XXX do an actual backend rename
+                          const file = files.find(file => file.name === oldName);
+                          file.name = newName;
+                        }
+                      }
+
                       _updatePages();
 
                       e.stopImmediatePropagation();
