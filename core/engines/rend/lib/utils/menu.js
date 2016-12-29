@@ -3,6 +3,11 @@ const prettyBytes = require('pretty-bytes');
 const pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
 const clone = o => JSON.parse(JSON.stringify(o));
 const cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
+const cleanElements = elements => elements.map(({tag, attributes, children}) => ({
+  tag,
+  attributes,
+  children: children.map(cleanElements),
+}));
 const cleanFiles = files => files.map(file => {
   const {name, type, size} = file;
   const description = (() => {
@@ -157,6 +162,7 @@ module.exports = {
   pathJoin,
   clone,
   cleanMods,
+  cleanElements,
   cleanFiles,
   getKeyPath,
   getElementKeyPath,

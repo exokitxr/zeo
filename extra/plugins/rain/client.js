@@ -179,6 +179,9 @@ class Rain {
           elements: [
             {
               tag: 'rain',
+              constructor() {
+                console.log('rain constructor'); // XXX
+              },
               attributes: {
                 position: {
                   type: 'position',
@@ -211,6 +214,9 @@ class Rain {
             },
             {
               tag: 'rain:box',
+              constructor() {
+                console.log('rain:box constructor'); // XXX
+              },
               attributes: {
                 position: {
                   type: 'position',

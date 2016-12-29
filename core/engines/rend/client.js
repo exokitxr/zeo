@@ -405,62 +405,104 @@ class Rend {
                   }
                 };
 
-                // load world mods
-                elementsState.loading = true;
-                Promise.resolve()
-                  .then(() => _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/' + mod.name)))
-                  .then(() => {
-                    console.log('world mods loaded');
+                // load world
+                const _loadWorld = () => {
+                  const _loadMods = () => {
+                    elementsState.loading = true;
 
-                    const availableElements = (() => {
-                      const result = [];
-                      modApis.forEach((modApi, modName) => {
-                        const {elements, templates} = modApi;
-                        const elementsMap = (() => {
-                          const result = {};
-                          for (let i = 0; i < elements.length; i++) {
-                            const element = elements[i];
-                            result[element.tag] = element;
-                          }
-                          return result;
-                        })();
-                        const _makeTemplateElementFromTemplate = template => {
-                          const _recurse = template => {
-                            const {tag} = template;
-                            const attributes = (() => {
-                              const element = elementsMap[tag];
-                              const {attributes: defaultAttributes} = element;
-                              const {attributes: attributeDefaults} = template;
+                    return _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/' + mod.name))
+                      .then(() => {
+                        console.log('world mods loaded');
 
-                              const result = menuUtils.clone(defaultAttributes);
-                              for (const attributeName in attributeDefaults) {
-                                const attributeValue = attributeDefaults[attributeName];
-                                result[attributeName].value = attributeValue;
+                        const availableElements = (() => {
+                          const result = [];
+                          modApis.forEach((modApi, modName) => {
+                            const {elements, templates} = modApi;
+                            const elementsMap = (() => {
+                              const result = {};
+                              for (let i = 0; i < elements.length; i++) {
+                                const element = elements[i];
+                                result[element.tag] = element;
                               }
                               return result;
                             })();
-                            const children = template.children.map(_recurse);
-                            return {
-                              tag,
-                              attributes,
-                              children,
-                            };
-                          };
-                          return _recurse(template);
-                        };
-                        for (let i = 0; i < templates.length; i++) {
-                          const template = templates[i];
-                          const templateElement = _makeTemplateElementFromTemplate(template);
-                          result.push(templateElement);
-                        }
-                      });
-                      return result;
-                    })();
-                    elementsState.availableElements = availableElements;
-                    elementsState.loading = false;
+                            const _makeTemplateElementFromTemplate = template => {
+                              const _recurse = template => {
+                                const {tag} = template;
+                                const attributes = (() => {
+                                  const element = elementsMap[tag];
+                                  const {attributes: defaultAttributes} = element;
+                                  const {attributes: attributeDefaults} = template;
 
-                    menu.updatePages();
-                  })
+                                  const result = menuUtils.clone(defaultAttributes);
+                                  for (const attributeName in attributeDefaults) {
+                                    const attributeValue = attributeDefaults[attributeName];
+                                    result[attributeName].value = attributeValue;
+                                  }
+                                  return result;
+                                })();
+                                const children = template.children.map(_recurse);
+                                return {
+                                  tag,
+                                  attributes,
+                                  children,
+                                };
+                              };
+                              return _recurse(template);
+                            };
+                            for (let i = 0; i < templates.length; i++) {
+                              const template = templates[i];
+                              const templateElement = _makeTemplateElementFromTemplate(template);
+                              result.push(templateElement);
+                            }
+                          });
+                          return result;
+                        })();
+                        elementsState.availableElements = availableElements;
+                        elementsState.loading = false;
+
+                        menu.updatePages();
+                      });
+                  };
+                  const _loadElements = () => new Promise((accept, reject) => {
+                    const {elements: elementSpecs} = elementsState;
+
+                    const _makeElementInstance = elementSpec => {
+                      const {tag, attributes, children} = elementSpec;
+                      const match = tag.match(/^([^:]+?)(?::([^:]+?))?$/);
+                      const mainTag = match[1];
+                      const subTag = match[2] || null;
+
+                      const modApi = modApis.get(mainTag);
+                      const {elements: modElements} = modApi;
+                      const elementKey = mainTag + ((subTag !== null) ? (':' + subTag) : '');
+                      const elementApi = modElements.find(modElement => modElement.tag === elementKey);
+
+                      let elementInstance = {};
+                      for (const attributeName in attributes) {
+                        const attributeValue = attributes[attributeName];
+                        elementInstance[attributeName] = attributeValue;
+                      }
+                      elementInstance.children = children.map(_makeElementInstance);
+                      const constructorResult = elementApi.constructor.call(elementInstance);
+                      if (constructorResult !== undefined) {
+                        elementInstance = constructorResult;
+                      }
+                      return elementInstance;
+                    };
+
+                    for (let i = 0; i < elementSpecs.length; i++) {
+                      const elementSpec = elementSpecs[i];
+                      const elementInstance = _makeElementInstance(elementSpec);
+                      elementSpec.instance = elementInstance;
+                    }
+                  });
+
+                  return _loadMods()
+                    .then(() => _loadElements());
+                };
+                Promise.resolve()
+                  .then(() => _loadWorld())
                   .catch(err => {
                     console.warn(err);
                   });
@@ -530,8 +572,8 @@ class Rend {
           const {name: worldName} = currentWorld;
           _requestSetElements({
             world: worldName,
-            elements: elementsState.elements,
-            clipboardElements: elementsState.clipboardElements,
+            elements: menuUtils.cleanElements(elementsState.elements),
+            clipboardElements: menuUtils.cleanElements(elementsState.clipboardElements),
           })
             .then(() => {
               console.log('saved elements for', JSON.stringify(worldName));
