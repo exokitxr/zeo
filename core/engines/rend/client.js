@@ -1731,7 +1731,7 @@ class Rend {
                   const {type} = focusState;
 
                   let match;
-                  if (type === 'worlds') {
+                  if (type === 'worlds:create') {
                     const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
 
                     if (applySpec) {
