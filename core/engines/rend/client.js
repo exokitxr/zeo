@@ -526,6 +526,20 @@ class Rend {
             clipboardElements,
           }),
         }).then(res => res.blob().then(() => {}));
+        const _saveElements = () => {
+          const {name: worldName} = currentWorld;
+          _requestSetElements({
+            world: worldName,
+            elements: elementsState.elements,
+            clipboardElements: elementsState.clipboardElements,
+          })
+            .then(() => {
+              console.log('saved elements for', JSON.stringify(worldName));
+            })
+            .catch(err => {
+              console.warn();
+            });
+        };
 
         const _initializeMenu = () => {
           if (live) {
@@ -1405,18 +1419,7 @@ class Rend {
                         clipboardElements: elementsState.clipboardElements,
                       }, oldElementsSelectedKeyPath.length > 0 ? oldElementsSelectedKeyPath : ['elements']);
 
-                      const {name: worldName} = currentWorld;
-                      _requestSetElements({
-                        world: worldName,
-                        elements: elementsState.elements,
-                        clipboardElements: elementsState.clipboardElements,
-                      })
-                        .then(() => {
-                          console.log('saved elements for', JSON.stringify(worldName));
-                        })
-                        .catch(err => {
-                          console.warn();
-                        });
+                      _saveElements();
 
                       _updatePages();
                     } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|tweak|toggle)(?::(.+?))?$/)) {
@@ -1652,18 +1655,7 @@ class Rend {
                             const dragFn = _getKeyPathDragFn(oldKeyPath);
                             dragFn(spec, oldKeyPath, newKeyPath);
 
-                            const {name: worldName} = currentWorld;
-                            _requestSetElements({
-                              world: worldName,
-                              elements: elementsState.elements,
-                              clipboardElements: elementsState.clipboardElements,
-                            })
-                              .then(() => {
-                                console.log('saved elements for', JSON.stringify(worldName));
-                              })
-                              .catch(err => {
-                                console.warn();
-                              });
+                            _saveElements();
                           } else {
                             elementsState.selectedKeyPath = oldDraggingKeyPath;
                           }
@@ -1681,18 +1673,7 @@ class Rend {
                             const dragFn = _getKeyPathDragFn(oldKeyPath);
                             dragFn(spec, oldKeyPath, newKeyPath);
 
-                            const {name: worldName} = currentWorld;
-                            _requestSetElements({
-                              world: worldName,
-                              elements: elementsState.elements,
-                              clipboardElements: elementsState.clipboardElements,
-                            })
-                              .then(() => {
-                                console.log('saved elements for', JSON.stringify(worldName));
-                              })
-                              .catch(err => {
-                                console.warn();
-                              });
+                            _saveElements();
                           } else {
                             elementsState.selectedKeyPath = oldDraggingKeyPath;
                           }
