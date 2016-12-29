@@ -395,7 +395,7 @@ class Rend {
                     const m = modsStatus.find(m => m.name === mod);
                     m.installed = true;
                   })
-                  .then(() => _requestMod('/extra/plugins/zeo/' + mod))
+                  .then(() => _requestMod('/extra/plugins/' + mod))
                 );
                 const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
                 const _requestMod = mod => archae.requestPlugin(mod)
@@ -422,7 +422,7 @@ class Rend {
                     const m = modsStatus.find(m => m.name === mod);
                     m.installed = false;
                   })
-                  .then(() => _requestReleaseMod('/extra/plugins/zeo/' + mod))
+                  .then(() => _requestReleaseMod('/extra/plugins/' + mod))
                 );
                 const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
                 const _requestReleaseMod = mod => archae.releasePlugin(mod)
@@ -443,7 +443,7 @@ class Rend {
                 // load world mods
                 elementsState.loading = true;
                 Promise.resolve()
-                  .then(() => _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/zeo/' + mod.name)))
+                  .then(() => _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/' + mod.name)))
                   .then(() => {
                     console.log('world mods loaded');
 

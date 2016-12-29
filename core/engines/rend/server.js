@@ -172,7 +172,7 @@ class Rend {
                 const {world} = data;
 
                 if (typeof world === 'string') {
-                  const pluginsPath = path.join(__dirname, '..', '..', '..', 'extra', 'plugins', 'zeo');
+                  const pluginsPath = path.join(__dirname, '..', '..', '..', 'extra', 'plugins');
                   const _getPlugins = () => new Promise((accept, reject) => {
                     fs.readdir(pluginsPath, (err, plugins) => {
                       if (!err) {
