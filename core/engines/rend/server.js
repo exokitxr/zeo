@@ -104,7 +104,7 @@ class Rend {
             }
           });
           const _setWorldElementsJson = ({world, worldElementsJson}) => new Promise((accept, reject) => {
-            worldElementsJsons.set(world, worldModJson);
+            worldElementsJsons.set(world, worldElementsJson);
 
             const worldElementJsonPath = path.join(worldsPath, world, 'elements.json');
             fs.writeFile(worldElementJsonPath, JSON.stringify(worldElementsJson, null, 2), 'utf8', err => {
@@ -424,8 +424,8 @@ class Rend {
 
               if (
                 typeof data === 'object' && data !== null &&
-                data.elements && Array.isArray(elements) &&
-                data.clipboardElements && Array.isArray(clipboardElements)
+                data.elements && Array.isArray(data.elements) &&
+                data.clipboardElements && Array.isArray(data.clipboardElements)
               ) {
                 const {world} = req.params;
                 const worldElementsJson = {

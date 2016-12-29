@@ -518,6 +518,9 @@ class Rend {
         const _requestGetElements = world => fetch('/archae/rend/worlds/' + world + '/elements.json').then(res => res.json());
         const _requestSetElements = ({world, elements, clipboardElements}) => fetch('/archae/rend/worlds/' + world + '/elements.json', {
           method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({
             elements,
             clipboardElements,
@@ -1402,6 +1405,19 @@ class Rend {
                         clipboardElements: elementsState.clipboardElements,
                       }, oldElementsSelectedKeyPath.length > 0 ? oldElementsSelectedKeyPath : ['elements']);
 
+                      const {name: worldName} = currentWorld;
+                      _requestSetElements({
+                        world: worldName,
+                        elements: elementsState.elements,
+                        clipboardElements: elementsState.clipboardElements,
+                      })
+                        .then(() => {
+                          console.log('saved elements for', JSON.stringify(worldName));
+                        })
+                        .catch(err => {
+                          console.warn();
+                        });
+
                       _updatePages();
                     } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|tweak|toggle)(?::(.+?))?$/)) {
                       const name = match[1];
@@ -1635,6 +1651,19 @@ class Rend {
                             const newKeyPath = keyPath.concat(menuUtils.getElementKeyPath(spec, keyPath).children.length);
                             const dragFn = _getKeyPathDragFn(oldKeyPath);
                             dragFn(spec, oldKeyPath, newKeyPath);
+
+                            const {name: worldName} = currentWorld;
+                            _requestSetElements({
+                              world: worldName,
+                              elements: elementsState.elements,
+                              clipboardElements: elementsState.clipboardElements,
+                            })
+                              .then(() => {
+                                console.log('saved elements for', JSON.stringify(worldName));
+                              })
+                              .catch(err => {
+                                console.warn();
+                              });
                           } else {
                             elementsState.selectedKeyPath = oldDraggingKeyPath;
                           }
@@ -1651,6 +1680,19 @@ class Rend {
                             const newKeyPath = keyPath;
                             const dragFn = _getKeyPathDragFn(oldKeyPath);
                             dragFn(spec, oldKeyPath, newKeyPath);
+
+                            const {name: worldName} = currentWorld;
+                            _requestSetElements({
+                              world: worldName,
+                              elements: elementsState.elements,
+                              clipboardElements: elementsState.clipboardElements,
+                            })
+                              .then(() => {
+                                console.log('saved elements for', JSON.stringify(worldName));
+                              })
+                              .catch(err => {
+                                console.warn();
+                              });
                           } else {
                             elementsState.selectedKeyPath = oldDraggingKeyPath;
                           }
