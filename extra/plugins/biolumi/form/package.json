@@ -1,9 +1,0 @@
-{
-  "name": "form",
-  "description": "A test plugin for the biolumi menu rendering engine.",
-  "version": "0.0.1",
-  "client": "client.js",
-  "dependencies": {
-    "alea": "0.0.9"
-  }
-}
