@@ -245,6 +245,10 @@ class RainElement {
     console.log('rain constructor'); // XXX
   }
 
+  destructor() {
+    console.log('rain destructor');
+  }
+
   set type(type) {
     console.log('rain set type', type);
   }
@@ -279,6 +283,10 @@ class RainBoxElement {
 
   constructor() {
     console.log('rain:box constructor'); // XXX
+  }
+
+  destructor() {
+    console.log('rain:box destructor');
   }
 }
 

@@ -6,7 +6,7 @@ const cleanMods = mods => mods.map(({name, description, installed}) => ({name, d
 const cleanElements = elements => elements.map(({tag, attributes, children}) => ({
   tag,
   attributes,
-  children: children.map(cleanElements),
+  children: cleanElements(children),
 }));
 const cleanFiles = files => files.map(file => {
   const {name, type, size} = file;
@@ -73,6 +73,16 @@ const copyElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
   const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
   const newParentElement = getElementKeyPath(spec, newKeyPathHead);
   newParentElement.children.splice(newKeyPathTail, 0, element);
+};
+const removeElementKeyPath = (spec, keyPath) => {
+  const keyPathHead = keyPath.slice(0, -1);
+  const keyPathTail = keyPath[keyPath.length - 1];
+  const oldParentElement = getElementKeyPath(spec, keyPathHead);
+  const element = oldParentElement.children[keyPathTail];
+
+  oldParentElement.children.splice(keyPathTail, 1);
+
+  return element;
 };
 const keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
   const bi = b[i];
@@ -168,6 +178,7 @@ module.exports = {
   getElementKeyPath,
   moveElementKeyPath,
   copyElementKeyPath,
+  removeElementKeyPath,
   keyPathEquals,
   isSubKeyPath,
   parseKeyPath,

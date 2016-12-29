@@ -483,14 +483,20 @@ class Rend {
                         const attributeValue = attributes[attributeName];
                         elementInstance[attributeName] = attributeValue;
                       }
-                      elementInstance.children = children.map(_makeElementInstance);
+                      elementInstance.children = children.map(child => {
+                        _constructElement(child);
+                        return child.instance;
+                      });
                       return elementInstance;
+                    };
+                    const _constructElement = elementSpec => {
+                      const elementInstance = _makeElementInstance(elementSpec);
+                      elementSpec.instance = elementInstance;
                     };
 
                     for (let i = 0; i < elementSpecs.length; i++) {
                       const elementSpec = elementSpecs[i];
-                      const elementInstance = _makeElementInstance(elementSpec);
-                      elementSpec.instance = elementInstance;
+                      _constructElement(elementSpec);
                     }
                   });
 
@@ -1232,7 +1238,7 @@ class Rend {
                         return [
                           {
                             type: 'html',
-                            src: menuRenderer.getElementsPageSrc(),
+                            src: menuRenderer.getElementsPageSrc({selectedKeyPath}),
                           },
                           {
                             type: 'html',
@@ -1447,6 +1453,34 @@ class Rend {
 
                             _updatePages();
                           });
+
+                        _updatePages();
+                      }
+                    } else if (onclick === 'elements:remove') {
+                      if (oldElementsSelectedKeyPath.length > 0) {
+                        const spec = {
+                          elements: elementsState.elements,
+                          availableElements: elementsState.availableElements,
+                          clipboardElements: elementsState.clipboardElements,
+                        };
+                        const oldElement = menuUtils.removeElementKeyPath(spec, oldElementsSelectedKeyPath);
+
+                        const _destroy = element => {
+                          const {children, instance} = element;
+
+                          for (let i = 0; i < children.length; i++) {
+                            const child = children[i];
+                            _destroy(child);
+                          }
+
+                          instance.destructor();
+                        };
+                        _destroy(oldElement);
+
+                        elementsState.selectedKeyPath = [];
+                        elementsState.draggingKeyPath = [];
+
+                        _saveElements();
 
                         _updatePages();
                       }
@@ -1678,7 +1712,7 @@ class Rend {
                           if (collection === 'elements' || collection === 'clipboardElements') {
                             return menuUtils.moveElementKeyPath;
                           } else if (collection === 'availableElements') {
-                            return menuUtils.copyElementKeyPath;
+                            return menuUtils.copyElementKeyPath; // XXX need to instantiate new element in this case
                           } else {
                             return () => {};
                           }

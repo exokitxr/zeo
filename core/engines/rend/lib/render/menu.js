@@ -87,18 +87,6 @@ ${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
 `;
 };
 
-const getWorldsButtonsSrc = selectedName => `\
-<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-  ${selectedName ? `\
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="worlds:rename">Rename</a>
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="worlds:remove">Remove</a>
-`
-  :
-    ''
-  }
-</div>
-`;
-
 const getModsPageSrc = ({mods, inputText, inputValue, focus}) => {
   const installedMods = mods.filter(mod => mod.installed);
   const availableMods = mods.filter(mod => !mod.installed);
@@ -189,8 +177,8 @@ const getConfigPageContentSrc = ({inputText, inputValue, focus, sliderValue, che
 </div>
 `;
 
-const getElementsPageSrc = () => `\
-${getHeaderSrc('elements', '', '', true)}
+const getElementsPageSrc = ({selectedKeyPath}) => `\
+${getHeaderSrc('elements', '', getElementsButtonsSrc(selectedKeyPath), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getElementsSidebarSrc()}
@@ -618,6 +606,18 @@ const getFilesSidebarSrc = () => `\
   <a style="text-decoration: none;"  onclick="blank"><p>Search mods</p></a>
 </div>`;
 
+const getWorldsButtonsSrc = selectedName => `\
+<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
+  ${selectedName ? `\
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="worlds:rename">Rename</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="worlds:remove">Remove</a>
+`
+  :
+    ''
+  }
+</div>
+`;
+
 const getGetButtonSrc = (name, installed) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   ${installed ?
@@ -625,6 +625,15 @@ const getGetButtonSrc = (name, installed) => `\
     <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="removemod:${name}">× Remove</a>`
   :
     `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF; text-decoration: none;" onclick="getmod:${name}">+ Get</a>`
+  }
+</div>`;
+
+const getElementsButtonsSrc = (selectedKeyPath) => `\
+<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
+  ${(selectedKeyPath.length > 0) ?
+    `<a style="padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="elements:remove">× Remove</a>`
+  :
+    ''
   }
 </div>`;
 
@@ -659,7 +668,6 @@ return {
   getSliderSrc,
   getCheckboxSrc,
   getWorldsPageSrc,
-  getWorldsButtonsSrc,
   getModsPageSrc,
   getItemsSrc,
   getItemSrc,
@@ -684,6 +692,7 @@ return {
   getConfigSidebarSrc,
   getElementsSidebarSrc,
   getFilesSidebarSrc,
+  getWorldsButtonsSrc,
   getGetButtonSrc,
   getFilesButtonsSrc,
 };
