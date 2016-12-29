@@ -93,11 +93,213 @@ class Rend {
         });
 
         // main state
+        let menu = null;
+
+        const focusState = {
+          type: null,
+        };
+        const worldsState = {
+          worlds: [
+            {
+              name: 'Proteus',
+              description: 'The default zeo.sh world',
+            },
+            {
+              name: 'Midgar',
+              description: 'Alternate zeo.sh world',
+            },
+            {
+              name: 'Mako Reactor',
+              description: 'Taken from Final Fantasy VII. Straight copy.',
+            },
+          ],
+          selectedName: 'Proteus',
+          inputText: '',
+          inputIndex: 0,
+          inputValue: 0,
+        };
+        const modsState = {
+          mods: [],
+          inputText: '',
+          inputIndex: 0,
+          inputValue: 0,
+        };
+        const configState = {
+          inputText: 'Hello, world! This is some text!',
+          inputIndex: 0,
+          inputValue: 0,
+          sliderValue: 0.5,
+          checkboxValue: false,
+        };
+        const statsState = {
+          frame: 0,
+        };
+        const elementsState = {
+          elements: [
+            {
+              tag: 'archae',
+              attributes: {
+                position: {
+                  type: 'position',
+                  value: [1, 2, 3].join(' '),
+                },
+                text: {
+                  type: 'text',
+                  value: 'Hello, world!',
+                },
+                number: {
+                  type: 'number',
+                  value: 2,
+                  min: 0,
+                  max: 10,
+                },
+                select: {
+                  type: 'select',
+                  value: 'basic',
+                  options: [
+                    'basic',
+                    'advanced',
+                    'core',
+                    'extra',
+                  ],
+                },
+                color: {
+                  type: 'color',
+                  value: '#563d7c',
+                },
+                enabled: {
+                  type: 'checkbox',
+                  value: true,
+                },
+                disabled: {
+                  type: 'checkbox',
+                  value: false,
+                },
+              },
+              children: [
+                {
+                  tag: 'sub',
+                  attributes: {
+                    rotation: {
+                      type: 'position',
+                      value: [0, Math.PI, 0].join(' '),
+                    },
+                  },
+                  children: [],
+                },
+                {
+                  tag: 'subsub',
+                  attributes: {
+                    rotation: {
+                      type: 'position',
+                      value: [0, Math.PI, 0].join(' '),
+                    },
+                  },
+                  children: [],
+                },
+              ],
+            },
+            {
+              tag: 'text',
+              attributes: {
+                lol: {
+                  type: 'text',
+                  value: 'zol',
+                },
+              },
+              children: [],
+            },
+          ],
+          availableElements: [
+            /* {
+              tag: 'model',
+              attributes: {
+                position: {
+                  type: 'position',
+                  value: [1, 2, 3].join(' '),
+                },
+                rotation: {
+                  type: 'position',
+                  value: [0, Math.PI, 0].join(' '),
+                },
+                url: {
+                  type: 'text',
+                  value: 'cloud.mdl',
+                },
+              },
+              children: [],
+            },
+            {
+              tag: 'model',
+              attributes: {
+                position: {
+                  type: 'position',
+                  value: [1, 2, 3].join(' '),
+                },
+                rotation: {
+                  type: 'position',
+                  value: [0, Math.PI, 0].join(' '),
+                },
+                url: {
+                  type: 'text',
+                  value: 'cloud.mdl',
+                },
+              },
+              children: [],
+            }, */
+          ],
+          clipboardElements: [
+            {
+              tag: 'model',
+              attributes: {
+                position: {
+                  type: 'position',
+                  value: [1, 2, 3].join(' '),
+                },
+                rotation: {
+                  type: 'position',
+                  value: [0, Math.PI, 0].join(' '),
+                },
+              },
+              children: [
+                {
+                  tag: 'submodel',
+                  attributes: {
+                    url: {
+                      type: 'text',
+                      value: 'cloud.mdl',
+                    },
+                  },
+                  children: [],
+                },
+              ],
+            },
+          ],
+          selectedKeyPath: [],
+          draggingKeyPath: [],
+          inputText: '',
+          inputIndex: 0,
+          inputValue: 0,
+          loading: false,
+        };
+        const filesState = {
+          cwd: fs.getCwd(),
+          files: [],
+          inputText: '',
+          inputIndex: 0,
+          inputValue: 0,
+          selectedName: '',
+          clipboardType: null,
+          clipboardPath: '',
+          loaded: false,
+          loading: false,
+          uploading: fs.getUploading(),
+        };
+
         const worlds = new Map();
         let currentWorld = null;
         const worldMods = new Map();
         let currentWorldMods = null;
-        let currentMainReadme = null;
 
         cleanups.push(() => {
           worlds.forEach(world => {
@@ -108,6 +310,32 @@ class Rend {
         const stats = new Stats();
         stats.render = () => {}; // overridden below
 
+        // helper functions
+        const _pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
+        const _clone = o => JSON.parse(JSON.stringify(o));
+        const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
+        const _cleanFiles = files => files.map(file => {
+          const {name, type, size} = file;
+          const description = (() => {
+            if (type === 'file') {
+              if (size !== null) {
+                return prettyBytes(size);
+              } else {
+                return '';
+              }
+            } else {
+              return 'Directory';
+            }
+          })();
+
+          return {
+            name,
+            type,
+            description,
+          };
+        });
+
+        // api functions
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
           const world = worlds.get(worldName);
@@ -116,9 +344,10 @@ class Rend {
             currentWorld = world;
             currentWorldMods = worldMods.get(worldName);
 
+            modsState.mods = _cleanMods(currentWorldMods);
+
             accept();
           } else {
-            const _requestMainReadme = worldName => fetch('/archae/rend/readme').then(res => res.text());
             const _requestModsStatus = worldName => fetch('/archae/rend/mods/status', {
               method: 'POST',
               headers: (() => {
@@ -132,12 +361,10 @@ class Rend {
             }).then(res => res.json());
 
             Promise.all([
-              _requestMainReadme(),
               _requestModsStatus(worldName),
               bullet.requestWorld(worldName),
             ])
               .then(([
-                mainReadme,
                 modsStatus,
                 physics,
               ]) => {
@@ -239,14 +466,13 @@ class Rend {
                 };
 
                 // load world mods
-                // XXX make menu initialization return a first-class api, break this out into a separate world mods initialization step, and use the menu api to render the load
-                // elementsState.loading = true;
+                elementsState.loading = true;
                 Promise.resolve()
                   .then(() => _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/zeo/' + mod.name)))
                   .then(() => {
                     console.log('world mods loaded');
 
-                    /* const availableElements = (() => { // XXX
+                    const availableElements = (() => {
                       const result = [];
                       modApis.forEach((modApi, modName) => {
                         const {templates} = modApi;
@@ -257,7 +483,7 @@ class Rend {
                     elementsState.availableElements = availableElements;
                     elementsState.loading = false;
 
-                    _updatePages(); */
+                    menu.updatePages();
                   })
                   .catch(err => {
                     console.warn(err);
@@ -288,7 +514,7 @@ class Rend {
                 worldMods.set(worldName, modsStatus);
                 currentWorldMods = modsStatus;
 
-                currentMainReadme = mainReadme;
+                modsState.mods = _cleanMods(currentWorldMods);
 
                 accept();
               });
@@ -310,6 +536,7 @@ class Rend {
             })
             .catch(reject); */
         });
+        const _requestMainReadme = worldName => fetch('/archae/rend/readme').then(res => res.text());
         const _requestGetElements = worldName => fetch('/archae/rend/worlds/' + worldName + '/elements.json').then(res => res.json().then(j => j.elements));
         const _requestSetElements = (worldName, elements) => fetch('/archae/rend/worlds/' + worldName + '/elements.json', {
           method: 'PUT',
@@ -318,13 +545,6 @@ class Rend {
           }, null, 2),
         }).then(res => res.blob().then(() => {}));
 
-        const worldName = 'proteus';
-        const _initializeWorld = () => _requestDeleteWorld(worldName)
-          .then(() => {
-            if (live) {
-              return _requestChangeWorld(worldName);
-            }
-          });
         const _initializeMenu = () => {
           if (live) {
             const mainFontSpec = {
@@ -349,9 +569,6 @@ class Rend {
               fontStyle: biolumi.getFontStyle(),
             };
 
-            const _pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
-            const _clone = o => JSON.parse(JSON.stringify(o));
-            const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
             const _getKeyPath = (root, keyPath) => {
               const _recurse = (root, i) => {
                 if (i === keyPath.length) {
@@ -463,235 +680,20 @@ class Rend {
               }
             };
             const _castValueValueToString = (s, type) => String(s);
-            const _getFilesSpecs = files => files.map(file => {
-              const {name, type, size} = file;
-              const description = (() => {
-                if (type === 'file') {
-                  if (size !== null) {
-                    return prettyBytes(size);
-                  } else {
-                    return '';
-                  }
-                } else {
-                  return 'Directory';
-                }
-              })();
-
-              return {
-                name,
-                type,
-                description,
-              };
-            });
 
             const menuImageShader = menuShaders.getMenuImageShader({maxNumTextures});
 
-            return biolumi.requestUi({
-              width: WIDTH,
-              height: HEIGHT,
-            }).then(ui => {
+            return Promise.all([
+              biolumi.requestUi({
+                width: WIDTH,
+                height: HEIGHT,
+              }),
+              _requestMainReadme(),
+            ]).then(([
+              ui,
+              mainReadme,
+            ]) => {
               if (live) {
-                const focusState = {
-                  type: null,
-                };
-                const worldsState = {
-                  worlds: [
-                    {
-                      name: 'Proteus',
-                      description: 'The default zeo.sh world',
-                    },
-                    {
-                      name: 'Midgar',
-                      description: 'Alternate zeo.sh world',
-                    },
-                    {
-                      name: 'Mako Reactor',
-                      description: 'Taken from Final Fantasy VII. Straight copy.',
-                    },
-                  ],
-                  selectedName: 'Proteus',
-                  inputText: '',
-                  inputIndex: 0,
-                  inputValue: 0,
-                };
-                const modsState = {
-                  mods: _cleanMods(currentWorldMods),
-                  inputText: '',
-                  inputIndex: 0,
-                  inputValue: 0,
-                };
-                const configState = {
-                  inputText: 'Hello, world! This is some text!',
-                  inputIndex: 0,
-                  inputValue: 0,
-                  sliderValue: 0.5,
-                  checkboxValue: false,
-                };
-                const statsState = {
-                  frame: 0,
-                };
-                const elementsState = {
-                  elements: [
-                    {
-                      tag: 'archae',
-                      attributes: {
-                        position: {
-                          type: 'position',
-                          value: [1, 2, 3].join(' '),
-                        },
-                        text: {
-                          type: 'text',
-                          value: 'Hello, world!',
-                        },
-                        number: {
-                          type: 'number',
-                          value: 2,
-                          min: 0,
-                          max: 10,
-                        },
-                        select: {
-                          type: 'select',
-                          value: 'basic',
-                          options: [
-                            'basic',
-                            'advanced',
-                            'core',
-                            'extra',
-                          ],
-                        },
-                        color: {
-                          type: 'color',
-                          value: '#563d7c',
-                        },
-                        enabled: {
-                          type: 'checkbox',
-                          value: true,
-                        },
-                        disabled: {
-                          type: 'checkbox',
-                          value: false,
-                        },
-                      },
-                      children: [
-                        {
-                          tag: 'sub',
-                          attributes: {
-                            rotation: {
-                              type: 'position',
-                              value: [0, Math.PI, 0].join(' '),
-                            },
-                          },
-                          children: [],
-                        },
-                        {
-                          tag: 'subsub',
-                          attributes: {
-                            rotation: {
-                              type: 'position',
-                              value: [0, Math.PI, 0].join(' '),
-                            },
-                          },
-                          children: [],
-                        },
-                      ],
-                    },
-                    {
-                      tag: 'text',
-                      attributes: {
-                        lol: {
-                          type: 'text',
-                          value: 'zol',
-                        },
-                      },
-                      children: [],
-                    },
-                  ],
-                  availableElements: [
-                    /* {
-                      tag: 'model',
-                      attributes: {
-                        position: {
-                          type: 'position',
-                          value: [1, 2, 3].join(' '),
-                        },
-                        rotation: {
-                          type: 'position',
-                          value: [0, Math.PI, 0].join(' '),
-                        },
-                        url: {
-                          type: 'text',
-                          value: 'cloud.mdl',
-                        },
-                      },
-                      children: [],
-                    },
-                    {
-                      tag: 'model',
-                      attributes: {
-                        position: {
-                          type: 'position',
-                          value: [1, 2, 3].join(' '),
-                        },
-                        rotation: {
-                          type: 'position',
-                          value: [0, Math.PI, 0].join(' '),
-                        },
-                        url: {
-                          type: 'text',
-                          value: 'cloud.mdl',
-                        },
-                      },
-                      children: [],
-                    }, */
-                  ],
-                  clipboardElements: [
-                    {
-                      tag: 'model',
-                      attributes: {
-                        position: {
-                          type: 'position',
-                          value: [1, 2, 3].join(' '),
-                        },
-                        rotation: {
-                          type: 'position',
-                          value: [0, Math.PI, 0].join(' '),
-                        },
-                      },
-                      children: [
-                        {
-                          tag: 'submodel',
-                          attributes: {
-                            url: {
-                              type: 'text',
-                              value: 'cloud.mdl',
-                            },
-                          },
-                          children: [],
-                        },
-                      ],
-                    },
-                  ],
-                  selectedKeyPath: [],
-                  draggingKeyPath: [],
-                  inputText: '',
-                  inputIndex: 0,
-                  inputValue: 0,
-                  loading: false,
-                };
-                const filesState = {
-                  cwd: fs.getCwd(),
-                  files: [],
-                  inputText: '',
-                  inputIndex: 0,
-                  inputValue: 0,
-                  selectedName: '',
-                  clipboardType: null,
-                  clipboardPath: '',
-                  loaded: false,
-                  loading: false,
-                  uploading: fs.getUploading(),
-                };
-
                 const uploadStart = () => {
                   filesState.uploading = true;
 
@@ -705,7 +707,7 @@ class Rend {
                   const {cwd} = filesState;
                   fs.getDirectory(cwd)
                     .then(files => {
-                      filesState.files = _getFilesSpecs(files);
+                      filesState.files = _cleanFiles(files);
                       filesState.loading = false;
 
                       _updatePages();
@@ -815,7 +817,7 @@ class Rend {
                   },
                   {
                     type: 'html',
-                    src: currentMainReadme,
+                    src: mainReadme,
                     x: 500,
                     y: 150 + 2,
                     w: WIDTH - 500,
@@ -979,7 +981,7 @@ class Rend {
                       reject(err);
                     };
                   });
-                  const keySpecs = (() => { // XXX use these for anchor computation
+                  const keySpecs = (() => {
                     const div = document.createElement('div');
                     div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
                     div.innerHTML = keyboardImg;
@@ -1355,7 +1357,7 @@ class Rend {
                         const {cwd} = filesState;
                         fs.getDirectory(cwd)
                           .then(files => {
-                            filesState.files = _getFilesSpecs(files);
+                            filesState.files = _cleanFiles(files);
                             filesState.loading = false;
 
                             _updatePages();
@@ -1396,7 +1398,7 @@ class Rend {
                         fs.setCwd(newCwd);
                         fs.getDirectory(newCwd)
                           .then(files => {
-                            filesState.files = _getFilesSpecs(files);
+                            filesState.files = _cleanFiles(files);
                             filesState.loading = false;
 
                             _updatePages();
@@ -1461,7 +1463,7 @@ class Rend {
                         fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
                           .then(() => fs.getDirectory(cwd)
                             .then(files => {
-                              filesState.files = _getFilesSpecs(files);
+                              filesState.files = _cleanFiles(files);
                               filesState.selectedName = name;
                               filesState.uploading = false;
                               if (clipboardType === 'cut') {
@@ -1505,7 +1507,7 @@ class Rend {
                         fs.remove(p)
                           .then(() => fs.getDirectory(cwd)
                             .then(files => {
-                              filesState.files = _getFilesSpecs(files);
+                              filesState.files = _cleanFiles(files);
                               const {clipboardPath} = filesState;
                               if (clipboardPath === p) {
                                 filesState.clipboardType = null;
@@ -1974,7 +1976,7 @@ class Rend {
                           fs.createDirectory(_pathJoin(cwd, name))
                             .then(() => fs.getDirectory(cwd)
                               .then(files => {
-                                filesState.files = _getFilesSpecs(files);
+                                filesState.files = _cleanFiles(files);
                                 filesState.uploading = false;
 
                                 _updatePages();
@@ -2013,7 +2015,7 @@ class Rend {
                           fs.move(src, dst)
                             .then(() => fs.getDirectory(cwd)
                               .then(files => {
-                                filesState.files = _getFilesSpecs(files);
+                                filesState.files = _cleanFiles(files);
                                 filesState.selectedName = newName;
                                 filesState.uploading = false;
 
@@ -2362,12 +2364,25 @@ class Rend {
                   _updateMenuMesh();
                   _updateAnchors();
                 });
+
+                menu = {
+                  updatePages: _updatePages,
+                };
               }
             });
           }
         };
-        const _initialize = () => _initializeWorld()
-          .then(() => _initializeMenu());
+        const _initializeWorld = () => {
+          const worldName = 'proteus';
+          return _requestDeleteWorld(worldName)
+            .then(() => {
+              if (live) {
+                return _requestChangeWorld(worldName);
+              }
+            });
+        };
+        const _initialize = () => _initializeMenu()
+          .then(() => _initializeWorld());
 
         return _initialize()
           .then(() => {
