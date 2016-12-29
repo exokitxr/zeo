@@ -81,7 +81,7 @@ const insertElementAtKeyPath = (root, keyPath) => {
     attributes: {
       position: {
         type: 'position',
-        value: [1, 2, 3].join(' '),
+        value: [1, 2, 3],
       },
     },
     children: [],
@@ -92,7 +92,14 @@ const insertElementAtKeyPath = (root, keyPath) => {
 };
 const castValueStringToValue = (s, type, min, max, options) => {
   switch (type) {
-    case 'position':
+    case 'position': {
+      const match = s.match(/^([0-9\.]+),([0-9\.]+),([0-9\.]+)$/);
+      if (match) {
+        return [match[1], match[2], match[3]];
+      } else {
+        return null;
+      }
+    }
     case 'text': {
       return s;
     }

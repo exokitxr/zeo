@@ -141,7 +141,7 @@ class Rend {
               attributes: {
                 position: {
                   type: 'position',
-                  value: [1, 2, 3].join(' '),
+                  value: [1, 2, 3],
                 },
                 text: {
                   type: 'text',
@@ -182,7 +182,7 @@ class Rend {
                   attributes: {
                     rotation: {
                       type: 'position',
-                      value: [0, Math.PI, 0].join(' '),
+                      value: [0, Math.PI, 0],
                     },
                   },
                   children: [],
@@ -192,7 +192,7 @@ class Rend {
                   attributes: {
                     rotation: {
                       type: 'position',
-                      value: [0, Math.PI, 0].join(' '),
+                      value: [0, Math.PI, 0],
                     },
                   },
                   children: [],
@@ -216,11 +216,11 @@ class Rend {
               attributes: {
                 position: {
                   type: 'position',
-                  value: [1, 2, 3].join(' '),
+                  value: [1, 2, 3],
                 },
                 rotation: {
                   type: 'position',
-                  value: [0, Math.PI, 0].join(' '),
+                  value: [0, Math.PI, 0],
                 },
                 url: {
                   type: 'text',
@@ -234,11 +234,11 @@ class Rend {
               attributes: {
                 position: {
                   type: 'position',
-                  value: [1, 2, 3].join(' '),
+                  value: [1, 2, 3],
                 },
                 rotation: {
                   type: 'position',
-                  value: [0, Math.PI, 0].join(' '),
+                  value: [0, Math.PI, 0],
                 },
                 url: {
                   type: 'text',
@@ -254,11 +254,11 @@ class Rend {
               attributes: {
                 position: {
                   type: 'position',
-                  value: [1, 2, 3].join(' '),
+                  value: [1, 2, 3],
                 },
                 rotation: {
                   type: 'position',
-                  value: [0, Math.PI, 0].join(' '),
+                  value: [0, Math.PI, 0],
                 },
               },
               children: [
