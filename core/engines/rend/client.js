@@ -922,6 +922,7 @@ class Rend {
                       uniforms: shaderUniforms,
                       vertexShader: menuImageShader.vertexShader,
                       fragmentShader: menuImageShader.fragmentShader,
+                      side: THREE.DoubleSide,
                       transparent: true,
                     });
                     // shaderMaterial.polygonOffset = true;
@@ -978,38 +979,66 @@ class Rend {
                       reject(err);
                     };
                   });
-                  const _requestKeySpecs = () => new Promise((accept, reject) => {
+                  const keySpecs = (() => { // XXX use these for anchor computation
                     const div = document.createElement('div');
-                    div.style.width = KEYBOARD_WIDTH + 'px';
-                    div.style.height = KEYBOARD_HEIGHT + 'px';
+                    div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
                     div.innerHTML = keyboardImg;
 
+                    document.body.appendChild(div);
+
                     const keyEls = div.querySelectorAll(':scope > svg > g[key]');
-                    const keySpecs = (() => {
-                      const result = Array(keyEls.length);
-                      for (let i = 0; i < keyEls.length; i++) {
-                        const keyEl = keyEls[i];
-                        const key = keyEl.getAttribute('key');
-                        const rect = key.getBoundingClientRect();
+                    const result = Array(keyEls.length);
+                    for (let i = 0; i < keyEls.length; i++) {
+                      const keyEl = keyEls[i];
+                      const key = keyEl.getAttribute('key');
+                      const rect = keyEl.getBoundingClientRect();
 
-                        const keySpec = {key, rect};
-                        result[i] = keySpec;
-                      }
-                      return result;
-                    })();
-                    accept(keySpecs);
-                  });
+                      const keySpec = {key, rect};
+                      result[i] = keySpec;
+                    }
 
-                  Promise.all([
-                    _requestKeyboardImage(),
-                    _requestKeySpecs(),
-                  ]).then(([
-                    keyboardImage,
-                    keySpecs,
-                  ]) => {
-                    console.log('got keyboard', {keyboardImage, keySpecs}); // XXX
-                  });
+                    document.body.removeChild(div);
+
+                    return result;
+                  })();
+
+                  const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
+                  const material = (() => {
+                    const texture = new THREE.Texture(
+                      transparentImg,
+                      THREE.UVMapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.NearestFilter,
+                      THREE.NearestFilter,
+                      THREE.RGBAFormat,
+                      THREE.UnsignedByteType,
+                      16
+                    );
+
+                    _requestKeyboardImage()
+                      .then(img => {
+                        texture.image = img;
+                        texture.needsUpdate = true;
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+
+                    const material = new THREE.MeshBasicMaterial({
+                      map: texture,
+                      side: THREE.DoubleSide,
+                      transparent: true,
+                      alphaTest: 0.5,
+                    });
+                    return material;
+                  })();
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.y = 1.5;
+                  mesh.rotation.x = -Math.PI * (3 / 8);
+                  return mesh;
                 })();
+                scene.add(keyboardMesh);
 
                 stats.render = (() => {
                   return () => {
