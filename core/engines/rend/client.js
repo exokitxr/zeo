@@ -210,44 +210,7 @@ class Rend {
               children: [],
             },
           ],
-          availableElements: [
-            /* {
-              tag: 'model',
-              attributes: {
-                position: {
-                  type: 'position',
-                  value: [1, 2, 3],
-                },
-                rotation: {
-                  type: 'position',
-                  value: [0, Math.PI, 0],
-                },
-                url: {
-                  type: 'text',
-                  value: 'cloud.mdl',
-                },
-              },
-              children: [],
-            },
-            {
-              tag: 'model',
-              attributes: {
-                position: {
-                  type: 'position',
-                  value: [1, 2, 3],
-                },
-                rotation: {
-                  type: 'position',
-                  value: [0, Math.PI, 0],
-                },
-                url: {
-                  type: 'text',
-                  value: 'cloud.mdl',
-                },
-              },
-              children: [],
-            }, */
-          ],
+          availableElements: [],
           clipboardElements: [
             {
               tag: 'model',
@@ -450,8 +413,44 @@ class Rend {
                     const availableElements = (() => {
                       const result = [];
                       modApis.forEach((modApi, modName) => {
-                        const {templates} = modApi;
-                        result.push.apply(result, menuUtils.clone(templates));
+                        const {elements, templates} = modApi;
+                        const elementsMap = (() => {
+                          const result = {};
+                          for (let i = 0; i < elements.length; i++) {
+                            const element = elements[i];
+                            result[element.tag] = element;
+                          }
+                          return result;
+                        })();
+                        const _makeTemplateElementFromTemplate = template => {
+                          const _recurse = template => {
+                            const {tag} = template;
+                            const attributes = (() => {
+                              const element = elementsMap[tag];
+                              const {attributes: defaultAttributes} = element;
+                              const {attributes: attributeDefaults} = template;
+
+                              const result = menuUtils.clone(defaultAttributes);
+                              for (const attributeName in attributeDefaults) {
+                                const attributeValue = attributeDefaults[attributeName];
+                                result[attributeName].value = attributeValue;
+                              }
+                              return result;
+                            })();
+                            const children = template.children.map(_recurse);
+                            return {
+                              tag,
+                              attributes,
+                              children,
+                            };
+                          };
+                          return _recurse(template);
+                        };
+                        for (let i = 0; i < templates.length; i++) {
+                          const template = templates[i];
+                          const templateElement = _makeTemplateElementFromTemplate(template);
+                          result.push(templateElement);
+                        }
                       });
                       return result;
                     })();
