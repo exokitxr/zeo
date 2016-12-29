@@ -62,17 +62,31 @@ const moveElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
   newParentElement.children.splice(newKeyPathTail, 0, element);
 
   oldParentElement.children.splice(oldKeyPathTail + ((keyPathEquals(newKeyPathHead, oldKeyPathHead) && newKeyPathTail <= oldKeyPathTail) ? 1 : 0), 1);
+
+  return element;
 };
 const copyElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
   const oldKeyPathHead = oldKeyPath.slice(0, -1);
   const oldKeyPathTail = oldKeyPath[oldKeyPath.length - 1];
   const oldParentElement = getElementKeyPath(spec, oldKeyPathHead);
-  const element = oldParentElement.children[oldKeyPathTail];
+  const oldElement = oldParentElement.children[oldKeyPathTail];
+
+  const _cloneElement = oldElement => {
+    const {tag: oldTag, attributes: oldAttributes, children: oldChildren} = oldElement;
+    return {
+      tag: oldTag,
+      attributes: clone(oldAttributes),
+      children: oldChildren.map(_cloneElement),
+    };
+  };
+  const newElement = _cloneElement(oldElement);
 
   const newKeyPathHead = newKeyPath.slice(0, -1);
   const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
   const newParentElement = getElementKeyPath(spec, newKeyPathHead);
-  newParentElement.children.splice(newKeyPathTail, 0, element);
+  newParentElement.children.splice(newKeyPathTail, 0, newElement);
+
+  return newElement;
 };
 const removeElementKeyPath = (spec, keyPath) => {
   const keyPathHead = keyPath.slice(0, -1);
@@ -167,6 +181,42 @@ const castValueStringToValue = (s, type, min, max, options) => {
   }
 };
 const castValueValueToString = (s, type) => String(s);
+const makeElementInstance = (modApis, element) => {
+  const {tag, attributes, children} = element;
+  const match = tag.match(/^([^:]+?)(?::([^:]+?))?$/);
+  const mainTag = match[1];
+  const subTag = match[2] || null;
+
+  const modApi = modApis.get(mainTag);
+  const {elements: modElements} = modApi;
+  const elementKey = mainTag + ((subTag !== null) ? (':' + subTag) : '');
+  const elementApi = modElements.find(modElement => modElement.tag === elementKey);
+
+  const elementInstance = new elementApi();
+  for (const attributeName in attributes) {
+    const attributeValue = attributes[attributeName];
+    elementInstance[attributeName] = attributeValue;
+  }
+  elementInstance.children = children.map(child => {
+    constructElement(modApis, child);
+    return child.instance;
+  });
+  return elementInstance;
+};
+const constructElement = (modApis, element) => {
+  const elementInstance = makeElementInstance(modApis, element);
+  element.instance = elementInstance;
+};
+const destructElement = element => {
+  const {children, instance} = element;
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    destructElement(child);
+  }
+
+  instance.destructor();
+};
 
 module.exports = {
   pathJoin,
@@ -185,4 +235,7 @@ module.exports = {
   insertElementAtKeyPath,
   castValueStringToValue,
   castValueValueToString,
+  makeElementInstance,
+  constructElement,
+  destructElement,
 };

@@ -135,109 +135,9 @@ class Rend {
           frame: 0,
         };
         const elementsState = {
-          elements: [
-            /* {
-              tag: 'archae',
-              attributes: {
-                position: {
-                  type: 'position',
-                  value: [1, 2, 3],
-                },
-                text: {
-                  type: 'text',
-                  value: 'Hello, world!',
-                },
-                number: {
-                  type: 'number',
-                  value: 2,
-                  min: 0,
-                  max: 10,
-                },
-                select: {
-                  type: 'select',
-                  value: 'basic',
-                  options: [
-                    'basic',
-                    'advanced',
-                    'core',
-                    'extra',
-                  ],
-                },
-                color: {
-                  type: 'color',
-                  value: '#563d7c',
-                },
-                enabled: {
-                  type: 'checkbox',
-                  value: true,
-                },
-                disabled: {
-                  type: 'checkbox',
-                  value: false,
-                },
-              },
-              children: [
-                {
-                  tag: 'sub',
-                  attributes: {
-                    rotation: {
-                      type: 'position',
-                      value: [0, Math.PI, 0],
-                    },
-                  },
-                  children: [],
-                },
-                {
-                  tag: 'subsub',
-                  attributes: {
-                    rotation: {
-                      type: 'position',
-                      value: [0, Math.PI, 0],
-                    },
-                  },
-                  children: [],
-                },
-              ],
-            },
-            {
-              tag: 'text',
-              attributes: {
-                lol: {
-                  type: 'text',
-                  value: 'zol',
-                },
-              },
-              children: [],
-            }, */
-          ],
+          elements: [],
           availableElements: [],
-          clipboardElements: [ // XXX delete this
-            /* {
-              tag: 'model',
-              attributes: {
-                position: {
-                  type: 'position',
-                  value: [1, 2, 3],
-                },
-                rotation: {
-                  type: 'position',
-                  value: [0, Math.PI, 0],
-                },
-              },
-              children: [
-                {
-                  tag: 'submodel',
-                  attributes: {
-                    url: {
-                      type: 'text',
-                      value: 'cloud.mdl',
-                    },
-                  },
-                  children: [],
-                },
-              ],
-            }, */
-          ],
+          clipboardElements: [],
           selectedKeyPath: [],
           draggingKeyPath: [],
           inputText: '',
@@ -263,6 +163,7 @@ class Rend {
         let currentWorld = null;
         const worldMods = new Map();
         let currentWorldMods = null;
+        const currentModApis = new Map();
 
         cleanups.push(() => {
           worlds.forEach(world => {
@@ -310,9 +211,6 @@ class Rend {
               ]) => {
                 const player = heartlink.getPlayer(); // XXX make this per-world
 
-                // mods management
-                const modApis = new Map();
-
                 const startTime = Date.now();
                 let worldTime = 0;
                 const _addUpdate = update => {
@@ -328,7 +226,7 @@ class Rend {
                   worldTime = now - startTime;
 
                   // update mods
-                  modApis.forEach(modApi => {
+                  currentModApis.forEach(modApi => {
                     if (typeof modApi.update === 'function') {
                       modApi.update();
                     }
@@ -336,7 +234,7 @@ class Rend {
                 });
                 _addUpdateEye(camera => {
                   // update mods per eye
-                  modApis.forEach(modApi => {
+                  currentModApis.forEach(modApi => {
                     if (typeof modApi.updateEye === 'function') {
                       modApi.updateEye(camera);
                     }
@@ -366,7 +264,7 @@ class Rend {
                 const _requestMod = mod => archae.requestPlugin(mod)
                   .then(mod => {
                     const modName = archae.getName(mod);
-                    modApis.set(modName, mod);
+                    currentModApis.set(modName, mod);
 
                     return mod;
                   });
@@ -393,7 +291,7 @@ class Rend {
                 const _requestReleaseMod = mod => archae.releasePlugin(mod)
                   .then(mod => {
                     const modName = archae.getName(mod);
-                    modApis.delete(modName);
+                    currentModApis.delete(modName);
 
                     return mod;
                   });
@@ -416,7 +314,7 @@ class Rend {
 
                         const availableElements = (() => {
                           const result = [];
-                          modApis.forEach((modApi, modName) => {
+                          currentModApis.forEach((modApi, modName) => {
                             const {elements, templates} = modApi;
                             const elementsMap = (() => {
                               const result = {};
@@ -465,39 +363,12 @@ class Rend {
                       });
                   };
                   const _loadElements = () => new Promise((accept, reject) => {
-                    const {elements: elementSpecs} = elementsState;
-
-                    const _makeElementInstance = elementSpec => {
-                      const {tag, attributes, children} = elementSpec;
-                      const match = tag.match(/^([^:]+?)(?::([^:]+?))?$/);
-                      const mainTag = match[1];
-                      const subTag = match[2] || null;
-
-                      const modApi = modApis.get(mainTag);
-                      const {elements: modElements} = modApi;
-                      const elementKey = mainTag + ((subTag !== null) ? (':' + subTag) : '');
-                      const elementApi = modElements.find(modElement => modElement.tag === elementKey);
-
-                      const elementInstance = new elementApi();
-                      for (const attributeName in attributes) {
-                        const attributeValue = attributes[attributeName];
-                        elementInstance[attributeName] = attributeValue;
-                      }
-                      elementInstance.children = children.map(child => {
-                        _constructElement(child);
-                        return child.instance;
-                      });
-                      return elementInstance;
-                    };
-                    const _constructElement = elementSpec => {
-                      const elementInstance = _makeElementInstance(elementSpec);
-                      elementSpec.instance = elementInstance;
-                    };
-
-                    for (let i = 0; i < elementSpecs.length; i++) {
-                      const elementSpec = elementSpecs[i];
-                      _constructElement(elementSpec);
+                    const {elements} = elementsState;
+                    for (let i = 0; i < elements.length; i++) {
+                      const element = elements[i];
+                      menuUtils.constructElement(currentModApis, element);
                     }
+                    accept();
                   });
 
                   return _loadMods()
@@ -1465,17 +1336,7 @@ class Rend {
                         };
                         const oldElement = menuUtils.removeElementKeyPath(spec, oldElementsSelectedKeyPath);
 
-                        const _destroy = element => {
-                          const {children, instance} = element;
-
-                          for (let i = 0; i < children.length; i++) {
-                            const child = children[i];
-                            _destroy(child);
-                          }
-
-                          instance.destructor();
-                        };
-                        _destroy(oldElement);
+                        menuUtils.destructElement(oldElement);
 
                         elementsState.selectedKeyPath = [];
                         elementsState.draggingKeyPath = [];
@@ -1710,9 +1571,14 @@ class Rend {
                           const collection = keyPath[0];
 
                           if (collection === 'elements' || collection === 'clipboardElements') {
-                            return menuUtils.moveElementKeyPath;
+                            return (spec, oldKeyPath, newKeyPath) => {
+                              menuUtils.moveElementKeyPath(spec, oldKeyPath, newKeyPath);
+                            };
                           } else if (collection === 'availableElements') {
-                            return menuUtils.copyElementKeyPath; // XXX need to instantiate new element in this case
+                            return (spec, oldKeyPath, newKeyPath) => {
+                              const element = menuUtils.copyElementKeyPath(spec, oldKeyPath, newKeyPath);
+                              menuUtils.constructElement(currentModApis, element);
+                            };
                           } else {
                             return () => {};
                           }
