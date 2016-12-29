@@ -2,6 +2,11 @@ import Stats from 'stats.js';
 import whatkey from 'whatkey';
 import prettyBytes from 'pretty-bytes';
 
+import keyboard from './lib/images/keyboard';
+import menuShaders from './lib/shaders/menu';
+
+const keyboardImgSrc = 'data:image/svg+xml;' + keyboard;
+
 const WIDTH = 2 * 1024;
 const HEIGHT = WIDTH / 1.5;
 const ASPECT_RATIO = WIDTH / HEIGHT;
@@ -1069,76 +1074,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
               };
             });
 
-            const imageShader = {
-              uniforms: {
-                textures: {
-                  type: 'tv',
-                  value: null,
-                },
-                validTextures: {
-                  type: 'iv1',
-                  value: null,
-                },
-                texturePositions: {
-                  type: 'v2v',
-                  value: null,
-                },
-                textureLimits: {
-                  type: 'v2v',
-                  value: null,
-                },
-                textureOffsets: {
-                  type: 'fv1',
-                  value: null,
-                },
-                textureDimensions: {
-                  type: 'fv1',
-                  value: null,
-                },
-              },
-              vertexShader: [
-                "varying vec2 vUv;",
-                "void main() {",
-                "  vUv = uv;",
-                "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
-                "}"
-              ].join("\n"),
-              fragmentShader: [
-                "uniform sampler2D textures[" + maxNumTextures + "];",
-                "uniform int validTextures[" + maxNumTextures + "];",
-                "uniform vec2 texturePositions[" + maxNumTextures + "];",
-                "uniform vec2 textureLimits[" + maxNumTextures + "];",
-                "uniform float textureOffsets[" + maxNumTextures + "];",
-                "uniform float textureDimensions[" + maxNumTextures + "];",
-                "varying vec2 vUv;",
-                "void main() {",
-                "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
-                "  float alpha = 0.0;",
-                "  int numValid = 0;",
-                "  for (int i = 0; i < " + maxNumTextures + "; i++) {",
-                "    if (validTextures[i] != 0) {",
-                "      vec2 uv = vec2(",
-                "        (vUv.x - texturePositions[i].x) / textureLimits[i].x,",
-                "        1.0 - ((1.0 - vUv.y - texturePositions[i].y) / textureLimits[i].y)",
-                "      );",
-                "      if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
-                "        uv.y = 1.0 - ((1.0 - vUv.y - texturePositions[i].y + textureOffsets[i]) / textureDimensions[i]);",
-                "        if (uv.y > 0.0 && uv.y < 1.0) {",
-                "          vec4 sample = texture2D(textures[i], uv);",
-                "          diffuse += sample.rgb;",
-                "",
-                "          if (sample.a > 0.0) {",
-                "            alpha += sample.a;",
-                "            numValid++;",
-                "          }",
-                "        }",
-                "      }",
-                "    }",
-                "  }",
-                "  gl_FragColor = vec4(diffuse / float(numValid), alpha / float(numValid));",
-                "}"
-              ].join("\n")
-            };
+            const menuImageShader = menuShaders.getMenuImageShader({maxNumTextures});
 
             return biolumi.requestUi({
               width: WIDTH,
@@ -1514,7 +1450,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                   result.position.z = -0.5;
 
                   const imageMaterial = (() => {
-                    const shaderUniforms = THREE.UniformsUtils.clone(imageShader.uniforms);
+                    const shaderUniforms = THREE.UniformsUtils.clone(menuImageShader.uniforms);
                     shaderUniforms.textures.value = (() => {
                       const result = Array(maxNumTextures);
                       for (let i = 0; i < maxNumTextures; i++) {
@@ -1574,8 +1510,8 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                     })();
                     const shaderMaterial = new THREE.ShaderMaterial({
                       uniforms: shaderUniforms,
-                      vertexShader: imageShader.vertexShader,
-                      fragmentShader: imageShader.fragmentShader,
+                      vertexShader: menuImageShader.vertexShader,
+                      fragmentShader: menuImageShader.fragmentShader,
                       transparent: true,
                     });
                     // shaderMaterial.polygonOffset = true;
@@ -2882,5 +2818,76 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
     this._cleanup();
   }
 }
+
+const _getImageShader = ({maxNumTextures}) => ({
+  uniforms: {
+    textures: {
+      type: 'tv',
+      value: null,
+    },
+    validTextures: {
+      type: 'iv1',
+      value: null,
+    },
+    texturePositions: {
+      type: 'v2v',
+      value: null,
+    },
+    textureLimits: {
+      type: 'v2v',
+      value: null,
+    },
+    textureOffsets: {
+      type: 'fv1',
+      value: null,
+    },
+    textureDimensions: {
+      type: 'fv1',
+      value: null,
+    },
+  },
+  vertexShader: [
+    "varying vec2 vUv;",
+    "void main() {",
+    "  vUv = uv;",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "uniform sampler2D textures[" + maxNumTextures + "];",
+    "uniform int validTextures[" + maxNumTextures + "];",
+    "uniform vec2 texturePositions[" + maxNumTextures + "];",
+    "uniform vec2 textureLimits[" + maxNumTextures + "];",
+    "uniform float textureOffsets[" + maxNumTextures + "];",
+    "uniform float textureDimensions[" + maxNumTextures + "];",
+    "varying vec2 vUv;",
+    "void main() {",
+    "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
+    "  float alpha = 0.0;",
+    "  int numValid = 0;",
+    "  for (int i = 0; i < " + maxNumTextures + "; i++) {",
+    "    if (validTextures[i] != 0) {",
+    "      vec2 uv = vec2(",
+    "        (vUv.x - texturePositions[i].x) / textureLimits[i].x,",
+    "        1.0 - ((1.0 - vUv.y - texturePositions[i].y) / textureLimits[i].y)",
+    "      );",
+    "      if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
+    "        uv.y = 1.0 - ((1.0 - vUv.y - texturePositions[i].y + textureOffsets[i]) / textureDimensions[i]);",
+    "        if (uv.y > 0.0 && uv.y < 1.0) {",
+    "          vec4 sample = texture2D(textures[i], uv);",
+    "          diffuse += sample.rgb;",
+    "",
+    "          if (sample.a > 0.0) {",
+    "            alpha += sample.a;",
+    "            numValid++;",
+    "          }",
+    "        }",
+    "      }",
+    "    }",
+    "  }",
+    "  gl_FragColor = vec4(diffuse / float(numValid), alpha / float(numValid));",
+    "}"
+  ].join("\n"),
+});
 
 module.exports = Rend;
