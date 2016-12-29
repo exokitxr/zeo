@@ -22,7 +22,8 @@ class Rend {
       live = false;
     };
 
-    const worldModJsons = new Map();
+    const worldModsJsons = new Map();
+    const worldElementsJsons = new Map();
     const worldModMutex = new MultiMutex();
 
     const worldsPath = path.join(__dirname, '..', '..', '..', 'data', 'worlds');
@@ -40,23 +41,23 @@ class Rend {
       .then(() => {
         if (live) {
           const _getWorldModJson = ({world}) => new Promise((accept, reject) => {
-            const entry = worldModJsons.get(world);
+            const entry = worldModsJsons.get(world);
 
             if (entry) {
               accept(entry);
             } else {
-              const worldModJsonPath = path.join(worldsPath, world, 'mods.json');
+              const worldModsJsonPath = path.join(worldsPath, world, 'mods.json');
 
-              fs.readFile(worldModJsonPath, 'utf8', (err, s) => {
+              fs.readFile(worldModsJsonPath, 'utf8', (err, s) => {
                 if (!err) {
                   const entry = JSON.parse(s);
-                  worldModJsons.set(world, entry);
+                  worldModsJsons.set(world, entry);
                   accept(entry);
                 } else if (err.code === 'ENOENT') {
                   const entry = {
                     mods: [],
                   };
-                  worldModJsons.set(world, entry);
+                  worldModsJsons.set(world, entry);
                   accept(entry);
                 } else {
                   reject(err);
@@ -64,10 +65,49 @@ class Rend {
               });
             }
           });
-          const _setWorldModJson = ({world, worldModJson}) => new Promise((accept, reject) => {
-            const worldModJsonPath = path.join(worldsPath, world, 'mods.json');
+          const _setWorldModsJson = ({world, worldModsJson}) => new Promise((accept, reject) => {
+            worldModsJsons.set(world, worldModsJson);
 
-            fs.writeFile(worldModJsonPath, JSON.stringify(worldModJson, null, 2), 'utf8', err => {
+            const worldModsJsonPath = path.join(worldsPath, world, 'mods.json');
+            fs.writeFile(worldModsJsonPath, JSON.stringify(worldModsJson, null, 2), 'utf8', err => {
+              if (!err) {
+                accept();
+              } else {
+                reject(err);
+              }
+            });
+          });
+          const _getWorldElementsJson = ({world}) => new Promise((accept, reject) => {
+            const entry = worldElementsJsons.get(world);
+
+            if (entry) {
+              accept(entry);
+            } else {
+              const worldElementsJsonPath = path.join(worldsPath, world, 'elements.json');
+
+              fs.readFile(worldElementsJsonPath, 'utf8', (err, s) => {
+                if (!err) {
+                  const entry = JSON.parse(s);
+                  worldElementsJsons.set(world, entry);
+                  accept(entry);
+                } else if (err.code === 'ENOENT') {
+                  const entry = {
+                    elements: [],
+                    clipboardElements: [],
+                  };
+                  worldElementsJsons.set(world, entry);
+                  accept(entry);
+                } else {
+                  reject(err);
+                }
+              });
+            }
+          });
+          const _setWorldElementsJson = ({world, worldElementsJson}) => new Promise((accept, reject) => {
+            worldElementsJsons.set(world, worldModJson);
+
+            const worldElementJsonPath = path.join(worldsPath, world, 'elements.json');
+            fs.writeFile(worldElementJsonPath, JSON.stringify(worldElementsJson, null, 2), 'utf8', err => {
               if (!err) {
                 accept();
               } else {
@@ -88,13 +128,13 @@ class Rend {
                 })(cb);
 
                 _getWorldModJson({world})
-                  .then(worldModJson => {
-                    const {mods} = worldModJson;
+                  .then(worldModsJson => {
+                    const {mods} = worldModsJson;
                     if (!mods.includes(mod)) {
                       mods.push(mod);
                     }
                     
-                    _setWorldModJson({world, worldModJson})
+                    _setWorldModsJson({world, worldModsJson})
                       .then(() => {
                         cb();
                       })
@@ -122,14 +162,14 @@ class Rend {
                 })(cb);
 
                 _getWorldModJson({world})
-                  .then(worldModJson => {
-                    const {mods} = worldModJson;
+                  .then(worldModsJson => {
+                    const {mods} = worldModsJson;
                     const index = mods.indexOf(mod);
                     if (index !== -1) {
                       mods.splice(index, 1);
                     }
                     
-                    _setWorldModJson({world, worldModJson})
+                    _setWorldModJson({world, worldModsJson})
                       .then(() => {
                         cb();
                       })
@@ -224,11 +264,11 @@ class Rend {
                     _getPlugins()
                   ])
                     .then(([
-                      worldModJson,
+                      worldModsJson,
                       plugins,
                     ]) => {
                       if (plugins.length > 0) {
-                        const {mods} = worldModJson;
+                        const {mods} = worldModsJson;
 
                         const result = [];
                         let pending = plugins.length;
@@ -356,26 +396,53 @@ class Rend {
           app.post('/archae/rend/mods/remove', serveModsRemove);
           function serveElementsGet(req, res, next) {
             const {world} = req.params;
-
             const worldElementsJsonPath = path.join(worldsPath, world, 'elements.json');
-            const rs = fs.createReadStream(worldElementsJsonPath);
-            
-            res.type('application/json');
-            rs.pipe(res);
-            rs.on('error', err => {
-              res.status(500);
-              res.send(err.stack);
-            });
+
+            _getWorldElementsJson({world})
+              .then(worldElementsJson => {
+                const {elements, clipboardElements} = worldElementsJson;
+
+                res.json({
+                  elements,
+                  clipboardElements,
+                });
+              })
+              .catch(err => {
+                res.status(500);
+                res.send(err.stack);
+              });
           }
           app.get('/archae/rend/worlds/:world/elements.json', serveElementsGet);
           function serveElementsSet(req, res, next) {
-            const {world} = req.params;
-            const worldElementsJsonPath = path.join(worldsPath, world, 'elements.json');
-            const ws = fs.createWriteStream(worldElementsJsonPath);
+            bodyParserJson(req, res, () => {
+              const {body: data} = req;
 
-            req.pipe(ws);
-            ws.on('finish', () => {
-              res.send();
+              const _respondInvalid = () => {
+                res.status(400);
+                res.send();
+              };
+
+              if (
+                typeof data === 'object' && data !== null &&
+                data.elements && Array.isArray(elements) &&
+                data.clipboardElements && Array.isArray(clipboardElements)
+              ) {
+                const {world} = req.params;
+                const worldElementsJson = {
+                  elements: data.elements,
+                  clipboardElements: data.clipboardElements,
+                };
+                _setWorldElementsJson({world, worldElementsJson})
+                  .then(() => {
+                    res.send();
+                  })
+                  .catch(err => {
+                    res.status(500);
+                    res.send(err.stack);
+                  });
+              } else {
+                _respondInvalid();
+              }
             });
           }
           app.put('/archae/rend/worlds/:world/elements.json', serveElementsSet);

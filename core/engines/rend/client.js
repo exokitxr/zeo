@@ -136,7 +136,7 @@ class Rend {
         };
         const elementsState = {
           elements: [
-            {
+            /* {
               tag: 'archae',
               attributes: {
                 position: {
@@ -208,11 +208,11 @@ class Rend {
                 },
               },
               children: [],
-            },
+            }, */
           ],
           availableElements: [],
-          clipboardElements: [
-            {
+          clipboardElements: [ // XXX delete this
+            /* {
               tag: 'model',
               attributes: {
                 position: {
@@ -236,7 +236,7 @@ class Rend {
                   children: [],
                 },
               ],
-            },
+            }, */
           ],
           selectedKeyPath: [],
           draggingKeyPath: [],
@@ -300,10 +300,12 @@ class Rend {
 
             Promise.all([
               _requestModsStatus(worldName),
+              _requestGetElements(worldName),
               bullet.requestWorld(worldName),
             ])
               .then(([
                 modsStatus,
+                elementsStatus,
                 physics,
               ]) => {
                 const player = heartlink.getPlayer(); // XXX make this per-world
@@ -488,7 +490,9 @@ class Rend {
                 worldMods.set(worldName, modsStatus);
                 currentWorldMods = modsStatus;
 
-                modsState.mods = menuUtils.cleanMods(currentWorldMods);
+                modsState.mods = menuUtils.cleanMods(modsStatus);
+                elementsState.elements = elementsStatus.elements;
+                elementsState.clipboardElements = elementsStatus.clipboardElements;
 
                 accept();
               });
@@ -510,13 +514,14 @@ class Rend {
             })
             .catch(reject); */
         });
-        const _requestMainReadme = worldName => fetch('/archae/rend/readme').then(res => res.text());
-        const _requestGetElements = worldName => fetch('/archae/rend/worlds/' + worldName + '/elements.json').then(res => res.json().then(j => j.elements));
-        const _requestSetElements = (worldName, elements) => fetch('/archae/rend/worlds/' + worldName + '/elements.json', {
+        const _requestMainReadme = () => fetch('/archae/rend/readme').then(res => res.text());
+        const _requestGetElements = world => fetch('/archae/rend/worlds/' + world + '/elements.json').then(res => res.json());
+        const _requestSetElements = ({world, elements, clipboardElements}) => fetch('/archae/rend/worlds/' + world + '/elements.json', {
           method: 'PUT',
           body: JSON.stringify({
             elements,
-          }, null, 2),
+            clipboardElements,
+          }),
         }).then(res => res.blob().then(() => {}));
 
         const _initializeMenu = () => {
