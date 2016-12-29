@@ -12,11 +12,17 @@ import {
   WORLD_DEPTH,
   STATS_REFRESH_RATE,
 } from './lib/constants/menu';
-import keyboard from './lib/images/keyboard';
+import {
+  KEYBOARD_WIDTH,
+  KEYBOARD_HEIGHT,
+  KEYBOARD_WORLD_WIDTH,
+  KEYBOARD_WORLD_HEIGHT,
+} from './lib/constants/keyboard';
+import keyboardImg from './lib/images/keyboard';
 import menuShaders from './lib/shaders/menu';
 import menuRender from './lib/render/menu';
 
-const keyboardImgSrc = 'data:image/svg+xml;' + keyboard;
+const keyboardImgSrc = 'data:image/svg+xml,' + keyboardImg;
 
 const WIDTH = 2 * 1024;
 const HEIGHT = WIDTH / 1.5;
@@ -960,6 +966,50 @@ class Rend {
                   return mesh;
                 })();
                 scene.add(dotMesh);
+
+                const keyboardMesh = (() => {
+                  const _requestKeyboardImage = () => new Promise((accept, reject) => {
+                    const img = new Image();
+                    img.src = keyboardImgSrc;
+                    img.onload = () => {
+                      accept(img);
+                    };
+                    img.onerror = err => {
+                      reject(err);
+                    };
+                  });
+                  const _requestKeySpecs = () => new Promise((accept, reject) => {
+                    const div = document.createElement('div');
+                    div.style.width = KEYBOARD_WIDTH + 'px';
+                    div.style.height = KEYBOARD_HEIGHT + 'px';
+                    div.innerHTML = keyboardImg;
+
+                    const keyEls = div.querySelectorAll(':scope > svg > g[key]');
+                    const keySpecs = (() => {
+                      const result = Array(keyEls.length);
+                      for (let i = 0; i < keyEls.length; i++) {
+                        const keyEl = keyEls[i];
+                        const key = keyEl.getAttribute('key');
+                        const rect = key.getBoundingClientRect();
+
+                        const keySpec = {key, rect};
+                        result[i] = keySpec;
+                      }
+                      return result;
+                    })();
+                    accept(keySpecs);
+                  });
+
+                  Promise.all([
+                    _requestKeyboardImage(),
+                    _requestKeySpecs(),
+                  ]).then(([
+                    keyboardImage,
+                    keySpecs,
+                  ]) => {
+                    console.log('got keyboard', {keyboardImage, keySpecs}); // XXX
+                  });
+                })();
 
                 stats.render = (() => {
                   return () => {
