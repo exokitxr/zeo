@@ -2,8 +2,19 @@ import Stats from 'stats.js';
 import whatkey from 'whatkey';
 import prettyBytes from 'pretty-bytes';
 
+import {
+  WIDTH,
+  HEIGHT,
+  ASPECT_RATIO,
+  MENU_SIZE,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+  STATS_REFRESH_RATE,
+} from './lib/constants/menu';
 import keyboard from './lib/images/keyboard';
 import menuShaders from './lib/shaders/menu';
+import menuRender from './lib/render/menu';
 
 const keyboardImgSrc = 'data:image/svg+xml;' + keyboard;
 
@@ -70,6 +81,10 @@ class Rend {
 
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
+
+        const menuRenderer = menuRender.makeRenderer({
+          creatureUtils,
+        });
 
         // main state
         const worlds = new Map();
@@ -327,617 +342,6 @@ class Rend {
               fontWeight: biolumi.getFontWeight(),
               fontStyle: biolumi.getFontStyle(),
             };
-
-            const getMainPageSrc = () => `\
-${getHeaderSrc('zeo.sh', '', '', false)}
-<div style="height: ${HEIGHT - (150 + 2)}px;">
-  <div style="display: flex;">
-    ${getMainSidebarSrc()}
-    <div style="width: ${WIDTH - 500}px;"></div>
-  </div>
-</div>
-`;
-            const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
-<div style='position: relative; height: 100px; width ${WIDTH - (500 + 40)}px; font-size: ${mainFontSpec.fontSize}px; line-height: ${mainFontSpec.lineHeight};'>
-  <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #EEE; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
-    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-    <div>${inputText}</div>
-    ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
-  </a>
-</div>
-`;
-            const getSliderSrc = sliderValue => `\
-<div style="position: relative; width: ${WIDTH - (500 + 40)}px; height: 100px;">
-  <a style="display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0;" onclick="config:resolution">
-    <div style="position: absolute; top: 40px; left: 0; right: 0; height: 10px; background-color: #CCC;">
-      <div style="position: absolute; top: -40px; bottom: -40px; left: ${sliderValue * (WIDTH - (500 + 40))}px; margin-left: -5px; width: 10px; background-color: #F00;"></div>
-    </div>
-  </a>
-</div>
-`;
-           const getCheckboxSrc = checkboxValue => `\
-<div style="display: flex; width: ${WIDTH - (500 + 40)}px; height: 100px; align-items: center;">
-  ${checkboxValue ?
-    `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="config:stats">
-      <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
-        <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #333;"></div>
-      </div>
-    </a>`
-  :
-    `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="config:stats">
-      <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
-        <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #CCC;"></div>
-      </div>
-    </a>`
-  }
-</div>
-`;
-            const getWorldsPageSrc = ({worlds, selectedName, inputText, inputValue, focusType}) => {
-              const renamingName = (() => {
-                const match = focusType.match(/^worlds:rename:(.+)$/);
-                return match ? match[1] : '';
-              })();
-
-              return `\
-${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
-<div style="height: ${HEIGHT - (150 + 2)}px;">
-  <div style="display: flex;">
-    ${getWorldsSidebarSrc()}
-    <div style="width: ${WIDTH - 500}px; clear: both;">
-      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local worlds</h1>
-      ${getItemsSrc(worlds, selectedName, renamingName, inputText, inputValue, 'Enter new name', 'world')}
-      <div style="display: flex; margin: 20px 0; float: left; clear: both; font-size: 32px; align-items: center;">
-        ${focusType !== 'worlds:create' ? `\
-<a style="display: flex; height: 60px; padding: 0 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="worlds:create">+ Create World</a>
-`
-        : `\
-<a style="display: flex; position: relative; width: ${(WIDTH - 500) / 3}px; height: 60px; background-color: #EEE; border-radius: 5px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
-  <div style="position: absolute; width: 2px; top: 0; bottom: 12px; left: ${inputValue}px; background-color: #333;"></div>
-  <div>${inputText}</div>
-  ${!inputText ? `<div style="color: #CCC;">Enter world name</div>` : ''}
-</a>
-`
-        }
-    </div>
-    </div>
-  </div>
-</div>
-`;
-            };
-            const getWorldsButtonsSrc = selectedName => `\
-<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-  ${selectedName ? `\
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="worlds:rename">Rename</a>
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="worlds:remove">Remove</a>
-`
-  :
-    ''
-  }
-</div>
-`;
-            const getModsPageSrc = ({mods, inputText, inputValue, focus}) => {
-              const installedMods = mods.filter(mod => mod.installed);
-              const availableMods = mods.filter(mod => !mod.installed);
-
-              return `\
-${getHeaderSrc('mods', '', '', true)}
-<div style="height: ${HEIGHT - (150 + 2)}px;">
-  <div style="display: flex;">
-    ${getModsSidebarSrc()}
-    <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
-      ${getInputSrc(inputText, 'Search npm', inputValue, focus, 'mods:input')}
-      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
-      ${getItemsSrc(installedMods, '', '', '', '', '', 'mod')}
-      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
-      ${getItemsSrc(availableMods, '', '', '', '', '', 'mod')}
-    </div>
-  </div>
-</div>
-`;
-            };
-            const getItemsSrc = (items, selectedName, renamingName, inputText, inputValue, inputPlaceholder, prefix) =>
-              (items.length > 0) ? `\
-<div style="width: inherit; float: left; clear: both;">
-  ${items.map(item => getItemSrc(item, selectedName, renamingName, inputText, inputValue, inputPlaceholder, prefix)).join('\n')}
-</div>
-`
-              :
-                `<h2 style="font-size: 40px; color: #CCC;">Nothing here...</h2>`;
-            const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inputPlaceholder, prefix) => {
-              const {name} = item;
-              const selected = name === selectedName;
-              const style = selected ? 'background-color: #EEE;' : '';
-              const renaming = name === renamingName;
-
-              return `\
-<a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; ${style}; text-decoration: none; overflow: hidden;" onclick="${prefix}:${name}">
-  <img src="${creatureUtils.makeStaticCreature('${prefix}:' + name)}" width="100" height="100" style="image-rendering: pixelated;" />
-  <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
-    ${!renaming ? `\
-<div style="width: 100%; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-<div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${item.description}</div>
-`   :
-      `\
-<div style="position: relative; width: 100%; background-color: #EEE; border-radius: 5px; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-  <div>${inputText}</div>
-  ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}
-  <div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>
-</div>
-`
-  }
-  </div>
-</a>`;
-            };
-            const getModPageSrc = ({name, version, installed}) => `\
-${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
-<div style="height: ${HEIGHT - (150 + 2)}px;">
-  <div style="display: flex;">
-    ${getModSidebarSrc()}
-  </div>
-</div>
-`;
-            const getModPageReadmeSrc = ({readme}) => `\
-<div style="position: absolute; top: 0; right: 0; height: 50px; width: 50px; background-color: red;"></div>
-<div style="position: absolute; top: 0; right: 50px; height: 100px; width: 50px; background-color: red;"></div>
-<div style="position: absolute; top: 0; right: 100px; height: 125px; width: 50px; background-color: red;"></div>
-<div style="position: absolute; top: 0; right: 150px; height: 150px; width: 50px; background-color: red;"></div>
-${readme}
-`;
-            const getConfigPageSrc = () => `\
-${getHeaderSrc('preferences', '', '', true)}
-<div style="height: ${HEIGHT - (150 + 2)}px;">
-  <div style="display: flex;">
-    ${getConfigSidebarSrc()}
-  </div>
-</div>
-`;
-            const getConfigPageContentSrc = ({inputText, inputValue, focus, sliderValue, checkboxValue}) => `\
-<div style="width: ${WIDTH - (500 + 40)}px; margin: 40px 0; padding-right: 40px;">
-  ${getInputSrc(inputText, '', inputValue, focus, 'config:input')}
-  ${getSliderSrc(sliderValue)}
-  ${getCheckboxSrc(checkboxValue)}
-</div>
-`;
-            const getElementsPageSrc = () => `\
-${getHeaderSrc('elements', '', '', true)}
-<div style="height: ${HEIGHT - (150 + 2)}px;">
-  <div style="display: flex;">
-    ${getElementsSidebarSrc()}
-    <div style="width: ${WIDTH - 500}px;"></div>
-  </div>
-</div>
-`;
-            const getElementsPageContentSrc = ({elements, selectedKeyPath, draggingKeyPath}) => `\
-<div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; border-left: 2px solid #333; border-right: 2px solid #333; overflow-x: hidden; overflow-y: visible; box-sizing: border-box;">
-  <h1 style="margin: 10px 0; font-size: 40px;">World</h1>
-  ${getElementsSrc(elements, ['elements'], selectedKeyPath, draggingKeyPath)}
-  <div style="display: flex; height: 40px; margin: 20px 0; align-items: center;">
-    <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 24px; color: #d9534f; text-decoration: none;" onclick="element:add">+ Add</a>
-  </div>
-  <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click one to adjust its properties. Drag to move. <a href="#">Add new element</a> or drag it in.</p>
-</div>
-`;
-            const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}) => {
-              const element = _getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
-
-              return `\
-<div style="display: flex; flex-direction: column; width: 600px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; box-sizing: border-box;">
-  ${selectedKeyPath.length > 0 ?
-    `${getSubcontentSectionSrc(
-      `\
-<span style="color: #a894a6;">\
-&lt;\
-<img src="${creatureUtils.makeStaticCreature('mod:' + element.tag)}" width="40" height="40" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
-${element.tag}&gt; properties\
-</span>\
-`,
-      null,
-      getElementAttributesSrc(element, inputText, inputValue, focusAttribute),
-      ''
-    )}
-    <div style="margin-top: 30px; margin-left: -30px; border-bottom: 2px solid #333;"></div>`
-  :
-    ''
-  }
-  ${getSubcontentSectionSrc(
-    'Installed',
-    `<a style="padding: 5px 10px; background-color: #5cb85c; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">More</a>`,
-    getElementsSrc(availableElements, ['availableElements'], selectedKeyPath, draggingKeyPath),
-    `Installed and ready to add. Drag to the left.<br/><a href="#">Install more elements</a>`
-  )}
-  <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
-  ${getSubcontentSectionSrc(
-    'Clipboard',
-    `<a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>`,
-    getElementsSrc(clipboardElements, ['clipboardElements'], selectedKeyPath, draggingKeyPath),
-    `Drag-and-drop elements to the clipboad to save them. Drag inside the clipboard to copy.`
-  )}
-</div>
-`;
-            };
-            const getElementAttributesSrc = (element, inputText, inputValue, focusAttribute) => {
-              let result = '';
-
-              const {attributes} = element;
-              for (const name in attributes) {
-                const attribute = attributes[name];
-                const {type, value, min, max, options} = attribute;
-                const focus = name === focusAttribute;
-
-                result += `\
-<div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
-  <div style="width: ${200 - 30}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
-  ${getElementAttributeInput(name, type, value, min, max, options, inputText, inputValue, focus)}
-</div>
-`;
-              }
-
-              return result;
-            };
-            const getElementAttributeInput = (name, type, value, min, max, options, inputText, inputValue, focus) => {
-              const focusValue = !focus ? value : _castValueStringToValue(inputText, type, min, max, options);
-
-              switch (type) {
-                case 'position': {
-                  return `<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
-                    <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;">Set</a>
-                  </div>`;
-                }
-                case 'text': {
-                  return `\
-<a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
-  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-  <div>${focusValue}</div>
-</a>
-`;
-                }
-                case 'number': {
-                  if (min === undefined) {
-                    min = 0;
-                  }
-                  if (max === undefined) {
-                    max = 10;
-                  }
-
-                  const factor = focusValue !== null ? ((focusValue - min) / max) : min;
-                  const string = focusValue !== null ? String(focusValue) : inputText;
-                  return `\
-<a style="position: relative; width: ${400 - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="element:attribute:${name}:tweak">
-  <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
-    <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
-  </div>
-</a>
-<a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
-  ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-  <div>${string}</div>
-</a>
-`;
-                }
-                case 'select': {
-                  if (options === undefined) {
-                    options = [''];
-                  }
-
-                  if (!focus) {
-                    return `\
-<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
-  <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${focusValue}</div>
-  <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
-</a>
-`;
-                  } else {
-                    return `\
-<div style="position: relative; width: 400px; height: 40px; z-index: 1;">
-  <div style="display: flex; flex-direction: column; background-color: #FFF;">
-    ${options.map((option, i, a) => {
-      const style = (() => {
-        let result = '';
-        if (i !== 0) {
-          result += 'padding-top: 2px; border-top: 0;';
-        }
-        if (i !== (a.length - 1)) {
-          result += 'padding-bottom: 2px; border-bottom: 0;';
-        }
-        if (option === focusValue) {
-          result += 'background-color: #EEE;';
-        }
-        return result;
-      })();
-      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="element:attribute:${name}:set:${option}">
-        ${option}
-      </a>`;
-    }).join('\n')}
-  </div>
-</div>
-`;
-                  }
-                }
-                case 'color': {
-                  const color = focusValue !== null ? focusValue : '#CCC';
-                  const string = focusValue !== null ? focusValue : inputText;
-                  return `\
-<div style="display: flex; width: 400px; height: 40px; align-items: center;">
-  <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${color};"></div>
-  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus">
-    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-    <div>${string}</div>
-  </a>
-</div>
-`;
-                }
-                case 'checkbox': {
-                  return `\
-<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end; align-items: center;">
-  ${focusValue ?
-    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="element:attribute:${name}:toggle">
-      <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
-        <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
-      </div>
-    </a>`
-  :
-    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="element:attribute:${name}:toggle">
-      <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
-        <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
-      </div>
-    </a>`
-  }
-</div>
-`;
-                }
-                default: {
-                  return '';
-                }
-              }
-            };
-            const getElementsSrc = (elements, keyPath, selectedKeyPath, draggingKeyPath) => {
-              const head = (element, keyPath, depth) => {
-                const tag = anchorTag(keyPath);
-
-                return `\
-${spaces(depth)}\
-<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">\
-&lt;\
-<img src="${creatureUtils.makeStaticCreature('mod:' + element.tag)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
-${element.tag}\
-${attributes(element)}\
-&gt;\
-</${tag}>\
-`;
-              };
-              const tail = (element, keyPath, depth) => {
-                const tag = anchorTag(keyPath);
-
-                return `<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">${spaces(depth)}&lt;/${element.tag}&gt;</${tag}>`;
-              };
-              const anchorTag = keyPath => (draggingKeyPath.length > 0 && _isSubKeyPath(keyPath, draggingKeyPath)) ? 'span' : 'a';
-              const anchorStyle = keyPath => {
-                const style = (() => {
-                  if (_keyPathEquals(keyPath, selectedKeyPath)) {
-                    const color = (() => {
-                      if (_keyPathEquals(keyPath, draggingKeyPath)) {
-                        return '#DDD';
-                      } else {
-                        return '#EEE';
-                      }
-                    })();
-                    return `background-color: ${color}; border-radius: 5px;`;
-                  } else {
-                    return '';
-                  }
-                })();
-                return `display: inline-block; ${style};`;
-              };
-              const anchorOnmousedown = keyPath => `element:select:${keyPath.join(':')}`;
-              const anchorOnmouseup = anchorOnmousedown;
-              const attributes = element => {
-                const {attributes} = element;
-
-                const acc = [];
-                for (const k in attributes) {
-                  const attribute = attributes[k];
-                  const {value: v} = attribute;
-                  acc.push(`<span style="color: #994500;">${k}</span>=<span style="color: #1a1aa6;">${JSON.stringify(v)}</span>`);
-                }
-                return acc.length > 0 ? (' ' + acc.join(' ')) : '';
-              };
-
-              const outerElements = (elements, keyPath) => `<div style="display: flex; flex-direction: column;">${innerElements(elements, keyPath)}</div>`;
-              const spaces = depth => Array(depth + 1).join('&nbsp;&nbsp;');
-              const innerElements = (elements, keyPath) => {
-                let result = '';
-
-                const hasDropHelper = draggingKeyPath.length > 0 && !_isSubKeyPath(keyPath, draggingKeyPath);
-
-                result += elements.map((element, i) => {
-                  const depth = keyPath.length - 1;
-                  const childKeyPath = keyPath.concat(i);
-
-                  let result = '';
-
-                  if (hasDropHelper) {
-                    result += getDropHelperSrc(childKeyPath);
-                  }
-
-                  result += `<div style="${anchorStyle(childKeyPath)}">${head(element, childKeyPath, depth)}`;
-
-                  const {children} = element;
-                  if (children.length > 0) {
-                    result += `<div>${outerElements(children, childKeyPath)}</div>`;
-                  }
-
-                  result += `${tail(element, childKeyPath, (children.length > 0) ? depth : 0)}</div>`;
-
-                  return result;
-                }).join('\n');
-
-                if (hasDropHelper) {
-                  result += getDropHelperSrc(keyPath.concat(elements.length));
-                }
-
-                return result;
-              };
-
-              return `<div style="font-family: Menlo; font-size: 28px; line-height: 1.4; white-space: pre;">${outerElements(elements, keyPath)}</div>`;
-            };
-            const getDropHelperSrc = keyPath => `<a style="display: flex; margin: ${-(32 / 2)}px 0; width: 100%; height: 32px; align-items: center;" onmouseup="element:move:${keyPath.join(':')}"><div></div></a>`;
-
-            const getHeaderSrc = (text, subtext, rightText, backButton) => `\
-<div style="height: 150px; border-bottom: 2px solid #333; clear: both; font-size: 107px; line-height: 1.4;">
-  ${backButton ? `<a style="display: inline-block; width: 150px; float: left; text-align: center; text-decoration: none;" onclick="back">❮</a>` : ''}
-  <span style="display: inline-block; width: 150px; height: 150px; margin-right: 30px; float: left;"></span>
-  <h1 style="display: inline-block; margin: 0; float: left; font-size: inherit; line-height: inherit;">${text}</h1>
-  ${subtext ? `<div style="display: inline-flex; height: 150px; margin-left: 20px; float: left; align-items: flex-end;">
-    <h2 style="margin: 0; font-size: 60px; line-height: 110px;">${subtext}</h2>
-  </div>` : ''}
-  ${rightText ? `<div style="float: right;">
-    ${rightText}
-  </div>` : ''}
-</div>`;
-            const getSubcontentSectionSrc = (headingSrc, buttonSrc, contentSrc, paragraphSrc) => `\
-<div style="margin: 10px 0;">
-  ${headingSrc ? `<div style="display: inline-block; float: left;">
-    <h1 style="margin: 0; font-size: 40px;">${headingSrc}</h1>
-  </div>` : ''}
-  ${buttonSrc ? `<div style="float: right;">
-    <div style="display: flex; height: 40px; margin: 6px 0; align-items: center;">
-      ${buttonSrc}
-    </div>
-  </div>` : ''}
-</div>
-${contentSrc}
-${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
-`;
-            const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}) => {
-              const content = (() => {
-                if (loading) {
-                  return `<h1 style="font-size: 50px;">Loading...</h1>`;
-                } else if (uploading) {
-                  return `<h1 style="font-size: 50px;">Uploading...</h1>`;
-                } else {
-                  const renamingName = (() => {
-                    const match = focusType.match(/^files:rename:(.+)$/);
-                    return match ? match[1] : '';
-                  })();
-
-                  return `\
-${(cwd !== '/') ?
-  `<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Go back</h1>
-  ${getItemsSrc([
-    {
-      name: '..',
-      description: '',
-    }
-  ], selectedName, '', '', '', '', 'file')}`
-:
-  ''
-}
-<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
-${getItemsSrc(files, selectedName, renamingName, inputText, inputValue, 'Enter new name', 'file')}
-<div style="display: flex; margin: 20px 0; float: left; clear: both; font-size: 32px; align-items: center;">
-  ${focusType !== 'files:createdirectory' ? `\
-    <a style="display: flex; height: 60px; padding: 0 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="files:createdirectory">+ Directory</a>
-`
-  : `\
-    <a style="display: flex; position: relative; width: ${(WIDTH - 500) / 3}px; height: 60px; background-color: #EEE; border-radius: 5px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="element:attribute:${name}:focus">
-      <div style="position: absolute; width: 2px; top: 0; bottom: 12px; left: ${inputValue}px; background-color: #333;"></div>
-      <div>${inputText}</div>
-      ${!inputText ? `<div style="color: #CCC;">Enter directory name</div>` : ''}
-    </a>
-`
-  }
-</div>
-<p style="width: 100%; padding: 5px; float: left; clear: both; background-color: #EEE; border-radius: 5px; box-sizing: border-box;">Click a file to cut, copy, paste, rename, and remove. Click a directory to navigate.<br/>Drag files into the window to upload. Uploaded files will be placed in the current working directory.</p>
-`;
-                }
-              })();
-              return `\
-${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath), true)}
-<div style="height: ${HEIGHT - (150 + 2)}px;">
-  <div style="display: flex;">
-    ${getFilesSidebarSrc()}
-    <div style="width: ${WIDTH - 500}px; clear: both;">
-      ${content}
-    </div>
-  </div>
-</div>
-`;
-            };
-            const getFilesButtonsSrc = (selectedName, clipboardPath) => `\
-<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-  ${selectedName ? `\
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="files:cut">Cut</a>
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="files:copy">Copy</a>
-`
-  :
-    ''
-  }
-  ${clipboardPath ? `\
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="files:paste">Paste</a>
-`
-  :
-    ''
-  }
-  ${selectedName ? `\
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="files:rename">Rename</a>
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="files:remove">Remove</a>
-`
-  :
-    ''
-  }
-</div>
-`;
-            const getMainSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="worlds"><p>World</p></a>
-  <a style="text-decoration: none;" onclick="mods"><p>Mods</p></a>
-  <a style="text-decoration: none;" onclick="elements"><p>Elements</p></a>
-  <a style="text-decoration: none;" onclick="files"><p>Filesystem</p></a>
-  <a style="text-decoration: none;" onclick="config"><p>Preferences</p></a>
-</div>`;
-            const getWorldsSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Create world</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Modify world</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Remove world</p></a>
-</div>`;
-            const getModsSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Installed mod</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Available mods</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Search mods</p></a>
-</div>`;
-            const getModSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Install mod</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Remove mod</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Configure mod</p></a>
-</div>`;
-            const getConfigSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Preferences</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>About</p></a>
-</div>`;
-            const getElementsSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Tree</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Zoom in</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Zoom out</p></a>
-</div>`;
-            const getFilesSidebarSrc = () => `\
-<div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Installed mod</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Available mods</p></a>
-  <a style="text-decoration: none;"  onclick="blank"><p>Search mods</p></a>
-</div>`;
-            const getGetButtonSrc = (name, installed) => `\
-<div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-  ${installed ?
-   `<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
-    <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="removemod:${name}">× Remove</a>`
-  :
-    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF; text-decoration: none;" onclick="getmod:${name}">+ Get</a>`
-  }
-</div>`;
 
             const _pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
             const _clone = o => JSON.parse(JSON.stringify(o));
@@ -1401,7 +805,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                 ui.pushPage([
                   {
                     type: 'html',
-                    src: getMainPageSrc(),
+                    src: menuRenderer.getMainPageSrc(),
                   },
                   {
                     type: 'html',
@@ -1644,7 +1048,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       ui.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
+                          src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
                         },
                         {
                           type: 'image',
@@ -1701,7 +1105,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       ui.pushPage(({mods: {inputText, inputValue, mods}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getModsPageSrc({mods, inputText, inputValue, focus: focusType === 'mods'}),
+                          src: menuRenderer.getModsPageSrc({mods, inputText, inputValue, focus: focusType === 'mods'}),
                         },
                         {
                           type: 'image',
@@ -1729,11 +1133,11 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       ui.pushPage(({mod: {name, version, installed, readme}}) => ([
                         {
                           type: 'html',
-                          src: getModPageSrc({name, version, installed}),
+                          src: menuRenderer.getModPageSrc({name, version, installed}),
                         },
                         {
                           type: 'html',
-                          src: getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
+                          src: menuRenderer.getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
                           x: 500,
                           y: 150 + 2,
                           w: WIDTH - 500,
@@ -1781,11 +1185,11 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       ui.pushPage(({config: {inputText, inputValue, sliderValue, checkboxValue}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getConfigPageSrc(),
+                          src: menuRenderer.getConfigPageSrc(),
                         },
                         {
                           type: 'html',
-                          src: getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, checkboxValue}),
+                          src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, checkboxValue}),
                           x: 500,
                           y: 150 + 2,
                           w: WIDTH - 500,
@@ -1818,11 +1222,11 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                         return [
                           {
                             type: 'html',
-                            src: getElementsPageSrc(),
+                            src: menuRenderer.getElementsPageSrc(),
                           },
                           {
                             type: 'html',
-                            src: getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
+                            src: menuRenderer.getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
                             x: 500,
                             y: 150 + 2,
                             w: WIDTH - (500 + 600),
@@ -1831,7 +1235,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                           },
                           {
                             type: 'html',
-                            src: getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}),
+                            src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}),
                             x: 500 + (WIDTH - (500 + 600)),
                             y: 150 + 2,
                             w: 600,
@@ -1878,7 +1282,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath)
                       ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                         {
                           type: 'html',
-                          src: getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}),
+                          src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}),
                         },
                         {
                           type: 'image',
