@@ -1,3 +1,5 @@
+const menuUtils = require('../utils/menu');
+
 const makeRenderer = ({creatureUtils}) => {
 
 const {
@@ -209,7 +211,7 @@ const getElementsPageContentSrc = ({elements, selectedKeyPath, draggingKeyPath})
 `;
 
 const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}) => {
-  const element = _getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
+  const element = menuUtils.getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
 
   return `\
 <div style="display: flex; flex-direction: column; width: 600px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; box-sizing: border-box;">
@@ -268,7 +270,7 @@ const getElementAttributesSrc = (element, inputText, inputValue, focusAttribute)
 };
 
 const getElementAttributeInput = (name, type, value, min, max, options, inputText, inputValue, focus) => {
-  const focusValue = !focus ? value : _castValueStringToValue(inputText, type, min, max, options);
+  const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, options);
 
   switch (type) {
     case 'position': {
@@ -407,12 +409,12 @@ ${attributes(element)}\
 
     return `<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">${spaces(depth)}&lt;/${element.tag}&gt;</${tag}>`;
   };
-  const anchorTag = keyPath => (draggingKeyPath.length > 0 && _isSubKeyPath(keyPath, draggingKeyPath)) ? 'span' : 'a';
+  const anchorTag = keyPath => (draggingKeyPath.length > 0 && menuUtils.isSubKeyPath(keyPath, draggingKeyPath)) ? 'span' : 'a';
   const anchorStyle = keyPath => {
     const style = (() => {
-      if (_keyPathEquals(keyPath, selectedKeyPath)) {
+      if (menuUtils.keyPathEquals(keyPath, selectedKeyPath)) {
         const color = (() => {
-          if (_keyPathEquals(keyPath, draggingKeyPath)) {
+          if (menuUtils.keyPathEquals(keyPath, draggingKeyPath)) {
             return '#DDD';
           } else {
             return '#EEE';
@@ -444,7 +446,7 @@ ${attributes(element)}\
   const innerElements = (elements, keyPath) => {
     let result = '';
 
-    const hasDropHelper = draggingKeyPath.length > 0 && !_isSubKeyPath(keyPath, draggingKeyPath);
+    const hasDropHelper = draggingKeyPath.length > 0 && !menuUtils.isSubKeyPath(keyPath, draggingKeyPath);
 
     result += elements.map((element, i) => {
       const depth = keyPath.length - 1;

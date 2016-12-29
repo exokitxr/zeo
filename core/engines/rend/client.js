@@ -1,6 +1,5 @@
 import Stats from 'stats.js';
 import whatkey from 'whatkey';
-import prettyBytes from 'pretty-bytes';
 
 import {
   WIDTH,
@@ -18,6 +17,7 @@ import {
   KEYBOARD_WORLD_WIDTH,
   KEYBOARD_WORLD_HEIGHT,
 } from './lib/constants/keyboard';
+import menuUtils from './lib/utils/menu';
 import keyboardImg from './lib/images/keyboard';
 import menuShaders from './lib/shaders/menu';
 import menuRender from './lib/render/menu';
@@ -310,31 +310,6 @@ class Rend {
         const stats = new Stats();
         stats.render = () => {}; // overridden below
 
-        // helper functions
-        const _pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
-        const _clone = o => JSON.parse(JSON.stringify(o));
-        const _cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
-        const _cleanFiles = files => files.map(file => {
-          const {name, type, size} = file;
-          const description = (() => {
-            if (type === 'file') {
-              if (size !== null) {
-                return prettyBytes(size);
-              } else {
-                return '';
-              }
-            } else {
-              return 'Directory';
-            }
-          })();
-
-          return {
-            name,
-            type,
-            description,
-          };
-        });
-
         // api functions
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
@@ -344,7 +319,7 @@ class Rend {
             currentWorld = world;
             currentWorldMods = worldMods.get(worldName);
 
-            modsState.mods = _cleanMods(currentWorldMods);
+            modsState.mods = menuUtils.cleanMods(currentWorldMods);
 
             accept();
           } else {
@@ -476,7 +451,7 @@ class Rend {
                       const result = [];
                       modApis.forEach((modApi, modName) => {
                         const {templates} = modApi;
-                        result.push.apply(result, _clone(templates));
+                        result.push.apply(result, menuUtils.clone(templates));
                       });
                       return result;
                     })();
@@ -514,7 +489,7 @@ class Rend {
                 worldMods.set(worldName, modsStatus);
                 currentWorldMods = modsStatus;
 
-                modsState.mods = _cleanMods(currentWorldMods);
+                modsState.mods = menuUtils.cleanMods(currentWorldMods);
 
                 accept();
               });
@@ -569,118 +544,6 @@ class Rend {
               fontStyle: biolumi.getFontStyle(),
             };
 
-            const _getKeyPath = (root, keyPath) => {
-              const _recurse = (root, i) => {
-                if (i === keyPath.length) {
-                  return root;
-                } else {
-                  return _recurse(root.children[keyPath[i]], i + 1);
-                }
-              };
-              return _recurse(root, 0);
-            };
-            const _getElementKeyPath = (spec, keyPath) => {
-              const children = (() => {
-                const result = {};
-                for (const k in spec) {
-                  result[k] = {
-                    children: spec[k],
-                  };
-                }
-                return result;
-              })();
-              return _getKeyPath({children}, keyPath);
-            };
-            const _moveElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
-              const oldKeyPathHead = oldKeyPath.slice(0, -1);
-              const oldKeyPathTail = oldKeyPath[oldKeyPath.length - 1];
-              const oldParentElement = _getElementKeyPath(spec, oldKeyPathHead);
-              const element = oldParentElement.children[oldKeyPathTail];
-
-              const newKeyPathHead = newKeyPath.slice(0, -1);
-              const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
-              const newParentElement = _getElementKeyPath(spec, newKeyPathHead);
-              newParentElement.children.splice(newKeyPathTail, 0, element);
-
-              oldParentElement.children.splice(oldKeyPathTail + ((_keyPathEquals(newKeyPathHead, oldKeyPathHead) && newKeyPathTail <= oldKeyPathTail) ? 1 : 0), 1);
-            };
-            const _keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
-              const bi = b[i];
-              return ai === bi;
-            });
-            const _isSubKeyPath = (a, b) => {
-              return a.length >= b.length && b.every((bi, i) => {
-                const ai = a[i];
-                return bi === ai;
-              });
-            };
-            const _parseKeyPath = s => s.split(':').map(p => {
-              if (/^[0-9]+$/.test(p)) {
-                return parseInt(p, 10);
-              } else {
-                return p;
-              }
-            });
-            const _insertElementAtKeyPath = (root, keyPath) => {
-              const element = {
-                element: 'element',
-                attributes: {
-                  position: {
-                    type: 'position',
-                    value: [1, 2, 3].join(' '),
-                  },
-                },
-                children: [],
-              };
-
-              const targetElement = _getElementKeyPath(root, keyPath);
-              targetElement.children.push(element);
-            };
-            const _castValueStringToValue = (s, type, min, max, options) => {
-              switch (type) {
-                case 'position':
-                case 'text': {
-                  return s;
-                }
-                case 'color': {
-                  const match = s.match(/^#?([a-f0-9]{3}(?:[a-f0-9]{3})?)$/i);
-                  if (match) {
-                    return '#' + match[1];
-                  } else {
-                    return null;
-                  }
-                }
-                case 'select': {
-                  if (options.includes(s)) {
-                    return s;
-                  } else {
-                    return null;
-                  }
-                }
-                case 'number': {
-                  const n = parseFloat(s);
-                  if (!isNaN(n) && n >= min && n <= max) {
-                    return n;
-                  } else {
-                    return null;
-                  }
-                }
-                case 'checkbox': {
-                  if (s === 'true') {
-                    return true;
-                  } else if (s === 'false') {
-                    return false;
-                  } else {
-                    return null;
-                  }
-                }
-                default: {
-                  return s;
-                }
-              }
-            };
-            const _castValueValueToString = (s, type) => String(s);
-
             const menuImageShader = menuShaders.getMenuImageShader({maxNumTextures});
 
             return Promise.all([
@@ -707,7 +570,7 @@ class Rend {
                   const {cwd} = filesState;
                   fs.getDirectory(cwd)
                     .then(files => {
-                      filesState.files = _cleanFiles(files);
+                      filesState.files = menuUtils.cleanFiles(files);
                       filesState.loading = false;
 
                       _updatePages();
@@ -1357,7 +1220,7 @@ class Rend {
                         const {cwd} = filesState;
                         fs.getDirectory(cwd)
                           .then(files => {
-                            filesState.files = _cleanFiles(files);
+                            filesState.files = menuUtils.cleanFiles(files);
                             filesState.loading = false;
 
                             _updatePages();
@@ -1398,7 +1261,7 @@ class Rend {
                         fs.setCwd(newCwd);
                         fs.getDirectory(newCwd)
                           .then(files => {
-                            filesState.files = _cleanFiles(files);
+                            filesState.files = menuUtils.cleanFiles(files);
                             filesState.loading = false;
 
                             _updatePages();
@@ -1441,7 +1304,7 @@ class Rend {
                       if (oldFilesSelectedName) {
                         const type = match[1];
                         const {cwd} = filesState;
-                        const cutPath = _pathJoin(cwd, oldFilesSelectedName);
+                        const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
 
                         filesState.selectedName = oldFilesSelectedName;
                         filesState.clipboardType = type;
@@ -1459,11 +1322,11 @@ class Rend {
 
                         const src = clipboardPath;
                         const name = clipboardPath.match(/\/([^\/]*)$/)[1];
-                        const dst = _pathJoin(cwd, name);
+                        const dst = menuUtils.pathJoin(cwd, name);
                         fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
                           .then(() => fs.getDirectory(cwd)
                             .then(files => {
-                              filesState.files = _cleanFiles(files);
+                              filesState.files = menuUtils.cleanFiles(files);
                               filesState.selectedName = name;
                               filesState.uploading = false;
                               if (clipboardType === 'cut') {
@@ -1503,11 +1366,11 @@ class Rend {
                         filesState.uploading = true;
 
                         const {cwd} = filesState;
-                        const p = _pathJoin(cwd, oldFilesSelectedName);
+                        const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
                         fs.remove(p)
                           .then(() => fs.getDirectory(cwd)
                             .then(files => {
-                              filesState.files = _cleanFiles(files);
+                              filesState.files = menuUtils.cleanFiles(files);
                               const {clipboardPath} = filesState;
                               if (clipboardPath === p) {
                                 filesState.clipboardType = null;
@@ -1529,7 +1392,7 @@ class Rend {
                         _updatePages();
                       }
                     } else if (onclick === 'element:add') {
-                      _insertElementAtKeyPath({
+                      menuUtils.insertElementAtKeyPath({
                         elements: elementsState.elements,
                         availableElements: elementsState.availableElements,
                         clipboardElements: elementsState.clipboardElements,
@@ -1541,7 +1404,7 @@ class Rend {
                       const action = match[2];
                       const value = match[3];
 
-                      const element = _getElementKeyPath({
+                      const element = menuUtils.getElementKeyPath({
                         elements: elementsState.elements,
                         availableElements: elementsState.availableElements,
                         clipboardElements: elementsState.clipboardElements,
@@ -1556,19 +1419,19 @@ class Rend {
                           const {type} = attribute;
                           if (type === 'text') {
                             const valuePx = value * 400;
-                            return getTextPropertiesFromCoord(_castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
+                            return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
                           } else if (type === 'number') {
                             const valuePx = value * 100;
-                            return getTextPropertiesFromCoord(_castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
+                            return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
                           } else if (type === 'color') {
                             const valuePx = value * (400 - (40 + 4));
-                            return getTextPropertiesFromCoord(_castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
+                            return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
                           } else {
                             return null;
                           }
                         })();
                         if (textProperties) {
-                          elementsState.inputText = _castValueValueToString(attribute.value, attribute.type);
+                          elementsState.inputText = menuUtils.castValueValueToString(attribute.value, attribute.type);
                           const {index, px} = textProperties;
                           elementsState.inputIndex = index;
                           elementsState.inputValue = px;
@@ -1648,7 +1511,7 @@ class Rend {
 
                       let match;
                       if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                        const keyPath = _parseKeyPath(match[1]);
+                        const keyPath = menuUtils.parseKeyPath(match[1]);
 
                         elementsState.selectedKeyPath = keyPath;
                         elementsState.draggingKeyPath = keyPath;
@@ -1744,24 +1607,24 @@ class Rend {
 
                         let match;
                         if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                          const keyPath = _parseKeyPath(match[1]);
+                          const keyPath = menuUtils.parseKeyPath(match[1]);
 
-                          if (!_isSubKeyPath(keyPath, oldDraggingKeyPath)) {
+                          if (!menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath)) {
                             const spec = {
                               elements: elementsState.elements,
                               availableElements: elementsState.availableElements,
                               clipboardElements: elementsState.clipboardElements,
                             };
                             const oldKeyPath = oldDraggingKeyPath;
-                            const newKeyPath = keyPath.concat(_getElementKeyPath(spec, keyPath).children.length);
-                            _moveElementKeyPath(spec, oldKeyPath, newKeyPath);
+                            const newKeyPath = keyPath.concat(menuUtils.getElementKeyPath(spec, keyPath).children.length);
+                            menuUtils.moveElementKeyPath(spec, oldKeyPath, newKeyPath);
                           } else {
                             elementsState.selectedKeyPath = oldDraggingKeyPath;
                           }
                         } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                          const keyPath = _parseKeyPath(match[1]);
+                          const keyPath = menuUtils.parseKeyPath(match[1]);
 
-                          if (!_isSubKeyPath(keyPath, oldDraggingKeyPath)) {
+                          if (!menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath)) {
                             const spec = {
                               elements: elementsState.elements,
                               availableElements: elementsState.availableElements,
@@ -1769,7 +1632,7 @@ class Rend {
                             };
                             const oldKeyPath = oldDraggingKeyPath;
                             const newKeyPath = keyPath;
-                            _moveElementKeyPath(spec, oldKeyPath, newKeyPath);
+                            menuUtils.moveElementKeyPath(spec, oldKeyPath, newKeyPath);
                           } else {
                             elementsState.selectedKeyPath = oldDraggingKeyPath;
                           }
@@ -1917,7 +1780,7 @@ class Rend {
                         // XXX cancel duplicate searches
                         npm.requestSearch(modsState.inputText)
                           .then(mods => {
-                            modsState.mods = _cleanMods(mods),
+                            modsState.mods = menuUtils.cleanMods(mods),
 
                             _updatePages();
                           })
@@ -1925,7 +1788,7 @@ class Rend {
                             console.warn(err);
                           });
                       } else {
-                        modsState.mods = _cleanMods(currentWorldMods);
+                        modsState.mods = menuUtils.cleanMods(currentWorldMods);
                       }
 
                       _updatePages();
@@ -1942,7 +1805,7 @@ class Rend {
                         const name = match[1];
                         const {selectedKeyPath, inputText} = elementsState;
 
-                        const element = _getElementKeyPath({
+                        const element = menuUtils.getElementKeyPath({
                           elements: elementsState.elements,
                           availableElements: elementsState.availableElements,
                           clipboardElements: elementsState.clipboardElements,
@@ -1950,7 +1813,7 @@ class Rend {
                         const {attributes} = element;
                         const attribute = attributes[name];
                         const {type, min, max, options} = attribute;
-                        const newValue = _castValueStringToValue(inputText, type, min, max, options);
+                        const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, options);
                         if (newValue !== null) {
                           attribute.value = newValue;
                         }
@@ -1973,10 +1836,10 @@ class Rend {
                         const name = inputText;
                         if (!files.some(file => file.name === name)) {
                           const {cwd} = filesState;
-                          fs.createDirectory(_pathJoin(cwd, name))
+                          fs.createDirectory(menuUtils.pathJoin(cwd, name))
                             .then(() => fs.getDirectory(cwd)
                               .then(files => {
-                                filesState.files = _cleanFiles(files);
+                                filesState.files = menuUtils.cleanFiles(files);
                                 filesState.uploading = false;
 
                                 _updatePages();
@@ -2010,12 +1873,12 @@ class Rend {
                           filesState.uploading = true;
 
                           const {cwd} = filesState;
-                          const src = _pathJoin(cwd, oldName);
-                          const dst = _pathJoin(cwd, newName);
+                          const src = menuUtils.pathJoin(cwd, oldName);
+                          const dst = menuUtils.pathJoin(cwd, newName);
                           fs.move(src, dst)
                             .then(() => fs.getDirectory(cwd)
                               .then(files => {
-                                filesState.files = _cleanFiles(files);
+                                filesState.files = menuUtils.cleanFiles(files);
                                 filesState.selectedName = newName;
                                 filesState.uploading = false;
 
