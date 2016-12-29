@@ -478,16 +478,12 @@ class Rend {
                       const elementKey = mainTag + ((subTag !== null) ? (':' + subTag) : '');
                       const elementApi = modElements.find(modElement => modElement.tag === elementKey);
 
-                      let elementInstance = {};
+                      const elementInstance = new elementApi();
                       for (const attributeName in attributes) {
                         const attributeValue = attributes[attributeName];
                         elementInstance[attributeName] = attributeValue;
                       }
                       elementInstance.children = children.map(_makeElementInstance);
-                      const constructorResult = elementApi.constructor.call(elementInstance);
-                      if (constructorResult !== undefined) {
-                        elementInstance = constructorResult;
-                      }
                       return elementInstance;
                     };
 
@@ -1465,7 +1461,7 @@ class Rend {
 
                       _updatePages();
                     } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|tweak|toggle)(?::(.+?))?$/)) {
-                      const name = match[1];
+                      const attributeName = match[1];
                       const action = match[2];
                       const value = match[3];
 
@@ -1474,8 +1470,8 @@ class Rend {
                         availableElements: elementsState.availableElements,
                         clipboardElements: elementsState.clipboardElements,
                       }, oldElementsSelectedKeyPath);
-                      const {attributes} = element;
-                      const attribute = attributes[name];
+                      const {attributes, instance} = element;
+                      const attribute = attributes[attributeName];
 
                       if (action === 'focus') {
                         const {value} = menuHoverState;
@@ -1502,16 +1498,22 @@ class Rend {
                           elementsState.inputValue = px;
                         }
 
-                        focusState.type = 'element:attribute:' + name;
+                        focusState.type = 'element:attribute:' + attributeName;
                       } else if (action === 'set') {
-                        attribute.value = value;
+                        const newValue = value;
+                        attribute.value = newValue;
+                        instance[attributeName] = newValue;
                       } else if (action === 'tweak') {
                         const {value} = menuHoverState;
                         const {min, max} = attribute;
 
-                        attribute.value = min + (value * (max - min));
+                        const newValue = min + (value * (max - min));
+                        attribute.value = newValue;
+                        instance[attributeName] = newValue;
                       } else if (action === 'toggle') {
-                        attribute.value = !attribute.value;
+                        const newValue = !attribute.value;
+                        attribute.value = newValue;
+                        instance[attributeName] = newValue;
                       }
 
                       elementsState.selectedKeyPath = oldElementsSelectedKeyPath;

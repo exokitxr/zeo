@@ -177,67 +177,8 @@ class Rain {
         return {
           update: _update,
           elements: [
-            {
-              tag: 'rain',
-              constructor() {
-                console.log('rain constructor'); // XXX
-              },
-              attributes: {
-                position: {
-                  type: 'position',
-                  value: [0, 0, 0],
-                },
-                type: {
-                  type: 'select',
-                  value: 'rain',
-                  options: [
-                    'rain',
-                    'snow',
-                    'firefly',
-                  ],
-                },
-                drops: {
-                  type: 'number',
-                  value: 250,
-                  min: 1,
-                  max: 1000,
-                },
-                color: {
-                  type: 'color',
-                  value: '#3e5eb8',
-                },
-                enabled: {
-                  type: 'checkbox',
-                  value: true,
-                },
-              },
-            },
-            {
-              tag: 'rain:box',
-              constructor() {
-                console.log('rain:box constructor'); // XXX
-              },
-              attributes: {
-                position: {
-                  type: 'position',
-                  value: [0, 0, 0],
-                },
-                color: {
-                  type: 'color',
-                  value: '#CCC',
-                },
-                opacity: {
-                  type: 'number',
-                  value: 0.1,
-                  min: 0,
-                  max: 1,
-                },
-                enabled: {
-                  type: 'checkbox',
-                  value: true,
-                },
-              },
-            },
+            RainElement,
+            RainBoxElement,
           ],
           templates: [
             {
@@ -261,6 +202,83 @@ class Rain {
 
   unmount() {
     this._cleanup();
+  }
+}
+
+class RainElement {
+  static get tag() {
+    return 'rain';
+  }
+  static get attributes() {
+    return {
+      position: {
+        type: 'position',
+        value: [0, 0, 0],
+      },
+      type: {
+        type: 'select',
+        value: 'rain',
+        options: [
+          'rain',
+          'snow',
+          'firefly',
+        ],
+      },
+      drops: {
+        type: 'number',
+        value: 250,
+        min: 1,
+        max: 1000,
+      },
+      color: {
+        type: 'color',
+        value: '#3e5eb8',
+      },
+      enabled: {
+        type: 'checkbox',
+        value: true,
+      },
+    };
+  }
+
+  constructor() {
+    console.log('rain constructor'); // XXX
+  }
+
+  set type(type) {
+    console.log('rain set type', type);
+  }
+}
+
+class RainBoxElement {
+  static get tag() {
+    return 'rain:box';
+  }
+  static get attributes() {
+    return {
+      position: {
+        type: 'position',
+        value: [0, 0, 0],
+      },
+      color: {
+        type: 'color',
+        value: '#CCC',
+      },
+      opacity: {
+        type: 'number',
+        value: 0.1,
+        min: 0,
+        max: 1,
+      },
+      enabled: {
+        type: 'checkbox',
+        value: true,
+      },
+    };
+  }
+
+  constructor() {
+    console.log('rain:box constructor'); // XXX
   }
 }
 
