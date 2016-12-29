@@ -58,6 +58,17 @@ const moveElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
 
   oldParentElement.children.splice(oldKeyPathTail + ((keyPathEquals(newKeyPathHead, oldKeyPathHead) && newKeyPathTail <= oldKeyPathTail) ? 1 : 0), 1);
 };
+const copyElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
+  const oldKeyPathHead = oldKeyPath.slice(0, -1);
+  const oldKeyPathTail = oldKeyPath[oldKeyPath.length - 1];
+  const oldParentElement = getElementKeyPath(spec, oldKeyPathHead);
+  const element = oldParentElement.children[oldKeyPathTail];
+
+  const newKeyPathHead = newKeyPath.slice(0, -1);
+  const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
+  const newParentElement = getElementKeyPath(spec, newKeyPathHead);
+  newParentElement.children.splice(newKeyPathTail, 0, element);
+};
 const keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
   const bi = b[i];
   return ai === bi;
@@ -150,6 +161,7 @@ module.exports = {
   getKeyPath,
   getElementKeyPath,
   moveElementKeyPath,
+  copyElementKeyPath,
   keyPathEquals,
   isSubKeyPath,
   parseKeyPath,

@@ -1609,6 +1609,18 @@ class Rend {
                         elementsState.selectedKeyPath = [];
                         elementsState.draggingKeyPath = [];
 
+                        const _getKeyPathDragFn = keyPath => {
+                          const collection = keyPath[0];
+
+                          if (collection === 'elements' || collection === 'clipboardElements') {
+                            return menuUtils.moveElementKeyPath;
+                          } else if (collection === 'availableElements') {
+                            return menuUtils.copyElementKeyPath;
+                          } else {
+                            return () => {};
+                          }
+                        };
+
                         let match;
                         if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
                           const keyPath = menuUtils.parseKeyPath(match[1]);
@@ -1621,7 +1633,8 @@ class Rend {
                             };
                             const oldKeyPath = oldDraggingKeyPath;
                             const newKeyPath = keyPath.concat(menuUtils.getElementKeyPath(spec, keyPath).children.length);
-                            menuUtils.moveElementKeyPath(spec, oldKeyPath, newKeyPath);
+                            const dragFn = _getKeyPathDragFn(oldKeyPath);
+                            dragFn(spec, oldKeyPath, newKeyPath);
                           } else {
                             elementsState.selectedKeyPath = oldDraggingKeyPath;
                           }
@@ -1636,7 +1649,8 @@ class Rend {
                             };
                             const oldKeyPath = oldDraggingKeyPath;
                             const newKeyPath = keyPath;
-                            menuUtils.moveElementKeyPath(spec, oldKeyPath, newKeyPath);
+                            const dragFn = _getKeyPathDragFn(oldKeyPath);
+                            dragFn(spec, oldKeyPath, newKeyPath);
                           } else {
                             elementsState.selectedKeyPath = oldDraggingKeyPath;
                           }
