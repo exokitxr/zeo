@@ -431,7 +431,13 @@ ${attributes(element)}\
   const innerElements = (elements, keyPath) => {
     let result = '';
 
-    const hasDropHelper = draggingKeyPath.length > 0 && !menuUtils.isSubKeyPath(keyPath, draggingKeyPath);
+    const hasDropHelper = keyPath => {
+      const parentKeyPath = keyPath.slice(0, -1);
+
+      return draggingKeyPath.length > 0 &&
+        !menuUtils.isSubKeyPath(parentKeyPath, draggingKeyPath) &&
+        !menuUtils.isAdjacentKeyPath(keyPath, draggingKeyPath);
+    };
 
     result += elements.map((element, i) => {
       const depth = keyPath.length - 1;
@@ -439,7 +445,7 @@ ${attributes(element)}\
 
       let result = '';
 
-      if (hasDropHelper) {
+      if (hasDropHelper(childKeyPath)) {
         result += getDropHelperSrc(childKeyPath);
       }
 
@@ -455,8 +461,9 @@ ${attributes(element)}\
       return result;
     }).join('\n');
 
-    if (hasDropHelper) {
-      result += getDropHelperSrc(keyPath.concat(elements.length));
+    const appendChildKeyPath = keyPath.concat(elements.length);
+    if (hasDropHelper(appendChildKeyPath)) {
+      result += getDropHelperSrc(appendChildKeyPath);
     }
 
     return result;

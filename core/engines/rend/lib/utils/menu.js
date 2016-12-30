@@ -102,11 +102,25 @@ const keyPathEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
   const bi = b[i];
   return ai === bi;
 });
-const isSubKeyPath = (a, b) => {
-  return a.length >= b.length && b.every((bi, i) => {
+const isSubKeyPath = (a, b) =>
+  a.length >= b.length &&
+  b.every((bi, i) => {
     const ai = a[i];
     return bi === ai;
   });
+const isAdjacentKeyPath = (a, b) => {
+  if (a.length === b.length) {
+    for (let i = 0; i < a.length - 1; i++) {
+      if (a[i] !== b[i]) {
+        return false;
+      }
+    }
+    const lastA = a[a.length - 1];
+    const lastB = b[b.length - 1];
+    return (lastA === lastB) ||  (lastA === (lastB + 1));
+  } else {
+    return false;
+  }
 };
 const parseKeyPath = s => s.split(':').map(p => {
   if (/^[0-9]+$/.test(p)) {
@@ -216,6 +230,7 @@ module.exports = {
   removeElementKeyPath,
   keyPathEquals,
   isSubKeyPath,
+  isAdjacentKeyPath,
   parseKeyPath,
   insertElementAtKeyPath,
   castValueStringToValue,

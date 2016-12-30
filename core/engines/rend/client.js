@@ -1579,10 +1579,14 @@ class Rend {
 
                           return (elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath) => {
                             if (newCollection === 'elements') {
-                              const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-
-                              const instance = menuUtils.constructElement(currentModApis, element);
-                              menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, element);
+                              if (oldCollection === 'elements') {
+                                menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
+                                menuUtils.moveElementKeyPath(elementInstancesSpec, oldKeyPath, newKeyPath);
+                              } else {
+                                const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
+                                const instance = menuUtils.constructElement(currentModApis, element);
+                                menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, element);
+                              }
                             } else if (newCollection === 'availableElements' || newCollection === 'clipboardElements') {
                               menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
 
@@ -1596,9 +1600,16 @@ class Rend {
 
                         let match;
                         if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                          const keyPath = menuUtils.parseKeyPath(match[1]);
+                          const keyPath = menuUtils.parseKeyPath(match[1]); // XXX destination key path here should be the child-appended one before the tree format checks
 
-                          if (!menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath)) {
+                          console.log('consider moving', {
+                            keyPath,
+                            oldDraggingKeyPath,
+                            isSubKeyPath: menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath),
+                            isAdjacentKeyPath: menuUtils.isAdjacentKeyPath(keyPath, oldDraggingKeyPath),
+                          });
+
+                          if (!menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(keyPath, oldDraggingKeyPath)) {
                             const elementsSpec = {
                               elements: elementsState.elements,
                               availableElements: elementsState.availableElements,
@@ -1619,7 +1630,7 @@ class Rend {
                         } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
                           const keyPath = menuUtils.parseKeyPath(match[1]);
 
-                          if (!menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath)) {
+                          if (!menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(keyPath, oldDraggingKeyPath)) {
                             const elementsSpec = {
                               elements: elementsState.elements,
                               availableElements: elementsState.availableElements,
