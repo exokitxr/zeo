@@ -3,34 +3,34 @@ const modelsPath = '/archae/models/models/';
 const MODELS = {
   cloud: {
     path: 'https://cdn.rawgit.com/modulesio/zeo-data/8a67c22f91517e457ddadd9241f594ed5180077f/models/cloud/cloud.json',
-    position: [-1, 1, -1],
+    position: [0, 0.65, 0],
     rotation: [0, Math.PI, 0],
     scale: [0.5, 0.5, 0.5],
   },
-  /* lightning: {
+  lightning: {
     path: 'lightning/lightning.json',
-    position: [0, 0.75, -1],
+    position: [0, 0.8, 0],
     rotation: [0, Math.PI, 0],
-    scale: [0.015, 0.015, 0.015],
+    scale: [0.014, 0.014, 0.014],
   },
   vanille: {
     path: 'vanille/vanille.json',
-    position: [0, 0.75, -1],
+    position: [0, 0.8, 0],
     rotation: [0, Math.PI, 0],
-    scale: [0.015, 0.015, 0.015],
+    scale: [0.014, 0.014, 0.014],
   },
   ellie: {
     path: 'ellie/ellie.json',
-    position: [0, 0.2, -1],
+    position: [0, 0, 0],
     rotation: [-Math.PI / 2, 0, 0],
-    scale: [0.8, 0.8, 0.8],
+    scale: [1, 1, 1],
   },
   pc: {
     path: 'pc/pc.json',
-    position: [0, 0, -1],
+    position: [0, 0, 0],
     rotation: [0, Math.PI, 0],
     scale: [0.025, 0.025, 0.025],
-  }, */
+  },
 };
 
 const modelName = 'cloud';
