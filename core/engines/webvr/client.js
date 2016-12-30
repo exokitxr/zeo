@@ -470,17 +470,16 @@ class WebVR {
               SIDES.forEach(side => {
                 const {gamepads: oldGamepadsStatus} = oldStatus;
                 const oldGamepadStatus = oldGamepadsStatus[side];
+                const {gamepads: newGamepadsStatus} = newStatus;
+                const newGamepadStatus = newGamepadsStatus[side];
 
-                if (oldGamepadStatus) {
-                  const {gamepads: newGamepadsStatus} = newStatus;
-                  const newGamepadStatus = newGamepadsStatus[side];
-
-                  if (!oldGamepadStatus.buttons.trigger.pressed && newGamepadStatus.buttons.trigger.pressed) {
-                    input.triggerEvent('mousedown', {side});
-                  } else if (oldGamepadStatus.buttons.trigger.pressed && !newGamepadStatus.buttons.trigger.pressed) {
-                    input.triggerEvent('mouseup', {side});
-                    input.triggerEvent('click', {side});
-                  }
+                const oldPressed = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons.trigger.pressed;
+                const newPressed = Boolean(newGamepadStatus) && newGamepadStatus.buttons.trigger.pressed;
+                if (!oldPressed && newPressed) {
+                  input.triggerEvent('mousedown', {side});
+                } else if (oldPressed && !newPressed) {
+                  input.triggerEvent('mouseup', {side});
+                  input.triggerEvent('click', {side});
                 }
               });
 
