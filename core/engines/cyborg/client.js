@@ -9,6 +9,9 @@ const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
 const NUM_PREV_STATUSES = 2;
 
+const BUTTON_COLOR = 0xFF4444;
+const BUTTON_COLOR_HIGHLIGHT = 0xffbb33;
+
 class Cyborg {
   constructor(archae) {
     this._archae = archae;
@@ -206,7 +209,7 @@ class Cyborg {
                 object.tip = tip;
 
                 const buttonSolidMaterial = new THREE.MeshPhongMaterial({
-                  color: 0xFF4444,
+                  color: BUTTON_COLOR_HIGHLIGHT,
                   shininess: 0,
                   // opacity: 0.75,
                   // transparent: true,
@@ -221,7 +224,13 @@ class Cyborg {
                 const padMesh = (() => {
                   const geometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
                   geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.0075, 0.05));
-                  const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+                  const padMeshSolidMaterial = new THREE.MeshPhongMaterial({
+                    color: BUTTON_COLOR,
+                    shininess: 0,
+                    // opacity: 0.75,
+                    // transparent: true,
+                  });
+                  const materials = [padMeshSolidMaterial, buttonWireframeMaterial];
 
                   const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   mesh.visible = false;
@@ -257,7 +266,7 @@ class Cyborg {
                 const gripMesh = (() => {
                   const _makeGripSideGeometry = index => {
                     const geometry = new THREE.BoxBufferGeometry(0.01, 0.0125, 0.0275);
-                    geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0.02 * ((index === 0) ? 1 : -1), -0.015, 0.0875));
+                    geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0.0175 * ((index === 0) ? 1 : -1), -0.015, 0.0875));
                     return geometry;
                   };
 
@@ -308,6 +317,7 @@ class Cyborg {
               const {buttons} = gamepadStatus;
               mesh.padMesh.visible = buttons.pad.touched;
               mesh.padMesh.position.y = buttons.pad.pressed ? -0.0025 : 0;
+              mesh.padMesh.children[0].material.color.setHex(buttons.pad.pressed ? BUTTON_COLOR_HIGHLIGHT : BUTTON_COLOR);
               mesh.triggerMesh.visible = buttons.trigger.pressed;
               mesh.gripMesh.visible = buttons.grip.pressed;
               mesh.menuMesh.visible = buttons.menu.pressed;
