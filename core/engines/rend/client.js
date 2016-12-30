@@ -1380,8 +1380,10 @@ class Rend {
                         const elementInstancesSpec = {
                           elements: elementsState.elementInstances,
                         };
-                        const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
-                        menuUtils.destructElement(instance);
+                        if (oldElementsSelectedKeyPath[0] === 'elements') {
+                          const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
+                          menuUtils.destructElement(instance);
+                        }
 
                         elementsState.selectedKeyPath = [];
                         elementsState.draggingKeyPath = [];
@@ -1609,21 +1611,30 @@ class Rend {
                           const newCollection = newKeyPath[0];
 
                           return (elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath) => {
-                            if (newCollection === 'elements') {
-                              if (oldCollection === 'elements') {
+                            if (oldCollection === 'elements') {
+                              if (newCollection === 'elements') {
                                 menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
                                 menuUtils.moveElementKeyPath(elementInstancesSpec, oldKeyPath, newKeyPath);
-                              } else {
-                                const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                const instance = menuUtils.constructElement(currentModApis, element);
-                                menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, element);
-                              }
-                            } else if (newCollection === 'availableElements' || newCollection === 'clipboardElements') {
-                              menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-
-                              if (oldCollection === 'elements') {
+                              } else if (newCollection === 'clipboardElements') {
+                                menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
                                 const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldKeyPath);
                                 menuUtils.destructElement(instance);
+                              }
+                            } else if (oldCollection === 'availableElements') {
+                              if (newCollection !== 'availableElements') {
+                                const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
+                                if (newCollection === 'elements') {
+                                  const instance = menuUtils.constructElement(currentModApis, element);
+                                  menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, element);
+                                }
+                              }
+                            } else if (oldCollection === 'clipboardElements') {
+                              if (newCollection !== 'availableElements') {
+                                const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
+                                if (newCollection === 'elements') {
+                                  const instance = menuUtils.constructElement(currentModApis, element);
+                                  menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, element);
+                                }
                               }
                             }
                           };

@@ -200,7 +200,7 @@ const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardEle
 
   return `\
 <div style="display: flex; flex-direction: column; width: 600px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; box-sizing: border-box;">
-  ${selectedKeyPath.length > 0 ?
+  ${(selectedKeyPath.length > 0 && selectedKeyPath[0] === 'elements') ?
     `${getSubcontentSectionSrc(
       `\
 <span style="color: #a894a6;">\
@@ -634,7 +634,7 @@ const getGetButtonSrc = (name, installed) => `\
 
 const getElementsButtonsSrc = (selectedKeyPath) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-  ${(selectedKeyPath.length > 0) ?
+  ${(selectedKeyPath.length > 0 && (selectedKeyPath[0] === 'elements' || selectedKeyPath[0] === 'clipboardElements')) ?
     `<a style="padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="elements:remove">× Remove</a>`
   :
     ''
