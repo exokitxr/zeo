@@ -195,7 +195,7 @@ const getElementsPageContentSrc = ({elements, selectedKeyPath, draggingKeyPath})
 </div>
 `;
 
-const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}) => {
+const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue, focusAttribute}) => {
   const element = menuUtils.getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
 
   return `\
@@ -210,7 +210,7 @@ ${element.tag}&gt; properties\
 </span>\
 `,
       null,
-      getElementAttributesSrc(element, inputText, inputValue, focusAttribute),
+      getElementAttributesSrc(element, positioningName, inputText, inputValue, focusAttribute),
       ''
     )}
     <div style="margin-top: 30px; margin-left: -30px; border-bottom: 2px solid #333;"></div>`
@@ -234,7 +234,7 @@ ${element.tag}&gt; properties\
 `;
 };
 
-const getElementAttributesSrc = (element, inputText, inputValue, focusAttribute) => {
+const getElementAttributesSrc = (element, positioningName, inputText, inputValue, focusAttribute) => {
   let result = '';
 
   const {attributes} = element;
@@ -246,7 +246,7 @@ const getElementAttributesSrc = (element, inputText, inputValue, focusAttribute)
     result += `\
 <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
   <div style="width: ${200 - 30}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
-  ${getElementAttributeInput(name, type, value, min, max, options, inputText, inputValue, focus)}
+  ${getElementAttributeInput(name, type, value, min, max, options, positioningName, inputText, inputValue, focus)}
 </div>
 `;
   }
@@ -254,14 +254,14 @@ const getElementAttributesSrc = (element, inputText, inputValue, focusAttribute)
   return result;
 };
 
-const getElementAttributeInput = (name, type, value, min, max, options, inputText, inputValue, focus) => {
+const getElementAttributeInput = (name, type, value, min, max, options, positioningName, inputText, inputValue, focus) => {
   const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, options);
 
   switch (type) {
     case 'position': {
       return `\
 <div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
-  <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:position">Set</a>
+  <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:position">${!positioningName ? 'Set' : 'Setting...'}</a>
 </div>
 `;
     }

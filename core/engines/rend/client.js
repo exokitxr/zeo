@@ -1227,7 +1227,7 @@ class Rend {
                       } else if (onclick === 'elements') {
                         ui.cancelTransition();
 
-                        ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue}, focus: {type: focusType}}) => {
+                        ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
                           const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
                           const focusAttribute = match && match[1];
 
@@ -1247,7 +1247,7 @@ class Rend {
                             },
                             {
                               type: 'html',
-                              src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}),
+                              src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue, focusAttribute}),
                               x: 500 + (WIDTH - (500 + 600)),
                               y: 150 + 2,
                               w: 600,
