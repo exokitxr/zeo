@@ -387,7 +387,9 @@ class WebVR {
                 };
               };
               const _getHmdStatus = ({stageMatrix}) => {
-                const pose = display.getPose();
+                const frameData = new VRFrameData();
+                display.getFrameData(frameData);
+                const {pose} = frameData;
 
                 const matrix = _getMatrixFromPose(pose, stageMatrix);
                 const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
@@ -763,15 +765,6 @@ class WebVR {
             cancelAnimationFrame(animationFrame);
           }
 
-          getPose() {
-            const {position, rotation} = this;
-
-            return {
-              position: position.toArray(),
-              orientation: rotation.toArray(),
-            };
-          }
-
           resetPose() {
             this.position.set(0, 0, 0);
             const euler = new THREE.Euler().setFromQuaternion(this.rotation, camera.rotation.order);
@@ -806,6 +799,12 @@ class WebVR {
               camera.scale
             ).toArray());
             frameData.rightProjectionMatrix.set(eyeCameraProjectionMatrixArray);
+
+            const {position, rotation} = this;
+            frameData.pose = {
+              position: position.toArray(),
+              orientation: rotation.toArray(),
+            };
           }
 
           getEyeParameters(side) {
