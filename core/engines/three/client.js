@@ -6,6 +6,7 @@ const CAMERA_ROTATION_ORDER = 'YXZ';
 class Three {
   mount() {
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xFFFFFF);
     scene.fog = new THREE.FogExp2(0xFFFFFF, 0);
 
     const camera = (() => {
@@ -26,8 +27,6 @@ class Three {
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      clearColor: 0xFFFFFF,
-      clearAlpha: 0,
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
