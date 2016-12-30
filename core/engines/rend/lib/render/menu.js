@@ -191,9 +191,6 @@ const getElementsPageContentSrc = ({elements, selectedKeyPath, draggingKeyPath})
 <div style="display: flex; flex-direction: column; width: ${WIDTH - (500 + 600)}px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; border-left: 2px solid #333; border-right: 2px solid #333; overflow-x: hidden; overflow-y: visible; box-sizing: border-box;">
   <h1 style="margin: 10px 0; font-size: 40px;">World</h1>
   ${getElementsSrc(elements, ['elements'], selectedKeyPath, draggingKeyPath)}
-  <div style="display: flex; height: 40px; margin: 20px 0; align-items: center;">
-    <a style="padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; font-size: 24px; color: #d9534f; text-decoration: none;" onclick="element:add">+ Add</a>
-  </div>
   <p style="width: ${WIDTH - (500 + 600 + 30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">These elements are currently active in the world. Click one to adjust its properties. Drag to move. <a href="#">Add new element</a> or drag it in.</p>
 </div>
 `;

@@ -1358,34 +1358,6 @@ class Rend {
 
                         _updatePages();
                       }
-                    } else if (onclick === 'element:add') { // XXX delete this
-                      const elementsSpec = {
-                        elements: elementsState.elements,
-                        availableElements: elementsState.availableElements,
-                        clipboardElements: elementsState.clipboardElements,
-                      };
-                      const keyPath = oldElementsSelectedKeyPath.length > 0 ? oldElementsSelectedKeyPath : ['elements'];
-                      const element = {
-                        tag: 'new-element',
-                        attributes: {
-                          position: {
-                            type: 'position',
-                            value: [1, 2, 3],
-                          },
-                        },
-                        children: [],
-                      };
-                      menuUtils.insertElementAtKeyPath(elementsSpec, keyPath, element);
-
-                      const elementInstancesSpec = {
-                        elements: elementsState.elementInstances,
-                      };
-                      const elementInstance = menuUtils.constructElement(currentModApis, element);
-                      menuUtils.insertElementAtKeyPath(elementInstancesSpec, keyPath, elementInstance);
-
-                      _saveElements();
-
-                      _updatePages();
                     } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|tweak|toggle)(?::(.+?))?$/)) {
                       const attributeName = match[1];
                       const action = match[2];
