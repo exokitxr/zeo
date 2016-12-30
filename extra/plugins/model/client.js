@@ -35,7 +35,7 @@ const MODELS = {
 
 const modelName = 'cloud';
 
-class Models {
+class Model {
   constructor(archae) {
     this._archae = archae;
   }
@@ -75,28 +75,67 @@ class Models {
           return _requestModelMeshFromSpec(modelJson, texturePath);
         });
 
-        const model = _getModel(modelName);
-        _requestModel(model)
-          .then(mesh => {
-            if (live) {
-              mesh.position.fromArray(model.position);
-              mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
-              mesh.scale.fromArray(model.scale);
-
-              scene.add(mesh);
-
-              this._cleanup = () => {
-                scene.remove(mesh);
-              };
-            }
-          })
-          .catch(err => {
-            console.warn(err);
-          });
-
         return {
           getModel: _getModel,
           requestModelJson: _requestModelJson,
+          elements: [
+            class ModelElement {
+              static get tag() {
+                return 'model';
+              }
+              static get attributes() {
+                return {
+                  position: {
+                    type: 'position',
+                    value: [0, 0, 0],
+                  },
+                  model: {
+                    type: 'text',
+                    value: 'cloud.mdl',
+                  },
+                };
+              }
+
+              constructor() {
+                console.log('model constructor');
+
+                let live = true;
+                this._cleanup = () => {
+                  live = false;
+                };
+
+                const model = _getModel(modelName);
+                _requestModel(model)
+                  .then(mesh => {
+                    if (live) {
+                      mesh.position.fromArray(model.position);
+                      mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
+                      mesh.scale.fromArray(model.scale);
+
+                      scene.add(mesh);
+                    }
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+
+                this._cleanup = () => {
+                  scene.remove(mesh);
+                };
+              }
+
+              destructor() {
+                this._cleanup();
+              }
+            }
+          ],
+          templates: [
+            {
+              tag: 'model',
+              attributes: {},
+              children: [],
+            },
+          ],
         };
       }
     });
@@ -118,4 +157,4 @@ const _getModelPath = model  => {
 };
 const _getTexturePath = url => url.substring(0, url.lastIndexOf('/') + 1);
 
-module.exports = Models;
+module.exports = Model;

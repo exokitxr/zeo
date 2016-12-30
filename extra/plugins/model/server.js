@@ -1,6 +1,6 @@
 const path = require('path');
 
-class Models {
+class Model {
   constructor(archae) {
     this._archae = archae;
   }
@@ -33,4 +33,4 @@ class Models {
   }
 }
 
-module.exports = Models;
+module.exports = Model;
