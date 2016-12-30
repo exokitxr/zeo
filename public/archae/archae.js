@@ -177,6 +177,7 @@ class ArchaeClient {
       }, (err, result) => {
         if (!err) {
           const {engineName} = result;
+          const oldEngineApi = this.engineApis[engineName];
 
           this.unmountEngine(engineName, err => {
             if (err) {
@@ -185,7 +186,7 @@ class ArchaeClient {
 
             this.unloadEngine(engineName);
 
-            accept();
+            accept(oldEngineApi);
           });
         } else {
           reject(err);
@@ -261,6 +262,7 @@ class ArchaeClient {
       }, (err, result) => {
         if (!err) {
           const {pluginName} = result;
+          const oldPluginApi = this.pluginApis[pluginName];
 
           this.unmountPlugin(pluginName, err => {
             if (err) {
@@ -269,7 +271,7 @@ class ArchaeClient {
 
             this.unloadPlugin(pluginName);
 
-            accept();
+            accept(oldPluginApi);
           });
         } else {
           reject(err);

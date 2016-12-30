@@ -278,11 +278,14 @@ class Rend {
                 );
                 const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
                 const _requestMod = mod => archae.requestPlugin(mod)
-                  .then(mod => {
-                    const modName = archae.getName(mod);
-                    currentModApis.set(modName, mod);
+                  .then(modApi => {
+                    const modName = archae.getName(modApi);
+                    currentModApis.set(modName, modApi);
 
-                    return mod;
+                    _addModApiElements(modApi);
+                    menu.updatePages();
+
+                    return modApi;
                   });
                 const _requestMods = mods => Promise.all(mods.map(_requestMod));
                 const _requestRemoveMod = mod => fetch('/archae/rend/mods/remove', {
@@ -305,9 +308,12 @@ class Rend {
                 );
                 const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
                 const _requestReleaseMod = mod => archae.releasePlugin(mod)
-                  .then(mod => {
-                    const modName = archae.getName(mod);
+                  .then(modApi => {
+                    const modName = archae.getName(modApi);
                     currentModApis.delete(modName);
+
+                    _removeModApiElements(modApi);
+                    menu.updatePages();
 
                     return mod;
                   });
@@ -319,6 +325,63 @@ class Rend {
                   }
                 };
 
+                const _addModApiElements = modApi => {
+                  const elements = Array.isArray(modApi.elements) ? modApi.elements : [];
+                  const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
+
+                  const elementsMap = (() => {
+                    const result = {};
+                    for (let i = 0; i < elements.length; i++) {
+                      const element = elements[i];
+                      result[element.tag] = element;
+                    }
+                    return result;
+                  })();
+                  const _makeTemplateElementFromTemplate = template => {
+                    const _recurse = template => {
+                      const {tag} = template;
+                      const attributes = (() => {
+                        const element = elementsMap[tag];
+                        const {attributes: defaultAttributes} = element;
+                        const {attributes: attributeDefaults} = template;
+
+                        const result = menuUtils.clone(defaultAttributes);
+                        for (const attributeName in attributeDefaults) {
+                          const attributeValue = attributeDefaults[attributeName];
+                          result[attributeName].value = attributeValue;
+                        }
+                        return result;
+                      })();
+                      const children = template.children.map(_recurse);
+                      return {
+                        tag,
+                        attributes,
+                        children,
+                      };
+                    };
+                    return _recurse(template);
+                  };
+                  for (let i = 0; i < templates.length; i++) {
+                    const template = templates[i];
+                    const templateElement = _makeTemplateElementFromTemplate(template);
+                    elementsState.availableElements.push(templateElement);
+                  }
+                };
+                const _removeModApiElements = modApi => {
+                  const oldTemplates = Array.isArray(modApi.templates) ? modApi.templates : [];
+                  const oldTemplateTagsIndex = (() => {
+                    const result = {};
+                    for (let i = 0; i < oldTemplates.length; i++) {
+                      const oldTemplate = oldTemplates[i];
+                      const {tag} = oldTemplate;
+                      result[tag] = true;
+                    }
+                    return result;
+                  })();
+
+                  elementsState.availableElements = elementsState.availableElements.filter(element => !oldTemplateTagsIndex[element.tag]);
+                };
+
                 // load world
                 const _loadWorld = () => {
                   const _loadMods = () => {
@@ -328,53 +391,6 @@ class Rend {
                       .then(() => {
                         console.log('world mods loaded');
 
-                        const availableElements = (() => {
-                          const result = [];
-                          currentModApis.forEach((modApi, modName) => {
-                            const elements = Array.isArray(modApi.elements) ? modApi.elements : [];
-                            const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
-
-                            const elementsMap = (() => {
-                              const result = {};
-                              for (let i = 0; i < elements.length; i++) {
-                                const element = elements[i];
-                                result[element.tag] = element;
-                              }
-                              return result;
-                            })();
-                            const _makeTemplateElementFromTemplate = template => {
-                              const _recurse = template => {
-                                const {tag} = template;
-                                const attributes = (() => {
-                                  const element = elementsMap[tag];
-                                  const {attributes: defaultAttributes} = element;
-                                  const {attributes: attributeDefaults} = template;
-
-                                  const result = menuUtils.clone(defaultAttributes);
-                                  for (const attributeName in attributeDefaults) {
-                                    const attributeValue = attributeDefaults[attributeName];
-                                    result[attributeName].value = attributeValue;
-                                  }
-                                  return result;
-                                })();
-                                const children = template.children.map(_recurse);
-                                return {
-                                  tag,
-                                  attributes,
-                                  children,
-                                };
-                              };
-                              return _recurse(template);
-                            };
-                            for (let i = 0; i < templates.length; i++) {
-                              const template = templates[i];
-                              const templateElement = _makeTemplateElementFromTemplate(template);
-                              result.push(templateElement);
-                            }
-                          });
-                          return result;
-                        })();
-                        elementsState.availableElements = availableElements;
                         elementsState.loading = false;
 
                         menu.updatePages();
