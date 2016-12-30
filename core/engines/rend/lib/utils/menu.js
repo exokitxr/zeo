@@ -115,20 +115,11 @@ const parseKeyPath = s => s.split(':').map(p => {
     return p;
   }
 });
-const insertElementAtKeyPath = (root, keyPath) => {
-  const element = {
-    tag: 'new-element',
-    attributes: {
-      position: {
-        type: 'position',
-        value: [1, 2, 3],
-      },
-    },
-    children: [],
-  };
-
-  const targetElement = getElementKeyPath(root, keyPath);
-  targetElement.children.push(element);
+const insertElementAtKeyPath = (root, keyPath, element) => {
+  const keyPathHead = keyPath.slice(0, -1);
+  const keyPathTail = keyPath[keyPath.length - 1];
+  const targetParentElement = getElementKeyPath(root, keyPathHead);
+  targetParentElement.children.splice(keyPathTail, 0, element);
 };
 const castValueStringToValue = (s, type, min, max, options) => {
   switch (type) {
@@ -181,7 +172,7 @@ const castValueStringToValue = (s, type, min, max, options) => {
   }
 };
 const castValueValueToString = (s, type) => String(s);
-const makeElementInstance = (modApis, element) => {
+const constructElement = (modApis, element) => {
   const {tag, attributes, children} = element;
   const match = tag.match(/^([^:]+?)(?::([^:]+?))?$/);
   const mainTag = match[1];
@@ -197,18 +188,12 @@ const makeElementInstance = (modApis, element) => {
     const {value: attributeValue} = attributes[attributeName];
     elementInstance[attributeName] = attributeValue;
   }
-  elementInstance.children = children.map(child => {
-    constructElement(modApis, child);
-    return child.instance;
-  });
+  elementInstance.children = constructElements(modApis, children);
   return elementInstance;
 };
-const constructElement = (modApis, element) => {
-  const elementInstance = makeElementInstance(modApis, element);
-  element.instance = elementInstance;
-};
-const destructElement = element => {
-  const {children, instance} = element;
+const constructElements = (modApis, elements) => elements.map(element => constructElement(modApis, element));
+const destructElement = instance => {
+  const {children} = instance;
 
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
@@ -235,7 +220,7 @@ module.exports = {
   insertElementAtKeyPath,
   castValueStringToValue,
   castValueValueToString,
-  makeElementInstance,
   constructElement,
+  constructElements,
   destructElement,
 };

@@ -226,12 +226,13 @@ class Rain {
                 scene.add(mesh);
                 this.mesh = mesh;
 
-                updates.push(() => {
+                const update = () => {
                   const worldTime = world.getWorldTime();
 
                   const frame = Math.floor(worldTime / PARTICLE_FRAME_TIME) % PARTICLE_FRAMES;
                   material.uniforms.frame.value = frame;
-                });
+                };
+                updates.push(update);
 
                 this._cleanup = () => {
                   scene.remove(mesh);
