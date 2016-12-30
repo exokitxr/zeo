@@ -327,7 +327,9 @@ class Rend {
                         const availableElements = (() => {
                           const result = [];
                           currentModApis.forEach((modApi, modName) => {
-                            const {elements, templates} = modApi;
+                            const elements = Array.isArray(modApi.elements) ? modApi.elements : [];
+                            const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
+
                             const elementsMap = (() => {
                               const result = {};
                               for (let i = 0; i < elements.length; i++) {

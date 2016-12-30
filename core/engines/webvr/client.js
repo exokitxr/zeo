@@ -30,6 +30,13 @@ const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
+const BUTTONS = {
+  PAD: 0,
+  TRIGGER: 1,
+  GRIP: 2,
+  MENU: 3,
+};
+
 class WebVR {
   constructor(archae) {
     this._archae = archae;
@@ -398,16 +405,14 @@ class WebVR {
 
                 const _isGamepadAvailable = gamepad => gamepad !== undefined && gamepad.pose !== null && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
                 const _getGamepadPose = gamepad => {
-                  const {pose, buttons: [padButton, triggerButton, gripButton, menuButton]} = gamepad;
+                  const {pose, buttons: [padButton, triggerButton, gripButton, menuButton], axes: [x, y]} = gamepad;
 
                   const _getGamepadButtonStatus = button => {
                     if (button) {
-                      const {touched, pressed, axes: [x, y], value} = button;
+                      const {touched, pressed, value} = button;
                       return {
                         touched,
                         pressed,
-                        x,
-                        y,
                         value,
                       };
                     } else {
@@ -423,6 +428,7 @@ class WebVR {
                     grip: _getGamepadButtonStatus(gripButton),
                     menu: _getGamepadButtonStatus(menuButton),
                   };
+                  const axes = [x, y];
 
                   return {
                     pose,
@@ -431,6 +437,7 @@ class WebVR {
                     rotation,
                     scale,
                     buttons,
+                    axes,
                   };
                 };
 
@@ -499,9 +506,6 @@ class WebVR {
               sittingToStandingTransform: sittingToStandingTransform.toArray(),
             };
 
-            const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
-            this.gamepads = gamepads;
-
             const fullscreenchange = e => {
               const {isPresenting: wasPresenting} = this;
 
@@ -522,6 +526,10 @@ class WebVR {
               down: false,
               left: false,
               right: false,
+              pad: false,
+              trigger: false,
+              grip: false,
+              menu: false,
               shift: false,
             };
             this.keys = keys;
@@ -531,13 +539,22 @@ class WebVR {
               keys.down = false;
               keys.left = false;
               keys.right = false;
+              keys.pad = false;
+              keys.trigger = false;
+              keys.grip = false;
+              keys.menu = false;
               keys.shift = false;
             };
+
+            const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
+            this.gamepads = gamepads;
 
             this.mode = 'move';
 
             const keydown = e => {
               if (this.isPresenting) {
+                let needsGamepadUpdate = false;
+
                 switch (e.keyCode) {
                   case 87: // W
                     keys.up = true;
@@ -550,6 +567,18 @@ class WebVR {
                     break;
                   case 68: // D
                     keys.right = true;
+                    break;
+                  case 81: // Q
+                    keys.pad = true;
+                    needsGamepadUpdate = true;
+                    break;
+                  case 69: // E
+                    keys.menu = true;
+                    needsGamepadUpdate = true;
+                    break;
+                  case 70: // F
+                    keys.grip = true;
+                    needsGamepadUpdate = true;
                     break;
                   case 16: // shift
                     keys.shift = true;
@@ -564,10 +593,16 @@ class WebVR {
                     this.mode = 'right';
                     break;
                 }
+
+                if (needsGamepadUpdate) {
+                  this.updateGamepads();
+                }
               }
             };
             const keyup = e => {
               if (this.isPresenting) {
+                let needsGamepadUpdate = false;
+
                 switch (e.keyCode) {
                   case 87: // W
                     keys.up = false;
@@ -581,10 +616,42 @@ class WebVR {
                   case 68: // D
                     keys.right = false;
                     break;
+                  case 81: // Q
+                    keys.pad = false;
+                    needsGamepadUpdate = true;
+                    break;
+                  case 69: // E
+                    keys.menu = false;
+                    needsGamepadUpdate = true;
+                    break;
+                  case 70: // F
+                    keys.grip = false;
+                    needsGamepadUpdate = true;
+                    break;
                   case 16: // shift
                     keys.shift = false;
                     break;
                 }
+
+                if (needsGamepadUpdate) {
+                  this.updateGamepads();
+                }
+              }
+            };
+            const mousedown = e => {
+              if (this.isPresenting) {
+                const {keys} = this;
+                keys.trigger = true;
+
+                this.updateGamepads();
+              }
+            };
+            const mouseup = e => {
+              if (this.isPresenting) {
+                const {keys} = this;
+                keys.trigger = false;
+
+                this.updateGamepads();
               }
             };
             const mousemove = e => {
@@ -612,6 +679,8 @@ class WebVR {
             };
             input.addEventListener('keydown', keydown);
             input.addEventListener('keyup', keyup);
+            input.addEventListener('mousedown', mousedown);
+            input.addEventListener('mouseup', mouseup);
             input.addEventListener('mousemove', mousemove);
             input.addEventListener('pointerlockchange', pointerlockchange);
             input.addEventListener('pointerlockerror', pointerlockerror);
@@ -627,6 +696,8 @@ class WebVR {
 
               input.removeEventListener('keydown', keydown);
               input.removeEventListener('keyup', keyup);
+              input.removeEventListener('mousedown', mousedown);
+              input.removeEventListener('mouseup', mouseup);
               input.removeEventListener('mousemove', mousemove);
               input.removeEventListener('pointerlockchange', pointerlockchange);
               input.removeEventListener('pointerlockerror', pointerlockerror);
@@ -802,7 +873,6 @@ class WebVR {
                 return {
                   touched: false,
                   pressed: false,
-                  axes: [0, 0],
                   value: 0,
                 };
               };
@@ -815,6 +885,7 @@ class WebVR {
               return result;
             })();
             this.buttons = buttons;
+            this.axes = [0, 0];
 
             const positionOffset = new THREE.Vector3(
               0.2 * (index === 0 ? -1 : 1),
@@ -835,16 +906,15 @@ class WebVR {
             this.updateProperties();
 
             const mousewheel = e => {
-              const {_parent: parent, _index: index} = this;
-              const mode = parent.getMode();
-
-              if (parent.isPresenting && ((mode === 'left' && index === 0) || (mode === 'right' && index === 1))) {
+              if (this.displayIsInControllerMode()) {
                 e.preventDefault();
 
                 if (e.shiftKey) {
                   this.rotate(e.deltaX, e.deltaY);
                 } else if (e.ctrlKey) {
                   this.move(0, 0, e.deltaY);
+                } else if (e.altKey) {
+                  this.touch(e.deltaX, e.deltaY);
                 } else {
                   this.move(e.deltaX, e.deltaY, 0);
                 }
@@ -857,6 +927,12 @@ class WebVR {
             };
           }
 
+          displayIsInControllerMode() {
+            const {_parent: parent, _index: index} = this;
+            const mode = parent.getMode();
+            return parent.isPresenting && ((mode === 'left' && index === 0) || (mode === 'right' && index === 1));
+          }
+
           move(x, y, z) {
             const {positionOffset} = this;
 
@@ -864,6 +940,18 @@ class WebVR {
             positionOffset.x += -x * moveFactor;
             positionOffset.y += y * moveFactor;
             positionOffset.z += -z * moveFactor;
+
+            this.updateProperties();
+          }
+
+          touch(x, y, z) {
+            const {axes} = this;
+
+            const _clampAxis = v => Math.min(Math.max(v, -1), 1);
+
+            const moveFactor = 0.02;
+            axes[0] = _clampAxis(axes[0] - (x * moveFactor));
+            axes[1] = _clampAxis(axes[1] - (y * moveFactor));
 
             this.updateProperties();
           }
@@ -905,6 +993,14 @@ class WebVR {
 
             this.pose.position = position.toArray();
             this.pose.orientation = rotation.toArray();
+
+            if (this.displayIsInControllerMode()) {
+              const {keys} = parent;
+              this.buttons[BUTTONS.PAD].pressed = keys.pad;
+              this.buttons[BUTTONS.TRIGGER].pressed = keys.trigger;
+              this.buttons[BUTTONS.GRIP].pressed = keys.grip;
+              this.buttons[BUTTONS.MENU].pressed = keys.menu;
+            }
           }
 
           destroy() {

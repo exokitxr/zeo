@@ -22,15 +22,23 @@ class Cyborg {
       live = false;
     };
 
-    return archae.requestEngines([
-      '/core/engines/three',
-      '/core/engines/webvr',
-      '/core/engines/rend',
+    return Promise.all([
+      archae.requestEngines([
+        '/core/engines/three',
+        '/core/engines/webvr',
+        '/core/engines/rend',
+      ]),
+      archae.requestPlugins([
+        '/core/plugins/geometry-utils',
+      ]),
     ])
       .then(([
-        three,
-        webvr,
-        rend,
+        [
+          three,
+          webvr,
+          rend,
+        ],
+        [geometryUtils],
       ]) => {
         if (live) {
           const {THREE, scene, camera, renderer} = three;
@@ -176,7 +184,7 @@ class Cyborg {
               this._index = index;
 
               const mesh = (() => {
-                const result = new THREE.Object3D();
+                const object = new THREE.Object3D();
 
                 const loader = new THREE.ObjectLoader();
                 loader.load(controllerModelPath, mesh => {
@@ -186,7 +194,7 @@ class Cyborg {
                   // model.material.map = loader.load(texturePath);
                   // model.material.specularMap = loader.load(specularMapPath);
 
-                  result.add(mesh);
+                  object.add(mesh);
                 });
 
                 const tip = (() => {
@@ -194,10 +202,79 @@ class Cyborg {
                   result.position.z = -1;
                   return result;
                 })();
-                result.add(tip);
-                result.tip = tip;
+                object.add(tip);
+                object.tip = tip;
 
-                return result;
+                const buttonSolidMaterial = new THREE.MeshPhongMaterial({
+                  color: 0xFF4444,
+                  shininess: 0,
+                  // opacity: 0.75,
+                  // transparent: true,
+                });
+                const buttonWireframeMaterial = new THREE.MeshBasicMaterial({
+                  color: 0x333333,
+                  wireframe: true,
+                  opacity: 0.5,
+                  transparent: true,
+                });
+
+                const padMesh = (() => {
+                  const geometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.0075, 0.05));
+                  const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+
+                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  mesh.visible = false;
+                  return mesh;
+                })();
+                object.add(padMesh);
+                object.padMesh = padMesh;
+
+                const menuMesh = (() => {
+                  const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
+                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.01 / 2, 0.02));
+                  const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+
+                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  mesh.visible = false;
+                  return mesh;
+                })();
+                object.add(menuMesh);
+                object.menuMesh = menuMesh;
+
+                const triggerMesh = (() => {
+                  const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02);
+                  geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.029, 0.0475));
+                  const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+
+                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  mesh.visible = false;
+                  return mesh;
+                })();
+                object.add(triggerMesh);
+                object.triggerMesh = triggerMesh;
+
+                const gripMesh = (() => {
+                  const _makeGripSideGeometry = index => {
+                    const geometry = new THREE.BoxBufferGeometry(0.01, 0.0125, 0.0275);
+                    geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0.02 * ((index === 0) ? 1 : -1), -0.015, 0.0875));
+                    return geometry;
+                  };
+
+                  const geometry = geometryUtils.mergeBufferGeometry(
+                    _makeGripSideGeometry(0),
+                    _makeGripSideGeometry(1)
+                  );
+                  const materials = [buttonSolidMaterial, buttonWireframeMaterial];
+
+                  const mesh = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  mesh.visible = false;
+                  return mesh;
+                })();
+                object.add(gripMesh);
+                object.gripMesh = gripMesh;
+
+                return object;
               })();
               scene.add(mesh);
               this.mesh = mesh;
@@ -227,6 +304,15 @@ class Cyborg {
               mesh.position.copy(gamepadStatus.position);
               mesh.quaternion.copy(gamepadStatus.rotation);
               mesh.scale.copy(gamepadStatus.scale);
+
+              const {buttons} = gamepadStatus;
+              mesh.padMesh.visible = buttons.pad.pressed;
+              mesh.triggerMesh.visible = buttons.trigger.pressed;
+              mesh.gripMesh.visible = buttons.grip.pressed;
+              mesh.menuMesh.visible = buttons.menu.pressed;
+              const {axes} = gamepadStatus;
+              mesh.padMesh.position.x = axes[0] * 0.02;
+              mesh.padMesh.position.z = axes[1] * 0.02;
             }
 
             destroy() {
