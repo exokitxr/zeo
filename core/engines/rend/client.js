@@ -967,7 +967,7 @@ class Rend {
                     const {anchor} = menuHoverState;
                     const onclick = (anchor && anchor.onclick) || '';
                     const {selectedName: oldWorldsSelectedName} = worldsState;
-                    const {selectedKeyPath: oldElementsSelectedKeyPath} = elementsState;
+                    const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
                     const {selectedName: oldFilesSelectedName} = filesState;
 
                     focusState.type = '';
@@ -1468,6 +1468,18 @@ class Rend {
                       }
 
                       elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
+
+                      _updatePages();
+                    } else if (onclick === 'elements:clearclipboard') {
+                      elementsState.clipboardElements = [];
+                      if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
+                        elementsState.selectedKeyPath = [];
+                      }
+                      if (oldDraggingKeyPath.length > 0 && oldDraggingKeyPath[0] === 'clipboardElements') {
+                        elementsState.draggingKeyPath = [];
+                      }
+
+                      _saveElements();
 
                       _updatePages();
                     } else if (onclick === 'mods:input') {

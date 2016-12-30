@@ -226,7 +226,7 @@ ${element.tag}&gt; properties\
   <div style="margin-top: 10px; margin-left: -30px; border-bottom: 2px solid #333;"></div>
   ${getSubcontentSectionSrc(
     'Clipboard',
-    `<a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;">Clear</a>`,
+    `<a style="padding: 5px 10px; background-color: #0275d8; border-radius: 5px; font-size: 24px; color: #FFF; text-decoration: none;" onclick="elements:clearclipboard">Clear</a>`,
     getElementsSrc(clipboardElements, ['clipboardElements'], selectedKeyPath, draggingKeyPath),
     `Drag-and-drop elements to the clipboad to save them. Drag inside the clipboard to copy.`
   )}
