@@ -892,7 +892,7 @@ class Rend {
                       page.update({mod});
                     } else if (type === 'elements') {
                       page.update({
-                        elements: elementsState,
+                        elements: elementsState, // XXX this update needs to elide element.instance updates to not crash
                         focus: focusState,
                       });
                     } else if (type === 'files') {

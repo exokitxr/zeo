@@ -194,7 +194,7 @@ const makeElementInstance = (modApis, element) => {
 
   const elementInstance = new elementApi();
   for (const attributeName in attributes) {
-    const attributeValue = attributes[attributeName];
+    const {value: attributeValue} = attributes[attributeName];
     elementInstance[attributeName] = attributeValue;
   }
   elementInstance.children = children.map(child => {
