@@ -145,7 +145,7 @@ class Rend {
           elementInstances: [],
           selectedKeyPath: [],
           draggingKeyPath: [],
-          positioningName: [],
+          positioningName: null,
           positioningSide: null,
           inputText: '',
           inputIndex: 0,
@@ -996,229 +996,214 @@ class Rend {
                   }
                 };
                 const click = e => {
-                  const {side} = e;
-                  const menuHoverState = menuHoverStates[side];
-                  const {intersectionPoint} = menuHoverState;
+                  const {selectedName: oldWorldsSelectedName} = worldsState;
+                  const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
+                  const {selectedName: oldFilesSelectedName} = filesState;
 
-                  if (intersectionPoint) {
-                    const {anchor} = menuHoverState;
-                    const onclick = (anchor && anchor.onclick) || '';
-                    const {selectedName: oldWorldsSelectedName} = worldsState;
-                    const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
-                    const {selectedName: oldFilesSelectedName} = filesState;
+                  const _doPosition = e => {
+                    const {positioningName} = elementsState;
 
-                    focusState.type = '';
-                    worldsState.selectedName = '';
-                    filesState.selectedName = '';
+                    if (positioningName) {
+                      const element = menuUtils.getElementKeyPath({
+                        elements: elementsState.elements,
+                        availableElements: elementsState.availableElements,
+                        clipboardElements: elementsState.clipboardElements,
+                      }, oldElementsSelectedKeyPath);
+                      const instance = menuUtils.getElementKeyPath({
+                        elements: elementsState.elementInstances,
+                      }, oldElementsSelectedKeyPath);
+                      const {attributes} = element;
+                      const attribute = attributes[positioningName];
 
-                    let match;
-                    if (onclick === 'back') {
-                      ui.cancelTransition();
+                      const {position} = positioningMesh;
+                      const newValue = position.toArray();
+                      attribute.value = newValue;
+                      instance[positioningName] = newValue.slice();
 
-                      if (ui.getPages().length > 1) {
-                        ui.popPage();
-                      }
-                    } else if (onclick === 'worlds') {
-                      ui.cancelTransition();
-
-                      ui.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
-                        {
-                          type: 'html',
-                          src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
-                        },
-                        {
-                          type: 'image',
-                          img: creatureUtils.makeAnimatedCreature('worlds'),
-                          x: 150,
-                          y: 0,
-                          w: 150,
-                          h: 150,
-                          frameTime: 300,
-                          pixelated: true,
-                        }
-                      ]), {
-                        type: 'worlds',
-                        state: {
-                          worlds: worldsState,
-                          focus: focusState,
-                        },
-                      });
-                    } else if (match = onclick.match(/^world:(.+)$/)) {
-                      const name = match[1];
-
-                      worldsState.selectedName = name;
+                      elementsState.positioningName = null;
+                      elementsState.positioningSide = null;
 
                       _updatePages();
-                    } else if (onclick === 'worlds:rename') {
-                      if (oldWorldsSelectedName) {
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  };
+                  const _doClick = e => {
+                    const {side} = e;
+                    const menuHoverState = menuHoverStates[side];
+                    const {intersectionPoint} = menuHoverState;
+
+                    if (intersectionPoint) {
+                      const {anchor} = menuHoverState;
+                      const onclick = (anchor && anchor.onclick) || '';
+
+                      focusState.type = '';
+                      worldsState.selectedName = '';
+                      filesState.selectedName = '';
+
+                      let match;
+                      if (onclick === 'back') {
+                        ui.cancelTransition();
+
+                        if (ui.getPages().length > 1) {
+                          ui.popPage();
+                        }
+                      } else if (onclick === 'worlds') {
+                        ui.cancelTransition();
+
+                        ui.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
+                          {
+                            type: 'html',
+                            src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
+                          },
+                          {
+                            type: 'image',
+                            img: creatureUtils.makeAnimatedCreature('worlds'),
+                            x: 150,
+                            y: 0,
+                            w: 150,
+                            h: 150,
+                            frameTime: 300,
+                            pixelated: true,
+                          }
+                        ]), {
+                          type: 'worlds',
+                          state: {
+                            worlds: worldsState,
+                            focus: focusState,
+                          },
+                        });
+                      } else if (match = onclick.match(/^world:(.+)$/)) {
+                        const name = match[1];
+
+                        worldsState.selectedName = name;
+
+                        _updatePages();
+                      } else if (onclick === 'worlds:rename') {
+                        if (oldWorldsSelectedName) {
+                          worldsState.inputText = '';
+                          worldsState.inputIndex = 0;
+                          worldsState.inputValue = 0;
+
+                          focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
+
+                          _updatePages();
+                        }
+                      } else if (onclick === 'worlds:remove') {
+                        if (oldWorldsSelectedName) {
+                          const {worlds} = worldsState;
+                          worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
+
+                          _updatePages();
+                        }
+                      } else if (onclick === 'worlds:create') {
                         worldsState.inputText = '';
                         worldsState.inputIndex = 0;
                         worldsState.inputValue = 0;
-
-                        focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
-
-                        _updatePages();
-                      }
-                    } else if (onclick === 'worlds:remove') {
-                      if (oldWorldsSelectedName) {
-                        const {worlds} = worldsState;
-                        worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
+                        
+                        focusState.type = 'worlds:create';
 
                         _updatePages();
-                      }
-                    } else if (onclick === 'worlds:create') {
-                      worldsState.inputText = '';
-                      worldsState.inputIndex = 0;
-                      worldsState.inputValue = 0;
-                      
-                      focusState.type = 'worlds:create';
+                      } else if (onclick === 'mods') {
+                        ui.cancelTransition();
 
-                      _updatePages();
-                    } else if (onclick === 'mods') {
-                      ui.cancelTransition();
+                        const mods = currentWorldMods;
 
-                      const mods = currentWorldMods;
-
-                      ui.pushPage(({mods: {inputText, inputValue, mods}, focus: {type: focusType}}) => ([
-                        {
-                          type: 'html',
-                          src: menuRenderer.getModsPageSrc({mods, inputText, inputValue, focus: focusType === 'mods'}),
-                        },
-                        {
-                          type: 'image',
-                          img: creatureUtils.makeAnimatedCreature('mods'),
-                          x: 150,
-                          y: 0,
-                          w: 150,
-                          h: 150,
-                          frameTime: 300,
-                          pixelated: true,
-                        }
-                      ]), {
-                        type: 'mods',
-                        state: {
-                          mods: modsState,
-                          focus: focusState,
-                        },
-                      });
-                    } else if (match = onclick.match(/^mod:(.+)$/)) {
-                      const name = match[1];
-                      const mods = currentWorldMods;
-                      const mod = mods.find(m => m.name === name);
-
-                      ui.cancelTransition();
-
-                      ui.pushPage(({mod: {name, version, installed, readme}}) => ([
-                        {
-                          type: 'html',
-                          src: menuRenderer.getModPageSrc({name, version, installed}),
-                        },
-                        {
-                          type: 'html',
-                          src: menuRenderer.getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
-                          x: 500,
-                          y: 150 + 2,
-                          w: WIDTH - 500,
-                          h: HEIGHT - (150 + 2),
-                          scroll: true,
-                        },
-                        {
-                          type: 'image',
-                          img: creatureUtils.makeAnimatedCreature('mod:' + name),
-                          x: 150,
-                          y: 0,
-                          w: 150,
-                          h: 150,
-                          frameTime: 300,
-                          pixelated: true,
-                        }
-                      ]), {
-                        type: 'mod:' + name,
-                        state: {
-                          mod,
-                        },
-                      });
-                    } else if (match = onclick.match(/^getmod:(.+)$/)) {
-                      const name = match[1];
-
-                      currentWorld.requestAddMod(name)
-                        .then(() => {
-                          _updatePages();
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-                    } else if (match = onclick.match(/^removemod:(.+)$/)) {
-                      const name = match[1];
-
-                      currentWorld.requestRemoveMod(name)
-                        .then(() => {
-                          _updatePages();
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-                    } else if (onclick === 'config') {
-                      ui.cancelTransition();
-
-                      ui.pushPage(({config: {inputText, inputValue, sliderValue, checkboxValue}, focus: {type: focusType}}) => ([
-                        {
-                          type: 'html',
-                          src: menuRenderer.getConfigPageSrc(),
-                        },
-                        {
-                          type: 'html',
-                          src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, checkboxValue}),
-                          x: 500,
-                          y: 150 + 2,
-                          w: WIDTH - 500,
-                          h: HEIGHT - (150 + 2),
-                          scroll: true,
-                        },
-                        {
-                          type: 'image',
-                          img: creatureUtils.makeAnimatedCreature('preferences'),
-                          x: 150,
-                          y: 0,
-                          w: 150,
-                          h: 150,
-                          frameTime: 300,
-                          pixelated: true,
-                        }
-                      ]), {
-                        type: 'config',
-                        state: {
-                          config: configState,
-                          focus: focusState,
-                        }
-                      });
-                    } else if (onclick === 'elements') {
-                      ui.cancelTransition();
-
-                      ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue}, focus: {type: focusType}}) => {
-                        const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
-                        const focusAttribute = match && match[1];
-
-                        return [
+                        ui.pushPage(({mods: {inputText, inputValue, mods}, focus: {type: focusType}}) => ([
                           {
                             type: 'html',
-                            src: menuRenderer.getElementsPageSrc({selectedKeyPath}),
+                            src: menuRenderer.getModsPageSrc({mods, inputText, inputValue, focus: focusType === 'mods'}),
+                          },
+                          {
+                            type: 'image',
+                            img: creatureUtils.makeAnimatedCreature('mods'),
+                            x: 150,
+                            y: 0,
+                            w: 150,
+                            h: 150,
+                            frameTime: 300,
+                            pixelated: true,
+                          }
+                        ]), {
+                          type: 'mods',
+                          state: {
+                            mods: modsState,
+                            focus: focusState,
+                          },
+                        });
+                      } else if (match = onclick.match(/^mod:(.+)$/)) {
+                        const name = match[1];
+                        const mods = currentWorldMods;
+                        const mod = mods.find(m => m.name === name);
+
+                        ui.cancelTransition();
+
+                        ui.pushPage(({mod: {name, version, installed, readme}}) => ([
+                          {
+                            type: 'html',
+                            src: menuRenderer.getModPageSrc({name, version, installed}),
                           },
                           {
                             type: 'html',
-                            src: menuRenderer.getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
+                            src: menuRenderer.getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
                             x: 500,
                             y: 150 + 2,
-                            w: WIDTH - (500 + 600),
+                            w: WIDTH - 500,
                             h: HEIGHT - (150 + 2),
                             scroll: true,
                           },
                           {
+                            type: 'image',
+                            img: creatureUtils.makeAnimatedCreature('mod:' + name),
+                            x: 150,
+                            y: 0,
+                            w: 150,
+                            h: 150,
+                            frameTime: 300,
+                            pixelated: true,
+                          }
+                        ]), {
+                          type: 'mod:' + name,
+                          state: {
+                            mod,
+                          },
+                        });
+                      } else if (match = onclick.match(/^getmod:(.+)$/)) {
+                        const name = match[1];
+
+                        currentWorld.requestAddMod(name)
+                          .then(() => {
+                            _updatePages();
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
+                      } else if (match = onclick.match(/^removemod:(.+)$/)) {
+                        const name = match[1];
+
+                        currentWorld.requestRemoveMod(name)
+                          .then(() => {
+                            _updatePages();
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
+                      } else if (onclick === 'config') {
+                        ui.cancelTransition();
+
+                        ui.pushPage(({config: {inputText, inputValue, sliderValue, checkboxValue}, focus: {type: focusType}}) => ([
+                          {
                             type: 'html',
-                            src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}),
-                            x: 500 + (WIDTH - (500 + 600)),
+                            src: menuRenderer.getConfigPageSrc(),
+                          },
+                          {
+                            type: 'html',
+                            src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, checkboxValue}),
+                            x: 500,
                             y: 150 + 2,
-                            w: 600,
+                            w: WIDTH - 500,
                             h: HEIGHT - (150 + 2),
                             scroll: true,
                           },
@@ -1232,342 +1217,396 @@ class Rend {
                             frameTime: 300,
                             pixelated: true,
                           }
-                        ];
-                      }, {
-                        type: 'elements',
-                        state: {
-                          elements: _cleanElementsState(elementsState),
-                          focus: focusState,
-                        },
-                      });
-                    } else if (onclick === 'files') {
-                      ui.cancelTransition();
+                        ]), {
+                          type: 'config',
+                          state: {
+                            config: configState,
+                            focus: focusState,
+                          }
+                        });
+                      } else if (onclick === 'elements') {
+                        ui.cancelTransition();
 
-                      const {loaded} = filesState;
-                      if (!loaded) {
-                        filesState.loading = true;
+                        ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue}, focus: {type: focusType}}) => {
+                          const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
+                          const focusAttribute = match && match[1];
 
-                        const {cwd} = filesState;
-                        fs.getDirectory(cwd)
-                          .then(files => {
-                            filesState.files = menuUtils.cleanFiles(files);
-                            filesState.loading = false;
+                          return [
+                            {
+                              type: 'html',
+                              src: menuRenderer.getElementsPageSrc({selectedKeyPath}),
+                            },
+                            {
+                              type: 'html',
+                              src: menuRenderer.getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
+                              x: 500,
+                              y: 150 + 2,
+                              w: WIDTH - (500 + 600),
+                              h: HEIGHT - (150 + 2),
+                              scroll: true,
+                            },
+                            {
+                              type: 'html',
+                              src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, inputText, inputValue, focusAttribute}),
+                              x: 500 + (WIDTH - (500 + 600)),
+                              y: 150 + 2,
+                              w: 600,
+                              h: HEIGHT - (150 + 2),
+                              scroll: true,
+                            },
+                            {
+                              type: 'image',
+                              img: creatureUtils.makeAnimatedCreature('preferences'),
+                              x: 150,
+                              y: 0,
+                              w: 150,
+                              h: 150,
+                              frameTime: 300,
+                              pixelated: true,
+                            }
+                          ];
+                        }, {
+                          type: 'elements',
+                          state: {
+                            elements: _cleanElementsState(elementsState),
+                            focus: focusState,
+                          },
+                        });
+                      } else if (onclick === 'files') {
+                        ui.cancelTransition();
 
-                            _updatePages();
-                          })
-                          .catch(err => {
-                            console.warn(err);
-                          });
-                      }
+                        const {loaded} = filesState;
+                        if (!loaded) {
+                          filesState.loading = true;
 
-                      ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
-                        {
-                          type: 'html',
-                          src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}),
-                        },
-                        {
-                          type: 'image',
-                          img: creatureUtils.makeAnimatedCreature('files'),
-                          x: 150,
-                          y: 0,
-                          w: 150,
-                          h: 150,
-                          frameTime: 300,
-                          pixelated: true,
+                          const {cwd} = filesState;
+                          fs.getDirectory(cwd)
+                            .then(files => {
+                              filesState.files = menuUtils.cleanFiles(files);
+                              filesState.loading = false;
+
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
                         }
-                      ]), {
-                        type: 'files',
-                        state: {
-                          files: filesState,
-                          focus: focusState,
-                        },
-                      });
-                    } else if (match = onclick.match(/^file:(.+)$/)) {
-                      ui.cancelTransition();
 
-                      const _chdir = newCwd => {
-                        filesState.loading = true;
+                        ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                          {
+                            type: 'html',
+                            src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}),
+                          },
+                          {
+                            type: 'image',
+                            img: creatureUtils.makeAnimatedCreature('files'),
+                            x: 150,
+                            y: 0,
+                            w: 150,
+                            h: 150,
+                            frameTime: 300,
+                            pixelated: true,
+                          }
+                        ]), {
+                          type: 'files',
+                          state: {
+                            files: filesState,
+                            focus: focusState,
+                          },
+                        });
+                      } else if (match = onclick.match(/^file:(.+)$/)) {
+                        ui.cancelTransition();
 
-                        filesState.cwd = newCwd;
-                        fs.setCwd(newCwd);
-                        fs.getDirectory(newCwd)
-                          .then(files => {
-                            filesState.files = menuUtils.cleanFiles(files);
-                            filesState.loading = false;
+                        const _chdir = newCwd => {
+                          filesState.loading = true;
 
-                            _updatePages();
-                          })
-                          .catch(err => {
-                            console.warn(err);
-                          });
+                          filesState.cwd = newCwd;
+                          fs.setCwd(newCwd);
+                          fs.getDirectory(newCwd)
+                            .then(files => {
+                              filesState.files = menuUtils.cleanFiles(files);
+                              filesState.loading = false;
 
-                        _updatePages();
-                      };
-
-                      const name = match[1];
-                      if (name !== '..') {
-                        const {files} = filesState;
-                        const file = files.find(f => f.name === name);
-                        const {type} = file;
-
-                        if (type === 'file') {
-                          filesState.selectedName = name;
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
 
                           _updatePages();
-                        } else if (type === 'directory') {
+                        };
+
+                        const name = match[1];
+                        if (name !== '..') {
+                          const {files} = filesState;
+                          const file = files.find(f => f.name === name);
+                          const {type} = file;
+
+                          if (type === 'file') {
+                            filesState.selectedName = name;
+
+                            _updatePages();
+                          } else if (type === 'directory') {
+                            const {cwd: oldCwd} = filesState;
+                            const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
+                            _chdir(newCwd);
+                          }
+                        } else {
                           const {cwd: oldCwd} = filesState;
-                          const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
+                          const newCwd = (() => {
+                            const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
+                            if (replacedCwd !== '') {
+                              return replacedCwd;
+                            } else {
+                              return '/';
+                            }
+                          })();
                           _chdir(newCwd);
                         }
-                      } else {
-                        const {cwd: oldCwd} = filesState;
-                        const newCwd = (() => {
-                          const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
-                          if (replacedCwd !== '') {
-                            return replacedCwd;
-                          } else {
-                            return '/';
+                      } else if (match = onclick.match(/^files:(cut|copy)$/)) {
+                        if (oldFilesSelectedName) {
+                          const type = match[1];
+                          const {cwd} = filesState;
+                          const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
+
+                          filesState.selectedName = oldFilesSelectedName;
+                          filesState.clipboardType = type;
+                          filesState.clipboardPath = cutPath;
+
+                          _updatePages();
+                        }
+                      } else if (onclick === 'files:paste') {
+                        const {clipboardPath} = filesState;
+
+                        if (clipboardPath) {
+                          filesState.uploading = true;
+
+                          const {cwd, clipboardType, clipboardPath} = filesState;
+
+                          const src = clipboardPath;
+                          const name = clipboardPath.match(/\/([^\/]*)$/)[1];
+                          const dst = menuUtils.pathJoin(cwd, name);
+                          fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
+                            .then(() => fs.getDirectory(cwd)
+                              .then(files => {
+                                filesState.files = menuUtils.cleanFiles(files);
+                                filesState.selectedName = name;
+                                filesState.uploading = false;
+                                if (clipboardType === 'cut') {
+                                  filesState.clipboardType = 'copy';
+                                  filesState.clipboardPath = dst;
+                                }
+
+                                _updatePages();
+                              })
+                            )
+                            .catch(err => {
+                              console.warn(err);
+
+                              filesState.uploading = true;
+
+                              _updatePages();
+                            });
+
+                          _updatePages();
+                        }
+                      } else if (onclick === 'files:createdirectory') {
+                        focusState.type = 'files:createdirectory';
+
+                        _updatePages();
+                      } else if (onclick === 'files:rename') {
+                        if (oldFilesSelectedName) {
+                          filesState.inputText = '';
+                          filesState.inputIndex = 0;
+                          filesState.inputValue = 0;
+
+                          focusState.type = 'files:rename:' + oldFilesSelectedName;
+
+                          _updatePages();
+                        }
+                      } else if (onclick === 'files:remove') {
+                        if (oldFilesSelectedName) {
+                          filesState.uploading = true;
+
+                          const {cwd} = filesState;
+                          const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
+                          fs.remove(p)
+                            .then(() => fs.getDirectory(cwd)
+                              .then(files => {
+                                filesState.files = menuUtils.cleanFiles(files);
+                                const {clipboardPath} = filesState;
+                                if (clipboardPath === p) {
+                                  filesState.clipboardType = null;
+                                  filesState.clipboardPath = '';
+                                }
+                                filesState.uploading = false;
+
+                                _updatePages();
+                              })
+                            )
+                            .catch(err => {
+                              console.warn(err);
+
+                              filesState.uploading = false;
+
+                              _updatePages();
+                            });
+
+                          _updatePages();
+                        }
+                      } else if (onclick === 'elements:remove') {
+                        if (oldElementsSelectedKeyPath.length > 0) {
+                          const elementsSpec = {
+                            elements: elementsState.elements,
+                            availableElements: elementsState.availableElements,
+                            clipboardElements: elementsState.clipboardElements,
+                          };
+                          menuUtils.removeElementKeyPath(elementsSpec, oldElementsSelectedKeyPath);
+                          const elementInstancesSpec = {
+                            elements: elementsState.elementInstances,
+                          };
+                          if (oldElementsSelectedKeyPath[0] === 'elements') {
+                            const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
+                            menuUtils.destructElement(instance);
                           }
-                        })();
-                        _chdir(newCwd);
-                      }
-                    } else if (match = onclick.match(/^files:(cut|copy)$/)) {
-                      if (oldFilesSelectedName) {
-                        const type = match[1];
-                        const {cwd} = filesState;
-                        const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
 
-                        filesState.selectedName = oldFilesSelectedName;
-                        filesState.clipboardType = type;
-                        filesState.clipboardPath = cutPath;
+                          elementsState.selectedKeyPath = [];
+                          elementsState.draggingKeyPath = [];
 
-                        _updatePages();
-                      }
-                    } else if (onclick === 'files:paste') {
-                      const {clipboardPath} = filesState;
+                          _saveElements();
 
-                      if (clipboardPath) {
-                        filesState.uploading = true;
+                          _updatePages();
+                        }
+                      } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle)(?::(.+?))?$/)) {
+                        const attributeName = match[1];
+                        const action = match[2];
+                        const value = match[3];
 
-                        const {cwd, clipboardType, clipboardPath} = filesState;
-
-                        const src = clipboardPath;
-                        const name = clipboardPath.match(/\/([^\/]*)$/)[1];
-                        const dst = menuUtils.pathJoin(cwd, name);
-                        fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
-                          .then(() => fs.getDirectory(cwd)
-                            .then(files => {
-                              filesState.files = menuUtils.cleanFiles(files);
-                              filesState.selectedName = name;
-                              filesState.uploading = false;
-                              if (clipboardType === 'cut') {
-                                filesState.clipboardType = 'copy';
-                                filesState.clipboardPath = dst;
-                              }
-
-                              _updatePages();
-                            })
-                          )
-                          .catch(err => {
-                            console.warn(err);
-
-                            filesState.uploading = true;
-
-                            _updatePages();
-                          });
-
-                        _updatePages();
-                      }
-                    } else if (onclick === 'files:createdirectory') {
-                      focusState.type = 'files:createdirectory';
-
-                      _updatePages();
-                    } else if (onclick === 'files:rename') {
-                      if (oldFilesSelectedName) {
-                        filesState.inputText = '';
-                        filesState.inputIndex = 0;
-                        filesState.inputValue = 0;
-
-                        focusState.type = 'files:rename:' + oldFilesSelectedName;
-
-                        _updatePages();
-                      }
-                    } else if (onclick === 'files:remove') {
-                      if (oldFilesSelectedName) {
-                        filesState.uploading = true;
-
-                        const {cwd} = filesState;
-                        const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-                        fs.remove(p)
-                          .then(() => fs.getDirectory(cwd)
-                            .then(files => {
-                              filesState.files = menuUtils.cleanFiles(files);
-                              const {clipboardPath} = filesState;
-                              if (clipboardPath === p) {
-                                filesState.clipboardType = null;
-                                filesState.clipboardPath = '';
-                              }
-                              filesState.uploading = false;
-
-                              _updatePages();
-                            })
-                          )
-                          .catch(err => {
-                            console.warn(err);
-
-                            filesState.uploading = false;
-
-                            _updatePages();
-                          });
-
-                        _updatePages();
-                      }
-                    } else if (onclick === 'elements:remove') {
-                      if (oldElementsSelectedKeyPath.length > 0) {
-                        const elementsSpec = {
+                        const element = menuUtils.getElementKeyPath({
                           elements: elementsState.elements,
                           availableElements: elementsState.availableElements,
                           clipboardElements: elementsState.clipboardElements,
-                        };
-                        menuUtils.removeElementKeyPath(elementsSpec, oldElementsSelectedKeyPath);
-                        const elementInstancesSpec = {
+                        }, oldElementsSelectedKeyPath);
+                        const instance = menuUtils.getElementKeyPath({
                           elements: elementsState.elementInstances,
-                        };
-                        if (oldElementsSelectedKeyPath[0] === 'elements') {
-                          const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
-                          menuUtils.destructElement(instance);
+                        }, oldElementsSelectedKeyPath);
+                        const {attributes} = element;
+                        const attribute = attributes[attributeName];
+
+                        if (action === 'position') {
+                          elementsState.positioningName = attributeName;
+                          elementsState.positioningSide = side;
+                        } else if (action === 'focus') {
+                          const {value} = menuHoverState;
+
+                          const textProperties = (() => {
+                            const {type} = attribute;
+                            if (type === 'text') {
+                              const valuePx = value * 400;
+                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
+                            } else if (type === 'number') {
+                              const valuePx = value * 100;
+                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
+                            } else if (type === 'color') {
+                              const valuePx = value * (400 - (40 + 4));
+                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
+                            } else {
+                              return null;
+                            }
+                          })();
+                          if (textProperties) {
+                            elementsState.inputText = menuUtils.castValueValueToString(attribute.value, attribute.type);
+                            const {index, px} = textProperties;
+                            elementsState.inputIndex = index;
+                            elementsState.inputValue = px;
+                          }
+
+                          focusState.type = 'element:attribute:' + attributeName;
+                        } else if (action === 'set') {
+                          const newValue = value;
+                          attribute.value = newValue;
+                          instance[attributeName] = newValue;
+                        } else if (action === 'tweak') {
+                          const {value} = menuHoverState;
+                          const {min, max} = attribute;
+
+                          const newValue = min + (value * (max - min));
+                          attribute.value = newValue;
+                          instance[attributeName] = newValue;
+                        } else if (action === 'toggle') {
+                          const newValue = !attribute.value;
+                          attribute.value = newValue;
+                          instance[attributeName] = newValue;
                         }
 
-                        elementsState.selectedKeyPath = [];
-                        elementsState.draggingKeyPath = [];
+                        elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
+
+                        _updatePages();
+                      } else if (onclick === 'elements:clearclipboard') {
+                        elementsState.clipboardElements = [];
+                        if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
+                          elementsState.selectedKeyPath = [];
+                        }
+                        if (oldDraggingKeyPath.length > 0 && oldDraggingKeyPath[0] === 'clipboardElements') {
+                          elementsState.draggingKeyPath = [];
+                        }
 
                         _saveElements();
 
                         _updatePages();
-                      }
-                    } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle)(?::(.+?))?$/)) {
-                      const attributeName = match[1];
-                      const action = match[2];
-                      const value = match[3];
+                      } else if (onclick === 'mods:input') {
+                        const {value} = menuHoverState;
+                        const valuePx = value * (WIDTH - (500 + 40));
 
-                      const element = menuUtils.getElementKeyPath({
-                        elements: elementsState.elements,
-                        availableElements: elementsState.availableElements,
-                        clipboardElements: elementsState.clipboardElements,
-                      }, oldElementsSelectedKeyPath);
-                      const instance = menuUtils.getElementKeyPath({
-                        elements: elementsState.elementInstances,
-                      }, oldElementsSelectedKeyPath);
-                      const {attributes} = element;
-                      const attribute = attributes[attributeName];
+                        const {index, px} = getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
 
-                      if (action === 'position') {
-                        elementsState.positioningName = attributeName;
-                        elementsState.positioningSide = side;
-                      } else if (action === 'focus') {
+                        modsState.inputIndex = index;
+                        modsState.inputValue = px;
+                        focusState.type = 'mods';
+
+                        _updatePages();
+                      } else if (onclick === 'config:input') {
+                        const {value} = menuHoverState;
+                        const valuePx = value * (WIDTH - (500 + 40));
+
+                        const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+
+                        configState.inputIndex = index;
+                        configState.inputValue = px;
+                        focusState.type = 'config';
+
+                        _updatePages();
+                      } else if (onclick === 'config:resolution') {
                         const {value} = menuHoverState;
 
-                        const textProperties = (() => {
-                          const {type} = attribute;
-                          if (type === 'text') {
-                            const valuePx = value * 400;
-                            return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
-                          } else if (type === 'number') {
-                            const valuePx = value * 100;
-                            return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
-                          } else if (type === 'color') {
-                            const valuePx = value * (400 - (40 + 4));
-                            return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
-                          } else {
-                            return null;
-                          }
-                        })();
-                        if (textProperties) {
-                          elementsState.inputText = menuUtils.castValueValueToString(attribute.value, attribute.type);
-                          const {index, px} = textProperties;
-                          elementsState.inputIndex = index;
-                          elementsState.inputValue = px;
+                        configState.sliderValue = value;
+
+                        _updatePages();
+                      } else if (onclick === 'config:stats') {
+                        const {checkboxValue} = configState;
+
+                        if (!checkboxValue) {
+                          const width = 0.0005;
+                          const height = width * (48 / 80);
+                          const depth = -0.001;
+
+                          configState.checkboxValue = true;
+                        } else {
+                          configState.checkboxValue = false;
                         }
 
-                        focusState.type = 'element:attribute:' + attributeName;
-                      } else if (action === 'set') {
-                        const newValue = value;
-                        attribute.value = newValue;
-                        instance[attributeName] = newValue;
-                      } else if (action === 'tweak') {
-                        const {value} = menuHoverState;
-                        const {min, max} = attribute;
-
-                        const newValue = min + (value * (max - min));
-                        attribute.value = newValue;
-                        instance[attributeName] = newValue;
-                      } else if (action === 'toggle') {
-                        const newValue = !attribute.value;
-                        attribute.value = newValue;
-                        instance[attributeName] = newValue;
-                      }
-
-                      elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
-
-                      _updatePages();
-                    } else if (onclick === 'elements:clearclipboard') {
-                      elementsState.clipboardElements = [];
-                      if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
-                        elementsState.selectedKeyPath = [];
-                      }
-                      if (oldDraggingKeyPath.length > 0 && oldDraggingKeyPath[0] === 'clipboardElements') {
-                        elementsState.draggingKeyPath = [];
-                      }
-
-                      _saveElements();
-
-                      _updatePages();
-                    } else if (onclick === 'mods:input') {
-                      const {value} = menuHoverState;
-                      const valuePx = value * (WIDTH - (500 + 40));
-
-                      const {index, px} = getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
-
-                      modsState.inputIndex = index;
-                      modsState.inputValue = px;
-                      focusState.type = 'mods';
-
-                      _updatePages();
-                    } else if (onclick === 'config:input') {
-                      const {value} = menuHoverState;
-                      const valuePx = value * (WIDTH - (500 + 40));
-
-                      const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
-
-                      configState.inputIndex = index;
-                      configState.inputValue = px;
-                      focusState.type = 'config';
-
-                      _updatePages();
-                    } else if (onclick === 'config:resolution') {
-                      const {value} = menuHoverState;
-
-                      configState.sliderValue = value;
-
-                      _updatePages();
-                    } else if (onclick === 'config:stats') {
-                      const {checkboxValue} = configState;
-
-                      if (!checkboxValue) {
-                        const width = 0.0005;
-                        const height = width * (48 / 80);
-                        const depth = -0.001;
-
-                        configState.checkboxValue = true;
+                        _updatePages();
                       } else {
-                        configState.checkboxValue = false;
+                        _updatePages();
                       }
 
-                      _updatePages();
+                      return true;
                     } else {
-                      _updatePages();
+                      return false;
                     }
-                  }
+                  };
+
+                  _doPosition(e) || _doClick(e);
                 };
                 input.addEventListener('click', click);
                 const mousedown = e => {
@@ -2406,6 +2445,7 @@ class Rend {
                       const status = webvr.getStatus();
                       const {gamepads: gamepadsStatus} = status;
                       const gamepadStatus = gamepadsStatus[positioningSide];
+
                       if (gamepadStatus) {
                         const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
                         positioningMesh.position.copy(controllerPosition);
