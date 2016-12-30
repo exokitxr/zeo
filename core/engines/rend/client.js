@@ -145,6 +145,8 @@ class Rend {
           elementInstances: [],
           selectedKeyPath: [],
           draggingKeyPath: [],
+          positioningName: [],
+          positioningSide: null,
           inputText: '',
           inputIndex: 0,
           inputValue: 0,
@@ -898,6 +900,41 @@ class Rend {
                 scene.add(keyboardDotMeshes.left);
                 scene.add(keyboardDotMeshes.right);
 
+                const positioningMesh = (() => {
+                  const geometry = (() => {
+                    const result = new THREE.BufferGeometry();
+                    const positions = Float32Array.from([
+                      0, 0, 0,
+                      0.1, 0, 0,
+                      0, 0, 0,
+                      0, 0.1, 0,
+                      0, 0, 0,
+                      0, 0, 0.1,
+                    ]);
+                    result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    const colors = Float32Array.from([
+                      1, 0, 0,
+                      1, 0, 0,
+                      0, 1, 0,
+                      0, 1, 0,
+                      0, 0, 1,
+                      0, 0, 1,
+                    ]);
+                    result.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                    return result;
+                  })();
+                  const material = new THREE.LineBasicMaterial({
+                    // color: 0xFFFFFF,
+                    // color: 0x333333,
+                    vertexColors: THREE.VertexColors,
+                  });
+
+                  const mesh = new THREE.LineSegments(geometry, material);
+                  mesh.visible = false;
+                  return mesh;
+                })();
+                scene.add(positioningMesh);
+
                 stats.render = (() => {
                   return () => {
                     const {frame: oldFrame} = statsState;
@@ -1408,7 +1445,7 @@ class Rend {
 
                         _updatePages();
                       }
-                    } else if (match = onclick.match(/^element:attribute:(.+?):(focus|set|tweak|toggle)(?::(.+?))?$/)) {
+                    } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle)(?::(.+?))?$/)) {
                       const attributeName = match[1];
                       const action = match[2];
                       const value = match[3];
@@ -1424,7 +1461,10 @@ class Rend {
                       const {attributes} = element;
                       const attribute = attributes[attributeName];
 
-                      if (action === 'focus') {
+                      if (action === 'position') {
+                        elementsState.positioningName = attributeName;
+                        elementsState.positioningSide = side;
+                      } else if (action === 'focus') {
                         const {value} = menuHoverState;
 
                         const textProperties = (() => {
@@ -1999,6 +2039,8 @@ class Rend {
                     scene.remove(keyboardDotMeshes[side]);
                   });
 
+                  scene.remove(positioningMesh);
+
                   input.removeEventListener('click', click);
                   input.removeEventListener('mousedown', mousedown);
                   input.removeEventListener('mouseup', mouseup);
@@ -2357,9 +2399,32 @@ class Rend {
                       }
                     });
                   };
+                  const _updateControllers = () => {
+                    const {positioningSide} = elementsState;
+
+                    if (positioningSide) {
+                      const status = webvr.getStatus();
+                      const {gamepads: gamepadsStatus} = status;
+                      const gamepadStatus = gamepadsStatus[positioningSide];
+                      if (gamepadStatus) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
+                        positioningMesh.position.copy(controllerPosition);
+                        positioningMesh.quaternion.copy(controllerRotation);
+                      }
+
+                      if (!positioningMesh.visible) {
+                        positioningMesh.visible = true;
+                      }
+                    } else {
+                      if (positioningMesh.visible) {
+                        positioningMesh.visible = false;
+                      }
+                    }
+                  };
 
                   _updateMenuMesh();
                   _updateAnchors();
+                  _updateControllers();
                 });
 
                 menu = {
