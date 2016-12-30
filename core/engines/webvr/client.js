@@ -958,7 +958,7 @@ class WebVR {
 
             const moveFactor = 0.02;
             axes[0] = _clampAxis(axes[0] - (x * moveFactor));
-            axes[1] = _clampAxis(axes[1] - (y * moveFactor));
+            axes[1] = _clampAxis(axes[1] + (y * moveFactor));
 
             this.updateProperties();
           }
