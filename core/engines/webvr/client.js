@@ -841,10 +841,12 @@ class WebVR {
               if (parent.isPresenting && ((mode === 'left' && index === 0) || (mode === 'right' && index === 1))) {
                 e.preventDefault();
 
-                if (!e.shiftKey) {
-                  this.move(e.deltaX, e.deltaY);
-                } else {
+                if (e.shiftKey) {
                   this.rotate(e.deltaX, e.deltaY);
+                } else if (e.ctrlKey) {
+                  this.move(0, 0, e.deltaY);
+                } else {
+                  this.move(e.deltaX, e.deltaY, 0);
                 }
               }
             };
@@ -855,12 +857,13 @@ class WebVR {
             };
           }
 
-          move(x, y) {
+          move(x, y, z) {
             const {positionOffset} = this;
 
             const moveFactor = 0.001;
             positionOffset.x += -x * moveFactor;
             positionOffset.y += y * moveFactor;
+            positionOffset.z += -z * moveFactor;
 
             this.updateProperties();
           }
