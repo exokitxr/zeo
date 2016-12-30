@@ -113,15 +113,15 @@ class Model {
                       mesh.scale.fromArray(model.scale);
 
                       scene.add(mesh);
+
+                      this._cleanup = () => {
+                        scene.remove(mesh);
+                      };
                     }
                   })
                   .catch(err => {
                     console.warn(err);
                   });
-
-                this._cleanup = () => {
-                  scene.remove(mesh);
-                };
               }
 
               destructor() {
