@@ -1600,27 +1600,22 @@ class Rend {
 
                         let match;
                         if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                          const keyPath = menuUtils.parseKeyPath(match[1]); // XXX destination key path here should be the child-appended one before the tree format checks
+                          const parentKeyPath = menuUtils.parseKeyPath(match[1]);
 
-                          console.log('consider moving', {
-                            keyPath,
-                            oldDraggingKeyPath,
-                            isSubKeyPath: menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath),
-                            isAdjacentKeyPath: menuUtils.isAdjacentKeyPath(keyPath, oldDraggingKeyPath),
-                          });
+                          const elementsSpec = {
+                            elements: elementsState.elements,
+                            availableElements: elementsState.availableElements,
+                            clipboardElements: elementsState.clipboardElements,
+                          };
+                          const childKeyPath = parentKeyPath.concat(menuUtils.getElementKeyPath(elementsSpec, parentKeyPath).children.length);
 
-                          if (!menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(keyPath, oldDraggingKeyPath)) {
-                            const elementsSpec = {
-                              elements: elementsState.elements,
-                              availableElements: elementsState.availableElements,
-                              clipboardElements: elementsState.clipboardElements,
-                            };
+                          if (!menuUtils.isSubKeyPath(childKeyPath, oldDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(childKeyPath, oldDraggingKeyPath)) {
+                            const oldKeyPath = oldDraggingKeyPath;
+                            const newKeyPath = childKeyPath;
+                            const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
                             const elementInstancesSpec = {
                               elements: elementsState.elementInstances,
                             };
-                            const oldKeyPath = oldDraggingKeyPath;
-                            const newKeyPath = keyPath.concat(menuUtils.getElementKeyPath(elementsSpec, keyPath).children.length);
-                            const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
                             dragFn(elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath);
 
                             _saveElements();
