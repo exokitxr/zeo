@@ -1588,16 +1588,6 @@ class Rend {
 
                   mousedownScrollLayer.scrollTo(scrollTop);
                 };
-                const mousemove = e => {
-                  const {side} = e;
-                  const menuHoverState = menuHoverStates[side];
-
-                  const {mousedownStartCoord} = menuHoverState;
-                  if (mousedownStartCoord) {
-                    _setLayerScrollTop(menuHoverState);
-                  }
-                };
-                input.addEventListener('mousemove', mousemove);
                 const mouseup = e => {
                   const {side} = e;
                   const menuHoverState = menuHoverStates[side];
@@ -1972,7 +1962,6 @@ class Rend {
 
                   input.removeEventListener('click', click);
                   input.removeEventListener('mousedown', mousedown);
-                  input.removeEventListener('mousemove', mousemove);
                   input.removeEventListener('mouseup', mouseup);
                   input.addEventListener('keydown', keydown);
                 });
@@ -2100,6 +2089,15 @@ class Rend {
                         validTextures.value[i] = 0;
                       }
                     }
+
+                    SIDES.forEach(side => {
+                      const menuHoverState = menuHoverStates[side];
+
+                      const {mousedownStartCoord} = menuHoverState;
+                      if (mousedownStartCoord) {
+                        _setLayerScrollTop(menuHoverState);
+                      }
+                    });
                   };
                   const _updateAnchors = () => {
                     const status = webvr.getStatus();
