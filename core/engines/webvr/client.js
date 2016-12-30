@@ -541,6 +541,7 @@ class WebVR {
               grip: false,
               menu: false,
               shift: false,
+              alt: false,
             };
             this.keys = keys;
 
@@ -593,6 +594,10 @@ class WebVR {
                   case 16: // shift
                     keys.shift = true;
                     break;
+                  case 18: // alt
+                    keys.alt = true;
+                    needsGamepadUpdate = true;
+                    break;
                   case 90: // Z
                     this.mode = 'left';
                     break;
@@ -640,6 +645,10 @@ class WebVR {
                     break;
                   case 16: // shift
                     keys.shift = false;
+                    break;
+                  case 18: // alt
+                    keys.alt = false;
+                    needsGamepadUpdate = true;
                     break;
                 }
 
@@ -1003,6 +1012,7 @@ class WebVR {
 
             if (this.displayIsInControllerMode()) {
               const {keys} = parent;
+              this.buttons[BUTTONS.PAD].touched = keys.alt;
               this.buttons[BUTTONS.PAD].pressed = keys.pad;
               this.buttons[BUTTONS.TRIGGER].pressed = keys.trigger;
               this.buttons[BUTTONS.GRIP].pressed = keys.grip;

@@ -306,7 +306,8 @@ class Cyborg {
               mesh.scale.copy(gamepadStatus.scale);
 
               const {buttons} = gamepadStatus;
-              mesh.padMesh.visible = buttons.pad.pressed;
+              mesh.padMesh.visible = buttons.pad.touched;
+              mesh.padMesh.position.y = buttons.pad.pressed ? -0.0025 : 0;
               mesh.triggerMesh.visible = buttons.trigger.pressed;
               mesh.gripMesh.visible = buttons.grip.pressed;
               mesh.menuMesh.visible = buttons.menu.pressed;
