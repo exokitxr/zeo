@@ -76,8 +76,6 @@ class Input {
     window.addEventListener('keyup', eventListeners.keyup);
 
     this._cleanup = () => {
-      document.body.removeChild(anchors);
-
       window.removeEventListener('click', eventListeners.click);
       window.removeEventListener('mousedown', eventListeners.mousedown);
       window.removeEventListener('mouseup', eventListeners.mouseup);
