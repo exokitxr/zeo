@@ -653,6 +653,7 @@ class Rend {
                 const solidMaterial = new THREE.MeshBasicMaterial({
                   color: 0xFFFFFF,
                   opacity: 0.5,
+                  side: THREE.DoubleSide,
                   transparent: true,
                   // alphaTest: 0.5,
                   depthWrite: false,
@@ -671,7 +672,7 @@ class Rend {
                 const menuMesh = (() => {
                   const result = new THREE.Object3D();
                   result.position.y = 1.5;
-                  result.position.z = -0.5;
+                  result.position.z = -1;
 
                   const imageMaterial = (() => {
                     const shaderUniforms = THREE.UniformsUtils.clone(menuImageShader.uniforms);
@@ -848,7 +849,7 @@ class Rend {
                     return material;
                   })();
                   const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.y = 1.5;
+                  mesh.position.y = 1;
                   mesh.rotation.x = -Math.PI * (3 / 8);
                   mesh.keySpecs = keySpecs;
                   return mesh;
