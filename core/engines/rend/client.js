@@ -643,6 +643,7 @@ class Rend {
                     w: 150,
                     h: 150,
                     frameTime: 300,
+                    pixelated: true,
                   }
                 ], {
                   type: 'main',
@@ -682,8 +683,8 @@ class Rend {
                           THREE.UVMapping,
                           THREE.ClampToEdgeWrapping,
                           THREE.ClampToEdgeWrapping,
-                          THREE.NearestFilter,
-                          THREE.NearestFilter,
+                          THREE.LinearFilter,
+                          THREE.LinearFilter,
                           THREE.RGBAFormat,
                           THREE.UnsignedByteType,
                           16
@@ -822,8 +823,8 @@ class Rend {
                       THREE.UVMapping,
                       THREE.ClampToEdgeWrapping,
                       THREE.ClampToEdgeWrapping,
-                      THREE.NearestFilter,
-                      THREE.NearestFilter,
+                      THREE.LinearFilter,
+                      THREE.LinearFilter,
                       THREE.RGBAFormat,
                       THREE.UnsignedByteType,
                       16
@@ -957,6 +958,7 @@ class Rend {
                           w: 150,
                           h: 150,
                           frameTime: 300,
+                          pixelated: true,
                         }
                       ]), {
                         type: 'worlds',
@@ -1014,6 +1016,7 @@ class Rend {
                           w: 150,
                           h: 150,
                           frameTime: 300,
+                          pixelated: true,
                         }
                       ]), {
                         type: 'mods',
@@ -1051,6 +1054,7 @@ class Rend {
                           w: 150,
                           h: 150,
                           frameTime: 300,
+                          pixelated: true,
                         }
                       ]), {
                         type: 'mod:' + name,
@@ -1103,6 +1107,7 @@ class Rend {
                           w: 150,
                           h: 150,
                           frameTime: 300,
+                          pixelated: true,
                         }
                       ]), {
                         type: 'config',
@@ -1149,6 +1154,7 @@ class Rend {
                             w: 150,
                             h: 150,
                             frameTime: 300,
+                            pixelated: true,
                           }
                         ];
                       }, {
@@ -1191,6 +1197,7 @@ class Rend {
                           w: 150,
                           h: 150,
                           frameTime: 300,
+                          pixelated: true,
                         }
                       ]), {
                         type: 'files',
@@ -2007,13 +2014,32 @@ class Rend {
                       if (layer && layer.getValid({worldTime})) {
                         validTextures.value[i] = 1;
 
-                        if (textures.value[i].image !== layer.img) {
-                          textures.value[i].image = layer.img;
-                          textures.value[i].needsUpdate = true;
+                        const texture = textures.value[i];
+                        if (texture.image !== layer.img) {
+                          texture.image = layer.img;
+                          if (!layer.pixelated) {
+                            texture.minFilter = THREE.LinearFilter;
+                            texture.magFilter = THREE.LinearFilter;
+                            texture.anisotropy = 16;
+                          } else {
+                            texture.minFilter = THREE.NearestFilter;
+                            texture.magFilter = THREE.NearestFilter;
+                            texture.anisotropy = 1;
+                          }
+                          texture.needsUpdate = true;
 
                           layer.img.needsUpdate = false;
                         } else if (layer.img.needsUpdate) {
-                          textures.value[i].needsUpdate = true;
+                          if (!layer.pixelated) {
+                            texture.minFilter = THREE.LinearFilter;
+                            texture.magFilter = THREE.LinearFilter;
+                            texture.anisotropy = 16;
+                          } else {
+                            texture.minFilter = THREE.NearestFilter;
+                            texture.magFilter = THREE.NearestFilter;
+                            texture.anisotropy = 1;
+                          }
+                          texture.needsUpdate = true;
 
                           layer.img.needsUpdate = false;
                         }

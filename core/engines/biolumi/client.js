@@ -183,13 +183,14 @@ class Biolumi {
                         layer.h = h;
                         layer.scrollHeight = scrollHeight;
                         layer.scroll = scroll;
+                        layer.pixelated = false;
                         layers.push(layer);
                       } else if (type === 'image') {
                         let {img: imgs} = layerSpec;
                         if (!Array.isArray(imgs)) {
                           imgs = [imgs];
                         }
-                        const {x = 0, y = 0, w = width, h = height, frameTime = 300} = layerSpec;
+                        const {x = 0, y = 0, w = width, h = height, frameTime = 300, pixelated = false} = layerSpec;
 
                         setTimeout(pend);
 
@@ -206,6 +207,7 @@ class Biolumi {
                           layer.numFrames = imgs.length;
                           layer.frameIndex = j;
                           layer.frameTime = frameTime;
+                          layer.pixelated = pixelated;
                           layers.push(layer);
                         }
                       } else {
@@ -236,6 +238,7 @@ class Biolumi {
                 this.numFrames = 1;
                 this.frameIndex = 0;
                 this.frameTime = 0;
+                this.pixelated = false;
               }
 
               getValid({worldTime}) {
