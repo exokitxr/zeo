@@ -42,7 +42,7 @@ class Input {
         listeners.sort((a, b) => b.priority - a.priority);
       };
       result.remove = handler => {
-        const index = listeners.indexOf(handler);
+        const index = listeners.findIndex(listener => listener.handler === handler);
         if (index !== -1) {
           listeners.splice(index, 1);
         }
