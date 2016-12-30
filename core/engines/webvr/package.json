@@ -6,6 +6,7 @@
   "dependencies": {
     "events": "",
     "mod-loop": "0.0.2",
+    "synchronous-promise": "^1.0.7",
     "webvr-polyfill": "^0.9.23"
   }
 }

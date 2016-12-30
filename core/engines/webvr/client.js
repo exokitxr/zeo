@@ -15,6 +15,7 @@ require('webvr-polyfill');
 
 const events = require('events');
 const EventEmitter = events.EventEmitter;
+const SynchronousPromise = require('synchronous-promise').SynchronousPromise;
 const mod = require('mod-loop');
 
 const VREffect = require('./lib/three-extra/VREffect');
@@ -50,18 +51,33 @@ class WebVR {
       live = false;
     };
 
-    return archae.requestEngines([
-      '/core/engines/input',
-      '/core/engines/three',
+    return Promise.all([
+      archae.requestEngines([
+        '/core/engines/input',
+        '/core/engines/three',
+      ]),
+      navigator.getVRDisplays(),
     ]).then(([
-      input,
-      three,
+      [
+        input,
+        three,
+      ],
+      displays,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
         const {domElement} = renderer;
 
         const THREEVREffect = VREffect(THREE);
+
+        const bestDisplay = displays.sort((a, b) => {
+          const diff = +_isPolyfillDisplay(a) - _isPolyfillDisplay(b);
+          if (diff !== 0) {
+            return diff;
+          } else {
+            return +_canPresent(b) - +_canPresent(a);
+          }
+        })[0];
 
         class WebvrInstance extends EventEmitter {
           constructor() {
@@ -226,27 +242,33 @@ class WebVR {
           };
 
           requestEnterVR({stereoscopic = true, update = () => {}, updateEye = () => {}, updateStart = () => {}, updateEnd = () => {}, onExit = () => {}}) {
-            const _startOpening = () => {
-              this.isOpening = true;
-
-              return Promise.resolve();
-            };
-            const _stopOpening = () => {
-              this.isOpening = false;
-
-              return Promise.resolve();
-            };
-            const _checkNotOpening = () => new Promise((accept, reject) => {
+            // NOTE: these promises *need* to be synchronous because the WebVR api can only be triggered in the same tick as a user action
+            const _checkNotOpening = () => new SynchronousPromise((accept, reject) => {
               const {isOpening} = this;
 
               if (!isOpening) {
                 accept();
               } else {
-                const err = new Error('webvr engine is already entering vr.');
+                const err = new Error('webvr engine is already entering vr');
                 reject(err);
               }
             });
-            const _getVRDisplays = () => navigator.getVRDisplays();
+            const _startOpening = () => {
+              this.isOpening = true;
+
+              return SynchronousPromise.resolve();
+            };
+            const _stopOpening = () => {
+              this.isOpening = false;
+
+              return SynchronousPromise.resolve();
+            };
+            const _handleError = err => {
+              _stopOpening();
+              _destroy();
+
+              return Promise.reject(err);
+            };
 
             let cleanups = [];
             const _destroy = () => {
@@ -259,17 +281,8 @@ class WebVR {
 
             const result = _checkNotOpening()
               .then(_startOpening)
-              .then(_getVRDisplays)
-              .then(displays => {
-                const sortedDisplays = displays.sort((a, b) => {
-                  const diff = +_isPolyfillDisplay(a) - _isPolyfillDisplay(b);
-                  if (diff !== 0) {
-                    return diff;
-                  } else {
-                    return +_canPresent(b) - +_canPresent(a);
-                  }
-                });
-                let display = sortedDisplays[0];
+              .then(() => {
+                let display = bestDisplay;
                 if (!_canPresent(display)) {
                   display = new FakeVRDisplay();
                 }
@@ -337,19 +350,14 @@ class WebVR {
                     return _requestRenderLoop()
                       .then(_stopOpening)
                       .then(() => {
-                        const api = {
+                        return {
                           destroy: _destroy,
                         };
-                        return api;
                       })
+                      .catch(_handleError);
                   }));
               })
-              .catch(err => {
-                _stopOpening();
-                _destroy();
-
-                return Promise.reject(err);
-              });
+              .catch(_handleError);
             result.destroy = _destroy;
 
             return result;
