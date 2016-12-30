@@ -38,6 +38,8 @@ const BUTTONS = {
   MENU: 3,
 };
 
+const SIDES = ['left', 'right'];
+
 class WebVR {
   constructor(archae) {
     this._archae = archae;
@@ -457,14 +459,32 @@ class WebVR {
                 };
               };
 
+              const {status: oldStatus} = this;
               const stageMatrix = this.getStageMatrix();
-              const status = {
+              const newStatus = {
                 hmd: _getHmdStatus({stageMatrix}),
                 gamepads: _getGamepadsStatus({stageMatrix}),
               };
-              this.setStatus(status);
+              this.setStatus(newStatus);
 
-              return status;
+              SIDES.forEach(side => {
+                const {gamepads: oldGamepadsStatus} = oldStatus;
+                const oldGamepadStatus = oldGamepadsStatus[side];
+
+                if (oldGamepadStatus) {
+                  const {gamepads: newGamepadsStatus} = newStatus;
+                  const newGamepadStatus = newGamepadsStatus[side];
+
+                  if (!oldGamepadStatus.buttons.trigger.pressed && newGamepadStatus.buttons.trigger.pressed) {
+                    input.triggerEvent('mousedown', {side});
+                  } else if (oldGamepadStatus.buttons.trigger.pressed && !newGamepadStatus.buttons.trigger.pressed) {
+                    input.triggerEvent('mouseup', {side});
+                    input.triggerEvent('click', {side});
+                  }
+                }
+              });
+
+              return newStatus;
             } else {
               return this.getStatus();
             }

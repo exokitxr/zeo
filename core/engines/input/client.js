@@ -1,3 +1,5 @@
+const DEFAULT_EVENT_SIDE = 'left';
+
 class Input {
   constructor(archae) {
     // this._archae = archae;
@@ -13,16 +15,25 @@ class Input {
       }
     }
 
-    const _makeEventListener = () => {
-      const listeners = [];
+    class EventRouter {
+      constructor() {
+        this.handle = this.handle.bind(this);
 
-      const result = e => {
+        this.listeners = [];
+      }
+
+      handle(e) {
+        const {listeners} = this;
+
         let live = true;
         e.stopImmediatePropagation = (stopImmediatePropagation => () => {
           live = false;
 
           stopImmediatePropagation.call(e);
         })(e.stopImmediatePropagation);
+        if (e.side === undefined) {
+          e.side = DEFAULT_EVENT_SIDE;
+        }
 
         const oldListeners = listeners.slice();
         for (let i = 0; i < oldListeners.length; i++) {
@@ -35,22 +46,27 @@ class Input {
             break;
           }
         }
-      };
-      result.add = (handler, {priority}) => {
+      }
+
+      add(handler, {priority}) {
+        const {listeners} = this;
+
         const listener = new Listener(handler, priority);
         listeners.push(listener);
         listeners.sort((a, b) => b.priority - a.priority);
-      };
-      result.remove = handler => {
+      }
+
+      remove(handler) {
+        const {listeners} = this;
+
         const index = listeners.findIndex(listener => listener.handler === handler);
         if (index !== -1) {
           listeners.splice(index, 1);
         }
-      };
+      }
+    }
 
-      return result;
-    };
-    const eventListeners = (() => {
+    const eventRouters = (() => {
       const result = {};
       [
         'click',
@@ -62,47 +78,54 @@ class Input {
         'keydown',
         'keyup',
       ].forEach(event => {
-        result[event] = _makeEventListener();
+        result[event] = new EventRouter();
       });
       return result;
     })();
-    window.addEventListener('click', eventListeners.click);
-    window.addEventListener('mousedown', eventListeners.mousedown);
-    window.addEventListener('mouseup', eventListeners.mouseup);
-    window.addEventListener('mousemove', eventListeners.mousemove);
-    window.addEventListener('mousewheel', eventListeners.mousewheel);
-    window.addEventListener('keypress', eventListeners.keypress);
-    window.addEventListener('keydown', eventListeners.keydown);
-    window.addEventListener('keyup', eventListeners.keyup);
+    window.addEventListener('click', eventRouters.click.handle);
+    window.addEventListener('mousedown', eventRouters.mousedown.handle);
+    window.addEventListener('mouseup', eventRouters.mouseup.handle);
+    window.addEventListener('mousemove', eventRouters.mousemove.handle);
+    window.addEventListener('mousewheel', eventRouters.mousewheel.handle);
+    window.addEventListener('keypress', eventRouters.keypress.handle);
+    window.addEventListener('keydown', eventRouters.keydown.handle);
+    window.addEventListener('keyup', eventRouters.keyup.handle);
 
     this._cleanup = () => {
-      window.removeEventListener('click', eventListeners.click);
-      window.removeEventListener('mousedown', eventListeners.mousedown);
-      window.removeEventListener('mouseup', eventListeners.mouseup);
-      window.removeEventListener('mousemove', eventListeners.mousemove);
-      window.removeEventListener('keypress', eventListeners.keypress);
-      window.removeEventListener('keydown', eventListeners.keydown);
-      window.removeEventListener('keyup', eventListeners.keyup);
+      window.removeEventListener('click', eventRouters.click.handle);
+      window.removeEventListener('mousedown', eventRouters.mousedown.handle);
+      window.removeEventListener('mouseup', eventRouters.mouseup.handle);
+      window.removeEventListener('mousemove', eventRouters.mousemove.handle);
+      window.removeEventListener('keypress', eventRouters.keypress.handle);
+      window.removeEventListener('keydown', eventRouters.keydown.handle);
+      window.removeEventListener('keyup', eventRouters.keyup.handle);
     };
 
     const _addEventListener = (event, handler, {priority = 0} = {}) => {
-      const eventListener = eventListeners[event];
-      if (eventListener) {
-        eventListener.add(handler, {
+      const eventRouter = eventRouters[event];
+      if (eventRouter) {
+        eventRouter.add(handler, {
           priority,
         });
       }
     };
     const _removeEventListener = (event, handler) => {
-      const eventListener = eventListeners[event];
-      if (eventListener) {
-        eventListener.remove(handler);
+      const eventRouter = eventRouters[event];
+      if (eventRouter) {
+        eventRouter.remove(handler);
+      }
+    };
+    const _triggerEvent = (event, {side = DEFAULT_EVENT_SIDE} = {}) => {
+      const eventRouter = eventRouters[event];
+      if (eventRouter) {
+        eventRouter.handle({side});
       }
     };
 
     return {
       addEventListener: _addEventListener,
       removeEventListener: _removeEventListener,
+      triggerEvent: _triggerEvent,
     };
   }
 

@@ -35,6 +35,8 @@ const WORLD_DEPTH = MENU_SIZE / 50;
 
 const STATS_REFRESH_RATE = 1000;
 
+const SIDES = ['left', 'right'];
+
 class Rend {
   constructor(archae) {
     this._archae = archae;
@@ -61,6 +63,7 @@ class Rend {
       archae.requestEngines([
         '/core/engines/input',
         '/core/engines/three',
+        '/core/engines/webvr',
         '/core/engines/biolumi',
         '/core/engines/npm',
         '/core/engines/fs',
@@ -74,6 +77,7 @@ class Rend {
       [
         input,
         three,
+        webvr,
         biolumi,
         npm,
         fs,
@@ -96,7 +100,7 @@ class Rend {
         let menu = null;
 
         const focusState = {
-          type: null,
+          type: '',
         };
         const worldsState = {
           worlds: [
@@ -771,8 +775,12 @@ class Rend {
                   mesh.visible = false;
                   return mesh;
                 };
-                const menuBoxMesh = _makeBoxMesh();
-                scene.add(menuBoxMesh);
+                const menuBoxMeshes = {
+                  left: _makeBoxMesh(),
+                  right: _makeBoxMesh(),
+                };
+                scene.add(menuBoxMeshes.left);
+                scene.add(menuBoxMeshes.right);
 
                 const _makeDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
@@ -780,8 +788,12 @@ class Rend {
 
                   return new THREE.Points(geometry, pointsMaterial);
                 };
-                const menuDotMesh = _makeDotMesh();
-                scene.add(menuDotMesh);
+                const menuDotMeshes = {
+                  left: _makeDotMesh(),
+                  right: _makeDotMesh(),
+                };
+                scene.add(menuDotMeshes.left);
+                scene.add(menuDotMeshes.right);
 
                 const keyboardMesh = (() => {
                   const _requestKeyboardImage = () => new Promise((accept, reject) => {
@@ -856,11 +868,19 @@ class Rend {
                 })();
                 scene.add(keyboardMesh);
 
-                const keyboardBoxMesh = _makeBoxMesh();
-                scene.add(keyboardBoxMesh);
+                const keyboardBoxMeshes = {
+                  left: _makeBoxMesh(),
+                  right: _makeBoxMesh(),
+                };
+                scene.add(keyboardBoxMeshes.left);
+                scene.add(keyboardBoxMeshes.right);
 
-                const keyboardDotMesh = _makeDotMesh();
-                scene.add(keyboardDotMesh);
+                const keyboardDotMeshes = {
+                  left: _makeDotMesh(),
+                  right: _makeDotMesh(),
+                };
+                scene.add(keyboardDotMeshes.left);
+                scene.add(keyboardDotMeshes.right);
 
                 stats.render = (() => {
                   return () => {
@@ -922,7 +942,9 @@ class Rend {
                     }
                   }
                 };
-                const click = () => {
+                const click = e => {
+                  const {side} = e;
+                  const menuHoverState = menuHoverStates[side];
                   const {intersectionPoint} = menuHoverState;
 
                   if (intersectionPoint) {
@@ -1478,7 +1500,10 @@ class Rend {
                   }
                 };
                 input.addEventListener('click', click);
-                const mousedown = () => {
+                const mousedown = e => {
+                  const {side} = e;
+                  const menuHoverState = menuHoverStates[side];
+
                   const _doDrag = () => {
                     const {intersectionPoint} = menuHoverState;
 
@@ -1534,7 +1559,7 @@ class Rend {
                 };
                 input.addEventListener('mousedown', mousedown);
 
-                const _setLayerScrollTop = () => {
+                const _setLayerScrollTop = menuHoverState => {
                   const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = menuHoverState;
 
                   const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
@@ -1563,14 +1588,20 @@ class Rend {
 
                   mousedownScrollLayer.scrollTo(scrollTop);
                 };
-                const mousemove = () => {
+                const mousemove = e => {
+                  const {side} = e;
+                  const menuHoverState = menuHoverStates[side];
+
                   const {mousedownStartCoord} = menuHoverState;
                   if (mousedownStartCoord) {
-                    _setLayerScrollTop();
+                    _setLayerScrollTop(menuHoverState);
                   }
                 };
                 input.addEventListener('mousemove', mousemove);
                 const mouseup = e => {
+                  const {side} = e;
+                  const menuHoverState = menuHoverStates[side];
+
                   const _doDrag = () => {
                     const {intersectionPoint} = menuHoverState;
 
@@ -1667,7 +1698,7 @@ class Rend {
                     const {mousedownStartCoord} = menuHoverState;
 
                     if (mousedownStartCoord) {
-                      _setLayerScrollTop();
+                      _setLayerScrollTop(menuHoverState);
 
                       menuHoverState.mousedownScrollLayer = null;
                       menuHoverState.mousedownStartCoord = null;
@@ -1930,11 +1961,14 @@ class Rend {
 
                 cleanups.push(() => {
                   scene.remove(menuMesh);
-                  scene.remove(menuBoxMesh);
-                  scene.remove(menuDotMesh);
                   scene.remove(keyboardMesh);
-                  scene.remove(keyboardBoxMesh);
-                  scene.remove(keyboardDotMesh);
+
+                  SIDES.forEach(side => {
+                    scene.remove(menuBoxMeshes[side]);
+                    scene.remove(menuDotMeshes[side]);
+                    scene.remove(keyboardBoxMeshes[side]);
+                    scene.remove(keyboardDotMeshes[side]);
+                  });
 
                   input.removeEventListener('click', click);
                   input.removeEventListener('mousedown', mousedown);
@@ -1989,7 +2023,7 @@ class Rend {
                   };
                 };
 
-                const menuHoverState = {
+                const _makeMenuHoverState = () => ({
                   intersectionPoint: null,
                   scrollLayer: null,
                   anchor: null,
@@ -1997,11 +2031,21 @@ class Rend {
                   mousedownScrollLayer: null,
                   mousedownStartCoord: null,
                   mousedownStartScrollTop: null,
+                });
+                const menuHoverStates = {
+                  left: _makeMenuHoverState(),
+                  right: _makeMenuHoverState(),
                 };
-                const keyboardHoverState = {
+
+                const _makeKeyboardHoverState = () => ({
                   intersectionPoint: null,
                   key: null,
+                });
+                const keyboardHoverStates = {
+                  left: _makeKeyboardHoverState(),
+                  right: _makeKeyboardHoverState(),
                 };
+
                 updates.push(() => {
                   const _updateMenuMesh = () => {
                     const {planeMesh: {imageMaterial}} = menuMesh;
@@ -2058,206 +2102,223 @@ class Rend {
                     }
                   };
                   const _updateAnchors = () => {
-                    const {position: cameraPosition, rotation: cameraRotation} = _decomposeObjectMatrixWorld(camera);;
+                    const status = webvr.getStatus();
+                    const {gamepads: gamepadsStatus} = status;
 
-                    const ray = new THREE.Vector3(0, 0, -1)
-                      .applyQuaternion(cameraRotation);
-                    const cameraLine = new THREE.Line3(
-                      cameraPosition.clone(),
-                      cameraPosition.clone().add(ray.clone().multiplyScalar(15))
-                    );
+                    SIDES.forEach(side => {
+                      const gamepadStatus = gamepadsStatus[side];
 
-                    const _updateMenuAnchors = () => {
-                      const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
-                      const menuIntersectionPoint = (() => {
-                        const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
-                        const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
-                        return menuPlane.intersectLine(cameraLine);
-                      })();
-                      if (menuIntersectionPoint) {
-                        menuHoverState.intersectionPoint = menuIntersectionPoint;
+                      if (gamepadStatus) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
 
-                        const _getMenuMeshPoint = _makeMeshPointGetter({
-                          position: menuPosition,
-                          rotation: menuRotation,
-                          width: WIDTH,
-                          height: HEIGHT,
-                          worldWidth: WORLD_WIDTH,
-                          worldHeight: WORLD_HEIGHT,
-                        });
+                        const ray = new THREE.Vector3(0, 0, -1)
+                          .applyQuaternion(controllerRotation);
+                        const controllerLine = new THREE.Line3(
+                          controllerPosition.clone(),
+                          controllerPosition.clone().add(ray.clone().multiplyScalar(15))
+                        );
 
-                        const scrollLayerBoxes = ui.getLayers()
-                          .filter(layer => layer.scroll)
-                          .map(layer => {
-                            const rect = layer.getRect();
-                            const layerBox = new THREE.Box3().setFromPoints([
-                              _getMenuMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
-                              _getMenuMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
-                            ]);
-                            layerBox.layer = layer;
-                            return layerBox;
-                          });
-                        const scrollLayerBox = (() => {
-                          for (let i = 0; i < scrollLayerBoxes.length; i++) {
-                            const layerBox = scrollLayerBoxes[i];
-                            if (layerBox.containsPoint(menuIntersectionPoint)) {
-                              return layerBox;
-                            }
-                          }
-                          return null;
-                        })();
-                        if (scrollLayerBox) {
-                          menuHoverState.scrollLayer = scrollLayerBox.layer;
-                        } else {
-                          menuHoverState.scrollLayer = null;
-                        }
+                        const menuHoverState = menuHoverStates[side];
+                        const menuDotMesh = menuDotMeshes[side];
+                        const menuBoxMesh = menuBoxMeshes[side];
 
-                        const anchorBoxes = (() => {
-                          const result = [];
-                          const layers = ui.getLayers();
-                          for (let i = 0; i < layers.length; i++) {
-                            const layer = layers[i];
-                            const anchors = layer.getAnchors();
+                        const keyboardHoverState = keyboardHoverStates[side];
+                        const keyboardDotMesh = keyboardDotMeshes[side];
+                        const keyboardBoxMesh = keyboardBoxMeshes[side];
 
-                            for (let j = 0; j < anchors.length; j++) {
-                              const anchor = anchors[j];
-                              const {rect} = anchor;
-
-                              const anchorBox = new THREE.Box3().setFromPoints([
-                                _getMenuMeshPoint(rect.left, rect.top - layer.scrollTop, -WORLD_DEPTH),
-                                _getMenuMeshPoint(rect.right, rect.bottom - layer.scrollTop, WORLD_DEPTH),
-                              ]);
-                              anchorBox.anchor = anchor;
-
-                              result.push(anchorBox);
-                            }
-                          }
-                          return result;
-                        })();
-                        const anchorBox = (() => {
-                          const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(menuIntersectionPoint));
-
-                          if (interstectedAnchorBoxes.length > 0) {
-                            return interstectedAnchorBoxes.map(anchorBox => ({
-                              anchorBox,
-                              distance: anchorBox.getCenter().distanceTo(menuIntersectionPoint),
-                            })).sort((a, b) => a.distance - b.distance)[0].anchorBox;
-                          } else {
-                            return null;
-                          }
-                        })();
-                        if (anchorBox) {
-                          menuBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
-                          menuBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
-
-                          const {anchor} = anchorBox;
-                          menuHoverState.anchor = anchor;
-                          menuHoverState.value = (() => {
-                            const {rect} = anchor;
-                            const horizontalLine = new THREE.Line3(
-                              _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                              _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                            );
-                            const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
-                            return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                        const _updateMenuAnchors = () => {
+                          const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
+                          const menuIntersectionPoint = (() => {
+                            const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
+                            const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
+                            return menuPlane.intersectLine(controllerLine);
                           })();
+                          if (menuIntersectionPoint) {
+                            menuHoverState.intersectionPoint = menuIntersectionPoint;
 
-                          if (!menuBoxMesh.visible) {
-                            menuBoxMesh.visible = true;
-                          }
-                        } else {
-                          menuHoverState.anchor = null;
-                          menuHoverState.value = 0;
+                            const _getMenuMeshPoint = _makeMeshPointGetter({
+                              position: menuPosition,
+                              rotation: menuRotation,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                            });
 
-                          if (menuBoxMesh.visible) {
-                            menuBoxMesh.visible = false;
-                          }
-                        }
+                            const scrollLayerBoxes = ui.getLayers()
+                              .filter(layer => layer.scroll)
+                              .map(layer => {
+                                const rect = layer.getRect();
+                                const layerBox = new THREE.Box3().setFromPoints([
+                                  _getMenuMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
+                                  _getMenuMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
+                                ]);
+                                layerBox.layer = layer;
+                                return layerBox;
+                              });
+                            const scrollLayerBox = (() => {
+                              for (let i = 0; i < scrollLayerBoxes.length; i++) {
+                                const layerBox = scrollLayerBoxes[i];
+                                if (layerBox.containsPoint(menuIntersectionPoint)) {
+                                  return layerBox;
+                                }
+                              }
+                              return null;
+                            })();
+                            if (scrollLayerBox) {
+                              menuHoverState.scrollLayer = scrollLayerBox.layer;
+                            } else {
+                              menuHoverState.scrollLayer = null;
+                            }
 
-                        menuDotMesh.position.copy(menuIntersectionPoint);
-                      } else {
-                        menuHoverState.intersectionPoint = null;
-                        menuHoverState.scrollLayer = null;
-                        menuHoverState.anchor = null;
-                        menuHoverState.value = 0;
+                            const anchorBoxes = (() => {
+                              const result = [];
+                              const layers = ui.getLayers();
+                              for (let i = 0; i < layers.length; i++) {
+                                const layer = layers[i];
+                                const anchors = layer.getAnchors();
 
-                        if (menuBoxMesh.visible) {
-                          menuBoxMesh.visible = false;
-                        }
-                      }
-                    };
-                    const _updateKeyboardAnchors = () => {
-                      const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(keyboardMesh);
-                      const keyboardIntersectionPoint = (() => {
-                        const keyboardNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(keyboardRotation);
-                        const keyboardPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(keyboardNormalZ, keyboardPosition);
-                        return keyboardPlane.intersectLine(cameraLine);
-                      })();
-                      if (keyboardIntersectionPoint) {
-                        keyboardHoverState.intersectionPoint = keyboardIntersectionPoint;
+                                for (let j = 0; j < anchors.length; j++) {
+                                  const anchor = anchors[j];
+                                  const {rect} = anchor;
 
-                        const _getKeyboardMeshPoint = _makeMeshPointGetter({
-                          position: keyboardPosition,
-                          rotation: keyboardRotation,
-                          width: KEYBOARD_WIDTH,
-                          height: KEYBOARD_HEIGHT,
-                          worldWidth: KEYBOARD_WORLD_WIDTH,
-                          worldHeight: KEYBOARD_WORLD_HEIGHT,
-                        });
+                                  const anchorBox = new THREE.Box3().setFromPoints([
+                                    _getMenuMeshPoint(rect.left, rect.top - layer.scrollTop, -WORLD_DEPTH),
+                                    _getMenuMeshPoint(rect.right, rect.bottom - layer.scrollTop, WORLD_DEPTH),
+                                  ]);
+                                  anchorBox.anchor = anchor;
 
-                        const {keySpecs} = keyboardMesh;
-                        const anchorBoxes = keySpecs.map(keySpec => {
-                          const {key, rect} = keySpec;
-                          const anchorBox = new THREE.Box3().setFromPoints([
-                            _getKeyboardMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
-                            _getKeyboardMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
-                          ]);
-                          anchorBox.key = key;
-                          return anchorBox;
-                        });
-                        const anchorBox = (() => {
-                          const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(keyboardIntersectionPoint));
+                                  result.push(anchorBox);
+                                }
+                              }
+                              return result;
+                            })();
+                            const anchorBox = (() => {
+                              const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(menuIntersectionPoint));
 
-                          if (interstectedAnchorBoxes.length > 0) {
-                            return interstectedAnchorBoxes.map(anchorBox => ({
-                              anchorBox,
-                              distance: anchorBox.getCenter().distanceTo(keyboardIntersectionPoint),
-                            })).sort((a, b) => a.distance - b.distance)[0].anchorBox;
+                              if (interstectedAnchorBoxes.length > 0) {
+                                return interstectedAnchorBoxes.map(anchorBox => ({
+                                  anchorBox,
+                                  distance: anchorBox.getCenter().distanceTo(menuIntersectionPoint),
+                                })).sort((a, b) => a.distance - b.distance)[0].anchorBox;
+                              } else {
+                                return null;
+                              }
+                            })();
+                            if (anchorBox) {
+                              menuBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
+                              menuBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
+
+                              const {anchor} = anchorBox;
+                              menuHoverState.anchor = anchor;
+                              menuHoverState.value = (() => {
+                                const {rect} = anchor;
+                                const horizontalLine = new THREE.Line3(
+                                  _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                                  _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                                );
+                                const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
+                                return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                              })();
+
+                              if (!menuBoxMesh.visible) {
+                                menuBoxMesh.visible = true;
+                              }
+                            } else {
+                              menuHoverState.anchor = null;
+                              menuHoverState.value = 0;
+
+                              if (menuBoxMesh.visible) {
+                                menuBoxMesh.visible = false;
+                              }
+                            }
+
+                            menuDotMesh.position.copy(menuIntersectionPoint);
                           } else {
-                            return null;
+                            menuHoverState.intersectionPoint = null;
+                            menuHoverState.scrollLayer = null;
+                            menuHoverState.anchor = null;
+                            menuHoverState.value = 0;
+
+                            if (menuBoxMesh.visible) {
+                              menuBoxMesh.visible = false;
+                            }
                           }
-                        })();
-                        if (anchorBox) {
-                          keyboardBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
-                          keyboardBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
+                        };
+                        const _updateKeyboardAnchors = () => {
+                          const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(keyboardMesh);
+                          const keyboardIntersectionPoint = (() => {
+                            const keyboardNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(keyboardRotation);
+                            const keyboardPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(keyboardNormalZ, keyboardPosition);
+                            return keyboardPlane.intersectLine(controllerLine);
+                          })();
+                          if (keyboardIntersectionPoint) {
+                            keyboardHoverState.intersectionPoint = keyboardIntersectionPoint;
 
-                          const {key} = anchorBox;
-                          keyboardHoverState.key = key;
+                            const _getKeyboardMeshPoint = _makeMeshPointGetter({
+                              position: keyboardPosition,
+                              rotation: keyboardRotation,
+                              width: KEYBOARD_WIDTH,
+                              height: KEYBOARD_HEIGHT,
+                              worldWidth: KEYBOARD_WORLD_WIDTH,
+                              worldHeight: KEYBOARD_WORLD_HEIGHT,
+                            });
 
-                          if (!keyboardBoxMesh.visible) {
-                            keyboardBoxMesh.visible = true;
+                            const {keySpecs} = keyboardMesh;
+                            const anchorBoxes = keySpecs.map(keySpec => {
+                              const {key, rect} = keySpec;
+                              const anchorBox = new THREE.Box3().setFromPoints([
+                                _getKeyboardMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
+                                _getKeyboardMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
+                              ]);
+                              anchorBox.key = key;
+                              return anchorBox;
+                            });
+                            const anchorBox = (() => {
+                              const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(keyboardIntersectionPoint));
+
+                              if (interstectedAnchorBoxes.length > 0) {
+                                return interstectedAnchorBoxes.map(anchorBox => ({
+                                  anchorBox,
+                                  distance: anchorBox.getCenter().distanceTo(keyboardIntersectionPoint),
+                                })).sort((a, b) => a.distance - b.distance)[0].anchorBox;
+                              } else {
+                                return null;
+                              }
+                            })();
+                            if (anchorBox) {
+                              keyboardBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
+                              keyboardBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
+
+                              const {key} = anchorBox;
+                              keyboardHoverState.key = key;
+
+                              if (!keyboardBoxMesh.visible) {
+                                keyboardBoxMesh.visible = true;
+                              }
+                            } else {
+                              keyboardHoverState.key = null;
+
+                              if (keyboardBoxMesh.visible) {
+                                keyboardBoxMesh.visible = false;
+                              }
+                            }
+
+                            keyboardDotMesh.position.copy(keyboardIntersectionPoint);
+                          } else {
+                            keyboardHoverState.intersectionPoint = null;
+                            keyboardHoverState.key = null;
+
+                            if (keyboardBoxMesh.visible) {
+                              keyboardBoxMesh.visible = false;
+                            }
                           }
-                        } else {
-                          keyboardHoverState.key = null;
+                        };
 
-                          if (keyboardBoxMesh.visible) {
-                            keyboardBoxMesh.visible = false;
-                          }
-                        }
-
-                        keyboardDotMesh.position.copy(keyboardIntersectionPoint);
-                      } else {
-                        keyboardHoverState.intersectionPoint = null;
-                        keyboardHoverState.key = null;
-
-                        if (keyboardBoxMesh.visible) {
-                          keyboardBoxMesh.visible = false;
-                        }
+                        _updateMenuAnchors();
+                        _updateKeyboardAnchors();
                       }
-                    };
-
-                    _updateMenuAnchors();
-                    _updateKeyboardAnchors();
+                    });
                   };
 
                   _updateMenuMesh();

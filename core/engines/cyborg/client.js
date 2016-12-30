@@ -200,13 +200,13 @@ class Cyborg {
                   object.add(mesh);
                 });
 
-                const tip = (() => {
+                /* const tip = (() => {
                   const result = new THREE.Object3D();
                   result.position.z = -1;
                   return result;
                 })();
                 object.add(tip);
-                object.tip = tip;
+                object.tip = tip; */
 
                 const buttonSolidMaterial = new THREE.MeshPhongMaterial({
                   color: BUTTON_COLOR_HIGHLIGHT,
