@@ -631,77 +631,57 @@ class ArchaeServer {
             if (method === 'requestEngine') {
               const {engine} = args;
 
-              if (_isValidModule(engine)) {
-                this.requestEngine(engine)
-                  .then(engineApi => {
-                    const engineName = this.getName(engineApi);
-                    cb(null, {
-                      engineName,
-                    });
-                  })
-                  .catch(err => {
-                    cb(err);
+              this.requestEngine(engine)
+                .then(engineApi => {
+                  const engineName = this.getName(engineApi);
+                  cb(null, {
+                    engineName,
                   });
-              } else {
-                const err = new Error('invalid engine spec');
-                cb(err);
-              }
+                })
+                .catch(err => {
+                  cb(err);
+                });
             } else if (method === 'releaseEngine') {
               const {engine} = args;
 
-              if (_isValidModule(engine)) {
-                this.releaseEngine(engine)
-                  .then(result => {
-                    const {engineName} = result;
+              this.releaseEngine(engine)
+                .then(result => {
+                  const {engineName} = result;
 
-                    cb(null, {
-                      engineName,
-                    });
-                  })
-                  .catch(err => {
-                    cb(err);
+                  cb(null, {
+                    engineName,
                   });
-              } else {
-                const err = new Error('invalid engine spec');
-                cb(err);
-              }
+                })
+                .catch(err => {
+                  cb(err);
+                });
             } else if (method === 'requestPlugin') {
               const {plugin} = args;
 
-              if (_isValidModule(plugin)) {
-                this.requestPlugin(plugin)
-                  .then(pluginApi => {
-                    const pluginName = this.getName(pluginApi);
-                    cb(null, {
-                      pluginName,
-                    });
-                  })
-                  .catch(err => {
-                    cb(err);
+              this.requestPlugin(plugin)
+                .then(pluginApi => {
+                  const pluginName = this.getName(pluginApi);
+                  cb(null, {
+                    pluginName,
                   });
-              } else {
-                const err = new Error('invalid plugin spec');
-                cb(err);
-              }
+                })
+                .catch(err => {
+                  cb(err);
+                });
             } else if (method === 'releasePlugin') {
               const {plugin} = args;
 
-              if (_isValidModule(plugin)) {
-                this.releasePlugin(plugin)
-                  .then(result => {
-                    const {pluginName} = result;
+              this.releasePlugin(plugin)
+                .then(result => {
+                  const {pluginName} = result;
 
-                    cb(null, {
-                      pluginName,
-                    });
-                  })
-                  .catch(err => {
-                    cb(err);
+                  cb(null, {
+                    pluginName,
                   });
-              } else {
-                const err = new Error('invalid plugin spec');
-                cb(err);
-              }
+                })
+                .catch(err => {
+                  cb(err);
+                });
             } else {
               const err = new Error('invalid message method: ' + JSON.stringify(method));
               cb(err);
@@ -827,7 +807,7 @@ const _requestInstalledModuleHash = (moduleName, type) => new Promise((accept, r
     }
   });
 });
-const _requestInstallCandidateModuleHash = module => new Promise((accept, reject) => { // XXX support object-formatted modules
+const _requestInstallCandidateModuleHash = module => new Promise((accept, reject) => {
   if (path.isAbsolute(module)) {
     const modulePath = _getLocalModulePath(module);
 
@@ -1007,68 +987,6 @@ const _addModule = (module, type, cb) => {
       });
     });
   };
-  const _dumpModule = (module, type, cb) => {
-    const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', worker = 'worker.js', files} = module;
-
-    if (_isValidModuleSpec(module)) {
-      const modulePath = _getInstalledModulePath(module.name, type);
-
-      mkdirp(modulePath, err => {
-        if (!err) {
-          const packageJson = {
-            name,
-            version,
-            dependencies,
-            client,
-            server,
-            worker,
-          };
-          const packageJsonString = JSON.stringify(packageJson, null, 2);
-
-          fs.writeFile(path.join(modulePath, 'package.json'), packageJsonString, 'utf8', err => {
-            if (!err) {
-              _yarnInstall(module.name, type, err => {
-                if (!err) {
-                  if (_isValidFiles(files)) {
-                    const fileNames = Object.keys(files);
-
-                    if (fileNames.length > 0) {
-                      let pending = fileNames.length;
-                      const pend = () => {
-                        if (--pending === 0) {
-                          cb();
-                        }
-                      };
-
-                      for (let i = 0; i < fileNames.length; i++) {
-                        const fileName = fileNames[i];
-                        const fileData = files[fileName];
-
-                        fs.writeFile(path.join(modulePath, fileName), fileData, 'utf8', pend);
-                      }
-                    } else {
-                      cb();
-                    }
-                  } else {
-                    cb(err);
-                  }
-                } else {
-                  cb();
-                }
-              });
-            } else {
-              cb(err);
-            }
-          });
-        } else {
-          cb(err);
-        }
-      });
-    } else {
-      const err = new Error('invalid module declaration');
-      cb(err);
-    }
-  };
 
   mkdirp(path.join(__dirname, 'installed', type), err => {
     if (!err) {
@@ -1077,14 +995,7 @@ const _addModule = (module, type, cb) => {
           const {exists, outdated, moduleName, installedHash, candidateHash} = result;
 
           const _doAdd = cb => {
-            if (typeof module === 'string') {
-              _downloadModule(module, type, cb);
-            } else if (typeof module === 'object') {
-              _dumpModule(module, type, cb);
-            } else {
-              const err = new Error('invalid module format');
-              cb(err);
-            }
+            _downloadModule(module, type, cb);
           };
           const _doRemove = cb => {
             _removeModule(moduleName, type, cb);
@@ -1254,87 +1165,30 @@ const _queueYarn = (() => {
   return _next;
 })();
 
-const _getModuleName = module => {
-  if (typeof module === 'string') {
-    return module;
-  } else if (_isValidModuleSpec(module)) {
-    return module.name;
-  } else {
-    return null;
-  }
-};
 const _getModuleRealName = (module, type, cb) => {
-  if (typeof module === 'string') {
-    if (path.isAbsolute(module)) {
-      const packageJsonPath = _getLocalModulePackageJsonPath(module);
+  if (path.isAbsolute(module)) {
+    const packageJsonPath = _getLocalModulePackageJsonPath(module);
 
-      fs.readFile(packageJsonPath, 'utf8', (err, s) => {
-        if (!err) {
-          const j = JSON.parse(s);
-          const moduleName = j.name;
-          cb(null, moduleName);
-        } else {
-          cb(err);
-        }
-      });
-    } else {
-      process.nextTick(() => {
-        cb(null, module);
-      });
-    }
-  } else if (_isValidModuleSpec(module)) {
-    process.nextTick(() => {
-      cb(null, module.name);
+    fs.readFile(packageJsonPath, 'utf8', (err, s) => {
+      if (!err) {
+        const j = JSON.parse(s);
+        const moduleName = j.name;
+        cb(null, moduleName);
+      } else {
+        cb(err);
+      }
     });
   } else {
     process.nextTick(() => {
-      const err = new Error('could not find module name: ' + JSON.stringify({module, type}, null, 2));
-      cb(err);
+      const moduleName = module;
+      cb(null, moduleName);
     });
   }
 };
-const _getInstalledModulePath = (moduleName, type) => path.join(__dirname, 'installed', type, 'node_modules', _getModuleName(moduleName));
+const _getInstalledModulePath = (moduleName, type) => path.join(__dirname, 'installed', type, 'node_modules', moduleName);
 const _getLocalModulePath = module => path.join(__dirname, module);
 const _getInstalledModulePackageJsonPath = (moduleName, type) => path.join(_getInstalledModulePath(moduleName, type), 'package.json');
 const _getLocalModulePackageJsonPath = module => path.join(_getLocalModulePath(module), 'package.json');
-
-const _isValidModule = module => typeof module === 'string' || _isValidModuleSpec(module);
-const _isValidModuleSpec = module => {
-  const {name, version = '', dependencies = {}, client = '', server = ''} = module;
-
-  return typeof name === 'string' &&
-    typeof version === 'string' &&
-    typeof client === 'string' &&
-    typeof server === 'string' &&
-    _isValidDependencies(dependencies);
-};
-const _isValidDependencies = dependencies => {
-  if (dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)) {
-    for (const k in dependencies) {
-      const v = dependencies[k];
-      if (typeof v !== 'string') {
-        return false;
-      }
-    }
-    return true;
-  } else {
-    return false;
-  }
-};
-
-const _isValidFiles = files => {
-  if (files && typeof files === 'object' && !Array.isArray(files)) {
-    for (const k in files) {
-      const v = files[k];
-      if (typeof v !== 'string') {
-        return false;
-      }
-    }
-    return true;
-  } else {
-    return false;
-  }
-};
 
 const archae = (opts) => new ArchaeServer(opts);
 
