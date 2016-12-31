@@ -1987,7 +1987,7 @@ class Rend {
                       const {commit} = applySpec;
 
                       if (commit) {
-                        const name = match[1];
+                        const attributeName = match[1];
                         const {selectedKeyPath, inputText} = elementsState;
 
                         const element = menuUtils.getElementKeyPath({
@@ -1995,12 +1995,16 @@ class Rend {
                           availableElements: elementsState.availableElements,
                           clipboardElements: elementsState.clipboardElements,
                         }, selectedKeyPath);
+                        const instance = menuUtils.getElementKeyPath({
+                          elements: elementsState.elementInstances,
+                        }, selectedKeyPath);
                         const {attributes} = element;
-                        const attribute = attributes[name];
+                        const attribute = attributes[attributeName];
                         const {type, min, max, options} = attribute;
                         const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, options);
                         if (newValue !== null) {
                           attribute.value = newValue;
+                          instance[attributeName] = newValue;
 
                           _saveElements();
                         }
