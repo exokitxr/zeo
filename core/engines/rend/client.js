@@ -908,13 +908,6 @@ class Rend {
                 scene.add(keyboardBoxMeshes.left);
                 scene.add(keyboardBoxMeshes.right);
 
-                const keyboardDotMeshes = {
-                  left: _makeDotMesh(),
-                  right: _makeDotMesh(),
-                };
-                scene.add(keyboardDotMeshes.left);
-                scene.add(keyboardDotMeshes.right);
-
                 const _makePositioningMesh = ({opacity = 1} = {}) => {
                   const geometry = (() => {
                     const result = new THREE.BufferGeometry();
@@ -2166,7 +2159,6 @@ class Rend {
                     scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
                     scene.remove(keyboardBoxMeshes[side]);
-                    scene.remove(keyboardDotMeshes[side]);
                   });
 
                   scene.remove(positioningMesh);
@@ -2332,7 +2324,6 @@ class Rend {
                         const menuBoxMesh = menuBoxMeshes[side];
 
                         const keyboardHoverState = keyboardHoverStates[side];
-                        const keyboardDotMesh = keyboardDotMeshes[side];
                         const keyboardBoxMesh = keyboardBoxMeshes[side];
 
                         const _updateMenuAnchors = () => {
@@ -2456,62 +2447,37 @@ class Rend {
                         };
                         const _updateKeyboardAnchors = () => {
                           const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(keyboardMesh);
-                          const keyboardIntersectionPoint = (() => {
-                            const keyboardNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(keyboardRotation);
-                            const keyboardPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(keyboardNormalZ, keyboardPosition);
-                            return keyboardPlane.projectPoint(controllerPosition);
-                          })();
-                          if (keyboardIntersectionPoint) {
-                            const _getKeyboardMeshPoint = _makeMeshPointGetter({
-                              position: keyboardPosition,
-                              rotation: keyboardRotation,
-                              width: KEYBOARD_WIDTH,
-                              height: KEYBOARD_HEIGHT,
-                              worldWidth: KEYBOARD_WORLD_WIDTH,
-                              worldHeight: KEYBOARD_WORLD_HEIGHT,
-                            });
+                          const _getKeyboardMeshPoint = _makeMeshPointGetter({
+                            position: keyboardPosition,
+                            rotation: keyboardRotation,
+                            width: KEYBOARD_WIDTH,
+                            height: KEYBOARD_HEIGHT,
+                            worldWidth: KEYBOARD_WORLD_WIDTH,
+                            worldHeight: KEYBOARD_WORLD_HEIGHT,
+                          });
 
-                            const {keySpecs} = keyboardMesh;
-                            const anchorBoxes = keySpecs.map(keySpec => {
-                              const {key, rect} = keySpec;
-                              const anchorBox = new THREE.Box3().setFromPoints([
-                                _getKeyboardMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
-                                _getKeyboardMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
-                              ]);
-                              anchorBox.key = key;
-                              return anchorBox;
-                            });
-                            const anchorBox = (() => {
-                              const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(keyboardIntersectionPoint));
+                          const {keySpecs} = keyboardMesh;
+                          const anchorBoxes = keySpecs.map(keySpec => {
+                            const {key, rect} = keySpec;
+                            const anchorBox = new THREE.Box3().setFromPoints([
+                              _getKeyboardMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
+                              _getKeyboardMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
+                            ]);
+                            anchorBox.key = key;
+                            return anchorBox;
+                          });
+                          // NOTE: there should be at most one intersecting anchor box since keys do not overlap
+                          const anchorBox = anchorBoxes.find(anchorBox => anchorBox.containsPoint(controllerPosition)) || null;
+                          if (anchorBox) {
+                            keyboardBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
+                            keyboardBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
 
-                              if (interstectedAnchorBoxes.length > 0) {
-                                return interstectedAnchorBoxes.map(anchorBox => ({
-                                  anchorBox,
-                                  distance: anchorBox.getCenter().distanceTo(keyboardIntersectionPoint),
-                                })).sort((a, b) => a.distance - b.distance)[0].anchorBox;
-                              } else {
-                                return null;
-                              }
-                            })();
-                            if (anchorBox) {
-                              keyboardBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
-                              keyboardBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
+                            const {key} = anchorBox;
+                            keyboardHoverState.key = key;
 
-                              const {key} = anchorBox;
-                              keyboardHoverState.key = key;
-
-                              if (!keyboardBoxMesh.visible) {
-                                keyboardBoxMesh.visible = true;
-                              }
-                            } else {
-                              keyboardHoverState.key = null;
-
-                              if (keyboardBoxMesh.visible) {
-                                keyboardBoxMesh.visible = false;
-                              }
+                            if (!keyboardBoxMesh.visible) {
+                              keyboardBoxMesh.visible = true;
                             }
-
-                            keyboardDotMesh.position.copy(keyboardIntersectionPoint);
                           } else {
                             keyboardHoverState.key = null;
 
