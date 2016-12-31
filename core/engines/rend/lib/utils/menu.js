@@ -26,11 +26,60 @@ const debounce = fn => {
   return _go;
 };
 const cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
-const cleanElements = elements => elements.map(({tag, attributes, children}) => ({
-  tag,
-  attributes,
-  children: cleanElements(children),
-}));
+const cleanElements = elements => elements.map(({tag, attributes, children}) => {
+  const _cleanAttributes = attributes => {
+    const result = {};
+    for (const attributeName in attributes) {
+      const {value: attributeValue} = attributes[attributeName];
+      result[attributeName] = attributeValue;
+    }
+    return result;
+  };
+
+  return {
+    tag,
+    attributes: _cleanAttributes(attributes),
+    children: cleanElements(children),
+  };
+});
+const uncleanElements = (modApis, elements) => elements.map(({tag, attributes, children}) => {
+  const match = tag.match(/^([^:]+?)(?::([^:]+?))?$/);
+  const mainTag = match[1];
+  const subTag = match[2] || null;
+
+  const modApi = modApis.get(mainTag);
+  const {elements: modElements} = modApi;
+  const elementKey = mainTag + ((subTag !== null) ? (':' + subTag) : '');
+  const elementApi = modElements.find(modElement => modElement.tag === elementKey);
+  const {attributes: elementApiAttributes} = elementApi;
+
+  const _uncleanAttributes = attributes => {
+    const result = {};
+    for (const attributeName in attributes) {
+      const value = attributes[attributeName];
+      const uncleanAttribute = {
+        value,
+      };
+
+      const elementApiAttribute = elementApiAttributes[attributeName];
+      for (const attributeConfigKey in elementApiAttribute) {
+        if (attributeConfigKey !== 'value') {
+          const elementApiAttributeConfigValue = elementApiAttribute[attributeConfigKey];
+          uncleanAttribute[attributeConfigKey] = elementApiAttributeConfigValue;
+        }
+      }
+
+      result[attributeName] = uncleanAttribute;
+    }
+    return result;
+  };
+
+  return {
+    tag,
+    attributes: _uncleanAttributes(attributes),
+    children: uncleanElements(modApis, children),
+  };
+});
 const cleanFiles = files => files.map(file => {
   const {name, type, size} = file;
   const description = (() => {
@@ -262,6 +311,7 @@ module.exports = {
   debounce,
   cleanMods,
   cleanElements,
+  uncleanElements,
   cleanFiles,
   getKeyPath,
   getElementKeyPath,

@@ -406,9 +406,14 @@ class Rend {
                       });
                   };
                   const _loadElements = () => new Promise((accept, reject) => {
-                    const {elements} = elementsState;
+                    const elements = menuUtils.uncleanElements(currentModApis, elementsStatus.elements);
+                    const clipboardElements = menuUtils.uncleanElements(currentModApis, elementsStatus.clipboardElements);
                     const elementInstances = menuUtils.constructElements(currentModApis, elements);
+
+                    elementsState.elements = elements;
+                    elementsState.clipboardElements = clipboardElements;
                     elementsState.elementInstances = elementInstances;
+
                     accept();
                   });
 
@@ -447,8 +452,6 @@ class Rend {
                 currentWorldMods = modsStatus;
 
                 modsState.mods = menuUtils.cleanMods(modsStatus);
-                elementsState.elements = elementsStatus.elements;
-                elementsState.clipboardElements = elementsStatus.clipboardElements;
 
                 accept();
               });

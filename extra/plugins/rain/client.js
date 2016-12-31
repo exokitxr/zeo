@@ -196,7 +196,7 @@ class Rain {
                     type: 'number',
                     value: 32,
                     min: 1,
-                    max: 50,
+                    max: 128,
                   },
                   length: {
                     type: 'number',
