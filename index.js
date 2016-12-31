@@ -724,7 +724,7 @@ class ArchaeServer {
 const moduleHashesMutex = new MultiMutex();
 const MODULE_HASHES_MUTEX_KEY = 'key';
 let modulesHashesJson = null;
-const validatedModules = {
+const validatedModuleHashes = {
   engines: {},
   plugins: {},
 };
@@ -815,8 +815,8 @@ const _setModuleHash = (moduleName, type, hash, cb) => {
     }
   });
 };
-const _setValidatedModule = (moduleName, type, hash) => {
-  validatedModules[type][moduleName] = hash;
+const _setValidatedModuleHash = (moduleName, type, hash) => {
+  validatedModuleHashes[type][moduleName] = hash;
 };
 const _requestInstalledModuleHash = (moduleName, type) => new Promise((accept, reject) => {
   _loadModulesHashesJson((err, modulesHashesJson) => {
@@ -862,7 +862,7 @@ throw new Error('npm not supported yet');
 const _getModuleInstallStatus = (module, type, cb) => {
   _getModuleRealName(module, type, (err, moduleName) => {
     if (!err) {
-      const validatedHash = validatedModules[type][moduleName] || null;
+      const validatedHash = validatedModuleHashes[type][moduleName] || null;
 
       if (validatedHash !== null) {
         const exists = true;
@@ -1093,7 +1093,7 @@ const _addModule = (module, type, cb) => {
             _setModuleHash(moduleName, type, candidateHash, cb);
           };
           const _doValidateHash = () => {
-            _setValidatedModule(moduleName, type, candidateHash);
+            _setValidatedModuleHash(moduleName, type, candidateHash);
           };
 
           if (!exists) {
