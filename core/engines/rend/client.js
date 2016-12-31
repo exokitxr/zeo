@@ -2468,19 +2468,36 @@ class Rend {
                           });
                           // NOTE: there should be at most one intersecting anchor box since keys do not overlap
                           const anchorBox = anchorBoxes.find(anchorBox => anchorBox.containsPoint(controllerPosition)) || null;
+
+                          const {key: oldKey} = keyboardHoverState;
+                          const newKey = anchorBox ? anchorBox.key : null;
+                          keyboardHoverState.key = newKey;
+
+                          if (oldKey && newKey !== oldKey) {
+                            input.triggerEvent('keyboardup', {
+                              key: oldKey,
+                              side,
+                            });
+                          }
+                          if (newKey && newKey !== oldKey) {
+                            input.triggerEvent('keyboarddown', {
+                              key: newKey,
+                              side,
+                            });
+                            input.triggerEvent('keyboardpress', { // XXX hook this up to input handling
+                              key: newKey,
+                              side,
+                            });
+                          }
+
                           if (anchorBox) {
                             keyboardBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
                             keyboardBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
-
-                            const {key} = anchorBox;
-                            keyboardHoverState.key = key;
 
                             if (!keyboardBoxMesh.visible) {
                               keyboardBoxMesh.visible = true;
                             }
                           } else {
-                            keyboardHoverState.key = null;
-
                             if (keyboardBoxMesh.visible) {
                               keyboardBoxMesh.visible = false;
                             }
