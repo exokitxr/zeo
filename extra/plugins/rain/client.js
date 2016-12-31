@@ -196,13 +196,14 @@ class Rain {
                     type: 'number',
                     value: 32,
                     min: 1,
-                    max: 256,
+                    max: 50,
                   },
                   length: {
                     type: 'number',
                     value: 64,
                     min: 1,
                     max: 256,
+                    step: 1,
                   },
                   color: {
                     type: 'color',
@@ -299,8 +300,6 @@ class Rain {
               }
 
               set length(length) {
-                length = Math.floor(length); // XXX encode this in the plugin attribute types
-
                 this._length = length;
 
                 this._updateGeometry();

@@ -158,7 +158,7 @@ const insertElementAtKeyPath = (root, keyPath, element) => {
   const targetParentElement = getElementKeyPath(root, keyPathHead);
   targetParentElement.children.splice(keyPathTail, 0, element);
 };
-const castValueStringToValue = (s, type, min, max, options) => {
+const castValueStringToValue = (s, type, min, max, step, options) => {
   switch (type) {
     case 'position': {
       const match = s.match(/^([0-9\.]+),([0-9\.]+),([0-9\.]+)$/);
@@ -188,8 +188,13 @@ const castValueStringToValue = (s, type, min, max, options) => {
     }
     case 'number': {
       const n = parseFloat(s);
+
       if (!isNaN(n) && n >= min && n <= max) {
-        return n;
+        if (step > 0) {
+          return Math.floor(n / step) * step;
+        } else {
+          return n;
+        }
       } else {
         return null;
       }

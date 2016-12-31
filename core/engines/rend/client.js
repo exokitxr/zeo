@@ -37,6 +37,13 @@ const STATS_REFRESH_RATE = 1000;
 
 const SIDES = ['left', 'right'];
 
+const ATTRIBUTE_DEFAULTS = {
+  MIN: 0,
+  MAX: 100,
+  STEP: 0,
+  OPTIONS: [],
+};
+
 class Rend {
   constructor(archae) {
     this._archae = archae;
@@ -345,12 +352,12 @@ class Rend {
                       const attributes = (() => {
                         const element = elementsMap[tag];
                         const {attributes: defaultAttributes} = element;
-                        const {attributes: attributeDefaults} = template;
+                        const {attributes: attributeDefaultValues} = template;
 
                         const result = menuUtils.clone(defaultAttributes);
-                        for (const attributeName in attributeDefaults) {
-                          const attributeValue = attributeDefaults[attributeName];
-                          result[attributeName].value = attributeValue;
+                        for (const attributeName in attributeDefaultValues) {
+                          const attributeDefaultValue = attributeDefaultValues[attributeName];
+                          result[attributeName].value = attributeDefaultValue;
                         }
                         return result;
                       })();
@@ -1567,9 +1574,15 @@ class Rend {
                           _saveElements();
                         } else if (action === 'tweak') {
                           const {value} = menuHoverState;
-                          const {min, max} = attribute;
+                          const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attribute;
 
-                          const newValue = min + (value * (max - min));
+                          const newValue = (() => {
+                            let n = min + (value * (max - min));
+                            if (step > 0) {
+                              n = Math.floor(n / step) * step;
+                            }
+                            return n;
+                          })();
                           attribute.value = newValue;
                           instance[attributeName] = newValue;
 
@@ -2040,8 +2053,8 @@ class Rend {
                         }, selectedKeyPath);
                         const {attributes} = element;
                         const attribute = attributes[attributeName];
-                        const {type, min, max, options} = attribute;
-                        const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, options);
+                        const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attribute;
+                        const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
                         if (newValue !== null) {
                           attribute.value = newValue;
                           instance[attributeName] = newValue;
