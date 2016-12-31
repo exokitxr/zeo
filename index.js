@@ -22,7 +22,26 @@ const defaultConfig = {
   dataDirectory: 'data',
 };
 
-const yarnBin = path.join(__dirname, 'node_modules', 'yarn', 'bin', 'yarn.js');
+const npmCommands = (() => {
+  const _hasCommand = command => child_process.spawnSync('bash', ['-c', 'type ' + command]).status === 0;
+
+  if (_hasCommand('yarn')) {
+    return {
+      add: ['yarn', 'add'],
+      install: ['yarn', 'install'],
+    };
+  } else if (_hasCommand('npm')) {
+    return {
+      add: ['npm', 'install'],
+      install: ['npm', 'install'],
+    };
+  } else {
+    return null;
+  }
+})();
+if (!npmCommands) {
+  throw new Error('no npm or yarn command available');
+}
 
 const nameSymbol = Symbol();
 
@@ -888,7 +907,7 @@ const _addModule = (module, type, cb) => {
 
           fs.exists(modulePath, exists => {
             if (exists) {
-              _yarnInstall(moduleName, type, err => {
+              _npmInstall(moduleName, type, err => {
                 if (!err) {
                   cb();
                 } else {
@@ -899,7 +918,7 @@ const _addModule = (module, type, cb) => {
               const localModulePath = path.join(__dirname, module);
               fs.copy(localModulePath, modulePath, err => {
                 if (!err) {
-                  _yarnInstall(moduleName, type, err => {
+                  _npmInstall(moduleName, type, err => {
                     if (!err) {
                       cb();
                     } else {
@@ -921,7 +940,7 @@ const _addModule = (module, type, cb) => {
     } else {
       const moduleName = module;
 
-      _yarnAdd(moduleName, type, err => {
+      _npmAdd(moduleName, type, err => {
         if (!err) {
           const modulePackageJsonPath = _getInstalledModulePackageJsonPath(moduleName, type);
 
@@ -939,22 +958,22 @@ const _addModule = (module, type, cb) => {
       });
     }
   };
-  const _yarnAdd = (module, type, cb) => {
-    _queueYarn(cleanup => {
-      const yarnAdd = child_process.spawn(
-        yarnBin,
-        [ 'add', module ],
+  const _npmAdd = (module, type, cb) => {
+    _queueNpm(cleanup => {
+      const npmAdd = child_process.spawn(
+        npmCommands.add[0],
+        npmCommands.add.slice(1).concat([ module ]),
         {
           cwd: path.join(__dirname, 'installed', type),
         }
       );
-      yarnAdd.stdout.pipe(process.stdout);
-      yarnAdd.stderr.pipe(process.stderr);
-      yarnAdd.on('exit', code => {
+      npmAdd.stdout.pipe(process.stdout);
+      npmAdd.stderr.pipe(process.stderr);
+      npmAdd.on('exit', code => {
         if (code === 0) {
           cb();
         } else {
-          const err = new Error('yarn add error: ' + code);
+          const err = new Error('npm add error: ' + code);
           cb(err);
         }
 
@@ -962,24 +981,24 @@ const _addModule = (module, type, cb) => {
       });
     });
   };
-  const _yarnInstall = (moduleName, type, cb) => {
-    _queueYarn(cleanup => {
+  const _npmInstall = (moduleName, type, cb) => {
+    _queueNpm(cleanup => {
       const modulePath = _getInstalledModulePath(moduleName, type);
 
-      const yarnInstall = child_process.spawn(
-        yarnBin,
-        [ 'install' ],
+      const npmInstall = child_process.spawn(
+        npmCommands.install[0],
+        npmCommands.install.slice(1),
         {
           cwd: modulePath,
         }
       );
-      yarnInstall.stdout.pipe(process.stdout);
-      yarnInstall.stderr.pipe(process.stderr);
-      yarnInstall.on('exit', code => {
+      npmInstall.stdout.pipe(process.stdout);
+      npmInstall.stderr.pipe(process.stderr);
+      npmInstall.on('exit', code => {
         if (code === 0) {
           cb();
         } else {
-          const err = new Error('yarn install error: ' + code);
+          const err = new Error('npm install error: ' + code);
           cb(err);
         }
 
@@ -1142,7 +1161,7 @@ const _removeModule = (module, type, cb) => {
   rimraf(modulePath, cb);
 };
 
-const _queueYarn = (() => {
+const _queueNpm = (() => {
   let running = false;
   const queue = [];
 
