@@ -322,14 +322,14 @@ class ArchaeServer {
     };
     const _sort = modules => modules.map(m => m.replace(/\.js$/, '')).sort();
 
-    fs.readdir(path.join(__dirname, 'engines', 'build'), (err, files) => {
+    fs.readdir(path.join(__dirname, 'installed', 'engines', 'build'), (err, files) => {
       if (!err) {
         engines = engines.concat(files);
       }
 
       pend();
     });
-    fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
+    fs.readdir(path.join(__dirname, 'installed', 'plugins', 'build'), (err, files) => {
       if (!err) {
         plugins = plugins.concat(files);
       }
@@ -353,7 +353,7 @@ class ArchaeServer {
     };
     const _sort = modules => modules.map(m => m.replace(/\.js$/, '')).sort();
 
-    fs.readdir(path.join(__dirname, 'engines', 'node_modules'), (err, files) => {
+    fs.readdir(path.join(__dirname, 'installed', 'engines', 'node_modules'), (err, files) => {
       if (!err) {
         if (files.length > 0) {
           let pending = files.length;
@@ -366,52 +366,12 @@ class ArchaeServer {
           files.forEach(file => {
             const engine = file;
 
-            fs.readFile(path.join(__dirname, 'engines', 'node_modules', engine, 'package.json'), 'utf8', (err, s) => {
+            fs.readFile(path.join(__dirname, 'installed', 'engines', 'node_modules', engine, 'package.json'), 'utf8', (err, s) => {
               if (!err) {
                 const j = JSON.parse(s);
                 const serverFileName = j.server;
                 if (serverFileName) {
                   engines.push(engine);
-                }
-
-                pend2();
-              } else {
-                console.warn(err);
-
-                pend2();
-              }
-            });
-          });
-        } else {
-          pend();
-        }
-      } else if (err.code === 'ENOENT') {
-        pend();
-      } else {
-        console.warn(err);
-
-        pend();
-      }
-    });
-    fs.readdir(path.join(__dirname, 'plugins', 'build'), (err, files) => {
-      if (!err) {
-        if (files.length > 0) {
-          let pending = files.length;
-          const pend2 = () => {
-            if (--pending === 0) {
-              pend();
-            }
-          };
-
-          files.forEach(file => {
-            const plugin = file.replace(/\.js$/, '');
-
-            fs.readFile(path.join(__dirname, 'plugins', 'node_modules', plugin, 'package.json'), 'utf8', (err, s) => {
-              if (!err) {
-                const j = JSON.parse(s);
-                const serverFileName = j.server;
-                if (serverFileName) {
-                  plugins.push(plugin);
                 }
 
                 pend2();
@@ -452,12 +412,12 @@ class ArchaeServer {
   }
 
   loadModule(module, type, packageJsonFileNameKey, exports, cb) {
-    fs.readFile(path.join(__dirname, type, 'node_modules', module, 'package.json'), 'utf8', (err, s) => {
+    fs.readFile(path.join(__dirname, 'installed', type, 'node_modules', module, 'package.json'), 'utf8', (err, s) => {
       if (!err) {
         const j = JSON.parse(s);
         const fileName = j[packageJsonFileNameKey];
         if (fileName) {
-          const moduleRequire = require(path.join(__dirname, type, 'node_modules', module, fileName));
+          const moduleRequire = require(path.join(__dirname, 'installed', type, 'node_modules', module, fileName));
 
           exports[module] = moduleRequire;
         } else {
@@ -579,7 +539,7 @@ class ArchaeServer {
           _respondOk(entry);
         } else {
           rollup.rollup({
-            entry: __dirname + '/' + type + '/node_modules/' + module + '/' + (!worker ? 'client' : 'worker') + '.js',
+            entry: path.join(__dirname, 'installed', type, 'node_modules',  module, (!worker ? 'client' : 'worker') + '.js'),
             plugins: [
               rollupPluginNodeResolve({
                 main: true,
@@ -825,7 +785,7 @@ const _addModule = (module, type, cb) => {
         yarnBin,
         [ 'add', module ],
         {
-          cwd: path.join(__dirname, type),
+          cwd: path.join(__dirname, 'installed', type),
         }
       );
       yarnAdd.stdout.pipe(process.stdout);
@@ -929,7 +889,7 @@ const _addModule = (module, type, cb) => {
     }
   };
 
-  mkdirp(path.join(__dirname, type), err => {
+  mkdirp(path.join(__dirname, 'installed', type), err => {
     if (!err) {
       _getModuleRealName(module, type, (err, moduleName) => {
         if (!err) {
@@ -1037,20 +997,12 @@ const _removeModule = (module, type, cb) => {
   if (typeof module === 'string') {
     const modulePath = _getModulePath(module, type); // XXX add module literal removal support
 
-    rimraf(modulePath, err => {
-      if (!err) {
-        const moduleBuildPath = _getModuleBuildDirectory(module, type);
-
-        rimraf(moduleBuildPath, cb);
-      } else {
-        cb(err);
-      }
-    });
+    rimraf(modulePath, cb);
   } else if (typeof module ==='object') {
     if (module && typeof module.name === 'string') {
-      const moduleBuildPath = _getModuleBuildDirectory(module.name, type);
+      const modulePath = _getModulePath(module.name, type);
 
-      rimraf(moduleBuildPath, cb);
+      rimraf(modulePath, cb);
     } else {
       const err = new Error('invalid module declaration');
       cb(err);
@@ -1112,7 +1064,7 @@ const _getModuleRealName = (module, type, cb) => {
     cb(null, null);
   }
 };
-const _getModulePath = (module, type) => path.join(__dirname, type, 'node_modules', _getModuleName(module));
+const _getModulePath = (module, type) => path.join(__dirname, 'installed', type, 'node_modules', _getModuleName(module));
 const _getModulePackageJsonPath = (module, type) => {
   const moduleName = _getModuleName(module);
 
@@ -1122,8 +1074,6 @@ const _getModulePackageJsonPath = (module, type) => {
     return path.join(_getModulePath(moduleName, type), 'package.json');
   }
 };
-const _getModuleBuildDirectory = (module, type) => path.join(__dirname, type, 'build', _getModuleName(module));
-const _getModuleBuildPath = (module, type, target) => path.join(_getModuleBuildDirectory(module, type), target + '.js');
 
 const _isValidModule = module => typeof module === 'string' || _isValidModuleSpec(module);
 const _isValidModuleSpec = module => {

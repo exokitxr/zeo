@@ -15,7 +15,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {app} = archae.getCore();
+    const {app, dirname} = archae.getCore();
 
     let live = true;
     this._cleanup = () => {
@@ -26,7 +26,7 @@ class Rend {
     const worldElementsJsons = new Map();
     const worldModMutex = new MultiMutex();
 
-    const worldsPath = path.join(__dirname, '..', '..', '..', 'data', 'worlds');
+    const worldsPath = path.join(dirname, 'data', 'worlds');
     const _ensureWorldsDirectory = () => new Promise((accept, reject) => {
       mkdirp(worldsPath, err => {
         if (!err) {
@@ -169,7 +169,7 @@ class Rend {
                       mods.splice(index, 1);
                     }
                     
-                    _setWorldModJson({world, worldModsJson})
+                    _setWorldModsJson({world, worldModsJson})
                       .then(() => {
                         cb();
                       })
@@ -212,7 +212,7 @@ class Rend {
                 const {world} = data;
 
                 if (typeof world === 'string') {
-                  const pluginsPath = path.join(__dirname, '..', '..', '..', 'extra', 'plugins');
+                  const pluginsPath = path.join(dirname, 'extra', 'plugins');
                   const _getPlugins = () => new Promise((accept, reject) => {
                     fs.readdir(pluginsPath, (err, plugins) => {
                       if (!err) {
