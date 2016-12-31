@@ -905,7 +905,7 @@ class Rend {
                 scene.add(keyboardDotMeshes.left);
                 scene.add(keyboardDotMeshes.right);
 
-                const positioningMesh = (() => {
+                const _makePositioningMesh = ({opacity = 1} = {}) => {
                   const geometry = (() => {
                     const result = new THREE.BufferGeometry();
                     const positions = Float32Array.from([
@@ -932,13 +932,19 @@ class Rend {
                     // color: 0xFFFFFF,
                     // color: 0x333333,
                     vertexColors: THREE.VertexColors,
+                    opacity: opacity,
                   });
 
                   const mesh = new THREE.LineSegments(geometry, material);
                   mesh.visible = false;
                   return mesh;
-                })();
+                };
+                const positioningMesh = _makePositioningMesh();
                 scene.add(positioningMesh);
+                const oldPositioningMesh = _makePositioningMesh({
+                  opacity: 0.5,
+                });
+                scene.add(oldPositioningMesh);
 
                 stats.render = (() => {
                   return () => {
@@ -2114,6 +2120,7 @@ class Rend {
                   });
 
                   scene.remove(positioningMesh);
+                  scene.remove(oldPositioningMesh);
 
                   input.removeEventListener('click', click);
                   input.removeEventListener('mousedown', mousedown);
@@ -2474,9 +2481,9 @@ class Rend {
                     });
                   };
                   const _updateControllers = () => {
-                    const {positioningSide} = elementsState;
+                    const {selectedKeyPath, positioningName, positioningSide} = elementsState;
 
-                    if (positioningSide) {
+                    if (selectedKeyPath.length > 0 && positioningName && positioningSide) {
                       const status = webvr.getStatus();
                       const {gamepads: gamepadsStatus} = status;
                       const gamepadStatus = gamepadsStatus[positioningSide];
@@ -2487,12 +2494,31 @@ class Rend {
                         positioningMesh.quaternion.copy(controllerRotation);
                       }
 
+                      const spec = {
+                        elements: elementsState.elements,
+                        availableElements: elementsState.availableElements,
+                        clipboardElements: elementsState.clipboardElements,
+                      };
+                      const element = menuUtils.getElementKeyPath(spec, selectedKeyPath);
+                      const {attributes} = element;
+                      const attribute = attributes[positioningName];
+                      const {value: oldValue} = attribute;
+                      oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
+                      oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
+                      oldPositioningMesh.scale.set(oldValue[7], oldValue[7], oldValue[9]);
+
                       if (!positioningMesh.visible) {
                         positioningMesh.visible = true;
+                      }
+                      if (!oldPositioningMesh.visible) {
+                        oldPositioningMesh.visible = true;
                       }
                     } else {
                       if (positioningMesh.visible) {
                         positioningMesh.visible = false;
+                      }
+                      if (oldPositioningMesh.visible) {
+                        oldPositioningMesh.visible = false;
                       }
                     }
                   };
