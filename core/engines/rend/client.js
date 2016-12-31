@@ -2239,7 +2239,6 @@ class Rend {
                 };
 
                 const _makeKeyboardHoverState = () => ({
-                  intersectionPoint: null,
                   key: null,
                 });
                 const keyboardHoverStates = {
@@ -2460,11 +2459,9 @@ class Rend {
                           const keyboardIntersectionPoint = (() => {
                             const keyboardNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(keyboardRotation);
                             const keyboardPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(keyboardNormalZ, keyboardPosition);
-                            return keyboardPlane.intersectLine(controllerLine);
+                            return keyboardPlane.projectPoint(controllerPosition);
                           })();
                           if (keyboardIntersectionPoint) {
-                            keyboardHoverState.intersectionPoint = keyboardIntersectionPoint;
-
                             const _getKeyboardMeshPoint = _makeMeshPointGetter({
                               position: keyboardPosition,
                               rotation: keyboardRotation,
@@ -2516,7 +2513,6 @@ class Rend {
 
                             keyboardDotMesh.position.copy(keyboardIntersectionPoint);
                           } else {
-                            keyboardHoverState.intersectionPoint = null;
                             keyboardHoverState.key = null;
 
                             if (keyboardBoxMesh.visible) {

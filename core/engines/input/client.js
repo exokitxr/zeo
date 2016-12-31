@@ -89,6 +89,9 @@ class Input {
         'menu',
         'menudown',
         'menuup',
+        'keyboardpress',
+        'keyboarddown',
+        'keyboardup',
       ].forEach(event => {
         result[event] = new EventRouter();
       });
