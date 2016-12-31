@@ -1028,9 +1028,12 @@ class Rend {
                   const {selectedName: oldFilesSelectedName} = filesState;
 
                   const _doPosition = e => {
-                    const {positioningName} = elementsState;
+                    const {side} = e;
+                    const {positioningSide} = elementsState;
 
-                    if (positioningName) {
+                    if (positioningSide && side === positioningSide) {
+                      const {positioningName} = elementsState;
+
                       const element = menuUtils.getElementKeyPath({
                         elements: elementsState.elements,
                         availableElements: elementsState.availableElements,
@@ -1855,6 +1858,18 @@ class Rend {
                   _doDrag() || _doScroll();
                 };
                 input.addEventListener('mouseup', mouseup);
+                const grip = e => {
+                  const {side} = e;
+                  const {positioningSide} = elementsState;
+
+                  if (positioningSide && side === positioningSide) {
+                    elementsState.positioningName = null;
+                    elementsState.positioningSide = null;
+
+                    _updatePages();
+                  }
+                };
+                input.addEventListener('grip', grip);
 
                 const _isPrintableKeycode = keyCode =>
                   (keyCode > 47 && keyCode < 58) || // number keys

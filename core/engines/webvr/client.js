@@ -40,6 +40,22 @@ const BUTTONS = {
 
 const SIDES = ['left', 'right'];
 
+class EventSpec {
+  constructor(buttonName, rootName, downName, upName) {
+    this.buttonName = buttonName;
+    this.rootName = rootName;
+    this.downName = downName;
+    this.upName = upName;
+  }
+}
+
+const EVENT_SPECS = [
+  new EventSpec('trigger', 'click', 'mousedown', 'mouseup'),
+  new EventSpec('pad', 'pad', 'paddown', 'padup'),
+  new EventSpec('grip', 'grip', 'gripdown', 'gripup'),
+  new EventSpec('menu', 'menu', 'menudown', 'menuup'),
+];
+
 class WebVR {
   constructor(archae) {
     this._archae = archae;
@@ -473,14 +489,17 @@ class WebVR {
                 const {gamepads: newGamepadsStatus} = newStatus;
                 const newGamepadStatus = newGamepadsStatus[side];
 
-                const oldPressed = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons.trigger.pressed;
-                const newPressed = Boolean(newGamepadStatus) && newGamepadStatus.buttons.trigger.pressed;
-                if (!oldPressed && newPressed) {
-                  input.triggerEvent('mousedown', {side});
-                } else if (oldPressed && !newPressed) {
-                  input.triggerEvent('mouseup', {side});
-                  input.triggerEvent('click', {side});
-                }
+                EVENT_SPECS.forEach(({buttonName, rootName, downName, upName}) => {
+                  const oldPressed = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons[buttonName].pressed;
+                  const newPressed = Boolean(newGamepadStatus) && newGamepadStatus.buttons[buttonName].pressed;
+
+                  if (!oldPressed && newPressed) {
+                    input.triggerEvent(downName, {side});
+                  } else if (oldPressed && !newPressed) {
+                    input.triggerEvent(upName, {side});
+                    input.triggerEvent(rootName, {side});
+                  }
+                });
               });
 
               return newStatus;

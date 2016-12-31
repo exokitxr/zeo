@@ -77,6 +77,15 @@ class Input {
         'keypress',
         'keydown',
         'keyup',
+        'pad',
+        'paddown',
+        'padup',
+        'grip',
+        'gripdown',
+        'gripup',
+        'menu',
+        'menudown',
+        'menuup',
       ].forEach(event => {
         result[event] = new EventRouter();
       });
