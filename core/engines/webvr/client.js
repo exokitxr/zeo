@@ -50,7 +50,7 @@ class EventSpec {
 }
 
 const EVENT_SPECS = [
-  new EventSpec('trigger', 'click', 'mousedown', 'mouseup'),
+  new EventSpec('trigger', 'trigger', 'triggerdown', 'triggerup'),
   new EventSpec('pad', 'pad', 'paddown', 'padup'),
   new EventSpec('grip', 'grip', 'gripdown', 'gripup'),
   new EventSpec('menu', 'menu', 'menudown', 'menuup'),

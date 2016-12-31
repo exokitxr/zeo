@@ -1032,7 +1032,7 @@ class Rend {
                     next();
                   }
                 });
-                const click = e => {
+                const trigger = e => {
                   const {selectedName: oldWorldsSelectedName} = worldsState;
                   const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
                   const {selectedName: oldFilesSelectedName} = filesState;
@@ -1667,8 +1667,8 @@ class Rend {
 
                   _doPosition(e) || _doClick(e);
                 };
-                input.addEventListener('click', click);
-                const mousedown = e => {
+                input.addEventListener('trigger', trigger);
+                const triggerdown = e => {
                   const {side} = e;
                   const menuHoverState = menuHoverStates[side];
 
@@ -1725,7 +1725,7 @@ class Rend {
 
                   _doDrag() || _doScroll();
                 };
-                input.addEventListener('mousedown', mousedown);
+                input.addEventListener('triggerdown', triggerdown);
 
                 const _setLayerScrollTop = menuHoverState => {
                   const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = menuHoverState;
@@ -1756,7 +1756,7 @@ class Rend {
 
                   mousedownScrollLayer.scrollTo(scrollTop);
                 };
-                const mouseup = e => {
+                const triggerup = e => {
                   const {side} = e;
                   const menuHoverState = menuHoverStates[side];
 
@@ -1878,7 +1878,7 @@ class Rend {
 
                   _doDrag() || _doScroll();
                 };
-                input.addEventListener('mouseup', mouseup);
+                input.addEventListener('triggerup', triggerup);
                 const grip = e => {
                   const {side} = e;
                   const {positioningSide} = elementsState;
@@ -2172,9 +2172,9 @@ class Rend {
                   scene.remove(positioningMesh);
                   scene.remove(oldPositioningMesh);
 
-                  input.removeEventListener('click', click);
-                  input.removeEventListener('mousedown', mousedown);
-                  input.removeEventListener('mouseup', mouseup);
+                  input.removeEventListener('trigger', trigger);
+                  input.removeEventListener('triggerdown', triggerdown);
+                  input.removeEventListener('triggerup', triggerup);
                   input.addEventListener('keydown', keydown);
                 });
 
