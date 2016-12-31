@@ -60,7 +60,7 @@ class Nedb {
     const {wss, dirname} = archae.getCore();
 
     const db = new nedb({
-      filename: path.join(dirname, 'data', 'nedb.db'),
+      filename: path.join(dirname, 'data', 'nedb', 'nedb.db'),
     });
 
     let live = true;
@@ -68,7 +68,7 @@ class Nedb {
       live = false;
     };
 
-    mkdirp(path.join(dirname, 'data'), err => {
+    mkdirp(path.join(dirname, 'data', 'nedb'), err => {
       if (live) {
         if (!err) {
           db.loadDatabase(err => {
