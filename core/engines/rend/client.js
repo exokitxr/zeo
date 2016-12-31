@@ -1761,7 +1761,7 @@ class Rend {
                                 const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
                                 if (newCollection === 'elements') {
                                   const instance = menuUtils.constructElement(currentModApis, element);
-                                  menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, element);
+                                  menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
                                 }
                               }
                             } else if (oldCollection === 'clipboardElements') {
@@ -1769,7 +1769,7 @@ class Rend {
                                 const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
                                 if (newCollection === 'elements') {
                                   const instance = menuUtils.constructElement(currentModApis, element);
-                                  menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, element);
+                                  menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
                                 }
                               }
                             }
