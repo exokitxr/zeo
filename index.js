@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs-extra');
+const https = require('https');
 const child_process = require('child_process');
 
 const spdy = require('spdy');
@@ -75,7 +76,7 @@ class ArchaeServer {
               })(cb);
           
               const _remove = cb => {
-                _removeModule(engine, 'engines', cb);
+                _removeModule(engineName, 'engines', cb);
               };
               const _add = cb => {
                 _addModule(engine, 'engines', err => {
@@ -203,7 +204,7 @@ class ArchaeServer {
               })(cb);
           
               const _remove = cb => {
-                _removeModule(plugin, 'plugins', cb);
+                _removeModule(pluginName, 'plugins', cb);
               };
               const _add = cb => {
                 _addModule(plugin, 'plugins', err => {
@@ -720,50 +721,144 @@ class ArchaeServer {
   }
 }
 
-const _requestInstalledModuleHash = moduleName => new Promise((accept, reject) => {
-  // XXX
+const moduleHashesMutex = new MultiMutex();
+const MODULE_HASHES_MUTEX_KEY = 'key';
+let modulesJson = null;
+const _loadModulesJson = cb => {
+  if (modulesJson !== null) {
+    process.nextTick(() => {
+      cb(null, modulesJson);
+    });
+  } else {
+    moduleHashesMutex.lock(MODULE_HASHES_MUTEX_KEY)
+      .then(unlock => {
+        const unlockCb = (err, result) => {
+          cb(err, result);
+
+          unlock();
+        };
+
+        const modulesPath = path.join(__dirname, 'data', 'modules');
+        const moduleHashesJsonPath = path.join(modulesPath, 'hashes.json');
+
+        fs.readFile(moduleHashesJsonPath, 'utf8', (err, s) => {
+          if (!err) {
+            modulesJson = JSON.parse(s);
+
+            unlockCb(null, modulesJson);
+          } else if (err.code === 'ENOENT') {
+            modulesJson = {
+              engines: {},
+              plugins: {},
+            };
+
+            unlockCb(null, modulesJson);
+          } else {
+            unlockCb(err);
+          }
+        });
+      })
+      .catch(err => {
+        cb(err);
+      });
+  }
+};
+const _saveModulesJson = cb => {
+  _loadModulesJson((err, modulesJson) => {
+    if (!err) {
+      const modulesPath = path.join(__dirname, 'data', 'modules');
+
+      mkdirp(modulesPath, err => {
+        if (!err) {
+          const moduleHashesJsonPath = path.join(modulesPath, 'hashes.json');
+
+          fs.writeFile(moduleHashesJsonPath, JSON.stringify(modulesJson, null, 2), err => {
+            if (!err) {
+              cb();
+            } else {
+              cb(err);
+            }
+          });
+        } else {
+          cb(err);
+        }
+      });
+    } else {
+      cb(err);
+    }
+  });
+};
+const _setModulesJson = (moduleName, type, hash, cb) => {
+  _loadModulesJson((err, modulesJson) => {
+    if (!err) {
+      modulesJson[type][moduleName] = hash;
+
+      _saveModulesJson(cb);
+    } else {
+      cb(err);
+    }
+  });
+};
+const _requestInstalledModuleHash = (moduleName, type) => new Promise((accept, reject) => {
+  _loadModulesJson((err, modulesJson) => {
+    if (!err) {
+      accept(modulesJson[type][moduleName] || null);
+    } else {
+      reject(err);
+    }
+  });
 });
-const _requestInstallCandidateModuleHash = modile => new Promise((accept, reject) => {
-  // XXX
+const _requestInstallCandidateModuleHash = module => new Promise((accept, reject) => { // XXX support object-formatted modules
+  if (path.isAbsolute(module)) {
+    const modulePath = _getLocalModulePath(module);
+
+    const hasher = fsHasher.watch(modulePath, newHash => {
+      accept(newHash);
+
+      hasher.destroy();
+    });
+  } else {
+throw new Error('npm not supported yet');
+
+    https.get({
+      hostname: 'api.npms.io',
+      pathname: '/v2/package/' + moduleName,
+    }, res => {
+      const bs = [];
+      res.on('data', d => {
+        bs.push(b);
+      });
+      res.on('end', () => {
+        const b = Buffer.concat(bs);
+        const s = b.toString('utf8');
+        const j = JSON.parse(s);
+        const {collected: {metadata: {version}}} = j;
+        accept(version);
+      });
+    }).on('error', err => {
+      reject(err);
+    });
+  }
 });
-const _moduleExists = (module, type, cb) => { // XXX
+const _getModuleInstallStatus = (module, type, cb) => {
   _getModuleRealName(module, type, (err, moduleName) => {
     if (!err) {
       Promise.all([
-        _requestInstalledModuleHash(moduleName),
+        _requestInstalledModuleHash(moduleName, type),
         _requestInstallCandidateModuleHash(module),
       ])
         .then(([
           installedHash,
           candidateHash,
         ]) => {
-          if (installedHash !== candidateHash) {
-            const exists = installedHash !== null;
-            const outdated = true;
+          const exists = installedHash !== null;
+          const outdated = !exists || installedHash !== candidateHash;
 
-            cb(null, exists, outdated);
-          } else {
-            const exists = true;
-            const outdated = false;
-
-            cb(null, exists, outdated);
-          }
+          cb(null, {exists, outdated, moduleName, installedHash, candidateHash});
         })
         .catch(err => {
           cb(err);
         });
-
-      const modulePath = _getInstalledModulePath(moduleName, type);
-
-      fs.exists(modulePath, exists => {
-        if (exists) {
-          const _request
-          
-          // XXX
-        } else {
-          cb(null, false);
-        }
-      });
     } else {
       cb(err);
     }
@@ -814,9 +909,11 @@ const _addModule = (module, type, cb) => {
         }
       });  
     } else {
-      _yarnAdd(module, type, err => {
+      const moduleName = module;
+
+      _yarnAdd(moduleName, type, err => {
         if (!err) {
-          const modulePackageJsonPath = _getInstalledModulePackageJsonPath(module, type);
+          const modulePackageJsonPath = _getInstalledModulePackageJsonPath(moduleName, type);
 
           fs.readFile(modulePackageJsonPath, 'utf8', (err, s) => {
             if (!err) {
@@ -855,9 +952,9 @@ const _addModule = (module, type, cb) => {
       });
     });
   };
-  const _yarnInstall = (module, type, cb) => {
+  const _yarnInstall = (moduleName, type, cb) => {
     _queueYarn(cleanup => {
-      const modulePath = _getInstalledModulePath(module, type);
+      const modulePath = _getInstalledModulePath(moduleName, type);
 
       const yarnInstall = child_process.spawn(
         yarnBin,
@@ -880,7 +977,7 @@ const _addModule = (module, type, cb) => {
       });
     });
   };
-  const _dumpPlugin = (module, type, cb) => {
+  const _dumpModule = (module, type, cb) => {
     const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', worker = 'worker.js', files} = module;
 
     if (_isValidModuleSpec(module)) {
@@ -945,29 +1042,44 @@ const _addModule = (module, type, cb) => {
 
   mkdirp(path.join(__dirname, 'installed', type), err => {
     if (!err) {
-      _moduleExists(module, type, (err, exists, outdated) => {
+      _getModuleInstallStatus(module, type, (err, {exists, outdated, moduleName, installedHash, candidateHash}) => {
         if (!err) {
           const _doAdd = cb => {
             if (typeof module === 'string') {
               _downloadModule(module, type, cb);
             } else if (typeof module === 'object') {
-              _dumpPlugin(module, type, cb);
+              _dumpModule(module, type, cb);
             } else {
               const err = new Error('invalid module format');
               cb(err);
             }
           };
           const _doRemove = cb => {
-            _removeModule(module, cb);
+            _removeModule(moduleName, type, cb);
+          };
+          const _doUpdateHash = cb => {
+            _setModulesJson(moduleName, type, candidateHash, cb);
           };
 
           if (!exists) {
-            _doAdd();
+            _doAdd(err => {
+              if (!err) {
+                _doUpdateHash(cb);
+              } else {
+                cb(err);
+              }
+            });
           } else {
             if (outdated) {
               _doRemove(err => {
                 if (!err) {
-                  _doAdd(cb);
+                  _doAdd(err => {
+                    if (!err) {
+                      _doUpdateHash(cb);
+                    } else {
+                      cb(err);
+                    }
+                  });
                 } else {
                   cb(err);
                 }
@@ -1101,6 +1213,8 @@ const _getModuleName = module => {
 const _getModuleRealName = (module, type, cb) => {
   if (typeof module === 'string') {
     if (path.isAbsolute(module)) {
+      const packageJsonPath = _getLocalModulePackageJsonPath(module);
+
       fs.readFile(packageJsonPath, 'utf8', (err, s) => {
         if (!err) {
           const j = JSON.parse(s);
@@ -1126,15 +1240,10 @@ const _getModuleRealName = (module, type, cb) => {
     });
   }
 };
-const _getInstalledModulePath = (module, type) => path.join(__dirname, 'installed', type, 'node_modules', _getModuleName(module));
-const _getLocalModulePackageJsonPath = (moduleName) => {
-  if (typeof moduleName === 'string' && path.isAbsolute(moduleName)) {
-    return path.join(__dirname, moduleName, 'package.json');
-  } else {
-    return null;
-  }
-};
-const _getInstalledModulePackageJsonPath = (module, type) => path.join(_getInstalledModulePath(module, type), 'package.json');
+const _getInstalledModulePath = (moduleName, type) => path.join(__dirname, 'installed', type, 'node_modules', _getModuleName(moduleName));
+const _getLocalModulePath = module => path.join(__dirname, module);
+const _getInstalledModulePackageJsonPath = (moduleName, type) => path.join(_getInstalledModulePath(moduleName, type), 'package.json');
+const _getLocalModulePackageJsonPath = module => path.join(_getLocalModulePath(module), 'package.json');
 
 const _isValidModule = module => typeof module === 'string' || _isValidModuleSpec(module);
 const _isValidModuleSpec = module => {
