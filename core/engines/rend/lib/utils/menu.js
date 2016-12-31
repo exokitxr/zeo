@@ -220,12 +220,23 @@ const constructElement = (modApis, element) => {
   const elementKey = mainTag + ((subTag !== null) ? (':' + subTag) : '');
   const elementApi = modElements.find(modElement => modElement.tag === elementKey);
 
-  const elementInstance = new elementApi();
+  const initialAttributes = (() => {
+    const result = {};
+    for (const attributeName in attributes) {
+      const {value: attributeValue} = attributes[attributeName];
+      result[attributeName] = attributeValue;
+    }
+    return result;
+  })();
+  const elementInstance = new elementApi(initialAttributes);
+
   for (const attributeName in attributes) {
     const {value: attributeValue} = attributes[attributeName];
     elementInstance[attributeName] = attributeValue;
   }
+
   elementInstance.children = constructElements(modApis, children);
+
   return elementInstance;
 };
 const constructElements = (modApis, elements) => elements.map(element => constructElement(modApis, element));

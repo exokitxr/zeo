@@ -1526,6 +1526,11 @@ class Rend {
                         const attribute = attributes[attributeName];
 
                         if (action === 'position') {
+                          const {value: oldValue} = attribute;
+                          oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
+                          oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
+                          oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
+
                           elementsState.positioningName = attributeName;
                           elementsState.positioningSide = side;
                         } else if (action === 'focus') {
@@ -1863,6 +1868,20 @@ class Rend {
                   const {positioningSide} = elementsState;
 
                   if (positioningSide && side === positioningSide) {
+                    const {selectedKeyPath, positioningName} = elementsState;
+                    const element = menuUtils.getElementKeyPath({
+                      elements: elementsState.elements,
+                      availableElements: elementsState.availableElements,
+                      clipboardElements: elementsState.clipboardElements,
+                    }, selectedKeyPath);
+                    const instance = menuUtils.getElementKeyPath({
+                      elements: elementsState.elementInstances,
+                    }, selectedKeyPath);
+                    const {attributes} = element;
+                    const attribute = attributes[positioningName];
+                    const {value: oldValue} = attribute;
+                    instance[positioningName] = oldValue.slice();
+
                     elementsState.positioningName = null;
                     elementsState.positioningSide = null;
 
@@ -2504,23 +2523,18 @@ class Rend {
                       const gamepadStatus = gamepadsStatus[positioningSide];
 
                       if (gamepadStatus) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
+                        const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepadStatus;
                         positioningMesh.position.copy(controllerPosition);
                         positioningMesh.quaternion.copy(controllerRotation);
-                      }
+                        positioningMesh.scale.copy(controllerScale);
 
-                      const spec = {
-                        elements: elementsState.elements,
-                        availableElements: elementsState.availableElements,
-                        clipboardElements: elementsState.clipboardElements,
-                      };
-                      const element = menuUtils.getElementKeyPath(spec, selectedKeyPath);
-                      const {attributes} = element;
-                      const attribute = attributes[positioningName];
-                      const {value: oldValue} = attribute;
-                      oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
-                      oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
-                      oldPositioningMesh.scale.set(oldValue[7], oldValue[7], oldValue[9]);
+                        const {selectedKeyPath, positioningName} = elementsState;
+                        const instance = menuUtils.getElementKeyPath({
+                          elements: elementsState.elementInstances,
+                        }, selectedKeyPath);
+                        const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
+                        instance[positioningName] = newValue;
+                      }
 
                       if (!positioningMesh.visible) {
                         positioningMesh.visible = true;
