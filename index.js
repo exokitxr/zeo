@@ -724,6 +724,10 @@ class ArchaeServer {
 const moduleHashesMutex = new MultiMutex();
 const MODULE_HASHES_MUTEX_KEY = 'key';
 let modulesJson = null;
+const validatedModules = {
+  engines: {},
+  plugins: {},
+};
 const _loadModulesJson = cb => {
   if (modulesJson !== null) {
     process.nextTick(() => {
@@ -766,23 +770,35 @@ const _loadModulesJson = cb => {
 const _saveModulesJson = cb => {
   _loadModulesJson((err, modulesJson) => {
     if (!err) {
-      const modulesPath = path.join(__dirname, 'data', 'modules');
+      moduleHashesMutex.lock(MODULE_HASHES_MUTEX_KEY)
+        .then(unlock => {
+          const unlockCb = (err, result) => {
+            cb(err, result);
 
-      mkdirp(modulesPath, err => {
-        if (!err) {
-          const moduleHashesJsonPath = path.join(modulesPath, 'hashes.json');
+            unlock();
+          };
 
-          fs.writeFile(moduleHashesJsonPath, JSON.stringify(modulesJson, null, 2), err => {
+          const modulesPath = path.join(__dirname, 'data', 'modules');
+
+          mkdirp(modulesPath, err => {
             if (!err) {
-              cb();
+              const moduleHashesJsonPath = path.join(modulesPath, 'hashes.json');
+
+              fs.writeFile(moduleHashesJsonPath, JSON.stringify(modulesJson, null, 2), err => {
+                if (!err) {
+                  unlockCb();
+                } else {
+                  unlockCb(err);
+                }
+              });
             } else {
-              cb(err);
+              unlockCb(err);
             }
           });
-        } else {
+        })
+        .catch(err => {
           cb(err);
-        }
-      });
+        });
     } else {
       cb(err);
     }
@@ -798,6 +814,9 @@ const _setModulesJson = (moduleName, type, hash, cb) => {
       cb(err);
     }
   });
+};
+const _setValidatedModule = (moduleName, type, hash) => {
+  validatedModules[type][moduleName] = hash;
 };
 const _requestInstalledModuleHash = (moduleName, type) => new Promise((accept, reject) => {
   _loadModulesJson((err, modulesJson) => {
@@ -843,22 +862,33 @@ throw new Error('npm not supported yet');
 const _getModuleInstallStatus = (module, type, cb) => {
   _getModuleRealName(module, type, (err, moduleName) => {
     if (!err) {
-      Promise.all([
-        _requestInstalledModuleHash(moduleName, type),
-        _requestInstallCandidateModuleHash(module),
-      ])
-        .then(([
-          installedHash,
-          candidateHash,
-        ]) => {
-          const exists = installedHash !== null;
-          const outdated = !exists || installedHash !== candidateHash;
+      const validatedHash = validatedModules[type][moduleName] || null;
 
-          cb(null, {exists, outdated, moduleName, installedHash, candidateHash});
-        })
-        .catch(err => {
-          cb(err);
-        });
+      if (validatedHash !== null) {
+        const exists = true;
+        const outdated = false;
+        const installedHash = validatedHash;
+        const candidateHash = validatedHash;
+
+        cb(null, {exists, outdated, moduleName, installedHash, candidateHash});
+      } else {
+        Promise.all([
+          _requestInstalledModuleHash(moduleName, type),
+          _requestInstallCandidateModuleHash(module),
+        ])
+          .then(([
+            installedHash,
+            candidateHash,
+          ]) => {
+            const exists = installedHash !== null;
+            const outdated = !exists || installedHash !== candidateHash;
+
+            cb(null, {exists, outdated, moduleName, installedHash, candidateHash});
+          })
+          .catch(err => {
+            cb(err);
+          });
+      }
     } else {
       cb(err);
     }
@@ -1060,11 +1090,22 @@ const _addModule = (module, type, cb) => {
           const _doUpdateHash = cb => {
             _setModulesJson(moduleName, type, candidateHash, cb);
           };
+          const _doValidateHash = () => {
+            _setValidatedModule(moduleName, type, candidateHash);
+          };
 
           if (!exists) {
             _doAdd(err => {
               if (!err) {
-                _doUpdateHash(cb);
+                _doUpdateHash(err => {
+                  if (!err) {
+                    _doValidateHash();
+
+                    cb();
+                  } else {
+                    cb(err);
+                  }
+                });
               } else {
                 cb(err);
               }
@@ -1075,7 +1116,15 @@ const _addModule = (module, type, cb) => {
                 if (!err) {
                   _doAdd(err => {
                     if (!err) {
-                      _doUpdateHash(cb);
+                      _doUpdateHash(err => {
+                        if (!err) {
+                          _doValidateHash();
+
+                          cb();
+                        } else {
+                          cb(err);
+                        }
+                      });
                     } else {
                       cb(err);
                     }
@@ -1085,6 +1134,8 @@ const _addModule = (module, type, cb) => {
                 }
               });
             } else {
+              _doValidateHash();
+
               cb();
             }
           }
