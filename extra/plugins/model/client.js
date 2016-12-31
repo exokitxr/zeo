@@ -86,8 +86,12 @@ class Model {
               static get attributes() {
                 return {
                   position: {
-                    type: 'position',
-                    value: [0, 0, 0],
+                    type: 'matrix',
+                    value: [
+                      0, 0, 0,
+                      0, 0, 0, 1,
+                      1, 1, 1,
+                    ],
                   },
                   model: {
                     type: 'text',

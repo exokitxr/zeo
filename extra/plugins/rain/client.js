@@ -146,8 +146,12 @@ class Rain {
               static get attributes() {
                 return {
                   position: {
-                    type: 'position',
-                    value: [0, 0, 0],
+                    type: 'matrix',
+                    value: [
+                      0, 0, 0,
+                      0, 0, 0, 1,
+                      1, 1, 1,
+                    ],
                   },
                   type: {
                     type: 'select',
@@ -278,8 +282,12 @@ class Rain {
               static get attributes() {
                 return {
                   position: {
-                    type: 'position',
-                    value: [0, 0, 0],
+                    type: 'matrix',
+                    value: [
+                      0, 0, 0,
+                      0, 0, 0, 1,
+                      1, 1, 1,
+                    ],
                   },
                   color: {
                     type: 'color',
@@ -331,7 +339,11 @@ class Rain {
                 {
                   tag: 'rain:box',
                   attributes: {
-                    position: [0, 1.5, 0],
+                    position: [
+                      0, 1.5, 0,
+                      0, 0, 0, 1,
+                      1, 1, 1,
+                    ],
                   },
                   children: [],
                 },

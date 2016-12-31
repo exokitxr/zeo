@@ -1036,8 +1036,8 @@ class Rend {
                       const {attributes} = element;
                       const attribute = attributes[positioningName];
 
-                      const {position} = positioningMesh;
-                      const newValue = position.toArray();
+                      const {position, quaternion, scale} = positioningMesh;
+                      const newValue = position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
                       attribute.value = newValue;
                       instance[positioningName] = newValue.slice();
 

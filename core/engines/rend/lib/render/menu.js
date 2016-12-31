@@ -258,7 +258,7 @@ const getElementAttributeInput = (name, type, value, min, max, options, position
   const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, options);
 
   switch (type) {
-    case 'position': {
+    case 'matrix': {
       return `\
 <div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
   <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:position">${!positioningName ? 'Set' : 'Setting...'}</a>
