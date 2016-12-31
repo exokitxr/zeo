@@ -723,15 +723,15 @@ class ArchaeServer {
 
 const moduleHashesMutex = new MultiMutex();
 const MODULE_HASHES_MUTEX_KEY = 'key';
-let modulesJson = null;
+let modulesHashesJson = null;
 const validatedModules = {
   engines: {},
   plugins: {},
 };
-const _loadModulesJson = cb => {
-  if (modulesJson !== null) {
+const _loadModulesHashesJson = cb => {
+  if (modulesHashesJson !== null) {
     process.nextTick(() => {
-      cb(null, modulesJson);
+      cb(null, modulesHashesJson);
     });
   } else {
     moduleHashesMutex.lock(MODULE_HASHES_MUTEX_KEY)
@@ -747,16 +747,16 @@ const _loadModulesJson = cb => {
 
         fs.readFile(moduleHashesJsonPath, 'utf8', (err, s) => {
           if (!err) {
-            modulesJson = JSON.parse(s);
+            modulesHashesJson = JSON.parse(s);
 
-            unlockCb(null, modulesJson);
+            unlockCb(null, modulesHashesJson);
           } else if (err.code === 'ENOENT') {
-            modulesJson = {
+            modulesHashesJson = {
               engines: {},
               plugins: {},
             };
 
-            unlockCb(null, modulesJson);
+            unlockCb(null, modulesHashesJson);
           } else {
             unlockCb(err);
           }
@@ -767,8 +767,8 @@ const _loadModulesJson = cb => {
       });
   }
 };
-const _saveModulesJson = cb => {
-  _loadModulesJson((err, modulesJson) => {
+const _saveModulesHashesJson = cb => {
+  _loadModulesHashesJson((err, modulesHashesJson) => {
     if (!err) {
       moduleHashesMutex.lock(MODULE_HASHES_MUTEX_KEY)
         .then(unlock => {
@@ -784,7 +784,7 @@ const _saveModulesJson = cb => {
             if (!err) {
               const moduleHashesJsonPath = path.join(modulesPath, 'hashes.json');
 
-              fs.writeFile(moduleHashesJsonPath, JSON.stringify(modulesJson, null, 2), err => {
+              fs.writeFile(moduleHashesJsonPath, JSON.stringify(modulesHashesJson, null, 2), err => {
                 if (!err) {
                   unlockCb();
                 } else {
@@ -804,12 +804,12 @@ const _saveModulesJson = cb => {
     }
   });
 };
-const _setModulesJson = (moduleName, type, hash, cb) => {
-  _loadModulesJson((err, modulesJson) => {
+const _setModuleHash = (moduleName, type, hash, cb) => {
+  _loadModulesHashesJson((err, modulesHashesJson) => {
     if (!err) {
-      modulesJson[type][moduleName] = hash;
+      modulesHashesJson[type][moduleName] = hash;
 
-      _saveModulesJson(cb);
+      _saveModulesHashesJson(cb);
     } else {
       cb(err);
     }
@@ -819,9 +819,9 @@ const _setValidatedModule = (moduleName, type, hash) => {
   validatedModules[type][moduleName] = hash;
 };
 const _requestInstalledModuleHash = (moduleName, type) => new Promise((accept, reject) => {
-  _loadModulesJson((err, modulesJson) => {
+  _loadModulesHashesJson((err, modulesHashesJson) => {
     if (!err) {
-      accept(modulesJson[type][moduleName] || null);
+      accept(modulesHashesJson[type][moduleName] || null);
     } else {
       reject(err);
     }
@@ -1072,8 +1072,10 @@ const _addModule = (module, type, cb) => {
 
   mkdirp(path.join(__dirname, 'installed', type), err => {
     if (!err) {
-      _getModuleInstallStatus(module, type, (err, {exists, outdated, moduleName, installedHash, candidateHash}) => {
+      _getModuleInstallStatus(module, type, (err, result) => {
         if (!err) {
+          const {exists, outdated, moduleName, installedHash, candidateHash} = result;
+
           const _doAdd = cb => {
             if (typeof module === 'string') {
               _downloadModule(module, type, cb);
@@ -1088,7 +1090,7 @@ const _addModule = (module, type, cb) => {
             _removeModule(moduleName, type, cb);
           };
           const _doUpdateHash = cb => {
-            _setModulesJson(moduleName, type, candidateHash, cb);
+            _setModuleHash(moduleName, type, candidateHash, cb);
           };
           const _doValidateHash = () => {
             _setValidatedModule(moduleName, type, candidateHash);
