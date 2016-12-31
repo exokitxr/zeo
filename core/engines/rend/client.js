@@ -1023,6 +1023,8 @@ class Rend {
                       elementsState.positioningName = null;
                       elementsState.positioningSide = null;
 
+                      _saveElements();
+
                       _updatePages();
 
                       return true;
@@ -1526,6 +1528,8 @@ class Rend {
                           const newValue = value;
                           attribute.value = newValue;
                           instance[attributeName] = newValue;
+
+                          _saveElements();
                         } else if (action === 'tweak') {
                           const {value} = menuHoverState;
                           const {min, max} = attribute;
@@ -1533,10 +1537,14 @@ class Rend {
                           const newValue = min + (value * (max - min));
                           attribute.value = newValue;
                           instance[attributeName] = newValue;
+
+                          _saveElements();
                         } else if (action === 'toggle') {
                           const newValue = !attribute.value;
                           attribute.value = newValue;
                           instance[attributeName] = newValue;
+
+                          _saveElements();
                         }
 
                         elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
@@ -1972,6 +1980,8 @@ class Rend {
                         const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, options);
                         if (newValue !== null) {
                           attribute.value = newValue;
+
+                          _saveElements();
                         }
                       }
 
