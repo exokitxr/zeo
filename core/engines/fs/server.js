@@ -13,7 +13,7 @@ class Fs {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, app} = archae.getCore();
+    const {express, app, dirname} = archae.getCore();
 
     const cleanups = [];
     this._cleanup = () => {
@@ -27,7 +27,7 @@ class Fs {
       live = false;
     });
 
-    const fsPath = path.join(__dirname, '..', '..', '..', 'data', 'fs');
+    const fsPath = path.join(dirname, 'data', 'fs');
     const _ensureFsDirectory = () => new Promise((accept, reject) => {
       mkdirp(fsPath, err => {
         if (!err) {
