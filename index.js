@@ -13,6 +13,7 @@ const rollupPluginCommonJs = require('rollup-plugin-commonjs');
 const rollupPluginJson = require('rollup-plugin-json');
 const cryptoutils = require('cryptoutils');
 const MultiMutex = require('multimutex');
+const fsHasher = require('fs-hasher');
 
 const defaultConfig = {
   hostname: 'zeo.sh',
@@ -719,15 +720,66 @@ class ArchaeServer {
   }
 }
 
+const _requestInstalledModuleHash = moduleName => new Promise((accept, reject) => {
+  // XXX
+});
+const _requestInstallCandidateModuleHash = modile => new Promise((accept, reject) => {
+  // XXX
+});
+const _moduleExists = (module, type, cb) => { // XXX
+  _getModuleRealName(module, type, (err, moduleName) => {
+    if (!err) {
+      Promise.all([
+        _requestInstalledModuleHash(moduleName),
+        _requestInstallCandidateModuleHash(module),
+      ])
+        .then(([
+          installedHash,
+          candidateHash,
+        ]) => {
+          if (installedHash !== candidateHash) {
+            const exists = installedHash !== null;
+            const outdated = true;
+
+            cb(null, exists, outdated);
+          } else {
+            const exists = true;
+            const outdated = false;
+
+            cb(null, exists, outdated);
+          }
+        })
+        .catch(err => {
+          cb(err);
+        });
+
+      const modulePath = _getInstalledModulePath(moduleName, type);
+
+      fs.exists(modulePath, exists => {
+        if (exists) {
+          const _request
+          
+          // XXX
+        } else {
+          cb(null, false);
+        }
+      });
+    } else {
+      cb(err);
+    }
+  });
+};
+
 const _addModule = (module, type, cb) => {
   const _downloadModule = (module, type, cb) => {
     if (path.isAbsolute(module)) {
-      const modulePackageJsonPath = _getModulePackageJsonPath(module);
+      const modulePackageJsonPath = _getLocalModulePackageJsonPath(module);
+
       fs.readFile(modulePackageJsonPath, 'utf8', (err, s) => {
         if (!err) {
           const j = JSON.parse(s);
           const moduleName = j.name;
-          const modulePath = _getModulePath(moduleName, type);
+          const modulePath = _getInstalledModulePath(moduleName, type);
 
           fs.exists(modulePath, exists => {
             if (exists) {
@@ -764,7 +816,8 @@ const _addModule = (module, type, cb) => {
     } else {
       _yarnAdd(module, type, err => {
         if (!err) {
-          const modulePackageJsonPath = _getModulePackageJsonPath(module, type);
+          const modulePackageJsonPath = _getInstalledModulePackageJsonPath(module, type);
+
           fs.readFile(modulePackageJsonPath, 'utf8', (err, s) => {
             if (!err) {
               const j = JSON.parse(s);
@@ -804,7 +857,8 @@ const _addModule = (module, type, cb) => {
   };
   const _yarnInstall = (module, type, cb) => {
     _queueYarn(cleanup => {
-      const modulePath = _getModulePath(module, type);
+      const modulePath = _getInstalledModulePath(module, type);
+
       const yarnInstall = child_process.spawn(
         yarnBin,
         [ 'install' ],
@@ -830,7 +884,7 @@ const _addModule = (module, type, cb) => {
     const {name, version = '0.0.1', dependencies = {}, client = 'client.js', server = 'server.js', worker = 'worker.js', files} = module;
 
     if (_isValidModuleSpec(module)) {
-      const modulePath = _getModulePath(module.name, type);
+      const modulePath = _getInstalledModulePath(module.name, type);
 
       mkdirp(modulePath, err => {
         if (!err) {
@@ -891,24 +945,37 @@ const _addModule = (module, type, cb) => {
 
   mkdirp(path.join(__dirname, 'installed', type), err => {
     if (!err) {
-      _getModuleRealName(module, type, (err, moduleName) => {
+      _moduleExists(module, type, (err, exists, outdated) => {
         if (!err) {
-          const modulePath = _getModulePath(moduleName, type);
+          const _doAdd = cb => {
+            if (typeof module === 'string') {
+              _downloadModule(module, type, cb);
+            } else if (typeof module === 'object') {
+              _dumpPlugin(module, type, cb);
+            } else {
+              const err = new Error('invalid module format');
+              cb(err);
+            }
+          };
+          const _doRemove = cb => {
+            _removeModule(module, cb);
+          };
 
-          fs.exists(modulePath, exists => {
-            if (!exists) {
-              if (typeof module === 'string') {
-                _downloadModule(module, type, cb);
-              } else if (typeof module === 'object') {
-                _dumpPlugin(module, type, cb);
-              } else {
-                const err = new Error('invalid module format');
-                cb(err);
-              }
+          if (!exists) {
+            _doAdd();
+          } else {
+            if (outdated) {
+              _doRemove(err => {
+                if (!err) {
+                  _doAdd(cb);
+                } else {
+                  cb(err);
+                }
+              });
             } else {
               cb();
             }
-          });
+          }
         } else {
           cb(err);
         }
@@ -994,23 +1061,9 @@ const _uninstantiate = api => (typeof api.unmount === 'function') ? api.unmount(
 const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/.test(fn.toString());
 
 const _removeModule = (module, type, cb) => {
-  if (typeof module === 'string') {
-    const modulePath = _getModulePath(module, type); // XXX add module literal removal support
+  const modulePath = _getInstalledModulePath(module, type);
 
-    rimraf(modulePath, cb);
-  } else if (typeof module ==='object') {
-    if (module && typeof module.name === 'string') {
-      const modulePath = _getModulePath(module.name, type);
-
-      rimraf(modulePath, cb);
-    } else {
-      const err = new Error('invalid module declaration');
-      cb(err);
-    }
-  } else {
-    const err = new Error('invalid module format');
-    cb(err);
-  }
+  rimraf(modulePath, cb);
 };
 
 const _queueYarn = (() => {
@@ -1047,33 +1100,41 @@ const _getModuleName = module => {
 };
 const _getModuleRealName = (module, type, cb) => {
   if (typeof module === 'string') {
-    const packageJsonPath = _getModulePackageJsonPath(module, type);
-
-    fs.readFile(packageJsonPath, 'utf8', (err, s) => {
-      if (!err) {
-        const j = JSON.parse(s);
-        const moduleName = j.name;
-        cb(null, moduleName);
-      } else {
-        cb(err);
-      }
-    });
+    if (path.isAbsolute(module)) {
+      fs.readFile(packageJsonPath, 'utf8', (err, s) => {
+        if (!err) {
+          const j = JSON.parse(s);
+          const moduleName = j.name;
+          cb(null, moduleName);
+        } else {
+          cb(err);
+        }
+      });
+    } else {
+      process.nextTick(() => {
+        cb(null, module);
+      });
+    }
   } else if (_isValidModuleSpec(module)) {
-    cb(null, module.name);
+    process.nextTick(() => {
+      cb(null, module.name);
+    });
   } else {
-    cb(null, null);
+    process.nextTick(() => {
+      const err = new Error('could not find module name: ' + JSON.stringify({module, type}, null, 2));
+      cb(err);
+    });
   }
 };
-const _getModulePath = (module, type) => path.join(__dirname, 'installed', type, 'node_modules', _getModuleName(module));
-const _getModulePackageJsonPath = (module, type) => {
-  const moduleName = _getModuleName(module);
-
-  if (path.isAbsolute(moduleName)) {
+const _getInstalledModulePath = (module, type) => path.join(__dirname, 'installed', type, 'node_modules', _getModuleName(module));
+const _getLocalModulePackageJsonPath = (moduleName) => {
+  if (typeof moduleName === 'string' && path.isAbsolute(moduleName)) {
     return path.join(__dirname, moduleName, 'package.json');
   } else {
-    return path.join(_getModulePath(moduleName, type), 'package.json');
+    return null;
   }
 };
+const _getInstalledModulePackageJsonPath = (module, type) => path.join(_getInstalledModulePath(module, type), 'package.json');
 
 const _isValidModule = module => typeof module === 'string' || _isValidModuleSpec(module);
 const _isValidModuleSpec = module => {
