@@ -1,4 +1,5 @@
 import Stats from 'stats.js';
+import keycode from 'keycode';
 import whatkey from 'whatkey';
 
 import {
@@ -2150,6 +2151,10 @@ class Rend {
                 input.addEventListener('keydown', keydown, {
                   priority: 1,
                 });
+                const keyboarddown = keydown;
+                input.addEventListener('keyboarddown', keyboarddown, {
+                  priority: 1,
+                });
 
                 cleanups.push(() => {
                   scene.remove(menuMesh);
@@ -2168,6 +2173,7 @@ class Rend {
                   input.removeEventListener('triggerdown', triggerdown);
                   input.removeEventListener('triggerup', triggerup);
                   input.addEventListener('keydown', keydown);
+                  input.addEventListener('keyboarddown', keyboarddown);
                 });
 
                 const _decomposeObjectMatrixWorld = object => {
@@ -2474,18 +2480,27 @@ class Rend {
                           keyboardHoverState.key = newKey;
 
                           if (oldKey && newKey !== oldKey) {
+                            const key = oldKey;
+                            const keyCode = keycode(key);
+
                             input.triggerEvent('keyboardup', {
-                              key: oldKey,
+                              key,
+                              keyCode,
                               side,
                             });
                           }
                           if (newKey && newKey !== oldKey) {
+                            const key = newKey;
+                            const keyCode = keycode(key);
+
                             input.triggerEvent('keyboarddown', {
-                              key: newKey,
+                              key,
+                              keyCode,
                               side,
                             });
-                            input.triggerEvent('keyboardpress', { // XXX hook this up to input handling
-                              key: newKey,
+                            input.triggerEvent('keyboardpress', {
+                              key,
+                              keyCode,
                               side,
                             });
                           }

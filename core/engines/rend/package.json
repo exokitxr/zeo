@@ -6,6 +6,7 @@
   "server": "server.js",
   "dependencies": {
     "body-parser": "^1.15.2",
+    "keycode": "^2.1.8",
     "mkdirp": "^0.5.1",
     "multimutex": "0.0.1",
     "pretty-bytes": "^4.0.2",
