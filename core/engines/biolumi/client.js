@@ -72,6 +72,8 @@ class Biolumi {
                 const {_lastStateJson: lastStateJson} = this;
 
                 if (stateJson !== lastStateJson) {
+                  this._lastStateJson = stateJson;
+
                   const {spec} = this;
 
                   const layers = [];
@@ -214,9 +216,11 @@ class Biolumi {
                         throw new Error('unknown layer type: ' + type);
                       }
                     }
+                  } else {
+                    cb();
                   }
-
-                  this._lastStateJson = stateJson;
+                } else {
+                  cb();
                 }
               }
             }

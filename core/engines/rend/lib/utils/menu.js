@@ -2,6 +2,29 @@ const prettyBytes = require('pretty-bytes');
 
 const pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
 const clone = o => JSON.parse(JSON.stringify(o));
+const debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 const cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
 const cleanElements = elements => elements.map(({tag, attributes, children}) => ({
   tag,
@@ -220,6 +243,7 @@ const destructElement = instance => {
 module.exports = {
   pathJoin,
   clone,
+  debounce,
   cleanMods,
   cleanElements,
   cleanFiles,

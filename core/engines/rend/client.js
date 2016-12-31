@@ -475,8 +475,9 @@ class Rend {
             clipboardElements,
           }),
         }).then(res => res.blob().then(() => {}));
-        const _saveElements = () => {
+        const _saveElements = menuUtils.debounce(next => {
           const {name: worldName} = currentWorld;
+
           _requestSetElements({
             world: worldName,
             elements: menuUtils.cleanElements(elementsState.elements),
@@ -484,11 +485,15 @@ class Rend {
           })
             .then(() => {
               console.log('saved elements for', JSON.stringify(worldName));
+
+              next();
             })
             .catch(err => {
-              console.warn();
+              console.warn(err);
+
+              next();
             });
-        };
+        });
 
         const _initializeMenu = () => {
           if (live) {
@@ -947,54 +952,70 @@ class Rend {
                   };
                 })();
 
-                const _updatePages = () => {
+                const _updatePages = menuUtils.debounce(next => {
                   const pages = ui.getPages();
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
 
-                    let match;
-                    if (type === 'stats') {
-                      page.update({
-                        config: {
-                          checkboxValue: configState.checkboxValue,
-                        },
-                        stats: statsState,
-                      });
-                    } else if (type === 'worlds') {
-                      page.update({
-                        worlds: worldsState,
-                        focus: focusState,
-                      });
-                    } else if (type === 'mods') {
-                      page.update({
-                        mods: modsState,
-                        focus: focusState,
-                      });
-                    } else if (match = type.match(/^mod:(.+)$/)) {
-                      const name = match[1];
-                      const mods = currentWorldMods;
-                      const mod = mods.find(m => m.name === name);
+                  if (pages.length > 0) {
+                    let pending = pages.length;
+                    const pend = () => {
+                      if (--pending === 0) {
+                        next();
+                      }
+                    };
 
-                      page.update({mod});
-                    } else if (type === 'elements') {
-                      page.update({
-                        elements: _cleanElementsState(elementsState),
-                        focus: focusState,
-                      });
-                    } else if (type === 'files') {
-                      page.update({
-                        files: filesState,
-                        focus: focusState,
-                      });
-                    } else if (type === 'config') {
-                      page.update({
-                        config: configState,
-                        focus: focusState,
-                      });
+                    for (let i = 0; i < pages.length; i++) {
+                      const page = pages[i];
+                      const {type} = page;
+
+                      let match;
+                      if (type === 'stats') {
+                        page.update({
+                          config: {
+                            checkboxValue: configState.checkboxValue,
+                          },
+                          stats: statsState,
+                        }, pend);
+                      } else if (type === 'worlds') {
+                        page.update({
+                          worlds: worldsState,
+                          focus: focusState,
+                        }, pend);
+                      } else if (type === 'mods') {
+                        page.update({
+                          mods: modsState,
+                          focus: focusState,
+                        }, pend);
+                      } else if (match = type.match(/^mod:(.+)$/)) {
+                        const name = match[1];
+                        const mods = currentWorldMods;
+                        const mod = mods.find(m => m.name === name);
+
+                        page.update({
+                          mod,
+                        }, pend);
+                      } else if (type === 'elements') {
+                        page.update({
+                          elements: _cleanElementsState(elementsState),
+                          focus: focusState,
+                        }, pend);
+                      } else if (type === 'files') {
+                        page.update({
+                          files: filesState,
+                          focus: focusState,
+                        }, pend);
+                      } else if (type === 'config') {
+                        page.update({
+                          config: configState,
+                          focus: focusState,
+                        }, pend);
+                      } else {
+                        pend();
+                      }
                     }
+                  } else {
+                    next();
                   }
-                };
+                });
                 const click = e => {
                   const {selectedName: oldWorldsSelectedName} = worldsState;
                   const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
