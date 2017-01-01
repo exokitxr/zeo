@@ -165,7 +165,7 @@ class Shell {
                       if (e.keyCode === 192 && (e.ctrlKey || e.metaKey)) { // (ctrl|meta)-`
                         focusState.focused = false;
                       } else if (!(e.keyCode === 82 && (e.ctrlKey || e.metaKey))) {// (ctrl|meta)-R
-                        term.keyboard.onKeyDown_(e);
+                        term.keyboard.onKeyPress_(e);
                       }
 
                       e.stopImmediatePropagation();
@@ -193,7 +193,7 @@ class Shell {
                       if (e.keyCode === 192 && (e.ctrlKey || e.metaKey)) { // (ctrl|meta)-`
                         focusState.focused = false;
                       } else if (!(e.keyCode === 82 && (e.ctrlKey || e.metaKey))) {// (ctrl|meta)-R
-                        term.keyboard.onKeyDown_(e);
+                        term.keyboard.onKeyUp_(e);
                       }
 
                       e.stopImmediatePropagation();
