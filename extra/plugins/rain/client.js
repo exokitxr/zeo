@@ -163,7 +163,7 @@ class Rain {
         return {
           update: _update,
           elements: [
-            class RainElement {
+            class RainElement extends HTMLElement {
               static get tag() {
                 return 'rain';
               }
@@ -329,7 +329,7 @@ class Rain {
                 uniforms.range.value = range;
               }
             },
-            class RainBoxElement {
+            class RainBoxElement extends HTMLElement {
               static get tag() {
                 return 'rain.box';
               }

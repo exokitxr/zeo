@@ -21,28 +21,19 @@ const _makeZeoElement = ({tag, elementApiAttributes, attributeValues}) => {
 
   const zeoElement = new zeoElementClass();
 
-  const attributeConfigs = (() => {
-    const result = {};
-    for (const attributeName in elementApiAttributes) {
-      const attributeConfig = (() => {
-        const result = {};
-        const elementApiAttributeConfig = elementApiAttributes[attributeName];
-        for (const attributeConfigKey in elementApiAttributeConfig) {
-          if (attributeConfigKey !== 'value') {
-            const elementApiAttributeConfigValue = elementApiAttributeConfig[attributeConfigKey];
-            result[attributeConfigKey] = elementApiAttributeConfigValue;
-          }
-        }
-        return result;
-      })();
-      result[attributeName] = attributeConfig;
-    }
-    return result;
-  })();
-  zeoElement.attributeConfigs = attributeConfigs;
+  zeoElement.attributeConfigs = elementApiAttributes;
 
   for (const attributeName in elementApiAttributes) {
-    const value = attributeValues[attributeName] || null;
+    const value = (() => {
+      let result = attributeValues[attributeName];
+      if (result === undefined) {
+        result = elementApiAttributes[attributeName].value;
+      }
+      if (result === undefined) {
+        result = null;
+      }
+      return result;
+    })();
     zeoElement.setAttribute(attributeName, JSON.stringify(value));
   }
 
@@ -70,33 +61,50 @@ const _makeZeoElementInstance = ({tag, elementApiAttributes, attributeValues, ba
 
   const zeoElementInstance = new zeoElementInstanceClass();
 
-  const attributeConfigs = (() => {
-    const result = {};
-    for (const attributeName in elementApiAttributes) {
-      const attributeConfig = (() => {
-        const result = {};
-        const elementApiAttributeConfig = elementApiAttributes[attributeName];
-        for (const attributeConfigKey in elementApiAttributeConfig) {
-          if (attributeConfigKey !== 'value') {
-            const elementApiAttributeConfigValue = elementApiAttributeConfig[attributeConfigKey];
-            result[attributeConfigKey] = elementApiAttributeConfigValue;
-          }
-        }
-        return result;
-      })();
-      result[attributeName] = attributeConfig;
-    }
-    return result;
-  })();
-  zeoElementInstance.attributeConfigs = attributeConfigs;
+  zeoElementInstance.attributeConfigs = elementApiAttributes;
 
   for (const attributeName in elementApiAttributes) {
-    const value = attributeValues[attributeName] || null;
+    const value = (() => {
+      let result = attributeValues[attributeName];
+      if (result === undefined) {
+        result = elementApiAttributes[attributeName].value;
+      }
+      if (result === undefined) {
+        result = null;
+      }
+      return result;
+    })();
     zeoElementInstance.setAttribute(attributeName, JSON.stringify(value));
   }
 
   return zeoElementInstance;
 };
+
+class FakeElement {
+  constructor({childNodes}) {
+    this.childNodes = childNodes;
+  }
+
+  insertBefore(element, beforeElement) {
+    const {childNodes} = this;
+
+    let beforeElementIndex = childNodes.indexOf(beforeElement);
+    if (beforeElementIndex === -1) {
+      beforeElementIndex = 0;
+    }
+
+    childNodes.splice(beforeElementIndex, 0, element);
+  }
+
+  removeNode(element) {
+    const {childNodes} = this;
+
+    const beforeElementIndex = childNodes.indexOf(element);
+    if (beforeElementIndex !== -1) {
+      childNodes.splice(beforeElementIndex, 1);
+    }
+  }
+}
 
 const pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -127,10 +135,10 @@ const cleanMods = mods => mods.map(({name, description, installed}) => ({name, d
 const elementsToJson = elements => elements.map(element => {
   const {tagName, attributes, childNodes} = element;
 
-  const _attrbutesToJson = attributes => {
+  const _attributesToJson = attributes => {
     const result = {};
     for (let i = 0; i < attributes.length; i++) {
-      const {name: attributeName, value: attributeValue} = attributes[attributeName];
+      const {name: attributeName, value: attributeValue} = attributes[i];
       result[attributeName] = attributeValue;
     }
     return result;
@@ -138,7 +146,7 @@ const elementsToJson = elements => elements.map(element => {
 
   return {
     tag: tagName.toLowerCase(),
-    attributes: _attrbutesToJson(attributes),
+    attributes: _attributesToJson(attributes),
     children: elementsToJson(Array.from(childNodes)),
   };
 });
@@ -150,8 +158,7 @@ const jsonToElements = (modApis, elementsJson) => elementsJson.map(elementJson =
 
   const modApi = modApis.get(mainTag);
   const {elements: modElements} = modApi;
-  const elementKey = mainTag + ((subTag !== null) ? ('.' + subTag) : '');
-  const elementApi = modElements.find(modElement => modElement.tag === elementKey);
+  const elementApi = modElements.find(modElement => modElement.tag === tag);
   const {attributes: elementApiAttributes} = elementApi;
 
   const attributeValues = attributes;
@@ -204,9 +211,9 @@ const getElementKeyPath = (spec, keyPath) => {
   const childNodes = (() => {
     const result = {};
     for (const k in spec) {
-      result[k] = {
+      result[k] = new FakeElement({
         childNodes: spec[k],
-      };
+      });
     }
     return result;
   })();
@@ -246,7 +253,7 @@ const removeElementKeyPath = (spec, keyPath) => {
   const oldParentElement = getElementKeyPath(spec, keyPathHead);
   const element = oldParentElement.childNodes[keyPathTail];
 
-  oldParentElement.removeNode(oldParentElement.childNodes[keyPathTail]);
+  oldParentElement.removeChild(oldParentElement.childNodes[keyPathTail]);
 
   return element;
 };
@@ -349,11 +356,11 @@ const constructElement = (modApis, element) => {
   const match = tagName.match(/^z-([^\.]+?)(?:\.([^\.]+?))?$/i);
   const mainTag = match[1].toLowerCase();
   const subTag = match[2] ? match[2].toLowerCase() : null;
+  const tag = mainTag + ((subTag !== null) ? ('.' + subTag) : '');
 
   const modApi = modApis.get(mainTag);
   const {elements: modElements} = modApi;
-  const elementKey = mainTag + ((subTag !== null) ? (':' + subTag) : '');
-  const elementApi = modElements.find(modElement => modElement.tag === elementKey);
+  const elementApi = modElements.find(modElement => modElement.tag === tag);
   const {attributes: elementApiAttributes} = elementApi;
 
   const attributeValues = (() => {

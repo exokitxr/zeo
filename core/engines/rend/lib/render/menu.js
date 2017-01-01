@@ -237,10 +237,11 @@ ${element.tag}&gt; properties\
 const getElementAttributesSrc = (element, positioningName, inputText, inputValue, focusAttribute) => {
   let result = '';
 
-  const {attributes} = element;
-  for (const name in attributes) {
-    const attribute = attributes[name];
-    const {type, value, min, max, step, options} = attribute;
+  const {attributeConfigs} = element;
+  for (const name in attributeConfigs) {
+    const value = JSON.parse(element.getAttribute(name) || 'null');
+    const attributeConfig = attributeConfigs[attributeName];
+    const {type, min, max, step, options} = attributeName;
     const focus = name === focusAttribute;
 
     result += `\
@@ -376,23 +377,25 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
 
 const getElementsSrc = (elements, keyPath, selectedKeyPath, draggingKeyPath) => {
   const head = (element, keyPath, depth) => {
-    const tag = anchorTag(keyPath);
+    const htmlTag = anchorTag(keyPath);
+    const elementTag = element.tagName.match(/^z-(.+)$/i)[1].toLowerCase();
 
     return `\
 ${spaces(depth)}\
-<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">\
+<${htmlTag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">\
 &lt;\
-<img src="${creatureUtils.makeStaticCreature('mod:' + element.tag)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
-${element.tag}\
+<img src="${creatureUtils.makeStaticCreature('mod:' + elementTag)}" width="32" height="32" style="display: inline-block; position: relative; top: 8px; image-rendering: pixelated;" />\
+${elementTag}\
 ${attributes(element)}\
 &gt;\
-</${tag}>\
+</${htmlTag}>\
 `;
   };
   const tail = (element, keyPath, depth) => {
-    const tag = anchorTag(keyPath);
+    const htmlTag = anchorTag(keyPath);
+    const elementTag = element.tagName.match(/^z-(.+)$/i)[1].toLowerCase();
 
-    return `<${tag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">${spaces(depth)}&lt;/${element.tag}&gt;</${tag}>`;
+    return `<${htmlTag} style="color: #a894a6; text-decoration: none;" onmousedown="${anchorOnmousedown(keyPath)}" onmouseup="${anchorOnmouseup(keyPath)}">${spaces(depth)}&lt;/${elementTag}&gt;</${htmlTag}>`;
   };
   const anchorTag = keyPath => (draggingKeyPath.length > 0 && menuUtils.isSubKeyPath(keyPath, draggingKeyPath)) ? 'span' : 'a';
   const anchorStyle = keyPath => {
@@ -415,12 +418,11 @@ ${attributes(element)}\
   const anchorOnmousedown = keyPath => `element:select:${keyPath.join(':')}`;
   const anchorOnmouseup = anchorOnmousedown;
   const attributes = element => {
-    const {attributes} = element;
+    const {attributeConfigs} = element;
 
     const acc = [];
-    for (const k in attributes) {
-      const attribute = attributes[k];
-      const {value: v} = attribute;
+    for (const k in attributeConfigs) {
+      const v = JSON.parse(element.getAttribute(k) || 'null');
       acc.push(`<span style="color: #994500;">${k}</span>=<span style="color: #1a1aa6;">${JSON.stringify(v)}</span>`);
     }
     return acc.length > 0 ? (' ' + acc.join(' ')) : '';
@@ -439,11 +441,11 @@ ${attributes(element)}\
         !menuUtils.isAdjacentKeyPath(keyPath, draggingKeyPath);
     };
 
-    result += elements.map((element, i) => {
+    for (let i = 0; i < elements.length; i++) {
+      const element = elements[i];
+
       const depth = keyPath.length - 1;
       const childKeyPath = keyPath.concat(i);
-
-      let result = '';
 
       if (hasDropHelper(childKeyPath)) {
         result += getDropHelperSrc(childKeyPath);
@@ -451,15 +453,13 @@ ${attributes(element)}\
 
       result += `<div style="${anchorStyle(childKeyPath)}">${head(element, childKeyPath, depth)}`;
 
-      const {children} = element;
-      if (children.length > 0) {
-        result += `<div>${outerElements(children, childKeyPath)}</div>`;
+      const {childNodes} = element;
+      if (childNodes.length > 0) {
+        result += `<div>${outerElements(childNodes, childKeyPath)}</div>`;
       }
 
-      result += `${tail(element, childKeyPath, (children.length > 0) ? depth : 0)}</div>`;
-
-      return result;
-    }).join('\n');
+      result += `${tail(element, childKeyPath, (childNodes.length > 0) ? depth : 0)}</div>`;
+    }
 
     const appendChildKeyPath = keyPath.concat(elements.length);
     if (hasDropHelper(appendChildKeyPath)) {

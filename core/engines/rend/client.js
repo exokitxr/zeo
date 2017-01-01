@@ -329,42 +329,6 @@ class Rend {
                   const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
                   const templateElements = menuUtils.jsonToElements(modApis, templates);
                   elementsState.availableElements.push.apply(elementsState.availableElements, templateElements);
-
-                  /* const elements = Array.isArray(modApi.elements) ? modApi.elements : [];
-                  const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
-
-                  const elementsMap = (() => {
-                    const result = {};
-                    for (let i = 0; i < elements.length; i++) {
-                      const element = elements[i];
-                      result[element.tag] = element;
-                    }
-                    return result;
-                  })();
-                  const _makeTemplateElementFromTemplate = template => {
-                    const _recurse = template => {
-                      const {tag} = template;
-                      const attributes = (() => {
-                        const element = elementsMap[tag];
-                        const {attributes: defaultAttributes} = element;
-                        const {attributes: attributeDefaultValues} = template;
-
-                        const result = menuUtils.clone(defaultAttributes);
-                        for (const attributeName in attributeDefaultValues) {
-                          const attributeDefaultValue = attributeDefaultValues[attributeName];
-                          result[attributeName].value = attributeDefaultValue;
-                        }
-                        return result;
-                      })();
-                      const children = template.children.map(_recurse);
-                      return {
-                        tag,
-                        attributes,
-                        children,
-                      };
-                    };
-                    return _recurse(template);
-                  }; */
                 };
                 const _removeModApiElements = modApi => {
                   const oldTemplates = Array.isArray(modApi.templates) ? modApi.templates : [];
