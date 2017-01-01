@@ -331,7 +331,7 @@ class Rain {
             },
             class RainBoxElement {
               static get tag() {
-                return 'rain:box';
+                return 'rain.box';
               }
               static get attributes() {
                 return {
