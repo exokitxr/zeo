@@ -113,15 +113,17 @@ class Shell {
                       img.onload = () => {
                         update(img);
 
-                        cb && cb();
+                        cb();
                       };
                       img.onerror = err => {
                         console.warn(err);
+
+                        cb();
                       };
 
                       lastSrc = src;
                     } else {
-                      cb && cb();
+                      cb();
                     }
                   };
 
@@ -150,27 +152,35 @@ class Shell {
                     return result;
                   })();
 
-                  const windowKeydown = e => {
-                    if (e.keyCode === TILDE_KEY_CODE) {
-                      term.focus();
-                    }
-                  };
-                  input.addEventListener('keydown', windowKeydown);
-                  const screenKeydown = e => {
-                    if (e.keyCode === TILDE_KEY_CODE) {
-                      if (document.activeElement === term.scrollPort_.iframe_) {
-                        document.activeElement.blur();
+                  const keypress = e => {
+                    term.keyboard.onKeyPress_(e);
 
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }
-                    }
+                    e.stopImmediatePropagation();
                   };
-                  term.scrollPort_.screen_.addEventListener('keydown', screenKeydown, true);
+                  input.addEventListener('keypress', keypress, {
+                    priority: 1,
+                  });
+                  const keydown = e => {
+                    term.keyboard.onKeyDown_(e);
+
+                    e.stopImmediatePropagation();
+                  };
+                  input.addEventListener('keydown', keydown, {
+                     priority: 1,
+                  });
+                  const keyup = e => {
+                    term.keyboard.onKeyUp_(e);
+
+                    e.stopImmediatePropagation();
+                  };
+                  input.addEventListener('keyup', keyup, {
+                    priority: 1,
+                  });
 
                   cleanups.push(() => {
-                    input.removeEventListener('keydown', windowKeydown);
-                    term.scrollPort_.screen_.removeEventListener('keydown', screenKeydown);
+                    input.removeEventListener('keypress', keypress);
+                    input.removeEventListener('keydown', keydown);
+                    input.removeEventListener('keyup', keyup);
                   });
 
                   const socket = io(window.location.origin, {
@@ -201,14 +211,13 @@ class Shell {
                     lib.init(() => {
                       term.runCommandClass(Wetty/*, window.document.location.hash.substr(1)*/);
                       socket.emit('resize', {
-                          col: term.screenSize.width,
-                          row: term.screenSize.height
+                        col: term.screenSize.width,
+                        row: term.screenSize.height
                       });
 
-                      if (buf && buf != '')
-                      {
-                          term.io.writeUTF16(buf);
-                          buf = '';
+                      if (buf && buf != '') {
+                        term.io.writeUTF16(buf);
+                        buf = '';
                       }
 
                       const html = terminalBuffer.childNodes[0].contentWindow.document.childNodes[0];
@@ -230,16 +239,13 @@ class Shell {
                         });
 
                         const update = () => {
-                          if (!rendering) {
+                          if (!rendering && renderQueued) {
                             rendering = true;
+                            renderQueued = false;
 
-                            if (renderQueued) {
-                              renderQueued = false;
-
-                              _render(new XMLSerializer().serializeToString(body), () => {
-                                rendering = false;
-                              });
-                            }
+                            _render(new XMLSerializer().serializeToString(body), () => {
+                              rendering = false;
+                            });
                           }
                         };
                         updates.push(update);
