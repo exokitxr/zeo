@@ -1487,7 +1487,7 @@ class Rend {
                         const attributeConfig = attributeConfigs[attributeName];
 
                         if (action === 'position') {
-                          const {value: oldValue} = attribute;
+                          const oldValue = JSON.parse(element.getAttribute(attributeName));
                           oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
                           oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
                           oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
@@ -2006,9 +2006,7 @@ class Rend {
                         const instance = menuUtils.getElementKeyPath({
                           elements: elementsState.elementInstances,
                         }, selectedKeyPath);
-                        const {attributes} = element;
-                        const attribute = attributes[attributeName];
-                        const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attribute;
+                        const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attributeConfig;
                         const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
                         if (newValue !== null) {
                           const newAttributeValue = JSON.stringify(newValue);
