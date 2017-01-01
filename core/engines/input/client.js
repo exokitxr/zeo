@@ -29,7 +29,9 @@ class Input {
         e.stopImmediatePropagation = (stopImmediatePropagation => () => {
           live = false;
 
-          stopImmediatePropagation.call(e);
+          if (stopImmediatePropagation) {
+            stopImmediatePropagation.call(e);
+          }
         })(e.stopImmediatePropagation);
         if (e.side === undefined) {
           e.side = DEFAULT_EVENT_SIDE;
