@@ -6,7 +6,6 @@ import {
   WIDTH,
   HEIGHT,
   ASPECT_RATIO,
-  MENU_SIZE,
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
@@ -24,15 +23,6 @@ import menuShaders from './lib/shaders/menu';
 import menuRender from './lib/render/menu';
 
 const keyboardImgSrc = 'data:image/svg+xml,' + keyboardImg;
-
-const WIDTH = 2 * 1024;
-const HEIGHT = WIDTH / 1.5;
-const ASPECT_RATIO = WIDTH / HEIGHT;
-
-const MENU_SIZE = 2;
-const WORLD_WIDTH = MENU_SIZE;
-const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
-const WORLD_DEPTH = MENU_SIZE / 50;
 
 const STATS_REFRESH_RATE = 1000;
 
@@ -2313,7 +2303,7 @@ class Rend {
                     const {gamepads: gamepadsStatus} = status;
 
                     const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
-                    const menuIntersectionPoint = (() => {
+                    const menuPlane = (() => {
                       const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
                       return new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
                     })();
