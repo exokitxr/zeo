@@ -1004,13 +1004,12 @@ class Rend {
                       const instance = menuUtils.getElementKeyPath({
                         elements: elementsState.elementInstances,
                       }, oldElementsSelectedKeyPath);
-                      const {attributes} = element;
-                      const attribute = attributes[positioningName];
 
                       const {position, quaternion, scale} = positioningMesh;
                       const newValue = position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
-                      attribute.value = newValue;
-                      instance[positioningName] = newValue.slice();
+                      const newAttributeValue = JSON.stringify(newValue);
+                      element.setAttribute(positioningName, newAttributeValue);
+                      instance.setAttribute(positioningName, newAttributeValue);
 
                       elementsState.positioningName = null;
                       elementsState.positioningSide = null;
@@ -1484,8 +1483,8 @@ class Rend {
                         const instance = menuUtils.getElementKeyPath({
                           elements: elementsState.elementInstances,
                         }, oldElementsSelectedKeyPath);
-                        const {attributes} = element;
-                        const attribute = attributes[attributeName];
+                        const {attributeConfigs} = element;
+                        const attributeConfig = attributeConfigs[attributeName];
 
                         if (action === 'position') {
                           const {value: oldValue} = attribute;
@@ -1498,23 +1497,23 @@ class Rend {
                         } else if (action === 'focus') {
                           const {value} = menuHoverState;
 
+                          const {type: attributeType} = attributeConfig;
                           const textProperties = (() => {
-                            const {type} = attribute;
-                            if (type === 'text') {
+                            if (attributeType === 'text') {
                               const valuePx = value * 400;
-                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
-                            } else if (type === 'number') {
+                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                            } else if (attributeType === 'number') {
                               const valuePx = value * 100;
-                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
-                            } else if (type === 'color') {
+                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                            } else if (attributeType === 'color') {
                               const valuePx = value * (400 - (40 + 4));
-                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(attribute.value, attribute.type), subcontentFontSpec, valuePx);
+                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
                             } else {
                               return null;
                             }
                           })();
                           if (textProperties) {
-                            elementsState.inputText = menuUtils.castValueValueToString(attribute.value, attribute.type);
+                            elementsState.inputText = menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType);
                             const {index, px} = textProperties;
                             elementsState.inputIndex = index;
                             elementsState.inputValue = px;
@@ -1522,14 +1521,14 @@ class Rend {
 
                           focusState.type = 'element:attribute:' + attributeName;
                         } else if (action === 'set') {
-                          const newValue = value;
-                          attribute.value = newValue;
-                          instance[attributeName] = newValue;
+                          const newAttributeValue = JSON.stringify(value);
+                          element.setAttribute(attributeName, newAttributeValue);
+                          instance.setAttribute(attributeName, newAttributeValue);
 
                           _saveElements();
                         } else if (action === 'tweak') {
                           const {value} = menuHoverState;
-                          const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attribute;
+                          const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attributeConfig;
 
                           const newValue = (() => {
                             let n = min + (value * (max - min));
@@ -1538,14 +1537,16 @@ class Rend {
                             }
                             return n;
                           })();
-                          attribute.value = newValue;
-                          instance[attributeName] = newValue;
+                          const newAttributeValue = JSON.stringify(newValue);
+                          element.setAttribute(attributeName, newAttributeValue);
+                          instance.setAttribute(attributeName, newAttributeValue);
 
                           _saveElements();
                         } else if (action === 'toggle') {
-                          const newValue = !attribute.value;
-                          attribute.value = newValue;
-                          instance[attributeName] = newValue;
+                          const newValue = !JSON.parse(element.getAttribute(attributeName));
+                          const newAttributeValue = JSON.stringify(newValue);
+                          element.setAttribute(attributeName, newAttributeValue);
+                          instance.setAttribute(attributeName, newAttributeValue);
 
                           _saveElements();
                         }
@@ -1845,10 +1846,9 @@ class Rend {
                     const instance = menuUtils.getElementKeyPath({
                       elements: elementsState.elementInstances,
                     }, selectedKeyPath);
-                    const {attributes} = element;
-                    const attribute = attributes[positioningName];
-                    const {value: oldValue} = attribute;
-                    instance[positioningName] = oldValue.slice();
+
+                    const oldValue = element.getAttribute(positioningName);
+                    instance.setAttribute(positioningName);
 
                     elementsState.positioningName = null;
                     elementsState.positioningSide = null;
@@ -2011,8 +2011,9 @@ class Rend {
                         const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attribute;
                         const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
                         if (newValue !== null) {
-                          attribute.value = newValue;
-                          instance[attributeName] = newValue;
+                          const newAttributeValue = JSON.stringify(newValue);
+                          element.setAttribute(attributeName, newAttributeValue);
+                          instance.setAttribute(attributeName, newAttributeValue);
 
                           _saveElements();
                         }
@@ -2502,7 +2503,8 @@ class Rend {
                           elements: elementsState.elementInstances,
                         }, selectedKeyPath);
                         const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                        instance[positioningName] = newValue;
+                        const newAttributeValue = JSON.stringify(newValue);
+                        instance.setAttribute(positioningName, newAttributeValue);
                       }
 
                       if (!positioningMesh.visible) {
