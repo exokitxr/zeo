@@ -269,6 +269,8 @@ class Lens {
                 updateEyes.push(updateEye);
 
                 this._cleanup = () => {
+                  const {mesh} = this;
+
                   scene.remove(mesh);
 
                   updateEyes.splice(updateEyes.indexOf(updateEye), 1);
