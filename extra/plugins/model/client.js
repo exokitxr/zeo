@@ -79,7 +79,7 @@ class Model {
           getModel: _getModel,
           requestModelJson: _requestModelJson,
           elements: [
-            class ModelElement {
+            class ModelElement extends HTMLElement {
               static get tag() {
                 return 'model';
               }
@@ -100,8 +100,9 @@ class Model {
                 };
               }
 
-              constructor() {
-                console.log('model constructor');
+              createdCallback() {
+                this.position = null;
+                this.mesh = null;
 
                 let live = true;
                 this._cleanup = () => {
@@ -117,6 +118,9 @@ class Model {
                       mesh.scale.fromArray(model.scale);
 
                       scene.add(mesh);
+                      this.mesh = mesh;
+
+                      this._updateMesh();
 
                       this._cleanup = () => {
                         scene.remove(mesh);
@@ -130,6 +134,43 @@ class Model {
 
               destructor() {
                 this._cleanup();
+              }
+
+              attributeChangedCallback(name, oldValue, newValue) {
+                const value = JSON.parse(newValue);
+
+                switch (name) {
+                  case 'position': {
+                    this.position = value;
+
+                    this._updateMesh();
+
+                    break;
+                  }
+                }
+              }
+
+              _updateMesh() {
+                const {mesh, position} = this;
+
+                const _isDefaultPosition = position => _arrayEquals(
+                  position,
+                  [
+                    0, 0, 0,
+                    0, 0, 0, 1,
+                    1, 1, 1,
+                  ]
+                );
+                const _arrayEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
+                  const bi = b[i];
+                  return ai === bi;
+                });
+
+                if (mesh && position && !_isDefaultPosition(position)) {
+                  mesh.position.set(position[0], position[1], position[2]);
+                  mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+                  mesh.scale.set(position[7], position[8], position[9]);
+                }
               }
             }
           ],
