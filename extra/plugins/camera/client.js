@@ -151,6 +151,16 @@ class Camera {
                   mesh.visible = true;
                 };
                 updates.push(update);
+
+                this._cleanup = () => {
+                  scene.remove(mesh);
+
+                  updates.splice(updates.indexOf(update), 1);
+                };
+              }
+
+              destructor() {
+                this._cleanup();
               }
 
               set position(matrix) {
