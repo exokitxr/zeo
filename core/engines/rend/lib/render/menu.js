@@ -240,8 +240,8 @@ const getElementAttributesSrc = (element, positioningName, inputText, inputValue
   const {attributeConfigs} = element;
   for (const name in attributeConfigs) {
     const value = JSON.parse(element.getAttribute(name) || 'null');
-    const attributeConfig = attributeConfigs[attributeName];
-    const {type, min, max, step, options} = attributeName;
+    const attributeConfig = attributeConfigs[name];
+    const {type, min, max, step, options} = attributeConfig;
     const focus = name === focusAttribute;
 
     result += `\
