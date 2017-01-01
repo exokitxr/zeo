@@ -67,7 +67,6 @@ class Skybox {
         };
 
         return {
-          // getSunSphere: _getSunSphere, // XXX expose this to the fog plugin via element walking
           update: _update,
           elements: [
             class SkyboxElement extends HTMLElement {
@@ -257,6 +256,13 @@ class Skybox {
                     break;
                   }
                 }
+              }
+
+              getSunSphere() {
+                const {mesh} = this;
+                const {sunSphere} = mesh;
+
+                return sunSphere;
               }
             }
           ],
