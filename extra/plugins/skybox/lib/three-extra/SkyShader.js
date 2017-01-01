@@ -16,7 +16,7 @@ module.exports = THREE => {
  * Three.js integration by zz85 http://twitter.com/blurspline
 */
 
-THREE.ShaderLib[ 'sky' ] = {
+const skyShader = {
 
 	uniforms: {
 
@@ -211,7 +211,6 @@ THREE.ShaderLib[ 'sky' ] = {
 
 function THREESky() {
 
-	var skyShader = THREE.ShaderLib[ "sky" ];
 	var skyUniforms = THREE.UniformsUtils.clone( skyShader.uniforms );
 
 	var skyMat = new THREE.ShaderMaterial( {
