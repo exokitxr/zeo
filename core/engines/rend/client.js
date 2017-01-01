@@ -282,7 +282,7 @@ class Rend {
                     const modName = archae.getName(modApi);
                     currentModApis.set(modName, modApi);
 
-                    _addModApiElements(modApi);
+                    _addModApiElements(modApi, currentModApis);
                     menu.updatePages();
 
                     return modApi;
@@ -325,8 +325,12 @@ class Rend {
                   }
                 };
 
-                const _addModApiElements = modApi => {
-                  const elements = Array.isArray(modApi.elements) ? modApi.elements : [];
+                const _addModApiElements = (modApi, modApis) => {
+                  const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
+                  const templateElements = menuUtils.jsonToElements(modApis, templates);
+                  elementsState.availableElements.push.apply(elementsState.availableElements, templateElements);
+
+                  /* const elements = Array.isArray(modApi.elements) ? modApi.elements : [];
                   const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
 
                   const elementsMap = (() => {
@@ -360,15 +364,11 @@ class Rend {
                       };
                     };
                     return _recurse(template);
-                  };
-                  for (let i = 0; i < templates.length; i++) {
-                    const template = templates[i];
-                    const templateElement = _makeTemplateElementFromTemplate(template);
-                    elementsState.availableElements.push(templateElement);
-                  }
+                  }; */
                 };
                 const _removeModApiElements = modApi => {
                   const oldTemplates = Array.isArray(modApi.templates) ? modApi.templates : [];
+
                   const oldTemplateTagsIndex = (() => {
                     const result = {};
                     for (let i = 0; i < oldTemplates.length; i++) {
@@ -379,7 +379,11 @@ class Rend {
                     return result;
                   })();
 
-                  elementsState.availableElements = elementsState.availableElements.filter(element => !oldTemplateTagsIndex[element.tag]);
+                  elementsState.availableElements = elementsState.availableElements.filter(element => {
+                    const {tagName} = element;
+                    const tag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
+                    return !oldTemplateTagsIndex[tag];
+                  });
                 };
 
                 // load world
@@ -397,8 +401,8 @@ class Rend {
                       });
                   };
                   const _loadElements = () => new Promise((accept, reject) => {
-                    const elements = menuUtils.uncleanElements(currentModApis, elementsStatus.elements);
-                    const clipboardElements = menuUtils.uncleanElements(currentModApis, elementsStatus.clipboardElements);
+                    const elements = menuUtils.jsonToElements(currentModApis, elementsStatus.elements);
+                    const clipboardElements = menuUtils.jsonToElements(currentModApis, elementsStatus.clipboardElements);
                     const elementInstances = menuUtils.constructElements(currentModApis, elements);
 
                     elementsState.elements = elements;
@@ -481,8 +485,8 @@ class Rend {
 
           _requestSetElements({
             world: worldName,
-            elements: menuUtils.cleanElements(elementsState.elements),
-            clipboardElements: menuUtils.cleanElements(elementsState.clipboardElements),
+            elements: menuUtils.elementsToJson(elementsState.elements),
+            clipboardElements: menuUtils.elementsToJson(elementsState.clipboardElements),
           })
             .then(() => {
               console.log('saved elements for', JSON.stringify(worldName));

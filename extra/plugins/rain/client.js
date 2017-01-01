@@ -361,27 +361,27 @@ class Rain {
               }
 
               constructor() {
-                console.log('rain:box constructor'); // XXX
+                console.log('rain.box constructor'); // XXX
               }
 
               destructor() {
-                console.log('rain:box destructor');
+                console.log('rain.box destructor');
               }
 
               set position(matrix) {
-                console.log('rain:box set position', matrix);
+                console.log('rain.box set position', matrix);
               }
 
               set color(color) {
-                console.log('rain:box set color', color);
+                console.log('rain.box set color', color);
               }
 
               set opacity(opacity) {
-                console.log('rain:box set opacity', opacity);
+                console.log('rain.box set opacity', opacity);
               }
 
               set enabled(enabled) {
-                console.log('rain:box set enabled', enabled);
+                console.log('rain.box set enabled', enabled);
               }
             }
           ],
@@ -391,7 +391,7 @@ class Rain {
               attributes: {},
               children: [
                 {
-                  tag: 'rain:box',
+                  tag: 'rain.box',
                   attributes: {
                     position: [
                       0, 1.5, 0,
