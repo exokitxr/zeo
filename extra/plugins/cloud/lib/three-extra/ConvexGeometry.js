@@ -19,7 +19,7 @@ module.exports = THREE => {
  *     50           107
  */
 
-function ConvexGeometry( vertices ) {
+function THREEConvexGeometry( vertices ) {
 
 	THREE.Geometry.call( this );
 
@@ -211,9 +211,9 @@ function ConvexGeometry( vertices ) {
 
 };
 
-ConvexGeometry.prototype = Object.create( THREE.Geometry.prototype );
-ConvexGeometry.prototype.constructor = THREE.ConvexGeometry;
+THREEConvexGeometry.prototype = Object.create( THREE.Geometry.prototype );
+THREEConvexGeometry.prototype.constructor = THREE.ConvexGeometry;
 
-return ConvexGeometry;
+return THREEConvexGeometry;
 
 };
