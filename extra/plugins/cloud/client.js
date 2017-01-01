@@ -34,7 +34,7 @@ class Cloud {
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
-        ConvexGeometry(THREE);
+        const THREEConvexGeometry = ConvexGeometry(THREE);
 
         const world = rend.getCurrentWorld();
 
@@ -89,6 +89,7 @@ class Cloud {
                   return result;
                 })();
                 scene.add(cloudsMesh);
+                this.cloudsMesh = cloudsMesh;
 
                 const _getWorldTime = () => world.getWorldTime();
                 const _getPosition = () => {
@@ -172,7 +173,7 @@ class Cloud {
                               }
                               return result;
                             })();
-                            const geometry = new THREE.ConvexGeometry(points);
+                            const geometry = new THREEConvexGeometry(points);
                             return geometry;
                           })();
                           const material = cloudsMaterial;
