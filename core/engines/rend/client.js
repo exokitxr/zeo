@@ -2006,6 +2006,8 @@ class Rend {
                         const instance = menuUtils.getElementKeyPath({
                           elements: elementsState.elementInstances,
                         }, selectedKeyPath);
+                        const {attributeConfigs} = element;
+                        const attributeConfig = attributeConfigs[attributeName];
                         const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attributeConfig;
                         const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
                         if (newValue !== null) {
