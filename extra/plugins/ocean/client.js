@@ -23,6 +23,13 @@ const OCEAN_SHADER = {
   ].join("\n")
 };
 
+const DATA = {
+  amplitude: 0.1,
+  amplitudeVariance: 0.3,
+  speed: 1,
+  speedVariance: 2,
+};
+
 class Ocean {
   constructor(archae) {
     this._archae = archae;
@@ -42,66 +49,114 @@ class Ocean {
       const {THREE, scene} = zeo;
       const world = rend.getCurrentWorld();
 
-      const planeMesh = (() => {
-        const geometry = new THREE.PlaneBufferGeometry(200, 200, 200 / 2, 200 / 2);
-        geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-        geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
-
-        /* const material = new THREE.MeshBasicMaterial({
-          color: 0x000000,
-          wireframe: true,
-          opacity: 0.25,
-          transparent: true,
-        }); */
-        const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
-        const material = new THREE.ShaderMaterial({
-          uniforms,
-          vertexShader: OCEAN_SHADER.vertexShader,
-          fragmentShader: OCEAN_SHADER.fragmentShader,
-          wireframe: true,
-          // opacity: 0.25,
-          transparent: true,
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.renderOrder = -1;
-        return mesh;
-      })();
-      scene.add(planeMesh);
-
-      const data = {
-        amplitude: 0.1,
-        amplitudeVariance: 0.3,
-        speed: 1,
-        speedVariance: 2,
-      };
-
-      const {geometry: planeMeshGeometry, material: planeMeshMaterial} = planeMesh;
-      const wavesAttributeArray = (() => {
-        const positions = planeMeshGeometry.getAttribute('position').array;
-        const numPositions = positions.length / 3;
-
-        const result = new Float32Array(numPositions * 4);
-        for (let i = 0; i < numPositions; i++) {
-          const y = positions[(i * 3) + 1];
-
-          const baseIndex = i * 4;
-          result[baseIndex + 0] = y; // y
-          result[baseIndex + 1] = Math.random() * Math.PI * 2; // ang
-          result[baseIndex + 2] = data.amplitude + Math.random() * data.amplitudeVariance; // amp
-          result[baseIndex + 3] = (data.speed + Math.random() * data.speedVariance) / 1000; // speed
-        }
-        return result;
-      })();
-      planeMeshGeometry.addAttribute('wave', new THREE.BufferAttribute(wavesAttributeArray, 4));
-
+      const updates = [];
       const _update = () => {
-        const worldTime = world.getWorldTime();
-        planeMeshMaterial.uniforms.worldTime.value = worldTime;
+        for (let i = 0; i < updates.length; i++) {
+          const update = updates[i];
+          update();
+        }
       };
 
       return {
         update: _update,
+        elements: [
+          class OceanElement {
+            static get tag() {
+              return 'ocean';
+            }
+            static get attributes() {
+              return {
+                position: {
+                  type: 'matrix',
+                  value: [
+                    0, 0, 0,
+                    0, 0, 0, 1,
+                    1, 1, 1,
+                  ],
+                },
+              };
+            }
+
+            constructor() {
+              const mesh = (() => {
+                const geometry = new THREE.PlaneBufferGeometry(200, 200, 200 / 2, 200 / 2);
+                geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+                geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0));
+                const waves = (() => {
+                  const positions = geometry.getAttribute('position').array;
+                  const numPositions = positions.length / 3;
+
+                  const result = new Float32Array(numPositions * 4);
+                  for (let i = 0; i < numPositions; i++) {
+                    const y = positions[(i * 3) + 1];
+
+                    const baseIndex = i * 4;
+                    result[baseIndex + 0] = y; // y
+                    result[baseIndex + 1] = Math.random() * Math.PI * 2; // ang
+                    result[baseIndex + 2] = DATA.amplitude + Math.random() * DATA.amplitudeVariance; // amp
+                    result[baseIndex + 3] = (DATA.speed + Math.random() * DATA.speedVariance) / 1000; // speed
+                  }
+                  return result;
+                })();
+                geometry.addAttribute('wave', new THREE.BufferAttribute(waves, 4));
+
+                /* const material = new THREE.MeshBasicMaterial({
+                  color: 0x000000,
+                  wireframe: true,
+                  opacity: 0.25,
+                  transparent: true,
+                }); */
+                const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
+                const material = new THREE.ShaderMaterial({
+                  uniforms,
+                  vertexShader: OCEAN_SHADER.vertexShader,
+                  fragmentShader: OCEAN_SHADER.fragmentShader,
+                  wireframe: true,
+                  // opacity: 0.25,
+                  transparent: true,
+                });
+
+                const result = new THREE.Mesh(geometry, material);
+                result.renderOrder = -1;
+                return result;
+              })();
+              scene.add(mesh);
+              this.mesh = mesh;
+
+              const {material: meshMaterial} = mesh;
+              const update = () => {
+                const worldTime = world.getWorldTime();
+                meshMaterial.uniforms.worldTime.value = worldTime;
+              };
+              updates.push(update);
+            
+              this._cleanup = () => {
+                scene.remove(mesh);
+
+                updates.splice(updates.indexOf(update), 1);
+              };
+            }
+
+            destructor() {
+              this._cleanup();
+            }
+
+            set position(matrix) {
+              const {mesh} = this;
+
+              mesh.position.set(matrix[0], matrix[1], matrix[2]);
+              mesh.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
+              mesh.scale.set(matrix[7], matrix[8], matrix[9]);
+            }
+          }
+        ],
+        templates: [
+          {
+            tag: 'ocean',
+            attributes: {},
+            children: [],
+          },
+        ],
       };
     });
   }
