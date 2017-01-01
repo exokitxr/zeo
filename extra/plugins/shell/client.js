@@ -10,6 +10,7 @@ const HEIGHT = 1024;
 const ASPECT_RATIO = WIDTH / HEIGHT;
 const MESH_WIDTH = 1;
 const MESH_HEIGHT = MESH_WIDTH / ASPECT_RATIO;
+const MESH_DEPTH = MESH_WIDTH / 50;
 
 const BOX_MESH_COLOR = 0x000000;
 const BOX_MESH_HOVER_COLOR = 0x0000FF;
@@ -161,7 +162,11 @@ class Shell {
 
                   const keypress = e => {
                     if (_isFocused()) {
-                      term.keyboard.onKeyPress_(e);
+                      if (e.keyCode === 192 && (e.ctrlKey || e.metaKey)) { // (ctrl|meta)-`
+                        focusState.focused = false;
+                      } else if (!(e.keyCode === 82 && (e.ctrlKey || e.metaKey))) {// (ctrl|meta)-R
+                        term.keyboard.onKeyDown_(e);
+                      }
 
                       e.stopImmediatePropagation();
                     }
@@ -171,7 +176,11 @@ class Shell {
                   });
                   const keydown = e => {
                     if (_isFocused()) {
-                      term.keyboard.onKeyDown_(e);
+                      if (e.keyCode === 192 && (e.ctrlKey || e.metaKey)) { // (ctrl|meta)-`
+                        focusState.focused = false;
+                      } else if (!(e.keyCode === 82 && (e.ctrlKey || e.metaKey))) {// (ctrl|meta)-R
+                        term.keyboard.onKeyDown_(e);
+                      }
 
                       e.stopImmediatePropagation();
                     }
@@ -181,7 +190,11 @@ class Shell {
                   });
                   const keyup = e => {
                     if (_isFocused()) {
-                      term.keyboard.onKeyUp_(e);
+                      if (e.keyCode === 192 && (e.ctrlKey || e.metaKey)) { // (ctrl|meta)-`
+                        focusState.focused = false;
+                      } else if (!(e.keyCode === 82 && (e.ctrlKey || e.metaKey))) {// (ctrl|meta)-R
+                        term.keyboard.onKeyDown_(e);
+                      }
 
                       e.stopImmediatePropagation();
                     }
@@ -189,11 +202,27 @@ class Shell {
                   input.addEventListener('keyup', keyup, {
                     priority: 1,
                   });
+                  const trigger = e => {
+                    const {side} = e;
+                    const hoverState = hoverStates[side];
+                    const {hovered} = hoverState;
+
+                    if (hovered) {
+                      focusState.focused = true;
+                    }
+                  };
+                  input.addEventListener('trigger', trigger);
+                  const grip = e => {
+                    focusState.focused = false;
+                  };
+                  input.addEventListener('grip', grip);
 
                   cleanups.push(() => {
                     input.removeEventListener('keypress', keypress);
                     input.removeEventListener('keydown', keydown);
                     input.removeEventListener('keyup', keyup);
+                    input.removeEventListener('trigger', trigger);
+                    input.removeEventListener('grip', grip);
                   });
 
                   const socket = io(window.location.origin, {
@@ -377,8 +406,8 @@ class Shell {
                   hovered: false,
                 });
                 const hoverStates = {
-                  left: _makeHoveredState();
-                  right: _makeHoveredState();
+                  left: _makeHoveredState(),
+                  right: _makeHoveredState(),
                 };
                 const focusState = {
                   focused: false,
@@ -391,10 +420,10 @@ class Shell {
                   const {mesh} = this;
                   const {shellMesh, boxMesh} = mesh;
 
+                  const {position: shellPosition, rotation: shellRotation} = _decomposeObjectMatrixWorld(shellMesh);
                   const shellPlane = (() => {
-                    const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(shellMesh);
-                    const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
-                    return new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
+                    const shellNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(shellRotation);
+                    return new THREE.Plane().setFromNormalAndCoplanarPoint(shellNormalZ, shellPosition);
                   })();
 
                   const _updateControllers = () => {
@@ -411,11 +440,31 @@ class Shell {
                           .applyQuaternion(controllerRotation);
                         const controllerLine = new THREE.Line3(
                           controllerPosition.clone(),
-                          controllerPosition.clone().add(ray.clone().multiplyScalar(15)),
+                          controllerPosition.clone().add(ray.clone().multiplyScalar(15))
                         );
-                        const shellIntersectionPoint = shellPlane.intesectLine(controllerLine);
+                        const shellIntersectionPoint = shellPlane.intersectLine(controllerLine);
                         if (shellIntersectionPoint) {
-                          hoverState.hovere = true;
+                          const _makeShellPoint = (x, y, z) => shellPosition.clone()
+                            .add(
+                              new THREE.Vector3(
+                                -MESH_WIDTH / 2,
+                                MESH_HEIGHT / 2,
+                                0
+                              )
+                              .add(
+                                new THREE.Vector3(
+                                  (x / WIDTH) * MESH_WIDTH,
+                                  (-y / HEIGHT) * MESH_HEIGHT,
+                                  z
+                                )
+                              ).applyQuaternion(shellRotation)
+                            );
+
+                          const shellBox = new THREE.Box3().setFromPoints([
+                            _makeShellPoint(0, 0, -MESH_DEPTH),
+                            _makeShellPoint(WIDTH, HEIGHT, MESH_DEPTH),
+                          ]);
+                          hoverState.hovered = shellBox.containsPoint(shellIntersectionPoint);
                         } else {
                           hoverState.hovered = false;
                         }
@@ -425,14 +474,10 @@ class Shell {
                     });
                   };
                   const _updateMesh = () => {
-                    const focused = _isFocused();
-
-                    if (focused) {
+                    if (_isFocused()) {
                       boxMesh.material.color.set(BOX_MESH_FOCUS_COLOR);
                     } else {
-                      const hovered = _isHovered();
-
-                      if (hovered) {
+                      if (_isHovered()) {
                         boxMesh.material.color.set(BOX_MESH_HOVER_COLOR);
                       } else {
                         boxMesh.material.color.set(BOX_MESH_COLOR);
