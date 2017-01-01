@@ -1,12 +1,12 @@
-module.exports = THREE => {
+module.exports = (THREE, THREEPass) => {
 
 /**
  * @author alteredq / http://alteredqualia.com/
  */
 
-THREE.RenderPass = function ( scene, camera, overrideMaterial, clearColor, clearAlpha ) {
+function THREERenderPass( scene, camera, overrideMaterial, clearColor, clearAlpha ) {
 
-	THREE.Pass.call( this );
+	THREEPass.call( this );
 
 	this.scene = scene;
 	this.camera = camera;
@@ -21,9 +21,9 @@ THREE.RenderPass = function ( scene, camera, overrideMaterial, clearColor, clear
 
 };
 
-THREE.RenderPass.prototype = Object.assign( Object.create( THREE.Pass.prototype ), {
+THREERenderPass.prototype = Object.assign( Object.create( THREEPass.prototype ), {
 
-	constructor: THREE.RenderPass,
+	constructor: THREERenderPass,
 
 	render: function ( renderer, writeBuffer, readBuffer, delta, maskActive ) {
 
@@ -56,5 +56,7 @@ THREE.RenderPass.prototype = Object.assign( Object.create( THREE.Pass.prototype 
 	}
 
 } );
+
+return THREERenderPass;
 
 };

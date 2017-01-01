@@ -1,10 +1,14 @@
+const ShaderPass = require('./ShaderPass');
+const RenderPass = require('./RenderPass');
+const CopyShader = require('../shaders/CopyShader');
+
 module.exports = THREE => {
 
 /**
  * @author alteredq / http://alteredqualia.com/
  */
 
-THREE.EffectComposer = function ( renderer, renderTarget ) {
+function THREEEffectComposer( renderer, renderTarget ) {
 
 	this.renderer = renderer;
 
@@ -29,14 +33,14 @@ THREE.EffectComposer = function ( renderer, renderTarget ) {
 
 	this.passes = [];
 
-	if ( THREE.CopyShader === undefined )
+	if ( THREECopyShader === undefined )
 		console.error( "THREE.EffectComposer relies on THREE.CopyShader" );
 
-	this.copyPass = new THREE.ShaderPass( THREE.CopyShader );
+	this.copyPass = new THREEShaderPass( THREECopyShader );
 
 };
 
-Object.assign( THREE.EffectComposer.prototype, {
+Object.assign( THREEEffectComposer.prototype, {
 
 	swapBuffers: function() {
 
@@ -148,7 +152,7 @@ Object.assign( THREE.EffectComposer.prototype, {
 } );
 
 
-THREE.Pass = function () {
+THREEPass = function () {
 
 	// if set to true, the pass is processed by the composer
 	this.enabled = true;
@@ -164,7 +168,7 @@ THREE.Pass = function () {
 
 };
 
-Object.assign( THREE.Pass.prototype, {
+Object.assign( THREEPass.prototype, {
 
 	setSize: function( width, height ) {},
 
@@ -175,5 +179,18 @@ Object.assign( THREE.Pass.prototype, {
 	}
 
 } );
+
+THREEEffectComposer.THREEPass = THREEPass;
+
+const THREERenderPass = RenderPass(THREE, THREEPass);
+THREEEffectComposer.THREERenderPass = THREERenderPass;
+
+const THREEShaderPass = ShaderPass(THREE, THREEPass);
+THREEEffectComposer.THREEShaderPass = THREEShaderPass;
+
+const THREECopyShader = CopyShader(THREE);
+THREEEffectComposer.THREECopyShader = THREECopyShader;
+
+return THREEEffectComposer;
 
 };

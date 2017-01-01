@@ -1,7 +1,4 @@
 const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
-const RenderPass = require('./lib/three-extra/postprocessing/RenderPass');
-const ShaderPass = require('./lib/three-extra/postprocessing/ShaderPass');
-const CopyShader = require('./lib/three-extra/shaders/CopyShader');
 const HorizontalBlurShader = require('./lib/three-extra/shaders/HorizontalBlurShader');
 const VerticalBlurShader = require('./lib/three-extra/shaders/VerticalBlurShader');
 
@@ -62,18 +59,16 @@ class Lens {
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
-        EffectComposer(THREE); // XXX need to constantize these
-        RenderPass(THREE);
-        ShaderPass(THREE);
-        CopyShader(THREE);
-        HorizontalBlurShader(THREE);
-        VerticalBlurShader(THREE);
+        const THREEEffectComposer = EffectComposer(THREE);
+        const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
+        const THREEHorizontalBlurShader = HorizontalBlurShader(THREE);
+        const THREEVerticalBlurShader = VerticalBlurShader(THREE);
 
         const updateEyes = [];
-        const _updateEye = () => {
+        const _updateEye = camera => {
           for (let i = 0; i < updateEyes.length; i++) {
             const updateEye = updateEyes[i];
-            updateEye();
+            updateEye(camera);
           }
         };
 
@@ -137,32 +132,32 @@ class Lens {
                   const render = (() => {
                     const horizontalBlurShader = {
                       uniforms: (() => {
-                        const result = THREE.UniformsUtils.clone(THREE.HorizontalBlurShader.uniforms);
+                        const result = THREE.UniformsUtils.clone(THREEHorizontalBlurShader.uniforms);
                         result.h.value = 1 / width;
                         return result;
                       })(),
-                      vertexShader: THREE.HorizontalBlurShader.vertexShader,
-                      fragmentShader: THREE.HorizontalBlurShader.fragmentShader,
+                      vertexShader: THREEHorizontalBlurShader.vertexShader,
+                      fragmentShader: THREEHorizontalBlurShader.fragmentShader,
                     };
                     const verticalBlurShader = {
                       uniforms: (() => {
-                        const result = THREE.UniformsUtils.clone(THREE.VerticalBlurShader.uniforms);
+                        const result = THREE.UniformsUtils.clone(THREEVerticalBlurShader.uniforms);
                         result.v.value = 1 / height;
                         return result;
                       })(),
-                      vertexShader: THREE.VerticalBlurShader.vertexShader,
-                      fragmentShader: THREE.VerticalBlurShader.fragmentShader,
+                      vertexShader: THREEVerticalBlurShader.vertexShader,
+                      fragmentShader: THREEVerticalBlurShader.fragmentShader,
                     };
 
-                    const composer = new THREE.EffectComposer(renderer, renderTarget);
-                    const renderPass = new THREE.RenderPass(scene, camera);
+                    const composer = new THREEEffectComposer(renderer, renderTarget);
+                    const renderPass = new THREERenderPass(scene, camera);
                     composer.addPass(renderPass);
-                    const hblur = new THREE.ShaderPass(horizontalBlurShader);
+                    const hblur = new THREEShaderPass(horizontalBlurShader);
                     composer.addPass(hblur);
                     composer.addPass(hblur);
-                    const vblur = new THREE.ShaderPass(verticalBlurShader);
+                    const vblur = new THREEShaderPass(verticalBlurShader);
                     composer.addPass(vblur);
-                    const vblurFinal = new THREE.ShaderPass(verticalBlurShader);
+                    const vblurFinal = new THREEShaderPass(verticalBlurShader);
                     // vblurFinal.renderToScreen = true;
 
                     composer.addPass(vblurFinal);
@@ -289,7 +284,7 @@ class Lens {
                 const {meshes} = this;
 
                 meshes.forEach((mesh, i) => {
-                  mesh.position.set(matrix[0], matrix[1] + 1.4 - (i * 0.2), matrix[2] - 0.1);
+                  mesh.position.set(matrix[0], matrix[1] - (i * 0.2), matrix[2] - 0.1);
                   mesh.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
                   mesh.scale.set(matrix[7], matrix[8], matrix[9]);
                 });

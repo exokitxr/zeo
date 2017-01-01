@@ -12,7 +12,7 @@ module.exports = THREE => {
  * - "h" and "v" parameters should be set to "1 / width" and "1 / height"
  */
 
-THREE.HorizontalBlurShader = {
+const THREEHorizontalBlurShader = {
 
 	uniforms: {
 
@@ -62,5 +62,7 @@ THREE.HorizontalBlurShader = {
 	].join( "\n" )
 
 };
+
+return THREEHorizontalBlurShader;
 
 };

@@ -6,7 +6,7 @@ module.exports = THREE => {
  * Full-screen textured quad shader
  */
 
-THREE.CopyShader = {
+const THREECopyShader = {
 
 	uniforms: {
 
@@ -46,5 +46,7 @@ THREE.CopyShader = {
 	].join( "\n" )
 
 };
+
+return THREECopyShader;
 
 };

@@ -1,12 +1,12 @@
-module.exports = THREE => {
+module.exports = (THREE, THREEPass) => {
 
 /**
  * @author alteredq / http://alteredqualia.com/
  */
 
-THREE.ShaderPass = function ( shader, textureID ) {
+THREEShaderPass = function ( shader, textureID ) {
 
-	THREE.Pass.call( this );
+	THREEPass.call( this );
 
 	this.textureID = ( textureID !== undefined ) ? textureID : "tDiffuse";
 
@@ -39,9 +39,9 @@ THREE.ShaderPass = function ( shader, textureID ) {
 
 };
 
-THREE.ShaderPass.prototype = Object.assign( Object.create( THREE.Pass.prototype ), {
+THREEShaderPass.prototype = Object.assign( Object.create( THREEPass.prototype ), {
 
-	constructor: THREE.ShaderPass,
+	constructor: THREEShaderPass,
 
 	render: function( renderer, writeBuffer, readBuffer, delta, maskActive ) {
 
@@ -66,5 +66,7 @@ THREE.ShaderPass.prototype = Object.assign( Object.create( THREE.Pass.prototype 
 	}
 
 } );
+
+return THREEShaderPass;
 
 };
