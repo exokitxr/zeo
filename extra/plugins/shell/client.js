@@ -93,8 +93,8 @@ class Shell {
               }
 
               createdCallback() {
+                const cleanups = [];
                 this._cleanup = () => {
-                  const cleanups = [];
                   for (let i = 0; i < cleanups.length; i++) {
                     const cleanup = cleanups[i];
                     cleanup();
@@ -273,7 +273,8 @@ class Shell {
                       const _listen = () => {
                         const observer = new MutationObserver(() => {
                           _queueRender();
-                        }).observe(body, {
+                        });
+                        observer.observe(body, {
                           childList: true,
                           subtree: true,
                           attributes: true,
@@ -417,7 +418,6 @@ class Shell {
                 const _isFocused = () => focusState.focused;
 
                 const update = () => {
-                  const {mesh} = this;
                   const {shellMesh, boxMesh} = mesh;
 
                   const {position: shellPosition, rotation: shellRotation} = _decomposeObjectMatrixWorld(shellMesh);
@@ -493,7 +493,7 @@ class Shell {
                 cleanups.push(() => {
                   scene.remove(mesh);
 
-                  updates.push(updates.indexOf(update), 1);
+                  updates.splice(updates.indexOf(update), 1);
                 });
               }
 
