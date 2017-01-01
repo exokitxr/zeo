@@ -96,7 +96,7 @@ class FakeElement {
     childNodes.splice(beforeElementIndex, 0, element);
   }
 
-  removeNode(element) {
+  removeChild(element) {
     const {childNodes} = this;
 
     const beforeElementIndex = childNodes.indexOf(element);
