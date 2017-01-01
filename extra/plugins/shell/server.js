@@ -5,7 +5,7 @@ const socketIo = require('socket.io');
 const httpProxy = require('http-proxy');
 const getRandomPort = require('get-random-port');
 
-const pty = require('./lib/pty.js');
+const pty = require('./lib/pty.js'); // XXX include building this in the package.json postinstall
 
 class Shell {
   constructor(archae) {
