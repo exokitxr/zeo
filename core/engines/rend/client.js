@@ -2312,6 +2312,12 @@ class Rend {
                     const status = webvr.getStatus();
                     const {gamepads: gamepadsStatus} = status;
 
+                    const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
+                    const menuIntersectionPoint = (() => {
+                      const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
+                      return new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
+                    })();
+
                     SIDES.forEach(side => {
                       const gamepadStatus = gamepadsStatus[side];
 
@@ -2333,12 +2339,7 @@ class Rend {
                         const keyboardBoxMesh = keyboardBoxMeshes[side];
 
                         const _updateMenuAnchors = () => {
-                          const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
-                          const menuIntersectionPoint = (() => {
-                            const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
-                            const menuPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
-                            return menuPlane.intersectLine(controllerLine);
-                          })();
+                          const menuIntersectionPoint = menuPlane.intersectLine(controllerLine);
                           if (menuIntersectionPoint) {
                             menuHoverState.intersectionPoint = menuIntersectionPoint;
 

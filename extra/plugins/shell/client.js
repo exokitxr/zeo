@@ -11,7 +11,11 @@ const ASPECT_RATIO = WIDTH / HEIGHT;
 const MESH_WIDTH = 1;
 const MESH_HEIGHT = MESH_WIDTH / ASPECT_RATIO;
 
-const TILDE_KEY_CODE = 192;
+const BOX_MESH_COLOR = 0x000000;
+const BOX_MESH_HOVER_COLOR = 0x0000FF;
+const BOX_MESH_FOCUS_COLOR = 0x00FF00;
+
+const SIDES = ['left', 'right'];
 
 class Shell {
   constructor(archae) {
@@ -29,16 +33,26 @@ class Shell {
     return archae.requestEngines([
       '/core/engines/zeo',
       '/core/engines/input',
+      '/core/engines/webvr',
       '/core/engines/biolumi',
     ]).then(([
       zeo,
       input,
+      webvr,
       biolumi,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
 
         const transparentImg = biolumi.getTransparentImg();
+
+        const _decomposeObjectMatrixWorld = object => {
+          const position = new THREE.Vector3();
+          const rotation = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          object.matrixWorld.decompose(position, rotation, scale);
+          return {position, rotation, scale};
+        };
 
         let cleanups = [];
         this._cleanup = () => {
@@ -48,13 +62,6 @@ class Shell {
           }
           cleanups = [];
         };
-
-        const boxMeshMaterial = new THREE.MeshBasicMaterial({
-          color: 0x000000,
-          wireframe: true,
-          opacity: 0.5,
-          transparent: true,
-        });
 
         const updates = [];
         const _update = () => {
@@ -153,25 +160,31 @@ class Shell {
                   })();
 
                   const keypress = e => {
-                    term.keyboard.onKeyPress_(e);
+                    if (_isFocused()) {
+                      term.keyboard.onKeyPress_(e);
 
-                    e.stopImmediatePropagation();
+                      e.stopImmediatePropagation();
+                    }
                   };
                   input.addEventListener('keypress', keypress, {
                     priority: 1,
                   });
                   const keydown = e => {
-                    term.keyboard.onKeyDown_(e);
+                    if (_isFocused()) {
+                      term.keyboard.onKeyDown_(e);
 
-                    e.stopImmediatePropagation();
+                      e.stopImmediatePropagation();
+                    }
                   };
                   input.addEventListener('keydown', keydown, {
                      priority: 1,
                   });
                   const keyup = e => {
-                    term.keyboard.onKeyUp_(e);
+                    if (_isFocused()) {
+                      term.keyboard.onKeyUp_(e);
 
-                    e.stopImmediatePropagation();
+                      e.stopImmediatePropagation();
+                    }
                   };
                   input.addEventListener('keyup', keyup, {
                     priority: 1,
@@ -334,10 +347,16 @@ class Shell {
                     return mesh;
                   })();
                   object.add(shellMesh);
+                  object.shellMesh = shellMesh;
 
                   const boxMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(MESH_WIDTH, MESH_HEIGHT, 0.1);
-                    const material = boxMeshMaterial;
+                    const material = new THREE.MeshBasicMaterial({
+                      color: BOX_MESH_COLOR,
+                      wireframe: true,
+                      opacity: 0.5,
+                      transparent: true,
+                    });
 
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.position.x = 0.5;
@@ -347,14 +366,89 @@ class Shell {
                     return mesh;
                   })();
                   object.add(boxMesh);
+                  object.boxMesh = boxMesh;
 
                   return object;
                 })();
                 scene.add(mesh);
                 this.mesh = mesh;
 
+                const _makeHoveredState = () => ({
+                  hovered: false,
+                });
+                const hoverStates = {
+                  left: _makeHoveredState();
+                  right: _makeHoveredState();
+                };
+                const focusState = {
+                  focused: false,
+                };
+
+                const _isHovered = () => SIDES.some(side => hoverStates[side].hovered);
+                const _isFocused = () => focusState.focused;
+
+                const update = () => {
+                  const {mesh} = this;
+                  const {shellMesh, boxMesh} = mesh;
+
+                  const shellPlane = (() => {
+                    const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(shellMesh);
+                    const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
+                    return new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
+                  })();
+
+                  const _updateControllers = () => {
+                    const status = webvr.getStatus();
+                    const {gamepads} = status;
+
+                    SIDES.forEach(side => {
+                      const gamepadStatus = gamepads[side];
+                      const hoverState = hoverStates[side];
+
+                      if (gamepadStatus) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
+                        const ray = new THREE.Vector3(0, 0, -10)
+                          .applyQuaternion(controllerRotation);
+                        const controllerLine = new THREE.Line3(
+                          controllerPosition.clone(),
+                          controllerPosition.clone().add(ray.clone().multiplyScalar(15)),
+                        );
+                        const shellIntersectionPoint = shellPlane.intesectLine(controllerLine);
+                        if (shellIntersectionPoint) {
+                          hoverState.hovere = true;
+                        } else {
+                          hoverState.hovered = false;
+                        }
+                      } else {
+                        hoverState.hovered = false;
+                      }
+                    });
+                  };
+                  const _updateMesh = () => {
+                    const focused = _isFocused();
+
+                    if (focused) {
+                      boxMesh.material.color.set(BOX_MESH_FOCUS_COLOR);
+                    } else {
+                      const hovered = _isHovered();
+
+                      if (hovered) {
+                        boxMesh.material.color.set(BOX_MESH_HOVER_COLOR);
+                      } else {
+                        boxMesh.material.color.set(BOX_MESH_COLOR);
+                      }
+                    }
+                  };
+
+                  _updateControllers();
+                  _updateMesh();
+                };
+                updates.push(update);
+
                 cleanups.push(() => {
                   scene.remove(mesh);
+
+                  updates.push(updates.indexOf(update), 1);
                 });
               }
 
