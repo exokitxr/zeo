@@ -263,6 +263,7 @@ const moveElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
   const oldKeyPathTail = oldKeyPath[oldKeyPath.length - 1];
   const oldParentElement = getElementKeyPath(spec, oldKeyPathHead);
   const element = oldParentElement.childNodes[oldKeyPathTail];
+  oldParentElement.removeChild(element);
 
   const newKeyPathHead = newKeyPath.slice(0, -1);
   const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
