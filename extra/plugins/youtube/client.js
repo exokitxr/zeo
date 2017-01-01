@@ -7,12 +7,6 @@ const videoResolutionHeight = videoResolutionWidth / aspectRatio;
 const trackbarStart = 26 + 8;
 const trackbarWidth = videoResolutionWidth - trackbarStart - (16);
 
-const transparentImg = (() => {
-  const img = new Image();
-  img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-  img.update = () => {};
-  return img;
-})();
 const videoUrl = 'https://www.youtube.com/watch?v=AOZtqDhQP44';
 
 class Youtube {
@@ -31,12 +25,16 @@ class Youtube {
     return archae.requestEngines([
       '/core/engines/zeo',
       '/core/engines/input',
+      '/core/engines/biolumi',
     ]).then(([
       zeo,
       input,
+      biolumi,
     ]) => {
       if (live) {
         const {THREE, scene, camera, sound} = zeo;
+
+        const transparentImg = biolumi.getTransparentImg();
 
         const solidMaterial = new THREE.MeshBasicMaterial({
           color: 0xFFFFFF,

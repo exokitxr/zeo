@@ -13,13 +13,6 @@ const MESH_HEIGHT = MESH_WIDTH / ASPECT_RATIO;
 
 const TILDE_KEY_CODE = 192;
 
-const transparentImg = (() => { // XXX dynamically load this
-  const img = new Image();
-  img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-  img.update = () => {};
-  return img;
-})();
-
 class Shell {
   constructor(archae) {
     this._archae = archae;
@@ -36,12 +29,16 @@ class Shell {
     return archae.requestEngines([
       '/core/engines/zeo',
       '/core/engines/input',
+      '/core/engines/biolumi',
     ]).then(([
       zeo,
       input,
+      biolumi,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
+
+        const transparentImg = biolumi.getTransparentImg();
 
         let cleanups = [];
         this._cleanup = () => {
