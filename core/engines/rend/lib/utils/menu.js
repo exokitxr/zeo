@@ -139,7 +139,7 @@ const elementsToJson = elements => elements.map(element => {
     const result = {};
     for (let i = 0; i < attributes.length; i++) {
       const {name: attributeName, value: attributeValue} = attributes[i];
-      result[attributeName] = attributeValue;
+      result[attributeName] = JSON.parse(attributeValue || 'null');
     }
     return result;
   };
