@@ -21,7 +21,7 @@ const _makeZeoElement = ({tag, elementApiAttributes, attributeValues}) => {
 
   const zeoElement = new zeoElementClass();
 
-  zeoElement.attributeConfigs = elementApiAttributes;
+  zeoElement.attributeConfigs = clone(elementApiAttributes);
 
   for (const attributeName in elementApiAttributes) {
     const value = (() => {
@@ -61,7 +61,7 @@ const _makeZeoElementInstance = ({tag, elementApiAttributes, attributeValues, ba
 
   const zeoElementInstance = new zeoElementInstanceClass();
 
-  zeoElementInstance.attributeConfigs = elementApiAttributes;
+  zeoElementInstance.attributeConfigs = clone(elementApiAttributes);
 
   for (const attributeName in elementApiAttributes) {
     const value = (() => {
@@ -239,6 +239,7 @@ const copyElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
   const oldElement = oldParentElement.childNodes[oldKeyPathTail];
 
   const newElement = oldElement.cloneNode(true);
+  newElement.attributeConfigs = clone(oldElement.attributeConfigs);
 
   const newKeyPathHead = newKeyPath.slice(0, -1);
   const newKeyPathTail = newKeyPath[newKeyPath.length - 1];
