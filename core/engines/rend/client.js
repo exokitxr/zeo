@@ -183,7 +183,9 @@ class Rend {
         const _cleanElementsState = elementsState => {
           const result = {};
           for (const k in elementsState) {
-            if (k !== 'elementInstances') {
+            if (k === 'elements' || k === 'availableElements' || k === 'clipboardElements') {
+              result[k] = menuUtils.elementsToState(elementsState[k]);
+            } else if (k !== 'elementInstances') {
               result[k] = elementsState[k];
             }
           }

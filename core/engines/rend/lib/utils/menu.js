@@ -177,6 +177,45 @@ const jsonToElements = (modApis, elementsJson) => elementsJson.map(elementJson =
 
   return element;
 });
+const elementsToState = elements => {
+  const elementsJson = elementsToJson(elements);
+
+  const _recurse = (elementsJson, elements) => elementsJson.map((elementJson, i) => {
+    const element = elements[i];
+
+    const attributesSpec = (() => {
+      const result = {};
+
+      const {attributes} = elementJson;
+      const {attributeConfigs} = element;
+      for (const attributeName in attributeConfigs) {
+        const attributeSpec = (() => {
+          const result = {
+            value: attributes[attributeName],
+          };
+
+          const attributeConfig = attributeConfigs[attributeName];
+          for (const attributeConfigKey in attributeConfig) {
+            if (attributeConfigKey !== 'value') {
+              result[attributeConfigKey] = attributeConfig[attributeConfigKey];
+            }
+          }
+
+          return result;
+        })();
+        result[attributeName] = attributeSpec;
+      }
+
+      return result;
+    })();
+    elementJson.attributes = attributesSpec;
+
+    _recurse(elementJson.children, element.childNodes);
+  });
+  _recurse(elementsJson, elements);
+
+  return elementsJson;
+};
 const cleanFiles = files => files.map(file => {
   const {name, type, size} = file;
   const description = (() => {
@@ -404,6 +443,7 @@ module.exports = {
   cleanMods,
   elementsToJson,
   jsonToElements,
+  elementsToState,
   cleanFiles,
   getKeyPath,
   getElementKeyPath,
