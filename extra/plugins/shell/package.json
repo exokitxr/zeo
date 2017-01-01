@@ -4,6 +4,9 @@
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",
+  "scripts": {
+    "postinstall": "scripts/postinstall.sh"
+  },
   "dependencies": {
     "get-random-port": "0.0.1",
     "http-proxy": "^1.15.2",
