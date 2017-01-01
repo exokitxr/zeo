@@ -145,7 +145,7 @@ const elementsToJson = elements => elements.map(element => {
   };
 
   return {
-    tag: tagName.toLowerCase(),
+    tag: tagName.match(/^z-(.+)$/i)[1].toLowerCase(),
     attributes: _attributesToJson(attributes),
     children: elementsToJson(Array.from(childNodes)),
   };
