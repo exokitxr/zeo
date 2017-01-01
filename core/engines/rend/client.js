@@ -1850,7 +1850,7 @@ class Rend {
                     }, selectedKeyPath);
 
                     const oldValue = element.getAttribute(positioningName);
-                    instance.setAttribute(positioningName);
+                    instance.setAttribute(positioningName, oldValue);
 
                     elementsState.positioningName = null;
                     elementsState.positioningSide = null;
