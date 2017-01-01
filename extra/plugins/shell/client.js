@@ -148,7 +148,9 @@ class Shell {
                     result.prefs_.set('font-size', 14);
                     result.prefs_.set('cursor-color', '#FFFFFF');
 
-                    result.scrollPort_.onResize = () => {}; // HACK: do not actualy listen for window resizes
+                    // HACK: do not handle requests to focus or window resizes
+                    result.scrollPort_.focus = () => {};
+                    result.scrollPort_.onResize = () => {};
                     result.decorate(terminalBuffer);
 
                     result.setCursorPosition(0, 0);
