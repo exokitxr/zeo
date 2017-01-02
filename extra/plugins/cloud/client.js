@@ -56,7 +56,7 @@ class Cloud {
         return {
           update: _update,
           elements: [
-            class CloudElement {
+            class CloudElement extends HTMLElement {
               static get tag() {
                 return 'cloud';
               }
@@ -73,7 +73,7 @@ class Cloud {
                 };
               }
 
-              constructor() {
+              createdCallback() {
                 const rng = new Alea();
                 const generator = indev({
                   random: rng,
@@ -235,12 +235,20 @@ class Cloud {
                 this._cleanup();
               }
 
-              set position(matrix) {
-                const {cloudsMesh} = this;
+              attributeChangedCallback(name, oldValue, newValue) {
+                const value = JSON.parse(newValue);
 
-                cloudsMesh.position.set(matrix[0], matrix[1], matrix[2]);
-                cloudsMesh.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
-                cloudsMesh.scale.set(matrix[7], matrix[8], matrix[9]);
+                switch (name) {
+                  case 'position': {
+                    const {cloudsMesh} = this;
+
+                    cloudsMesh.position.set(value[0], value[1], value[2]);
+                    cloudsMesh.quaternion.set(value[3], value[4], value[5], value[6]);
+                    cloudsMesh.scale.set(value[7], value[8], value[9]);
+
+                    break;
+                  }
+                }
               }
             }
           ],
