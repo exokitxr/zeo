@@ -414,7 +414,7 @@ class Rend {
                   world: worldName,
                   mod: mod,
                 }),
-              }).then(res => res.text()
+              }).then(res => res.json()
                 .then(mod => {
                   const index = modsState.mods.findIndex(m => m.name === mod.name);
                   if (index !== -1) {
