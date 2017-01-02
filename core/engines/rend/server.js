@@ -304,9 +304,11 @@ class Rend {
               }
             });
           });
+          const _cleanName = name => name.match(/([^\/]*)$/)[1];
           const _getInstalledModSpec = mod => _getInstalledPluginPackageJson(mod)
             .then(packageJson => ({
               name: mod,
+              displayName: _cleanName(mod),
               version: packageJson.version,
               description: packageJson.description || null,
               hasClient: Boolean(packageJson.client),
@@ -324,6 +326,7 @@ class Rend {
               readmeMd,
             ]) => ({
               name: mod,
+              displayName: _cleanName(mod),
               version: packageJson.version,
               description: packageJson.description || null,
               readme: readmeMd || '',
@@ -336,6 +339,7 @@ class Rend {
             _getUninstalledPluginPackageJson(mod)
               .then(packageJson => ({
                 name: mod,
+                displayName: _cleanName(mod),
                 version: packageJson.version,
                 description: packageJson.description || null,
                 hasClient: Boolean(packageJson.client),
