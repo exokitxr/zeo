@@ -421,7 +421,12 @@ class Rend {
                 if (typeof q === 'string') {
                   npm.requestSearch(q)
                     .then(results => {
-                      res.json(results);
+                      const mods = results.map(({package: {name}}) => name);
+
+                      return _getUninstalledModSpecs(mods)
+                        .then(modSpecs => {
+                          res.json(modSpecs);
+                        });
                     })
                     .catch(err => {
                       res.status(500);
