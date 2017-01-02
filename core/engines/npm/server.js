@@ -54,7 +54,7 @@ class Npm {
 
       https.get({
         hostname: 'unpkg.com',
-        path: module + '/package.json',
+        path: '/' + module + '/package.json',
       }, proxyRes => {
         if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
           _getJson(proxyRes, (err, j) => {
@@ -81,7 +81,7 @@ class Npm {
 
       https.get({
         hostname: 'unpkg.com',
-        path: module + '/README.md',
+        path: '/' + module + '/README.md',
       }, proxyRes => {
         if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
           _getString(proxyRes, (err, s) => {
