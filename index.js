@@ -432,11 +432,29 @@ class ArchaeServer {
     this.mountModule(plugin, this.plugins, this.pluginInstances, this.pluginApis, cb);
   }
 
-  loadModule(module, type, packageJsonFileNameKey, exports, cb) {
+  getModulePackageJsonFileName(module, type, packageJsonFileNameKey, cb) {
     fs.readFile(path.join(__dirname, 'installed', type, 'node_modules', module, 'package.json'), 'utf8', (err, s) => {
       if (!err) {
         const j = JSON.parse(s);
         const fileName = j[packageJsonFileNameKey];
+        cb(null, fileName);
+      } else {
+        cb(err);
+      }
+    });
+  }
+
+  getEngineClient(engine, cb) {
+    this.getModulePackageJsonFileName(engine, 'engines', 'client', cb);
+  }
+
+  getPluginClient(plugin, cb) {
+    this.getModulePackageJsonFileName(plugin, 'plugins', 'client', cb);
+  }
+
+  loadModule(module, type, packageJsonFileNameKey, exports, cb) {
+    this.getModulePackageJsonFileName(module, type, packageJsonFileNameKey, (err, fileName) => {
+      if (!err) {
         if (fileName) {
           const moduleRequire = require(path.join(__dirname, 'installed', type, 'node_modules', module, fileName));
 
@@ -653,8 +671,17 @@ class ArchaeServer {
               this.requestEngine(engine)
                 .then(engineApi => {
                   const engineName = this.getName(engineApi);
-                  cb(null, {
-                    engineName,
+
+                  this.getEngineClient(engineName, (err, clientFileName) => {
+                    if (!err) {
+                      const hasClient = Boolean(clientFileName);
+                      cb(null, {
+                        engineName,
+                        hasClient,
+                      });
+                    } else {
+                      cb(err);
+                    }
                   });
                 })
                 .catch(err => {
@@ -680,8 +707,17 @@ class ArchaeServer {
               this.requestPlugin(plugin)
                 .then(pluginApi => {
                   const pluginName = this.getName(pluginApi);
-                  cb(null, {
-                    pluginName,
+
+                  this.getPluginClient(pluginName, (err, clientFileName) => {
+                    if (!err) {
+                      const hasClient = Boolean(clientFileName);
+                      cb(null, {
+                        pluginName,
+                        hasClient,
+                      });
+                    } else {
+                      cb(err);
+                    }
                   });
                 })
                 .catch(err => {
