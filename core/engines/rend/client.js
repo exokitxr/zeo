@@ -122,14 +122,20 @@ class Rend {
           mods: [],
           localMods: [],
           remoteMods: [],
+          tab: 'installed',
           inputText: '',
           inputIndex: 0,
           inputValue: 0,
+          loadingLocal: false,
+          loadingRemote: false,
+          cancelLocalRequest: null,
+          cancelRemoteRequest: null,
         };
         const modState = {
           modName: '',
           mod: null,
           loading: false,
+          cancelRequest: null,
         };
         const configState = {
           inputText: 'Hello, world! This is some text!',
@@ -140,9 +146,6 @@ class Rend {
         };
         const statsState = {
           frame: 0,
-        };
-        const searchState = {
-          cancel: null,
         };
         const elementsState = {
           elements: [],
@@ -197,14 +200,80 @@ class Rend {
           }
           return result;
         };
-        const _searchMods = q => new Promise((accept, reject) => {
-          if (searchState.cancel) {
-            searchState.cancel();
-            searchState.cancel = null;
+        const _getModSpec = mod => new Promise((accept, reject) => {
+          if (modState.cancelRequest) {
+            modState.cancelRequest();
+            modState.cancelRequest = null;
           }
 
           let live = true;
-          searchState.cancel = () => {
+          modState.cancelRequest = () => {
+            live = false;
+          };
+
+          fetch('/archae/rend/mods/spec', {
+            method: 'POST',
+            headers: (() => {
+              const headers = new Headers();
+              headers.set('Content-Type', 'application/json');
+              return headers;
+            })(),
+            body: JSON.stringify({
+              mod,
+            }),
+          }).then(res => res.json()
+            .then(modSpecs => {
+              if (live) {
+                accept(modSpecs);
+
+                modState.cancelRequest = null;
+              }
+            })
+            .catch(err => {
+              if (live) {
+                reject(err):
+
+                modState.cancelRequest = null;
+              }
+            });
+          );
+        });
+        const _getLocalModSpecs = q => new Promise((accept, reject) => {
+          if (modsState.cancelLocalRequest) {
+            modsState.cancelLocalRequest();
+            modsState.cancelLocalRequest = null;
+          }
+
+          let live = true;
+          modsState.cancelLocalRequest = () => {
+            live = false;
+          };
+
+          fetch('/archae/rend/mods/installed').then(res => res.json()
+            .then(modSpecs => {
+              if (live) {
+                accept(modSpecs);
+
+                modsState.cancelLocalRequest = null;
+              }
+            })
+            .catch(err => {
+              if (live) {
+                reject(err):
+
+                modsState.cancelLocalRequest = null;
+              }
+            });
+          );
+        });
+        const _getRemoteModSpecs = q => new Promise((accept, reject) => {
+          if (modsState.cancelRemoteRequest) {
+            modsState.cancelRemoteRequest();
+            modsState.cancelRemoteRequest = null;
+          }
+
+          let live = true;
+          modsState.cancelRemoteRequest = () => {
             live = false;
           };
 
@@ -218,27 +287,28 @@ class Rend {
             body: JSON.stringify({
               q,
             }),
-          }).then(res => res.json());
-            .then(mods => {
+          }).then(res => res.json()
+            .then(modSpecs => {
               if (live) {
-                accept(mods);
+                accept(modSpecs);
 
-                searchState.cancel = null;
+                modsState.cancelRemoteRequest = null;
               }
             })
             .catch(err => {
               if (live) {
                 reject(err):
 
-                searchState.cancel = null;
+                modsState.cancelRemoteRequest = null;
               }
             });
+          );
         });
 
         // api functions
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
-          const _requestInstalledModSpecs = worldName => fetch('/archae/rend/mods/installed', { // XXX make this use the installed endpoint instead
+          const _requestInstalledModSpecs = worldName => fetch('/archae/rend/mods/installed', {
             method: 'POST',
             headers: (() => {
               const headers = new Headers();
@@ -1000,7 +1070,7 @@ class Rend {
                           mods: modsState,
                           focus: focusState,
                         }, pend);
-                      } else if (match = type.match(/^mod$/)) {
+                      } else if (type === 'mod')) {
                         page.update({
                           mod: modState,
                           mods: modsState,
@@ -1146,10 +1216,10 @@ class Rend {
                       } else if (onclick === 'mods') {
                         ui.cancelTransition();
 
-                        ui.pushPage(({mods: {inputText, inputValue, mods}, focus: {type: focusType}}) => ([
+                        ui.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
                           {
                             type: 'html',
-                            src: menuRenderer.getModsPageSrc({mods, inputText, inputValue, focus: focusType === 'mods'}),
+                            src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}), // XXX rewrite this
                           },
                           {
                             type: 'image',
@@ -1168,16 +1238,66 @@ class Rend {
                             focus: focusState,
                           },
                         });
+                      } else if (match = onclick.match(/^mods:(installed|local|remote)$/)) {
+                        const tab = match[1];
+
+                        if (tab === 'local') {
+                          modsState.loadingLocal = true;
+
+                          _getLocalModSpecs();
+                            .then(localMods => {
+                              modsState.localMods = localMods;
+                              modsState.loadingLocal = false;
+
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (tab === 'remote') {
+                          modsState.inputText = '';
+                          modsState.inputIndex = 0;
+                          modsState.inputValue = 0;
+                          modsState.loadingRemote = true;
+
+                          _getRemoteModSpecs(modsState.inputText)
+                            .then(remoteMods => {
+                              modsState.remoteMods = remoteMods;
+                              modsState.loadingRemote = false;
+
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        }
+
+                        modsState.tab = tab;
+
+                        _updatePages();
                       } else if (match = onclick.match(/^mod:(.+)$/)) {
                         const name = match[1];
 
                         ui.cancelTransition();
 
-                        // XXX flag mod as loading, request mod details + readme, set modState.mod, unflag, and _updatePages();
-
                         modState.modName = name;
-                        modState.mod = null;
+                        modState.mod = {};
                         modState.loading = true;
+
+                        _getModSpec(name)
+                          .then(modSpec => {
+                            modState.mod = modSpec;
+                            modState.loading = false;
+
+                            _updatePages();
+                          })
+                          .catch(err => {
+                            console.warn(err);
+
+                            modState.loading = false;
+
+                            _updatePages();
+                          });
 
                         ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
                           const installed = mods.some(m => m.name === mod.name);
@@ -2017,7 +2137,7 @@ class Rend {
                     }
                   } else if (type === 'mods') {
                     if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
-                      _searchMods(modsState.inputText)
+                      _getRemoteMods(modsState.inputText)
                         .then(remoteMods => {
                           modsState.remoteMods = remoteMods,
 
