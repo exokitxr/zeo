@@ -283,6 +283,7 @@ class Rend {
           const _getInstalledModSpec = mod => _getInstalledPluginPackageJson(mod)
             .then(packageJson => ({
               name: packageJson.name,
+              path: mod,
               version: packageJson.version,
               description: packageJson.description || null,
               hasClient: Boolean(packageJson.client),
@@ -300,6 +301,7 @@ class Rend {
               readmeMd,
             ]) => ({
               name: packageJson.name,
+              path: mod,
               version: packageJson.version,
               description: packageJson.description || null,
               readme: readmeMd || '',
@@ -339,9 +341,7 @@ class Rend {
                     .then(({mods}) =>
                       _getInstalledModSpecs(mods)
                         .then(modsSpecs => {
-                          res.json({
-                            mods: modsSpecs,
-                          });
+                          res.json(mods);
                         })
                     )
                     .catch(err => {
@@ -402,9 +402,7 @@ class Rend {
                 if (typeof mod === 'string') {
                   _getUninstalledModSpec(mod)
                     .then(modSpec => {
-                      res.json({
-                        mod: modSpec,
-                      });
+                      res.json(modSpec);
                     })
                     .catch(err => {
                       res.status(500);
@@ -439,9 +437,7 @@ class Rend {
                     if (!err) {
                       _getInstalledModSpec(mod)
                         .then(modSpec => {
-                          res.json({
-                            mod: modSpec,
-                          });
+                          res.json(modSpec);
                         })
                         .catch(err => {
                           res.status(500);
@@ -481,9 +477,7 @@ class Rend {
                         mod,
                       }, err => {
                         if (!err) {
-                          res.send({
-                            mod: modSpec,
-                          });
+                          res.send(modSpec);
                         } else {
                           res.status(500);
                           res.send(err.stack);

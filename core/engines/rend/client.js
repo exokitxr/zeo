@@ -233,7 +233,7 @@ class Rend {
         // api functions
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
-          const _requestModsStatus = worldName => fetch('/archae/rend/mods/status', { // XXX make this use the installed endpoint instead
+          const _requestModsStatus = worldName => fetch('/archae/rend/mods/installed', { // XXX make this use the installed endpoint instead
             method: 'POST',
             headers: (() => {
               const headers = new Headers();
@@ -407,7 +407,7 @@ class Rend {
                 const _loadMods = () => {
                   elementsState.loading = true;
 
-                  return _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/' + mod.name))
+                  return _requestMods(modsStatus.map(({path}) => path))
                     .then(() => {
                       console.log('world mods loaded');
 
