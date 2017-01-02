@@ -101,6 +101,10 @@ class Portal {
                       1, 1, 1,
                     ],
                   },
+                  color1: {
+                    type: 'color',
+                    value: '#000000'
+                  },
                   position2: {
                     type: 'matrix',
                     value: [
@@ -108,6 +112,10 @@ class Portal {
                       0, 0, 0, 1,
                       1, 1, 1,
                     ],
+                  },
+                  color2: {
+                    type: 'color',
+                    value: '#000000'
                   },
                 };
               }
@@ -440,6 +448,17 @@ class Portal {
 
                     break;
                   }
+                  case 'color1': {
+                    const {mesh} = this;
+                    const {meshes} = mesh;
+                    const {red: redPortalMesh} = meshes;
+                    const {outer} = redPortalMesh;
+                    const {material} = outer;
+
+                    material.color = new THREE.Color(value);
+
+                    break;
+                  }
                   case 'position2': {
                     const {mesh} = this;
                     const {meshes} = mesh;
@@ -448,6 +467,17 @@ class Portal {
                     bluePortalMesh.position.set(value[0], value[1], value[2]);
                     bluePortalMesh.quaternion.set(value[3], value[4], value[5], value[6]);
                     bluePortalMesh.scale.set(value[7], value[8], value[9]);
+
+                    break;
+                  }
+                  case 'color2': {
+                    const {mesh} = this;
+                    const {meshes} = mesh;
+                    const {blue: bluePortalMesh} = meshes;
+                    const {outer} = bluePortalMesh;
+                    const {material} = outer;
+
+                    material.color = new THREE.Color(value);
 
                     break;
                   }
@@ -465,12 +495,14 @@ class Portal {
                   const scale = new THREE.Vector3(1, 1, 1);
                   return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
                 })(),
+                color1: '#FDA232',
                 position2: (() => {
                   const position = new THREE.Vector3(1, 1.5, -1);
                   const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -(Math.PI / 2) + (Math.PI / 4), 0, camera.rotation.order));
                   const scale = new THREE.Vector3(1, 1, 1);
                   return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
                 })(),
+                color2: '#188EFA',
               },
               children: [],
             },
