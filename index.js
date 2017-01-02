@@ -25,12 +25,7 @@ const defaultConfig = {
 const npmCommands = (() => {
   const _hasCommand = command => child_process.spawnSync('bash', ['-c', 'type ' + command]).status === 0;
 
-  if (_hasCommand('yarn')) {
-    return {
-      add: ['yarn', 'add'],
-      install: ['yarn', 'install'],
-    };
-  } else if (_hasCommand('npm')) {
+  if (_hasCommand('npm')) {
     return {
       add: ['npm', 'install'],
       install: ['npm', 'install'],
