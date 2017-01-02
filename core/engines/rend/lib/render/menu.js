@@ -142,16 +142,17 @@ const getItemsSrc = (items, selectedName, renamingName, inputText, inputValue, i
 
 const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inputPlaceholder, prefix) => {
   const {name} = item;
+  const displayName = item.displayName || name;
   const selected = name === selectedName;
   const style = selected ? 'background-color: #EEE;' : '';
   const renaming = name === renamingName;
 
   return `\
 <a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; ${style}; text-decoration: none; overflow: hidden;" onclick="${prefix}:${name}">
-  <img src="${creatureUtils.makeStaticCreature(prefix + ':' + name)}" width="100" height="100" style="image-rendering: pixelated;" />
+  <img src="${creatureUtils.makeStaticCreature(prefix + ':' + displayName)}" width="100" height="100" style="image-rendering: pixelated;" />
   <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
     ${!renaming ? `\
-<div style="width: 100%; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+<div style="width: 100%; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
 <div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${item.description}</div>
 `   :
       `\
@@ -166,21 +167,27 @@ const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inp
 </a>`;
 };
 
-const getModPageSrc = ({modName, mod, installed}) => `\
-${getHeaderSrc(modName, mod.version ? ('v' + mod.version) : '', getGetButtonSrc(modName, installed), true)}
+const getModPageSrc = ({modName, mod, installed}) => {
+  const displayName = modName.match(/([^\/]*)$/)[1];
+
+  return `\
+${getHeaderSrc(displayName, mod ? ('v' + mod.version) : '', mod ? getGetButtonSrc(mod.name, installed) : '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModSidebarSrc()}
   </div>
 </div>
 `;
+};
 
 const getModPageReadmeSrc = ({modName, mod, loading}) => {
   const content = (() => {
     if (loading) {
       return `<h1 style="font-size: 50px;">Loading...</h1>`;
     } else {
-      return mod.readme || ('<h1>No readme for `' + modName + (mod.version ? ('@' + mod.version) : '') + '`</h1>');
+      const displayName = modName.match(/([^\/]*)$/)[1];
+      const readme = mod.readme || ('<h1>No readme for `' + displayName + (mod ? ('@' + mod.version) : '') + '`</h1>');
+      return readme;
     }
   })();
 

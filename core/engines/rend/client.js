@@ -133,7 +133,7 @@ class Rend {
         };
         const modState = {
           modName: '',
-          mod: {},
+          mod: null,
           loading: false,
           cancelRequest: null,
         };
@@ -1281,7 +1281,7 @@ class Rend {
                         ui.cancelTransition();
 
                         modState.modName = name;
-                        modState.mod = {};
+                        modState.mod = null;
                         modState.loading = true;
 
                         _getModSpec(name)
@@ -1300,6 +1300,7 @@ class Rend {
                           });
 
                         ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
+                          const displayName = modName.match(/([^\/]*)$/)[1];
                           const installed = mods.some(m => m.name === modName);
 
                           return [
@@ -1318,7 +1319,7 @@ class Rend {
                             },
                             {
                               type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('mod:' + modName),
+                              img: creatureUtils.makeAnimatedCreature('mod:' + displayName),
                               x: 150,
                               y: 0,
                               w: 150,
