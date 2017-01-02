@@ -197,6 +197,7 @@ class Rend {
           };
 
           const pluginsInstalledPath = path.join(dirname, 'installed', 'plugins');
+          const pluginsLocalPath = path.join(dirname, 'plugins');
           const _getPluginName = plugin => new Promise((accept, reject) => {
             if (path.isAbsolute(plugin)) {
               const pluginPath = path.join(dirname, plugin);
@@ -280,6 +281,17 @@ class Rend {
                 .catch(reject);
             }
           });
+          const _getLocalPlugins = () => new Promise((accept, reject) => {
+            fs.readdir(pluginsLocalPath, (err, files) => {
+              if (!err) {
+                const plugins = files.map(file => path.join('/', 'plugins', file));
+
+                accept(plugins);
+              } else {
+                reject(err);
+              }
+            });
+          });
           const _getInstalledModSpec = mod => _getInstalledPluginPackageJson(mod)
             .then(packageJson => ({
               name: packageJson.name,
@@ -291,7 +303,7 @@ class Rend {
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
             }));
-          const _getInstalledModSpecs = plugins => Promise.all(plugins.map(_getInstalledModSpec));
+          const _getInstalledModSpecs = mods => Promise.all(mods.map(_getInstalledModSpec));
           const _getUninstalledModSpec = mod => Promise.all([
             _getUninstalledPluginPackageJson(mod),
             _getUninstalledPluginReadmeMd(mod),
@@ -310,6 +322,19 @@ class Rend {
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
             }));
+          const _getUninstalledModSpecs = mods => Promise.all(mods.map(mod =>
+            _getUninstalledPluginPackageJson(mod)
+              .then(packageJson => ({
+                name: packageJson.name,
+                path: mod,
+                version: packageJson.version,
+                description: packageJson.description || null,
+                hasClient: Boolean(packageJson.client),
+                hasServer: Boolean(packageJson.server),
+                hasWorker: Boolean(packageJson.worker),
+                local: path.isAbsolute(mod),
+              }))
+          ));
 
           function serveReadme(req, res, next) {
             fs.readFile(path.join(__dirname, '..', 'zeo', 'README.md'), 'utf8', (err, s) => {
@@ -341,7 +366,7 @@ class Rend {
                     .then(({mods}) =>
                       _getInstalledModSpecs(mods)
                         .then(modsSpecs => {
-                          res.json(mods);
+                          res.json(modSpecs);
                         })
                     )
                     .catch(err => {
@@ -357,6 +382,20 @@ class Rend {
             });
           }
           app.post('/archae/rend/mods/installed', serveModsInstalled);
+          function serveModsLocal(req, res, next) {
+            _getLocalPlugins()
+              .then(plugins =>
+                _getUninstalledModSpecs(plugins)
+                  .then(modsSpecs => {
+                    res.json(modsSpecs);
+                  })
+              )
+              .catch(err => {
+                res.status(500);
+                res.send(err.stack);
+              });
+          }
+          app.get('/archae/rend/mods/local', serveModsLocal);
           function serveModsSearch(req, res, next) {
             bodyParserJson(req, res, () => {
               const {body: data} = req;
@@ -555,6 +594,8 @@ class Rend {
               if (
                 route.handle.name === 'serveReadme' ||
                 route.handle.name === 'serveModsInstalled' ||
+                route.handle.name === 'serveModsLocal' ||
+                route.handle.name === 'serveModsSearch' ||
                 route.handle.name === 'serveModsSpec' ||
                 route.handle.name === 'serveModsAdd' ||
                 route.handle.name === 'serveModsRemove' ||
