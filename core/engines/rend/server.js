@@ -189,6 +189,79 @@ class Rend {
         });
     };
 
+    const pluginsInstalledPath = path.join(dirname, 'installed', 'plugins');
+    const _getInstalledPluginName = plugin => new Promise((accept, reject) => {
+      if (path.isAbsolute(plugin)) {
+        const pluginPath = path.join(dirname, plugin);
+        const pluginPackageJsonPath = path.join(pluginPath, 'package.json');
+
+        fs.readFile(pluginPackageJsonPath, 'utf8', (err, s) => {
+          if (!err) {
+            const j = JSON.parse(s);
+            const {name} = j;
+            
+            accept(name);
+          } else {
+            reject(err);
+          }
+        });
+      } else {
+        accept(plugin);
+      }
+    });
+    const _getInstalledPluginPackageJson = plugin => _getInstalledPluginName(plugin)
+      .then(name => new Promise((accept, reject) => {
+        fs.readFile(path.join(pluginsInstalledPath, plugin, 'package.json'), 'utf8', (err, s) => {
+          if (!err) {
+            const j = JSON.parse(s);
+
+            accept(j);
+          } else {
+            reject(err);
+          }
+        });
+      }));
+    const _getInstalledPluginReadmeMd = plugin => _getInstalledPluginName(plugin)
+      .then(name => new Promise((accept, reject) => {
+        const pluginPath = path.join(pluginsInstalledPath, name);
+
+        fs.readdir(pluginPath, (err, files) => {
+          if (!err) {
+            const readmeFiles = files.filter(f => /^README\.md$/i.test());
+
+            if (readmeFiles.length > 0) {
+              const readmeFilePath = readmeFiles.sort((a, b) => a.localeCompare(b))[0];
+
+              fs.readFile(path.join(pluginPath, readmeFilePath), 'utf8', (err, s) => {
+                if (!err) {
+                  accept(_renderMarkdown(s));
+                } else {
+                  reject(err);
+                }
+              });
+            } else {
+              accept('');
+            }
+          } else if (err.code === 'ENOENT') {
+            accept('');
+          } else {
+            reject(err);
+          }
+        });
+      });
+    const _getInstalledModSpec = mod => _getInstalledPluginPackageJson(mod)
+      .then(packageJson => ({
+        name: mod,
+        description: packageJson.description,
+        version: packageJson.version,
+        description: packageJson.description || null,
+        hasClient: Boolean(packageJson.client),
+        hasServer: Boolean(packageJson.server),
+        hasWorker: Boolean(packageJson.worker),
+        local: path.isAbsolute(mod),
+      }));
+    const _getInstalledModSpecs = plugins => Promise.all(plugins.map(_getInstalledModSpec));
+
     function serveReadme(req, res, next) {
       fs.readFile(path.join(__dirname, '..', 'zeo', 'README.md'), 'utf8', (err, s) => {
         if (!err) {
@@ -202,7 +275,7 @@ class Rend {
       });
     }
     app.get('/archae/rend/readme', serveReadme);
-    function serveModsStatus(req, res, next) {
+    function serveModsInstalled(req, res, next) {
       bodyParserJson(req, res, () => {
         const {body: data} = req;
 
@@ -215,108 +288,45 @@ class Rend {
           const {world} = data;
 
           if (typeof world === 'string') {
-            const pluginsPath = path.join(dirname, 'extra', 'plugins');
-            const _getPlugins = () => new Promise((accept, reject) => {
-              fs.readdir(pluginsPath, (err, plugins) => {
-                if (!err) {
-                  accept(plugins);
-                } else {
-                  reject(err);
-                }
-              });
-            });
-            const _getPluginPackageJson = ({plugin}) => new Promise((accept, reject) => {
-              fs.readFile(path.join(pluginsPath, plugin, 'package.json'), 'utf8', (err, s) => {
-                if (!err) {
-                  const j = JSON.parse(s);
-                  accept(j);
-                } else {
-                  reject(err);
-                }
-              });
-            });
-            const _getPluginReadmeMd = ({plugin}) => new Promise((accept, reject) => {
-              const pluginPath = path.join(pluginsPath, plugin);
-              fs.readdir(pluginPath, (err, files) => {
-                if (!err) {
-                  const readmeFiles = files.filter(f => /^README\.md$/i.test());
-
-                  if (readmeFiles.length > 0) {
-                    const readmeFilePath = readmeFiles.sort((a, b) => a.localeCompare(b))[0];
-
-                    fs.readFile(path.join(pluginPath, readmeFilePath), 'utf8', (err, s) => {
-                      if (!err) {
-                        accept(_renderMarkdown(s));
-                      } else {
-                        reject(err);
-                      }
+            _getWorldModJson({world})
+              .then(({mods}) =>
+                _getInstalledModSpecs(mods)
+                  .then(modsSpecs => {
+                    res.json({
+                      mods: modsSpecs,
                     });
-                  } else {
-                    accept('');
-                  }
-                } else if (err.code === 'ENOENT') {
-                  accept('');
-                } else {
-                  reject(err);
-                }
+                  })
+              )
+              .catch(err => {
+                res.status(500);
+                res.send(err.stack);
               });
-            });
+          } else {
+            _respondInvalid();
+          }
+        } else {
+          _respondInvalid();
+        }
+      });
+    }
+    app.post('/archae/rend/mods/installed', serveModsInstalled);
+    function serveModsReadme(req, res, next) {
+      bodyParserJson(req, res, () => {
+        const {body: data} = req;
 
-            Promise.all([
-              _getWorldModJson({world}),
-              _getPlugins()
-            ])
-              .then(([
-                worldModsJson,
-                plugins,
-              ]) => {
-                if (plugins.length > 0) {
-                  const {mods} = worldModsJson;
+        const _respondInvalid = () => {
+          res.status(400);
+          res.send();
+        };
 
-                  const result = [];
-                  let pending = plugins.length;
-                  function pend() {
-                    if (--pending === 0) {
-                      done();
-                    }
-                  }
-                  function done() {
-                    res.json(result);
-                  }
+        if (typeof data === 'object' && data !== null) {
+          const {mod} = data;
 
-                  for (let i = 0; i < plugins.length; i++) {
-                    const plugin = plugins[i];
-
-                    Promise.all([
-                      _getPluginPackageJson({plugin}),
-                      _getPluginReadmeMd({plugin}),
-                    ])
-                      .then(([
-                        packageJson,
-                        readmeMd,
-                      ]) => {
-                        result.push({
-                          name: plugin,
-                          version: packageJson.version,
-                          description: packageJson.description || null,
-                          hasClient: Boolean(packageJson.client),
-                          hasServer: Boolean(packageJson.server),
-                          hasWorker: Boolean(packageJson.worker),
-                          installed: mods.includes(plugin),
-                          reamde: readmeMd,
-                        });
-
-                        pend();
-                      })
-                      .catch(err => {
-                        console.warn(err);
-
-                        pend();
-                      });
-                  }
-                } else {
-                  res.json([]);
-                }
+          if (typeof mod === 'string') {
+            _getInstalledPluginReadmeMd(mod)
+              .then(readmeMd => {
+                res.type('text/html; charset=utf-8');
+                res.send(readmeMd);
               })
               .catch(err => {
                 res.status(500);
@@ -330,7 +340,7 @@ class Rend {
         }
       });
     }
-    app.post('/archae/rend/mods/status', serveModsStatus);
+    app.post('/archae/rend/mods/readme', serveModsReadme);
     function serveModsAdd(req, res, next) {
       bodyParserJson(req, res, () => {
         const {body: data} = req;
@@ -349,7 +359,16 @@ class Rend {
               mod,
             }, err => {
               if (!err) {
-                res.send();
+                _getInstalledModSpec(mod)
+                  .then(modSpec => {
+                    res.json({
+                      mod: modSpec,
+                    });
+                  })
+                  .catch(err => {
+                    res.status(500);
+                    res.send(err.stack);
+                  });
               } else {
                 res.status(500);
                 res.send(err.stack);
@@ -377,17 +396,26 @@ class Rend {
           const {world, mod} = data;
 
           if (typeof world === 'string' && typeof mod === 'string') {
-            _removeWorldMod({
-              world,
-              mod,
-            }, err => {
-              if (!err) {
-                res.send();
-              } else {
+            _getInstalledModSpec(mod)
+              .then(modSpec => {
+                _removeWorldMod({
+                  world,
+                  mod,
+                }, err => {
+                  if (!err) {
+                    res.send({
+                      mod: modSpec,
+                    });
+                  } else {
+                    res.status(500);
+                    res.send(err.stack);
+                  }
+                });
+              })
+              .catch(err => {
                 res.status(500);
                 res.send(err.stack);
-              }
-            });
+              });
           } else {
             _respondInvalid();
           }
@@ -454,7 +482,8 @@ class Rend {
       function removeMiddlewares(route, i, routes) {
         if (
           route.handle.name === 'serveReadme' ||
-          route.handle.name === 'serveModsStatus' ||
+          route.handle.name === 'serveModsInstalled' ||
+          route.handle.name === 'serveModsReadme' ||
           route.handle.name === 'serveModsAdd' ||
           route.handle.name === 'serveModsRemove' ||
           route.handle.name === 'serveElementsGet' ||
