@@ -166,8 +166,8 @@ const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inp
 </a>`;
 };
 
-const getModPageSrc = ({name, version, installed}) => `\
-${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
+const getModPageSrc = ({modName, mod, installed}) => `\
+${getHeaderSrc(modName, mod.version ? ('v' + mod.version) : '', getGetButtonSrc(modName, installed), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModSidebarSrc()}
@@ -175,13 +175,23 @@ ${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
 </div>
 `;
 
-const getModPageReadmeSrc = ({readme}) => `\
+const getModPageReadmeSrc = ({modName, mod, loading}) => {
+  const content = (() => {
+    if (loading) {
+      return `<h1 style="font-size: 50px;">Loading...</h1>`;
+    } else {
+      return mod.readme || ('<h1>No readme for `' + modName + (mod.version ? ('@' + mod.version) : '') + '`</h1>');
+    }
+  })();
+
+  return `\
 <div style="position: absolute; top: 0; right: 0; height: 50px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 50px; height: 100px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 100px; height: 125px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 150px; height: 150px; width: 50px; background-color: red;"></div>
-${readme}
+${content}
 `;
+};
 
 const getConfigPageSrc = () => `\
 ${getHeaderSrc('preferences', '', '', true)}

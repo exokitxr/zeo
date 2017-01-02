@@ -133,7 +133,7 @@ class Rend {
         };
         const modState = {
           modName: '',
-          mod: null,
+          mod: {},
           loading: false,
           cancelRequest: null,
         };
@@ -1219,7 +1219,7 @@ class Rend {
                         ui.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
                           {
                             type: 'html',
-                            src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}), // XXX rewrite this
+                            src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
                           },
                           {
                             type: 'image',
@@ -1300,16 +1300,16 @@ class Rend {
                           });
 
                         ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
-                          const installed = mods.some(m => m.name === mod.name);
+                          const installed = mods.some(m => m.name === modName);
 
                           return [
                             {
                               type: 'html',
-                              src: menuRenderer.getModPageSrc({modName, mod, loading, installed}), // XXX rewrite this
+                              src: menuRenderer.getModPageSrc({modName, mod, installed}),
                             },
                             {
                               type: 'html',
-                              src: menuRenderer.getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}), // XXX rewrite this
+                              src: menuRenderer.getModPageReadmeSrc({modName, mod, loading}),
                               x: 500,
                               y: 150 + 2,
                               w: WIDTH - 500,
@@ -1329,7 +1329,10 @@ class Rend {
                           ];
                         }, {
                           type: 'mod',
-                          state: modState,
+                          state: {
+                            mod: modState,
+                            mods: modsState,
+                          },
                         });
                       } else if (match = onclick.match(/^getmod:(.+)$/)) {
                         const name = match[1];
