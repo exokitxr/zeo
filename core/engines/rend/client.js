@@ -377,8 +377,8 @@ class Rend {
               }).then(res => res.json()
                 .then(mod => {
                   ['localMods', 'remoteMods'].forEach(k => {
-                    const modsKeyCollection = modsState[k];
-                    const index = modsKeyCollection.findIndex(m => m.name === mod.name);
+                    const modsCollection = modsState[k];
+                    const index = modsCollection.findIndex(m => m.name === mod.name);
                     if (index !== -1) {
                       modsCollection.splice(index, 1);
                     }
