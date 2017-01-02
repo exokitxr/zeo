@@ -853,8 +853,22 @@ const _setModuleHash = (moduleName, type, hash, cb) => {
     }
   });
 };
+const _unsetModuleHash = (moduleName, type, cb) => {
+  _loadModulesHashesJson((err, modulesHashesJson) => {
+    if (!err) {
+      delete modulesHashesJson[type][moduleName];
+
+      _saveModulesHashesJson(cb);
+    } else {
+      cb(err);
+    }
+  });
+};
 const _setValidatedModuleHash = (moduleName, type, hash) => {
   validatedModuleHashes[type][moduleName] = hash;
+};
+const _unsetValidatedModuleHash = (moduleName, type) => {
+  delete validatedModuleHashes[type][moduleName];
 };
 const _requestInstalledModuleHash = (moduleName, type) => new Promise((accept, reject) => {
   _loadModulesHashesJson((err, modulesHashesJson) => {
@@ -1194,10 +1208,16 @@ const _instantiate = (fn, arg) => _isConstructible(fn) ? new fn(arg) : fn(arg);
 const _uninstantiate = api => (typeof api.unmount === 'function') ? api.unmount() : null;
 const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/.test(fn.toString());
 
-const _removeModule = (module, type, cb) => {
-  const modulePath = _getInstalledModulePath(module, type);
-
-  rimraf(modulePath, cb);
+const _removeModule = (moduleName, type, cb) => {
+  _unsetValidatedModuleHash(moduleName, type);
+  _unsetModuleHash(moduleName, type, err => {
+    if (!err) {
+      const modulePath = _getInstalledModulePath(moduleName, type);
+      rimraf(modulePath, cb);
+    } else {
+      cb(err);
+    }
+  });
 };
 
 const _queueNpm = (() => {
