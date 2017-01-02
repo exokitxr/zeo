@@ -18,7 +18,7 @@ class Npm {
 
     function serveSearch(req, res, next) {
       const parsedUrl = url.parse(req.url, true);
-      const {query: {q}} = parsedUrl;
+      const {query: {q = ''}} = parsedUrl;
 
       const _sendApiError = (statusCode = 500, message = 'API Error') => {
         res.status(statusCode);
@@ -28,7 +28,7 @@ class Npm {
       https.get({
         hostname: 'api.npms.io',
         path: '/v2/search?' + querystring.stringify({
-          q: q// + '+keywords:http',
+          q: q + '+keywords:zeo-mod',
         }),
       }, proxyRes => {
         if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
