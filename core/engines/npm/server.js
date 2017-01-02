@@ -71,6 +71,8 @@ class Npm {
         } else {
           _sendApiError(proxyRes.statusCode);
         }
+      }).on('error', err => {
+        _sendApiError(500, err.stack);
       });
     });
 
@@ -92,6 +94,8 @@ class Npm {
         } else {
           _sendApiError(proxyRes.statusCode);
         }
+      }).on('error', err => {
+        _sendApiError(500, err.stack);
       });
     });
 
