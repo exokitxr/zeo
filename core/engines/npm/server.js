@@ -104,9 +104,7 @@ class Npm {
 
       https.get({
         hostname: 'api.npms.io',
-        path: '/v2/search?' + querystring.stringify({
-          q: q + '+keywords:zeo-mod',
-        }),
+        path: '/v2/search?q=' + encodeURIComponent(q) + '+keywords:zeo-mod',
       }, proxyRes => {
         if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
           _getJson(proxyRes, (err, j) => {
