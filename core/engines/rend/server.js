@@ -365,7 +365,7 @@ class Rend {
                   _getWorldModJson({world})
                     .then(({mods}) =>
                       _getInstalledModSpecs(mods)
-                        .then(modsSpecs => {
+                        .then(modSpecs => {
                           res.json(modSpecs);
                         })
                     )
@@ -386,8 +386,8 @@ class Rend {
             _getLocalPlugins()
               .then(plugins =>
                 _getUninstalledModSpecs(plugins)
-                  .then(modsSpecs => {
-                    res.json(modsSpecs);
+                  .then(modSpecs => {
+                    res.json(modSpecs);
                   })
               )
               .catch(err => {

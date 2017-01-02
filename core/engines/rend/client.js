@@ -231,11 +231,11 @@ class Rend {
             })
             .catch(err => {
               if (live) {
-                reject(err):
+                reject(err);
 
                 modState.cancelRequest = null;
               }
-            });
+            })
           );
         });
         const _getLocalModSpecs = q => new Promise((accept, reject) => {
@@ -249,7 +249,7 @@ class Rend {
             live = false;
           };
 
-          fetch('/archae/rend/mods/installed').then(res => res.json()
+          fetch('/archae/rend/mods/local').then(res => res.json()
             .then(modSpecs => {
               if (live) {
                 accept(modSpecs);
@@ -259,11 +259,11 @@ class Rend {
             })
             .catch(err => {
               if (live) {
-                reject(err):
+                reject(err);
 
                 modsState.cancelLocalRequest = null;
               }
-            });
+            })
           );
         });
         const _getRemoteModSpecs = q => new Promise((accept, reject) => {
@@ -297,11 +297,11 @@ class Rend {
             })
             .catch(err => {
               if (live) {
-                reject(err):
+                reject(err);
 
                 modsState.cancelRemoteRequest = null;
               }
-            });
+            })
           );
         });
 
@@ -1070,7 +1070,7 @@ class Rend {
                           mods: modsState,
                           focus: focusState,
                         }, pend);
-                      } else if (type === 'mod')) {
+                      } else if (type === 'mod') {
                         page.update({
                           mod: modState,
                           mods: modsState,
@@ -1244,7 +1244,7 @@ class Rend {
                         if (tab === 'local') {
                           modsState.loadingLocal = true;
 
-                          _getLocalModSpecs();
+                          _getLocalModSpecs()
                             .then(localMods => {
                               modsState.localMods = localMods;
                               modsState.loadingLocal = false;
