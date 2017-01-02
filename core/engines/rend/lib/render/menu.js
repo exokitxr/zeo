@@ -611,21 +611,17 @@ const getWorldsSidebarSrc = () => `\
 
 const getModsSidebarSrc = tab => {
   const tabStyle = t => {
-    let result = 'border-left: 3px solid transparent;';
-
+    let result = 'padding-left: 30px; border-left: 10px solid transparent;';
     if (t === tab) {
       result += 'border-left-color: #333;';
     }
-
-    result += 'text-decoration: none;';
-
     return result;
   };
   return `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="${tabStyle('installed')}" onclick="mods:installed"><p>Installed</p></a>
-  <a style="${tabStyle('local')}" onclick="mods:local"><p>Local</p></a>
-  <a style="${tabStyle('remote')}" onclick="mods:remote"><p>Npm search</p></a>
+  <a style="text-decoration: none;" onclick="mods:installed"><p style="${tabStyle('installed')}">Installed</p></a>
+  <a style="text-decoration: none;" onclick="mods:local"><p style="${tabStyle('local')}">Local</p></a>
+  <a style="text-decoration: none;" onclick="mods:remote"><p style="${tabStyle('remote')}">Npm search</p></a>
 </div>
 `;
 };
