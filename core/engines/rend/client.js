@@ -396,7 +396,7 @@ class Rend {
                   const modName = archae.getName(modApi);
                   currentModApis.set(modName, modApi);
 
-                  _addModApiElements(modApi, currentModApis);
+                  _addModApiElements(modName, modApi, currentModApis);
 
                   menu.updatePages();
 
@@ -452,9 +452,33 @@ class Rend {
                 }
               };
 
-              const _addModApiElements = (modApi, modApis) => {
+              const _addModApiElements = (modName, modApi, modApis) => {
+                const _validateTemplates = templates => {
+                  const _isValid = template => {
+                    const {tag, children} = template;
+                    const mainTag = tag.match(/^([^\.]*)/)[0];
+                    return mainTag === modName && children.every(_isValid);
+                  };
+
+                  const valid = [];
+                  const invalid = [];
+                  for (let i = 0; i < templates.length; i++) {
+                    const template = templates[i];
+                    if (_isValid(template)) {
+                      valid.push(template);
+                    } else {
+                      invalid.push(template);
+                    }
+                  }
+                  return {valid, invalid};
+                };
+
                 const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
-                const templateElements = menuUtils.jsonToElements(modApis, templates);
+                const {valid: validTemplates, invalid: invalidTemplates} = _validateTemplates(templates);
+                if (invalidTemplates.length > 0) {
+                  console.warn('warning: ignoring invalid templates in ' + JSON.stringify(modName), invalidTemplates);
+                }
+                const templateElements = menuUtils.jsonToElements(modApis, validTemplates);
                 elementsState.availableElements.push.apply(elementsState.availableElements, templateElements);
               };
               const _removeModApiElements = modApi => {
