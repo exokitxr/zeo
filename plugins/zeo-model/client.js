@@ -81,7 +81,7 @@ class Model {
           elements: [
             class ModelElement extends HTMLElement {
               static get tag() {
-                return 'model';
+                return 'zeo-model';
               }
               static get attributes() {
                 return {
@@ -176,7 +176,7 @@ class Model {
           ],
           templates: [
             {
-              tag: 'model',
+              tag: 'zeo-model',
               attributes: {},
               children: [],
             },
