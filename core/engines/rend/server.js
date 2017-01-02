@@ -479,24 +479,31 @@ class Rend {
                 const {world, mod} = data;
 
                 if (typeof world === 'string' && typeof mod === 'string') {
-                  _addWorldMod({
-                    world,
-                    mod,
-                  }, err => {
-                    if (!err) {
-                      _getInstalledModSpec(mod)
-                        .then(modSpec => {
-                          res.json(modSpec);
-                        })
-                        .catch(err => {
+                  archae.requestPlugin(mod)
+                    .then(() => {
+                      _addWorldMod({
+                        world,
+                        mod,
+                      }, err => {
+                        if (!err) {
+                          _getInstalledModSpec(mod)
+                            .then(modSpec => {
+                              res.json(modSpec);
+                            })
+                            .catch(err => {
+                              res.status(500);
+                              res.send(err.stack);
+                            });
+                        } else {
                           res.status(500);
                           res.send(err.stack);
-                        });
-                    } else {
+                        }
+                      });
+                    })
+                    .catch(err => {
                       res.status(500);
                       res.send(err.stack);
-                    }
-                  });
+                    });
                 } else {
                   _respondInvalid();
                 }
@@ -526,7 +533,14 @@ class Rend {
                         mod,
                       }, err => {
                         if (!err) {
-                          res.send(modSpec);
+                          archae.releasePlugin(mod)
+                            .then(() => {
+                              res.send(modSpec);
+                            })
+                            .catch(err => {
+                              res.status(500);
+                              res.send(err.stack);
+                            });
                         } else {
                           res.status(500);
                           res.send(err.stack);

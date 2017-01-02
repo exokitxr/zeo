@@ -417,6 +417,7 @@ class Rend {
               }).then(res => res.text()
                 .then(mod => {
                   const index = modsState.mods.findIndex(m => m.name === mod.name);
+console.log('remove move', {mods: modsState.mods, mod, name: mod.name, index});
                   if (index !== -1) {
                     modsState.mods.splice(index, 1);
                   }
