@@ -619,8 +619,8 @@ const getModsSidebarSrc = tab => {
   };
   return `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="mods:installed"><p style="${tabStyle('installed')}">Installed</p></a>
-  <a style="text-decoration: none;" onclick="mods:local"><p style="${tabStyle('local')}">Local</p></a>
+  <a style="text-decoration: none;" onclick="mods:installed"><p style="${tabStyle('installed')}">Installed mods</p></a>
+  <a style="text-decoration: none;" onclick="mods:local"><p style="${tabStyle('local')}">Local mods</p></a>
   <a style="text-decoration: none;" onclick="mods:remote"><p style="${tabStyle('remote')}">Npm search</p></a>
 </div>
 `;
