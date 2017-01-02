@@ -131,9 +131,9 @@ class Npm {
     });
 
     return {
-      _requestPackageJson,
-      _requestReadmeMd,
-      _requestSearch,
+      requestPackageJson: _requestPackageJson,
+      requestReadmeMd: _requestReadmeMd,
+      requestSearch: _requestSearch,
     };
   }
 
