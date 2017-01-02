@@ -91,6 +91,8 @@ class Npm {
               _sendApiError(500, err.stack);
             }
           });
+        } else if (proxyRes.statusCode === 404) {
+          accept('');
         } else {
           _sendApiError(proxyRes.statusCode);
         }
