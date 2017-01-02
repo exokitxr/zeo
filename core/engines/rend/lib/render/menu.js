@@ -125,7 +125,7 @@ const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inp
 
   return `\
 <a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; ${style}; text-decoration: none; overflow: hidden;" onclick="${prefix}:${name}">
-  <img src="${creatureUtils.makeStaticCreature('${prefix}:' + name)}" width="100" height="100" style="image-rendering: pixelated;" />
+  <img src="${creatureUtils.makeStaticCreature(prefix + ':' + name)}" width="100" height="100" style="image-rendering: pixelated;" />
   <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
     ${!renaming ? `\
 <div style="width: 100%; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
