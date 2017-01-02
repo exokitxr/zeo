@@ -1302,11 +1302,12 @@ class Rend {
                         ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
                           const displayName = modName.match(/([^\/]*)$/)[1];
                           const installed = mods.some(m => m.name === modName);
+                          const conflicting = mods.some(m => m.displayName === displayName);
 
                           return [
                             {
                               type: 'html',
-                              src: menuRenderer.getModPageSrc({modName, mod, installed}),
+                              src: menuRenderer.getModPageSrc({modName, mod, installed, conflicting}),
                             },
                             {
                               type: 'html',

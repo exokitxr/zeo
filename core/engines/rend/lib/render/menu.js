@@ -167,11 +167,11 @@ const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inp
 </a>`;
 };
 
-const getModPageSrc = ({modName, mod, installed}) => {
+const getModPageSrc = ({modName, mod, installed, conflicting}) => {
   const displayName = modName.match(/([^\/]*)$/)[1];
 
   return `\
-${getHeaderSrc(displayName, mod ? ('v' + mod.version) : '', mod ? getGetButtonSrc(mod.name, installed) : '', true)}
+${getHeaderSrc(displayName, mod ? ('v' + mod.version) : '', mod ? getGetButtonSrc(mod.name, installed, conflicting) : '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModSidebarSrc()}
@@ -672,14 +672,18 @@ const getWorldsButtonsSrc = selectedName => `\
 </div>
 `;
 
-const getGetButtonSrc = (name, installed) => `\
+const getGetButtonSrc = (name, installed, conflicting) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-  ${installed ?
+  ${installed ? (
    `<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
     <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="removemod:${name}">× Remove</a>`
-  :
-    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF; text-decoration: none;" onclick="getmod:${name}">+ Get</a>`
-  }
+  ) : (
+    conflicting ? (
+      `<div style="font-size: 50px; color: #d9534f;">>× Cannot install: name conflict</div>`
+    ) : (
+      `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF; text-decoration: none;" onclick="getmod:${name}">+ Get</a>`
+    )
+  )}
 </div>`;
 
 const getElementsButtonsSrc = (selectedKeyPath) => `\
