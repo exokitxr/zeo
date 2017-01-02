@@ -87,21 +87,39 @@ ${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
 `;
 };
 
-const getModsPageSrc = ({mods, inputText, inputValue, focus}) => {
+const getModsPageSrc = ({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus}) => { // XXX implement loading
   const installedMods = mods.filter(mod => mod.installed);
   const availableMods = mods.filter(mod => !mod.installed);
+
+  const content = (() => {
+    if (tab === 'installed') {
+      return `\
+<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
+${getItemsSrc(mods, '', '', '', '', '', 'mod')}
+`;
+    } else if (tab === 'local') {
+return `\
+<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local mods</h1>
+${getItemsSrc(localMods, '', '', '', '', '', 'mod')}
+`;
+    } else if (tab === 'remote') {
+      return `\
+${getInputSrc(inputText, 'Search npm', inputValue, focus, 'mods:input')}
+<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Search results</h1>
+${getItemsSrc(remoteMods, '', '', '', '', '', 'mod')}
+`;
+    } else {
+      return null;
+    }
+  })();
 
   return `\
 ${getHeaderSrc('mods', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
-    ${getModsSidebarSrc()}
+    ${getModsSidebarSrc(tab)}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
-      ${getInputSrc(inputText, 'Search npm', inputValue, focus, 'mods:input')}
-      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
-      ${getItemsSrc(installedMods, '', '', '', '', '', 'mod')}
-      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
-      ${getItemsSrc(availableMods, '', '', '', '', '', 'mod')}
+      ${content}
     </div>
   </div>
 </div>
@@ -576,12 +594,26 @@ const getWorldsSidebarSrc = () => `\
   <a style="text-decoration: none;" onclick="blank"><p>Remove world</p></a>
 </div>`;
 
-const getModsSidebarSrc = () => `\
+const getModsSidebarSrc = tab => {
+  const tabStyle = t => {
+    let result = 'border-left: 3px solid transparent;';
+
+    if (t === tab) {
+      result += 'border-left-color: #333;';
+    }
+
+    result += 'text-decoration: none;';
+
+    return result;
+  };
+  return `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Installed mod</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Available mods</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Search mods</p></a>
-</div>`;
+  <a style="${tabStyle('installed')}" onclick="mods:installed"><p>Installed</p></a>
+  <a style="${tabStyle('local')}" onclick="mods:local"><p>Local</p></a>
+  <a style="${tabStyle('remote')}" onclick="mods:remote"><p>Npm search</p></a>
+</div>
+`;
+};
 
 const getModSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
