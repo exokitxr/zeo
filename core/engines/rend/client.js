@@ -194,6 +194,33 @@ class Rend {
           }
           return result;
         };
+        const _npmSearch = q => new Promise((accept, reject) => {
+          if (searchState.cancel) {
+            searchState.cancel();
+            searchState.cancel = null;
+          }
+
+          let live = true;
+          searchState.cancel = () => {
+            live = false;
+          };
+
+          npm.requestSearch(q)
+            .then(mods => {
+              if (live) {
+                accept(mods);
+
+                searchState.cancel = null;
+              }
+            })
+            .catch(err => {
+              if (live) {
+                reject(err):
+
+                searchState.cancel = null;
+              }
+            });
+        });
 
         // api functions
         const _getCurrentWorld = () => currentWorld;
@@ -1975,31 +2002,14 @@ class Rend {
                   } else if (type === 'mods') {
                     if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
                       if (modsState.inputText.length > 0) {
-                        if (searchState.cancel) {
-                          searchState.cancel();
-                          searchState.cancel = null;
-                        }
-
-                        let live = true;
-                        searchState.cancel = () => {
-                          live = false;
-                        };
-                        npm.requestSearch(modsState.inputText)
+                        _npmSearch(modsState.inputText)
                           .then(mods => {
-                            if (live) {
-                              modsState.mods = menuUtils.cleanMods(mods),
+                            modsState.mods = menuUtils.cleanMods(mods),
 
-                              _updatePages();
-
-                              searchState.cancel = null;
-                            }
+                            _updatePages();
                           })
                           .catch(err => {
-                            if (live) {
-                              console.warn(err);
-
-                              searchState.cancel = null;
-                            }
+                            console.warn(err);
                           });
                       } else {
                         modsState.mods = menuUtils.cleanMods(currentWorldMods);
