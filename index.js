@@ -513,17 +513,20 @@ class ArchaeServer {
 
   unmountModule(module, exportInstances, exportApis, cb) {
     const moduleInstance = exportInstances[module];
+    if (moduleInstance !== undefined) {
+      Promise.resolve(typeof moduleInstance.unmount === 'function' ? moduleInstance.unmount : null)
+        .then(() => {
+          delete exportInstances[module];
+          delete exportApis[module];
 
-    Promise.resolve(typeof moduleInstance.unmount === 'function' ? moduleInstance.unmount : null)
-      .then(() => {
-        delete exportInstances[module];
-        delete exportApis[module];
-
-        cb();
-      })
-      .catch(err => {
-        cb(err);
-      });
+          cb();
+        })
+        .catch(err => {
+          cb(err);
+        });
+    } else {
+      process.nextTick(cb);
+    }
   }
 
   getCore() {
