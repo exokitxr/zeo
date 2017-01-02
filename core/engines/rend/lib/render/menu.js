@@ -87,10 +87,7 @@ ${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
 `;
 };
 
-const getModsPageSrc = ({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus}) => { // XXX implement loading
-  const installedMods = mods.filter(mod => mod.installed);
-  const availableMods = mods.filter(mod => !mod.installed);
-
+const getModsPageSrc = ({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus}) => {
   const content = (() => {
     if (tab === 'installed') {
       return `\
@@ -98,16 +95,24 @@ const getModsPageSrc = ({mods, localMods, remoteMods, tab, inputText, inputValue
 ${getItemsSrc(mods, '', '', '', '', '', 'mod')}
 `;
     } else if (tab === 'local') {
-return `\
+      if (loadingLocal) {
+        return `<h1 style="font-size: 50px;">Loading...</h1>`;
+      } else {
+        return `\
 <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local mods</h1>
 ${getItemsSrc(localMods, '', '', '', '', '', 'mod')}
 `;
+      }
     } else if (tab === 'remote') {
-      return `\
+      if (loadingRemote) {
+        return `<h1 style="font-size: 50px;">Loading...</h1>`;
+      } else {
+        return `\
 ${getInputSrc(inputText, 'Search npm', inputValue, focus, 'mods:input')}
 <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Search results</h1>
 ${getItemsSrc(remoteMods, '', '', '', '', '', 'mod')}
 `;
+      }
     } else {
       return null;
     }
