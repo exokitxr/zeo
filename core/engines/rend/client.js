@@ -300,7 +300,7 @@ class Rend {
                   mod: mod,
                 }),
               }).then(res => res.json()
-                .then(({mod}) => {
+                .then(mod => {
                   ['localMods', 'remoteMods'].forEach(k => {
                     const modsKeyCollection = modsState[k];
                     const index = modsKeyCollection.findIndex(m => m.name === mod.name);
@@ -313,7 +313,7 @@ class Rend {
 
                   menu.updatePages();
                 })
-                .then(() => _requestMod('/extra/plugins/' + mod))
+                .then(() => _requestMod(mod))
               );
               const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
               const _requestMod = mod => archae.requestPlugin(mod)
@@ -340,7 +340,7 @@ class Rend {
                   mod: mod,
                 }),
               }).then(res => res.text()
-                .then(({mod}) => {
+                .then(mod => {
                   const index = modsState.mods.findIndex(m => m.name === mod.name);
                   if (index !== -1) {
                     modsState.mods.splice(index, 1);
@@ -355,7 +355,7 @@ class Rend {
 
                   menu.updatePages();
                 })
-                .then(() => _requestReleaseMod('/extra/plugins/' + mod))
+                .then(() => _requestReleaseMod(mod))
               );
               const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
               const _requestReleaseMod = mod => archae.releasePlugin(mod)
