@@ -196,14 +196,11 @@ class Rend {
               });
           };
 
-          const pluginsInstalledPath = path.join(dirname, 'installed', 'plugins');
+          const pluginsInstalledPath = path.join(dirname, 'installed', 'plugins', 'node_modules');
           const pluginsLocalPath = path.join(dirname, 'plugins');
           const _getPluginName = plugin => new Promise((accept, reject) => {
             if (path.isAbsolute(plugin)) {
-              const pluginPath = path.join(dirname, plugin);
-              const pluginPackageJsonPath = path.join(pluginPath, 'package.json');
-
-              fs.readFile(pluginPackageJsonPath, 'utf8', (err, s) => {
+              fs.readFile(path.join(dirname, plugin, 'package.json'), 'utf8', (err, s) => {
                 if (!err) {
                   const j = JSON.parse(s);
                   const {name} = j;
@@ -219,7 +216,7 @@ class Rend {
           });
           const _getInstalledPluginPackageJson = plugin => _getPluginName(plugin)
             .then(name => new Promise((accept, reject) => {
-              fs.readFile(path.join(pluginsInstalledPath, plugin, 'package.json'), 'utf8', (err, s) => {
+              fs.readFile(path.join(pluginsInstalledPath, name, 'package.json'), 'utf8', (err, s) => {
                 if (!err) {
                   const j = JSON.parse(s);
 
