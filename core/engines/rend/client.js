@@ -136,6 +136,9 @@ class Rend {
         const statsState = {
           frame: 0,
         };
+        const searchState = {
+          cancel: null,
+        };
         const elementsState = {
           elements: [],
           availableElements: [],
@@ -1972,15 +1975,31 @@ class Rend {
                   } else if (type === 'mods') {
                     if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
                       if (modsState.inputText.length > 0) {
-                        // XXX cancel duplicate searches
+                        if (searchState.cancel) {
+                          searchState.cancel();
+                          searchState.cancel = null;
+                        }
+
+                        let live = true;
+                        searchState.cancel = () => {
+                          live = false;
+                        };
                         npm.requestSearch(modsState.inputText)
                           .then(mods => {
-                            modsState.mods = menuUtils.cleanMods(mods),
+                            if (live) {
+                              modsState.mods = menuUtils.cleanMods(mods),
 
-                            _updatePages();
+                              _updatePages();
+
+                              searchState.cancel = null;
+                            }
                           })
                           .catch(err => {
-                            console.warn(err);
+                            if (live) {
+                              console.warn(err);
+
+                              searchState.cancel = null;
+                            }
                           });
                       } else {
                         modsState.mods = menuUtils.cleanMods(currentWorldMods);
