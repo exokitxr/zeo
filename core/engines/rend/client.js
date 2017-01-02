@@ -482,7 +482,7 @@ class Rend {
                 const _loadMods = () => {
                   elementsState.loading = true;
 
-                  return _requestMods(installedModSpecs.map(({path}) => path))
+                  return _requestMods(installedModSpecs.map(({name}) => name))
                     .then(() => {
                       console.log('world mods loaded');
 

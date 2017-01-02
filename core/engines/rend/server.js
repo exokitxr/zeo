@@ -306,8 +306,7 @@ class Rend {
           });
           const _getInstalledModSpec = mod => _getInstalledPluginPackageJson(mod)
             .then(packageJson => ({
-              name: packageJson.name,
-              path: mod,
+              name: mod,
               version: packageJson.version,
               description: packageJson.description || null,
               hasClient: Boolean(packageJson.client),
@@ -324,8 +323,7 @@ class Rend {
               packageJson,
               readmeMd,
             ]) => ({
-              name: packageJson.name,
-              path: mod,
+              name: mod,
               version: packageJson.version,
               description: packageJson.description || null,
               readme: readmeMd || '',
@@ -337,8 +335,7 @@ class Rend {
           const _getUninstalledModSpecs = mods => Promise.all(mods.map(mod =>
             _getUninstalledPluginPackageJson(mod)
               .then(packageJson => ({
-                name: packageJson.name,
-                path: mod,
+                name: mod,
                 version: packageJson.version,
                 description: packageJson.description || null,
                 hasClient: Boolean(packageJson.client),
