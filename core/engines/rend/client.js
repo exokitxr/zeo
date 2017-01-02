@@ -126,6 +126,11 @@ class Rend {
           inputIndex: 0,
           inputValue: 0,
         };
+        const modState = {
+          modName: '',
+          mod: null,
+          loading: false,
+        };
         const configState = {
           inputText: 'Hello, world! This is some text!',
           inputIndex: 0,
@@ -233,7 +238,7 @@ class Rend {
         // api functions
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
-          const _requestModsStatus = worldName => fetch('/archae/rend/mods/installed', { // XXX make this use the installed endpoint instead
+          const _requestInstalledModSpecs = worldName => fetch('/archae/rend/mods/installed', { // XXX make this use the installed endpoint instead
             method: 'POST',
             headers: (() => {
               const headers = new Headers();
@@ -246,12 +251,12 @@ class Rend {
           }).then(res => res.json());
 
           Promise.all([
-            _requestModsStatus(worldName),
+            _requestInstalledModSpecs(worldName),
             _requestGetElements(worldName),
             bullet.requestWorld(worldName),
           ])
             .then(([
-              modsStatus,
+              installedModSpecs,
               elementsStatus,
               physics,
             ]) => {
@@ -407,7 +412,7 @@ class Rend {
                 const _loadMods = () => {
                   elementsState.loading = true;
 
-                  return _requestMods(modsStatus.map(({path}) => path))
+                  return _requestMods(installedModSpecs.map(({path}) => path))
                     .then(() => {
                       console.log('world mods loaded');
 
@@ -456,6 +461,8 @@ class Rend {
                 destroy: _destroy,
               };
               currentWorld = world;
+
+              modsState.mods = installedModSpecs;
 
               accept();
             });
@@ -995,7 +1002,8 @@ class Rend {
                         }, pend);
                       } else if (match = type.match(/^mod$/)) {
                         page.update({
-                          mod: modState, // XXX implement this
+                          mod: modState,
+                          mods: modsState,
                         }, pend);
                       } else if (type === 'elements') {
                         page.update({
@@ -1161,37 +1169,45 @@ class Rend {
                           },
                         });
                       } else if (match = onclick.match(/^mod:(.+)$/)) {
+                        const name = match[1];
+
                         ui.cancelTransition();
 
                         // XXX flag mod as loading, request mod details + readme, set modState.mod, unflag, and _updatePages();
 
+                        modState.modName = name;
+                        modState.mod = null;
                         modState.loading = true;
 
-                        ui.pushPage(({mod: {name, version, installed, readme, loading}}) => ([
-                          {
-                            type: 'html',
-                            src: menuRenderer.getModPageSrc({name, version, installed}),
-                          },
-                          {
-                            type: 'html',
-                            src: menuRenderer.getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
-                            x: 500,
-                            y: 150 + 2,
-                            w: WIDTH - 500,
-                            h: HEIGHT - (150 + 2),
-                            scroll: true,
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('mod:' + name),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
-                            pixelated: true,
-                          }
-                        ]), {
+                        ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
+                          const installed = mods.some(m => m.name === mod.name);
+
+                          return [
+                            {
+                              type: 'html',
+                              src: menuRenderer.getModPageSrc({modName, mod, loading, installed}), // XXX rewrite this
+                            },
+                            {
+                              type: 'html',
+                              src: menuRenderer.getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}), // XXX rewrite this
+                              x: 500,
+                              y: 150 + 2,
+                              w: WIDTH - 500,
+                              h: HEIGHT - (150 + 2),
+                              scroll: true,
+                            },
+                            {
+                              type: 'image',
+                              img: creatureUtils.makeAnimatedCreature('mod:' + modName),
+                              x: 150,
+                              y: 0,
+                              w: 150,
+                              h: 150,
+                              frameTime: 300,
+                              pixelated: true,
+                            }
+                          ];
+                        }, {
                           type: 'mod',
                           state: modState,
                         });
