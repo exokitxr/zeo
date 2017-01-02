@@ -2,6 +2,8 @@
   "name": "npm",
   "description": "Provides NPM search functionality for the zeo core.",
   "version": "0.0.1",
-  "client": "client.js",
-  "server": "server.js"
+  "server": "server.js",
+  "dependencies": {
+    "follow-redirects": "^1.2.1"
+  }
 }

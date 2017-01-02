@@ -87,21 +87,44 @@ ${getHeaderSrc('worlds', '', getWorldsButtonsSrc(selectedName), true)}
 `;
 };
 
-const getModsPageSrc = ({mods, inputText, inputValue, focus}) => {
-  const installedMods = mods.filter(mod => mod.installed);
-  const availableMods = mods.filter(mod => !mod.installed);
+const getModsPageSrc = ({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus}) => {
+  const content = (() => {
+    if (tab === 'installed') {
+      return `\
+<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
+${getItemsSrc(mods, '', '', '', '', '', 'mod')}
+`;
+    } else if (tab === 'local') {
+      if (loadingLocal) {
+        return `<h1 style="font-size: 50px;">Loading...</h1>`;
+      } else {
+        return `\
+<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Local mods</h1>
+${getItemsSrc(localMods, '', '', '', '', '', 'mod')}
+`;
+      }
+    } else if (tab === 'remote') {
+      if (loadingRemote) {
+        return `<h1 style="font-size: 50px;">Loading...</h1>`;
+      } else {
+        return `\
+${getInputSrc(inputText, 'Search npm', inputValue, focus, 'mods:input')}
+<h1 style="border-bottom: 2px solid #333; font-size: 50px;">Search results</h1>
+${getItemsSrc(remoteMods, '', '', '', '', '', 'mod')}
+`;
+      }
+    } else {
+      return null;
+    }
+  })();
 
   return `\
 ${getHeaderSrc('mods', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
-    ${getModsSidebarSrc()}
+    ${getModsSidebarSrc(tab)}
     <div style="width: ${WIDTH - 500}px; margin: 40px 0; clear: both;">
-      ${getInputSrc(inputText, 'Search npm', inputValue, focus, 'mods:input')}
-      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Installed mods</h1>
-      ${getItemsSrc(installedMods, '', '', '', '', '', 'mod')}
-      <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Available mods</h1>
-      ${getItemsSrc(availableMods, '', '', '', '', '', 'mod')}
+      ${content}
     </div>
   </div>
 </div>
@@ -119,16 +142,17 @@ const getItemsSrc = (items, selectedName, renamingName, inputText, inputValue, i
 
 const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inputPlaceholder, prefix) => {
   const {name} = item;
+  const displayName = item.displayName || name;
   const selected = name === selectedName;
   const style = selected ? 'background-color: #EEE;' : '';
   const renaming = name === renamingName;
 
   return `\
 <a style="display: inline-flex; width: ${(WIDTH - 500) / 3}px; float: left; ${style}; text-decoration: none; overflow: hidden;" onclick="${prefix}:${name}">
-  <img src="${creatureUtils.makeStaticCreature(prefix + ':' + name)}" width="100" height="100" style="image-rendering: pixelated;" />
+  <img src="${creatureUtils.makeStaticCreature(prefix + ':' + displayName)}" width="100" height="100" style="image-rendering: pixelated;" />
   <div style="width: ${((WIDTH - 500) / 3) - (20 + 100)}px;">
     ${!renaming ? `\
-<div style="width: 100%; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+<div style="width: 100%; font-size: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
 <div style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; height: ${20 * 1.4 * 2}px; font-size: 20px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">${item.description}</div>
 `   :
       `\
@@ -143,22 +167,38 @@ const getItemSrc = (item, selectedName, renamingName, inputText, inputValue, inp
 </a>`;
 };
 
-const getModPageSrc = ({name, version, installed}) => `\
-${getHeaderSrc(name, 'v' + version, getGetButtonSrc(name, installed), true)}
+const getModPageSrc = ({modName, mod, installed, conflicting}) => {
+  const displayName = modName.match(/([^\/]*)$/)[1];
+
+  return `\
+${getHeaderSrc(displayName, mod ? ('v' + mod.version) : '', mod ? getGetButtonSrc(mod.name, installed, conflicting) : '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModSidebarSrc()}
   </div>
 </div>
 `;
+};
 
-const getModPageReadmeSrc = ({readme}) => `\
+const getModPageReadmeSrc = ({modName, mod, loading}) => {
+  const content = (() => {
+    if (loading) {
+      return `<h1 style="font-size: 50px;">Loading...</h1>`;
+    } else {
+      const displayName = modName.match(/([^\/]*)$/)[1];
+      const readme = mod.readme || ('<h1>No readme for `' + displayName + (mod ? ('@' + mod.version) : '') + '`</h1>');
+      return readme;
+    }
+  })();
+
+  return `\
 <div style="position: absolute; top: 0; right: 0; height: 50px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 50px; height: 100px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 100px; height: 125px; width: 50px; background-color: red;"></div>
 <div style="position: absolute; top: 0; right: 150px; height: 150px; width: 50px; background-color: red;"></div>
-${readme}
+${content}
 `;
+};
 
 const getConfigPageSrc = () => `\
 ${getHeaderSrc('preferences', '', '', true)}
@@ -576,12 +616,22 @@ const getWorldsSidebarSrc = () => `\
   <a style="text-decoration: none;" onclick="blank"><p>Remove world</p></a>
 </div>`;
 
-const getModsSidebarSrc = () => `\
+const getModsSidebarSrc = tab => {
+  const tabStyle = t => {
+    let result = 'padding-left: 30px; border-left: 10px solid transparent;';
+    if (t === tab) {
+      result += 'border-left-color: #333;';
+    }
+    return result;
+  };
+  return `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
-  <a style="text-decoration: none;" onclick="blank"><p>Installed mod</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Available mods</p></a>
-  <a style="text-decoration: none;" onclick="blank"><p>Search mods</p></a>
-</div>`;
+  <a style="text-decoration: none;" onclick="mods:installed"><p style="${tabStyle('installed')}">Installed mods</p></a>
+  <a style="text-decoration: none;" onclick="mods:local"><p style="${tabStyle('local')}">Local mods</p></a>
+  <a style="text-decoration: none;" onclick="mods:remote"><p style="${tabStyle('remote')}">Npm search</p></a>
+</div>
+`;
+};
 
 const getModSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
@@ -622,14 +672,18 @@ const getWorldsButtonsSrc = selectedName => `\
 </div>
 `;
 
-const getGetButtonSrc = (name, installed) => `\
+const getGetButtonSrc = (name, installed, conflicting) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
-  ${installed ?
+  ${installed ? (
    `<div style="font-size: 50px; margin-right: 30px;">✓ Installed</div>
     <a style="padding: 10px 40px; border: 3px solid #d9534f; border-radius: 5px; font-size: 50px; color: #d9534f; text-decoration: none;" onclick="removemod:${name}">× Remove</a>`
-  :
-    `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF; text-decoration: none;" onclick="getmod:${name}">+ Get</a>`
-  }
+  ) : (
+    conflicting ? (
+      `<div style="font-size: 50px; color: #d9534f;">>× Cannot install: name conflict</div>`
+    ) : (
+      `<a style="padding: 10px 40px; background-color: #5cb85c; border-radius: 5px; font-size: 50px; color: #FFF; text-decoration: none;" onclick="getmod:${name}">+ Get</a>`
+    )
+  )}
 </div>`;
 
 const getElementsButtonsSrc = (selectedKeyPath) => `\

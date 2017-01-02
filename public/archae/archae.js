@@ -124,7 +124,7 @@ class ArchaeClient {
         engine,
       }, (err, result) => {
         if (!err) {
-          const {engineName} = result;
+          const {engineName, hasClient} = result;
 
           const {enginesMutex} = this;
           enginesMutex.lock(engineName)
@@ -141,7 +141,7 @@ class ArchaeClient {
                 const engineApi = this.engineApis[engineName];
                 unlockCb(null, engineApi);
               } else {
-                this.loadEngine(engineName, err => {
+                this.loadEngine(engineName, hasClient, err => {
                   if (!err) {
                     this.mountEngine(engineName, err => {
                       if (!err) {
@@ -209,7 +209,7 @@ class ArchaeClient {
         plugin,
       }, (err, result) => {
         if (!err) {
-          const {pluginName} = result;
+          const {pluginName, hasClient} = result;
 
           const {pluginsMutex} = this;
           pluginsMutex.lock(pluginName)
@@ -226,7 +226,7 @@ class ArchaeClient {
                 const pluginApi = this.pluginApis[pluginName];
                 unlockCb(null, pluginApi);
               } else {
-                this.loadPlugin(pluginName, err => {
+                this.loadPlugin(pluginName, hasClient, err => {
                   if (!err) {
                     this.mountPlugin(pluginName, err => {
                       if (!err) {
@@ -390,8 +390,8 @@ class ArchaeClient {
     this.connect();
   }
 
-  loadEngine(engine, cb) {
-    this.loadModule(engine, 'engines', engine, this.engines, cb);
+  loadEngine(engine, hasClient, cb) {
+    this.loadModule(engine, 'engines', engine, this.engines, hasClient, cb);
   }
 
   unloadEngine(engine) {
@@ -406,8 +406,8 @@ class ArchaeClient {
     this.unmountModule(engine, this.engineInstances, this.engineApis, this.moduleDescriptors, cb);
   }
 
-  loadPlugin(plugin, cb) {
-    this.loadModule(plugin, 'plugins', plugin, this.plugins, cb);
+  loadPlugin(plugin, hasClient, cb) {
+    this.loadModule(plugin, 'plugins', plugin, this.plugins, hasClient, cb);
   }
 
   unloadPlugin(plugin) {
@@ -422,8 +422,8 @@ class ArchaeClient {
     this.unmountModule(plugin, this.pluginInstances, this.pluginApis, this.moduleDescriptors, cb);
   }
 
-  loadModule(module, type, target, exports, cb) {
-    if (!exports[module]) {
+  loadModule(module, type, target, exports, hasClient, cb) {
+    if (hasClient) {
       global.module = {};
 
       _loadScript('/archae/' + type + '/' + module + '/' + target + '.js')
@@ -434,17 +434,13 @@ class ArchaeClient {
 
           global.module = {};
 
-          cb(null, {
-            loaded: true,
-          });
+          cb();
         })
         .catch(err => {
           cb(err);
         });
     } else {
-      cb(null, {
-        loaded: false,
-      });
+      cb();
     }
   }
 

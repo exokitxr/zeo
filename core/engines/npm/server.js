@@ -1,6 +1,6 @@
 const url = require('url');
 const querystring = require('querystring');
-const https = require('https');
+const https = require('follow-redirects').https;
 
 class Npm {
   constructor(archae) {
@@ -16,40 +16,56 @@ class Npm {
       live = false;
     };
 
-    function serveSearch(req, res, next) {
-      const parsedUrl = url.parse(req.url, true);
-      const {query: {q = ''}} = parsedUrl;
+    const _makeSendApiError = reject => (statusCode = 500, message = 'API Error') => {
+      const err = new Error(message);
+      err.statusCode = statusCode;
+      reject(err); 
+    };
 
-      const _sendApiError = (statusCode = 500, message = 'API Error') => {
-        res.status(statusCode);
-        res.send(message);
-      };
+    const _getString = (res, cb) => {
+      const bs = [];
+      res.on('data', d => {
+        bs.push(d);
+      });
+      res.on('end', () => {
+        const b = Buffer.concat(bs);
+        const s = b.toString('utf8');
+
+        cb(null, s);
+      });
+      res.on('error', err => {
+        cb(err);
+      });
+    };
+    const _getJson = (res, cb) => {
+      _getString(res, (err, s) => {
+        if (!err) {
+          const j = _jsonParse(s);
+
+          cb(null, j);
+        } else {
+          cb(err);
+        }
+      });
+    };
+
+    const _requestPackageJson = module => new Promise((accept, reject) => {
+      const _sendApiError = _makeSendApiError(reject);
 
       https.get({
-        hostname: 'api.npms.io',
-        path: '/v2/search?' + querystring.stringify({
-          q: q + '+keywords:zeo-mod',
-        }),
+        hostname: 'unpkg.com',
+        path: '/' + module + '/package.json',
       }, proxyRes => {
         if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
-          const bs = [];
-          proxyRes.on('data', d => {
-            bs.push(d);
-          });
-          proxyRes.on('end', () => {
-            const b = Buffer.concat(bs);
-            const s = b.toString('utf8');
-            const j = _jsonParse(s);
-
-            if (typeof j === 'object' && j !== null) {
-              const {results} = j;
-              if (Array.isArray(results)) {
-                res.json(results);
+          _getJson(proxyRes, (err, j) => {
+            if (!err) {
+              if (typeof j === 'object' && j !== null) {
+                accept(j);
               } else {
                 _sendApiError();
               }
             } else {
-              _sendApiError();
+              _sendApiError(proxyRes.statusCode);
             }
           });
         } else {
@@ -58,19 +74,70 @@ class Npm {
       }).on('error', err => {
         _sendApiError(500, err.stack);
       });
-    }
-    app.get('/archae/npm/search', serveSearch);
+    });
 
-    this._cleanup = () => {
-      function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveSearch') {
-          routes.splice(i, 1);
+    const _requestReadmeMd = module => new Promise((accept, reject) => {
+      const _sendApiError = _makeSendApiError(reject);
+
+      https.get({
+        hostname: 'unpkg.com',
+        path: '/' + module + '/README.md',
+      }, proxyRes => {
+        if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+          _getString(proxyRes, (err, s) => {
+            if (!err) {
+              accept(s);
+            } else {
+              _sendApiError(500, err.stack);
+            }
+          });
+        } else {
+          _sendApiError(proxyRes.statusCode);
         }
-        if (route.route) {
-          route.route.stack.forEach(removeMiddlewares);
+      }).on('error', err => {
+        _sendApiError(500, err.stack);
+      });
+    });
+
+    const _requestSearch = q => new Promise((accept, reject) => {
+      const _sendApiError = _makeSendApiError(reject);
+
+      https.get({
+        hostname: 'api.npms.io',
+        path: '/v2/search?' + querystring.stringify({
+          q: q + '+keywords:zeo-mod',
+        }),
+      }, proxyRes => {
+        if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+          _getJson(proxyRes, (err, j) => {
+            if (!err) {
+              if (typeof j === 'object' && j !== null) {
+                const {results} = j;
+
+                if (Array.isArray(results)) {
+                  accept(results);
+                } else {
+                  _sendApiError();
+                }
+              } else {
+                _sendApiError();
+              }
+            } else {
+              _sendApiError(500, err.stack);
+            }
+          });
+        } else {
+          _sendApiError(proxyRes.statusCode);
         }
-      }
-      app._router.stack.forEach(removeMiddlewares);
+      }).on('error', err => {
+        _sendApiError(500, err.stack);
+      });
+    });
+
+    return {
+      requestPackageJson: _requestPackageJson,
+      requestReadmeMd: _requestReadmeMd,
+      requestSearch: _requestSearch,
     };
   }
 

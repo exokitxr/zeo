@@ -63,7 +63,6 @@ class Rend {
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/biolumi',
-        '/core/engines/npm',
         '/core/engines/fs',
         '/core/engines/bullet',
         '/core/engines/heartlink',
@@ -77,7 +76,6 @@ class Rend {
         three,
         webvr,
         biolumi,
-        npm,
         fs,
         bullet,
         heartlink,
@@ -122,9 +120,22 @@ class Rend {
         };
         const modsState = {
           mods: [],
+          localMods: [],
+          remoteMods: [],
+          tab: 'installed',
           inputText: '',
           inputIndex: 0,
           inputValue: 0,
+          loadingLocal: false,
+          loadingRemote: false,
+          cancelLocalRequest: null,
+          cancelRemoteRequest: null,
+        };
+        const modState = {
+          modName: '',
+          mod: null,
+          loading: false,
+          cancelRequest: null,
         };
         const configState = {
           inputText: 'Hello, world! This is some text!',
@@ -135,9 +146,6 @@ class Rend {
         };
         const statsState = {
           frame: 0,
-        };
-        const searchState = {
-          cancel: null,
         };
         const elementsState = {
           elements: [],
@@ -169,8 +177,6 @@ class Rend {
 
         const worlds = new Map();
         let currentWorld = null;
-        const worldMods = new Map();
-        let currentWorldMods = null;
         const currentModApis = new Map();
 
         cleanups.push(() => {
@@ -194,270 +200,349 @@ class Rend {
           }
           return result;
         };
-        const _npmSearch = q => new Promise((accept, reject) => {
-          if (searchState.cancel) {
-            searchState.cancel();
-            searchState.cancel = null;
+        const _getModSpec = mod => new Promise((accept, reject) => {
+          if (modState.cancelRequest) {
+            modState.cancelRequest();
+            modState.cancelRequest = null;
           }
 
           let live = true;
-          searchState.cancel = () => {
+          modState.cancelRequest = () => {
             live = false;
           };
 
-          npm.requestSearch(q)
-            .then(mods => {
+          fetch('/archae/rend/mods/spec', {
+            method: 'POST',
+            headers: (() => {
+              const headers = new Headers();
+              headers.set('Content-Type', 'application/json');
+              return headers;
+            })(),
+            body: JSON.stringify({
+              mod,
+            }),
+          }).then(res => res.json()
+            .then(modSpecs => {
               if (live) {
-                accept(mods);
+                accept(modSpecs);
 
-                searchState.cancel = null;
+                modState.cancelRequest = null;
               }
             })
             .catch(err => {
               if (live) {
-                reject(err):
+                reject(err);
 
-                searchState.cancel = null;
+                modState.cancelRequest = null;
               }
-            });
+            })
+          );
+        });
+        const _getLocalModSpecs = q => new Promise((accept, reject) => {
+          if (modsState.cancelLocalRequest) {
+            modsState.cancelLocalRequest();
+            modsState.cancelLocalRequest = null;
+          }
+
+          let live = true;
+          modsState.cancelLocalRequest = () => {
+            live = false;
+          };
+
+          fetch('/archae/rend/mods/local').then(res => res.json()
+            .then(modSpecs => {
+              if (live) {
+                accept(modSpecs);
+
+                modsState.cancelLocalRequest = null;
+              }
+            })
+            .catch(err => {
+              if (live) {
+                reject(err);
+
+                modsState.cancelLocalRequest = null;
+              }
+            })
+          );
+        });
+        const _getRemoteModSpecs = q => new Promise((accept, reject) => {
+          if (modsState.cancelRemoteRequest) {
+            modsState.cancelRemoteRequest();
+            modsState.cancelRemoteRequest = null;
+          }
+
+          let live = true;
+          modsState.cancelRemoteRequest = () => {
+            live = false;
+          };
+
+          fetch('/archae/rend/mods/search', {
+            method: 'POST',
+            headers: (() => {
+              const headers = new Headers();
+              headers.set('Content-Type', 'application/json');
+              return headers;
+            })(),
+            body: JSON.stringify({
+              q,
+            }),
+          }).then(res => res.json()
+            .then(modSpecs => {
+              if (live) {
+                accept(modSpecs);
+
+                modsState.cancelRemoteRequest = null;
+              }
+            })
+            .catch(err => {
+              if (live) {
+                reject(err);
+
+                modsState.cancelRemoteRequest = null;
+              }
+            })
+          );
         });
 
         // api functions
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
-          const world = worlds.get(worldName);
+          const _requestInstalledModSpecs = worldName => fetch('/archae/rend/mods/installed', {
+            method: 'POST',
+            headers: (() => {
+              const headers = new Headers();
+              headers.set('Content-Type', 'application/json');
+              return headers;
+            })(),
+            body: JSON.stringify({
+              world: worldName,
+            }),
+          }).then(res => res.json());
 
-          if (world) {
-            currentWorld = world;
-            currentWorldMods = worldMods.get(worldName);
+          Promise.all([
+            _requestInstalledModSpecs(worldName),
+            _requestGetElements(worldName),
+            bullet.requestWorld(worldName),
+          ])
+            .then(([
+              installedModSpecs,
+              elementsStatus,
+              physics,
+            ]) => {
+              const player = heartlink.getPlayer(); // XXX make this per-world
 
-            modsState.mods = menuUtils.cleanMods(currentWorldMods);
+              const startTime = Date.now();
+              let worldTime = 0;
+              const _addUpdate = update => {
+                updates.push(update);
+              };
+              const _addUpdateEye = updateEye => {
+                updateEyes.push(updateEye);
+              };
 
-            accept();
-          } else {
-            const _requestModsStatus = worldName => fetch('/archae/rend/mods/status', {
-              method: 'POST',
-              headers: (() => {
-                const headers = new Headers();
-                headers.set('Content-Type', 'application/json');
-                return headers;
-              })(),
-              body: JSON.stringify({
-                world: worldName,
-              }),
-            }).then(res => res.json());
+              _addUpdate(() => {
+                // update state
+                const now = Date.now();
+                worldTime = now - startTime;
 
-            Promise.all([
-              _requestModsStatus(worldName),
-              _requestGetElements(worldName),
-              bullet.requestWorld(worldName),
-            ])
-              .then(([
-                modsStatus,
-                elementsStatus,
-                physics,
-              ]) => {
-                const player = heartlink.getPlayer(); // XXX make this per-world
-
-                const startTime = Date.now();
-                let worldTime = 0;
-                const _addUpdate = update => {
-                  updates.push(update);
-                };
-                const _addUpdateEye = updateEye => {
-                  updateEyes.push(updateEye);
-                };
-
-                _addUpdate(() => {
-                  // update state
-                  const now = Date.now();
-                  worldTime = now - startTime;
-
-                  // update mods
-                  currentModApis.forEach(modApi => {
-                    if (typeof modApi.update === 'function') {
-                      modApi.update();
-                    }
-                  });
-                });
-                _addUpdateEye(camera => {
-                  // update mods per eye
-                  currentModApis.forEach(modApi => {
-                    if (typeof modApi.updateEye === 'function') {
-                      modApi.updateEye(camera);
-                    }
-                  });
-                });
-
-                const _getWorldTime = () => worldTime;
-                const _requestAddMod = mod => fetch('/archae/rend/mods/add', {
-                  method: 'POST',
-                  headers: (() => {
-                    const headers = new Headers();
-                    headers.set('Content-Type', 'application/json');
-                    return headers;
-                  })(),
-                  body: JSON.stringify({
-                    world: worldName,
-                    mod: mod,
-                  }),
-                }).then(res => res.text()
-                  .then(() => {
-                    const m = modsStatus.find(m => m.name === mod);
-                    m.installed = true;
-                  })
-                  .then(() => _requestMod('/extra/plugins/' + mod))
-                );
-                const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
-                const _requestMod = mod => archae.requestPlugin(mod)
-                  .then(modApi => {
-                    const modName = archae.getName(modApi);
-                    currentModApis.set(modName, modApi);
-
-                    _addModApiElements(modApi, currentModApis);
-                    menu.updatePages();
-
-                    return modApi;
-                  });
-                const _requestMods = mods => Promise.all(mods.map(_requestMod));
-                const _requestRemoveMod = mod => fetch('/archae/rend/mods/remove', {
-                  method: 'POST',
-                  headers: (() => {
-                    const headers = new Headers();
-                    headers.set('Content-Type', 'application/json');
-                    return headers;
-                  })(),
-                  body: JSON.stringify({
-                    world: worldName,
-                    mod: mod,
-                  }),
-                }).then(res => res.text()
-                  .then(() => {
-                    const m = modsStatus.find(m => m.name === mod);
-                    m.installed = false;
-                  })
-                  .then(() => _requestReleaseMod('/extra/plugins/' + mod))
-                );
-                const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
-                const _requestReleaseMod = mod => archae.releasePlugin(mod)
-                  .then(modApi => {
-                    const modName = archae.getName(modApi);
-                    currentModApis.delete(modName);
-
-                    _removeModApiElements(modApi);
-                    menu.updatePages();
-
-                    return mod;
-                  });
-                const _requestReleaseMods = mods => Promise.all(mods.map(_requestReleaseMod));
-                const _requestWorker = (module, options) => archae.requestWorker(module, options);
-                const _destroy = () => {
-                  if (animationFrame) {
-                    cancelAnimationFrame(animationFrame);
+                // update mods
+                currentModApis.forEach(modApi => {
+                  if (typeof modApi.update === 'function') {
+                    modApi.update();
                   }
-                };
-
-                const _addModApiElements = (modApi, modApis) => {
-                  const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
-                  const templateElements = menuUtils.jsonToElements(modApis, templates);
-                  elementsState.availableElements.push.apply(elementsState.availableElements, templateElements);
-                };
-                const _removeModApiElements = modApi => {
-                  const oldTemplates = Array.isArray(modApi.templates) ? modApi.templates : [];
-
-                  const oldTemplateTagsIndex = (() => {
-                    const result = {};
-                    for (let i = 0; i < oldTemplates.length; i++) {
-                      const oldTemplate = oldTemplates[i];
-                      const {tag} = oldTemplate;
-                      result[tag] = true;
-                    }
-                    return result;
-                  })();
-
-                  elementsState.availableElements = elementsState.availableElements.filter(element => {
-                    const {tagName} = element;
-                    const tag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
-                    return !oldTemplateTagsIndex[tag];
-                  });
-                };
-
-                // load world
-                const _loadWorld = () => {
-                  const _loadMods = () => {
-                    elementsState.loading = true;
-
-                    return _requestMods(modsStatus.filter(mod => mod.installed).map(mod => '/extra/plugins/' + mod.name))
-                      .then(() => {
-                        console.log('world mods loaded');
-
-                        elementsState.loading = false;
-
-                        menu.updatePages();
-                      });
-                  };
-                  const _loadElements = () => new Promise((accept, reject) => {
-                    const elements = menuUtils.jsonToElements(currentModApis, elementsStatus.elements);
-                    const clipboardElements = menuUtils.jsonToElements(currentModApis, elementsStatus.clipboardElements);
-                    const elementInstances = menuUtils.constructElements(currentModApis, elements);
-
-                    elementsState.elements = elements;
-                    elementsState.clipboardElements = clipboardElements;
-                    elementsState.elementInstances = elementInstances;
-
-                    accept();
-                  });
-
-                  return _loadMods()
-                    .then(() => _loadElements());
-                };
-                Promise.resolve()
-                  .then(() => _loadWorld())
-                  .catch(err => {
-                    console.warn(err);
-                  });
-
-                const world = {
-                  name: worldName,
-                  getWorldTime: _getWorldTime,
-                  requestAddMod: _requestAddMod,
-                  requestAddMods: _requestAddMods,
-                  requestMod: _requestMod,
-                  requestMods: _requestMods,
-                  requestRemoveMod: _requestRemoveMod,
-                  requestRemoveMods: _requestRemoveMods,
-                  requestReleaseMod: _requestReleaseMod,
-                  requestReleaseMods: _requestReleaseMods,
-                  requestWorker: _requestWorker,
-                  addUpdate: _addUpdate,
-                  addUpdateEye: _addUpdateEye,
-                  physics,
-                  player,
-                  destroy: _destroy,
-                };
-
-                worlds.set(worldName, world);
-                currentWorld = world;
-
-                worldMods.set(worldName, modsStatus);
-                currentWorldMods = modsStatus;
-
-                modsState.mods = menuUtils.cleanMods(modsStatus);
-
-                accept();
+                });
               });
-          }
+              _addUpdateEye(camera => {
+                // update mods per eye
+                currentModApis.forEach(modApi => {
+                  if (typeof modApi.updateEye === 'function') {
+                    modApi.updateEye(camera);
+                  }
+                });
+              });
+
+              const _getWorldTime = () => worldTime;
+              const _requestAddMod = mod => fetch('/archae/rend/mods/add', {
+                method: 'POST',
+                headers: (() => {
+                  const headers = new Headers();
+                  headers.set('Content-Type', 'application/json');
+                  return headers;
+                })(),
+                body: JSON.stringify({
+                  world: worldName,
+                  mod: mod,
+                }),
+              }).then(res => res.json()
+                .then(mod => {
+                  ['localMods', 'remoteMods'].forEach(k => {
+                    const modsCollection = modsState[k];
+                    const index = modsCollection.findIndex(m => m.name === mod.name);
+                    if (index !== -1) {
+                      modsCollection.splice(index, 1);
+                    }
+                  });
+
+                  modsState.mods.push(mod);
+
+                  menu.updatePages();
+                })
+                .then(() => _requestMod(mod))
+              );
+              const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
+              const _requestMod = mod => archae.requestPlugin(mod)
+                .then(modApi => {
+                  const modName = archae.getName(modApi);
+                  currentModApis.set(modName, modApi);
+
+                  _addModApiElements(modApi, currentModApis);
+
+                  menu.updatePages();
+
+                  return modApi;
+                });
+              const _requestMods = mods => Promise.all(mods.map(_requestMod));
+              const _requestRemoveMod = mod => fetch('/archae/rend/mods/remove', {
+                method: 'POST',
+                headers: (() => {
+                  const headers = new Headers();
+                  headers.set('Content-Type', 'application/json');
+                  return headers;
+                })(),
+                body: JSON.stringify({
+                  world: worldName,
+                  mod: mod,
+                }),
+              }).then(res => res.json()
+                .then(mod => {
+                  const index = modsState.mods.findIndex(m => m.name === mod.name);
+                  if (index !== -1) {
+                    modsState.mods.splice(index, 1);
+                  }
+
+                  const {local} = mod;
+                  if (local) {
+                    modsState.localMods.push(mod);
+                  } else {
+                    modsState.remoteMods.push(mod);
+                  }
+
+                  menu.updatePages();
+                })
+                .then(() => _requestReleaseMod(mod))
+              );
+              const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
+              const _requestReleaseMod = mod => archae.releasePlugin(mod)
+                .then(modApi => {
+                  const modName = archae.getName(modApi);
+                  currentModApis.delete(modName);
+
+                  _removeModApiElements(modApi);
+
+                  menu.updatePages();
+
+                  return mod;
+                });
+              const _requestReleaseMods = mods => Promise.all(mods.map(_requestReleaseMod));
+              const _requestWorker = (module, options) => archae.requestWorker(module, options);
+              const _destroy = () => {
+                if (animationFrame) {
+                  cancelAnimationFrame(animationFrame);
+                }
+              };
+
+              const _addModApiElements = (modApi, modApis) => {
+                const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
+                const templateElements = menuUtils.jsonToElements(modApis, templates);
+                elementsState.availableElements.push.apply(elementsState.availableElements, templateElements);
+              };
+              const _removeModApiElements = modApi => {
+                const oldTemplates = Array.isArray(modApi.templates) ? modApi.templates : [];
+
+                const oldTemplateTagsIndex = (() => {
+                  const result = {};
+                  for (let i = 0; i < oldTemplates.length; i++) {
+                    const oldTemplate = oldTemplates[i];
+                    const {tag} = oldTemplate;
+                    result[tag] = true;
+                  }
+                  return result;
+                })();
+
+                elementsState.availableElements = elementsState.availableElements.filter(element => {
+                  const {tagName} = element;
+                  const tag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
+                  return !oldTemplateTagsIndex[tag];
+                });
+              };
+
+              // load world
+              const _loadWorld = () => {
+                const _loadMods = () => {
+                  elementsState.loading = true;
+
+                  return _requestMods(installedModSpecs.map(({name}) => name))
+                    .then(() => {
+                      console.log('world mods loaded');
+
+                      elementsState.loading = false;
+
+                      menu.updatePages();
+                    });
+                };
+                const _loadElements = () => new Promise((accept, reject) => {
+                  const elements = menuUtils.jsonToElements(currentModApis, elementsStatus.elements);
+                  const clipboardElements = menuUtils.jsonToElements(currentModApis, elementsStatus.clipboardElements);
+                  const elementInstances = menuUtils.constructElements(currentModApis, elements);
+
+                  elementsState.elements = elements;
+                  elementsState.clipboardElements = clipboardElements;
+                  elementsState.elementInstances = elementInstances;
+
+                  accept();
+                });
+
+                return _loadMods()
+                  .then(() => _loadElements());
+              };
+              Promise.resolve()
+                .then(() => _loadWorld())
+                .catch(err => {
+                  console.warn(err);
+                });
+
+              const world = {
+                name: worldName,
+                getWorldTime: _getWorldTime,
+                requestAddMod: _requestAddMod,
+                requestAddMods: _requestAddMods,
+                requestMod: _requestMod,
+                requestMods: _requestMods,
+                requestRemoveMod: _requestRemoveMod,
+                requestRemoveMods: _requestRemoveMods,
+                requestReleaseMod: _requestReleaseMod,
+                requestReleaseMods: _requestReleaseMods,
+                requestWorker: _requestWorker,
+                addUpdate: _addUpdate,
+                addUpdateEye: _addUpdateEye,
+                physics,
+                player,
+                destroy: _destroy,
+              };
+              currentWorld = world;
+
+              modsState.mods = installedModSpecs;
+
+              accept();
+            });
         });
         const _requestDeleteWorld = worldName => new Promise((accept, reject) => {
           accept();
           /* bullet.releaseWorld(worldName)
             .then(() => {
-              worlds.delete(worldName);
-              worldMods.delete(worldName);
-
               if (currentWorld && currentWorld.name === worldName) {
                 currentWorld = null;
-                currentWorldMods = null;
               }
 
               accept();
@@ -985,13 +1070,10 @@ class Rend {
                           mods: modsState,
                           focus: focusState,
                         }, pend);
-                      } else if (match = type.match(/^mod:(.+)$/)) {
-                        const name = match[1];
-                        const mods = currentWorldMods;
-                        const mod = mods.find(m => m.name === name);
-
+                      } else if (type === 'mod') {
                         page.update({
-                          mod,
+                          mod: modState,
+                          mods: modsState,
                         }, pend);
                       } else if (type === 'elements') {
                         page.update({
@@ -1134,12 +1216,10 @@ class Rend {
                       } else if (onclick === 'mods') {
                         ui.cancelTransition();
 
-                        const mods = currentWorldMods;
-
-                        ui.pushPage(({mods: {inputText, inputValue, mods}, focus: {type: focusType}}) => ([
+                        ui.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
                           {
                             type: 'html',
-                            src: menuRenderer.getModsPageSrc({mods, inputText, inputValue, focus: focusType === 'mods'}),
+                            src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
                           },
                           {
                             type: 'image',
@@ -1158,41 +1238,102 @@ class Rend {
                             focus: focusState,
                           },
                         });
+                      } else if (match = onclick.match(/^mods:(installed|local|remote)$/)) {
+                        const tab = match[1];
+
+                        if (tab === 'local') {
+                          modsState.loadingLocal = true;
+
+                          _getLocalModSpecs()
+                            .then(localMods => {
+                              modsState.localMods = localMods;
+                              modsState.loadingLocal = false;
+
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (tab === 'remote') {
+                          modsState.inputText = '';
+                          modsState.inputIndex = 0;
+                          modsState.inputValue = 0;
+                          modsState.loadingRemote = true;
+
+                          _getRemoteModSpecs(modsState.inputText)
+                            .then(remoteMods => {
+                              modsState.remoteMods = remoteMods;
+                              modsState.loadingRemote = false;
+
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        }
+
+                        modsState.tab = tab;
+
+                        _updatePages();
                       } else if (match = onclick.match(/^mod:(.+)$/)) {
                         const name = match[1];
-                        const mods = currentWorldMods;
-                        const mod = mods.find(m => m.name === name);
 
                         ui.cancelTransition();
 
-                        ui.pushPage(({mod: {name, version, installed, readme}}) => ([
-                          {
-                            type: 'html',
-                            src: menuRenderer.getModPageSrc({name, version, installed}),
-                          },
-                          {
-                            type: 'html',
-                            src: menuRenderer.getModPageReadmeSrc({readme: readme || '<h1>No readme for `' + name + '@' + version + '`</h1>'}),
-                            x: 500,
-                            y: 150 + 2,
-                            w: WIDTH - 500,
-                            h: HEIGHT - (150 + 2),
-                            scroll: true,
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('mod:' + name),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
-                            pixelated: true,
-                          }
-                        ]), {
-                          type: 'mod:' + name,
+                        modState.modName = name;
+                        modState.mod = null;
+                        modState.loading = true;
+
+                        _getModSpec(name)
+                          .then(modSpec => {
+                            modState.mod = modSpec;
+                            modState.loading = false;
+
+                            _updatePages();
+                          })
+                          .catch(err => {
+                            console.warn(err);
+
+                            modState.loading = false;
+
+                            _updatePages();
+                          });
+
+                        ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
+                          const displayName = modName.match(/([^\/]*)$/)[1];
+                          const installed = mods.some(m => m.name === modName);
+                          const conflicting = mods.some(m => m.displayName === displayName);
+
+                          return [
+                            {
+                              type: 'html',
+                              src: menuRenderer.getModPageSrc({modName, mod, installed, conflicting}),
+                            },
+                            {
+                              type: 'html',
+                              src: menuRenderer.getModPageReadmeSrc({modName, mod, loading}),
+                              x: 500,
+                              y: 150 + 2,
+                              w: WIDTH - 500,
+                              h: HEIGHT - (150 + 2),
+                              scroll: true,
+                            },
+                            {
+                              type: 'image',
+                              img: creatureUtils.makeAnimatedCreature('mod:' + displayName),
+                              x: 150,
+                              y: 0,
+                              w: 150,
+                              h: 150,
+                              frameTime: 300,
+                              pixelated: true,
+                            }
+                          ];
+                        }, {
+                          type: 'mod',
                           state: {
-                            mod,
+                            mod: modState,
+                            mods: modsState,
                           },
                         });
                       } else if (match = onclick.match(/^getmod:(.+)$/)) {
@@ -2001,19 +2142,15 @@ class Rend {
                     }
                   } else if (type === 'mods') {
                     if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
-                      if (modsState.inputText.length > 0) {
-                        _npmSearch(modsState.inputText)
-                          .then(mods => {
-                            modsState.mods = menuUtils.cleanMods(mods),
+                      _getRemoteMods(modsState.inputText)
+                        .then(remoteMods => {
+                          modsState.remoteMods = remoteMods,
 
-                            _updatePages();
-                          })
-                          .catch(err => {
-                            console.warn(err);
-                          });
-                      } else {
-                        modsState.mods = menuUtils.cleanMods(currentWorldMods);
-                      }
+                          _updatePages();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
 
                       _updatePages();
 
