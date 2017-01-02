@@ -106,6 +106,12 @@ class FakeElement {
   }
 }
 
+class FakeState {
+  constructor({children}) {
+    this.children = children;
+  }
+}
+
 const pathJoin = (a, b) => a + (!/\/$/.test(a) ? '/' : '') + b;
 const clone = o => JSON.parse(JSON.stringify(o));
 const debounce = fn => {
@@ -236,12 +242,12 @@ const cleanFiles = files => files.map(file => {
     description,
   };
 });
-const getKeyPath = (root, keyPath) => {
+const getKeyPath = (root, keyPath, childrenKey) => {
   const _recurse = (root, i) => {
     if (i === keyPath.length) {
       return root;
     } else {
-      return _recurse(root.childNodes[keyPath[i]], i + 1);
+      return _recurse(root[childrenKey][keyPath[i]], i + 1);
     }
   };
   return _recurse(root, 0);
@@ -256,7 +262,19 @@ const getElementKeyPath = (spec, keyPath) => {
     }
     return result;
   })();
-  return getKeyPath({childNodes}, keyPath);
+  return getKeyPath(new FakeElement({childNodes}), keyPath, 'childNodes');
+};
+const getStateKeyPath = (spec, keyPath) => {
+  const children  = (() => {
+    const result = {};
+    for (const k in spec) {
+      result[k] = new FakeState({
+        children: spec[k],
+      });
+    }
+    return result;
+  })();
+  return getKeyPath(new FakeState({children}), keyPath, 'children');
 };
 const moveElementKeyPath = (spec, oldKeyPath, newKeyPath) => {
   const oldKeyPathHead = oldKeyPath.slice(0, -1);
@@ -448,6 +466,7 @@ module.exports = {
   cleanFiles,
   getKeyPath,
   getElementKeyPath,
+  getStateKeyPath,
   moveElementKeyPath,
   copyElementKeyPath,
   removeElementKeyPath,
