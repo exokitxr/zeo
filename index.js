@@ -889,21 +889,20 @@ const _requestInstallCandidateModuleHash = module => new Promise((accept, reject
       hasher.destroy();
     });
   } else {
-throw new Error('npm not supported yet');
-
     https.get({
       hostname: 'api.npms.io',
-      pathname: '/v2/package/' + moduleName,
+      path: '/v2/package/' + module,
     }, res => {
       const bs = [];
       res.on('data', d => {
-        bs.push(b);
+        bs.push(d);
       });
       res.on('end', () => {
         const b = Buffer.concat(bs);
         const s = b.toString('utf8');
         const j = JSON.parse(s);
         const {collected: {metadata: {version}}} = j;
+
         accept(version);
       });
     }).on('error', err => {
