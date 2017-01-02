@@ -137,7 +137,6 @@ const debounce = fn => {
   };
   return _go;
 };
-const cleanMods = mods => mods.map(({name, description, installed}) => ({name, description, installed}));
 const elementsToJson = elements => elements.map(element => {
   const {tagName, attributes, childNodes} = element;
 
@@ -460,7 +459,6 @@ module.exports = {
   pathJoin,
   clone,
   debounce,
-  cleanMods,
   elementsToJson,
   jsonToElements,
   elementsToState,
