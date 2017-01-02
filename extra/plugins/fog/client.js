@@ -15,36 +15,72 @@ class Fog {
 
     return archae.requestEngines([
       '/core/engines/zeo',
-      '/core/engines/rend',
     ]).then(([
       zeo,
-      rend,
     ]) => {
       if (live) {
         const {scene} = zeo;
-        const world = rend.getCurrentWorld();
 
-        return world.requestMods([
-          '/extra/plugins/zeo/skybox',
-        ]).then(([
-          skybox,
-        ]) => {
-          if (live) {
-            const _update = () => {
-              const sunSphere = skybox.getSunSphere();
-              const sunFactor = Math.max(sunSphere.position.y / sunSphere.distance, 0);
-              scene.fog.density = sunFactor * FOG_DENSITY;
-            };
-
-            this._cleanup = () => {
-              scene.fog.density = 0;
-            };
-
-            return {
-              update: _update,
-            };
+        const updates = [];
+        const _update = () => {
+          for (let i = 0; i < updates.length; i++) {
+            const update = updates[i];
+            update();
           }
-        });
+        };
+
+        return {
+          update: _update,
+          elements: [
+            class FogElement extends HTMLElement {
+              static get tag() {
+                return 'fog';
+              }
+              static get attributes() {
+                return {};
+              }
+
+              createdCallback() {
+                const update = () => {
+                  const skybox = (() => {
+                    for (let {parentNode: node} = this; node; node = node.parentNode) {
+                      if (/^z-i-skybox$/i.test(node.tagName)) {
+                        return node;
+                      }
+                    }
+                    return null;
+                  })();
+
+                  if (skybox) {
+                    const sunSphere = skybox.getSunSphere();
+                    const sunFactor = Math.max(sunSphere.position.y / sunSphere.distance, 0);
+                    scene.fog.density = sunFactor * FOG_DENSITY;
+                  } else {
+                    scene.fog.density = 0;
+                  }
+                };
+                updates.push(update);
+
+                this._cleanup = () => {
+                  updates.splice(updates.indexOf(update), 1);
+
+                  scene.fog.density = 0;
+                };
+              }
+
+              destructor() {
+                this._cleanup();
+              }
+            }
+          ],
+          templates: [
+            {
+              tag: 'fog',
+              attributes: {},
+              children: [],
+            },
+          ],
+        };
       }
     });
   }

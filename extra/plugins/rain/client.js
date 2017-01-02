@@ -163,7 +163,7 @@ class Rain {
         return {
           update: _update,
           elements: [
-            class RainElement {
+            class RainElement extends HTMLElement {
               static get tag() {
                 return 'rain';
               }
@@ -216,10 +216,16 @@ class Rain {
                 };
               }
 
-              constructor({drops, range, length}) {
-                this._drops = drops;
-                this._range = range;
-                this._length = length;
+              createdCallback() {
+                const {
+                  drops: {value: drops},
+                  range: {value: range},
+                  length: {value: length},
+                } = RainElement.attributes;
+
+                this.drops = drops;
+                this.range = range;
+                this.length = length;
 
                 const geometry = (() => {
                   const result = new THREE.BufferGeometry();
@@ -275,63 +281,77 @@ class Rain {
                 this._cleanup();
               }
 
-              set position(matrix) {
-                const {mesh} = this;
-                mesh.position.set(matrix[0], matrix[1], matrix[2]);
-                mesh.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
-                mesh.scale.set(matrix[7], matrix[8], matrix[9]);
-              }
+              attributeChangedCallback(name, oldValue, newValue) {
+                const value = JSON.parse(newValue || 'null');
 
-              set type(type) {
-                console.log('rain set type', type); // XXX
-              }
+                switch (name) {
+                  case 'position': {
+                    const {mesh} = this;
 
-              set drops(drops) {
-                this._drops = drops;
+                    mesh.position.set(value[0], value[1], value[2]);
+                    mesh.quaternion.set(value[3], value[4], value[5], value[6]);
+                    mesh.scale.set(value[7], value[8], value[9]);
 
-                this._updateGeometry();
-              }
+                    break;
+                  }
+                  case 'type': {
+                    console.log('rain set type', value); // XXX
 
-              set range(range) {
-                this._range = range;
+                    break;
+                  }
+                  case 'drops': {
+                    this.drops = value;
+                    this._updateGeometry();
 
-                this._updateGeometry();
-                this._updateMaterial();
-              }
+                    break;
+                  }
+                  case 'range': {
+                    this.range = value;
+                    this._updateGeometry();
+                    this._updateMaterial();
 
-              set length(length) {
-                this._length = length;
+                    break;
+                  }
+                  case 'length': {
+                    this.length = value;
+                    this._updateGeometry();
 
-                this._updateGeometry();
-              }
+                    break;
+                  }
+                  case 'color': {
+                    const {mesh: {material: {uniforms}}} = this;
 
-              set color(color) {
-                const {mesh: {material: {uniforms}}} = this;
-                uniforms.diffuse.value = new THREE.Color(color);
-              }
+                    uniforms.diffuse.value = new THREE.Color(value);
 
-              set enabled(enabled) {
-                const {mesh} = this;
-                mesh.visible = enabled;
+                    break;
+                  }
+                  case 'enabled': {
+                    const {mesh} = this;
+                    
+                    mesh.visible = value;
+
+                    break;
+                  }
+                }
               }
 
               _updateGeometry() {
                 const {mesh: {geometry}} = this;
-                const {_drops: drops, _range: range, _length: length} = this;
+                const {drops, range, length} = this;
                 const positions = _makePositions({drops, range, length});
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
               }
 
               _updateMaterial() {
                 const {mesh: {material: {uniforms}}} = this;
-                const {_range: range} = this;
+                const {range} = this;
 
                 uniforms.range.value = range;
               }
             },
-            class RainBoxElement {
+            class RainBoxElement extends HTMLElement {
               static get tag() {
-                return 'rain:box';
+                return 'rain.box';
               }
               static get attributes() {
                 return {
@@ -361,27 +381,27 @@ class Rain {
               }
 
               constructor() {
-                console.log('rain:box constructor'); // XXX
+                console.log('rain.box constructor'); // XXX
               }
 
               destructor() {
-                console.log('rain:box destructor');
+                console.log('rain.box destructor');
               }
 
               set position(matrix) {
-                console.log('rain:box set position', matrix);
+                console.log('rain.box set position', matrix);
               }
 
               set color(color) {
-                console.log('rain:box set color', color);
+                console.log('rain.box set color', color);
               }
 
               set opacity(opacity) {
-                console.log('rain:box set opacity', opacity);
+                console.log('rain.box set opacity', opacity);
               }
 
               set enabled(enabled) {
-                console.log('rain:box set enabled', enabled);
+                console.log('rain.box set enabled', enabled);
               }
             }
           ],
@@ -391,7 +411,7 @@ class Rain {
               attributes: {},
               children: [
                 {
-                  tag: 'rain:box',
+                  tag: 'rain.box',
                   attributes: {
                     position: [
                       0, 1.5, 0,

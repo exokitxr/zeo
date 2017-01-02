@@ -19,16 +19,76 @@ class Light {
       if (live) {
         const {THREE, scene} = zeo;
 
-        const light = (() => {
-          const result = new THREE.DirectionalLight(0xFFFFFF, 2);
-          result.position.set(3, 3, 3);
-          result.lookAt(new THREE.Vector3(0, 0, 0));
-          return result;
-        })();
-        scene.add(light);
+        return {
+          elements: [
+            class LightElement extends HTMLElement {
+              static get tag() {
+                return 'light';
+              }
+              static get attributes() {
+                return {
+                  position: {
+                    type: 'matrix',
+                    value: [
+                      3, 3, 3,
+                      0, 0, 0, 1,
+                      1, 1, 1,
+                    ],
+                  },
+                  lookAt: {
+                    type: 'matrix',
+                    value: [
+                      0, 0, 0,
+                      0, 0, 0, 1,
+                      1, 1, 1,
+                    ],
+                  },
+                };
+              }
 
-        this._cleanup = () => {
-          scene.remove(light);
+              createdCallback() {
+                const light = new THREE.DirectionalLight(0xFFFFFF, 2);
+                scene.add(light);
+                this.light = light;
+
+                this._cleanup = () => {
+                  scene.remove(light);
+                };
+              }
+
+              destructor() {
+                this._cleanup();
+              }
+
+              attributeChangedCallback(name, oldValue, newValue) {
+                const value = JSON.parse(newValue);
+
+                switch (name) {
+                  case 'position': {
+                    const {light} = this;
+
+                    light.position.set(value[0], value[1], value[2]);
+
+                    break;
+                  }
+                  case 'lookAt': {
+                    const {light} = this;
+
+                    light.lookAt.set(new THREE.Vector3(value[0], value[1], value[2]));
+
+                    break;
+                  }
+                }
+              }
+            }
+          ],
+          templates: [
+            {
+              tag: 'light',
+              attributes: {},
+              children: [],
+            },
+          ],
         };
       }
     });

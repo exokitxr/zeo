@@ -196,7 +196,7 @@ const getElementsPageContentSrc = ({elements, selectedKeyPath, draggingKeyPath})
 `;
 
 const getElementsPageSubcontentSrc = ({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue, focusAttribute}) => {
-  const element = menuUtils.getElementKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
+  const element = menuUtils.getStateKeyPath({elements, availableElements, clipboardElements}, selectedKeyPath);
 
   return `\
 <div style="display: flex; flex-direction: column; width: 600px; min-height: ${HEIGHT - (150 + 2)}px; padding-left: 30px; box-sizing: border-box;">

@@ -61,7 +61,7 @@ class Youtube {
         return {
           update: _update,
           elements: [
-            class YoutubeElement {
+            class YoutubeElement extends HTMLElement {
               static get tag() {
                 return 'youtube';
               }
@@ -78,7 +78,7 @@ class Youtube {
                 };
               }
 
-              constructor() {
+              createdCallback() {
                 const mesh = (() => {
                   const object = new THREE.Object3D();
 
@@ -435,12 +435,20 @@ class Youtube {
                 this._cleanup();
               }
 
-              set position(matrix) {
-                const {mesh} = this;
+              attributeChangedCallback(name, oldValue, newValue) {
+                const value = JSON.parse(newValue);
 
-                mesh.position.set(matrix[0], matrix[1], matrix[2]);
-                mesh.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
-                mesh.scale.set(matrix[7], matrix[8], matrix[9]);
+                switch (name) {
+                  case 'position': {
+                    const {mesh} = this;
+
+                    mesh.position.set(value[0], value[1], value[2]);
+                    mesh.quaternion.set(value[3], value[4], value[5], value[6]);
+                    mesh.scale.set(value[7], value[8], value[9]);
+
+                    break;
+                  }
+                }
               }
             }
           ],

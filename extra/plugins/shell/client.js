@@ -75,7 +75,7 @@ class Shell {
         return {
           update: _update,
           elements: [
-            class ShellElement {
+            class ShellElement extends HTMLElement {
               static get tag() {
                 return 'shell';
               }
@@ -92,9 +92,9 @@ class Shell {
                 };
               }
 
-              constructor() {
+              createdCallback() {
+                const cleanups = [];
                 this._cleanup = () => {
-                  const cleanups = [];
                   for (let i = 0; i < cleanups.length; i++) {
                     const cleanup = cleanups[i];
                     cleanup();
@@ -148,7 +148,9 @@ class Shell {
                     result.prefs_.set('font-size', 14);
                     result.prefs_.set('cursor-color', '#FFFFFF');
 
-                    result.scrollPort_.onResize = () => {}; // HACK: do not actualy listen for window resizes
+                    // HACK: do not handle requests to focus or window resizes
+                    result.scrollPort_.focus = () => {};
+                    result.scrollPort_.onResize = () => {};
                     result.decorate(terminalBuffer);
 
                     result.setCursorPosition(0, 0);
@@ -273,7 +275,8 @@ class Shell {
                       const _listen = () => {
                         const observer = new MutationObserver(() => {
                           _queueRender();
-                        }).observe(body, {
+                        });
+                        observer.observe(body, {
                           childList: true,
                           subtree: true,
                           attributes: true,
@@ -417,7 +420,6 @@ class Shell {
                 const _isFocused = () => focusState.focused;
 
                 const update = () => {
-                  const {mesh} = this;
                   const {shellMesh, boxMesh} = mesh;
 
                   const {position: shellPosition, rotation: shellRotation} = _decomposeObjectMatrixWorld(shellMesh);
@@ -493,7 +495,7 @@ class Shell {
                 cleanups.push(() => {
                   scene.remove(mesh);
 
-                  updates.push(updates.indexOf(update), 1);
+                  updates.splice(updates.indexOf(update), 1);
                 });
               }
 
@@ -501,12 +503,18 @@ class Shell {
                 this._cleanup();
               }
 
-              set position(matrix) {
-                const {mesh} = this;
+              attributeChangedCallback(name, oldValue, newValue) {
+                const value = JSON.parse(newValue);
 
-                mesh.position.set(matrix[0], matrix[1], matrix[2]);
-                mesh.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
-                mesh.scale.set(matrix[7], matrix[8], matrix[9]);
+                switch (name) {
+                  case 'position': {
+                    const {mesh} = this;
+
+                    mesh.position.set(value[0], value[1], value[2]);
+                    mesh.quaternion.set(value[3], value[4], value[5], value[6]);
+                    mesh.scale.set(value[7], value[8], value[9]);
+                  }
+                };
               }
             }
           ],

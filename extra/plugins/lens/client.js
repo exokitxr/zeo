@@ -79,7 +79,7 @@ class Lens {
         return {
           updateEye: _updateEye,
           elements: [
-            class LensElement {
+            class LensElement extends HTMLElement {
               static get tag() {
                 return 'lens';
               }
@@ -93,10 +93,18 @@ class Lens {
                       1, 1, 1,
                     ],
                   },
+                  type: {
+                    type: 'select',
+                    value: 'blur',
+                    options: [
+                      'blur',
+                      'pixel',
+                    ],
+                  },
                 };
               }
 
-              constructor() {
+              createdCallback() {
                 const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
                   minFilter: THREE.NearestFilter,
                   magFilter: THREE.NearestFilter,
@@ -122,7 +130,7 @@ class Lens {
                 })();
                 const _makeLineMesh = () => new THREE.Line(lineGeometry, lineMaterial);
 
-                const blurLensMesh = (() => {
+                const _makeBlurLensMesh = () => {
                   const object = new THREE.Object3D();
                   object.position.set(0, 1.4 - (0 * 0.2), -0.1);
 
@@ -199,9 +207,8 @@ class Lens {
                   object.lineMesh = lineMesh;
 
                   return object;
-                })();
-
-                const pixelLensMesh = (() => {
+                };
+                const _makePixelLensMesh = () => {
                   const object = new THREE.Object3D();
                   object.position.set(0, 1.4 - (1 * 0.2), -0.1);
 
@@ -237,40 +244,34 @@ class Lens {
                   object.lineMesh = lineMesh;
 
                   return object;
-                })();
+                };
+                const meshConstructors = {
+                  blur: _makeBlurLensMesh,
+                  pixel: _makePixelLensMesh,
+                };
+                this.meshConstructors = meshConstructors;
 
-                const meshes = [blurLensMesh, pixelLensMesh];
-                this.meshes = meshes;
-
-                meshes.forEach(mesh => {
-                  scene.add(mesh);
-                });
+                const mesh = _makeBlurLensMesh();
+                scene.add(mesh);
+                this.mesh = mesh;
 
                 const updateEye = eyeCamera => {
-                  meshes.forEach(mesh => {
-                    const {planeMesh, lineMesh} = mesh;
+                  const {mesh} = this;
+                  const {planeMesh, lineMesh} = mesh;
+                  planeMesh.visible = false;
+                  lineMesh.visible = false;
 
-                    planeMesh.visible = false;
-                    lineMesh.visible = false;
-                  });
+                  mesh.render(scene, eyeCamera);
 
-                  meshes.forEach(mesh => {
-                    mesh.render(scene, eyeCamera);
-                  });
-
-                  meshes.forEach(mesh => {
-                    const {planeMesh, lineMesh} = mesh;
-
-                    planeMesh.visible = true;
-                    lineMesh.visible = true;
-                  });
+                  planeMesh.visible = true;
+                  lineMesh.visible = true;
                 };
                 updateEyes.push(updateEye);
 
                 this._cleanup = () => {
-                  meshes.forEach(mesh => {
-                    scene.remove(mesh);
-                  });
+                  const {mesh} = this;
+
+                  scene.remove(mesh);
 
                   updateEyes.splice(updateEyes.indexOf(updateEye), 1);
                 };
@@ -280,14 +281,31 @@ class Lens {
                 this._cleanup();
               }
 
-              set position(matrix) {
-                const {meshes} = this;
+              attributeChangedCallback(name, oldValue, newValue) {
+                const value = JSON.parse(newValue);
 
-                meshes.forEach((mesh, i) => {
-                  mesh.position.set(matrix[0], matrix[1] - (i * 0.2), matrix[2] - 0.1);
-                  mesh.quaternion.set(matrix[3], matrix[4], matrix[5], matrix[6]);
-                  mesh.scale.set(matrix[7], matrix[8], matrix[9]);
-                });
+                switch (name) {
+                  case 'position': {
+                    const {mesh} = this;
+
+                    mesh.position.set(value[0], value[1], value[2]);
+                    mesh.quaternion.set(value[3], value[4], value[5], value[6]);
+                    mesh.scale.set(value[7], value[8], value[9]);
+
+                    break;
+                  }
+                  case 'type': {
+                    const {mesh: oldMesh, meshConstructors} = this;
+                    scene.remove(oldMesh);
+
+                    const meshConstructor = meshConstructors[value];
+                    const newMesh = meshConstructor();
+                    scene.add(newMesh);
+                    this.mesh = newMesh;
+
+                    break;
+                  }
+                }
               }
             }
           ],
