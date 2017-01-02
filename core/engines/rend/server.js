@@ -229,9 +229,9 @@ class Rend {
                 }
               });
             }));
-          const _getUninstalledPluginPackageJson = plugin => {
+          const _getUninstalledPluginPackageJson = plugin => new Promise((accept, reject) => {
             if (path.isAbsolute(plugin)) {
-              fs.readFile(path.join(pluginsInstalledPath, plugin, 'package.json'), 'utf8', (err, s) => {
+              fs.readFile(path.join(dirname, plugin, 'package.json'), 'utf8', (err, s) => {
                 if (!err) {
                   const j = JSON.parse(s);
 
@@ -245,34 +245,18 @@ class Rend {
                 .then(accept)
                 .catch(reject);
             }
-          };
+          });
           const _getUninstalledPluginReadmeMd = plugin => new Promise((accept, reject) => {
             if (path.isAbsolute(plugin)) {
-              const pluginPath = path.join(dirname, plugin);
-
-              fs.readdir(pluginPath, (err, files) => {
+              fs.readFile(path.join(dirname, plugin, 'README.md'), 'utf8', (err, s) => {
                 if (!err) {
-                  const readmeFiles = files.filter(f => /^README\.md$/i.test());
-
-                  if (readmeFiles.length > 0) {
-                    const readmeFilePath = readmeFiles.sort((a, b) => a.localeCompare(b))[0];
-
-                    fs.readFile(path.join(pluginPath, readmeFilePath), 'utf8', (err, s) => {
-                      if (!err) {
-                        accept(_renderMarkdown(s));
-                      } else {
-                        reject(err);
-                      }
-                    });
-                  } else {
-                    accept('');
-                  }
+                  accept(_renderMarkdown(s));
                 } else if (err.code === 'ENOENT') {
-                  accept('');
+                   accept('');
                 } else {
                   reject(err);
                 }
-              })
+              });
             } else {
               npm.requestReadmeMd(plugin)
                 .then(s => {
@@ -284,9 +268,37 @@ class Rend {
           const _getLocalPlugins = () => new Promise((accept, reject) => {
             fs.readdir(pluginsLocalPath, (err, files) => {
               if (!err) {
-                const plugins = files.map(file => path.join('/', 'plugins', file));
+                if (files.length > 0) {
+                  const result = [];
+                  let pending = files.length;
+                  const pend = () => {
+                    if (--pending === 0) {
+                      done();
+                    }
+                  };
+                  const done = () => {
+                    accept(result);
+                  };
 
-                accept(plugins);
+                  for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const filePath = path.join('/', 'plugins', file);
+
+                    fs.lstat(path.join(dirname, filePath), (err, stats) => {
+                      if (!err) {
+                        if (stats.isDirectory()) {
+                          result.push(filePath);
+                        }
+                      } else {
+                        console.warn(err);
+                      }
+
+                      pend();
+                    });
+                  }
+                } else {
+                  accept([]);
+                }
               } else {
                 reject(err);
               }
