@@ -63,7 +63,6 @@ class Rend {
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/biolumi',
-        '/core/engines/npm',
         '/core/engines/fs',
         '/core/engines/bullet',
         '/core/engines/heartlink',
@@ -77,7 +76,6 @@ class Rend {
         three,
         webvr,
         biolumi,
-        npm,
         fs,
         bullet,
         heartlink,
@@ -194,7 +192,7 @@ class Rend {
           }
           return result;
         };
-        const _npmSearch = q => new Promise((accept, reject) => {
+        const _searchMods = q => new Promise((accept, reject) => {
           if (searchState.cancel) {
             searchState.cancel();
             searchState.cancel = null;
@@ -205,7 +203,17 @@ class Rend {
             live = false;
           };
 
-          npm.requestSearch(q)
+          fetch('/archae/rend/mods/search', {
+            method: 'POST',
+            headers: (() => {
+              const headers = new Headers();
+              headers.set('Content-Type', 'application/json');
+              return headers;
+            })(),
+            body: JSON.stringify({
+              q,
+            }),
+          }).then(res => res.json());
             .then(mods => {
               if (live) {
                 accept(mods);
@@ -225,7 +233,7 @@ class Rend {
         // api functions
         const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
-          const _requestModsStatus = worldName => fetch('/archae/rend/mods/status', {
+          const _requestModsStatus = worldName => fetch('/archae/rend/mods/status', { // XXX make this use the installed endpoint instead
             method: 'POST',
             headers: (() => {
               const headers = new Headers();
@@ -1993,7 +2001,7 @@ class Rend {
                     }
                   } else if (type === 'mods') {
                     if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
-                      _npmSearch(modsState.inputText)
+                      _searchMods(modsState.inputText)
                         .then(remoteMods => {
                           modsState.remoteMods = remoteMods,
 
