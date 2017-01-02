@@ -190,7 +190,7 @@ class Rend {
     };
 
     const pluginsInstalledPath = path.join(dirname, 'installed', 'plugins');
-    const _getInstalledPluginName = plugin => new Promise((accept, reject) => {
+    const _getPluginName = plugin => new Promise((accept, reject) => {
       if (path.isAbsolute(plugin)) {
         const pluginPath = path.join(dirname, plugin);
         const pluginPackageJsonPath = path.join(pluginPath, 'package.json');
@@ -209,7 +209,7 @@ class Rend {
         accept(plugin);
       }
     });
-    const _getInstalledPluginPackageJson = plugin => _getInstalledPluginName(plugin)
+    const _getInstalledPluginPackageJson = plugin => _getPluginName(plugin)
       .then(name => new Promise((accept, reject) => {
         fs.readFile(path.join(pluginsInstalledPath, plugin, 'package.json'), 'utf8', (err, s) => {
           if (!err) {
@@ -221,9 +221,26 @@ class Rend {
           }
         });
       }));
-    const _getInstalledPluginReadmeMd = plugin => _getInstalledPluginName(plugin)
-      .then(name => new Promise((accept, reject) => {
-        const pluginPath = path.join(pluginsInstalledPath, name);
+    const _getUninstalledPluginPackageJson = plugin => {
+      if (path.isAbsolute(plugin)) {
+        fs.readFile(path.join(pluginsInstalledPath, plugin, 'package.json'), 'utf8', (err, s) => {
+          if (!err) {
+            const j = JSON.parse(s);
+
+            accept(j);
+          } else {
+            reject(err);
+          }
+        });
+      } else {
+        npm.requestPackageJson(plugin) // XXX implement this
+          .then(accept)
+          .catch(reject);
+      }
+    };
+    const _getUninstalledPluginReadmeMd = plugin => new Promise((accept, reject) => {
+      if (path.isAbsolute(plugin)) {
+        const pluginPath = path.join(dirname, plugin);
 
         fs.readdir(pluginPath, (err, files) => {
           if (!err) {
@@ -247,12 +264,18 @@ class Rend {
           } else {
             reject(err);
           }
-        });
-      });
+        })
+      } else {
+        npm.requestReadmeMd(plugin) // XXX implement this
+          .then(s => {
+            accept(_renderMarkdown(s));
+          })
+          .catch(reject);
+      }
+    });
     const _getInstalledModSpec = mod => _getInstalledPluginPackageJson(mod)
       .then(packageJson => ({
-        name: mod,
-        description: packageJson.description,
+        name: packageJson.name,
         version: packageJson.version,
         description: packageJson.description || null,
         hasClient: Boolean(packageJson.client),
@@ -261,6 +284,23 @@ class Rend {
         local: path.isAbsolute(mod),
       }));
     const _getInstalledModSpecs = plugins => Promise.all(plugins.map(_getInstalledModSpec));
+    const _getUninstalledModSpec = mod => Promise.all([
+      _getUninstalledPluginPackageJson(mod),
+      _getUninstalledPluginReadmeMd(mod),
+    ])
+      .then(([
+        packageJson,
+        readmeMd,
+      ]) => ({
+        name: packageJson.name,
+        version: packageJson.version,
+        description: packageJson.description || null,
+        readme: readmeMd || '',
+        hasClient: Boolean(packageJson.client),
+        hasServer: Boolean(packageJson.server),
+        hasWorker: Boolean(packageJson.worker),
+        local: path.isAbsolute(mod),
+      }));
 
     function serveReadme(req, res, next) {
       fs.readFile(path.join(__dirname, '..', 'zeo', 'README.md'), 'utf8', (err, s) => {
@@ -310,7 +350,7 @@ class Rend {
       });
     }
     app.post('/archae/rend/mods/installed', serveModsInstalled);
-    function serveModsReadme(req, res, next) {
+    function serveModsSpec(req, res, next) {
       bodyParserJson(req, res, () => {
         const {body: data} = req;
 
@@ -323,10 +363,11 @@ class Rend {
           const {mod} = data;
 
           if (typeof mod === 'string') {
-            _getInstalledPluginReadmeMd(mod)
-              .then(readmeMd => {
-                res.type('text/html; charset=utf-8');
-                res.send(readmeMd);
+            _getUninstalledModSpec(mod)
+              .then(modSpec => {
+                res.json({
+                  mod: modSpec,
+                });
               })
               .catch(err => {
                 res.status(500);
@@ -340,7 +381,7 @@ class Rend {
         }
       });
     }
-    app.post('/archae/rend/mods/readme', serveModsReadme);
+    app.post('/archae/rend/mods/spec', serveModsSpec);
     function serveModsAdd(req, res, next) {
       bodyParserJson(req, res, () => {
         const {body: data} = req;
@@ -483,7 +524,7 @@ class Rend {
         if (
           route.handle.name === 'serveReadme' ||
           route.handle.name === 'serveModsInstalled' ||
-          route.handle.name === 'serveModsReadme' ||
+          route.handle.name === 'serveModsSpec' ||
           route.handle.name === 'serveModsAdd' ||
           route.handle.name === 'serveModsRemove' ||
           route.handle.name === 'serveElementsGet' ||

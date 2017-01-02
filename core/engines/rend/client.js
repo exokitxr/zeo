@@ -985,9 +985,7 @@ class Rend {
                           mods: modsState,
                           focus: focusState,
                         }, pend);
-                      } else if (match = type.match(/^mod:(.+)$/)) {
-                        const name = match[1]; // XXX don't need this
-
+                      } else if (match = type.match(/^mod$/)) {
                         page.update({
                           mod: modState, // XXX implement this
                         }, pend);
@@ -1155,14 +1153,13 @@ class Rend {
                           },
                         });
                       } else if (match = onclick.match(/^mod:(.+)$/)) {
-                        // XXX flag mod as loading, request mod details + readme, set modState.mod, unflag, and _updatePages();
-                        const name = match[1];
-                        const mods = currentWorldMods;
-                        const mod = mods.find(m => m.name === name);
-
                         ui.cancelTransition();
 
-                        ui.pushPage(({mod: {name, version, installed, readme}}) => ([
+                        // XXX flag mod as loading, request mod details + readme, set modState.mod, unflag, and _updatePages();
+
+                        modState.loading = true;
+
+                        ui.pushPage(({mod: {name, version, installed, readme, loading}}) => ([
                           {
                             type: 'html',
                             src: menuRenderer.getModPageSrc({name, version, installed}),
@@ -1187,10 +1184,8 @@ class Rend {
                             pixelated: true,
                           }
                         ]), {
-                          type: 'mod:' + name,
-                          state: {
-                            mod,
-                          },
+                          type: 'mod',
+                          state: modState,
                         });
                       } else if (match = onclick.match(/^getmod:(.+)$/)) {
                         const name = match[1];
