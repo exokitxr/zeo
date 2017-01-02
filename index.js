@@ -1228,7 +1228,14 @@ const _getModuleRealName = (module, type, cb) => {
       if (!err) {
         const j = JSON.parse(s);
         const moduleName = j.name;
-        cb(null, moduleName);
+        const displayName = module.match(/([^\/]*)$/)[1];
+
+        if (moduleName === displayName) {
+          cb(null, moduleName);
+        } else {
+          const err = new Error('module name in package.json does not match path: ' + JSON.stringify(module));
+          cb(err);
+        }
       } else {
         cb(err);
       }
