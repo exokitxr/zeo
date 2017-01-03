@@ -50,6 +50,8 @@ class Zeo {
         const {domElement} = renderer;
         const {sound} = somnifer;
 
+        const supportsWebVR = webvr.supportsWebVR();
+
         const updates = [];
         const updateEyes = [];
         const _update = () => {
@@ -152,20 +154,30 @@ background-color: ${color};
           .then(() => {
             if (live) {
               return Promise.all([
-                _requestAnchor(keyboardIconSrc, '#000', '#2196F3', () => {
-                  if (!webvr.display) {
-                    _enterVR({
-                      stereoscopic: false,
-                    });
+                _requestAnchor(
+                  keyboardIconSrc,
+                  '#000',
+                  '#2196F3',
+                  () => {
+                    if (!webvr.display) {
+                      _enterVR({
+                        stereoscopic: false,
+                      });
+                    }
                   }
-                }),
-                _requestAnchor(vrIconSrc, '#4CAF50', '#43A047', () => {
-                  if (!webvr.display) {
-                    _enterVR({
-                      stereoscopic: true,
-                    });
+                ),
+                _requestAnchor(
+                  vrIconSrc,
+                  supportsWebVR ? '#4CAF50' : '#E91E63',
+                  supportsWebVR ? '#43A047' : '#D81B60',
+                  () => {
+                    if (!webvr.display) {
+                      _enterVR({
+                        stereoscopic: true,
+                      });
+                    }
                   }
-                }),
+                ),
               ]);
             }
           })
@@ -212,7 +224,7 @@ flex-direction: column;
 `;
               help.innerHTML = `\
 <p style="margin: 3px 0; font-size: 16px;">Welcome to zeo!</p>
-<p style="margin: 3px 0;">Take control with <span style="color: #03A9F4;">Keyboard + Mouse</span> or <span style="color: #8BC34A;">WebVR</span>. Looks like <span style="color: #8BC34A;">WebVR is supported</span> in your browser!</p>
+<p style="margin: 3px 0;">Take control with <span style="color: #03A9F4;">Keyboard + Mouse</span> or <span style="color: ${supportsWebVR ? '#8BC34A' : '#E91E63'};">WebVR</span>. Looks like <span style="color: ${supportsWebVR ? '#8BC34A' : '#E91E63'};">WebVR is ${supportsWebVR ? '' : 'not '}supported</span> in your browser!</p>
 <p style="margin: 3px 0;">WASD: move, Z/C: select left/right controller, Click: trigger, Mousewheel: move controller, E: menu, F: grip, Q: pad, Shift+Mousewheel: rotate controller, Ctrl+Mousewheel: Controller forward/back, Alt+Mousewheel: touchpad.</p>
 `;
               navbar.appendChild(help);

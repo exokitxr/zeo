@@ -126,6 +126,10 @@ class WebVR {
             };
           }
 
+          supportsWebVR() {
+            return _canPresent(bestDisplay);
+          }
+
           requestRenderLoop({display = null, stereoscopic = false, update = () => {}, updateEye = () => {}, updateStart = () => {}, updateEnd = () => {}}) {
             let cleanups = [];
             const _destroy = () => {
