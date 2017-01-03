@@ -50,9 +50,22 @@
     }
     .container {
       display: flex;
+      position: relative;
       height: 100%;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .container-overlay {
+      display: flex;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, 0.5);
       justify-content: center;
       align-items: center;
+      flex-direction: column;
     }
     .container-wrapper {
       display: flex;
@@ -60,6 +73,20 @@
       justify-content: center;
       align-items: center;
       flex-direction: column;
+    }
+    .video-wrapper {
+      position: absolute;
+      display: flex;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      justify-content: center;
+      align-items: center;
+      z-index: -1;
+    }
+    video {
+      width: 100%;
     }
     h1, h2 {
       margin: 0;
@@ -103,18 +130,17 @@
       cursor: inherit;
     }
     button:hover {
-      border-color: #4CAF50;
-      color: #4CAF50;
+      border-color: #9CCC65;
+      color: #9CCC65;
     }
     button:active {
-      border-color: #2E7D32;
-      color: #2E7D32;
+      border-color: #7CB342;
+      color: #7CB342;
     }
     footer {
       display: flex;
       height: 100px;
       padding: 0 30px;
-      border-top: 1px solid #222;
       font-size: 13px;
       justify-content: center;
       align-items: center;
@@ -134,17 +160,24 @@
     <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
   </header>
   <div class=container>
-    <div class=container-wrapper>
-      <h1>zeo</h1>
-      <h2>WebVR worlds via NPM</h2>
-      <section>
-        <p>Experience Javascript modules in your browser. Literally.</p>
-        <p>Supports WebVR headsets/controllers or plain keyboard/mouse. Includes server-side persistence, multiplayer, physics, and more out of the box.</p>
-        <p>Open source on GitHub.</p>
-      </section>
-      <a class=enter-anchor href="/vr">
-        <button>Enter VR</button>
-      </a>
+    <div class=video-wrapper>
+      <video autoplay>
+        <source src="/video/demo.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class=container-overlay>
+      <div class=container-wrapper>
+        <h1>zeo</h1>
+        <h2>WebVR worlds via NPM</h2>
+        <section>
+          <p>Experience Javascript modules in your browser. Literally.</p>
+          <p>Supports WebVR headsets/controllers or plain keyboard/mouse. Includes server-side persistence, multiplayer, physics, and more out of the box.</p>
+          <p>Open source on GitHub.</p>
+        </section>
+        <a class=enter-anchor href="/vr">
+          <button>Enter VR</button>
+        </a>
+      </div>
     </div>
   </div>
   <footer>
