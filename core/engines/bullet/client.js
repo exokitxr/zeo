@@ -2,7 +2,8 @@ const idUtils = require('./lib/idUtils');
 
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
-const DEBUG = true;
+const DEBUG = false;
+// const DEBUG = true;
 
 const engineKey = null;
 
