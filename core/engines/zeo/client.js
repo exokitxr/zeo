@@ -111,38 +111,30 @@ class Zeo {
           return _enterNormal();
         };
 
-        const _requestAnchor = (src, click) => new Promise((accept, reject) => {
+        const _requestAnchor = (src, color, hoverColor, click) => new Promise((accept, reject) => {
           const img = new Image();
           img.src = src;
+          img.style.cssText = `\
+filter: invert(100%);
+`;
           img.onload = () => {
             const a = document.createElement('a');
             a.style.cssText = `\
 position: relative;
 width: 100px;
 height: 100px;
-background-color: #FFF;
-`;
-            const border = document.createElement('a');
-            border.style.cssText = `\
-position: absolute;
-left: 0;
-right: 0;
-bottom: 0;
-height: 2px;
-background-color: #F00;
-visibility: hidden;
+background-color: ${color};
 `;
             a.appendChild(img);
-            a.appendChild(border);
 
             a.addEventListener('click', click);
             a.addEventListener('mouseenter', e => {
               a.style.cursor = 'pointer';
-              border.style.visibility = 'visible';
+              a.style.backgroundColor = hoverColor;
             });
             a.addEventListener('mouseleave', e => {
               a.style.cursor = 'auto';
-              border.style.visibility = 'hidden';
+              a.style.backgroundColor = color;
             });
             a.addEventListener('mousemove', e => {
               e.preventDefault();
@@ -160,14 +152,14 @@ visibility: hidden;
           .then(() => {
             if (live) {
               return Promise.all([
-                _requestAnchor(keyboardIconSrc, () => {
+                _requestAnchor(keyboardIconSrc, '#000', '#2196F3', () => {
                   if (!webvr.display) {
                     _enterVR({
                       stereoscopic: false,
                     });
                   }
                 }),
-                _requestAnchor(vrIconSrc, () => {
+                _requestAnchor(vrIconSrc, '#4CAF50', '#43A047', () => {
                   if (!webvr.display) {
                     _enterVR({
                       stereoscopic: true,
@@ -179,18 +171,61 @@ visibility: hidden;
           })
           .then(([keyboardMouseAnchor, vrAnchor]) => {
             if (live) {
-              const anchors = document.createElement('div');
-              anchors.style.cssText = `\
+              const navbar = document.createElement('div');
+              navbar.style.cssText = `\
 position: absolute;
 display: flex;
 bottom: 0;
+left: 0;
 right: 0;
+height: 100px;
+background-color: #000;
+font-family: 'Open Sans';
+color: white;
+`;
+              const wasd = document.createElement('div');
+              wasd.style.cssText = `\
+display: flex;
+width: 200px;
+height: 100px;
+justify-content: center;
+flex-direction: column;
+`;
+              wasd.innerHTML = `\
+<div style="display: flex; justify-content: center;">
+  <div style="display: flex; width: 40px; height: 40px; margin: 2px; border: 2px solid #FFF; border-radius: 6px; justify-content: center; align-items: center; box-sizing: border-box;">W</div>
+</div>
+<div style="display: flex; justify-content: center;">
+  <div style="display: flex; width: 40px; height: 40px; margin: 2px; border: 2px solid #FFF; border-radius: 6px; justify-content: center; align-items: center; box-sizing: border-box;">A</div>
+  <div style="display: flex; width: 40px; height: 40px; margin: 2px; border: 2px solid #FFF; border-radius: 6px; justify-content: center; align-items: center; box-sizing: border-box;">S</div>
+  <div style="display: flex; width: 40px; height: 40px; margin: 2px; border: 2px solid #FFF; border-radius: 6px; justify-content: center; align-items: center; box-sizing: border-box;">D</div>
+</div>
+`;
+              navbar.appendChild(wasd);
+              const help = document.createElement('div');
+              help.style.cssText = `\
+display: flex;
+margin: 50px 0;
+font-size: 13px;
+justify-content: center;
+flex-direction: column;
+`;
+              help.innerHTML = `\
+<p style="margin: 3px 0; font-size: 16px;">Welcome to zeo!</p>
+<p style="margin: 3px 0;">Take control with <span style="color: #03A9F4;">Keyboard + Mouse</span> or <span style="color: #8BC34A;">WebVR</span>. Looks like <span style="color: #8BC34A;">WebVR is supported</span> in your browser!</p>
+<p style="margin: 3px 0;">WASD: move, Z/C: select left/right controller, Click: trigger, Mousewheel: move controller, E: menu, F: grip, Q: pad, Shift+Mousewheel: rotate controller, Ctrl+Mousewheel: Controller forward/back, Alt+Mousewheel: touchpad.</p>
+`;
+              navbar.appendChild(help);
+              const anchors = document.createElement('div');
+              anchors.style.cssText = `\
+display: flex;
 width: 200px;
 height: 100px;
 `;
               anchors.appendChild(keyboardMouseAnchor);
               anchors.appendChild(vrAnchor);
-              document.body.appendChild(anchors);
+              navbar.appendChild(anchors);
+              document.body.appendChild(navbar);
 
               class Listener {
                 constructor(handler, priority) {
