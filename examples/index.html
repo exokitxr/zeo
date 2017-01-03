@@ -1,18 +1,95 @@
-<!doctyle html>
+<!DOCTYPE html>
 <html>
 <head>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400" rel="stylesheet">
   <style>
     body {
+      display: flex;
+      height: 100vh;
       margin: 0;
-      background-color: #000000;
+      background-color: #000;
+      font-family: 'Open Sans';
+      font-weight: 300;
+      color: #FFF;
+      flex-direction: column;
     }
-    canvas {
-      background-color: #FFFFFF;
+    header {
+      display: flex;
+      height: 100px;
+      width: 100%;
+      padding: 0 30px;
+      background-color: #000;
+      align-items: center;
+    }
+    .icon {
+      margin-right: 20px;
+    }
+    .header-anchor {
+      font-size: 20px;
+    }
+    .container {
+      display: flex;
+      height: 100%;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    h1 {
+      margin: 0;
+      font-size: 100px;
+      line-height: 1;
+    }
+    h1, h2 {
+      font-weight: inherit;
+    }
+    a {
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .enter-anchor {
+      color: inherit;
+    }
+    button {
+      display: block;
+      padding: 10px 20px;
+      background-color: transparent;
+      border: 2px solid #FFF;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: inherit;
+      color: inherit;
+      cursor: inherit;
+    }
+    footer {
+      display: flex;
+      height: 100px;
+      padding: 0 30px;
+      border-top: 1px solid #222;
+      font-size: 12px;
+      justify-content: center;
+      align-items: center;
+    }
+    .footer-left {
+      margin-right: auto;
     }
   </style>
 </head>
 <body>
-  <script src='/archae/archae.js'></script>
-  <script src='/js/index.js'></script>
+  <header>
+    <img width=32 height=51 src="/img/logo.png" class=icon>
+    <a class=header-anchor>zeo.sh</a>
+  </header>
+  <div class=container>
+    <h1>zeo</h1>
+    <h2>WebVR Worlds in NPM modules</h2>
+    <p><p>
+    <a class=enter-anchor href="/vr">
+      <button>Enter VR</button>
+    </a>
+  </div>
+  <footer>
+    <p class=footer-left>Home | Github | Contact</p>
+    <p class=footer-right>&copy; 2017 Avaer Kazmer</p>
+  </footer>
 </body>
 </html>
