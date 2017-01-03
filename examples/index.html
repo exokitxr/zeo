@@ -27,6 +27,9 @@
     .header-anchor {
       font-size: 20px;
     }
+    .header-anchor:hover {
+      color: #4CAF50;
+    }
     .container {
       display: flex;
       height: 100%;
@@ -43,6 +46,7 @@
       font-weight: inherit;
     }
     a {
+      color: inherit;
       text-decoration: none;
       cursor: pointer;
     }
@@ -58,7 +62,16 @@
       font-size: 16px;
       font-weight: inherit;
       color: inherit;
+      outline: none;
       cursor: inherit;
+    }
+    button:hover {
+      border-color: #4CAF50;
+      color: #4CAF50;
+    }
+    button:active {
+      border-color: #2E7D32;
+      color: #2E7D32;
     }
     footer {
       display: flex;
@@ -71,6 +84,9 @@
     }
     .footer-left {
       margin-right: auto;
+    }
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -88,7 +104,7 @@
     </a>
   </div>
   <footer>
-    <p class=footer-left>Home | Github | Contact</p>
+    <p class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></p>
     <p class=footer-right>&copy; 2017 Avaer Kazmer</p>
   </footer>
 </body>
