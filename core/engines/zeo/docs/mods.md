@@ -183,4 +183,20 @@ Once you've placed your mod in `plugin/`, you'll be able to add it to Zeo the no
 
 ## Publishing to `npm`
 
-// XXX note `zeo-mod` tag
+Zeo mods can be published to `npm` for consumption by anyone running Zeo, right from the VR interface. The only additional thing you need to do to make this work is to add `"zeo-mod"` to your `"keywords" array in `package.json`, so Zeo knows how to find your module.
+
+```js
+// package.json
+{
+  "name": "my-mod",
+  "version": "0.0.1",
+  "keywords": [
+    "zeo-mod"
+  ],
+  "client": "client.js"
+}
+```
+
+The mod format is the same regardless of whether you want your mod to be local or puplushed to `npm`. You can publish to `npm` in the usual way; just note that there might be a short delay (seconds to minutes) between when you publish your module and when it becomes visible in the search results.
+
+To install a Zeo mod that was published to `npm`, go to `Mods > Npm search` in the main Zeo menu.
