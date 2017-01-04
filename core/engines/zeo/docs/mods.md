@@ -62,7 +62,7 @@ module.exports = archae => { // here
 Once you've done that, you get the Zeo engine instance with `archae.requestEngine('/core/engines/zeo')`. This returns a `Promise` that will resolve to the Zeo API root:
 
 ```js
-module.exports = archae => { // here
+module.exports = archae => {
   mount() {
     return archae.requestEngine('/core/engines/zeo')
       .then(zeo => {
@@ -81,7 +81,7 @@ The rest of what your module does communicates with Zeo through the API you get 
 Zeo loads `THREE.js` and sets up the `scene` rendering for you, and exposes these at the root of the Zeo API.
 
 ```js
-module.exports = archae => { // here
+module.exports = archae => {
   mount() {
     return archae.requestEngine('/core/engines/zeo')
       .then(zeo => {
@@ -105,15 +105,81 @@ Since Zeo is fundamentally about interactive VR, you will probably want a way to
 
 The Zeo framework is the "owner" of the VR camera, the rendering pipeline, and timing, so to be able to do stuff (like updating animations), you'll need to be able to hook in your code at the right time in a frame. That's what the update callbacks are for.
 
-// XXXX
+All callbacks are declared by your mod via the [Archae specification](https://github.com/modulesio/archae). That is, your mount function should return (a `Promise` that resolves to) an object with the callback key mapping to the callback handler:
+
+```js
+module.exports = archae => {
+  mount() {
+    return archae.requestEngine('/core/engines/zeo')
+      .then(zeo => {
+        return {
+          update() {
+            console.log('about to render a frame');
+          },
+        };
+      });
+  },
+};
+```
+
+#### `update`
+
+The `update` callback will fire _before_ Zeo renders every frame. This lets you do
+
+```js
+module.exports = archae => {
+  mount() {
+    return archae.requestEngine('/core/engines/zeo')
+      .then(zeo => {
+        const {THREE, scene} = zeo;
+
+        const object = new THREE.Object3D(); // or new THREE.Mesh() etc.
+        object.position.set(0, 5, 0);
+        scene.add(object);
+        this.object = object;
+
+        this._cleanup = () => {
+          scene.remove(object);
+        };
+
+        return {
+          update() {
+            object.position.y -= 0.001; // a hacky version of gravity
+          },
+        };
+      });
+  },
+  unmount() {
+    this._cleanup && this._cleanup();
+  },
+};
+```
+
+Note however that whatever you do here needs to be _fast_, since this function will run on every frame, and VR is best when it runs at 90FPS. Basically, the sum total of the execution of _all_ of the `update` functions of _all_ loaded mods needs to complete in under `10` milliseconds.
+
+That is, you probably don't want to be doing expensive things here like adding/removing objects or constructing new materials (`new THREE.Material()`).
+
+If you need to do expensive setup for your object, the right place to do it is the `mount` function; if this setup needs to be asynchronous (such as needing to fetch resources), your `mount` function can return the appropriate `Promise`.
 
 ### Zeo VR status API
 
 // XXX
 
-## Local mods
+### Zeo elements API
 
 // XXX
+
+## Local mods
+
+Zeo supports two sources of mods: you can either installed from the local filesystem (in which case the mod will only be available to your server), or publish to the public `npm` registry (in which case anyone will be able to find and install your module).
+
+The former of these is most useful for testing mods as you develop them, without the overhead of constantly publishing and downloading from `npm`.
+
+To use the local mod installation feature, simply drop your `npm` module (which otherwise meets the same Zeo mods specification) into Zeo's `plugins/` directory. For example, `plugins/my-mod` would contain an `npm`-compatible mod named `my-mod`.
+
+Once you've placed your mod in `plugin/`, you'll be able to add it to Zeo the normal way,  by going to `Mods > Local Mods` in the main Zeo menu.
+
+// XXX explain reinstalls
 
 ## Publishing to `npm`
 
