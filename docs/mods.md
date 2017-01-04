@@ -95,3 +95,5 @@ module.exports = () => ({
 The resolved result of the `unmount` handler, whatever it is, will be discarded.
 
 A throw or `Promise` rejection in the `mount` handler will cause your mod's loading to fail, and this fact will be reported to callers depending on it, such as those waiting on calling Archae's `requestPlugin()`. A throw or `Promise` rejection in the `unmount` handler has no effect -- the unmount will be considered successful regardless, though the error will be reported to the console for debugging.
+
+Note that the API exported by your mod in the `mount` handler is environment-specific. That is, whatever you return in a `"client"` file will only be available to other mod's `"client"` files.
