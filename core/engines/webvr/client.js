@@ -170,6 +170,7 @@ class WebVR {
                       effect.setSize(window.innerWidth, window.innerHeight);
                     };
                     window.addEventListener('resize', resize);
+                    window.addEventListener('vrdisplaypresentchange', resize);
 
                     cleanups.push(() => {
                       this.display = null;
@@ -181,6 +182,7 @@ class WebVR {
                       renderer.setPixelRatio(window.devicePixelRatio);
 
                       window.removeEventListener('resize', resize);
+                      window.removeEventListener('vrdisplaypresentchange', resize);
                     });
                   }
 
