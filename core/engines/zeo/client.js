@@ -284,6 +284,8 @@ height: 100px;
                 return result;
               };
 
+              const _getCurrentWorld = () => rend.getCurrentWorld();
+
               this._cleanup = () => {
                 _stopRenderLoop();
               };
@@ -293,7 +295,7 @@ height: 100px;
                 scene,
                 camera,
                 renderer,
-                sound,
+                getCurrentWorld: _getCurrentWorld,
               };
             }
           })
