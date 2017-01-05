@@ -85,19 +85,47 @@ module.exports = archae => {
   mount() {
     return archae.requestEngine('/core/engines/zeo')
       .then(zeo => {
-        const {THREE, scene} = zeo;
+        const {THREE, scene, camera, renderer} = zeo;
 
-        console.log("got Zeo's THREE and scene!", {THREE, scene});
+        console.log("got Zeo's THREE and scene!", {THREE, scene, camera, renderer});
       });
   },
 };
 ```
 
-These are the bare THREE.js APIs and you can immediately use them to add meshes and other objects to the THREE.js scene graph. There's no magic here and you have the full THREE.js API at your disposal.
+These objects (`THREE`, `scene`, `camera`, `renderer`) are the bare THREE.js APIs and you can immediately use them to add meshes and other objects to the THREE.js scene graph. There's no magic here and you have the full THREE.js API at your disposal.
 
 Here we add a green sphere floating in the middle of the scene:
 
-// XXX
+```js
+module.exports = archae => {
+  mount() {
+    return archae.requestEngine('/core/engines/zeo')
+      .then(zeo => {
+        const {THREE, scene} = zeo;
+
+        const sphere = new THREE.Mesh(
+          new THREE.SphereBufferGeometry(0.1, 5, 4),
+          new THREE.MeshPhongMaterial({
+            color: 0x4CAF50,
+            shading: THREE.FlatShading,
+            shininess: 0,
+          })
+        );
+        scene.add(sphere);
+
+        this._cleanup = () => {
+          scene.remove(sphere);
+        };
+      });
+  },
+  unmount() {
+    this._cleanup();
+  },
+};
+```
+
+Note that a full example of this mod is available as a demo plugin in the [plugins/demo/](/plugins/demo/).
 
 ### Zeo update callbacks API
 
