@@ -435,7 +435,7 @@ class WebVR {
                 const leftGamepad = gamepads[0];
                 const rightGamepad = gamepads[1];
 
-                const _isGamepadAvailable = gamepad => Boolean(gamepad) && gamepad.pose !== null && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
+                const _isGamepadAvailable = gamepad => Boolean(gamepad) && Boolean(gamepad.pose) && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
                 const _getGamepadPose = gamepad => {
                   const {pose, buttons: [padButton, triggerButton, gripButton, menuButton], axes: [x, y]} = gamepad;
 
