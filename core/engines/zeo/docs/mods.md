@@ -162,7 +162,8 @@ module.exports = archae => {
         const {THREE, scene} = zeo;
 
         const object = new THREE.Object3D(); // or new THREE.Mesh() etc.
-        object.position.set(0, 5, 0);
+        const y = 5;
+        object.position.set(0, y, 0);
         scene.add(object);
         this.object = object;
 
@@ -170,9 +171,13 @@ module.exports = archae => {
           scene.remove(object);
         };
 
+        let i = 0;
+
         return {
           update() {
-            object.position.y -= 0.001; // a hacky version of gravity
+            object.position.y = y + Math.sin(Math.PI * i * 0.001); // a hacky version of gravity in which time flows in lockstep with your framerate
+
+            i++;
           },
         };
       });
@@ -205,9 +210,44 @@ The Zeo status API lets you get details about the current user state -- their He
 
 ### Zeo world API
 
-The Zeo world API lets your mod get details about the currently loaded VR world -- such as accurate world timing information for animations. For this, the Zeo engine exports a `getWorld()` function.
+The Zeo world API lets your mod get details about the currently loaded VR world -- such as accurate world timing information for animations. For this, the Zeo engine exports a `getCurrentWorld()` function:
 
-// XXX
+```js
+module.exports = archae => {
+  mount() {
+    return archae.requestEngines('/core/engines/zeo')
+      .then(zeo => {
+        const {THREE, scene} = zeo;
+
+        const object = new THREE.Object3D(); // or new THREE.Mesh() etc.
+        object.position.set(0, 5, 0);
+        scene.add(object);
+        this.object = object;
+
+        this._cleanup = () => {
+          scene.remove(object);
+        };
+
+        let lastWorldTime = zeo.getCurrentWorldTime();
+
+        return {
+          update() {
+            const currentWorldTime = zeo.getCurrentWorldTime();
+            const timeDiff = currentWorldTime - lastWorldTime;
+            object.position.y = Math.sin(Math.PI * timeDiff * 0.001); // a less hacky version of gravity that is synchronized to the world rather than your framerate
+
+            lastWorldTime = zeo.getCurrentWorldTime();
+          },
+        };
+      });
+  },
+  unmount() {
+    this._cleanup && this._cleanup();
+  },
+};
+```
+
+The API behind the `World` object exported from is still settling, but you can rely on `getWorldTime()` being available, for getting the current number of milliseconds that the world has been executing.
 
 ### Zeo elements API
 
