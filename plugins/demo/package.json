@@ -1,0 +1,10 @@
+{
+  "name": "demo",
+  "description": "Zeo demo plugin.",
+  "version": "0.0.1",
+  "keywords": [
+    "zeo-mod"
+  ],
+  "client": "client.js",
+  "dependencies": {}
+}

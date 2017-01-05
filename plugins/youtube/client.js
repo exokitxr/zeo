@@ -26,13 +26,16 @@ class Youtube {
       '/core/engines/zeo',
       '/core/engines/input',
       '/core/engines/biolumi',
+      '/core/engines/somnifer',
     ]).then(([
       zeo,
       input,
       biolumi,
+      somnifer,
     ]) => {
       if (live) {
-        const {THREE, scene, camera, sound} = zeo;
+        const {THREE, scene, camera} = zeo;
+        const {sound} = somnifer;
 
         const transparentImg = biolumi.getTransparentImg();
 
