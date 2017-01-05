@@ -124,12 +124,12 @@ module.exports = archae => {
 
 #### `update`
 
-The `update` callback will fire _before_ Zeo renders every frame. This lets you do
+The `update` callback will fire _before_ Zeo renders every frame. This lets you do additional work that needs to be done per frame, such as updating animations.
 
 ```js
 module.exports = archae => {
   mount() {
-    return archae.requestEngine('/core/engines/zeo')
+    return archae.requestEngines('/core/engines/zeo')
       .then(zeo => {
         const {THREE, scene} = zeo;
 
@@ -155,17 +155,43 @@ module.exports = archae => {
 };
 ```
 
-Note however that whatever you do here needs to be _fast_, since this function will run on every frame, and VR is best when it runs at 90FPS. Basically, the sum total of the execution of _all_ of the `update` functions of _all_ loaded mods needs to complete in under `10` milliseconds.
+Note that whatever your `update` callback runs once per frame, so it needs to be fast.
 
-That is, you probably don't want to be doing expensive things here like adding/removing objects or constructing new materials (`new THREE.Material()`).
+This means your `update` callback should not add or remove objects from the scene, construct new materials (`new THREE.Material()`), or do heavy math.
 
-If you need to do expensive setup for your object, the right place to do it is the `mount` function; if this setup needs to be asynchronous (such as needing to fetch resources), your `mount` function can return the appropriate `Promise`.
+If you need to do these things, the right place to do them is in the `mount` function; if this setup needs to be asynchronous (such as needing to fetch resources), your `mount` function can return the appropriate `Promise`.
 
-### Zeo VR status API
+#### `updateEye`
+
+The `updateEye` callback is similar to `update`, only it will get called once _per eye_ being rendered (generally, twice per frame).
+
+Additionally, it gets passed the `camera` that correponds to the eye being rendered. You can use the `camera` object to perform additional computation or set up shader parameters for more complicated rendering passes. For example, if you want to render a stereoscopic portal texture, `updateEye` is the way you'd do it.
+
+Note that `update` and `updateEye` are _not_ mutually exclusive. You can use both, in which case `updateEye` will be called for each eye, followed by `update`.
+
+### Zeo status API
+
+The Zeo status API lets you get details about the current user state -- their Head Mounted Display (HMD) pose, controller poses, and button states.
+
+// XXX
+
+### Zeo world API
+
+The Zeo world API lets your mod get details about the currently loaded VR world -- such as accurate world timing information for animations. For this, the Zeo engine exports a `getWorld()` function.
 
 // XXX
 
 ### Zeo elements API
+
+The Zeo elements API is a way for mods to comunicate -- with the user (via configuration in the menu interface), and with each other (via a DOM object model and event system). The key idea is that a Zeo mod can export a specification for custom DOM elements, and these can be added to the world and configured by the user.
+
+Here's a simple example of a mod that allows user-configurable placement of a cube:
+
+```js
+// XXX
+```
+
+There are basically three parts to the elements API: `element declarations`, `attrbute declarations`, and `template declarations`. We'll tackle them individually.
 
 // XXX
 
