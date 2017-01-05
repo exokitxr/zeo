@@ -590,7 +590,17 @@ class ArchaeClient {
   }
 }
 
-const _instantiate = (fn, arg) => _isConstructible(fn) ? new fn(arg) : fn(arg);
+const _instantiate = (o, arg) => {
+  if (typeof o === 'function') {
+    if (/^(?:function|class)/.test(o.toString())) {
+      return new o(arg);
+    } else {
+      return o(arg);
+    }
+  } else {
+    return o;
+  }
+};
 const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/.test(fn.toString());
 
 const _makeId = () => Math.random().toString(36).substring(7);
