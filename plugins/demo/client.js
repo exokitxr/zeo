@@ -1,4 +1,4 @@
-module.exports = archae => {
+module.exports = archae => ({
   mount() {
     return archae.requestEngine('/core/engines/zeo')
       .then(zeo => {
@@ -12,21 +12,21 @@ module.exports = archae => {
             shininess: 0,
           })
         );
+        const y = 1.2;
+        sphere.position.y = y;
         scene.add(sphere);
 
         this._cleanup = () => {
           scene.remove(sphere);
         };
 
-        let lastWorldTime = zeo.getCurrentWorldTime();
+        const world = zeo.getCurrentWorld();
 
         return {
           update() {
-            const currentWorldTime = zeo.getCurrentWorldTime();
-            const timeDiff = currentWorldTime - lastWorldTime;
-            object.position.y = Math.sin(Math.PI * timeDiff * 0.001); // a less hacky version of gravity that is synchronized to the world rather than your framerate
-
-            lastWorldTime = zeo.getCurrentWorldTime();
+            const t = world.getWorldTime();
+            sphere.position.y = y + Math.sin((t * 0.0025) % (Math.PI * 2)) * 0.25;
+            sphere.rotation.y = y + (t * 0.002) % (Math.PI * 2);
           },
         };
       });
@@ -34,4 +34,4 @@ module.exports = archae => {
   unmount() {
     this._cleanup();
   },
-};
+});
