@@ -1198,9 +1198,18 @@ const _loadCerts = () => {
   return _getOldCerts() || _getNewCerts();
 };
 
-const _instantiate = (fn, arg) => _isConstructible(fn) ? new fn(arg) : fn(arg);
+const _instantiate = (o, arg) => {
+  if (typeof o === 'function') {
+    if (/^(?:function|class)/.test(o.toString())) {
+      return new o(arg);
+    } else {
+      return o(arg);
+    }
+  } else {
+    return o;
+  }
+};
 const _uninstantiate = api => (typeof api.unmount === 'function') ? api.unmount() : null;
-const _isConstructible = fn => typeof fn === 'function' && /^(?:function|class)/.test(fn.toString());
 
 const _removeModule = (moduleName, type, cb) => {
   _unsetValidatedModuleHash(moduleName, type);
