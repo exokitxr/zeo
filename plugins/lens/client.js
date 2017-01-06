@@ -281,16 +281,14 @@ class Lens {
                 this._cleanup();
               }
 
-              attributeChangedCallback(name, oldValue, newValue) {
-                const value = JSON.parse(newValue);
-
+              attributeValueChangedCallback(name, oldValue, newValue) {
                 switch (name) {
                   case 'position': {
                     const {mesh} = this;
 
-                    mesh.position.set(value[0], value[1], value[2]);
-                    mesh.quaternion.set(value[3], value[4], value[5], value[6]);
-                    mesh.scale.set(value[7], value[8], value[9]);
+                    mesh.position.set(newValue[0], newValue[1], newValue[2]);
+                    mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                    mesh.scale.set(newValue[7], newValue[8], newValue[9]);
 
                     break;
                   }
@@ -298,7 +296,7 @@ class Lens {
                     const {mesh: oldMesh, meshConstructors} = this;
                     scene.remove(oldMesh);
 
-                    const meshConstructor = meshConstructors[value];
+                    const meshConstructor = meshConstructors[newValue];
                     const newMesh = meshConstructor();
                     scene.add(newMesh);
                     this.mesh = newMesh;

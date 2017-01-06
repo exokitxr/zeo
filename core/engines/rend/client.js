@@ -452,6 +452,16 @@ class Rend {
               };
 
               const _addModApiElements = (modName, modApi, modApis) => {
+                const _validateAttributes = attributes => {
+                  for (const attributeName in attributes) {
+                    if (/^[^\t\n\f \/>"'=]+$/.test(attributeName) && attributeName.toLowerCase() === attributeName) {
+                      // attribute ok
+                    } else {
+                      return false;
+                    }
+                  }
+                  return true;
+                };
                 const _validateTemplates = templates => {
                   const _isValid = template => {
                     const {tag, children} = template;
@@ -472,13 +482,20 @@ class Rend {
                   return {valid, invalid};
                 };
 
-                const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
-                const {valid: validTemplates, invalid: invalidTemplates} = _validateTemplates(templates);
-                if (invalidTemplates.length > 0) {
-                  console.warn('warning: ignoring invalid templates in ' + JSON.stringify(modName), invalidTemplates);
+                const attributes = (typeof modApi.attributes === 'object' && modApi.attributes !== null && !Array.isArray(modApi.attributes)) ? modApi.attributes : {};
+                if (_validateAttributes(attributes)) {
+                  const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
+
+                  const {valid: validTemplates, invalid: invalidTemplates} = _validateTemplates(templates);
+                  if (invalidTemplates.length === 0) {
+                    const templateElements = menuUtils.jsonToElements(modApis, validTemplates);
+                    elementsState.availableElements.push.apply(elementsState.availableElements, templateElements);
+                  } else {
+                    console.warn('warning: ignoring mod with invalid template tag names', JSON.stringify(modName), invalidTemplates);
+                  }
+                } else {
+                  console.warn('warning: ignoring mod with invalid attribute names', JSON.stringify(modName), attributes);
                 }
-                const templateElements = menuUtils.jsonToElements(modApis, validTemplates);
-                elementsState.availableElements.push.apply(elementsState.availableElements, templateElements);
               };
               const _removeModApiElements = modApi => {
                 const oldTemplates = Array.isArray(modApi.templates) ? modApi.templates : [];

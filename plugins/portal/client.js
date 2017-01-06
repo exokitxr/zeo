@@ -434,17 +434,15 @@ class Portal {
               }
 
               attributeChangedCallback(name, oldValue, newValue) {
-                const value = JSON.parse(newValue);
-
                 switch (name) {
                   case 'position1': {
                     const {mesh} = this;
                     const {meshes} = mesh;
                     const {red: redPortalMesh} = meshes;
 
-                    redPortalMesh.position.set(value[0], value[1], value[2]);
-                    redPortalMesh.quaternion.set(value[3], value[4], value[5], value[6]);
-                    redPortalMesh.scale.set(value[7], value[8], value[9]);
+                    redPortalMesh.position.set(newValue[0], newValue[1], newValue[2]);
+                    redPortalMesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                    redPortalMesh.scale.set(newValue[7], newValue[8], newValue[9]);
 
                     break;
                   }
@@ -455,7 +453,7 @@ class Portal {
                     const {outer} = redPortalMesh;
                     const {material} = outer;
 
-                    material.color = new THREE.Color(value);
+                    material.color = new THREE.Color(newValue);
 
                     break;
                   }
@@ -464,9 +462,9 @@ class Portal {
                     const {meshes} = mesh;
                     const {blue: bluePortalMesh} = meshes;
 
-                    bluePortalMesh.position.set(value[0], value[1], value[2]);
-                    bluePortalMesh.quaternion.set(value[3], value[4], value[5], value[6]);
-                    bluePortalMesh.scale.set(value[7], value[8], value[9]);
+                    bluePortalMesh.position.set(newValue[0], newValue[1], newValue[2]);
+                    bluePortalMesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                    bluePortalMesh.scale.set(newValue[7], newValue[8], newValue[9]);
 
                     break;
                   }
@@ -477,7 +475,7 @@ class Portal {
                     const {outer} = bluePortalMesh;
                     const {material} = outer;
 
-                    material.color = new THREE.Color(value);
+                    material.color = new THREE.Color(newValue);
 
                     break;
                   }

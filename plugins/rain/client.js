@@ -281,39 +281,37 @@ class Rain {
                 this._cleanup();
               }
 
-              attributeChangedCallback(name, oldValue, newValue) {
-                const value = JSON.parse(newValue || 'null');
-
+              attributeValueChangedCallback(name, oldValue, newValue) {
                 switch (name) {
                   case 'position': {
                     const {mesh} = this;
 
-                    mesh.position.set(value[0], value[1], value[2]);
-                    mesh.quaternion.set(value[3], value[4], value[5], value[6]);
-                    mesh.scale.set(value[7], value[8], value[9]);
+                    mesh.position.set(newValue[0], newValue[1], newValue[2]);
+                    mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                    mesh.scale.set(newValue[7], newValue[8], newValue[9]);
 
                     break;
                   }
                   case 'type': {
-                    console.log('rain set type', value); // XXX
+                    console.log('rain set type', newValue); // XXX
 
                     break;
                   }
                   case 'drops': {
-                    this.drops = value;
+                    this.drops = newValue;
                     this._updateGeometry();
 
                     break;
                   }
                   case 'range': {
-                    this.range = value;
+                    this.range = newValue;
                     this._updateGeometry();
                     this._updateMaterial();
 
                     break;
                   }
                   case 'length': {
-                    this.length = value;
+                    this.length = newValue;
                     this._updateGeometry();
 
                     break;
@@ -321,14 +319,14 @@ class Rain {
                   case 'color': {
                     const {mesh: {material: {uniforms}}} = this;
 
-                    uniforms.diffuse.value = new THREE.Color(value);
+                    uniforms.diffuse.value = new THREE.Color(newValue);
 
                     break;
                   }
                   case 'enabled': {
                     const {mesh} = this;
                     
-                    mesh.visible = value;
+                    mesh.visible = newValue;
 
                     break;
                   }

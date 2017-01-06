@@ -136,12 +136,10 @@ class Model {
                 this._cleanup();
               }
 
-              attributeChangedCallback(name, oldValue, newValue) {
-                const value = JSON.parse(newValue);
-
+              attributeValueChangedCallback(name, oldValue, newValue) {
                 switch (name) {
                   case 'position': {
-                    this.position = value;
+                    this.position = newValue;
 
                     this._updateMesh();
 

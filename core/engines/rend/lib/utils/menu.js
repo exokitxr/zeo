@@ -1,7 +1,9 @@
 const prettyBytes = require('pretty-bytes');
 
 const zeoElementClasses = new Map();
-const _makeZeoElementClass = ({tag, attributeNames}) => {
+const _makeZeoElementClass = ({tag, elementApiAttributes}) => {
+  const attributeNames = Object.keys(elementApiAttributes);
+
   class ZeoElement extends HTMLElement {
     get observedAttributes() {
       return attributeNames;
@@ -14,8 +16,7 @@ const _makeZeoElementClass = ({tag, attributeNames}) => {
 const _makeZeoElement = ({tag, elementApiAttributes, attributeValues}) => {
   let zeoElementClass = zeoElementClasses.get(tag);
   if (!zeoElementClass) {
-    const attributeNames = Object.keys(elementApiAttributes);
-    zeoElementClass = _makeZeoElementClass({tag, attributeNames});
+    zeoElementClass = _makeZeoElementClass({tag, elementApiAttributes});
     zeoElementClasses.set(tag, zeoElementClass);
   }
 
@@ -41,10 +42,33 @@ const _makeZeoElement = ({tag, elementApiAttributes, attributeValues}) => {
 };
 
 const zeoElementInstanceClasses = new Map();
-const _makeZeoElementInstanceClass = ({tag, attributeNames, baseClass}) => {
+const _makeZeoElementInstanceClass = ({tag, elementApiAttributes, baseClass}) => {
+  const attributeNames = Object.keys(elementApiAttributes);
+
   class ZeoElementInstance extends baseClass {
     get observedAttributes() {
       return attributeNames;
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+      if (typeof super.attributeChangedCallback === 'function') {
+        super.attributeChangedCallback(name, oldValue, newValue);
+      }
+
+      if (typeof super.attributeValueChangedCallback === 'function') {
+        const attributeConfig = elementApiAttributes[name];
+        const {type, min, max, step, options} = attributeConfig;
+
+        const _castValue = s => {
+          if (s !== null) {
+            return castValueStringToValue(s.replace(/^"([\s\S]*)"$/, '$1'), type, min, max, step, options);
+          } else {
+            return null;
+          }
+        }
+
+        super.attributeValueChangedCallback(name, _castValue(oldValue), _castValue(newValue));
+      }
     }
   }
 
@@ -54,8 +78,7 @@ const _makeZeoElementInstanceClass = ({tag, attributeNames, baseClass}) => {
 const _makeZeoElementInstance = ({tag, elementApiAttributes, attributeValues, baseClass}) => {
   let zeoElementInstanceClass = zeoElementInstanceClasses.get(tag);
   if (!zeoElementInstanceClass) {
-    const attributeNames = Object.keys(elementApiAttributes);
-    zeoElementInstanceClass = _makeZeoElementInstanceClass({tag, attributeNames, baseClass});
+    zeoElementInstanceClass = _makeZeoElementInstanceClass({tag, elementApiAttributes, baseClass});
     zeoElementInstanceClasses.set(tag, zeoElementInstanceClass);
   }
 
@@ -356,13 +379,8 @@ const parseKeyPath = s => s.split(':').map(p => {
 });
 const castValueStringToValue = (s, type, min, max, step, options) => {
   switch (type) {
-    case 'position': {
-      const match = s.match(/^([0-9\.]+),([0-9\.]+),([0-9\.]+)$/);
-      if (match) {
-        return [match[1], match[2], match[3]];
-      } else {
-        return null;
-      }
+    case 'matrix': {
+      return _jsonParse(s);
     }
     case 'text': {
       return s;
@@ -409,7 +427,27 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
     }
   }
 };
-const castValueValueToString = (s, type) => String(s);
+const castValueValueToString = (s, type) => {
+  if (typeof s === 'string') {
+    return s;
+  } else {
+    return JSON.stringify(s);
+  }
+};
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return null;
+  }
+};
 const constructElement = (modApis, element) => {
   const {tagName, childNodes} = element;
   const match = tagName.match(/^z-([^\.]+?)(?:\.([^\.]+?))?$/i);

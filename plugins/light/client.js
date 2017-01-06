@@ -35,7 +35,7 @@ class Light {
                       1, 1, 1,
                     ],
                   },
-                  lookAt: {
+                  lookat: {
                     type: 'matrix',
                     value: [
                       0, 0, 0,
@@ -60,21 +60,19 @@ class Light {
                 this._cleanup();
               }
 
-              attributeChangedCallback(name, oldValue, newValue) {
-                const value = JSON.parse(newValue);
-
+              attributeValueChangedCallback(name, oldValue, newValue) {
                 switch (name) {
                   case 'position': {
                     const {light} = this;
 
-                    light.position.set(value[0], value[1], value[2]);
+                    light.position.set(newValue[0], newValue[1], newValue[2]);
 
                     break;
                   }
-                  case 'lookAt': {
+                  case 'lookat': {
                     const {light} = this;
 
-                    light.lookAt.set(new THREE.Vector3(value[0], value[1], value[2]));
+                    light.lookAt(new THREE.Vector3(newValue[0], newValue[1], newValue[2]));
 
                     break;
                   }
