@@ -132,10 +132,10 @@ class Input {
         eventRouter.remove(handler);
       }
     };
-    const _triggerEvent = (event, {side = DEFAULT_EVENT_SIDE} = {}) => {
+    const _triggerEvent = (event, eventData) => {
       const eventRouter = eventRouters[event];
       if (eventRouter) {
-        eventRouter.handle({side});
+        eventRouter.handle(eventData);
       }
     };
 

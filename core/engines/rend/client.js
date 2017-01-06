@@ -1,6 +1,5 @@
 import Stats from 'stats.js';
 import keycode from 'keycode';
-import whatkey from 'whatkey';
 
 import {
   WIDTH,
@@ -2085,7 +2084,7 @@ class Rend {
                   let commit = false;
 
                   if (_isPrintableKeycode(e.keyCode)) {
-                    state.inputText = inputText.slice(0, inputIndex) + whatkey(e).key + inputText.slice(inputIndex);
+                    state.inputText = inputText.slice(0, inputIndex) + keycode(e.keyCode) + inputText.slice(inputIndex);
                     state.inputIndex++;
                     state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
