@@ -1,0 +1,8 @@
+{
+  "name": "voxel",
+  "description": "Voxel-based mesh rendering.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}
