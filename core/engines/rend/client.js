@@ -1127,7 +1127,7 @@ class Rend {
                   const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
                   const {selectedName: oldFilesSelectedName} = filesState;
 
-                  const _doPosition = e => {
+                  const _doSetPosition = e => {
                     const {side} = e;
                     const {positioningSide} = elementsState;
 
@@ -1815,14 +1815,30 @@ class Rend {
                     }
                   };
 
-                  _doPosition(e) || _doClick(e);
+                  _doSetPosition(e) || _doClick(e);
                 };
                 input.addEventListener('trigger', trigger);
                 const triggerdown = e => {
                   const {side} = e;
                   const menuHoverState = menuHoverStates[side];
 
-                  const _doDrag = () => {
+                  const _doClick = () => {
+                    const {intersectionPoint} = menuHoverState;
+
+                    if (intersectionPoint) {
+                      const {anchor} = menuHoverState;
+                      const onmousedown = (anchor && anchor.onmousedown) || '';
+
+                      if (/^element:attribute:(.+?):(position|focus|set|tweak|toggle)(?::(.+?))?$/.test(onmousedown)) {
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  };
+                  const _doDragElement = () => {
                     const {intersectionPoint} = menuHoverState;
 
                     if (intersectionPoint) {
@@ -1873,7 +1889,7 @@ class Rend {
                     }
                   };
 
-                  _doDrag() || _doScroll();
+                  _doClick() || _doDragElement() || _doScroll();
                 };
                 input.addEventListener('triggerdown', triggerdown);
 
