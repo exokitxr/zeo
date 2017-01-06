@@ -2571,10 +2571,7 @@ class Rend {
                               const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(menuIntersectionPoint));
 
                               if (interstectedAnchorBoxes.length > 0) {
-                                return interstectedAnchorBoxes.map(anchorBox => ({
-                                  anchorBox,
-                                  distance: anchorBox.getCenter().distanceTo(menuIntersectionPoint),
-                                })).sort((a, b) => a.distance - b.distance)[0].anchorBox;
+                                return interstectedAnchorBoxes[0];
                               } else {
                                 return null;
                               }
