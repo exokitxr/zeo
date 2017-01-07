@@ -1,6 +1,8 @@
 const TELEPORT_DISTANCE = 15;
 const DEFAULT_USER_HEIGHT = 1.6;
 
+const SIDES = ['left', 'right'];
+
 class Teleport {
   constructor(archae) {
     this._archae = archae;
@@ -18,88 +20,76 @@ class Teleport {
       '/core/engines/zeo',
       '/core/engines/input',
       '/core/engines/webvr',
-      '/core/engines/rend',
       '/core/engines/cyborg',
     ]).then(([
       zeo,
       input,
       webvr,
-      rend,
       cyborg,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
-        const world = rend.getCurrentWorld();
+        const world = zeo.getCurrentWorld();
 
-        const controllers = cyborg.getControllers();
+        const teleportMeshMaterial = new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          wireframe: true,
+          opacity: 0.25,
+          transparent: true,
+        });
 
-        const mesh = (() => {
+        const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
+
+        const _makeTeleportMesh = () => {
           const geometry = new THREE.TorusBufferGeometry(0.5, 0.1, 3, 5, Math.PI * 2);
           geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-(Math.PI / 2)));
           geometry.applyMatrix(new THREE.Matrix4().makeRotationY((1 / 20) * (Math.PI * 2)));
 
-          const material = new THREE.MeshBasicMaterial({
-            color: 0x000000,
-            wireframe: true,
-            opacity: 0.25,
-            transparent: true,
-          });
+          const material = teleportMeshMaterial;
 
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
-
           return mesh;
-        })();
-        scene.add(mesh);
-
-        const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
-
-        let teleporting = false;
-        let commitTeleporting = false;
-        let teleportPoint = null;
-        const keydown = e => { // XXX move this to webvr/cyborg engines
-          if (window.document.pointerLockElement) {
-            switch (e.keyCode) {
-              case 88: { // X
-                teleporting = false;
-                commitTeleporting = false;
-                teleportPoint = null;
-
-                e.stopImmediatePropagation();
-                break;
-              }
-              case 32: { // space
-                const mode = cyborg.getMode();
-                if (mode !== 'move') {
-                  teleporting = true;
-
-                  e.stopImmediatePropagation();
-                }
-                break;
-              }
-            }
-          }
         };
-        const keyup = e => {
-          if (window.document.pointerLockElement) {
-            switch (e.keyCode) {
-              case 32: { // space
-                teleporting = false;
-                commitTeleporting = true;
 
-                e.stopImmediatePropagation();
-                break;
-              }
-            }
-          }
+        const teleportMeshes = {
+          left: _makeTeleportMesh(),
+          right: _makeTeleportMesh(),
         };
-        input.addEventListener('keydown', keydown);
-        input.addEventListener('keyup', keyup);
+        scene.add(teleportMeshes.left);
+        scene.add(teleportMeshes.right);
+
+        const _makeTeleportState = () => ({
+          teleportFloorPoint: null,
+          teleportAirPoint: null,
+        });
+        const teleportStates = {
+          left: _makeTeleportState(),
+          right: _makeTeleportState(),
+        };
+
+        /* const paddown = e => {
+          const {side} = e;
+          const teleportState = teleportStates[side];
+
+          const status = webvr.getStatus();
+          const {gamepads} = status;
+          const gamepadStatus = gamepads[side];
+        };
+        input.addEventListener('paddown', paddown);
+        const padup = e => {
+          const {side} = e;
+          const teleportState = teleportStates[side];
+          // XXX
+        };
+        input.addEventListener('padup', padup);
 
         this._cleanup = () => {
           input.removeEventListener('keydown', keydown);
           input.removeEventListener('keyup', keyup);
-        };
+        }; */
+
+        this._cleanup = () => {};
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -115,65 +105,71 @@ class Teleport {
         };
 
         const _update = options => {
-          if (teleporting) {
-            const side = cyborg.getMode();
-            const rootMesh = controllers[side].mesh;
-            const tipMesh = rootMesh.tip;
+          const status = webvr.getStatus();
+          const {gamepads} = status;
 
-            const rootMatrixWorld = _decomposeObjectMatrixWorld(rootMesh);
-            const tipMatrixWorld = _decomposeObjectMatrixWorld(tipMesh);
-            const ray = tipMatrixWorld.position.clone().sub(rootMatrixWorld.position);
-            const controllerLine = new THREE.Line3(
-              rootMatrixWorld.position.clone(),
-              rootMatrixWorld.position.clone().add(ray.clone().multiplyScalar(TELEPORT_DISTANCE))
-            );
-            const intersectionPoint = floorPlane.intersectLine(controllerLine);
+          SIDES.forEach(side => {
+            const gamepadStatus = gamepads[side];
+            const teleportState = teleportStates[side];
+            const teleportMesh = teleportMeshes[side];
 
-            if (intersectionPoint) {
-              mesh.position.copy(intersectionPoint);
+            if (gamepadStatus) {
+              const {position: controllerPosition, rotation: controllerRotation, buttons} = gamepadStatus;
+              const padButtonPressed = buttons.pad.pressed;
 
-              const rootMatrixWorldEuler = new THREE.Euler().setFromQuaternion(rootMatrixWorld.quaternion, camera.rotation.order);
-              mesh.rotation.y = rootMatrixWorldEuler.y;
+              if (padButtonPressed) {
+                const ray = new THREE.Vector3(0, 0, -10)
+                  .applyQuaternion(controllerRotation);
+                const controllerLine = new THREE.Line3(
+                  controllerPosition.clone(),
+                  controllerPosition.clone().add(ray.clone().multiplyScalar(15))
+                );
+                const intersectionPoint = floorPlane.intersectLine(controllerLine);
 
-              teleportPoint = intersectionPoint;
+                if (intersectionPoint) {
+                  teleportMesh.position.copy(intersectionPoint);
 
-              if (!mesh.visible) {
-                mesh.visible = true;
+                  const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
+                  teleportMesh.rotation.y = controllerEuler.y;
+
+                  teleportState.teleportFloorPoint = intersectionPoint;
+
+                  if (!teleportMesh.visible) {
+                    teleportMesh.visible = true;
+                  }
+                } else {
+                  teleportState.teleportFloorPoint = null;
+
+                  if (teleportMesh.visible) {
+                    teleportMesh.visible = false;
+                  }
+                }
+              } else {
+                const {teleportFloorPoint} = teleportState;
+
+                if (teleportFloorPoint) {
+                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, DEFAULT_USER_HEIGHT, 0));
+                  const {position: cameraPosition} = _decomposeObjectMatrixWorld(camera);
+                  const positionDiff = destinationPoint.clone().sub(cameraPosition);
+
+                  const stageMatrix = webvr.getStageMatrix();
+                  const {position, quaternion, scale} = _decomposeMatrix(stageMatrix);
+                  position.add(positionDiff);
+                  stageMatrix.compose(position, quaternion, scale);
+                  webvr.setStageMatrix(stageMatrix);
+
+                  webvr.updateStatus();
+                  cyborg.update();
+
+                  teleportState.teleportFloorPoint = null;
+                }
+
+                if (teleportMesh.visible) {
+                  teleportMesh.visible = false;
+                }
               }
-            } else {
-              teleportPoint = null;
-
-              if (mesh.visible) {
-                mesh.visible = false;
-              }
             }
-          } else if (commitTeleporting) {
-            if (teleportPoint) {
-              const destinationPoint = teleportPoint.clone().add(new THREE.Vector3(0, DEFAULT_USER_HEIGHT, 0));
-              const {position: cameraPosition} = _decomposeObjectMatrixWorld(camera);
-              const positionDiff = destinationPoint.clone().sub(cameraPosition);
-
-              const matrix = webvr.getStageMatrix();
-              const {position, quaternion, scale} = _decomposeMatrix(matrix);
-              position.add(positionDiff);
-              matrix.compose(position, quaternion, scale);
-              webvr.setStageMatrix(matrix);
-
-              webvr.updateStatus();
-              cyborg.update();
-
-              teleportPoint = null;
-            }
-
-            commitTeleporting = false;
-
-            if (mesh.visible) {
-              mesh.visible = false;
-            }
-
-            // update the cyborg controllers immediately instead of waiting for the next frame
-            cyborg.update(options);
-          }
+          });
         };
 
         return {
