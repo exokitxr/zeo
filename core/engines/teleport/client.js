@@ -17,19 +17,21 @@ class Teleport {
     };
 
     return archae.requestEngines([
-      '/core/engines/zeo',
+      '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
+      '/core/engines/rend',
       '/core/engines/cyborg',
     ]).then(([
-      zeo,
+      three,
       input,
       webvr,
+      rend,
       cyborg,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = zeo;
-        const world = zeo.getCurrentWorld();
+        const {THREE, scene, camera} = three;
+        const world = rend.getCurrentWorld();
 
         const teleportMeshMaterial = new THREE.MeshBasicMaterial({
           color: 0x000000,
@@ -82,27 +84,6 @@ class Teleport {
           left: _makeTeleportState(),
           right: _makeTeleportState(),
         };
-
-        /* const paddown = e => {
-          const {side} = e;
-          const teleportState = teleportStates[side];
-
-          const status = webvr.getStatus();
-          const {gamepads} = status;
-          const gamepadStatus = gamepads[side];
-        };
-        input.addEventListener('paddown', paddown);
-        const padup = e => {
-          const {side} = e;
-          const teleportState = teleportStates[side];
-          // XXX
-        };
-        input.addEventListener('padup', padup);
-
-        this._cleanup = () => {
-          input.removeEventListener('keydown', keydown);
-          input.removeEventListener('keyup', keyup);
-        }; */
 
         this._cleanup = () => {
           SIDES.forEach(side => {
@@ -229,10 +210,7 @@ class Teleport {
             }
           });
         };
-
-        return {
-          update: _update,
-        };
+        world.addUpdate(_update);
       }
     });
   }
