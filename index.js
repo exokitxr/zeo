@@ -571,7 +571,8 @@ class ArchaeServer {
           res.send(s);
         };
 
-        const entry = bundleCache[module];
+        const key = module + (!worker ? '-client' : '-worker');
+        const entry = bundleCache[key];
         if (entry !== undefined) {
           _respondOk(entry);
         } else {
@@ -594,7 +595,7 @@ class ArchaeServer {
             const {code} = result;
             const wrappedCode = '(function() {\n' + code + '\n})();\n';
 
-            bundleCache[module] = wrappedCode;
+            bundleCache[key] = wrappedCode;
 
             _respondOk(wrappedCode);
           })
