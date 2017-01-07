@@ -2,11 +2,6 @@ const isosurface = require('isosurface');
 
 self.onrequest = (method, args, cb) => {
   switch (method) {
-    case 'ping': {
-      cb(null, args[0]);
-
-      break;
-    }
     case 'marchCubes': {
       const opts = args[0];
       const positions = marchCubes(opts);
