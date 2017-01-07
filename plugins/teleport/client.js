@@ -124,6 +124,8 @@ class Teleport {
           };
         };
 
+        let airHeight = 0;
+
         const _update = options => {
           const status = webvr.getStatus();
           const {gamepads} = status;
@@ -164,7 +166,8 @@ class Teleport {
                     teleportAirMesh.visible = false;
                   }
                 } else {
-                  const destinationPoint = controllerLine.end;
+                  const destinationPoint = controllerLine.end.clone();
+                  destinationPoint.y = Math.max(destinationPoint.y, camera.position.y - airHeight, 0);
                   teleportAirMesh.position.copy(destinationPoint);
                   const controllerEuler = new THREE.Euler().setFromQuaternion(controllerRotation, camera.rotation.order);
                   teleportAirMesh.rotation.y = controllerEuler.y;
@@ -183,7 +186,8 @@ class Teleport {
                 const {teleportFloorPoint, teleportAirPoint} = teleportState;
 
                 if (teleportFloorPoint) {
-                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, DEFAULT_USER_HEIGHT, 0));
+                  const destinationPoint = teleportFloorPoint.clone().add(new THREE.Vector3(0, camera.position.y - airHeight, 0));
+                  airHeight = 0;
                   const {position: cameraPosition} = _decomposeObjectMatrixWorld(camera);
                   const positionDiff = destinationPoint.clone().sub(cameraPosition);
 
@@ -199,7 +203,7 @@ class Teleport {
                   teleportState.teleportFloorPoint = null;
                 } else if (teleportAirPoint) {
                   const destinationPoint = teleportAirPoint.clone();
-                  destinationPoint.y = Math.max(destinationPoint.y, DEFAULT_USER_HEIGHT);
+                  airHeight += destinationPoint.y - camera.position.y;
                   const {position: cameraPosition} = _decomposeObjectMatrixWorld(camera);
                   const positionDiff = destinationPoint.clone().sub(cameraPosition);
 
