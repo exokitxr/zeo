@@ -70,14 +70,16 @@ class Map {
               });
 
               return worker.request('generate', [
-                offset: {
-                  x: 0,
-                  y: 0,
-                },
-                position: {
-                  x: 0,
-                  y: 0,
-                },
+                {
+                  offset: {
+                    x: 0,
+                    y: 0,
+                  },
+                  position: {
+                    x: 0,
+                    y: 0,
+                  },
+                }
               ]).then(mapChunk => {
                 const mesh = _makeMapChunkMesh(mapChunk);
                 scene.add(mesh);

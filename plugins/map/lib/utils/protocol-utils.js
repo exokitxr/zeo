@@ -1,6 +1,4 @@
-const {
-  MapPoint,
-} = require('../records/records');
+import {MapPoint} from '../records/records';
 
 const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
@@ -264,7 +262,7 @@ export const parseMapChunk = (buffer, byteOffset) => {
       water,
       ocean,
       lake,
-      lava,
+      lava
     );
   }
 

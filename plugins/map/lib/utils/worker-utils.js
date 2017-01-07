@@ -1,15 +1,13 @@
-const Alea = require('alea');
-const isosurface = require('isosurface');
-const indev = require('indev');
+import Alea from 'alea';
+import isosurface from 'isosurface';
+import indev from 'indev';
 
-const {
+import {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
   DEFAULT_SEED,
-} = require('./lib/constants/constants');
-const {
-  MapPoint,
-} = require('./lib/records/records');
+} from '../constants/constants';
+import  {MapPoint} from '../records/records';
 
 const BIOME_COLORS = {
   // Features
