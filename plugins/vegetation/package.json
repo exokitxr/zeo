@@ -1,0 +1,10 @@
+{
+  "name": "vegetation",
+  "description": "Procedurally generated vegetation.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {
+    "alea": "0.0.9"
+  }
+}
