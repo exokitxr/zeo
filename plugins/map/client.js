@@ -1,3 +1,5 @@
+const protocolUtils = require('./lib/utils/protocol-utils');
+
 class Map {
   constructor(archae) {
     this._archae = archae;
@@ -80,7 +82,8 @@ class Map {
                     y: 0,
                   },
                 }
-              ]).then(mapChunk => {
+              ]).then(({mapChunk: mapChunkBuffer}) => {
+                const mapChunk = protocolUtils.parseMapChunk(mapChunkBuffer);
                 const mesh = _makeMapChunkMesh(mapChunk);
                 scene.add(mesh);
 

@@ -1,3 +1,7 @@
+importScripts(
+  '/archae/three/three.js'
+);
+
 const workerUtils = require('./lib/utils/worker-utils');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
@@ -19,11 +23,7 @@ self.onrequest = (method, args, cb) => {
       const transfers = [
         mapChunkBuffer.buffer,
       ];
-      const result = {
-        value,
-        transfers,
-      };
-      cb(null, result);
+      cb(null, value, transfers);
 
       break;
     }
