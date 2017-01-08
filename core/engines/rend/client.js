@@ -672,7 +672,10 @@ class Rend {
             ]) => {
               if (live) {
                 const uploadStart = () => {
-                  filesState.uploading = true; // XXX handle uploading to elementAttributeFiles
+                  const pages = ui.getPages();
+                  if (pages.length > 0 && pages[pages.length - 1].type === 'files') {
+                    filesState.uploading = true;
+                  }
 
                   _updatePages();
                 }
