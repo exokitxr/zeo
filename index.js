@@ -1,7 +1,7 @@
 const http = require('http');
 
 const express = require('express');
-const archae = require('..');
+const archae = require('archae');
 
 const app = express();
 app.get('/vr', (req, res, next) => {
@@ -20,4 +20,4 @@ a.server.on('listening', () => {
 });
 a.server.on('error', err => {
   console.warn(err);
-});;
+});
