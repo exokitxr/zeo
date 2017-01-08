@@ -1,0 +1,31 @@
+{
+  "name": "zeo",
+  "version": "0.0.1",
+  "description": "WebVR worlds in Javascript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modulesio/zeo.git"
+  },
+  "keywords": [
+    "zeo",
+    "webvr",
+    "javascript",
+    "npm",
+    "modules",
+    "threejs"
+  ],
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/modulesio/zeo/issues"
+  },
+  "homepage": "https://github.com/modulesio/zeo#readme",
+  "dependencies": {
+    "archae": "0.0.1",
+    "express": "^4.14.0"
+  }
+}
