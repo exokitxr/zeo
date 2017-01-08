@@ -410,9 +410,12 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
     }
     case 'file': {
       return `\
-<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
-  <div style="display: flex; margin-right: 20px; font-family: Menlo; font-size: 20px; color: #808080; overflow: hidden; text-overflow: ellipsis; align-items: center;">${focusValue}</div>
-  <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:choose" onmousedown="element:attribute:${name}:choose">Choose</a>
+<div style="display: flex; width: 400px; height: 40px;">
+  <a style="position: relative; width: 260px; height: 40px; margin-right: 20px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="element:attribute:${name}:focus" onmousedown="element:attribute:${name}:focus">
+    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+    <div>${focusValue}</div>
+  </a>
+  <a style="display: flex; width: 120px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:choose" onmousedown="element:attribute:${name}:choose">Choose</a>
 </div>
 `;
     }
