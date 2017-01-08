@@ -408,6 +408,13 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
 </div>
 `;
     }
+    case 'file': {
+      return `\
+<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
+  <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:choose" onmousedown="element:attribute:${name}:choose">Choose</a>
+</div>
+`;
+    }
     default: {
       return '';
     }
@@ -543,7 +550,7 @@ ${contentSrc}
 ${paragraphSrc ? `<p style="width: ${600 - (30 + 30)}px; padding: 5px; background-color: #EEE; border-radius: 5px; font-family: Menlo; box-sizing: border-box;">${paragraphSrc}</p>` : ''}
 `;
 
-const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}) => {
+const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix}) => {
   const content = (() => {
     if (loading) {
       return `<h1 style="font-size: 50px;">Loading...</h1>`;
@@ -551,8 +558,13 @@ const getFilesPageSrc = ({cwd, files, inputText, inputValue, selectedName, clipb
       return `<h1 style="font-size: 50px;">Uploading...</h1>`;
     } else {
       const renamingName = (() => {
-        const match = focusType.match(/^files:rename:(.+)$/);
-        return match ? match[1] : '';
+        const match = focusType.match(/^(.+?)s:rename:(.+?)$/);
+
+        if (match && match[1] === prefix) {
+          return match[2];
+        } else {
+          return '';
+        }
       })();
 
       return `\
@@ -563,15 +575,15 @@ ${(cwd !== '/') ?
       name: '..',
       description: '',
     }
-  ], selectedName, '', '', '', '', 'file')}`
+  ], selectedName, '', '', '', '', prefix)}`
 :
   ''
 }
 <h1 style="border-bottom: 2px solid #333; font-size: 50px;">Contents of ${cwd}</h1>
-${getItemsSrc(files, selectedName, renamingName, inputText, inputValue, 'Enter new name', 'file')}
+${getItemsSrc(files, selectedName, renamingName, inputText, inputValue, 'Enter new name', prefix)}
 <div style="display: flex; margin: 20px 0; float: left; clear: both; font-size: 32px; align-items: center;">
-  ${focusType !== 'files:createdirectory' ? `\
-    <a style="display: flex; height: 60px; padding: 0 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="files:createdirectory">+ Directory</a>
+  ${(focusType !== (prefix + 's:createdirectory')) ? `\
+    <a style="display: flex; height: 60px; padding: 0 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="${prefix}s:createdirectory">+ Directory</a>
 `
   : `\
     <a style="display: flex; position: relative; width: ${(WIDTH - 500) / 3}px; height: 60px; background-color: #EEE; border-radius: 5px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;">
@@ -588,7 +600,7 @@ ${getItemsSrc(files, selectedName, renamingName, inputText, inputValue, 'Enter n
   })();
 
   return `\
-${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath), true)}
+${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath, prefix), true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getFilesSidebarSrc()}
@@ -695,24 +707,24 @@ const getElementsButtonsSrc = (selectedKeyPath) => `\
   }
 </div>`;
 
-const getFilesButtonsSrc = (selectedName, clipboardPath) => `\
+const getFilesButtonsSrc = (selectedName, clipboardPath, prefix) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
   ${selectedName ? `\
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="files:cut">Cut</a>
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="files:copy">Copy</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="${prefix}s:cut">Cut</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="${prefix}s:copy">Copy</a>
 `
   :
     ''
   }
   ${clipboardPath ? `\
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="files:paste">Paste</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="${prefix}s:paste">Paste</a>
 `
   :
     ''
   }
   ${selectedName ? `\
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="files:rename">Rename</a>
-<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="files:remove">Remove</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="${prefix}s:rename">Rename</a>
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="${prefix}s:remove">Remove</a>
 `
   :
     ''

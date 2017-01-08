@@ -173,6 +173,19 @@ class Rend {
           loading: false,
           uploading: fs.getUploading(),
         };
+        const elementAttributeFilesState = {
+          cwd: fs.getCwd(),
+          files: [],
+          inputText: '',
+          inputIndex: 0,
+          inputValue: 0,
+          selectedName: '',
+          clipboardType: null,
+          clipboardPath: '',
+          loaded: false,
+          loading: false,
+          uploading: fs.getUploading(),
+        };
 
         const worlds = new Map();
         let currentWorld = null;
@@ -659,7 +672,7 @@ class Rend {
             ]) => {
               if (live) {
                 const uploadStart = () => {
-                  filesState.uploading = true;
+                  filesState.uploading = true; // XXX handle uploading to elementAttributeFiles
 
                   _updatePages();
                 }
@@ -1125,6 +1138,11 @@ class Rend {
                           files: filesState,
                           focus: focusState,
                         }, pend);
+                      } else if (type === 'elementAttributeFiles') {
+                        page.update({
+                          elementAttributeFiles: elementAttributeFilesState,
+                          focus: focusState,
+                        }, pend);
                       } else if (type === 'config') {
                         page.update({
                           config: configState,
@@ -1139,9 +1157,21 @@ class Rend {
                   }
                 });
                 const trigger = e => {
-                  const {selectedName: oldWorldsSelectedName} = worldsState;
-                  const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
-                  const {selectedName: oldFilesSelectedName} = filesState;
+                  const oldStates = {
+                    worldsState: {
+                      selectedName: worldsState.selectedName,
+                    },
+                    elementsState: {
+                      selectedKeyPath: elementsState.selectedKeyPath,
+                      draggingKeyPath: elementsState.draggingKeyPath,
+                    },
+                    filesState: {
+                      selectedName: filesState.selectedName,
+                    },
+                    elementAttributeFilesState: {
+                      selectedName: elementAttributeFilesState.selectedName,
+                    },
+                  };
 
                   const _doSetPosition = e => {
                     const {side} = e;
@@ -1149,6 +1179,7 @@ class Rend {
 
                     if (positioningSide && side === positioningSide) {
                       const {positioningName} = elementsState;
+                      const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
 
                       const element = menuUtils.getElementKeyPath({
                         elements: elementsState.elements,
@@ -1189,6 +1220,27 @@ class Rend {
                       focusState.type = '';
                       worldsState.selectedName = '';
                       filesState.selectedName = '';
+                      elementAttributeFilesState.selectedName = '';
+
+                      const _ensureFilesLoaded = targetState => {
+                        const {loaded} = targetState;
+
+                        if (!loaded) {
+                          targetState.loading = true;
+
+                          const {cwd} = targetState;
+                          fs.getDirectory(cwd)
+                            .then(files => {
+                              targetState.files = menuUtils.cleanFiles(files);
+                              targetState.loading = false;
+
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        }
+                      };
 
                       let match;
                       if (onclick === 'back') {
@@ -1229,6 +1281,7 @@ class Rend {
 
                         _updatePages();
                       } else if (onclick === 'worlds:rename') {
+                        const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
                         if (oldWorldsSelectedName) {
                           worldsState.inputText = '';
                           worldsState.inputIndex = 0;
@@ -1239,6 +1292,7 @@ class Rend {
                           _updatePages();
                         }
                       } else if (onclick === 'worlds:remove') {
+                        const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
                         if (oldWorldsSelectedName) {
                           const {worlds} = worldsState;
                           worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
@@ -1481,27 +1535,12 @@ class Rend {
                       } else if (onclick === 'files') {
                         ui.cancelTransition();
 
-                        const {loaded} = filesState;
-                        if (!loaded) {
-                          filesState.loading = true;
-
-                          const {cwd} = filesState;
-                          fs.getDirectory(cwd)
-                            .then(files => {
-                              filesState.files = menuUtils.cleanFiles(files);
-                              filesState.loading = false;
-
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        }
+                        _ensureFilesLoaded(filesState);
 
                         ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                           {
                             type: 'html',
-                            src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType}),
+                            src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'file'}),
                           },
                           {
                             type: 'image',
@@ -1520,18 +1559,29 @@ class Rend {
                             focus: focusState,
                           },
                         });
-                      } else if (match = onclick.match(/^file:(.+)$/)) {
+                      } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
                         ui.cancelTransition();
 
-                        const _chdir = newCwd => {
-                          filesState.loading = true;
+                        const target = match[1];
+                        const name = match[2];
 
-                          filesState.cwd = newCwd;
+                        const targetState = (() => {
+                          switch (target) {
+                            case 'file': return filesState;
+                            case 'elementAttributeFile': return elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+
+                        const _chdir = newCwd => {
+                          targetState.loading = true;
+
+                          targetState.cwd = newCwd;
                           fs.setCwd(newCwd);
                           fs.getDirectory(newCwd)
                             .then(files => {
-                              filesState.files = menuUtils.cleanFiles(files);
-                              filesState.loading = false;
+                              targetState.files = menuUtils.cleanFiles(files);
+                              targetState.loading = false;
 
                               _updatePages();
                             })
@@ -1542,23 +1592,22 @@ class Rend {
                           _updatePages();
                         };
 
-                        const name = match[1];
                         if (name !== '..') {
-                          const {files} = filesState;
+                          const {files} = targetState;
                           const file = files.find(f => f.name === name);
                           const {type} = file;
 
                           if (type === 'file') {
-                            filesState.selectedName = name;
+                            targetState.selectedName = name;
 
                             _updatePages();
                           } else if (type === 'directory') {
-                            const {cwd: oldCwd} = filesState;
+                            const {cwd: oldCwd} = targetState;
                             const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
                             _chdir(newCwd);
                           }
                         } else {
-                          const {cwd: oldCwd} = filesState;
+                          const {cwd: oldCwd} = targetState;
                           const newCwd = (() => {
                             const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
                             if (replacedCwd !== '') {
@@ -1569,25 +1618,52 @@ class Rend {
                           })();
                           _chdir(newCwd);
                         }
-                      } else if (match = onclick.match(/^files:(cut|copy)$/)) {
+                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
+                        const target = match[1];
+                        const type = match[2];
+
+                        const targetState = (() => {
+                          switch (target) {
+                            case 'file': return filesState;
+                            case 'elementAttributeFile': return elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+                        const oldTargetState = (() => {
+                          switch (target) {
+                            case 'file': return oldStates.filesState;
+                            case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+                        const {selectedName: oldFilesSelectedName} = oldTargetState;
+
                         if (oldFilesSelectedName) {
-                          const type = match[1];
-                          const {cwd} = filesState;
+                          const {cwd} = targetState;
                           const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
 
-                          filesState.selectedName = oldFilesSelectedName;
-                          filesState.clipboardType = type;
-                          filesState.clipboardPath = cutPath;
+                          targetState.selectedName = oldFilesSelectedName;
+                          targetState.clipboardType = type;
+                          targetState.clipboardPath = cutPath;
 
                           _updatePages();
                         }
-                      } else if (onclick === 'files:paste') {
-                        const {clipboardPath} = filesState;
+                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:paste$/)) {
+                        const target = match[1];
+                        const targetState = (() => {
+                          switch (target) {
+                            case 'file': return filesState;
+                            case 'elementAttributeFile': return elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+
+                        const {clipboardPath} = targetState;
 
                         if (clipboardPath) {
-                          filesState.uploading = true;
+                          targetState.uploading = true;
 
-                          const {cwd, clipboardType, clipboardPath} = filesState;
+                          const {cwd, clipboardType, clipboardPath} = targetState;
 
                           const src = clipboardPath;
                           const name = clipboardPath.match(/\/([^\/]*)$/)[1];
@@ -1595,12 +1671,12 @@ class Rend {
                           fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
                             .then(() => fs.getDirectory(cwd)
                               .then(files => {
-                                filesState.files = menuUtils.cleanFiles(files);
-                                filesState.selectedName = name;
-                                filesState.uploading = false;
+                                targetState.files = menuUtils.cleanFiles(files);
+                                targetState.selectedName = name;
+                                targetState.uploading = false;
                                 if (clipboardType === 'cut') {
-                                  filesState.clipboardType = 'copy';
-                                  filesState.clipboardPath = dst;
+                                  targetState.clipboardType = 'copy';
+                                  targetState.clipboardPath = dst;
                                 }
 
                                 _updatePages();
@@ -1609,43 +1685,79 @@ class Rend {
                             .catch(err => {
                               console.warn(err);
 
-                              filesState.uploading = true;
+                              targetState.uploading = true;
 
                               _updatePages();
                             });
 
                           _updatePages();
                         }
-                      } else if (onclick === 'files:createdirectory') {
-                        focusState.type = 'files:createdirectory';
+                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
+                        const target = match[1];
+
+                        focusState.type = target + 's:createdirectory';
 
                         _updatePages();
-                      } else if (onclick === 'files:rename') {
+                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:rename$/)) {
+                        const target = match[1];
+                        const targetState = (() => {
+                          switch (target) {
+                            case 'file': return filesState;
+                            case 'elementAttributeFile': return elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+                        const oldTargetState = (() => {
+                          switch (target) {
+                            case 'file': return oldStates.filesState;
+                            case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+                        const {selectedName: oldFilesSelectedName} = oldTargetState;
+
                         if (oldFilesSelectedName) {
-                          filesState.inputText = '';
-                          filesState.inputIndex = 0;
-                          filesState.inputValue = 0;
+                          targetState.inputText = '';
+                          targetState.inputIndex = 0;
+                          targetState.inputValue = 0;
 
                           focusState.type = 'files:rename:' + oldFilesSelectedName;
 
                           _updatePages();
                         }
-                      } else if (onclick === 'files:remove') {
-                        if (oldFilesSelectedName) {
-                          filesState.uploading = true;
+                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:remove$/)) {
+                        const target = match[1];
+                        const targetState = (() => {
+                          switch (target) {
+                            case 'file': return filesState;
+                            case 'elementAttributeFile': return elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+                        const oldTargetState = (() => {
+                          switch (target) {
+                            case 'file': return oldStates.filesState;
+                            case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+                        const {selectedName: oldFilesSelectedName} = oldTargetState;
 
-                          const {cwd} = filesState;
+                        if (oldFilesSelectedName) {
+                          targetState.uploading = true;
+
+                          const {cwd} = targetState;
                           const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
                           fs.remove(p)
                             .then(() => fs.getDirectory(cwd)
                               .then(files => {
-                                filesState.files = menuUtils.cleanFiles(files);
-                                const {clipboardPath} = filesState;
+                                targetState.files = menuUtils.cleanFiles(files);
+                                const {clipboardPath} = targetState;
                                 if (clipboardPath === p) {
-                                  filesState.clipboardType = null;
-                                  filesState.clipboardPath = '';
+                                  targetState.clipboardType = null;
+                                  targetState.clipboardPath = '';
                                 }
-                                filesState.uploading = false;
+                                targetState.uploading = false;
 
                                 _updatePages();
                               })
@@ -1653,7 +1765,7 @@ class Rend {
                             .catch(err => {
                               console.warn(err);
 
-                              filesState.uploading = false;
+                              targetState.uploading = false;
 
                               _updatePages();
                             });
@@ -1661,6 +1773,7 @@ class Rend {
                           _updatePages();
                         }
                       } else if (onclick === 'elements:remove') {
+                        const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
                         if (oldElementsSelectedKeyPath.length > 0) {
                           const elementsSpec = {
                             elements: elementsState.elements,
@@ -1683,10 +1796,12 @@ class Rend {
 
                           _updatePages();
                         }
-                      } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle)(?::(.+?))?$/)) {
+                      } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
                         const attributeName = match[1];
                         const action = match[2];
                         const value = match[3];
+
+                        const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
 
                         const element = menuUtils.getElementKeyPath({
                           elements: elementsState.elements,
@@ -1762,17 +1877,46 @@ class Rend {
                           instance.setAttribute(attributeName, newAttributeValue);
 
                           _saveElements();
+                        } else if (action === 'choose') {
+                          ui.cancelTransition();
+
+                          _ensureFilesLoaded(elementAttributeFilesState);
+
+                          ui.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                            {
+                              type: 'html',
+                              src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
+                            },
+                            {
+                              type: 'image',
+                              img: creatureUtils.makeAnimatedCreature('files'),
+                              x: 150,
+                              y: 0,
+                              w: 150,
+                              h: 150,
+                              frameTime: 300,
+                              pixelated: true,
+                            }
+                          ]), {
+                            type: 'elementAttributeFiles',
+                            state: {
+                              elementAttributeFiles: elementAttributeFilesState,
+                              focus: focusState,
+                            },
+                          });
                         }
 
                         elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
 
                         _updatePages();
                       } else if (onclick === 'elements:clearclipboard') {
+                        const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
+
                         elementsState.clipboardElements = [];
                         if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
                           elementsState.selectedKeyPath = [];
                         }
-                        if (oldDraggingKeyPath.length > 0 && oldDraggingKeyPath[0] === 'clipboardElements') {
+                        if (oldElementsDraggingKeyPath.length > 0 && oldElementsDraggingKeyPath[0] === 'clipboardElements') {
                           elementsState.draggingKeyPath = [];
                         }
 
@@ -1845,7 +1989,7 @@ class Rend {
                       const {anchor} = menuHoverState;
                       const onmousedown = (anchor && anchor.onmousedown) || '';
 
-                      if (/^element:attribute:(.+?):(position|focus|set|tweak|toggle)(?::(.+?))?$/.test(onmousedown)) {
+                      if (/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/.test(onmousedown)) {
                         return true;
                       } else {
                         return false;
@@ -1860,7 +2004,6 @@ class Rend {
                     if (intersectionPoint) {
                       const {anchor} = menuHoverState;
                       const onmousedown = (anchor && anchor.onmousedown) || '';
-                      const {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldDraggingKeyPath} = elementsState;
 
                       let match;
                       if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
@@ -1948,9 +2091,15 @@ class Rend {
                     if (intersectionPoint) {
                       const {anchor} = menuHoverState;
                       const onmouseup = (anchor && anchor.onmouseup) || '';
-                      const {draggingKeyPath: oldDraggingKeyPath} = elementsState;
 
-                      if (oldDraggingKeyPath.length > 0) {
+                      const oldStates = {
+                        elementsState: {
+                          draggingKeyPath: elementsState.draggingKeyPath,
+                        },
+                      };
+                      const {elementsState: {draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
+
+                      if (oldElementsDraggingKeyPath.length > 0) {
                         elementsState.selectedKeyPath = [];
                         elementsState.draggingKeyPath = [];
 
@@ -1999,8 +2148,8 @@ class Rend {
                           };
                           const childKeyPath = parentKeyPath.concat(menuUtils.getElementKeyPath(elementsSpec, parentKeyPath).children.length);
 
-                          if (!menuUtils.isSubKeyPath(childKeyPath, oldDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(childKeyPath, oldDraggingKeyPath)) {
-                            const oldKeyPath = oldDraggingKeyPath;
+                          if (!menuUtils.isSubKeyPath(childKeyPath, oldElementsDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(childKeyPath, oldElementsDraggingKeyPath)) {
+                            const oldKeyPath = oldElementsDraggingKeyPath;
                             const newKeyPath = childKeyPath;
                             const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
                             const elementInstancesSpec = {
@@ -2010,12 +2159,12 @@ class Rend {
 
                             _saveElements();
                           } else {
-                            elementsState.selectedKeyPath = oldDraggingKeyPath;
+                            elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
                           }
                         } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
                           const keyPath = menuUtils.parseKeyPath(match[1]);
 
-                          if (!menuUtils.isSubKeyPath(keyPath, oldDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(keyPath, oldDraggingKeyPath)) {
+                          if (!menuUtils.isSubKeyPath(keyPath, oldElementsDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(keyPath, oldElementsDraggingKeyPath)) {
                             const elementsSpec = {
                               elements: elementsState.elements,
                               availableElements: elementsState.availableElements,
@@ -2024,17 +2173,17 @@ class Rend {
                             const elementInstancesSpec = {
                               elements: elementsState.elementInstances,
                             };
-                            const oldKeyPath = oldDraggingKeyPath;
+                            const oldKeyPath = oldElementsDraggingKeyPath;
                             const newKeyPath = keyPath;
                             const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
                             dragFn(elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath);
 
                             _saveElements();
                           } else {
-                            elementsState.selectedKeyPath = oldDraggingKeyPath;
+                            elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
                           }
                         } else {
-                          elementsState.selectedKeyPath = oldDraggingKeyPath;
+                          elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
                         }
 
                         _updatePages();
@@ -2247,7 +2396,7 @@ class Rend {
 
                       e.stopImmediatePropagation();
                     }
-                  } else if (type === 'files:createdirectory') {
+                  } else if (type === 'files:createdirectory') { // XXX port these
                     const applySpec = _applyStateKeyEvent(filesState, itemsFontSpec, e);
 
                     if (applySpec) {

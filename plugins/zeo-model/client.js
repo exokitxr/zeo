@@ -94,8 +94,8 @@ class Model {
                     ],
                   },
                   model: {
-                    type: 'text',
-                    value: 'cloud.mdl',
+                    type: 'file',
+                    value: '',
                   },
                 };
               }

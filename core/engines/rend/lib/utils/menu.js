@@ -422,6 +422,10 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
         return null;
       }
     }
+    case 'file': {
+      return () => fetch(s)
+        .then(res => res.blob());
+    }
     default: {
       return s;
     }
