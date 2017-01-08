@@ -146,7 +146,7 @@ class Model {
                     break;
                   }
                   case 'model': {
-                    console.log('got model', window.newValue = newValue);
+                    console.log('got model change', {newValue});
 
                     break;
                   }

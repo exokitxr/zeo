@@ -1868,6 +1868,9 @@ class Rend {
                             } else if (attributeType === 'color') {
                               const valuePx = value * (400 - (40 + 4));
                               return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                            } else if (attributeType === 'file') {
+                              const valuePx = value * 260;
+                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
                             } else {
                               return null;
                             }

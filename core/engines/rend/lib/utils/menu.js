@@ -61,7 +61,7 @@ const _makeZeoElementInstanceClass = ({tag, elementApiAttributes, baseClass}) =>
 
         const _castValue = s => {
           if (s !== null) {
-            return castValueStringToValue(s.replace(/^"([\s\S]*)"$/, '$1'), type, min, max, step, options);
+            return castValueStringToCallbackValue(s.replace(/^"([\s\S]*)"$/, '$1'), type, min, max, step, options);
           } else {
             return null;
           }
@@ -423,6 +423,16 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
       }
     }
     case 'file': {
+      return s;
+    }
+    default: {
+      return s;
+    }
+  }
+};
+const castValueStringToCallbackValue = (s, type, min, max, step, options) => {
+  switch (type) {
+    case 'file': {
       return ({type} = {}) => fetch('/archae/fs' + s)
         .then(res => {
           switch (type) {
@@ -434,9 +444,8 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
           }
         });
     }
-    default: {
-      return s;
-    }
+    default:
+      return castValueStringToValue(s, type, min, max, step, options);
   }
 };
 const castValueValueToString = (s, type) => {
@@ -525,6 +534,7 @@ module.exports = {
   parseKeyPath,
   insertElementAtKeyPath,
   castValueStringToValue,
+  castValueStringToCallbackValue,
   castValueValueToString,
   constructElement,
   constructElements,
