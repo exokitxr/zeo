@@ -115,7 +115,7 @@ class MapPlugin {
                   currentMapChunks.forEach(currentMapChunk => {
                     const {offset} = currentMapChunk;
                     if (!requiredMapChunkOffsets.some(([x, y]) => x === offset[0] && y === offset[1])) {
-                      result.push([x, y]);
+                      result.push([offset[0], offset[1]]);
                     }
                   });
                   return result;
@@ -156,7 +156,44 @@ class MapPlugin {
                   });
               };
 
-              return _requestRefreshMapChunks();
+              return _requestRefreshMapChunks()
+                .then(() => {
+                  let updating = false;
+                  let updateQueued = false;
+                  const tryMapChunkUpdate = () => {
+                    if (!updating) {
+                      updating = true;
+
+                      const done = () => {
+                        updating = false;
+
+                        if (updateQueued) {
+                          updateQueued = false;
+
+                          tryMapChunkUpdate();
+                        }
+                      };
+
+                      _requestRefreshMapChunks()
+                        .then(done)
+                        .catch(err => {
+                          console.warn(err);
+
+                          done();
+                        });
+                    } else {
+                      updateQueued = true;
+                    }
+                  };
+
+                  const _update = () => {
+                    tryMapChunkUpdate();
+                  };
+
+                  return {
+                    update: _update,
+                  };
+                });
             } else {
               worker.terminate();
             }
