@@ -66,11 +66,6 @@ function drawLogo() {
   ctx.closePath();
   ctx.fill();
 
-  // Core
-  ctx.fillStyle = 'rgb(254, 0, 0)';
-  ctx.beginPath();  
-  ctx.arc(x, y, size * 0.3, 0, 2*Math.PI);
-  ctx.fill();
   // Top left
   ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
   ctx.beginPath();
@@ -81,7 +76,7 @@ function drawLogo() {
   ctx.fill();
 
   // Top right
-  ctx.fillStyle = 'rgba(22, 137, 72, 0.6)';
+  ctx.fillStyle = 'rgba(76, 175, 80, 0.7)';
   ctx.beginPath();
   ctx.moveTo(x, y - size * 1.2);
   ctx.lineTo(x + size, y);
@@ -90,7 +85,7 @@ function drawLogo() {
   ctx.fill();
 
   // Top left
-  ctx.fillStyle = 'rgba(0, 174, 87, 0.7)';
+  ctx.fillStyle = 'rgba(139, 195, 74, 0.7)';
   ctx.beginPath();
   ctx.moveTo(x, y - size * 1.2);
   ctx.lineTo(x - size, y);
@@ -99,7 +94,7 @@ function drawLogo() {
   ctx.fill();
 
   // Bottom left
-  ctx.fillStyle = 'rgba(163, 49, 74, 0.65)';
+  ctx.fillStyle = 'rgba(255, 23, 68, 0.65)';
   ctx.beginPath();
   ctx.moveTo(x, y + size * 2);
   ctx.lineTo(x - size, y);
