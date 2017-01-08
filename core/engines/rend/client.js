@@ -673,7 +673,7 @@ class Rend {
               if (live) {
                 const uploadStart = () => {
                   const pages = ui.getPages();
-                  if (pages.length > 0 && pages[pages.length - 1].type === 'files') {
+                  if (pages.length > 0 && pages[pages.length - 1].type === 'files') { // XXX handle multiple uploads and elementAttributeFiles page
                     filesState.uploading = true;
                   }
 
@@ -1567,7 +1567,6 @@ class Rend {
 
                         const target = match[1];
                         const name = match[2];
-
                         const targetState = (() => {
                           switch (target) {
                             case 'file': return filesState;
@@ -2399,24 +2398,33 @@ class Rend {
 
                       e.stopImmediatePropagation();
                     }
-                  } else if (type === 'files:createdirectory') { // XXX port these
-                    const applySpec = _applyStateKeyEvent(filesState, itemsFontSpec, e);
+                  } else if (match = type.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
+                    const target = match[1];
+                    const targetState = (() => {
+                      switch (target) {
+                        case 'file': return filesState;
+                        case 'elementAttributeFile': return elementAttributeFilesState;
+                        default: return null;
+                      }
+                    })();
+
+                    const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
 
                     if (applySpec) {
                       const {commit} = applySpec;
 
                       if (commit) {
-                        filesState.uploading = true;
+                        targetState.uploading = true;
 
-                        const {files, inputText} = filesState;
+                        const {files, inputText} = targetState;
                         const name = inputText;
                         if (!files.some(file => file.name === name)) {
-                          const {cwd} = filesState;
+                          const {cwd} = targetState;
                           fs.createDirectory(menuUtils.pathJoin(cwd, name))
                             .then(() => fs.getDirectory(cwd)
                               .then(files => {
-                                filesState.files = menuUtils.cleanFiles(files);
-                                filesState.uploading = false;
+                                targetState.files = menuUtils.cleanFiles(files);
+                                targetState.uploading = false;
 
                                 _updatePages();
                               })
@@ -2424,7 +2432,7 @@ class Rend {
                             .catch(err => {
                               console.warn(err);
 
-                              filesState.uploading = false;
+                              targetState.uploading = false;
 
                               _updatePages();
                             });
@@ -2435,28 +2443,38 @@ class Rend {
 
                       e.stopImmediatePropagation();
                     }
-                  } else if (match = type.match(/^files:rename:(.+)$/)) {
-                    const applySpec = _applyStateKeyEvent(filesState, itemsFontSpec, e);
+                  } else if (match = type.match(/^(file|elementAttributeFile)s:rename:(.+)$/)) {
+                    const target = match[1];
+                    const name = match[2];
+                    const targetState = (() => {
+                      switch (target) {
+                        case 'file': return filesState;
+                        case 'elementAttributeFile': return elementAttributeFilesState;
+                        default: return null;
+                      }
+                    })();
+
+                    const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
 
                     if (applySpec) {
                       const {commit} = applySpec;
                       if (commit) {
-                        const {files, inputText} = filesState;
-                        const oldName = match[1];
+                        const {files, inputText} = targetState;
+                        const oldName = name;
                         const newName = inputText;
 
                         if (!files.some(file => file.name === newName && file.name !== oldName)) {
-                          filesState.uploading = true;
+                          targetState.uploading = true;
 
-                          const {cwd} = filesState;
+                          const {cwd} = targetState;
                           const src = menuUtils.pathJoin(cwd, oldName);
                           const dst = menuUtils.pathJoin(cwd, newName);
                           fs.move(src, dst)
                             .then(() => fs.getDirectory(cwd)
                               .then(files => {
-                                filesState.files = menuUtils.cleanFiles(files);
-                                filesState.selectedName = newName;
-                                filesState.uploading = false;
+                                targetState.files = menuUtils.cleanFiles(files);
+                                targetState.selectedName = newName;
+                                targetState.uploading = false;
 
                                 _updatePages();
                               })
@@ -2464,7 +2482,7 @@ class Rend {
                             .catch(err => {
                               console.warn(err);
 
-                              filesState.uploading = true;
+                              targetState.uploading = true;
 
                               _updatePages();
                             });
