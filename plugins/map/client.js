@@ -3,17 +3,16 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const DIRECTIONS = [
-  [-1,-1],
-  [-1,0],
-  [-1,1],
-  [0,-1],
-  [0,0],
-  [0,1],
-  [1,-1],
-  [1,0],
-  [1,1],
-];
+const DIRECTIONS = (() => {
+  const result = [];
+  const size = 2;
+  for (let x = -size; x <= size; x++) {
+    for (let y = -size; y <= size; y++) {
+      result.push([x, y]);
+    }
+  }
+  return result;
+})();
 
 class MapPlugin {
   constructor(archae) {
