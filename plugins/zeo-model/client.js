@@ -55,7 +55,7 @@ class Model {
         const {THREE, scene, camera} = zeo;
 
         const _getTexturePath = url => url.substring(0, url.lastIndexOf('/') + 1);
-        const _requestModel = file => file({
+        const _requestModel = file => file.fetch({
           type: 'json',
         }).then(modelJson => new Promise((accept, reject) => {
           const loader = new THREE.ObjectLoader();
@@ -118,8 +118,6 @@ class Model {
                     break;
                   }
                   case 'model': {
-                    console.log('got model change', {newValue});
-
                     const {mesh: oldMesh, _cancelRequest: cancelRequest} = this;
                     if (oldMesh) {
                       scene.remove(oldMesh);
