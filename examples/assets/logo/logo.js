@@ -38,7 +38,7 @@ function downloadCanvas(link, canvas, filename) {
 }
 
 function drawLogo() {
-  var size = 256;
+  var size = 32;
 
   var canvas = document.createElement('canvas');
   canvas.width = size * 2;
