@@ -2,7 +2,8 @@
 <html>
 <head>
   <link rel="favicon" type="image/png" href="/img/logo.png">
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Droid+Sans+Mono:400" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/font/octicons.min.css" rel="stylesheet">
   <style>
     body {
@@ -25,14 +26,22 @@
       align-items: center;
     }
     .icon {
-      margin-right: 20px;
+      margin-right: 10px;
     }
     .header-logo-anchor {
+      display: flex;
       margin-right: auto;
       font-size: 20px;
+      align-items: center;
     }
     .header-logo-anchor:hover {
-      color: #4CAF50;
+      color: #2196F3;
+    }
+    .header-logo-anchor:hover > img {
+      transform: scale(1.2);
+    }
+    .header-logo-anchor:active > img {
+      transform: scale(0.8);
     }
     .header-github-anchor {
       display: flex;
@@ -69,11 +78,12 @@
     }
     .container-wrapper {
       display: flex;
+      position: relative;
       width: 480px;
-      padding: 0 30px;
-      padding-bottom: 10px;
-      background-color: rgba(255, 255, 255, 0.9);
-      border: 3px solid;
+      padding: 0 40px;
+      padding-bottom: 30px;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.7) 0%, rgba(220, 220, 220, 0.7) 100%);
+      border-radius: 5px;
       color: #000;
       justify-content: center;
       align-items: center;
@@ -100,13 +110,14 @@
       font-weight: inherit;
     }
     h1 {
-      font-size: 100px;
+      font-size: 80px;
     }
     h2 {
       font-size: 26px;
     }
     h3 {
-      font-size: 30px;
+      font-size: 26px;
+      text-align: center;
     }
     section {
       margin: 20px 0;
@@ -117,6 +128,19 @@
       margin-bottom: 20px;
       font-weight: 400;
     }
+    pre {
+      padding: 15px;
+      background-color: #000;
+      border-radius: 3px;
+      color: #FFF;
+      font-family: 'Droid Sans Mono';
+    }
+    .dollar, .comment {
+      color: #666;
+    }
+    .dollar {
+      user-select: none;
+    }
     a {
       color: inherit;
       text-decoration: none;
@@ -124,32 +148,38 @@
     }
     .cta {
       display: flex;
+      width: 100%;
     }
     .cta-item {
       display: block;
       padding: 13px;
       border-radius: 5px;
+      border: 3px solid;
       font-size: 13px;
+      color: #000;
+      flex: 1;
+      box-sizing: border-box;
     }
     .cta-item:hover {
+      color: #4527A0;
+    }
+    .cta-item.highlight {
+      background-color: #673AB7;
+      border: 0;
       color: #FFF;
-      background-color: #E91E63;
     }
     .cta-item.highlight:hover {
-      background-color: #4CAF50;
+      background-color: #4527A0;
     }
     .cta-icon {
       display: flex;
       justify-content: center;
     }
     .cta-icon > i {
-      font-size: 50px !important;
+      font-size: 44px !important;
     }
     .cta-spacer {
-      height: 115px;
-      width: 1px;
-      margin: 0 30px;
-      background-color: #000;
+      margin: 0 20px;
     }
     footer {
       display: flex;
@@ -169,8 +199,7 @@
 </head>
 <body>
   <header>
-    <img width=32 height=51 src="/img/logo.png" class=icon>
-    <a href="https://zeo.sh" class=header-logo-anchor>zeo.sh</a>
+    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=icon>zeo.sh</a>
     <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
   </header>
   <div class=container>
@@ -184,16 +213,16 @@
         <h1>zeo</h1>
         <h2>WebVR worlds in Javascript</h2>
         <section>
-          <p>NPM modules delivered to your face, from your browser.</p>
-          <p>Supports WebVR or keyboard + mouse. Includes server-side persistence, design interface, multiplayer, physics, plugin API, and more.</p>
-          <p>Open source on GitHub.</p>
+          <p><b>NPM</b> modules delivered to your face, from your browser.</p>
+          <p>Supports <b>WebVR</b> or keyboard + mouse. Includes server-side persistence, design interface, multiplayer, physics, plugin API, and more.</p>
+          <pre><span class=dollar>$ </span>npm install zeo<span class=comment> # requires node 6+</span></pre>
         </section>
         <div class=cta>
           <a class="cta-item highlight" href="https://github.com/modulesio/zeo/blob/master/core/engines/zeo/README.md">
             <div class=cta-icon>
               <i class="octicon octicon-terminal"></i>
             </div>
-            <h3>Install server</h3>
+            <h3>Get started</h3>
           </a>
           <div class=cta-spacer>
           </div>
@@ -201,7 +230,7 @@
             <div class=cta-icon>
               <i class="octicon octicon-code"></i>
             </div>
-            <h3>Plugin API</h3>
+            <h3>API docs</h3>
           </a>
         </div>
       </div>
@@ -209,7 +238,7 @@
   </div>
   <footer>
     <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></aside>
-    <aside class=footer-right>&copy; 2017 Avaer Kazmer</aside>
+    <aside class=footer-right>&copy; 2017 <a href="mailto:a@modules.io">Avaer Kazmer</a></aside>
   </footer>
 </body>
 </html>
