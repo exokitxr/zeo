@@ -1,5 +1,5 @@
 mkdir -p bullet-build
 pushd bullet-build
-cmake .. -G "Unix Makefiles"
+cmake .. -DBUILD_CPU_DEMOS:BOOL=OFF -DBUILD_EXTRAS:BOOL=OFF -DBUILD_BULLET2_DEMOS:BOOL=OFF -DBUILD_OPENGL3_DEMOS:BOOL=OFF -DBUILD_UNIT_TESTS:BOOL=OFF .. -G "Unix Makefiles"
 make -j4
 popd
