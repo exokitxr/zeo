@@ -1,0 +1,12 @@
+{
+  "name": "link",
+  "version": "0.0.1",
+  "description": "Link to other worlds via environment-mapped link nodes.",
+  "client": "client.js",
+  "worker": "worker.js",
+  "dependencies": {
+    "alea": "0.0.9",
+    "indev": "^3.0.9",
+    "isosurface": "^1.0.0"
+  }
+}
