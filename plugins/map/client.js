@@ -15,7 +15,7 @@ const DIRECTIONS = [
   [1,1],
 ];
 
-class Map {
+class MapPlugin {
   constructor(archae) {
     this._archae = archae;
   }
@@ -42,7 +42,7 @@ class Map {
       zeo,
     ]) => {
       if (live) {
-        const {THREE, scene} = zeo;
+        const {THREE, scene, camera} = zeo;
 
         return archae.requestWorker(this, {
           count: 4,
@@ -59,8 +59,8 @@ class Map {
                 vertexColors: THREE.VertexColors,
               });
 
-              const _makeMapChunkMesh = mapChunk => {
-                const {position, positions, normals, colors, boundingSphere} = mapChunk;
+              const _makeMapChunkMesh = mapChunkData => {
+                const {position, positions, normals, colors, boundingSphere} = mapChunkData;
 
                 const geometry = (() => {
                   const geometry = new THREE.BufferGeometry();
@@ -82,34 +82,81 @@ class Map {
                 return mesh;
               };
 
+              const object = new THREE.Object3D();
+              scene.add(object);
+
               cleanups.push(() => {
+                scene.remove(object);
+
                 worker.terminate();
               });
 
-              return Promise.all(DIRECTIONS.map(([x, y]) => {
-                return worker.request('generate', [
-                  {
-                    offset: {
-                      x,
-                      y,
-                    },
-                    position: {
-                      x: x * NUM_CELLS,
-                      y: y * NUM_CELLS,
-                    },
-                  }
-                ]).then(({mapChunk: mapChunkBuffer}) => {
-                  const mapChunk = protocolUtils.parseMapChunk(mapChunkBuffer);
-                  const mesh = _makeMapChunkMesh(mapChunk);
-                  scene.add(mesh);
+              const currentMapChunks = new Map();
 
-                  cleanups.push(() => {
-                    scene.remove(mesh);
+              class MapChunk {
+                constructor(offset, mesh) {
+                  this.offset = offset;
+                  this.mesh = mesh;
+                }
+              }
+
+              const _getMapChunkOffsetKey = (x, y) => x + ',' + y;
+              const _requestRefreshMapChunks = () => {
+                const {position: cameraPosition} = camera;
+                const cameraMapChunkOffset = [Math.floor(cameraPosition.x / NUM_CELLS), Math.floor(cameraPosition.z / NUM_CELLS)];
+
+                const requiredMapChunkOffsets = DIRECTIONS.map(([x, y]) => ([cameraMapChunkOffset[0] + x, cameraMapChunkOffset[1] + y]));
+                const missingMapChunkOffsets = requiredMapChunkOffsets.filter(([x, y]) => {
+                  const key = _getMapChunkOffsetKey(x, y);
+                  return !currentMapChunks.has(key);
+                });
+                const deadMapChunkOffsets = (() => {
+                  const result = [];
+                  currentMapChunks.forEach(currentMapChunk => {
+                    const {offset} = currentMapChunk;
+                    if (!requiredMapChunkOffsets.some(([x, y]) => x === offset[0] && y === offset[1])) {
+                      result.push([x, y]);
+                    }
+                  });
+                  return result;
+                })();
+
+                const missingMapChunkPromises = missingMapChunkOffsets.map(([x, y]) => {
+                  return worker.request('generate', [
+                    {
+                      offset: {
+                        x,
+                        y,
+                      },
+                      position: {
+                        x: x * NUM_CELLS,
+                        y: y * NUM_CELLS,
+                      },
+                    }
+                  ]).then(({mapChunk: mapChunkBuffer}) => {
+                    const mapChunkData = protocolUtils.parseMapChunk(mapChunkBuffer);
+                    const mesh = _makeMapChunkMesh(mapChunkData);
+                    object.add(mesh);
+
+                    const key = _getMapChunkOffsetKey(x, y);
+                    const mapChunk = new MapChunk([x, y], mesh);
+                    currentMapChunks.set(key, mapChunk);
                   });
                 });
-              })).then(() => {
-                console.log('map done');
-              });
+                return Promise.all(missingMapChunkPromises)
+                  .then(() => {
+                    deadMapChunkOffsets.forEach(([x, y]) => {
+                      const key = _getMapChunkOffsetKey(x, y);
+                      const mapChunk = currentMapChunks.get(key);
+                      const {mesh} = mapChunk;
+                      object.remove(mesh);
+
+                      currentMapChunks.delete(key);
+                    });
+                  });
+              };
+
+              return _requestRefreshMapChunks();
             } else {
               worker.terminate();
             }
@@ -123,4 +170,4 @@ class Map {
   }
 }
 
-module.exports = Map;
+module.exports = MapPlugin;
