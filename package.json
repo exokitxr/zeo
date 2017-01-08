@@ -13,7 +13,6 @@
     "fs-hasher": "0.0.4",
     "mkdirp": "^0.5.1",
     "multimutex": "0.0.1",
-    "nedb": "^1.8.0",
     "rimraf": "^2.5.4",
     "rollup": "^0.37.0",
     "rollup-plugin-commonjs": "^6.0.0",
