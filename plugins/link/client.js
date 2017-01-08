@@ -32,7 +32,10 @@ class Link {
           for (let i = 0; i < meshes.length; i++) {
             const mesh = meshes[i];
             const {cubeCamera} = mesh;
+
+            mesh.visible = false;
             cubeCamera.updateCubeMap(renderer, scene);
+            mesh.visible = true;
           }
         };
 
@@ -49,6 +52,14 @@ class Link {
                     type: 'matrix',
                     value: [
                       -1, 1, 0,
+                      0, 0, 0, 1,
+                      1, 1, 1,
+                    ],
+                  },
+                  destination: {
+                    type: 'matrix',
+                    value: [
+                      0, 1, -10,
                       0, 0, 0, 1,
                       1, 1, 1,
                     ],
@@ -92,11 +103,18 @@ class Link {
                   case 'position': {
                     const {mesh} = this;
 
-                    [mesh, mesh.cubeCamera].forEach(o => {
-                      o.position.set(newValue[0], newValue[1], newValue[2]);
-                      o.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
-                      o.scale.set(newValue[7], newValue[8], newValue[9]);
-                    });
+                    mesh.position.set(newValue[0], newValue[1], newValue[2]);
+                    mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                    mesh.scale.set(newValue[7], newValue[8], newValue[9]);
+
+                    break;
+                  }
+                  case 'destination': {
+                    const {mesh: {cubeCamera}} = this;
+
+                    cubeCamera.position.set(newValue[0], newValue[1], newValue[2]);
+                    cubeCamera.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                    cubeCamera.scale.set(newValue[7], newValue[8], newValue[9]);
 
                     break;
                   }
