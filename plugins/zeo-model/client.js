@@ -145,6 +145,11 @@ class Model {
 
                     break;
                   }
+                  case 'model': {
+                    console.log('got model', window.newValue = newValue);
+
+                    break;
+                  }
                 }
               }
 

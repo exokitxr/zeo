@@ -423,8 +423,16 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
       }
     }
     case 'file': {
-      return () => fetch(s)
-        .then(res => res.blob());
+      return ({type} = {}) => fetch('/archae/fs' + s)
+        .then(res => {
+          switch (type) {
+            case 'text': return res.text();
+            case 'json': return res.json();
+            case 'arrayBuffer': return res.arrayBuffer();
+            case 'blob': return res.blob();
+            default: return res.blob();
+          }
+        });
     }
     default: {
       return s;

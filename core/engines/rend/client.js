@@ -155,6 +155,7 @@ class Rend {
           draggingKeyPath: [],
           positioningName: null,
           positioningSide: null,
+          choosingName: null,
           inputText: '',
           inputIndex: 0,
           inputValue: 0,
@@ -1620,6 +1621,35 @@ class Rend {
                           })();
                           _chdir(newCwd);
                         }
+                      } else if (onclick === 'elementAttributeFiles:select') {
+                        const {
+                          elementsState: {selectedKeyPath: oldElementsSelectedKeyPath},
+                          elementAttributeFilesState: {selectedName: oldFilesSelectedName},
+                        } = oldStates;
+
+                        if (oldFilesSelectedName) {
+                          ui.cancelTransition();
+
+                          const {choosingName} = elementsState;
+                          const element = menuUtils.getElementKeyPath({
+                            elements: elementsState.elements,
+                            availableElements: elementsState.availableElements,
+                            clipboardElements: elementsState.clipboardElements,
+                          }, oldElementsSelectedKeyPath);
+                          const instance = menuUtils.getElementKeyPath({
+                            elements: elementsState.elementInstances,
+                          }, oldElementsSelectedKeyPath);
+
+                          const {cwd} = elementAttributeFilesState;
+                          const selectPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
+                          const newAttributeValue = JSON.stringify(selectPath);
+                          element.setAttribute(choosingName, newAttributeValue);
+                          instance.setAttribute(choosingName, newAttributeValue);
+
+                          _saveElements();
+
+                          ui.popPage();
+                        }
                       } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
                         const target = match[1];
                         const type = match[2];
@@ -1881,6 +1911,8 @@ class Rend {
                           _saveElements();
                         } else if (action === 'choose') {
                           ui.cancelTransition();
+
+                          elementsState.choosingName = attributeName;
 
                           _ensureFilesLoaded(elementAttributeFilesState);
 

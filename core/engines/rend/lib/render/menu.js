@@ -411,6 +411,7 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
     case 'file': {
       return `\
 <div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
+  <div style="display: flex; margin-right: 20px; font-family: Menlo; font-size: 20px; color: #808080; overflow: hidden; text-overflow: ellipsis; align-items: center;">${focusValue}</div>
   <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:choose" onmousedown="element:attribute:${name}:choose">Choose</a>
 </div>
 `;
@@ -709,6 +710,12 @@ const getElementsButtonsSrc = (selectedKeyPath) => `\
 
 const getFilesButtonsSrc = (selectedName, clipboardPath, prefix) => `\
 <div style="display: flex; height: 150px; margin: 0 30px; align-items: center;">
+  ${(prefix === 'elementAttributeFile' && selectedName) ? `\
+<a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #0275d8; border-radius: 5px; font-size: 30px; color: #0275d8; text-decoration: none;" onclick="${prefix}s:select">Select</a>
+`
+  :
+    ''
+  }
   ${selectedName ? `\
 <a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #d9534f; border-radius: 5px; font-size: 30px; color: #d9534f; text-decoration: none;" onclick="${prefix}s:cut">Cut</a>
 <a style="margin-left: 20px; padding: 5px 20px; border: 3px solid #5cb85c; border-radius: 5px; font-size: 30px; color: #5cb85c; text-decoration: none;" onclick="${prefix}s:copy">Copy</a>
