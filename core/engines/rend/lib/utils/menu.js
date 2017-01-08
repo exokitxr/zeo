@@ -433,7 +433,8 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
 const castValueStringToCallbackValue = (s, type, min, max, step, options) => {
   switch (type) {
     case 'file': {
-      return ({type} = {}) => fetch('/archae/fs' + s)
+      const url = /^\//.test(s) ? ('/archae/fs' + s) : s;
+      const result = ({type} = {}) => fetch(url)
         .then(res => {
           switch (type) {
             case 'text': return res.text();
@@ -443,6 +444,8 @@ const castValueStringToCallbackValue = (s, type, min, max, step, options) => {
             default: return res.blob();
           }
         });
+      result.url = url;
+      return result;
     }
     default:
       return castValueStringToValue(s, type, min, max, step, options);

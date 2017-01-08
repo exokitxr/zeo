@@ -1,6 +1,6 @@
 const modelsPath = '/archae/models/models/';
 
-const MODELS = {
+const MODELS = { // XXX fold these transforms into the models themselves
   cloud: {
     path: 'https://cdn.rawgit.com/modulesio/zeo-data/8a67c22f91517e457ddadd9241f594ed5180077f/models/cloud/cloud.json',
     position: [0, 0.65, 0],
@@ -33,8 +33,6 @@ const MODELS = {
   },
 };
 
-const modelName = 'cloud';
-
 class Model {
   constructor(archae) {
     this._archae = archae;
@@ -56,28 +54,17 @@ class Model {
       if (live) {
         const {THREE, scene, camera} = zeo;
 
-        const _getModel = modelName => MODELS[modelName];
-        const _requestModelJson = model => {
-          const modelPath = _getModelPath(model);
-
-          return fetch(modelPath).then(res => res.text().then(s => _asyncJsonParse(s)));
-        };
-        const _requestModelMeshFromSpec = (modelJson, texturePath) => new Promise((accept, reject) => {
+        const _getTexturePath = url => url.substring(0, url.lastIndexOf('/') + 1);
+        const _requestModel = file => file({
+          type: 'json',
+        }).then(modelJson => new Promise((accept, reject) => {
           const loader = new THREE.ObjectLoader();
 
-          loader.setTexturePath(texturePath);
+          loader.setTexturePath(_getTexturePath(file.url));
           loader.parse(modelJson, accept);
-        });
-        const _requestModel = model => _requestModelJson(model).then(modelJson => {
-          const modelPath = _getModelPath(model);
-          const texturePath = _getTexturePath(modelPath); 
-
-          return _requestModelMeshFromSpec(modelJson, texturePath);
-        });
+        }));
 
         return {
-          getModel: _getModel,
-          requestModelJson: _requestModelJson,
           elements: [
             class ModelElement extends HTMLElement {
               static get tag() {
@@ -104,32 +91,17 @@ class Model {
                 this.position = null;
                 this.mesh = null;
 
-                let live = true;
+                this._cancelRequest = null;
+
                 this._cleanup = () => {
-                  live = false;
+                  const {mesh, _cancelRequest: cancelRequest} = this;
+                  if (mesh) {
+                    scene.remove(mesh);
+                  }
+                  if (cancelRequest) {
+                    cancelRequest();
+                  }
                 };
-
-                const model = _getModel(modelName);
-                _requestModel(model)
-                  .then(mesh => {
-                    if (live) {
-                      mesh.position.fromArray(model.position);
-                      mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
-                      mesh.scale.fromArray(model.scale);
-
-                      scene.add(mesh);
-                      this.mesh = mesh;
-
-                      this._updateMesh();
-
-                      this._cleanup = () => {
-                        scene.remove(mesh);
-                      };
-                    }
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
               }
 
               destructor() {
@@ -147,6 +119,41 @@ class Model {
                   }
                   case 'model': {
                     console.log('got model change', {newValue});
+
+                    const {mesh: oldMesh, _cancelRequest: cancelRequest} = this;
+                    if (oldMesh) {
+                      scene.remove(oldMesh);
+                      this.mesh = null;
+                    }
+                    if (cancelRequest) {
+                      cancelRequest();
+                    }
+
+                    let live = true;
+                    this._cancelRequest = () => {
+                      live = false;
+                    };
+
+                    const file = newValue;
+                    _requestModel(file)
+                      .then(mesh => {
+                        if (live) {
+                          const model = MODELS['cloud'];
+                          mesh.position.fromArray(model.position);
+                          mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
+                          mesh.scale.fromArray(model.scale);
+
+                          scene.add(mesh);
+                          this.mesh = mesh;
+
+                          this._updateMesh();
+
+                          this._cancelRequest = null;
+                        }
+                      })
+                      .catch(err => {
+                        console.warn('failed to load model', err);
+                      });
 
                     break;
                   }
@@ -180,7 +187,9 @@ class Model {
           templates: [
             {
               tag: 'zeo-model',
-              attributes: {},
+              attributes: {
+                model: 'https://cdn.rawgit.com/modulesio/zeo-data/8a67c22f91517e457ddadd9241f594ed5180077f/models/cloud/cloud.json',
+              },
               children: [],
             },
           ],
@@ -193,16 +202,5 @@ class Model {
     this._cleanup();
   }
 }
-
-const _asyncJsonParse = s => new Response(s).json();
-const _getModelPath = model  => {
-  const {path} = model;
-  if (/^.*?:\/\//.test(path)) {
-    return path;
-  } else {
-    return modelsPath + path;
-  }
-};
-const _getTexturePath = url => url.substring(0, url.lastIndexOf('/') + 1);
 
 module.exports = Model;
