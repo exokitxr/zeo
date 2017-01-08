@@ -1,4 +1,19 @@
+const {
+  NUM_CELLS,
+} = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+
+const DIRECTIONS = [
+  [-1,-1],
+  [-1,0],
+  [-1,1],
+  [0,-1],
+  [0,0],
+  [0,1],
+  [1,-1],
+  [1,0],
+  [1,1],
+];
 
 class Map {
   constructor(archae) {
@@ -30,7 +45,7 @@ class Map {
         const {THREE, scene} = zeo;
 
         return archae.requestWorker(this, {
-          count: 2,
+          count: 4,
         })
           .then(worker => {
             if (live) {
@@ -71,25 +86,29 @@ class Map {
                 worker.terminate();
               });
 
-              return worker.request('generate', [
-                {
-                  offset: {
-                    x: 0,
-                    y: 0,
-                  },
-                  position: {
-                    x: 0,
-                    y: 0,
-                  },
-                }
-              ]).then(({mapChunk: mapChunkBuffer}) => {
-                const mapChunk = protocolUtils.parseMapChunk(mapChunkBuffer);
-                const mesh = _makeMapChunkMesh(mapChunk);
-                scene.add(mesh);
+              return Promise.all(DIRECTIONS.map(([x, y]) => {
+                return worker.request('generate', [
+                  {
+                    offset: {
+                      x,
+                      y,
+                    },
+                    position: {
+                      x: x * NUM_CELLS,
+                      y: y * NUM_CELLS,
+                    },
+                  }
+                ]).then(({mapChunk: mapChunkBuffer}) => {
+                  const mapChunk = protocolUtils.parseMapChunk(mapChunkBuffer);
+                  const mesh = _makeMapChunkMesh(mapChunk);
+                  scene.add(mesh);
 
-                cleanups.push(() => {
-                  scene.remove(mesh);
+                  cleanups.push(() => {
+                    scene.remove(mesh);
+                  });
                 });
+              })).then(() => {
+                console.log('map done');
               });
             } else {
               worker.terminate();
