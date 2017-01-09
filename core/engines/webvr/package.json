@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "events": "",
+    "events": "^1.1.1",
     "mod-loop": "0.0.2",
     "synchronous-promise": "^1.0.7",
     "webvr-polyfill": "^0.9.23"
