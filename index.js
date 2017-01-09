@@ -1,3 +1,4 @@
+const path = require('path');
 const http = require('http');
 
 const express = require('express');
@@ -9,9 +10,10 @@ app.get('/vr', (req, res, next) => {
 
   next('route');
 });
-app.use('/', express.static(__dirname));
+app.use('/', express.static(path.join(__dirname, 'public')));
 
 const a = archae({
+  dirname: __dirname,
   app,
 });
 a.server.listen(8000);

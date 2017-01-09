@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
-    "archae": "0.0.1",
+    "archae": "0.0.2",
     "express": "^4.14.0"
   }
 }
