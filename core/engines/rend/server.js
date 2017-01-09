@@ -347,7 +347,7 @@ class Rend {
           ));
 
           function serveReadme(req, res, next) {
-            fs.readFile(path.join(__dirname, '..', 'zeo', 'README.md'), 'utf8', (err, s) => {
+            fs.readFile(path.join(dirname, 'README.md'), 'utf8', (err, s) => {
               if (!err) {
                 res.send(_renderMarkdown(s));
               } else if (err.code === 'ENOENT') {
