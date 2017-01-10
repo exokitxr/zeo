@@ -15,7 +15,7 @@ class Weapons {
     };
 
     return Promise.all([
-      archae.requestEngines([
+      archae.requestPlugins([
         '/core/engines/zeo',
         '/core/engines/input',
         '/core/engines/rend',

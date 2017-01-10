@@ -14,7 +14,7 @@ class Multiplayer {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/rend',
       '/core/engines/cyborg',

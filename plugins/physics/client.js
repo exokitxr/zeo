@@ -11,7 +11,7 @@ class Physics {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/input',
       '/core/engines/rend',
     ]).then(([

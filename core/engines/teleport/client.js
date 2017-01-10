@@ -16,7 +16,7 @@ class Teleport {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',

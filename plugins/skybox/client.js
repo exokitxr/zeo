@@ -14,7 +14,7 @@ class Skybox {
     };
 
     return Promise.all([
-      archae.requestEngines([
+      archae.requestPlugins([
         '/core/engines/zeo',
         '/core/engines/rend',
       ]),

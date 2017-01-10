@@ -70,7 +70,7 @@ class WebVR {
     };
 
     return Promise.all([
-      archae.requestEngines([
+      archae.requestPlugins([
         '/core/engines/input',
         '/core/engines/three',
       ]),

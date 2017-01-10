@@ -57,7 +57,7 @@ class Rend {
     };
 
     return Promise.all([
-      archae.requestEngines([
+      archae.requestPlugins([
         '/core/engines/input',
         '/core/engines/three',
         '/core/engines/webvr',

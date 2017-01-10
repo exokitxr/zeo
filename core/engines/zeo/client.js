@@ -20,7 +20,7 @@ class Zeo {
       live = false;
     });
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/three',

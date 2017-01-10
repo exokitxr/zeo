@@ -46,7 +46,7 @@ class Model {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/zeo',
     ]).then(([
       zeo,

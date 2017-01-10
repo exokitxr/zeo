@@ -15,7 +15,7 @@ class Build {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/webvr',
       '/core/engines/input',

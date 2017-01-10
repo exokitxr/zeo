@@ -22,7 +22,7 @@ class Youtube {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/input',
       '/core/engines/biolumi',

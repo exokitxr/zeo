@@ -22,7 +22,7 @@ class Rend {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/npm',
     ])
       .then(([

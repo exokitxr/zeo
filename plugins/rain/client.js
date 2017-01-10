@@ -17,7 +17,7 @@ class Rain {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/rend',
     ]).then(([

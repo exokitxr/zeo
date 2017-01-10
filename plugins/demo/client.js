@@ -1,6 +1,6 @@
 module.exports = archae => ({
   mount() {
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/webvr',
     ])

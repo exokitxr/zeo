@@ -41,7 +41,7 @@ class Portal {
     };
 
     return Promise.all([
-      archae.requestEngines([
+      archae.requestPlugins([
         '/core/engines/zeo',
         '/core/engines/webvr',
         '/core/engines/rend',

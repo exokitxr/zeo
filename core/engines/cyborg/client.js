@@ -26,7 +26,7 @@ class Cyborg {
     };
 
     return Promise.all([
-      archae.requestEngines([
+      archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/rend',

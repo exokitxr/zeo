@@ -14,7 +14,7 @@ export default class Vegetation {
     };
 
     return Promise.all([
-      archae.requestEngines([
+      archae.requestPlugins([
         '/core/engines/zeo',
       ]),
       archae.requestPlugins([

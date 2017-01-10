@@ -39,7 +39,7 @@ class Ocean {
     const {_archae: archae} = this;
     this._cleanup = () => {};
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/rend',
     ]).then(([

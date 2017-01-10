@@ -11,7 +11,7 @@ class Fs {
       live = false;
     };
 
-    return archae.requestEngines([
+    return archae.requestPlugins([
       '/core/engines/three',
     ]).then(([
       three,
