@@ -25,23 +25,17 @@ class Cyborg {
       live = false;
     };
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/three',
-        '/core/engines/webvr',
-        '/core/engines/rend',
-      ]),
-      archae.requestPlugins([
-        '/core/plugins/geometry-utils',
-      ]),
+    return archae.requestPlugins([
+      '/core/engines/three',
+      '/core/engines/webvr',
+      '/core/engines/rend',
+      '/core/plugins/geometry-utils',
     ])
       .then(([
-        [
-          three,
-          webvr,
-          rend,
-        ],
-        [geometryUtils],
+        three,
+        webvr,
+        rend,
+        geometryUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera, renderer} = three;

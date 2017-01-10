@@ -14,16 +14,12 @@ export default class Vegetation {
     };
 
     return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/zeo',
-      ]),
-      archae.requestPlugins([
-        '/core/plugins/fun-utils',
-      ]),
+      '/core/engines/zeo',
+      '/core/plugins/fun-utils',
     ])
       .then(([
-        [zeo],
-        [funUtils],
+        zeo,
+        funUtils,
       ]) => {
         if (live) {
           const {THREE, scene} = zeo;

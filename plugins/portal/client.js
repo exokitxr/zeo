@@ -40,19 +40,18 @@ class Portal {
       live = false;
     };
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/zeo',
-        '/core/engines/webvr',
-        '/core/engines/rend',
-        '/core/engines/cyborg',
-      ]),
-      archae.requestPlugins([
-        '/core/plugins/geometry-utils',
-      ]),
+    return archae.requestPlugins([
+      '/core/engines/zeo',
+      '/core/engines/webvr',
+      '/core/engines/rend',
+      '/core/engines/cyborg',
+      '/core/plugins/geometry-utils',
     ]).then(([
-      [zeo, webvr, rend, cyborg],
-      [geometryUtils]
+      zeo,
+      webvr,
+      rend,
+      cyborg,
+      geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;

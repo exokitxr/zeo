@@ -14,21 +14,22 @@ class Weapons {
       live = false;
     };
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/zeo',
-        '/core/engines/input',
-        '/core/engines/rend',
-        '/core/engines/cyborg',
-      ]),
-      archae.requestPlugins([
-        '/core/plugins/geometry-utils',
-        '/core/plugins/text-utils',
-        '/core/plugins/creature-utils',
-      ]),
+    return archae.requestPlugins([
+      '/core/engines/zeo',
+      '/core/engines/input',
+      '/core/engines/rend',
+      '/core/engines/cyborg',
+      '/core/plugins/geometry-utils',
+      '/core/plugins/text-utils',
+      '/core/plugins/creature-utils',
     ]).then(([
-      [zeo, input, rend, cyborg],
-      [geometryUtils, textUtils, creatureUtils],
+      zeo,
+      input,
+      rend,
+      cyborg,
+      geometryUtils,
+      textUtils,
+      creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;

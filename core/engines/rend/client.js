@@ -56,30 +56,24 @@ class Rend {
       }
     };
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/input',
-        '/core/engines/three',
-        '/core/engines/webvr',
-        '/core/engines/biolumi',
-        '/core/engines/fs',
-        '/core/engines/bullet',
-        '/core/engines/heartlink',
-      ]),
-      archae.requestPlugins([
-        '/core/plugins/creature-utils',
-      ]),
+    return archae.requestPlugins([
+      '/core/engines/input',
+      '/core/engines/three',
+      '/core/engines/webvr',
+      '/core/engines/biolumi',
+      '/core/engines/fs',
+      '/core/engines/bullet',
+      '/core/engines/heartlink',
+      '/core/plugins/creature-utils',
     ]).then(([
-      [
-        input,
-        three,
-        webvr,
-        biolumi,
-        fs,
-        bullet,
-        heartlink,
-      ],
-      [creatureUtils],
+      input,
+      three,
+      webvr,
+      biolumi,
+      fs,
+      bullet,
+      heartlink,
+      creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;

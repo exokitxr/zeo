@@ -13,17 +13,14 @@ class Skybox {
       live = false;
     };
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/zeo',
-        '/core/engines/rend',
-      ]),
-      archae.requestPlugins([
-        '/core/plugins/geometry-utils',
-      ]),
+    return archae.requestPlugins([
+      '/core/engines/zeo',
+      '/core/engines/rend',
+      '/core/plugins/geometry-utils',
     ]).then(([
-      [zeo, rend],
-      [geometryUtils]
+      zeo,
+      rend,
+      geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
