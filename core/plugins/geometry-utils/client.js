@@ -8,16 +8,12 @@ const geometryUtils = archae => ({
       live = false;
     };
 
-    return Promise.all([
-      archae.requestEngines([
-        '/core/engines/three',
-      ]),
-      archae.requestPlugins([
-        '/core/plugins/fun-utils',
-      ]),
+    return archae.requestPlugins([
+      '/core/engines/three',
+      '/core/plugins/fun-utils',
     ]).then(([
-      [three],
-      [funUtils],
+      three,
+      funUtils,
     ]) => {
       if (live) {
         const {THREE} = three;
