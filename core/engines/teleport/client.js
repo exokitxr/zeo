@@ -85,13 +85,6 @@ class Teleport {
           right: _makeTeleportState(),
         };
 
-        this._cleanup = () => {
-          SIDES.forEach(side => {
-            scene.remove(teleportFloorMeshes[side]);
-            scene.remove(teleportAirMeshes[side]);
-          });
-        };
-
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
@@ -210,7 +203,17 @@ class Teleport {
             }
           });
         };
-        world.addUpdate(_update);
+
+        world.on('update', _update);
+
+        this._cleanup = () => {
+          SIDES.forEach(side => {
+            scene.remove(teleportFloorMeshes[side]);
+            scene.remove(teleportAirMeshes[side]);
+          });
+
+          world.removeListener('update', _update);
+        };
       }
     });
   }

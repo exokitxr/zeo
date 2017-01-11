@@ -37,21 +37,19 @@ const ATTRIBUTE_DEFAULTS = {
 class Rend {
   constructor(archae) {
     this._archae = archae;
-
-    this.updates = [];
-    this.updateEyes = [];
   }
 
   mount() {
-    const {_archae: archae, updates, updateEyes} = this;
+    const {_archae: archae} = this;
 
     let live = true;
     const cleanups = [];
     this._cleanup = () => {
       live = false;
 
-      for (let i = 0; i < cleanups.length; i++) {
-        const cleanup = cleanups[i];
+      const oldCleanups = cleanups.slice();
+      for (let i = 0; i < oldCleanups.length; i++) {
+        const cleanup = oldCleanups[i];
         cleanup();
       }
     };
@@ -64,6 +62,7 @@ class Rend {
       '/core/engines/fs',
       '/core/engines/bullet',
       '/core/engines/heartlink',
+      '/core/plugins/js-utils',
       '/core/plugins/creature-utils',
     ]).then(([
       input,
@@ -73,10 +72,13 @@ class Rend {
       fs,
       bullet,
       heartlink,
+      jsUtils,
       creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
 
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
@@ -84,6 +86,9 @@ class Rend {
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
         });
+
+        const updates = [];
+        const updateEyes = [];
 
         // main state
         let menu = null;
@@ -341,14 +346,8 @@ class Rend {
 
               const startTime = Date.now();
               let worldTime = 0;
-              const _addUpdate = update => {
-                updates.push(update);
-              };
-              const _addUpdateEye = updateEye => {
-                updateEyes.push(updateEye);
-              };
 
-              _addUpdate(() => {
+              updates.push(() => {
                 // update state
                 const now = Date.now();
                 worldTime = now - startTime;
@@ -360,7 +359,7 @@ class Rend {
                   }
                 });
               });
-              _addUpdateEye(camera => {
+              updateEyes.push(camera => {
                 // update mods per eye
                 currentModApis.forEach(modApi => {
                   if (typeof modApi.updateEye === 'function') {
@@ -369,35 +368,6 @@ class Rend {
                 });
               });
 
-              const _getWorldTime = () => worldTime;
-              const _requestAddMod = mod => fetch('/archae/rend/mods/add', {
-                method: 'POST',
-                headers: (() => {
-                  const headers = new Headers();
-                  headers.set('Content-Type', 'application/json');
-                  return headers;
-                })(),
-                body: JSON.stringify({
-                  world: worldName,
-                  mod: mod,
-                }),
-              }).then(res => res.json()
-                .then(mod => {
-                  ['localMods', 'remoteMods'].forEach(k => {
-                    const modsCollection = modsState[k];
-                    const index = modsCollection.findIndex(m => m.name === mod.name);
-                    if (index !== -1) {
-                      modsCollection.splice(index, 1);
-                    }
-                  });
-
-                  modsState.mods.push(mod);
-
-                  menu.updatePages();
-                })
-                .then(() => _requestMod(mod))
-              );
-              const _requestAddMods = mods => Promise.all(mods.map(_requestAddMod));
               const _requestMod = mod => archae.requestPlugin(mod)
                 .then(modApi => {
                   const modName = archae.getName(modApi);
@@ -409,38 +379,8 @@ class Rend {
 
                   return modApi;
                 });
-              const _requestMods = mods => Promise.all(mods.map(_requestMod));
-              const _requestRemoveMod = mod => fetch('/archae/rend/mods/remove', {
-                method: 'POST',
-                headers: (() => {
-                  const headers = new Headers();
-                  headers.set('Content-Type', 'application/json');
-                  return headers;
-                })(),
-                body: JSON.stringify({
-                  world: worldName,
-                  mod: mod,
-                }),
-              }).then(res => res.json()
-                .then(mod => {
-                  const index = modsState.mods.findIndex(m => m.name === mod.name);
-                  if (index !== -1) {
-                    modsState.mods.splice(index, 1);
-                  }
-
-                  const {local} = mod;
-                  if (local) {
-                    modsState.localMods.push(mod);
-                  } else {
-                    modsState.remoteMods.push(mod);
-                  }
-
-                  menu.updatePages();
-                })
-                .then(() => _requestReleaseMod(mod))
-              );
-              const _requestRemoveMods = mods => Promise.all(mods.map(_requestRemoveMod));
-              const _requestReleaseMod = mod => archae.releasePlugin(mod)
+              const _requestMods = mods => Promise.all(mods.map(mod => _requestMod(mod)));
+              const _releaseMod = mod => archae.releasePlugin(mod)
                 .then(modApi => {
                   const modName = archae.getName(modApi);
                   currentModApis.delete(modName);
@@ -451,14 +391,7 @@ class Rend {
 
                   return mod;
                 });
-              const _requestReleaseMods = mods => Promise.all(mods.map(_requestReleaseMod));
-              const _requestWorker = (module, options) => archae.requestWorker(module, options);
-              const _destroy = () => {
-                if (animationFrame) {
-                  cancelAnimationFrame(animationFrame);
-                }
-              };
-
+              const _releaseMods = mods => Promise.all(mods.map(mod => _releaseMod(mod)));
               const _addModApiElements = (modName, modApi, modApis) => {
                 const _validateAttributes = attributes => {
                   for (const attributeName in attributes) {
@@ -560,24 +493,123 @@ class Rend {
                   console.warn(err);
                 });
 
-              const world = {
+              class World extends EventEmitter {
+                constructor({name, physics, player}) {
+                  super();
+
+                  this.name = name;
+                  this.physics = physics;
+                  this.player = player;
+
+                  this._update = this.update.bind(this);
+                  this._updateEye = this.updateEye.bind(this);
+
+                  this.listen();
+                }
+
+                getWorldTime() {
+                  return worldTime;
+                }
+
+                requestAddMod(mod) {
+                  return fetch('/archae/rend/mods/add', {
+                    method: 'POST',
+                    headers: (() => {
+                      const headers = new Headers();
+                      headers.set('Content-Type', 'application/json');
+                      return headers;
+                    })(),
+                    body: JSON.stringify({
+                      world: worldName,
+                      mod: mod,
+                    }),
+                  }).then(res => res.json()
+                    .then(mod => {
+                      ['localMods', 'remoteMods'].forEach(k => {
+                        const modsCollection = modsState[k];
+                        const index = modsCollection.findIndex(m => m.name === mod.name);
+                        if (index !== -1) {
+                          modsCollection.splice(index, 1);
+                        }
+                      });
+
+                      modsState.mods.push(mod);
+
+                      menu.updatePages();
+                    })
+                    .then(() => _requestMod(mod))
+                  );
+                }
+
+                requestAddMods(mods) {
+                  return Promise.all(mods.map(mod => this.requestAddMod(mod)));
+                }
+
+                requestRemoveMod(mod) {
+                  return fetch('/archae/rend/mods/remove', {
+                    method: 'POST',
+                    headers: (() => {
+                      const headers = new Headers();
+                      headers.set('Content-Type', 'application/json');
+                      return headers;
+                    })(),
+                    body: JSON.stringify({
+                      world: worldName,
+                      mod: mod,
+                    }),
+                  }).then(res => res.json()
+                    .then(mod => {
+                      const index = modsState.mods.findIndex(m => m.name === mod.name);
+                      if (index !== -1) {
+                        modsState.mods.splice(index, 1);
+                      }
+
+                      const {local} = mod;
+                      if (local) {
+                        modsState.localMods.push(mod);
+                      } else {
+                        modsState.remoteMods.push(mod);
+                      }
+
+                      menu.updatePages();
+                    })
+                    .then(() => _releaseMod(mod))
+                  );
+                }
+
+                requestRemoveMods(mods) {
+                  return Promise.all(mods.map(mod => this.requestRemoveMod(mod)));
+                }
+
+                requestWorker(module, options) {
+                  return archae.requestWorker(module, options);
+                }
+
+                update() {
+                  this.emit('update');
+                }
+
+                updateEye(camera) {
+                  this.emit('updateEye', camera);
+                }
+
+                listen() {
+                  updates.push(this._update);
+                  updateEyes.push(this._updateEye);
+                }
+
+                destroy() {
+                  updates.splice(updates.indexOf(this._update), 1);
+                  updateEyes.splice(updates.indexOf(this._updateEye), 1);
+                };
+              }
+
+              const world = new World({
                 name: worldName,
-                getWorldTime: _getWorldTime,
-                requestAddMod: _requestAddMod,
-                requestAddMods: _requestAddMods,
-                requestMod: _requestMod,
-                requestMods: _requestMods,
-                requestRemoveMod: _requestRemoveMod,
-                requestRemoveMods: _requestRemoveMods,
-                requestReleaseMod: _requestReleaseMod,
-                requestReleaseMods: _requestReleaseMods,
-                requestWorker: _requestWorker,
-                addUpdate: _addUpdate,
-                addUpdateEye: _addUpdateEye,
                 physics,
                 player,
-                destroy: _destroy,
-              };
+              });
+
               currentWorld = world;
 
               modsState.mods = installedModSpecs;

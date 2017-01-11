@@ -387,20 +387,21 @@ class Cyborg {
             player.snapshotStatus();
           };
 
-          world.addUpdate(_update);
+          world.on('update', _update);
 
           this._cleanup = () => {
             for (let i = 0; i < controllers.length; i++) {
               const controller = controllers[i];
               controller.destroy();
             }
+
+            world.removeListener('update', _update);
           };
 
           return {
             getPlayer: _getPlayer,
             getControllers: _getControllers,
             getMode: _getMode,
-            update: _update,
           };
         }
       });
