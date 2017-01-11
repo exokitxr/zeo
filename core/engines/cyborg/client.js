@@ -1,6 +1,3 @@
-const events = require('events');
-const EventEmitter = events.EventEmitter;
-
 const controllerModelPath = '/archae/models/controller/controller.json';
 
 const POSITION_SPEED = 0.05;
@@ -29,18 +26,22 @@ class Cyborg {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/rend',
+      '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
     ])
       .then(([
         three,
         webvr,
         rend,
+        jsUtils,
         geometryUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera, renderer} = three;
           const world = rend.getCurrentWorld();
           const {physics} = world;
+          const {events} = jsUtils;
+          const {EventEmitter} = events;
 
           class Player extends EventEmitter {
             constructor() {

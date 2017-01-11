@@ -13,8 +13,6 @@ window.WebVRConfig = {
 };
 require('webvr-polyfill');
 
-const events = require('events');
-const EventEmitter = events.EventEmitter;
 const SynchronousPromise = require('synchronous-promise').SynchronousPromise;
 const mod = require('mod-loop');
 
@@ -73,18 +71,22 @@ class WebVR {
       archae.requestPlugins([
         '/core/engines/input',
         '/core/engines/three',
+        '/core/plugins/js-utils',
       ]),
       navigator.getVRDisplays(),
     ]).then(([
       [
         input,
         three,
+        jsUtils,
       ],
       displays,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
         const {domElement} = renderer;
+        const {events} = jsUtils;
+        const EventEmitter = events;
 
         const THREEVREffect = VREffect(THREE);
 
