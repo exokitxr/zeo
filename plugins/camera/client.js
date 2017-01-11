@@ -27,8 +27,13 @@ class Camera {
           }
         };
 
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+        };
+
         return {
-          update: _update,
           elements: [
             class CameraElement extends HTMLElement {
               static get tag() {

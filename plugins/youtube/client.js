@@ -61,8 +61,13 @@ class Youtube {
           }
         };
 
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+        };
+
         return {
-          update: _update,
           elements: [
             class YoutubeElement extends HTMLElement {
               static get tag() {

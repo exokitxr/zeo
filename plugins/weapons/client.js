@@ -768,15 +768,17 @@ class Weapons {
           _updateHud();
         };
 
+        zeo.on('update', _update);
+
         this._cleanup = () => {
           input.removeEventListener('keydown', keydown);
           player.removeEventListener('hmdUpdate', hmdUpdate);
           player.removeEventListener('controllerUpdate', controllerUpdate);
+
+          zeo.removeListener('update', _update);
         };
 
-        return {
-          update: _update,
-        };
+        return {};
       }
     });
   }

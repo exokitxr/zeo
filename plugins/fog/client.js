@@ -29,8 +29,13 @@ class Fog {
           }
         };
 
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+        };
+
         return {
-          update: _update,
           elements: [
             class FogElement extends HTMLElement {
               static get tag() {

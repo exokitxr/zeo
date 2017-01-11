@@ -63,8 +63,13 @@ class Skybox {
           }
         };
 
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+        };
+
         return {
-          update: _update,
           elements: [
             class SkyboxElement extends HTMLElement {
               static get tag() {

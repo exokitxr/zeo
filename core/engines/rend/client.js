@@ -87,8 +87,7 @@ class Rend {
           creatureUtils,
         });
 
-        const updates = [];
-        const updateEyes = [];
+        const localUpdates = [];
 
         // main state
         let menu = null;
@@ -190,12 +189,6 @@ class Rend {
         const worlds = new Map();
         let currentWorld = null;
         const currentModApis = new Map();
-
-        cleanups.push(() => {
-          worlds.forEach(world => {
-            world.destroy();
-          });
-        });
 
         const stats = new Stats();
         stats.render = () => {}; // overridden below
@@ -318,7 +311,6 @@ class Rend {
         });
 
         // api functions
-        const _getCurrentWorld = () => currentWorld;
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
           const _requestInstalledModSpecs = worldName => fetch('/archae/rend/mods/installed', {
             method: 'POST',
@@ -347,25 +339,9 @@ class Rend {
               const startTime = Date.now();
               let worldTime = 0;
 
-              updates.push(() => {
-                // update state
+              localUpdates.push(() => {
                 const now = Date.now();
                 worldTime = now - startTime;
-
-                // update mods
-                currentModApis.forEach(modApi => {
-                  if (typeof modApi.update === 'function') {
-                    modApi.update();
-                  }
-                });
-              });
-              updateEyes.push(camera => {
-                // update mods per eye
-                currentModApis.forEach(modApi => {
-                  if (typeof modApi.updateEye === 'function') {
-                    modApi.updateEye(camera);
-                  }
-                });
               });
 
               const _requestMod = mod => archae.requestPlugin(mod)
@@ -493,18 +469,11 @@ class Rend {
                   console.warn(err);
                 });
 
-              class World extends EventEmitter {
+              class World {
                 constructor({name, physics, player}) {
-                  super();
-
                   this.name = name;
                   this.physics = physics;
                   this.player = player;
-
-                  this._update = this.update.bind(this);
-                  this._updateEye = this.updateEye.bind(this);
-
-                  this.listen();
                 }
 
                 getWorldTime() {
@@ -584,24 +553,6 @@ class Rend {
                 requestWorker(module, options) {
                   return archae.requestWorker(module, options);
                 }
-
-                update() {
-                  this.emit('update');
-                }
-
-                updateEye(camera) {
-                  this.emit('updateEye', camera);
-                }
-
-                listen() {
-                  updates.push(this._update);
-                  updateEyes.push(this._updateEye);
-                }
-
-                destroy() {
-                  updates.splice(updates.indexOf(this._update), 1);
-                  updateEyes.splice(updates.indexOf(this._updateEye), 1);
-                };
               }
 
               const world = new World({
@@ -2658,7 +2609,7 @@ class Rend {
                   right: _makeKeyboardHoverState(),
                 };
 
-                updates.push(() => {
+                localUpdates.push(() => {
                   const _updateMenuMesh = () => {
                     const {planeMesh: {imageMaterial}} = menuMesh;
                     const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = imageMaterial;
@@ -3001,34 +2952,42 @@ class Rend {
 
         return _initialize()
           .then(() => {
-            const _update = () => {
-              for (let i = 0; i < updates.length; i++) {
-                const update = updates[i];
-                update();
+            class RendApi extends EventEmitter {
+              constructor() {
+                super();
               }
 
-              stats.render();
-            };
-            const _updateEye = camera => {
-              for (let i = 0; i < updateEyes.length; i++) {
-                const updateEye = updateEyes[i];
-                updateEye(camera);
+              getCurrentWorld() {
+                return currentWorld;
               }
-            };
-            const _updateStart = () => {
-              stats.begin();
-            };
-            const _updateEnd = () => {
-              stats.end();
-            };
 
-            return {
-              getCurrentWorld: _getCurrentWorld,
-              update: _update,
-              updateEye: _updateEye,
-              updateStart: _updateStart,
-              updateEnd: _updateEnd,
-            };
+              update() {
+                this.emit('update');
+
+                stats.render();
+              }
+
+              updateEye(camera) {
+                this.emit('updateEye', camera);
+              }
+
+              updateStart() {
+                stats.begin();
+              }
+
+              updateEnd() {
+                stats.end();
+              }
+            }
+            const api = new RendApi();
+            api.on('update', () => {
+              for (let i = 0; i < localUpdates.length; i++) {
+                const localUpdate = localUpdates[i];
+                localUpdate();
+              }
+            });
+
+            return api;
           });
       }
     });

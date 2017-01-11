@@ -189,9 +189,13 @@ class MapPlugin {
                     tryMapChunkUpdate();
                   };
 
-                  return {
-                    update: _update,
-                  };
+                  zeo.on('update', _update);
+
+                  cleanups.push(() => {
+                    zeo.removeListener('update', _update);
+                  });
+
+                  return {};
                 });
             } else {
               worker.terminate();

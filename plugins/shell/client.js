@@ -55,15 +55,6 @@ class Shell {
           return {position, rotation, scale};
         };
 
-        let cleanups = [];
-        this._cleanup = () => {
-          for (let i = 0; i < cleanups.length; i++) {
-            const cleanup = cleanups[i];
-            cleanup();
-          }
-          cleanups = [];
-        };
-
         const updates = [];
         const _update = () => {
           for (let i = 0; i < updates.length; i++) {
@@ -72,8 +63,13 @@ class Shell {
           }
         };
 
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+        };
+
         return {
-          update: _update,
           elements: [
             class ShellElement extends HTMLElement {
               static get tag() {

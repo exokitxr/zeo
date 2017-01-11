@@ -76,8 +76,13 @@ class Lens {
           color: 0x000000,
         });
 
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+        };
+
         return {
-          updateEye: _updateEye,
           elements: [
             class LensElement extends HTMLElement {
               static get tag() {

@@ -204,7 +204,7 @@ class Teleport {
           });
         };
 
-        world.on('update', _update);
+        rend.on('update', _update);
 
         this._cleanup = () => {
           SIDES.forEach(side => {
@@ -212,7 +212,7 @@ class Teleport {
             scene.remove(teleportAirMeshes[side]);
           });
 
-          world.removeListener('update', _update);
+          rend.removeListener('update', _update);
         };
       }
     });

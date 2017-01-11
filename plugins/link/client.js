@@ -6,18 +6,10 @@ class Link {
   mount() {
     const {_archae: archae} = this;
 
-    const cleanups = [];
-    this._cleanup = () => {
-      for (let i = 0; i < cleanups.length; i++) {
-        const cleanup = cleanups[i];
-        cleanup();
-      }
-    };
-
     let live = true;
-    cleanups.push(() => {
+    this._cleanup = () => {
       live = false;
-    });
+    };
 
     return archae.requestPlugins([
       '/core/engines/zeo',
@@ -39,8 +31,13 @@ class Link {
           }
         };
 
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+        };
+
         return {
-          update: _update,
           elements: [
             class LinkElement extends HTMLElement {
               static get tag() {

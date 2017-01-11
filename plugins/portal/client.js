@@ -82,9 +82,15 @@ class Portal {
           }
         };
 
+        zeo.on('update', _update);
+        zeo.on('updateEye', _updateEye);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+          zeo.removeListener('updateEye', _updateEye);
+        };
+
         return {
-          update: _update,
-          updateEye: _updateEye,
           elements: [
             class PortalElement extends HTMLElement {
               static get tag() {

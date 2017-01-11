@@ -387,7 +387,7 @@ class Cyborg {
             player.snapshotStatus();
           };
 
-          world.on('update', _update);
+          rend.on('update', _update);
 
           this._cleanup = () => {
             for (let i = 0; i < controllers.length; i++) {
@@ -395,7 +395,7 @@ class Cyborg {
               controller.destroy();
             }
 
-            world.removeListener('update', _update);
+            rend.removeListener('update', _update);
           };
 
           return {

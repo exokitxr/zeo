@@ -33,6 +33,7 @@ class Zeo {
       '/core/engines/somnifer',
       '/core/engines/bullet',
       '/core/engines/heartlink',
+      '/core/plugins/js-utils',
     ]).then(([
       input,
       webvr,
@@ -46,11 +47,14 @@ class Zeo {
       somnifer,
       bullet,
       heartlink,
+      jsUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
         const {domElement} = renderer;
         const {sound} = somnifer;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
 
         const supportsWebVR = webvr.supportsWebVR();
 
@@ -286,19 +290,47 @@ height: 100px;
                 return result;
               };
 
-              const _getCurrentWorld = () => rend.getCurrentWorld();
-
               this._cleanup = () => {
                 _stopRenderLoop();
               };
 
-              return {
+              class ZeoApi extends EventEmitter {
+                constructor({THREE, scene, camera, renderer}) {
+                  super();
+
+                  this.THREE = THREE;
+                  this.scene = scene;
+                  this.camera = camera;
+                  this.renderer = renderer;
+                }
+
+                update() {
+                  this.emit('update');
+                }
+
+                updateEye(camera) {
+                  this.emit('updateEye', camera);
+                }
+
+                getCurrentWorld() {
+                  return rend.getCurrentWorld();
+                }
+              }
+
+              const api = new ZeoApi({
                 THREE,
                 scene,
                 camera,
                 renderer,
-                getCurrentWorld: _getCurrentWorld,
-              };
+              });
+              rend.on('update', () => {
+                api.update();
+              });
+              rend.on('updateEye', camera => {
+                api.updateEye(camera);
+              });
+
+              return api;
             }
           })
       }
