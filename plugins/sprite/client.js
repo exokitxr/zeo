@@ -38,9 +38,6 @@ class Sprite {
           shininess: 0,
         });
 
-        const boxMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), pixelMaterial);
-        scene.add(boxMesh);
-
         const getPixelVertices = (x, y, width, height) => {
           const pixelVertices = pixelGeometryVertices.slice();
           for (let i = 0; i < CUBE_VERTICES; i += 3) {
