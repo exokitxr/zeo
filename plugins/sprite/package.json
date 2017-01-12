@@ -1,0 +1,9 @@
+{
+  "name": "sprite",
+  "description": "Load 3D sprites from 2d images.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {}
+}
