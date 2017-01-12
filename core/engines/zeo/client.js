@@ -295,13 +295,14 @@ height: 100px;
               };
 
               class ZeoApi extends EventEmitter {
-                constructor({THREE, scene, camera, renderer}) {
+                constructor({THREE, scene, camera, renderer, sound}) {
                   super();
 
                   this.THREE = THREE;
                   this.scene = scene;
                   this.camera = camera;
                   this.renderer = renderer;
+                  this.sound = sound;
                 }
 
                 update() {
@@ -330,6 +331,7 @@ height: 100px;
                 scene,
                 camera,
                 renderer,
+                sound,
               });
               rend.on('update', () => {
                 api.update();
