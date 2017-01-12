@@ -14,7 +14,7 @@ module.exports = archae => ({
         const red = new THREE.Color(0xE91E63);
 
         const sphere = new THREE.Mesh(
-          new THREE.SphereBufferGeometry(0.1, 5, 4),
+          new THREE.SphereBufferGeometry(0.1, 7, 5),
           new THREE.MeshPhongMaterial({
             color: green,
             shading: THREE.FlatShading,
@@ -37,39 +37,43 @@ module.exports = archae => ({
         box.visible = false;
         scene.add(box);
 
+        const world = zeo.getCurrentWorld();
+
+        const _update = () => {
+          // update sphere/box
+          const t = world.getWorldTime();
+          const newY = startY + Math.sin((t * 0.0025) % (Math.PI * 2)) * 0.25;
+          sphere.position.y = newY;
+          sphere.rotation.y = (t * 0.002) % (Math.PI * 2);
+          box.position.y = newY;
+
+          // update box mesh
+          const status = webvr.getStatus();
+          const {gamepads: gamepadsStatus} = status;
+
+          const select = ['left', 'right'].some(side => {
+            const gamepadStatus = gamepadsStatus[side];
+
+            if (gamepadStatus) {
+              const {position: controllerPosition} = gamepadStatus;
+              return controllerPosition.distanceTo(sphere.position) <= 0.1;
+            } else {
+              return false;
+            }
+          });
+          sphere.material.color = select ? red : green;
+          box.visible = select;
+        };
+
+        zeo.on('update', _update);
+
         this._cleanup = () => {
+          zeo.removeListener('update', _update);
+
           scene.remove(sphere);
         };
 
-        const world = zeo.getCurrentWorld();
-
-        return {
-          update() {
-            // update sphere/box
-            const t = world.getWorldTime();
-            const newY = startY + Math.sin((t * 0.0025) % (Math.PI * 2)) * 0.25;
-            sphere.position.y = newY;
-            sphere.rotation.y = (t * 0.002) % (Math.PI * 2);
-            box.position.y = newY;
-
-            // update box mesh
-            const status = webvr.getStatus();
-            const {gamepads: gamepadsStatus} = status;
-
-            const select = ['left', 'right'].some(side => {
-              const gamepadStatus = gamepadsStatus[side];
-
-              if (gamepadStatus) {
-                const {position: controllerPosition} = gamepadStatus;
-                return controllerPosition.distanceTo(sphere.position) <= 0.1;
-              } else {
-                return false;
-              }
-            });
-            sphere.material.color = select ? red : green;
-            box.visible = select;
-          },
-        };
+        return {};
       });
   },
   unmount() {

@@ -64,134 +64,128 @@ class Model {
           loader.parse(modelJson, accept);
         }));
 
-        return {
-          elements: [
-            class ModelElement extends HTMLElement {
-              static get tag() {
-                return 'zeo-model';
+        class ModelElement extends HTMLElement {
+          static get tag() {
+            return 'zeo-model';
+          }
+          static get attributes() {
+            return {
+              position: {
+                type: 'matrix',
+                value: [
+                  0, 0, 0,
+                  0, 0, 0, 1,
+                  1, 1, 1,
+                ],
+              },
+              model: {
+                type: 'file',
+                value: 'https://cdn.rawgit.com/modulesio/zeo-data/8a67c22f91517e457ddadd9241f594ed5180077f/models/cloud/cloud.json',
+              },
+            };
+          }
+
+          createdCallback() {
+            this.position = null;
+            this.mesh = null;
+
+            this._cancelRequest = null;
+
+            this._cleanup = () => {
+              const {mesh, _cancelRequest: cancelRequest} = this;
+              if (mesh) {
+                scene.remove(mesh);
               }
-              static get attributes() {
-                return {
-                  position: {
-                    type: 'matrix',
-                    value: [
-                      0, 0, 0,
-                      0, 0, 0, 1,
-                      1, 1, 1,
-                    ],
-                  },
-                  model: {
-                    type: 'file',
-                    value: '',
-                  },
-                };
+              if (cancelRequest) {
+                cancelRequest();
               }
+            };
+          }
 
-              createdCallback() {
-                this.position = null;
-                this.mesh = null;
+          destructor() {
+            this._cleanup();
+          }
 
-                this._cancelRequest = null;
+          attributeValueChangedCallback(name, oldValue, newValue) {
+            switch (name) {
+              case 'position': {
+                this.position = newValue;
 
-                this._cleanup = () => {
-                  const {mesh, _cancelRequest: cancelRequest} = this;
-                  if (mesh) {
-                    scene.remove(mesh);
-                  }
-                  if (cancelRequest) {
-                    cancelRequest();
-                  }
-                };
+                this._updateMesh();
+
+                break;
               }
-
-              destructor() {
-                this._cleanup();
-              }
-
-              attributeValueChangedCallback(name, oldValue, newValue) {
-                switch (name) {
-                  case 'position': {
-                    this.position = newValue;
-
-                    this._updateMesh();
-
-                    break;
-                  }
-                  case 'model': {
-                    const {mesh: oldMesh, _cancelRequest: cancelRequest} = this;
-                    if (oldMesh) {
-                      scene.remove(oldMesh);
-                      this.mesh = null;
-                    }
-                    if (cancelRequest) {
-                      cancelRequest();
-                    }
-
-                    let live = true;
-                    this._cancelRequest = () => {
-                      live = false;
-                    };
-
-                    const file = newValue;
-                    _requestModel(file)
-                      .then(mesh => {
-                        if (live) {
-                          const model = MODELS['cloud'];
-                          mesh.position.fromArray(model.position);
-                          mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
-                          mesh.scale.fromArray(model.scale);
-
-                          scene.add(mesh);
-                          this.mesh = mesh;
-
-                          this._updateMesh();
-
-                          this._cancelRequest = null;
-                        }
-                      })
-                      .catch(err => {
-                        console.warn('failed to load model', err);
-                      });
-
-                    break;
-                  }
+              case 'model': {
+                const {mesh: oldMesh, _cancelRequest: cancelRequest} = this;
+                if (oldMesh) {
+                  scene.remove(oldMesh);
+                  this.mesh = null;
                 }
-              }
-
-              _updateMesh() {
-                const {mesh, position} = this;
-
-                const _isDefaultPosition = position => _arrayEquals(
-                  position,
-                  [
-                    0, 0, 0,
-                    0, 0, 0, 1,
-                    1, 1, 1,
-                  ]
-                );
-                const _arrayEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
-                  const bi = b[i];
-                  return ai === bi;
-                });
-
-                if (mesh && position && !_isDefaultPosition(position)) {
-                  mesh.position.set(position[0], position[1], position[2]);
-                  mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-                  mesh.scale.set(position[7], position[8], position[9]);
+                if (cancelRequest) {
+                  cancelRequest();
                 }
+
+                let live = true;
+                this._cancelRequest = () => {
+                  live = false;
+                };
+
+                const file = newValue;
+                _requestModel(file)
+                  .then(mesh => {
+                    if (live) {
+                      const model = MODELS['cloud'];
+                      mesh.position.fromArray(model.position);
+                      mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
+                      mesh.scale.fromArray(model.scale);
+
+                      scene.add(mesh);
+                      this.mesh = mesh;
+
+                      this._updateMesh();
+
+                      this._cancelRequest = null;
+                    }
+                  })
+                  .catch(err => {
+                    console.warn('failed to load model', err);
+                  });
+
+                break;
               }
             }
-          ],
-          templates: [
-            {
-              tag: 'zeo-model',
-              attributes: {
-                model: 'https://cdn.rawgit.com/modulesio/zeo-data/8a67c22f91517e457ddadd9241f594ed5180077f/models/cloud/cloud.json',
-              },
-              children: [],
-            },
-          ],
+          }
+
+          _updateMesh() {
+            const {mesh, position} = this;
+
+            const _isDefaultPosition = position => _arrayEquals(
+              position,
+              [
+                0, 0, 0,
+                0, 0, 0, 1,
+                1, 1, 1,
+              ]
+            );
+            const _arrayEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
+              const bi = b[i];
+              return ai === bi;
+            });
+
+            if (mesh && position && !_isDefaultPosition(position)) {
+              mesh.position.set(position[0], position[1], position[2]);
+              mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+              mesh.scale.set(position[7], position[8], position[9]);
+            }
+          }
+        }
+        zeo.registerElement(ModelElement);
+
+        this._cleanup = () => {
+          zeo.unregisterElement(ModelElement);
         };
+
+        return {};
       }
     });
   }

@@ -178,33 +178,45 @@ const elementsToJson = elements => elements.map(element => {
     children: elementsToJson(Array.from(childNodes)),
   };
 });
-const jsonToElements = (modApis, elementsJson) => elementsJson.map(elementJson => {
-  const {tag, attributes, children} = elementJson;
-  const match = tag.match(/^([^\.]+?)(?:\.([^\.]+?))?$/);
-  const mainTag = match[1];
-  const subTag = match[2] || null;
+const jsonToElements = (modElementApis, elementsJson) => {
+  const _recurse = elementsJson => elementsJson.map(elementJson => {
+    const {tag, attributes, children} = elementJson;
+    // const match = tag.match(/^([^\.]+?)(?:\.([^\.]+?))?$/);
+    // const mainTag = match[1];
+    // const subTag = match[2] || null;
 
-  const modApi = modApis.get(mainTag);
-  const {elements: modElements} = modApi;
-  const elementApi = modElements.find(modElement => modElement.tag === tag);
-  const {attributes: elementApiAttributes} = elementApi;
+    const elementApi = modElementApis[tag];
+    const {attributes: elementApiAttributes} = elementApi;
 
-  const attributeValues = attributes;
+    const attributeValues = attributes;
 
-  const element = _makeZeoElement({
+    const element = _makeZeoElement({
+      tag,
+      elementApiAttributes,
+      attributeValues,
+    });
+
+    const childNodes = _recurse(children);
+    for (let i = 0; i < childNodes.length; i++) {
+      const childNode = childNodes[i];
+      element.appendChild(childNode);
+    }
+
+    return element;
+  });
+
+  return _recurse(elementsJson);
+};
+const elementApiToElement = elementApi => {
+  const {tag, attributes: elementApiAttributes} = elementApi;
+  const attributeValues = {};
+
+  return _makeZeoElement({
     tag,
     elementApiAttributes,
     attributeValues,
   });
-
-  const childNodes = jsonToElements(modApis, children);
-  for (let i = 0; i < childNodes.length; i++) {
-    const childNode = childNodes[i];
-    element.appendChild(childNode);
-  }
-
-  return element;
-});
+};
 const elementsToState = elements => {
   const elementsJson = elementsToJson(elements);
 
@@ -481,16 +493,15 @@ const _jsonParse = s => {
     return null;
   }
 };
-const constructElement = (modApis, element) => {
+const constructElement = (modElementApis, element) => {
   const {tagName, childNodes} = element;
-  const match = tagName.match(/^z-([^\.]+?)(?:\.([^\.]+?))?$/i);
-  const mainTag = match[1].toLowerCase();
-  const subTag = match[2] ? match[2].toLowerCase() : null;
-  const tag = mainTag + ((subTag !== null) ? ('.' + subTag) : '');
+  const match = tagName.match(/^z-(.+)$/i);
+  const tag = match[1].toLowerCase();
+  // const mainTag = match[1].toLowerCase();
+  // const subTag = match[2] ? match[2].toLowerCase() : null;
+  // const tag = mainTag + ((subTag !== null) ? ('.' + subTag) : '');
 
-  const modApi = modApis.get(mainTag);
-  const {elements: modElements} = modApi;
-  const elementApi = modElements.find(modElement => modElement.tag === tag);
+  const elementApi = modElementApis[tag];
   const {attributes: elementApiAttributes} = elementApi;
 
   const attributeValues = (() => {
@@ -506,7 +517,7 @@ const constructElement = (modApis, element) => {
 
   const elementInstance = _makeZeoElementInstance({tag, elementApiAttributes, attributeValues, baseClass});
 
-  const childNodeInstances = constructElements(modApis, Array.from(childNodes));
+  const childNodeInstances = constructElements(modElementApis, Array.from(childNodes));
   for (let i = 0; i < childNodeInstances.length; i++) {
     const childNodeInstance = childNodeInstances[i];
     elementInstance.appendChild(childNodeInstance);
@@ -514,7 +525,7 @@ const constructElement = (modApis, element) => {
 
   return elementInstance;
 };
-const constructElements = (modApis, elements) => elements.map(element => constructElement(modApis, element));
+const constructElements = (modElementApis, elements) => elements.map(element => constructElement(modElementApis, element));
 const destructElement = instance => {
   const {childNodes} = instance;
 
@@ -532,6 +543,7 @@ module.exports = {
   debounce,
   elementsToJson,
   jsonToElements,
+  elementApiToElement,
   elementsToState,
   cleanFiles,
   getKeyPath,

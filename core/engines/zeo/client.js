@@ -315,6 +315,14 @@ height: 100px;
                 getCurrentWorld() {
                   return rend.getCurrentWorld();
                 }
+
+                registerElement(elementApi) {
+                  rend.registerElement(elementApi);
+                }
+
+                unregisterElement(elementApi) {
+                  rend.unregisterElement(elementApi);
+                }
               }
 
               const api = new ZeoApi({

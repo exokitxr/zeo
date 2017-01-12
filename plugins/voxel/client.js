@@ -1,4 +1,4 @@
-class Voxel {
+export default class Voxel {
   constructor(archae) {
     this._archae = archae;
   }
@@ -342,158 +342,156 @@ class Voxel {
           return texture;
         })();
 
-        return {
-          elements: [
-            class VoxelElement extends HTMLElement {
-              static get tag() {
-                return 'voxel';
-              }
-              static get attributes() {
-                return {
-                  position: {
-                    type: 'matrix',
-                    value: [
-                      0.5, 1, -0.5,
-                      0, 0, 0, 1,
-                      1/32, 1/32, 1/32,
-                    ],
-                  },
-                };
-              }
+        class VoxelElement extends HTMLElement {
+          static get tag() {
+            return 'voxel';
+          }
+          static get attributes() {
+            return {
+              position: {
+                type: 'matrix',
+                value: [
+                  0.5, 1, -0.5,
+                  0, 0, 0, 1,
+                  1/32, 1/32, 1/32,
+                ],
+              },
+            };
+          }
 
-              createdCallback() {
-                const mesh = (() => {
-                  const chunkSize = 32;
-                  const dims = [chunkSize, chunkSize, chunkSize];
+          createdCallback() {
+            const mesh = (() => {
+              const chunkSize = 32;
+              const dims = [chunkSize, chunkSize, chunkSize];
 
-                  const sphereOrigin = new THREE.Vector3(dims[0] / 2, dims[1] / 2, dims[2] / 2);
-                  const sphereRadius = 4;
-                  const liquidOrigin = new THREE.Vector3((dims[0] / 2) - 2, dims[0] / 2 + 2, dims[1] / 2, dims[2] / 2);
-                  const liquidRadius = 5;
+              const sphereOrigin = new THREE.Vector3(dims[0] / 2, dims[1] / 2, dims[2] / 2);
+              const sphereRadius = 4;
+              const liquidOrigin = new THREE.Vector3((dims[0] / 2) - 2, dims[0] / 2 + 2, dims[1] / 2, dims[2] / 2);
+              const liquidRadius = 5;
 
-                  let numColors = 0;
-                  const colorNameMap = {
-                    green: ++numColors,
-                    blue: ++numColors,
-                  };
-                  const colorMap = {
-                    [colorNameMap.green]: [0, 1, 0.6, 1],
-                    [colorNameMap.blue]: [0, 0.25, 1, 0.5],
-                  };
+              let numColors = 0;
+              const colorNameMap = {
+                green: ++numColors,
+                blue: ++numColors,
+              };
+              const colorMap = {
+                [colorNameMap.green]: [0, 1, 0.6, 1],
+                [colorNameMap.blue]: [0, 0.25, 1, 0.5],
+              };
 
-                  const geometry = (() => {
-                    const voxels = (() => {
-                      const result = new Uint8Array(dims[0] * dims[1] * dims[2]);
+              const geometry = (() => {
+                const voxels = (() => {
+                  const result = new Uint8Array(dims[0] * dims[1] * dims[2]);
 
-                      for (let z = 0; z < dims[2]; z++) {
-                        for (let y = 0; y < dims[1]; y++) {
-                          for (let x = 0; x < dims[0]; x++) {
-                            const point = new THREE.Vector3(x, y, z);
+                  for (let z = 0; z < dims[2]; z++) {
+                    for (let y = 0; y < dims[1]; y++) {
+                      for (let x = 0; x < dims[0]; x++) {
+                        const point = new THREE.Vector3(x, y, z);
 
-                            const distanceToLiquidOrigin = Math.abs(point.distanceTo(liquidOrigin));
-                            if (distanceToLiquidOrigin <= liquidRadius) {
-                              const index = getIndex(x, y, z);
-                              result[index] = colorNameMap.blue;
+                        const distanceToLiquidOrigin = Math.abs(point.distanceTo(liquidOrigin));
+                        if (distanceToLiquidOrigin <= liquidRadius) {
+                          const index = getIndex(x, y, z);
+                          result[index] = colorNameMap.blue;
 
-                              continue;
-                            }
+                          continue;
+                        }
 
-                            const distanceToSphereOrigin = new THREE.Vector3(
-                              Math.abs(point.x - sphereOrigin.x),
-                              Math.abs(point.y - sphereOrigin.y),
-                              Math.abs(point.z - sphereOrigin.z)
-                            );
-                            if (
-                              distanceToSphereOrigin.x <= sphereRadius &&
-                              distanceToSphereOrigin.y <= sphereRadius &&
-                              distanceToSphereOrigin.z <= sphereRadius
-                            ) {
-                              const index = getIndex(x, y, z);
-                              result[index] = colorNameMap.green;
+                        const distanceToSphereOrigin = new THREE.Vector3(
+                          Math.abs(point.x - sphereOrigin.x),
+                          Math.abs(point.y - sphereOrigin.y),
+                          Math.abs(point.z - sphereOrigin.z)
+                        );
+                        if (
+                          distanceToSphereOrigin.x <= sphereRadius &&
+                          distanceToSphereOrigin.y <= sphereRadius &&
+                          distanceToSphereOrigin.z <= sphereRadius
+                        ) {
+                          const index = getIndex(x, y, z);
+                          result[index] = colorNameMap.green;
 
-                              continue;
-                            }
-                          }
+                          continue;
                         }
                       }
-
-                      function snapCoordinate(n, d) {
-                        return Math.abs((d + n % d) % d);
-                      }
-                      function getIndex(x, y, z) {
-                        x = snapCoordinate(x, dims[0]);
-                        y = snapCoordinate(y, dims[1]);
-                        z = snapCoordinate(z, dims[2]);
-                        return (x) + (y * dims[0]) + (z * dims[0] * dims[1]);
-                      }
-
-                      return result;
-                    })();
-
-                    const blocks = voxelBlockGenerator(voxels, dims, {
-                      colorMap,
-                    });
-                    const {positions, normals, uvs, colors} = blocks;
-
-                    const geometry = new THREE.BufferGeometry();
-                    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                    geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-                    geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-                    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-                    return geometry;
-                  })();
-
-                  const material = new THREE.MeshPhongMaterial({
-                    // color: 0xFFFFFF,
-                    shininess: 0,
-                    shading: THREE.FlatShading,
-                    vertexColors: THREE.VertexColors,
-                    alphaMap: alphaMap,
-                    alphaTest: 0.1,
-                    transparent: true,
-                  });
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.set(-0.5, -0.5, -0.5);
-                  mesh.scale.set(1 / dims[0], 1 / dims[1], 1 / dims[2]);
-                  return mesh;
-                })();
-                scene.add(mesh);
-                this.mesh = mesh;
-
-                this._cleanup = () => {
-                  scene.remove(mesh);
-                };
-              }
-
-              attributeValueChangedCallback(name, oldValue, newValue) {
-                switch (name) {
-                  case 'position': {
-                    const {mesh} = this;
-
-                    mesh.position.set(newValue[0], newValue[1], newValue[2]);
-                    mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
-                    mesh.scale.set(newValue[7], newValue[8], newValue[9]);
+                    }
                   }
-                }
-              }
 
-              destructor() {
-                this._cleanup();
+                  function snapCoordinate(n, d) {
+                    return Math.abs((d + n % d) % d);
+                  }
+                  function getIndex(x, y, z) {
+                    x = snapCoordinate(x, dims[0]);
+                    y = snapCoordinate(y, dims[1]);
+                    z = snapCoordinate(z, dims[2]);
+                    return (x) + (y * dims[0]) + (z * dims[0] * dims[1]);
+                  }
+
+                  return result;
+                })();
+
+                const blocks = voxelBlockGenerator(voxels, dims, {
+                  colorMap,
+                });
+                const {positions, normals, uvs, colors} = blocks;
+
+                const geometry = new THREE.BufferGeometry();
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+                geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                return geometry;
+              })();
+
+              const material = new THREE.MeshPhongMaterial({
+                // color: 0xFFFFFF,
+                shininess: 0,
+                shading: THREE.FlatShading,
+                vertexColors: THREE.VertexColors,
+                alphaMap: alphaMap,
+                alphaTest: 0.1,
+                transparent: true,
+              });
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.set(-0.5, -0.5, -0.5);
+              mesh.scale.set(1 / dims[0], 1 / dims[1], 1 / dims[2]);
+              return mesh;
+            })();
+            scene.add(mesh);
+            this.mesh = mesh;
+
+            this._cleanup = () => {
+              scene.remove(mesh);
+            };
+          }
+
+          attributeValueChangedCallback(name, oldValue, newValue) {
+            switch (name) {
+              case 'position': {
+                const {mesh} = this;
+
+                mesh.position.set(newValue[0], newValue[1], newValue[2]);
+                mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                mesh.scale.set(newValue[7], newValue[8], newValue[9]);
               }
             }
-          ],
-          templates: [
-            {
-              tag: 'voxel',
-              attributes: {},
-              children: [],
-            },
-          ],
+          }
+
+          destructor() {
+            this._cleanup();
+          }
+        }
+        zeo.registerElement(VoxelElement);
+
+        this._cleanup = () => {
+          zeo.unregisterElement(VoxelElement);
         };
+
+        return {};
       }
     });
   }  
-};
 
-module.exports = Voxel;
+  unmount() {
+    this._cleanup();
+  }
+};

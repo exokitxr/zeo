@@ -160,274 +160,201 @@ class Rain {
           }
         };
 
+        class RainElement extends HTMLElement {
+          static get tag() {
+            return 'rain';
+          }
+          static get attributes() {
+            return {
+              position: {
+                type: 'matrix',
+                value: [
+                  0, 0, 0,
+                  0, 0, 0, 1,
+                  1, 1, 1,
+                ],
+              },
+              type: {
+                type: 'select',
+                value: 'rain',
+                options: [
+                  'rain',
+                  'snow',
+                  'firefly',
+                ],
+              },
+              drops: {
+                type: 'number',
+                value: 250,
+                min: 1,
+                max: 1000,
+              },
+              range: {
+                type: 'number',
+                value: 32,
+                min: 1,
+                max: 128,
+              },
+              length: {
+                type: 'number',
+                value: 64,
+                min: 1,
+                max: 256,
+                step: 1,
+              },
+              color: {
+                type: 'color',
+                value: '#3e5eb8',
+              },
+              enabled: {
+                type: 'checkbox',
+                value: true,
+              },
+            };
+          }
+
+          createdCallback() {
+            const {
+              drops: {value: drops},
+              range: {value: range},
+              length: {value: length},
+            } = RainElement.attributes;
+
+            this.drops = drops;
+            this.range = range;
+            this.length = length;
+
+            const geometry = (() => {
+              const result = new THREE.BufferGeometry();
+
+              const positions = _makePositions({drops, range, length});
+              result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+              return result;
+            })();
+
+            const material = (() => {
+              const uniforms = THREE.UniformsUtils.clone(rainShader.uniforms);
+              uniforms.size.value = PARTICLE_SIZE;
+              uniforms.scale.value = PARTICLE_SCALE;
+              uniforms.diffuse.value = new THREE.Color(0x3e5eb8);
+              uniforms.range.value = range;
+
+              return new THREE.ShaderMaterial({
+                side: THREE.FrontSide,
+                // lights: [], // force lights refresh to setup uniforms, three.js WebGLRenderer line 4323
+                transparent: true,
+                fog: true,
+                uniforms: uniforms,
+                vertexShader: rainShader.vertexShader,
+                fragmentShader: rainShader.fragmentShader,
+              });
+            })();
+
+            const mesh = (() => {
+              const result = new THREE.Points(geometry, material);
+              result.frustumCulled = false;
+              return result;
+            })();
+            scene.add(mesh);
+            this.mesh = mesh;
+
+            const update = () => {
+              const worldTime = world.getWorldTime();
+
+              const frame = Math.floor(worldTime / PARTICLE_FRAME_TIME) % PARTICLE_FRAMES;
+              material.uniforms.frame.value = frame;
+            };
+            updates.push(update);
+
+            this._cleanup = () => {
+              scene.remove(mesh);
+
+              updates.splice(updates.indexOf(update), 1);
+            };
+          }
+
+          destructor() {
+            this._cleanup();
+          }
+
+          attributeValueChangedCallback(name, oldValue, newValue) {
+            switch (name) {
+              case 'position': {
+                const {mesh} = this;
+
+                mesh.position.set(newValue[0], newValue[1], newValue[2]);
+                mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                mesh.scale.set(newValue[7], newValue[8], newValue[9]);
+
+                break;
+              }
+              case 'type': {
+                console.log('rain set type', newValue); // XXX
+
+                break;
+              }
+              case 'drops': {
+                this.drops = newValue;
+                this._updateGeometry();
+
+                break;
+              }
+              case 'range': {
+                this.range = newValue;
+                this._updateGeometry();
+                this._updateMaterial();
+
+                break;
+              }
+              case 'length': {
+                this.length = newValue;
+                this._updateGeometry();
+
+                break;
+              }
+              case 'color': {
+                const {mesh: {material: {uniforms}}} = this;
+
+                uniforms.diffuse.value = new THREE.Color(newValue);
+
+                break;
+              }
+              case 'enabled': {
+                const {mesh} = this;
+                
+                mesh.visible = newValue;
+
+                break;
+              }
+            }
+          }
+
+          _updateGeometry() {
+            const {mesh: {geometry}} = this;
+            const {drops, range, length} = this;
+            const positions = _makePositions({drops, range, length});
+            geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+          }
+
+          _updateMaterial() {
+            const {mesh: {material: {uniforms}}} = this;
+            const {range} = this;
+
+            uniforms.range.value = range;
+          }
+        }
+        zeo.registerElement(RainElement);
+
         zeo.on('update', _update);
 
         this._cleanup = () => {
+          zeo.unregisterElement(RainElement);
+
           zeo.removeListener('update', _update);
         };
 
-        return {
-          elements: [
-            class RainElement extends HTMLElement {
-              static get tag() {
-                return 'rain';
-              }
-              static get attributes() {
-                return {
-                  position: {
-                    type: 'matrix',
-                    value: [
-                      0, 0, 0,
-                      0, 0, 0, 1,
-                      1, 1, 1,
-                    ],
-                  },
-                  type: {
-                    type: 'select',
-                    value: 'rain',
-                    options: [
-                      'rain',
-                      'snow',
-                      'firefly',
-                    ],
-                  },
-                  drops: {
-                    type: 'number',
-                    value: 250,
-                    min: 1,
-                    max: 1000,
-                  },
-                  range: {
-                    type: 'number',
-                    value: 32,
-                    min: 1,
-                    max: 128,
-                  },
-                  length: {
-                    type: 'number',
-                    value: 64,
-                    min: 1,
-                    max: 256,
-                    step: 1,
-                  },
-                  color: {
-                    type: 'color',
-                    value: '#3e5eb8',
-                  },
-                  enabled: {
-                    type: 'checkbox',
-                    value: true,
-                  },
-                };
-              }
-
-              createdCallback() {
-                const {
-                  drops: {value: drops},
-                  range: {value: range},
-                  length: {value: length},
-                } = RainElement.attributes;
-
-                this.drops = drops;
-                this.range = range;
-                this.length = length;
-
-                const geometry = (() => {
-                  const result = new THREE.BufferGeometry();
-
-                  const positions = _makePositions({drops, range, length});
-                  result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-                  return result;
-                })();
-
-                const material = (() => {
-                  const uniforms = THREE.UniformsUtils.clone(rainShader.uniforms);
-                  uniforms.size.value = PARTICLE_SIZE;
-                  uniforms.scale.value = PARTICLE_SCALE;
-                  uniforms.diffuse.value = new THREE.Color(0x3e5eb8);
-                  uniforms.range.value = range;
-
-                  return new THREE.ShaderMaterial({
-                    side: THREE.FrontSide,
-                    // lights: [], // force lights refresh to setup uniforms, three.js WebGLRenderer line 4323
-                    transparent: true,
-                    fog: true,
-                    uniforms: uniforms,
-                    vertexShader: rainShader.vertexShader,
-                    fragmentShader: rainShader.fragmentShader,
-                  });
-                })();
-
-                const mesh = (() => {
-                  const result = new THREE.Points(geometry, material);
-                  result.frustumCulled = false;
-                  return result;
-                })();
-                scene.add(mesh);
-                this.mesh = mesh;
-
-                const update = () => {
-                  const worldTime = world.getWorldTime();
-
-                  const frame = Math.floor(worldTime / PARTICLE_FRAME_TIME) % PARTICLE_FRAMES;
-                  material.uniforms.frame.value = frame;
-                };
-                updates.push(update);
-
-                this._cleanup = () => {
-                  scene.remove(mesh);
-
-                  updates.splice(updates.indexOf(update), 1);
-                };
-              }
-
-              destructor() {
-                this._cleanup();
-              }
-
-              attributeValueChangedCallback(name, oldValue, newValue) {
-                switch (name) {
-                  case 'position': {
-                    const {mesh} = this;
-
-                    mesh.position.set(newValue[0], newValue[1], newValue[2]);
-                    mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
-                    mesh.scale.set(newValue[7], newValue[8], newValue[9]);
-
-                    break;
-                  }
-                  case 'type': {
-                    console.log('rain set type', newValue); // XXX
-
-                    break;
-                  }
-                  case 'drops': {
-                    this.drops = newValue;
-                    this._updateGeometry();
-
-                    break;
-                  }
-                  case 'range': {
-                    this.range = newValue;
-                    this._updateGeometry();
-                    this._updateMaterial();
-
-                    break;
-                  }
-                  case 'length': {
-                    this.length = newValue;
-                    this._updateGeometry();
-
-                    break;
-                  }
-                  case 'color': {
-                    const {mesh: {material: {uniforms}}} = this;
-
-                    uniforms.diffuse.value = new THREE.Color(newValue);
-
-                    break;
-                  }
-                  case 'enabled': {
-                    const {mesh} = this;
-                    
-                    mesh.visible = newValue;
-
-                    break;
-                  }
-                }
-              }
-
-              _updateGeometry() {
-                const {mesh: {geometry}} = this;
-                const {drops, range, length} = this;
-                const positions = _makePositions({drops, range, length});
-                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-              }
-
-              _updateMaterial() {
-                const {mesh: {material: {uniforms}}} = this;
-                const {range} = this;
-
-                uniforms.range.value = range;
-              }
-            },
-            class RainBoxElement extends HTMLElement {
-              static get tag() {
-                return 'rain.box';
-              }
-              static get attributes() {
-                return {
-                  position: {
-                    type: 'matrix',
-                    value: [
-                      0, 0, 0,
-                      0, 0, 0, 1,
-                      1, 1, 1,
-                    ],
-                  },
-                  color: {
-                    type: 'color',
-                    value: '#CCC',
-                  },
-                  opacity: {
-                    type: 'number',
-                    value: 0.1,
-                    min: 0,
-                    max: 1,
-                  },
-                  enabled: {
-                    type: 'checkbox',
-                    value: true,
-                  },
-                };
-              }
-
-              constructor() {
-                console.log('rain.box constructor'); // XXX
-              }
-
-              destructor() {
-                console.log('rain.box destructor');
-              }
-
-              set position(matrix) {
-                console.log('rain.box set position', matrix);
-              }
-
-              set color(color) {
-                console.log('rain.box set color', color);
-              }
-
-              set opacity(opacity) {
-                console.log('rain.box set opacity', opacity);
-              }
-
-              set enabled(enabled) {
-                console.log('rain.box set enabled', enabled);
-              }
-            }
-          ],
-          templates: [
-            {
-              tag: 'rain',
-              attributes: {},
-              children: [
-                {
-                  tag: 'rain.box',
-                  attributes: {
-                    position: [
-                      0, 1.5, 0,
-                      0, 0, 0, 1,
-                      1, 1, 1,
-                    ],
-                  },
-                  children: [],
-                },
-              ],
-            },
-          ],
-        };
+        return {};
       }
     });
   }

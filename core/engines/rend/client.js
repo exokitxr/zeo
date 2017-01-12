@@ -188,12 +188,12 @@ class Rend {
 
         const worlds = new Map();
         let currentWorld = null;
-        const currentModApis = new Map();
+        const modElementApis = {};
 
         const stats = new Stats();
         stats.render = () => {}; // overridden below
 
-        // helper functions
+        // element helper functions
         const _cleanElementsState = elementsState => {
           const result = {};
           for (const k in elementsState) {
@@ -310,6 +310,39 @@ class Rend {
           );
         });
 
+        // mod helper functions
+        const _requestMod = mod => archae.requestPlugin(mod)
+          .then(modApi => {
+            menu.updatePages();
+
+            return modApi;
+          });
+        const _requestMods = mods => Promise.all(mods.map(mod => _requestMod(mod)));
+        const _releaseMod = mod => archae.releasePlugin(mod)
+          .then(() => {
+            menu.updatePages();
+          });
+        const _releaseMods = mods => Promise.all(mods.map(mod => _releaseMod(mod)));
+        const _addModApiElement = elementApi => {
+          const {tag} = elementApi;
+
+          modElementApis[tag] = elementApi;
+
+          const element = menuUtils.elementApiToElement(elementApi);
+          elementsState.availableElements.push(element);
+        };
+        const _removeModApiElement = elementApi => {
+          const {tag} = elementApi;
+
+          delete modElementApis[tag];
+
+          elementsState.availableElements = elementsState.availableElements.filter(element => {
+            const {tagName} = element;
+            const tag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
+            return tag !== modName;
+          });
+        };
+
         // api functions
         const _requestChangeWorld = worldName => new Promise((accept, reject) => {
           const _requestInstalledModSpecs = worldName => fetch('/archae/rend/mods/installed', {
@@ -344,96 +377,6 @@ class Rend {
                 worldTime = now - startTime;
               });
 
-              const _requestMod = mod => archae.requestPlugin(mod)
-                .then(modApi => {
-                  const modName = archae.getName(modApi);
-                  currentModApis.set(modName, modApi);
-
-                  _addModApiElements(modName, modApi, currentModApis);
-
-                  menu.updatePages();
-
-                  return modApi;
-                });
-              const _requestMods = mods => Promise.all(mods.map(mod => _requestMod(mod)));
-              const _releaseMod = mod => archae.releasePlugin(mod)
-                .then(modApi => {
-                  const modName = archae.getName(modApi);
-                  currentModApis.delete(modName);
-
-                  _removeModApiElements(modApi);
-
-                  menu.updatePages();
-
-                  return mod;
-                });
-              const _releaseMods = mods => Promise.all(mods.map(mod => _releaseMod(mod)));
-              const _addModApiElements = (modName, modApi, modApis) => {
-                const _validateAttributes = attributes => {
-                  for (const attributeName in attributes) {
-                    if (/^[^\t\n\f \/>"'=]+$/.test(attributeName) && attributeName.toLowerCase() === attributeName) {
-                      // attribute ok
-                    } else {
-                      return false;
-                    }
-                  }
-                  return true;
-                };
-                const _validateTemplates = templates => {
-                  const _isValid = template => {
-                    const {tag, children} = template;
-                    const mainTag = tag.match(/^([^\.]*)/)[0];
-                    return mainTag === modName && children.every(_isValid);
-                  };
-
-                  const valid = [];
-                  const invalid = [];
-                  for (let i = 0; i < templates.length; i++) {
-                    const template = templates[i];
-                    if (_isValid(template)) {
-                      valid.push(template);
-                    } else {
-                      invalid.push(template);
-                    }
-                  }
-                  return {valid, invalid};
-                };
-
-                const attributes = (typeof modApi.attributes === 'object' && modApi.attributes !== null && !Array.isArray(modApi.attributes)) ? modApi.attributes : {};
-                if (_validateAttributes(attributes)) {
-                  const templates = Array.isArray(modApi.templates) ? modApi.templates : [];
-
-                  const {valid: validTemplates, invalid: invalidTemplates} = _validateTemplates(templates);
-                  if (invalidTemplates.length === 0) {
-                    const templateElements = menuUtils.jsonToElements(modApis, validTemplates);
-                    elementsState.availableElements.push.apply(elementsState.availableElements, templateElements);
-                  } else {
-                    console.warn('warning: ignoring mod with invalid template tag names', JSON.stringify(modName), invalidTemplates);
-                  }
-                } else {
-                  console.warn('warning: ignoring mod with invalid attribute names', JSON.stringify(modName), attributes);
-                }
-              };
-              const _removeModApiElements = modApi => {
-                const oldTemplates = Array.isArray(modApi.templates) ? modApi.templates : [];
-
-                const oldTemplateTagsIndex = (() => {
-                  const result = {};
-                  for (let i = 0; i < oldTemplates.length; i++) {
-                    const oldTemplate = oldTemplates[i];
-                    const {tag} = oldTemplate;
-                    result[tag] = true;
-                  }
-                  return result;
-                })();
-
-                elementsState.availableElements = elementsState.availableElements.filter(element => {
-                  const {tagName} = element;
-                  const tag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
-                  return !oldTemplateTagsIndex[tag];
-                });
-              };
-
               // load world
               const _loadWorld = () => {
                 const _loadMods = () => {
@@ -449,9 +392,9 @@ class Rend {
                     });
                 };
                 const _loadElements = () => new Promise((accept, reject) => {
-                  const elements = menuUtils.jsonToElements(currentModApis, elementsStatus.elements);
-                  const clipboardElements = menuUtils.jsonToElements(currentModApis, elementsStatus.clipboardElements);
-                  const elementInstances = menuUtils.constructElements(currentModApis, elements);
+                  const elements = menuUtils.jsonToElements(modElementApis, elementsStatus.elements);
+                  const clipboardElements = menuUtils.jsonToElements(modElementApis, elementsStatus.clipboardElements);
+                  const elementInstances = menuUtils.constructElements(modElementApis, elements);
 
                   elementsState.elements = elements;
                   elementsState.clipboardElements = clipboardElements;
@@ -2135,7 +2078,7 @@ class Rend {
                               if (newCollection !== 'availableElements') {
                                 const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
                                 if (newCollection === 'elements') {
-                                  const instance = menuUtils.constructElement(currentModApis, element);
+                                  const instance = menuUtils.constructElement(modElementApis, element);
                                   menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
                                 }
                               }
@@ -2143,7 +2086,7 @@ class Rend {
                               if (newCollection !== 'availableElements') {
                                 const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
                                 if (newCollection === 'elements') {
-                                  const instance = menuUtils.constructElement(currentModApis, element);
+                                  const instance = menuUtils.constructElement(modElementApis, element);
                                   menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
                                 }
                               }
@@ -2977,6 +2920,14 @@ class Rend {
 
               updateEnd() {
                 stats.end();
+              }
+
+              registerElement(elementApi) {
+                _addModApiElement(elementApi);
+              }
+
+              unregisterElement(elementApi) {
+                _removeModApiElement(elementApi);
               }
             }
             const api = new RendApi();
