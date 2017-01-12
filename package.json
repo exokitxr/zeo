@@ -28,6 +28,6 @@
   },
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
-    "archae": "0.0.8"
+    "archae": "0.0.9"
   }
 }
