@@ -2,23 +2,29 @@
 
 WebVR worlds in Javascript.
 
-Zeo.sh lets you run `npm` modules in VR from your browser, using a headset or keyboard + mouse. The goal is to get Javascript from your fingers to your face in the shortest time possible.
+Zeo.sh lets you run `npm` modules in VR from your browser, using a headset or keyboard + mouse. The goal is _Javascript from fingers to face at the speed of thought_.
 
 <img src="https://cdn.rawgit.com/modulesio/zeo-data/defb101e115250f6512ab6f6c29e69ce9e75a80b/video/demo.gif" width="512px">
 
-If you know how to run `node`, you can strap on a headset, pick up your controllers, and build worlds out of the Zeo module ecosystem on `npm`. If you know Javascript, `THREE.js`, and `npm`, then you can write your own.
+If you know how to run `node`, you can pick up your headset + controllers and build worlds out of Zeo modules on `npm`. If you know Javascript, `THREE.js`, and `npm`, then you can write your own.
 
 ## Features
 
-- one command `npm install`
-- world persistence
-- in-VR plugin UI
-- multiplayer support
-- server-side physics
-- file upload/download
-- `npm` module ecosystem
+- One command `npm install`
+- Works with WebVR 1.0, polyfilled
+- World persistence
+- In-VR plugin UI
+- API for HMD / controller position
+- Multiplayer support
+- Server-side physics
+- Per-frame, per-eye callbacks
+- Positional audio support
+- File upload/download integration
+- Full access to `NPM` ecosystem
+- HMD + controller emulation with keyboard + mouse
+- Almost everything in Javascript
 
-Zeo uses the [`archae`](https://github.com/modulesio/archae) module loader.
+Zeo uses the [`archae`](https://github.com/modulesio/archae) module loader under the hood.
 
 ## Quick install (Linux)
 
@@ -34,7 +40,11 @@ sudo apt-get install build-essential cmake
 
 If you're using a different package manager it almost certainly has these, though under a different name.
 
-// XXX
+## Example module
+
+Here is the full code for a `zeo` module for a bouncy ball you can touch:
+
+// XXX fill this in
 
 ```js
 function init() {
@@ -78,7 +88,17 @@ function init() {
 }
 ```
 
-## Features
+## API documentation
+
+[Full API documentation is available here](https://github.com/modulesio/zeo/tree/master/docs/api.md). // XXX write this
+
+## Awesome modules
+
+Here's a showcase of some of the `npm` modules you can run on Zeo:
+
+// XXX fill this in
+
+## Features // XXX delete these
 
 - Works with WebVR 1.0
 - Fully emulates HMD + tracked controllers, if you don't have the browser or hardware for it
@@ -103,3 +123,7 @@ function init() {
   - Virtual tools you can pick up and play with
   - Keyboard emulation
   - Emulated game consoles with Retroarch
+
+## Contact
+
+Issues and PR's are welcome. If you want to reach me privately, I'm Avaer Kazmer <a@modules.io>.
