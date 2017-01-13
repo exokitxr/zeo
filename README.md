@@ -22,7 +22,7 @@ If you know how to run `node`, you can pick up your headset + controllers and bu
 - File upload/download integration
 - Full access to `NPM` ecosystem
 - HMD + controller emulation with keyboard + mouse
-- Almost everything in Javascript
+- Zeo is 100% Javascript
 
 Zeo uses the [`archae`](https://github.com/modulesio/archae) module loader under the hood.
 
@@ -32,7 +32,7 @@ Zeo uses the [`archae`](https://github.com/modulesio/archae) module loader under
 npm install zeo # requires node 6+
 ```
 
-:point_right: The _required dependencies_ are `build-essential` and `cmake`. These are needed to build the included [Bullet physics engine](https://github.com/bulletphysics/bullet3). On Debian/Ubuntu you can get these dependencies with:
+:point_right: The _required dependencies_ are `build-essential` and `cmake`. These are needed to build the included third-party [Bullet physics engine](https://github.com/bulletphysics/bullet3). On Debian/Ubuntu you can get these dependencies with:
 
 ```bash
 sudo apt-get install build-essential cmake
@@ -40,52 +40,112 @@ sudo apt-get install build-essential cmake
 
 If you're using a different package manager it almost certainly has these, though under a different name.
 
-## Example module
+## Example: Bouncy ball
 
-Here is the full code for a `zeo` module for a bouncy ball you can touch:
-
-// XXX fill this in
+Here is the full code for `Bouncy ball`, a little game you can play with tracked controllers. It's packaged as a Zeo  module in [`plugins/demo`](https://github.com/modulesio/zeo/tree/master/plugins/demo).
 
 ```js
-function init() {
+module.exports = archae => ({ // `archae` is the Zeo plugin loader
+  mount() { // `mount` gets called when our plugin loads
+    // request the `zeo` plugin API from `archae`
+    return archae.requestPlugin('/core/engines/zeo')
+      .then(zeo => {
+        // grab the API veriables we need
+        const {THREE, scene} = zeo;
+        const world = zeo.getCurrentWorld();
 
-	scene = new THREE.Scene();
+        // declare some contants
+        const COLORS = {
+          GREEN: new THREE.Color(0x4CAF50),
+          RED: new THREE.Color(0xE91E63),
+        };
 
-	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
-	camera.position.z = 1000;
+        // create the sphere and add it to the scene
+        const sphere = new THREE.Mesh(
+          new THREE.SphereBufferGeometry(0.1, 7, 5),
+          new THREE.MeshPhongMaterial({
+            color: COLORS.GREEN,
+            shading: THREE.FlatShading,
+            shininess: 0,
+          })
+        );
+        const startY = 1.2;
+        sphere.position.y = startY;
+        scene.add(sphere);
 
-	geometry = new THREE.BoxGeometry( 200, 200, 200 );
-	material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+        // declare some state
+        const position = new THREE.Vector3(0, 0, 0);
+        const velocity = new THREE.Vector3(0, 0, 0);
+        let lastTime = world.getWorldTime();
 
-	mesh = new THREE.Mesh( geometry, material );
-	scene.add( mesh );
+        // `_update` will be called on every frame
+        const _update = () => {
+          // update time
+          const currentTime = world.getWorldTime();
+          const timePassed = Math.max(currentTime - lastTime, 1);
+          lastTime = currentTime;
 
-	renderer = new THREE.WebGLRenderer();
-	renderer.setSize( window.innerWidth, window.innerHeight );
+          // calculate new position
+          const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
+          const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
+          velocity.add(rayBack).multiplyScalar(0.98);
+          position.copy(newPosition);
 
-	document.body.appendChild( renderer.domElement );
+          // update sphere
+          sphere.position.x = newPosition.x;
+          sphere.position.y = newPosition.y;
+          sphere.position.z = newPosition.z;
+          sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+          sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
 
-}
+          // detect hits
+          const status = zeo.getStatus();
+          const {gamepads: gamepadsStatus} = status;
+          const lines = ['left', 'right'].map(side => {
+            const gamepadStatus = gamepadsStatus[side];
+            if (gamepadStatus) {
+              const {position: controllerPosition} = gamepadStatus;
+              return new THREE.Line3(controllerPosition.clone(), sphere.position.clone());
+            } else {
+              return null;
+            }
+          });
+          const touchingLines = lines
+            .map(line => {
+              const distance = line ? line.distance() : Infinity;
+              return {
+                line,
+                distance,
+              };
+            })
+            .sort((a, b) => a.distance - b.distance)
+            .filter(({distance}) => distance <= 0.1)
+            .map(({line}) => line);
+          if (touchingLines.length > 0) {
+            const touchingLine = touchingLines[0];
+            const delta = touchingLine.delta().normalize().multiplyScalar(2.5);
+            velocity.copy(delta);
+          }
 
-function init() {
+          // style the sphere
+          sphere.material.color = touchingLines.length > 0 ? COLORS.RED : CcOLORS.GREEN;
+        };
 
-	scene = new THREE.Scene();
+        // listen for Zeo telling us it's time to update for the next frame
+        zeo.on('update', _update);
 
-	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
-	camera.position.z = 1000;
+        // set up a callback to call when we want to clean up after the plugin
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
 
-	geometry = new THREE.BoxGeometry( 200, 200, 200 );
-	material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
-
-	mesh = new THREE.Mesh( geometry, material );
-	scene.add( mesh );
-
-	renderer = new THREE.WebGLRenderer();
-	renderer.setSize( window.innerWidth, window.innerHeight );
-
-	document.body.appendChild( renderer.domElement );
-
-}
+          scene.remove(sphere);
+        };
+      });
+  },
+  unmount() { // `unmount` gets called when our plugin unloads
+    this._cleanup();
+  },
+});
 ```
 
 ## API documentation
