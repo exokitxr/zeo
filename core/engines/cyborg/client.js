@@ -402,6 +402,7 @@ class Cyborg {
             getPlayer: _getPlayer,
             getControllers: _getControllers,
             getMode: _getMode,
+            update: _update,
           };
         }
       });
