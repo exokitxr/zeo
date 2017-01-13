@@ -317,6 +317,10 @@ height: 100px;
                   return rend.getCurrentWorld();
                 }
 
+                getStatus() {
+                  return webvr.getStatus();
+                }
+
                 registerElement(elementApi) {
                   rend.registerElement(elementApi);
                 }
