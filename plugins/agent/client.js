@@ -29,6 +29,8 @@ class Agent {
               const audio = document.createElement('audio');
               audio.src = url;
               audio.oncanplaythrough = () => {
+                audio.oncanplaythrough = null;
+
                 accept(audio);
               };
               audio.onerror = err => {
