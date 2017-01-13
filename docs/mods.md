@@ -1,6 +1,110 @@
-# Zeo mods
+# Zeo plugins
 
-This document specifies what you need to do to write your own Zeo mods.
+This document specifies what you need to do to write your own Zeo plugins, which are self-contained units of code you can add to your Zeo worlds.
+
+It is assumed that you already have a Zeo server running. If not, see [Getting started](https://github.com/modulesio/zeo/tree/master/docs/getting-started.md).
+
+## Introduction
+
+A Zeo plugin is just an [`npm`](https://www.npmjs.com/) module: that is, a [`package.json`](https://docs.npmjs.com/files/package.json) plus the Javascript files with your plugin code.
+
+The only difference between a Zeo plugin and any other `npm` module is some extra keys in the `package.json` that tell Zeo how to start it and stop it. Your plugin will probably also probably  `requestPlugin('zeo')` to interfact with the Zeo world.
+
+If you're a hands-on learner, you might want to simply dive into the [`Bouncy ball` demo plugin](/plugins/demo/). Otherwise, read on for the full Zeo plugin specification.
+
+## Module specification
+
+Under the hood, Zeo uses the [`archae`](https://github.com/modulesio/archae) module loader. It's just a way of writing client/server `npm` modules that can be started and stopped dynamically.
+
+### Package format
+
+The main thing that makes an `npm` module compatible with Zeo is that its `package.json` includes the keys `client`, `server`, or `worker` (all of which are optional). These should point to the (package-relative) `.js` files you want to run in the corresponding environments:
+
+#### package.json
+```js
+{
+  "name": "my-plugin",
+  "version": "0.0.1",
+  "keywords": ["zeo-mod"],
+  "client": "client.js",
+  "server": "server.js",
+  "worker": "worker.js"
+}
+```
+
+Also note the `"keywords": ["zeo-mod"]`: this is used by Zeo to find your module when searching `npm`. It's not required to load
+
+The reference `.js` files (e.g. `client.js`) should export `mount` and `unmount` functions to call when your plugin is to be started or stopped, respectively:
+
+#### client.js
+```js
+module.exports = {
+  mount() {
+    console.log('plugin loading!');
+  },
+  unmount() {
+    console.log('plugin unloading!');
+  },
+};
+```
+
+### Plugin APIs
+
+In addition to loading and unloading plugins, Zeo lets plugins export their APIs and import other plugin's APIs.
+
+// XXX finish this
+
+The above will let Zeo load and unload module, but it won't actually do anything. To interface with the world you'll need to use the `THREE.js` API that Zeo exports.
+
+## Loading modules
+
+Now that you know how to write modules, you'll need to know how to load them.
+
+There are two ways to load a module into Zeo: Zeo supports two sources of mods: you can either installed from the local filesystem (in which case the plugin will only be available to your server), or publish to the public `npm` registry (in which case the plugin will be available for anyone to find and install). Either way, the code for your module is the same.
+
+### Option 1: Local install
+
+This method is most useful for testing plugins as you develop them, without the overhead of publishing and downloading from `npm`.
+
+To use a plugin locally, simply drop your `npm` module (which otherwise meets the same Zeo mods specification) into Zeo's `plugins/` directory. For example, `plugins/my-mod` would be the right place to put a `zeo` plugin named `my-mod`.
+
+Once you've done this, you'll be able to add your plugin to Zeo the normal way, by going to `Mods > Local Mods` in the main Zeo menu. You can only do this on the server where you dropped your plugin.
+
+// XXX explain reinstalls
+
+### Option 2: Publish to `npm`
+
+Publishing your plugin to `npm` is the best way to deliver your module to anyone running Zeo. This is mostly just a straightforward [`npm publish`](https://docs.npmjs.com/cli/publish). The only additional thing you need to do is to make sure that `"zeo-mod"` is included in your `"keywords" array in `package.json`, so Zeo knows how to find your module.
+
+```js
+// package.json
+{
+  "name": "my-mod",
+  "version": "0.0.1",
+  "keywords": [
+    "zeo-mod"
+  ],
+  "client": "client.js"
+}
+```
+
+To install a Zeo mod that was published to `npm`, go to `Mods > Npm search` in the main Zeo menu. Anyone running a Zeo server will be able to search for your mod and install it this way.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// XXX finish this
 
 The high-level oveview is that you write `mount` and `unmount` functions as your entry points, add objects to the VR scene with plain `THREE.js`, and publish the result to `npm`. Everything here is free-form Javascript; Zeo is the glue that delivers the Javascript to your face.
 
@@ -16,32 +120,8 @@ What follows is a _Getting started_ guide and a specification.
 
 Zeo mods follow the [Archae mods specification](https://github.com/modulesio/archae). That is, you should define `"client"`, `"server"`, and/or `"worker"` files in your `"package.json"`, and have them export `mount` and `unmount` functions so the loader knows how to load them. Once you've done this, your module can be loaded into Zeo, even if it technically doesn't do anything.
 
-Example skeleton:
 
-#### package.json
-
-```js
-{
-  "name": "test-mod",
-  "client": "client.js",
-  "keywords": ["zeo-mod"]
-}
-```
-
-#### client.js
-
-```js
-module.exports = () => {
-  mount() {
-    console.log('mounted!');
-  },
-  unmount() {
-    console.log('unmounted!');
-  },
-};
-```
-
-To actually add functionality to your moduel, you'll probably want to _add stuff to the Zeo scene in the `mount` function_ and _remove it in the `unmount` function_.
+To actually add functionality to your module, you'll probably want to _add stuff to the Zeo scene in the `mount` function_ and _remove it in the `unmount` function_.
 
 Technically speaking, Zeo is an Archae engine that wraps `THREE.js`: Zeo takes care of setting up the `scene` you'll be using, adds some infrastructural components such as HMD and controller tracking, and sets up the Archae loader for your modules.
 
@@ -262,35 +342,3 @@ Here's a simple example of a mod that allows user-configurable placement of a cu
 There are basically three parts to the elements API: `element declarations`, `attrbute declarations`, and `template declarations`. We'll tackle them individually.
 
 // XXX
-
-## Local mods
-
-Zeo supports two sources of mods: you can either installed from the local filesystem (in which case the mod will only be available to your server), or publish to the public `npm` registry (in which case anyone will be able to find and install your module).
-
-The former of these is most useful for testing mods as you develop them, without the overhead of constantly publishing and downloading from `npm`.
-
-To use the local mod installation feature, simply drop your `npm` module (which otherwise meets the same Zeo mods specification) into Zeo's `plugins/` directory. For example, `plugins/my-mod` would contain an `npm`-compatible mod named `my-mod`.
-
-Once you've placed your mod in `plugin/`, you'll be able to add it to Zeo the normal way,  by going to `Mods > Local Mods` in the main Zeo menu.
-
-// XXX explain reinstalls
-
-## Publishing to `npm`
-
-Zeo mods can be published to `npm` for consumption by anyone running Zeo, right from the VR interface. The only additional thing you need to do to make this work is to add `"zeo-mod"` to your `"keywords" array in `package.json`, so Zeo knows how to find your module.
-
-```js
-// package.json
-{
-  "name": "my-mod",
-  "version": "0.0.1",
-  "keywords": [
-    "zeo-mod"
-  ],
-  "client": "client.js"
-}
-```
-
-The mod format is the same regardless of whether you want your mod to be local or puplushed to `npm`. You can publish to `npm` in the usual way; just note that there might be a short delay (seconds to minutes) between when you publish your module and when it becomes visible in the search results.
-
-To install a Zeo mod that was published to `npm`, go to `Mods > Npm search` in the main Zeo menu.

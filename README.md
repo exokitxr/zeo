@@ -20,11 +20,10 @@ If you know how to run `node`, you can pick up your headset + controllers and bu
 - Per-frame, per-eye callbacks
 - Positional audio support
 - File upload/download integration
-- Full access to `NPM` ecosystem
+- Full access to [NPM](https://npmjs.org) ecosystem
 - HMD + controller emulation with keyboard + mouse
-- Zeo is 100% Javascript
-
-Zeo uses the [`archae`](https://github.com/modulesio/archae) module loader under the hood.
+- Hotload plugins with [`archae`](https://github.com/modulesio/archae)
+- Javascript all the way down
 
 ## Quick install (Linux)
 
