@@ -52,15 +52,83 @@ module.exports = {
 
 In addition to loading and unloading plugins, Zeo lets plugins export their APIs and import other plugin's APIs.
 
-// XXX finish this
+### Import a plugin's API
 
-The above will let Zeo load and unload module, but it won't actually do anything. To interface with the world you'll need to use the `THREE.js` API that Zeo exports.
+To import a plugin API, use a `function` or `class` at the top-level `export default` or `module.exports` of your Javascript file, to capture the `archae` object:
+
+#### client.js
+```js
+export default const MyPluginClient = archae => {
+  mount() {
+    return archae.requestPlugin('/core/engines/zeo') // load the Zeo plugin
+      .then(zeo => {
+        console.log('got the Zeo API!', zeo);
+      });
+  },
+};
+```
+
+The important part is the call to `archae.requestPlugin()`, which lets us request other plugins. The return value of this function is a `Promise` that will `resolve` to the API that's exported by that plugin, or `reject` with an error describing how loading the plugin failed.
+
+In this case we are requesting the `/core/engines/zeo` plugin, which resolves to the Zeo plugin API. This betrays a key design principle of Zeo: it's actually just a plugin! That is, Zeo is just plugins all the way down.
+
+Also note the `return archae.requestPlugin(...)`: we are returning a `Promise` from `mount`. In this case, it means we want the plugin's loading to wait until the returned `Promise` resolves. This is also the mechanism that allows a plugin to export its own API for other plugins to consume.
+
+### Export your plugin's API
+
+To export an API for your plugin, simply return (a `Promise` that resolves to) your API from the plugin's `mount` function in its Javascript implementation file.
+
+Returning a regular value means that the plugin should be considered loaded immediately, while returning a `Promise` means you want to wait for the plugin to load until the `Promise` resolves. Either way, the behavior is the same from the user's perspective: the resolved value of the `Promise` that the user gets as the result of calling `archae.requestPlugin()` will be the API your plugin exports.
+
+Here's an example of a plugin exporting an API and another plugin importing it for use:
+
+#### database/client.js
+```js
+export default class Database {
+  mount() {
+    return new Promise((accept, reject) => {
+      const databaseInstance = {}; // load the database instance somehow...
+      accept(databaseInstance);
+    })
+      .then(databaseInstance => {
+        const databaseApi = {
+          get(key) {
+            return new Promise((accept, reject) => {
+              // get the value from databaseApi and accept() it...
+            });
+          },
+          set(key, value) {
+            return new Promise((accept, reject) => {
+              // set the value from databaseApi and accept() when done...
+            });
+          },
+        };
+      });
+  }
+
+  unmount() {}
+}
+```
+
+#### some-other-plugin/client.js
+```js
+module.exports = archae => {
+  mount() {
+    return archae.requestPlugin('database')
+      .then(database => {
+        // call database.get() or database.set() here to use the database...
+      });
+  }
+
+  unmount() {}
+};
+```
 
 ## Loading modules
 
-Now that you know how to write modules, you'll need to know how to load them.
+Now that you know how to write modules, you'll need to know how to load them into Zeo.
 
-There are two ways to load a module into Zeo: Zeo supports two sources of mods: you can either installed from the local filesystem (in which case the plugin will only be available to your server), or publish to the public `npm` registry (in which case the plugin will be available for anyone to find and install). Either way, the code for your module is the same.
+There are two ways to do this: you can either installed from the local filesystem (in which case the plugin will only be available to your server), or publish to the public `npm` registry (in which case the plugin will be available for anyone to find and install). Either way, there's no difference in functionality and the code for your module is the same.
 
 ### Option 1: Local install
 
@@ -90,44 +158,23 @@ Publishing your plugin to `npm` is the best way to deliver your module to anyone
 
 To install a Zeo mod that was published to `npm`, go to `Mods > Npm search` in the main Zeo menu. Anyone running a Zeo server will be able to search for your mod and install it this way.
 
+## Zeo API
 
+The above describes how to write and load Zeo plugins that do nothing. To interact with the user and the Zeo world you'll want to use the `THREE.js` objects and APIs exported by `/core/engines/zeo`.
 
+```js
+// XXX write this
+```
 
-
-
-
-
-
-
-
-
-
-
-
-// XXX finish this
-
-The high-level oveview is that you write `mount` and `unmount` functions as your entry points, add objects to the VR scene with plain `THREE.js`, and publish the result to `npm`. Everything here is free-form Javascript; Zeo is the glue that delivers the Javascript to your face.
-
-There's an escape hatch to `glsl`, `node`, `npm` and the full internet ecosystem if you need it.
-
-What follows is a _Getting started_ guide and a specification.
-
-## Getting started
-
-// XXX
-
-## Specification
-
-Zeo mods follow the [Archae mods specification](https://github.com/modulesio/archae). That is, you should define `"client"`, `"server"`, and/or `"worker"` files in your `"package.json"`, and have them export `mount` and `unmount` functions so the loader knows how to load them. Once you've done this, your module can be loaded into Zeo, even if it technically doesn't do anything.
-
+// XXX rewrite this
 
 To actually add functionality to your module, you'll probably want to _add stuff to the Zeo scene in the `mount` function_ and _remove it in the `unmount` function_.
 
 Technically speaking, Zeo is an Archae engine that wraps `THREE.js`: Zeo takes care of setting up the `scene` you'll be using, adds some infrastructural components such as HMD and controller tracking, and sets up the Archae loader for your modules.
 
-But you don't have to worry about any og that; the only thing you need to do as a Zeo mod is to interact with the `THREE.js` scene that Zeo sets up for you. The API follows.
+But you don't have to worry about any of that; the only thing you need to do as a Zeo mod is to interact with the `THREE.js` scene that Zeo sets up for you. The API follows.
 
-### Zeo engine API
+### Engine API
 
 The first thing you'll need to do to get access to the rest of Zeo's APIs is to request the Zeo engine with `archae.requestEngine()`. Per the Archae specification, you can get the `archae` loader instance by grabbing it in the top-level function that's exported from your module:
 
@@ -156,7 +203,7 @@ Note the `return archae.requestEngine()`: per the Archae specification, the `mou
 
 The rest of what your module does communicates with Zeo through the API you get out of the resolved `archae.requestEngine('/core/engines/zeo')`.
 
-### Zeo scene API
+### Scene API
 
 Zeo loads `THREE.js` and sets up the `scene` rendering for you, and exposes these at the root of the Zeo API.
 
