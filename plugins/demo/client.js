@@ -1,20 +1,23 @@
-module.exports = archae => ({
-  mount() {
-    return archae.requestPlugins([
-      '/core/engines/zeo',
-    ])
-      .then(([
-        zeo,
-      ]) => {
+module.exports = archae => ({ // `archae` is the Zeo plugin loader
+  mount() { // `mount` gets called when our plugin loads
+    // request the `zeo` plugin API from `archae`
+    return archae.requestPlugin('/core/engines/zeo')
+      .then(zeo => {
+        // grab the API veriables we need
         const {THREE, scene} = zeo;
+        const world = zeo.getCurrentWorld();
 
-        const green = new THREE.Color(0x4CAF50);
-        const red = new THREE.Color(0xE91E63);
+        // declare some contants
+        const COLORS = {
+          GREEN: new THREE.Color(0x4CAF50),
+          RED: new THREE.Color(0xE91E63),
+        };
 
+        // create the sphere and add it to the scene
         const sphere = new THREE.Mesh(
           new THREE.SphereBufferGeometry(0.1, 7, 5),
           new THREE.MeshPhongMaterial({
-            color: green,
+            color: COLORS.GREEN,
             shading: THREE.FlatShading,
             shininess: 0,
           })
@@ -23,11 +26,12 @@ module.exports = archae => ({
         sphere.position.y = startY;
         scene.add(sphere);
 
-        const world = zeo.getCurrentWorld();
-
+        // declare some state
         const position = new THREE.Vector3(0, 0, 0);
         const velocity = new THREE.Vector3(0, 0, 0);
         let lastTime = world.getWorldTime();
+
+        // `_update` will be called on every frame
         const _update = () => {
           // update time
           const currentTime = world.getWorldTime();
@@ -75,22 +79,23 @@ module.exports = archae => ({
             const delta = touchingLine.delta().normalize().multiplyScalar(2.5);
             velocity.copy(delta);
           }
-          const select = touchingLines.length > 0;
-          sphere.material.color = select ? red : green;
+
+          // style the sphere
+          sphere.material.color = touchingLines.length > 0 ? COLORS.RED : COLORS.GREEN;
         };
 
+        // listen for Zeo telling us it's time to update for the next frame
         zeo.on('update', _update);
 
+        // set up a callback to call when we want to clean up after the plugin
         this._cleanup = () => {
           zeo.removeListener('update', _update);
 
           scene.remove(sphere);
         };
-
-        return {};
       });
   },
-  unmount() {
+  unmount() { // `unmount` gets called when our plugin unloads
     this._cleanup();
   },
 });
