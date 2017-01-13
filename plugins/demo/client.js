@@ -2,11 +2,9 @@ module.exports = archae => ({
   mount() {
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/webvr',
     ])
       .then(([
         zeo,
-        webvr,
       ]) => {
         const {THREE, scene} = zeo;
 
@@ -25,44 +23,60 @@ module.exports = archae => ({
         sphere.position.y = startY;
         scene.add(sphere);
 
-        const box = new THREE.Mesh(
-          new THREE.BoxBufferGeometry(0.2, 0.2, 0.2),
-          new THREE.MeshBasicMaterial({
-            color: 0x333333,
-            wireframe: true,
-            opacity: 0.5,
-            transparent: true,
-          })
-        );
-        box.visible = false;
-        scene.add(box);
-
         const world = zeo.getCurrentWorld();
 
+        const position = new THREE.Vector3(0, 0, 0);
+        const velocity = new THREE.Vector3(0, 0, 0);
+        let lastTime = world.getWorldTime();
         const _update = () => {
-          // update sphere/box
-          const t = world.getWorldTime();
-          const newY = startY + Math.sin((t * 0.0025) % (Math.PI * 2)) * 0.25;
-          sphere.position.y = newY;
-          sphere.rotation.y = (t * 0.002) % (Math.PI * 2);
-          box.position.y = newY;
+          // update time
+          const currentTime = world.getWorldTime();
+          const timePassed = Math.max(currentTime - lastTime, 1);
+          lastTime = currentTime;
 
-          // update box mesh
-          const status = webvr.getStatus();
+          // calculate new position
+          const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
+          const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
+          velocity.add(rayBack).multiplyScalar(0.98);
+          position.copy(newPosition);
+
+          // update sphere
+          sphere.position.x = newPosition.x;
+          sphere.position.y = newPosition.y;
+          sphere.position.z = newPosition.z;
+          sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+          sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
+
+          // detect hits
+          const status = zeo.getStatus();
           const {gamepads: gamepadsStatus} = status;
-
-          const select = ['left', 'right'].some(side => {
+          const lines = ['left', 'right'].map(side => {
             const gamepadStatus = gamepadsStatus[side];
-
             if (gamepadStatus) {
               const {position: controllerPosition} = gamepadStatus;
-              return controllerPosition.distanceTo(sphere.position) <= 0.1;
+              return new THREE.Line3(controllerPosition.clone(), sphere.position.clone());
             } else {
-              return false;
+              return null;
             }
           });
+          const touchingLines = lines
+            .map(line => {
+              const distance = line ? line.distance() : Infinity;
+              return {
+                line,
+                distance,
+              };
+            })
+            .sort((a, b) => a.distance - b.distance)
+            .filter(({distance}) => distance <= 0.1)
+            .map(({line}) => line);
+          if (touchingLines.length > 0) {
+            const touchingLine = touchingLines[0];
+            const delta = touchingLine.delta().normalize().multiplyScalar(2.5);
+            velocity.copy(delta);
+          }
+          const select = touchingLines.length > 0;
           sphere.material.color = select ? red : green;
-          box.visible = select;
         };
 
         zeo.on('update', _update);
