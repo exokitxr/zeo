@@ -338,8 +338,8 @@ class Rend {
 
           elementsState.availableElements = elementsState.availableElements.filter(element => {
             const {tagName} = element;
-            const tag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
-            return tag !== modName;
+            const elementTag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
+            return elementTag !== tag;
           });
         };
 
