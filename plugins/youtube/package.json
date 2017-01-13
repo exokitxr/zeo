@@ -6,7 +6,7 @@
   "server": "server.js",
   "dependencies": {
     "request": "^2.79.0",
-    "lru-cache": "^4.0.1",
+    "lru-cache": "^4.0.2",
     "ytdl-core": "^0.7.19"
   }
 }

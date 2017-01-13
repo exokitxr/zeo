@@ -26,16 +26,13 @@ class Youtube {
       '/core/engines/zeo',
       '/core/engines/input',
       '/core/engines/biolumi',
-      '/core/engines/somnifer',
     ]).then(([
       zeo,
       input,
       biolumi,
-      somnifer,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = zeo;
-        const {sound} = somnifer;
+        const {THREE, scene, camera, sound} = zeo;
 
         const transparentImg = biolumi.getTransparentImg();
 
@@ -91,12 +88,15 @@ class Youtube {
                       .then(res => {
                         res.text()
                           .then(src => {
+                            const video = document.createElement('video');
                             video.src = '/archae/cors/' + src;
                             video.loop = true;
                             // video.muted = true;
                             video.oncanplay = () => {
                               texture.image = video;
                               texture.needsUpdate = true;
+
+                              soundBody.setInput(video);
 
                               // video.play();
                               // video.currentTime = 0.5 * video.duration;
@@ -142,19 +142,9 @@ class Youtube {
                 mesh.position.z = 0;
                 mesh.rotation.y = Math.PI / 2;
 
-                const video = (() => {
-                  const result = document.createElement('video');
-                  result.width = videoResolutionWidth;
-                  result.update = () => {
-                    material.map.needsUpdate = true;
-                  };
-                  return result;
-                })();
-                mesh.video = video;
-
                 const soundBody = (() => {
                   const result = new sound.Body();
-                  result.setInput(video);
+                  // result.setInput(video);
                   result.setObject(mesh);
                   return result;
                 })();
@@ -387,19 +377,24 @@ class Youtube {
 
             const trigger = e => {
               const {videoMesh, menuMesh} = mesh;
-              const {video} = videoMesh;
+              const {material: {map}} = videoMesh;
+              const video = map.image.tagName === 'VIDEO' ? map.image : null;
               const {boxMesh} = menuMesh;
 
               if (boxMesh.target === 'play') {
-                if (video.paused) {
-                  video.play();
-                } else {
-                  video.pause();
+                if (video) {
+                  if (video.paused) {
+                    video.play();
+                  } else {
+                    video.pause();
+                  }
                 }
 
                 e.stopImmediatePropagation();
               } else if (boxMesh.target === 'track') {
-                video.currentTime = boxMesh.value * video.duration;
+                if (video) {
+                  video.currentTime = boxMesh.value * video.duration;
+                }
 
                 e.stopImmediatePropagation();
               }
@@ -408,16 +403,20 @@ class Youtube {
 
             const update = () => {
               const {videoMesh, menuMesh} = mesh;
-              const {video} = videoMesh;
-              const {controlsMesh, boxMesh} = menuMesh;
-              const canvas = controlsMesh.children[1].material.map.image;
+              const {material: {map}} = videoMesh;
+              const video = map.image.tagName === 'VIDEO' ? map.image : null;
 
-              video.update();
+              if (video) {
+                map.needsUpdate = true;
 
-              const {currentTime, duration} = video;
-              const progress = currentTime / duration;
-              canvas.update(progress);
+                const {controlsMesh} = menuMesh;
+                const canvas = controlsMesh.children[1].material.map.image;
+                const {currentTime, duration} = video;
+                const progress = currentTime / duration;
+                canvas.update(progress);
+              }
 
+              const {boxMesh} = menuMesh;
               boxMesh.update();
             };
             updates.push(update);

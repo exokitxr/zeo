@@ -48,7 +48,7 @@ class Youtube {
         proxyRes.pipe(res);
       }).on('error', err => {
         res.status(500);
-        res.send(err);
+        res.send(err.stack);
       });
     }
     function serveYoutube(req, res, next) {
