@@ -430,7 +430,7 @@ class Portal {
             this._cleanup();
           }
 
-          attributeChangedCallback(name, oldValue, newValue) {
+          attributeValueChangedCallback(name, oldValue, newValue) {
             switch (name) {
               case 'position1': {
                 const {mesh} = this;
