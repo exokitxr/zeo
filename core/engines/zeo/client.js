@@ -52,10 +52,19 @@ class Zeo {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
         const {domElement} = renderer;
+        const {EVENTS} = input;
         const {sound} = somnifer;
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
+        const inputEventsIndex = (() => {
+          const result = {};
+          for (let i = 0; i < EVENTS.length; i++) {
+            const eventName = EVENTS[i];
+            result[eventName] = true;
+          }
+          return result;
+        })();
         const supportsWebVR = webvr.supportsWebVR();
 
         const updates = [];
@@ -303,6 +312,33 @@ height: 100px;
                   this.camera = camera;
                   this.renderer = renderer;
                   this.sound = sound;
+                }
+
+                on(eventName, handler, options) {
+                  if (inputEventsIndex[eventName]) {
+                    input.on(eventName, handler, options);
+                    return this;
+                  } else {
+                    return super.on(eventName, handler);
+                  }
+                }
+
+                removeListener(eventName, handler) {
+                  if (inputEventsIndex[eventName]) {
+                    input.removeListener(eventName, handler);
+                    return this;
+                  } else {
+                    return super.removeListener(eventName, handler);
+                  }
+                }
+
+                removeAllListeners(eventName) {
+                  if (inputEventsIndex[eventName]) {
+                    input.removeAllListeners(eventName);
+                    return this;
+                  } else {
+                    return super.removeAllListeners(eventName);
+                  }
                 }
 
                 update() {

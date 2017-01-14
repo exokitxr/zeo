@@ -1934,7 +1934,7 @@ class Rend {
 
                   _doSetPosition(e) || _doClick(e);
                 };
-                input.addEventListener('trigger', trigger);
+                input.on('trigger', trigger);
                 const triggerdown = e => {
                   const {side} = e;
                   const menuHoverState = menuHoverStates[side];
@@ -2007,7 +2007,7 @@ class Rend {
 
                   _doClick() || _doDragElement() || _doScroll();
                 };
-                input.addEventListener('triggerdown', triggerdown);
+                input.on('triggerdown', triggerdown);
 
                 const _setLayerScrollTop = menuHoverState => {
                   const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = menuHoverState;
@@ -2166,7 +2166,7 @@ class Rend {
 
                   _doDrag() || _doScroll();
                 };
-                input.addEventListener('triggerup', triggerup);
+                input.on('triggerup', triggerup);
                 const grip = e => {
                   const {side} = e;
                   const {positioningSide} = elementsState;
@@ -2191,7 +2191,7 @@ class Rend {
                     _updatePages();
                   }
                 };
-                input.addEventListener('grip', grip);
+                input.on('grip', grip);
 
                 const _isPrintableKeycode = keyCode =>
                   (keyCode > 47 && keyCode < 58) || // number keys
@@ -2456,11 +2456,11 @@ class Rend {
                     }
                   }
                 };
-                input.addEventListener('keydown', keydown, {
+                input.on('keydown', keydown, {
                   priority: 1,
                 });
                 const keyboarddown = keydown;
-                input.addEventListener('keyboarddown', keyboarddown, {
+                input.on('keyboarddown', keyboarddown, {
                   priority: 1,
                 });
 
@@ -2477,11 +2477,11 @@ class Rend {
                   scene.remove(positioningMesh);
                   scene.remove(oldPositioningMesh);
 
-                  input.removeEventListener('trigger', trigger);
-                  input.removeEventListener('triggerdown', triggerdown);
-                  input.removeEventListener('triggerup', triggerup);
-                  input.addEventListener('keydown', keydown);
-                  input.addEventListener('keyboarddown', keyboarddown);
+                  input.removeListener('trigger', trigger);
+                  input.removeListener('triggerdown', triggerdown);
+                  input.removeListener('triggerup', triggerup);
+                  input.removeListener('keydown', keydown);
+                  input.removeListener('keyboarddown', keyboarddown);
                 });
 
                 const _decomposeObjectMatrixWorld = object => {

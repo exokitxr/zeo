@@ -16,7 +16,6 @@ class Weapons {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/input',
       '/core/engines/rend',
       '/core/engines/cyborg',
       '/core/plugins/geometry-utils',
@@ -24,7 +23,6 @@ class Weapons {
       '/core/plugins/creature-utils',
     ]).then(([
       zeo,
-      input,
       rend,
       cyborg,
       geometryUtils,
@@ -151,7 +149,7 @@ class Weapons {
             }
           }
         };
-        input.addEventListener('keydown', keydown);
+        zeo.on('keydown', keydown);
         const hmdUpdate = update => {
           ['left', 'right'].forEach(_syncWeaponSide);
         };
@@ -771,7 +769,7 @@ class Weapons {
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          input.removeEventListener('keydown', keydown);
+          zeo.removeListener('keydown', keydown);
           player.removeEventListener('hmdUpdate', hmdUpdate);
           player.removeEventListener('controllerUpdate', controllerUpdate);
 

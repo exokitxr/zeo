@@ -33,12 +33,10 @@ class Shell {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
     ]).then(([
       zeo,
-      input,
       webvr,
       biolumi,
     ]) => {
@@ -161,7 +159,7 @@ class Shell {
                   e.stopImmediatePropagation();
                 }
               };
-              input.addEventListener('keypress', keypress, {
+              zeo.on('keypress', keypress, {
                 priority: 1,
               });
               const keydown = e => {
@@ -175,7 +173,7 @@ class Shell {
                   e.stopImmediatePropagation();
                 }
               };
-              input.addEventListener('keydown', keydown, {
+              zeo.on('keydown', keydown, {
                  priority: 1,
               });
               const keyup = e => {
@@ -189,7 +187,7 @@ class Shell {
                   e.stopImmediatePropagation();
                 }
               };
-              input.addEventListener('keyup', keyup, {
+              zeo.on('keyup', keyup, {
                 priority: 1,
               });
               const trigger = e => {
@@ -201,18 +199,18 @@ class Shell {
                   focusState.focused = true;
                 }
               };
-              input.addEventListener('trigger', trigger);
+              zeo.on('trigger', trigger);
               const grip = e => {
                 focusState.focused = false;
               };
-              input.addEventListener('grip', grip);
+              zeo.on('grip', grip);
 
               cleanups.push(() => {
-                input.removeEventListener('keypress', keypress);
-                input.removeEventListener('keydown', keydown);
-                input.removeEventListener('keyup', keyup);
-                input.removeEventListener('trigger', trigger);
-                input.removeEventListener('grip', grip);
+                zeo.removeListener('keypress', keypress);
+                zeo.removeListener('keydown', keydown);
+                zeo.removeListener('keyup', keyup);
+                zeo.removeListener('trigger', trigger);
+                zeo.removeListener('grip', grip);
               });
 
               const socket = io(window.location.origin, {

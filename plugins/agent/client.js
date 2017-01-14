@@ -21,14 +21,12 @@ class Agent {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/zeo',
-        '/core/engines/input',
         '/core/plugins/js-utils',
       ]),
       _requestTokens(),
     ]).then(([
       [
         zeo,
-        input,
         jsUtils,
       ],
       {tokens},
@@ -306,7 +304,7 @@ class Agent {
                 }
               }
             };
-            input.addEventListener('trigger', trigger);
+            zeo.on('trigger', trigger);
             const grip = e => {
               const {side} = e;
 
@@ -331,13 +329,13 @@ class Agent {
                 }
               }
             };
-            input.addEventListener('grip', grip);
+            zeo.on('grip', grip);
 
             this._cleanup = () => {
               updates.splice(updates.indexOf(update), 1);
 
-              input.removeEventListener('trigger', trigger);
-              input.removeEventListener('grip', grip);
+              zeo.removeListener('trigger', trigger);
+              zeo.removeListener('grip', grip);
             };
           }
 

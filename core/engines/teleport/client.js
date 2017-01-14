@@ -18,13 +18,11 @@ class Teleport {
 
     return archae.requestPlugins([
       '/core/engines/three',
-      '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/rend',
       '/core/engines/cyborg',
     ]).then(([
       three,
-      input,
       webvr,
       rend,
       cyborg,

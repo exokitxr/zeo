@@ -18,11 +18,9 @@ class Build {
     return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/webvr',
-      '/core/engines/input',
     ]).then(([
       zeo,
       webvr,
-      input,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
@@ -284,27 +282,27 @@ class Build {
                     break;
                 }
               };
-              input.addEventListener('keydown', keydown);
+              zeo.on('keydown', keydown);
               const triggerdown = e => {
                 const {side} = e;
 
                 _startBuilding(side);
               };
-              input.addEventListener('triggerdown', triggerdown);
+              zeo.on('triggerdown', triggerdown);
               const triggerup = e => {
                 const {side} = e;
 
                 _stopBuilding(side);
               };
-              input.addEventListener('triggerup', triggerup);
+              zeo.on('triggerup', triggerup);
 
               this._cleanup = () => {
                 scene.remove(polygonMeshes.left);
                 scene.remove(polygonMeshes.right);
 
-                input.removeEventListener('keydown', keydown);
-                input.removeEventListener('triggerdown', triggerdown);
-                input.removeEventListener('triggerup', triggerup);
+                zeo.removeListener('keydown', keydown);
+                zeo.removeListener('triggerdown', triggerdown);
+                zeo.removeListener('triggerup', triggerup);
 
                 worker.terminate();
               };

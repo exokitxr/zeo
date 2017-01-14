@@ -742,13 +742,13 @@ class WebVR {
 
               console.warn('pointer lock error', err);
             };
-            input.addEventListener('keydown', keydown);
-            input.addEventListener('keyup', keyup);
-            input.addEventListener('mousedown', mousedown);
-            input.addEventListener('mouseup', mouseup);
-            input.addEventListener('mousemove', mousemove);
-            input.addEventListener('pointerlockchange', pointerlockchange);
-            input.addEventListener('pointerlockerror', pointerlockerror);
+            input.on('keydown', keydown);
+            input.on('keyup', keyup);
+            input.on('mousedown', mousedown);
+            input.on('mouseup', mouseup);
+            input.on('mousemove', mousemove);
+            input.on('pointerlockchange', pointerlockchange);
+            input.on('pointerlockerror', pointerlockerror);
 
             this._cleanup = () => {
               for (let i = 0; i < gamepads.length; i++) {
@@ -759,13 +759,13 @@ class WebVR {
               // document.removeEventListener('fullscreenchange', fullscreenchange);
               document.removeEventListener('webkitfullscreenchange', fullscreenchange);
 
-              input.removeEventListener('keydown', keydown);
-              input.removeEventListener('keyup', keyup);
-              input.removeEventListener('mousedown', mousedown);
-              input.removeEventListener('mouseup', mouseup);
-              input.removeEventListener('mousemove', mousemove);
-              input.removeEventListener('pointerlockchange', pointerlockchange);
-              input.removeEventListener('pointerlockerror', pointerlockerror);
+              input.removeListener('keydown', keydown);
+              input.removeListener('keyup', keyup);
+              input.removeListener('mousedown', mousedown);
+              input.removeListener('mouseup', mouseup);
+              input.removeListener('mousemove', mousemove);
+              input.removeListener('pointerlockchange', pointerlockchange);
+              input.removeListener('pointerlockerror', pointerlockerror);
             };
           }
 
@@ -982,10 +982,10 @@ class WebVR {
                 }
               }
             };
-            input.addEventListener('mousewheel', mousewheel);
+            input.on('mousewheel', mousewheel);
 
             this._cleanup = () => {
-              input.removeEventListener('mousewheel', mousewheel);
+              input.removeListener('mousewheel', mousewheel);
             };
           }
 

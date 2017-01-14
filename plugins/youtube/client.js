@@ -24,11 +24,9 @@ class Youtube {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/input',
       '/core/engines/biolumi',
     ]).then(([
       zeo,
-      input,
       biolumi,
     ]) => {
       if (live) {
@@ -399,7 +397,7 @@ class Youtube {
                 e.stopImmediatePropagation();
               }
             };
-            input.addEventListener('trigger', trigger);
+            zeo.on('trigger', trigger);
 
             const update = () => {
               const {videoMesh, menuMesh} = mesh;
@@ -424,7 +422,7 @@ class Youtube {
             this._cleanup = () => {
               scene.remove(mesh);
 
-              input.removeEventListener('trigger', trigger);
+              zeo.removeListener('trigger', trigger);
 
               updates.splice(updates.indexOf(update), 1);
             };

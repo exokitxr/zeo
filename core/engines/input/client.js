@@ -1,3 +1,28 @@
+const EVENTS = [
+  'click',
+  'mousedown',
+  'mouseup',
+  'mousemove',
+  'mousewheel',
+  'keypress',
+  'keydown',
+  'keyup',
+  'trigger',
+  'triggerdown',
+  'triggerup',
+  'pad',
+  'paddown',
+  'padup',
+  'grip',
+  'gripdown',
+  'gripup',
+  'menu',
+  'menudown',
+  'menuup',
+  'keyboardpress',
+  'keyboarddown',
+  'keyboardup',
+];
 const DEFAULT_EVENT_SIDE = 'left';
 
 class Input {
@@ -66,35 +91,16 @@ class Input {
           listeners.splice(index, 1);
         }
       }
+
+      removeAll() {
+        const {listeners} = this;
+        listeners.length = 0;
+      }
     }
 
     const eventRouters = (() => {
       const result = {};
-      [
-        'click',
-        'mousedown',
-        'mouseup',
-        'mousemove',
-        'mousewheel',
-        'keypress',
-        'keydown',
-        'keyup',
-        'trigger',
-        'triggerdown',
-        'triggerup',
-        'pad',
-        'paddown',
-        'padup',
-        'grip',
-        'gripdown',
-        'gripup',
-        'menu',
-        'menudown',
-        'menuup',
-        'keyboardpress',
-        'keyboarddown',
-        'keyboardup',
-      ].forEach(event => {
+      EVENTS.forEach(event => {
         result[event] = new EventRouter();
       });
       return result;
@@ -118,7 +124,7 @@ class Input {
       window.removeEventListener('keyup', eventRouters.keyup.handle);
     };
 
-    const _addEventListener = (event, handler, {priority = 0} = {}) => {
+    const _on = (event, handler, {priority = 0} = {}) => {
       const eventRouter = eventRouters[event];
       if (eventRouter) {
         eventRouter.add(handler, {
@@ -126,10 +132,16 @@ class Input {
         });
       }
     };
-    const _removeEventListener = (event, handler) => {
+    const _removeListener = (event, handler) => {
       const eventRouter = eventRouters[event];
       if (eventRouter) {
         eventRouter.remove(handler);
+      }
+    };
+    const _removeAllListeners = (event) => {
+      const eventRouter = eventRouters[event];
+      if (eventRouter) {
+        eventRouter.removeAll();
       }
     };
     const _triggerEvent = (event, eventData) => {
@@ -140,8 +152,10 @@ class Input {
     };
 
     return {
-      addEventListener: _addEventListener,
-      removeEventListener: _removeEventListener,
+      EVENTS,
+      on: _on,
+      removeListener: _removeListener,
+      removeAllListeners: _removeAllListeners,
       triggerEvent: _triggerEvent,
     };
   }
