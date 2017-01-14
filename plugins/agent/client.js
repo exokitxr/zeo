@@ -225,7 +225,8 @@ class Agent {
                 } else if (loading) {
                   return COLORS.ORANGE;
                 } else if (loaded) {
-                  return COLORS.GREEN;
+                  const {soundBody} = this;
+                  return COLORS.GREEN.clone().addScalar(soundBody.getAmplitude() * 0.5);
                 } else if (selected) {
                   return COLORS.BLUE;
                 } else {
