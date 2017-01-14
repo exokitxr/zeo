@@ -119,7 +119,7 @@ ${getItemsSrc(remoteMods, '', '', '', '', '', 'mod')}
   })();
 
   return `\
-${getHeaderSrc('mods', '', '', true)}
+${getHeaderSrc('plugins', '', '', true)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getModsSidebarSrc(tab)}
@@ -619,7 +619,7 @@ ${getHeaderSrc('filesystem', '', getFilesButtonsSrc(selectedName, clipboardPath,
 const getMainSidebarSrc = () => `\
 <div style="width: 500px; padding: 0 40px; font-size: 36px; box-sizing: border-box;">
   <a style="text-decoration: none;" onclick="worlds"><p>World</p></a>
-  <a style="text-decoration: none;" onclick="mods"><p>Mods</p></a>
+  <a style="text-decoration: none;" onclick="mods"><p>Plugins</p></a>
   <a style="text-decoration: none;" onclick="elements"><p>Elements</p></a>
   <a style="text-decoration: none;" onclick="files"><p>Filesystem</p></a>
   <a style="text-decoration: none;" onclick="config"><p>Preferences</p></a>
