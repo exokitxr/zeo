@@ -160,19 +160,123 @@ To install a Zeo mod that was published to `npm`, go to `Mods > Npm search` in t
 
 ## Zeo API
 
-The above describes how to write and load Zeo plugins that do nothing. To interact with the user and the Zeo world you'll want to use the `THREE.js` objects and APIs exported by `/core/engines/zeo`.
+The above describes how to write and load Zeo plugins that do nothing. To interact with the user and the Zeo world you'll want to use the API exported by `/core/engines/zeo`.
+
+This lets you get at the THREE.js `THREE`, `scene`, `camera`, and `renderer` objects, listen for frame updates, and get user poses:
 
 ```js
-// XXX write this
+module.exports = archae => ({
+  mount() {
+    return archae.requestPlugin('/core/engines/zeo')
+      .then(zeo => {
+        const {THREE, scene} = zeo;
+
+        const COLORS = {
+          GREEN: new THREE.Color(0x4CAF50),
+          RED: new THREE.Color(0xE91E63),
+          BLUE: new THREE.Color(0x2196F3),
+        };
+
+        const startY = 1.2;
+        const radius = 0.1;
+
+        const sphere = new THREE.Mesh(
+          new THREE.SphereBufferGeometry(radius, 7, 5),
+          new THREE.MeshPhongMaterial({
+            color: COLORS.GREEN,
+            shading: THREE.FlatShading,
+            shininess: 0,
+          })
+        );
+        sphere.position.y = startY;
+        scene.add(sphere);
+
+        const _update = () => {
+          // update sphere position
+          const currentTime = world.getWorldTime();
+          sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+          sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
+
+          // update sphere color when touched or looked at
+          const {hmd, gamepads: gamepadsStatus} = zeo.getStatus();
+          const touched = ['left', 'right'].some(side => {
+            const gamepadStatus = gamepadsStatus[side];
+            if (gamepadStatus) {
+              const {position: controllerPosition} = gamepadStatus;
+              return controllerPosition.distanceTo(sphere.position) < radius;
+            } else {
+              return false;
+            }
+          });
+          const lookedAt = (() => {
+            const ray = new THREE.Ray(hmd.position, new THREE.Vector3(0, 0, -1).applyQuaternion(hmd.rotation));
+            const box = new THREE.Box3().setFromCenterAndSize(camera.position, radius * 2);
+            const intersectPoint = ray.intersectBox(box);
+            return Boolean(intersectPoint);
+          })();
+          sphere.material.color = (() => {
+            if (touched) {
+              return COLORS.RED;
+            } else if (lookedAt) {
+              return COLOR.BLUE;
+            } else {
+              return COLORS.GREEN;
+            }
+          })();
+        };
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          scene.remove(sphere);
+
+          zeo.removeListener('update', _update);
+        };
+      });
+  },
+  unmount() {
+    this._cleanup();
+  },
+});
 ```
+This plugin uses the Zeo API to add a sphere to the `scene` that Zeo has created for us, makes it float up and down in the scene, and colors it `BLUE` when we're looking directly at it or `RED` when we're touching it with tracked controllers.
 
-// XXX rewrite this
+We update the scene every frame on by listening for `zeo.on('update', _update)` and get the HMD and controllers status via `zeo.getStatus()`. These APIs are documented below.
 
-To actually add functionality to your module, you'll probably want to _add stuff to the Zeo scene in the `mount` function_ and _remove it in the `unmount` function_.
+### Exported objects
 
-Technically speaking, Zeo is an Archae engine that wraps `THREE.js`: Zeo takes care of setting up the `scene` you'll be using, adds some infrastructural components such as HMD and controller tracking, and sets up the Archae loader for your modules.
+The Zeo API exports some standard THREE.js primitives as seen above. These include:
 
-But you don't have to worry about any of that; the only thing you need to do as a Zeo mod is to interact with the `THREE.js` scene that Zeo sets up for you. The API follows.
+- `THREE`, the raw THREE.js API
+- `scene`, the `THREE.Scene` for the current world
+- `camera`, the `THREE.PerspectiveCamera` for viewing the current world
+- `render`, the `THREE.WebGLRenderer` for rendering the current world
+
+You can use these freely, as you would in any THREE.js app, but note that your plugin should conform to the module loader requirement that whatever you do in the `mount` step (such as adding objects to the `scene`) should be undone un the `unmount` step (such as removing the objects you added to the `scene`). If you don't this, your plugin will not behave correctly: it might leak resources, impact performance, or crash.
+
+### Frame Events
+
+The Zeo API doubles as an [`EventEmitter`](https://nodejs.org/api/events.html) that you can listen to for events relating to frame timing and and input.
+
+The API is inherited from `node`: `zeo.on('eventName', eventHandler)` registers `eventHandler` to listen for `'eventName'` events and `zeo.removeListener('eventName', eventHandler)` unregisters it. The events you can subscribe to are:
+
+// XXX
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### Engine API
 

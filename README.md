@@ -91,9 +91,7 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
           position.copy(newPosition);
 
           // update sphere
-          sphere.position.x = newPosition.x;
-          sphere.position.y = newPosition.y;
-          sphere.position.z = newPosition.z;
+          sphere.position.copy(newPosition);
           sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
           sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
 
