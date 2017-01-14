@@ -1,5 +1,7 @@
 const WatsonSpeech = require('./lib/watson-speech/watson-speech.js');
 
+const SIDES = ['left', 'right'];
+
 class Agent {
   constructor(archae) {
     this._archae = archae;
@@ -19,11 +21,16 @@ class Agent {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/zeo',
+        '/core/engines/input',
         '/core/plugins/js-utils',
       ]),
       _requestTokens(),
     ]).then(([
-      [zeo, jsUtils],
+      [
+        zeo,
+        input,
+        jsUtils,
+      ],
       {tokens},
     ]) => {
       if (live) {
@@ -32,8 +39,13 @@ class Agent {
         const {EventEmitter} = events;
         const {tts: ttsToken, stt: sttToken} = tokens;
 
-        const green = new THREE.Color(0x4CAF50);
-        const red = new THREE.Color(0xE91E63);
+        const COLORS = {
+          GRAY: new THREE.Color(0x9E9E9E),
+          GREEN: new THREE.Color(0x4CAF50),
+          BLUE: new THREE.Color(0x2196F3),
+          RED: new THREE.Color(0xF44336),
+          ORANGE: new THREE.Color(0xFF9800),
+        };
 
         const _requestTextToSpeech = s => new Promise((accept, reject) => {
           const audio = WatsonSpeech.TextToSpeech.synthesize({
@@ -63,39 +75,35 @@ class Agent {
             continuous: true,
           });
           stream.on('data', d => {
-            const s = d.results.map(({alternatives}) => alternatives[0].transcript).join(' ');
-            result.emit('data', s);
+            if (live) {
+              const s = d.results.map(({alternatives}) => alternatives[0].transcript).join(' ');
+              result.emit('data', s);
+            }
           });
           stream.on('end', () => {
-            result.emit('end');
+            if (live) {
+              result.emit('end');
+            }
           });
           stream.on('error', err => {
-            result.emit('error', err);
+            if (live) {
+              result.emit('error', err);
+            }
           });
+
+          let live = true;
 
           const result = new EventEmitter();
           result.stop = () => {
             stream.stop();
           };
+          result.cancel = () => {
+            live = false;
+            
+            stream.stop();
+          };
           return result;
         };
-
-let stream = null; // XXX integrate this into the actual agent
-window.lol = () => {
-  stream = _requestSpeechToText();
-  stream.on('data', d => {
-    console.log(d);
-  });
-  stream.on('end', () => {
-    console.log('end');
-  });
-  stream.on('error', err => {
-    console.warn(err);
-  });
-};
-window.zol = () => {
-  stream.stop();
-};
 
         class AgentElement extends HTMLElement {
           static get tag() {
@@ -110,10 +118,6 @@ window.zol = () => {
                   0, 0, 0, 1,
                   1, 1, 1,
                 ],
-              },
-              text: {
-                type: 'text',
-                value: 'Welcome to Zeo shell!',
               },
             };
           }
@@ -132,6 +136,18 @@ window.zol = () => {
               if (cancelRequest) {
                 cancelRequest();
               }
+            };
+
+            const _makeHoverState = () => ({
+              target: null,
+            });
+            const hoverStates = {
+              left: _makeHoverState(),
+              right: _makeHoverState(),
+            };
+            const streamState = {
+              sttStream: null,
+              ttsStream: null,
             };
 
             const box = (() => {
@@ -153,7 +169,7 @@ window.zol = () => {
             const mesh = (() => {
               const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
               const material = new THREE.MeshPhongMaterial({
-                color: green,
+                color: COLORS.GRAY,
                 shininess: 0,
               });
 
@@ -172,13 +188,11 @@ window.zol = () => {
 
             this.text = null;
 
-            this.audio = null;
-            this._cancelRequest = null;
-
             const update = () => {
               const status = zeo.getStatus();
               const {gamepads: gamepadsStatus} = status;
-              const select = ['left', 'right'].some(side => {
+
+              const _getSelected = side => {
                 const gamepadStatus = gamepadsStatus[side];
 
                 if (gamepadStatus) {
@@ -187,17 +201,142 @@ window.zol = () => {
                 } else {
                   return false;
                 }
+              };
+
+              const {sttStream, ttsStream, audio} = streamState;
+              const recording = Boolean(sttStream);
+              const loading = Boolean(ttsStream);
+              const loaded = Boolean(audio);
+              let selected = false;
+              SIDES.forEach(side => {
+                const sideSelected = _getSelected(side);
+
+                const hoverState = hoverStates[side];
+                hoverState.target = sideSelected ? 'agent' : null;
+
+                if (sideSelected) {
+                  selected = true;
+                }
               });
 
-              mesh.material.color = select ? red : green;
-
+              mesh.material.color = (() => {
+                if (recording) {
+                  return COLORS.RED;
+                } else if (loading) {
+                  return COLORS.ORANGE;
+                } else if (loaded) {
+                  return COLORS.GREEN;
+                } else if (selected) {
+                  return COLORS.BLUE;
+                } else {
+                  return COLORS.GRAY;
+                }
+              })();
               box.position.copy(mesh.position);
-              box.visible = select;
+              box.visible = selected;
             };
             updates.push(update);
 
+            const trigger = e => {
+              const {side} = e;
+              const hoverState = hoverStates[side];
+              const {target} = hoverState;
+
+              if (target) {
+                const {sttStream} = streamState;
+
+                if (sttStream) {
+                  sttStream.stop();
+                } else {
+                  const {audio} = streamState;
+
+                  if (audio) {
+                    if (audio.paused) {
+                      audio.play();
+                    } else {
+                      audio.currentTime = 0;
+                    }
+                  } else {
+                    const {ttsStream} = streamState;
+
+                    if (!ttsStream) {
+                      const stream = _requestSpeechToText();
+         
+                      let speechText = '';
+                      stream.on('data', s => {
+                        speechText = s;
+                      });
+                      stream.on('end', () => {
+                        let live = true;
+                        const _cancel = () => {
+                          live = false;
+                        };
+
+                        _requestTextToSpeech(speechText)
+                          .then(audio => {
+                            if (live) {
+                              const {soundBody} = this;
+                              soundBody.setInput(audio);
+
+                              streamState.ttsStream = null;
+                              streamState.audio = audio;
+                            }
+                          })
+                          .catch(err => {
+                            console.warn(err);
+
+                            streamState.ttsStream = null;
+                          });
+
+                        streamState.sttStream = null;
+                        streamState.ttsStream = {
+                          cancel: _cancel,
+                        };
+                      });
+                      stream.on('error', err => {
+                        console.warn(err);
+
+                        streamState.sttStream = null;
+                      });
+
+                      streamState.sttStream = stream;
+                    }
+                  }
+                }
+              }
+            };
+            input.addEventListener('trigger', trigger);
+            const grip = e => {
+              const {side} = e;
+
+              const hoverState = hoverStates[side];
+              const {target} = hoverState;
+              if (target) {
+                const {sttStream, ttsStream, audio} = streamState;
+
+                if (sttStream) {
+                  sttStream.cancel();
+                  streamState.sttStream = null;
+                }
+                if (ttsStream) {
+                  ttsStream.cancel();
+                  streamState.ttsStream = null;
+                }
+                if (audio) {
+                  if (!audio.paused) {
+                    audio.pause();
+                  }
+                  streamState.audio = null;
+                }
+              }
+            };
+            input.addEventListener('grip', grip);
+
             this._cleanup = () => {
               updates.splice(updates.indexOf(update), 1);
+
+              input.removeEventListener('trigger', trigger);
+              input.removeEventListener('grip', grip);
             };
           }
 
@@ -214,13 +353,6 @@ window.zol = () => {
 
                 break;
               }
-              case 'text': {
-                this.text = newValue;
-
-                this._updateAudio();
-
-                break;
-              }
             }
           }
 
@@ -231,34 +363,6 @@ window.zol = () => {
               mesh.position.set(position[0], position[1], position[2]);
               mesh.quaternion.set(position[3], position[4], position[5], position[6]);
               mesh.scale.set(position[7], position[8], position[9]);
-            }
-          }
-
-          _updateAudio() {
-            const {text, _cancelRequest: cancelRequest} = this;
-
-            if (cancelRequest) {
-              cancelRequest();
-              this._cancelRequest = null;
-            }
-
-            if (text) {
-              let live = true;
-              this._cancelRequest = () => {
-                live = false;
-              };
-
-              _requestTextToSpeech(text)
-                .then(newAudio => {
-                  if (live) {
-                    const {soundBody, oldAudio} = this;
-
-                    soundBody.setInput(newAudio);
-                    this.audio = newAudio;
-
-                    this._cancelRequest = null;
-                  }
-                });
             }
           }
         }
