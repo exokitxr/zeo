@@ -366,6 +366,8 @@ The full list of available events is:
 - `keyboardup` `{ key: 'a', keyCode: 65, side: 'left' }`
   - Fired when a virtual keyboard key is released _up_.
 
+// XXX describe event priorities and how event.stopImmediatePropagation() short-circuits
+
 ### Status API
 
 // XXX finish this
