@@ -1,3 +1,5 @@
+const WatsonSpeech = require('./lib/watson-speech/watson-speech.js');
+
 class Agent {
   constructor(archae) {
     this._archae = archae;
@@ -11,45 +13,89 @@ class Agent {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/zeo',
+    const _requestTokens = () => fetch('/archae/agent/tokens')
+      .then(res => res.json());
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/zeo',
+        '/core/plugins/js-utils',
+      ]),
+      _requestTokens(),
     ]).then(([
-      zeo,
+      [zeo, jsUtils],
+      {tokens},
     ]) => {
       if (live) {
         const {THREE, scene, camera, sound} = zeo;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
+        const {tts: ttsToken, stt: sttToken} = tokens;
 
         const green = new THREE.Color(0x4CAF50);
         const red = new THREE.Color(0xE91E63);
 
-        const _requestTextToSpeech = s => fetch('/archae/agent/textToSpeech', {
-          method: 'POST',
-          body: s,
-        })
-          .then(res => res.blob()
-            .then(blob => new Promise((accept, reject) => {
-              const url = URL.createObjectURL(blob);
-              const audio = document.createElement('audio');
-              audio.src = url;
-              audio.oncanplaythrough = () => {
-                audio.oncanplaythrough = null;
+        const _requestTextToSpeech = s => new Promise((accept, reject) => {
+          const audio = WatsonSpeech.TextToSpeech.synthesize({
+            text: '<voice-transformation type="Custom" glottal_tension="-100%" pitch="100%">' +
+              s.replace(/[<>]+/g, '') +
+              '</voice-transformation>',
+            voice: 'en-US_AllisonVoice',
+            autoPlay: false,
+            token: ttsToken,
+          });
+          audio.oncanplay = () => {
+            audio.oncanplay = null;
 
-                accept(audio);
-              };
-              audio.onerror = err => {
-                reject(err);
+            accept(audio);
+          };
+          audio.onerror = err => {
+            reject(err);
+          };
+        });
+        const _requestSpeechToText = () => {
+          const stream = WatsonSpeech.SpeechToText.recognizeMicrophone({
+            token: sttToken,
+            model: 'en-US_BroadbandModel',
+            smart_formatting: true,
+            objectMode: true,
+            interim_results: true,
+            continuous: true,
+          });
+          stream.on('data', d => {
+            const s = d.results.map(({alternatives}) => alternatives[0].transcript).join(' ');
+            result.emit('data', s);
+          });
+          stream.on('end', () => {
+            result.emit('end');
+          });
+          stream.on('error', err => {
+            result.emit('error', err);
+          });
 
-                _cleanup();
-              };
-              audio.destroy = () => {
-                _cleanup();
-              };
+          const result = new EventEmitter();
+          result.stop = () => {
+            stream.stop();
+          };
+          return result;
+        };
 
-              const _cleanup = () => {
-                URL.revokeObjectURL(url);
-              };
-            }))
-          );
+let stream = null; // XXX integrate this into the actual agent
+window.lol = () => {
+  stream = _requestSpeechToText();
+  stream.on('data', d => {
+    console.log(d);
+  });
+  stream.on('end', () => {
+    console.log('end');
+  });
+  stream.on('error', err => {
+    console.warn(err);
+  });
+};
+window.zol = () => {
+  stream.stop();
+};
 
         class AgentElement extends HTMLElement {
           static get tag() {
@@ -79,12 +125,9 @@ class Agent {
             this._cancelRequest = null;
 
             this._cleanup = () => {
-              const {mesh, audio, _cancelRequest: cancelRequest} = this;
+              const {mesh, _cancelRequest: cancelRequest} = this;
               if (mesh) {
                 scene.remove(mesh);
-              }
-              if (audio) {
-                audio.destroy();
               }
               if (cancelRequest) {
                 cancelRequest();
@@ -209,10 +252,6 @@ class Agent {
                 .then(newAudio => {
                   if (live) {
                     const {soundBody, oldAudio} = this;
-
-                    if (oldAudio) {
-                      oldAudio.destroy();
-                    }
 
                     soundBody.setInput(newAudio);
                     this.audio = newAudio;

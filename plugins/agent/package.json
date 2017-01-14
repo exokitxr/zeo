@@ -5,5 +5,7 @@
   "keywords": [],
   "client": "client.js",
   "server": "server.js",
-  "dependencies": {}
+  "dependencies": {
+    "watson-developer-cloud": "^2.14.6"
+  }
 }
