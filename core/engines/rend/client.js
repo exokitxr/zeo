@@ -139,7 +139,8 @@ class Rend {
           inputIndex: 0,
           inputValue: 0,
           sliderValue: 0.5,
-          checkboxValue: false,
+          airlockCheckboxValue: false,
+          statsCheckboxValue: false,
         };
         const statsState = {
           frame: 0,
@@ -679,9 +680,9 @@ class Rend {
                   return {index, px};
                 };
 
-                ui.pushPage(({config: {checkboxValue}, stats: {frame}}) => {
+                ui.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
                   const img = (() => {
-                    if (checkboxValue) {
+                    if (statsCheckboxValue) {
                       const statsImg = stats.dom.childNodes[0];
                       statsImg.needsUpdate = true;
                       return statsImg;
@@ -704,7 +705,7 @@ class Rend {
                   type: 'stats',
                   state: {
                     config: {
-                      checkboxValue: configState.checkboxValue,
+                      statsCheckboxValue: configState.statsCheckboxValue,
                     },
                     stats: statsState,
                   },
@@ -1031,7 +1032,7 @@ class Rend {
                       if (type === 'stats') {
                         page.update({
                           config: {
-                            checkboxValue: configState.checkboxValue,
+                            statsCheckboxValue: configState.statsCheckboxValue,
                           },
                           stats: statsState,
                         }, pend);
@@ -1375,14 +1376,14 @@ class Rend {
                       } else if (onclick === 'config') {
                         ui.cancelTransition();
 
-                        ui.pushPage(({config: {inputText, inputValue, sliderValue, checkboxValue}, focus: {type: focusType}}) => ([
+                        ui.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
                           {
                             type: 'html',
                             src: menuRenderer.getConfigPageSrc(),
                           },
                           {
                             type: 'html',
-                            src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, checkboxValue}),
+                            src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, statsCheckboxValue}),
                             x: 500,
                             y: 150 + 2,
                             w: WIDTH - 500,
@@ -1906,17 +1907,27 @@ class Rend {
                         configState.sliderValue = value;
 
                         _updatePages();
-                      } else if (onclick === 'config:stats') {
-                        const {checkboxValue} = configState;
+                      } else if (onclick === 'config:airlock') {
+                        const {airlockCheckboxValue} = configState;
 
-                        if (!checkboxValue) {
+                        if (!airlockCheckboxValue) {
+                          configState.airlockCheckboxValue = true;
+                        } else {
+                          configState.airlockCheckboxValue = false;
+                        }
+
+                        _updatePages();
+                      } else if (onclick === 'config:stats') {
+                        const {statsCheckboxValue} = configState;
+
+                        if (!statsCheckboxValue) {
                           const width = 0.0005;
                           const height = width * (48 / 80);
                           const depth = -0.001;
 
-                          configState.checkboxValue = true;
+                          configState.statsCheckboxValue = true;
                         } else {
-                          configState.checkboxValue = false;
+                          configState.statsCheckboxValue = false;
                         }
 
                         _updatePages();

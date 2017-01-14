@@ -37,21 +37,24 @@ const getSliderSrc = sliderValue => `\
 </div>
 `;
 
-const getCheckboxSrc = checkboxValue => `\
+const getCheckboxSrc = (label, checkboxValue, onclick) => `\
 <div style="display: flex; width: ${WIDTH - (500 + 40)}px; height: 100px; align-items: center;">
-  ${checkboxValue ?
-    `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="config:stats">
-      <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
-        <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #333;"></div>
-      </div>
-    </a>`
-  :
-    `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="config:stats">
-      <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
-        <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #CCC;"></div>
-      </div>
-    </a>`
-  }
+  <h1 style="margin: 0; font-size: 50px; font-weight: 300; flex: 1;">${label}</h1>
+  <div style="display: flex; align-items: center;">
+    ${checkboxValue ?
+      `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="${onclick}">
+        <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
+          <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #333;"></div>
+        </div>
+      </a>`
+    :
+      `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="{onclick}">
+        <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
+          <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #CCC;"></div>
+        </div>
+      </a>`
+    }
+  </div>
 </div>
 `;
 const getWorldsPageSrc = ({worlds, selectedName, inputText, inputValue, focusType}) => {
@@ -209,11 +212,12 @@ ${getHeaderSrc('preferences', '', '', true)}
 </div>
 `;
 
-const getConfigPageContentSrc = ({inputText, inputValue, focus, sliderValue, checkboxValue}) => `\
+const getConfigPageContentSrc = ({inputText, inputValue, focus, sliderValue, airlockCheckboxValue, statsCheckboxValue}) => `\
 <div style="width: ${WIDTH - (500 + 40)}px; margin: 40px 0; padding-right: 40px;">
   ${getInputSrc(inputText, '', inputValue, focus, 'config:input')}
   ${getSliderSrc(sliderValue)}
-  ${getCheckboxSrc(checkboxValue)}
+  ${getCheckboxSrc('Airlock', airlockCheckboxValue, 'config:airlock')}
+  ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
 </div>
 `;
 
