@@ -264,26 +264,16 @@ The API is inherited from `node`: `zeo.on('eventName', eventHandler)` registers 
 The `update` event fires _before_ every frame is rendered. It's intended to let plugins perform update that need to happen on every frame, such as applying velocities to positions.
 
 ```js
-{
 module.exports = archae => ({
   mount() {
     return archae.requestPlugin('/core/engines/zeo')
       .then(zeo => {
-        const _update = () => {
+        zeo.on('update', () => {
           console.log('about to render a frame!');
           // time to update stuff...
-        };
-        zeo.on('update', _update);
-
-        this._cleanup = () => {
-          zeo.removeListener('update', _update);
-        };
+        });
       });
   },
-  unmount() {
-    this._cleanup();
-  },
-}
 ```
 
 Note that since listeners for the `update` event run on every frame, they need to be fast.
@@ -304,24 +294,16 @@ module.exports = archae => ({
   mount() {
     return archae.requestPlugin('/core/engines/zeo')
       .then(zeo => {
-        const _updateEye = camera => {
+        zeo.on('updateEye', camera => {
           console.log('about to render with eye camera!', camera);
           // time to update stuff...
-        };
-        zeo.on('updateEye', _update);
-
-        this._cleanup = () => {
-          zeo.removeListener('updateEye', _updateEye);
-        };
+        });
       });
   },
-  unmount() {
-    this._cleanup();
-  },
-}
+};
 ```
 
-The `camera` argument represents the specific eye view being rendered. `updateEye` is most useful for cases where you want to render something that _depends on the eye camera_ but _is not accounted for by the camera's transform matrix_. An example is rendering to a texture that depends on the camera, if you want the texture to be stereoscopic (such as a portal).
+The `camera` argument is the `THREE.PerspectiveCamera` for the eye being rendered. `updateEye` is most useful for cases where you want to render something that _depends on the eye camera_ but _is not accounted for by the camera's transform matrix_. An example is rendering to a texture that depends on the camera, if you want the texture to be stereoscopic (such as a portal).
 
 Note that `updateEye` and `update` are _not_ interchangeable. In the stereoscopic rendering case you will get _two_ `updateEye` events per frame, so you'd be doing double the work ad double the rate.
 
@@ -331,11 +313,62 @@ In general, prefer to use `update` instead of `updateEye`.
 
 #### Input events
 
-// XXX
+Interacting with the VR world is a bit different than interacting with a regular browser page. For example, you want to be able to take input events from tracked controllers, which have buttons that do not correspond to anything on a standard keyboard or mouse. You'll want to know _which_ controller your events are coming from. And with features such as virtual keyboards, some logical events do not correspond to any native event in the browser.
 
+For this reason, Zeo abstracts input events for you. It listens to the hardware and passes events to you through the regular `EventEmitter` interface. For example, listening to tracked controller events:
 
+```js
+module.exports = archae => ({
+  mount() {
+    return archae.requestPlugin('/core/engines/zeo')
+      .then(zeo => {
+        const _trigger = event => {
+          const {side} = event;
+          console.log('trigger pressed on ' + side + ' controller!');
+        };
+        zeo.on('trigger', _trigger);
+      });
+  },
+};
+```
 
+The full list of available events is:
 
+- `trigger` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `triggerdown` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is pushed _down_.
+- `triggerup` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is released _up_.
+- `pad` `{side: 'left'}`
+  - Fired when the controller's `pad` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `paddown` `{side: 'left'}`
+  - Fired when the controller's `pad` button is pushed _down_.
+- `padup` `{side: 'left'}`
+  - Fired when the controller's `pad` button is released _up_.
+- `grip` `{side: 'left'}`
+  - Fired when the controller's `grip` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `gripdown` `{side: 'left'}`
+  - Fired when the controller's `grip` button is pushed _down_.
+- `gripup` `{side: 'left'}`
+  - Fired when the controller's `grip` button is released _up_.
+- `menu` `{side: 'left'}`
+  - Fired when the controller's `menu` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `menudown` `{side: 'left'}`
+  - Fired when the controller's `menu` button is pushed _down_.
+- `menuup` `{side: 'left'}`
+  - Fired when the controller's `menu` button is released _up_.
+- `keyboardpress` `{ key: 'a', keyCode: 65, side: 'left' }`
+   - Fired when a virtual keyboard key is pressed.
+   - `key` is the textual representation of the key. `keyCode` is the corresponding Javascript-compatible key code. `side` is whether the `left` or `right` controller was used to press the key. 
+- `keyboarddown` `{ key: 'a', keyCode: 65, side: 'left' }`
+  - Fired when a virtual keyboard key is pushed _down_.
+- `keyboardup` `{ key: 'a', keyCode: 65, side: 'left' }`
+  - Fired when a virtual keyboard key is released _up_.
+
+### Status API
+
+// XXX finish this
 
 
 
