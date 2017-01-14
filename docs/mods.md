@@ -259,6 +259,78 @@ The Zeo API doubles as an [`EventEmitter`](https://nodejs.org/api/events.html) t
 
 The API is inherited from `node`: `zeo.on('eventName', eventHandler)` registers `eventHandler` to listen for `'eventName'` events and `zeo.removeListener('eventName', eventHandler)` unregisters it. The events you can subscribe to are:
 
+#### `update`
+
+The `update` event fires _before_ every frame is rendered. It's intended to let plugins perform update that need to happen on every frame, such as applying velocities to positions.
+
+```js
+{
+module.exports = archae => ({
+  mount() {
+    return archae.requestPlugin('/core/engines/zeo')
+      .then(zeo => {
+        const _update = () => {
+          console.log('about to render a frame!');
+          // time to update stuff...
+        };
+        zeo.on('update', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('update', _update);
+        };
+      });
+  },
+  unmount() {
+    this._cleanup();
+  },
+}
+```
+
+Note that since listeners for the `update` event run on every frame, they need to be fast.
+
+That is, you shouldn't be iterating over large arrays, adding materials or textures, and other expensive things in your `update` function. If you need to do these, you should prefer:
+
+- precomputation in `mount`
+- asynchronous computation in a worker
+- doing the work in a vertex/fragment shader
+
+#### `updateEye(camera)`
+
+The `updateEye` event fires before each eye is rendered, and receives the eye's `camera` as an argument.
+
+```js
+{
+module.exports = archae => ({
+  mount() {
+    return archae.requestPlugin('/core/engines/zeo')
+      .then(zeo => {
+        const _updateEye = camera => {
+          console.log('about to render with eye camera!', camera);
+          // time to update stuff...
+        };
+        zeo.on('updateEye', _update);
+
+        this._cleanup = () => {
+          zeo.removeListener('updateEye', _updateEye);
+        };
+      });
+  },
+  unmount() {
+    this._cleanup();
+  },
+}
+```
+
+The `camera` argument represents the specific eye view being rendered. `updateEye` is most useful for cases where you want to render something that _depends on the eye camera_ but _is not accounted for by the camera's transform matrix_. An example is rendering to a texture that depends on the camera, if you want the texture to be stereoscopic (such as a portal).
+
+Note that `updateEye` and `update` are _not_ interchangeable. In the stereoscopic rendering case you will get _two_ `updateEye` events per frame, so you'd be doing double the work ad double the rate.
+
+For consistency, `updateEye` will fire even if the renderering is monoscopic. In that case there will be a single `updateEye` event and a single `update` event fired.
+
+In general, prefer to use `update` instead of `updateEye`.
+
+#### Input events
+
 // XXX
 
 
