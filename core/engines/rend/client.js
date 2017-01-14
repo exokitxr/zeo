@@ -1002,17 +1002,15 @@ class Rend {
                 });
                 scene.add(oldPositioningMesh);
 
-                stats.render = (() => {
-                  return () => {
-                    const {frame: oldFrame} = statsState;
-                    const newFrame = Math.floor(Date.now() / STATS_REFRESH_RATE);
-                    if (newFrame !== oldFrame) {
-                      statsState.frame = newFrame;
+                stats.render = () => {
+                  const {frame: oldFrame} = statsState;
+                  const newFrame = Math.floor(Date.now() / STATS_REFRESH_RATE);
+                  if (newFrame !== oldFrame) {
+                    statsState.frame = newFrame;
 
-                      _updatePages();
-                    }
-                  };
-                })();
+                    _updatePages();
+                  }
+                };
 
                 const _updatePages = menuUtils.debounce(next => {
                   const pages = ui.getPages();
