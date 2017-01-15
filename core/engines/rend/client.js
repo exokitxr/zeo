@@ -764,7 +764,7 @@ class Rend {
                   transparent: true,
                 });
                 const pointsMaterial = new THREE.PointsMaterial({
-                  color: 0x000000,
+                  color: 0xFF0000,
                   size: 0.01,
                 });
 
@@ -2787,7 +2787,21 @@ class Rend {
                               }
                             }
 
-                            menuDotMesh.position.copy(menuIntersectionPoint);
+                            const menuBox = new THREE.Box3().setFromPoints([
+                              _getMenuMeshPoint(0, 0, -WORLD_DEPTH),
+                              _getMenuMeshPoint(WIDTH, HEIGHT, WORLD_DEPTH),
+                            ]);
+                            if (menuBox.containsPoint(menuIntersectionPoint)) {
+                              menuDotMesh.position.copy(menuIntersectionPoint);
+
+                              if (!menuDotMesh.visible) {
+                                menuDotMesh.visible = true;
+                              }
+                            } else {
+                              if (menuDotMesh.visible) {
+                                menuDotMesh.visible = false;
+                              }
+                            }
                           } else {
                             menuHoverState.intersectionPoint = null;
                             menuHoverState.scrollLayer = null;
