@@ -1,0 +1,7 @@
+{
+  "name": "airlock",
+  "description": "Provides a basic scene for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {}
+}

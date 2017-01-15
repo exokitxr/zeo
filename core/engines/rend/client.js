@@ -59,6 +59,7 @@ class Rend {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/biolumi',
+      '/core/engines/airlock',
       '/core/engines/fs',
       '/core/engines/bullet',
       '/core/engines/heartlink',
@@ -69,6 +70,7 @@ class Rend {
       three,
       webvr,
       biolumi,
+      airlock,
       fs,
       bullet,
       heartlink,
@@ -139,7 +141,7 @@ class Rend {
           inputIndex: 0,
           inputValue: 0,
           sliderValue: 0.5,
-          airlockCheckboxValue: false,
+          airlockCheckboxValue: true,
           statsCheckboxValue: false,
         };
         const statsState = {
@@ -740,6 +742,8 @@ class Rend {
                   type: 'main',
                   immediate: true,
                 });
+
+                airlock.enable(); // XXX TEMP until this is part of the saved config
 
                 const solidMaterial = new THREE.MeshBasicMaterial({
                   color: 0xFFFFFF,
@@ -1911,8 +1915,12 @@ class Rend {
                         const {airlockCheckboxValue} = configState;
 
                         if (!airlockCheckboxValue) {
+                          airlock.enable();
+
                           configState.airlockCheckboxValue = true;
                         } else {
+                          airlock.disable();
+
                           configState.airlockCheckboxValue = false;
                         }
 
