@@ -165,13 +165,26 @@ class Agent {
             this.box = box;
 
             const mesh = (() => {
-              const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+              const geometry = new THREE.OctahedronBufferGeometry(0.1, 0);
               const material = new THREE.MeshPhongMaterial({
                 color: COLORS.GRAY,
                 // shininess: 0,
               });
 
-              return new THREE.Mesh(geometry, material);
+              const mesh = new THREE.Mesh(geometry, material);
+
+              const wireframeMesh = (() => {
+                const geometry = new THREE.OctahedronBufferGeometry(0.1, 0);
+                const material = new THREE.MeshBasicMaterial({
+                  color: 0x000000,
+                  wireframe: true,
+                });
+
+                return new THREE.Mesh(geometry, material);
+              })();
+              mesh.add(wireframeMesh);
+
+              return mesh;
             })();
             scene.add(mesh);
             this.mesh = mesh;
