@@ -54,13 +54,14 @@ class Model {
       if (live) {
         const {THREE, scene, camera} = zeo;
 
-        const _getTexturePath = url => url.substring(0, url.lastIndexOf('/') + 1);
         const _requestModel = file => file.fetch({
           type: 'json',
         }).then(modelJson => new Promise((accept, reject) => {
           const loader = new THREE.ObjectLoader();
 
-          loader.setTexturePath(_getTexturePath(file.url));
+          const {url} = file;
+          const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
+          loader.setTexturePath(texturePath);
           loader.parse(modelJson, accept);
         }));
 
@@ -134,11 +135,6 @@ class Model {
                 _requestModel(file)
                   .then(mesh => {
                     if (live) {
-                      /* const model = MODELS['cloud'];
-                      mesh.position.fromArray(model.position);
-                      mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
-                      mesh.scale.fromArray(model.scale); */
-
                       scene.add(mesh);
                       this.mesh = mesh;
 

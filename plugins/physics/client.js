@@ -1,3 +1,5 @@
+const MODEL_SRC = 'https://cdn.rawgit.com/modulesio/zeo-data/9673929107022b9e43697669607a7e5eeff3a6a7/models/cloud/cloud.json';
+
 class Physics {
   constructor(archae) {
     this._archae = archae;
@@ -12,20 +14,36 @@ class Physics {
     };
 
     return archae.requestPlugins([
-      '/core/engines/rend',
+      '/core/engines/zeo',
     ]).then(([
-      rend,
+      zeo,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
-        const world = rend.getCurrentWorld();
+        const world = zeo.getCurrentWorld();
         const {physics} = world;
 
-        return world.requestMods([
-          '/extra/plugins/zeo/models',
-        ]).then(([
-          models,
-        ]) => {
+        const _requestModelData = () => fetch(MODEL_SRC)
+          .then(res => res.json()
+            .then(modelJson => new Promise((accept, reject) => {
+              const loader = new THREE.ObjectLoader();
+
+              const url = MODEL_SRC;
+              const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
+              loader.setTexturePath(texturePath);
+              loader.parse(modelJson, model => {
+                accept({
+                  modelJson,
+                  model,
+                });
+              });
+            }))
+          )
+
+        return _requestModelData().then(({
+          modelJson,
+          model,
+        }) => {
           if (live) {
             const _getModelPoints = modelJson => {
               const {geometries, object} = modelJson;
@@ -98,100 +116,101 @@ class Physics {
               return points;
             };
 
-            const model = models.getModel('cloud');
-            return models.requestModelJson(model)
-              .then(modelJson => {
-                if (live) {
-                  const modelPhysicsBody = new physics.TriangleMesh({
-                    position: model.position,
-                    rotation: new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                      model.rotation[0],
-                      model.rotation[1],
-                      model.rotation[2],
-                      camera.rotation.order
-                    )).toArray(),
-                    scale: model.scale,
-                    points: _getModelPoints(modelJson),
-                    mass: 0,
-                  });
-                  physics.add(modelPhysicsBody);
+            const modelPosition = new THREE.Vector3(-1, 0, -1);
+            const modelRotation = new THREE.Quaternion();
+            const modelScale = new THREE.Vector3(1, 1, 1);
 
-                  const boxMeshSize = 0.1;
-                  const boxPositionOffset = new THREE.Vector3(-1, 2, -1);
-                  const zeroVector = new THREE.Vector3();
-                  const zeroQuaternion = new THREE.Quaternion();
-                  const numBoxMeshes = 20;
+            model.position.copy(modelPosition);
+            model.quaternion.copy(modelRotation);
+            model.scale.copy(modelScale);
+            scene.add(model);
 
-                  const _getRandomOffset = () => -0.5 + Math.random() * 1;
-                  const _getRandomPosition = () => boxPositionOffset.clone().add(new THREE.Vector3(_getRandomOffset(), 0, _getRandomOffset()));
+            const modelPhysicsBody = new physics.TriangleMesh({
+              position: modelPosition.toArray(),
+              rotation: modelRotation.toArray(),
+              scale: modelScale.toArray(),
+              points: _getModelPoints(modelJson),
+              mass: 0,
+            });
+            physics.add(modelPhysicsBody);
 
-                  const boxMeshes = (() => {
-                    const result = [];
+            const boxMeshSize = 0.1;
+            const boxPositionOffset = modelPosition;
+            const zeroVector = new THREE.Vector3();
+            const zeroQuaternion = new THREE.Quaternion();
+            const numBoxMeshes = 20;
 
-                    const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize);
-                    const material = new THREE.MeshPhongMaterial({
-                      color: 0x333333,
-                      shininess: 0,
-                      shading: THREE.FlatShading,
-                    });
+            const _getRandomOffset = () => -0.5 + Math.random() * 1;
+            const _getRandomPosition = () => modelPosition.clone().add(new THREE.Vector3(_getRandomOffset(), 2, _getRandomOffset()));
 
-                    for (let i = 0; i < numBoxMeshes; i++) {
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.position.copy(_getRandomPosition());
+            const boxMeshes = (() => {
+              const result = [];
 
-                      result.push(mesh);
-                    }
-
-                    return result;
-                  })();
-                  boxMeshes.forEach(boxMesh => {
-                    scene.add(boxMesh);
-                  });
-
-                  const floorPhysicsBody = new physics.Plane({
-                    position: [0, 0, 0],
-                    dimensions: [0, 1, 0],
-                    mass: 0,
-                  });
-                  physics.add(floorPhysicsBody);
-
-                  const boxPhysicsBodies = boxMeshes.map(boxMesh => {
-                    const physicsBody = physics.makeBody(boxMesh);
-                    physicsBody.setObject(boxMesh);
-                    return physicsBody;
-                  });
-                  boxPhysicsBodies.forEach(physicsBody => {
-                    physics.add(physicsBody);
-                  });
-
-                  const keydown = e => {
-                    if (e.keyCode === 82) { // R
-                      boxPhysicsBodies.forEach(physicsBody => {
-                        physicsBody.setPosition(_getRandomPosition().toArray());
-                        physicsBody.setRotation(zeroQuaternion.toArray());
-                        physicsBody.setLinearVelocity(zeroVector.toArray());
-                        physicsBody.setAngularVelocity(zeroVector.toArray());
-                        physicsBody.activate();
-                      });
-
-                      e.stopImmediatePropagation();
-                    }
-                  };
-                  zeo.on('keydown', keydown);
-
-                  this._cleanup = () => {
-                    boxMeshes.forEach(boxMesh => {
-                      scene.remove(boxMesh);
-                    });
-                    physics.remove(floorPhysicsBody);
-                    boxPhysicsBodies.forEach(physicsBody => {
-                      physics.remove(physicsBody);
-                    });
-
-                    zeo.removeListner('keydown', keydown);
-                  };
-                }
+              const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize);
+              const material = new THREE.MeshPhongMaterial({
+                color: 0x333333,
+                // shininess: 10,
+                // shading: THREE.FlatShading,
               });
+
+              for (let i = 0; i < numBoxMeshes; i++) {
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(_getRandomPosition());
+                mesh.castShadow = true;
+
+                result.push(mesh);
+              }
+
+              return result;
+            })();
+            boxMeshes.forEach(boxMesh => {
+              scene.add(boxMesh);
+            });
+
+            const floorPhysicsBody = new physics.Plane({
+              position: [0, 0, 0],
+              dimensions: [0, 1, 0],
+              mass: 0,
+            });
+            physics.add(floorPhysicsBody);
+
+            const boxPhysicsBodies = boxMeshes.map(boxMesh => {
+              const physicsBody = physics.makeBody(boxMesh);
+              physicsBody.setObject(boxMesh);
+              return physicsBody;
+            });
+            boxPhysicsBodies.forEach(physicsBody => {
+              physics.add(physicsBody);
+            });
+
+            const keydown = e => {
+              if (e.keyCode === 86) { // V
+                boxPhysicsBodies.forEach(physicsBody => {
+                  physicsBody.setPosition(_getRandomPosition().toArray());
+                  physicsBody.setRotation(zeroQuaternion.toArray());
+                  physicsBody.setLinearVelocity(zeroVector.toArray());
+                  physicsBody.setAngularVelocity(zeroVector.toArray());
+                  physicsBody.activate();
+                });
+
+                e.stopImmediatePropagation();
+              }
+            };
+            zeo.on('keydown', keydown);
+
+            this._cleanup = () => {
+              scene.remove(model);
+
+              boxMeshes.forEach(boxMesh => {
+                scene.remove(boxMesh);
+              });
+              physics.remove(floorPhysicsBody);
+              boxPhysicsBodies.forEach(physicsBody => {
+                physics.remove(physicsBody);
+              });
+
+              zeo.removeListner('keydown', keydown);
+            };
           }
         });
       }
