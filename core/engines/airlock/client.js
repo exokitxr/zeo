@@ -2,6 +2,10 @@ const GRID_SIZE = 32;
 const GRID_RESOLUTION = 4;
 const TARGET_RADII = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 
+const LINE_COLOR = 0x808080;
+
+const SHADOW_MAP_SIZE = 2048;
+
 class Airlock {
   constructor(archae) {
     this._archae = archae;
@@ -52,12 +56,7 @@ class Airlock {
               return result;
             })();
             const material = new THREE.LineBasicMaterial({
-              // color: 0xFFFFFF,
-              // color: 0x333333,
               vertexColors: THREE.VertexColors,
-              // opacity: 0.5,
-              // transparent: true,
-              // depthTest: false,
             });
 
             const mesh = new THREE.LineSegments(geometry, material);
@@ -93,7 +92,7 @@ class Airlock {
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
 
             const material = new THREE.PointsMaterial({
-              color: 0xCCCCCC,
+              color: LINE_COLOR,
               size: 0.02,
             });
 
@@ -107,8 +106,8 @@ class Airlock {
             geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1, 0));
 
             const material = new THREE.MeshPhongMaterial({
-              color: 0xFFFFFF,
-              // shininess: 30,
+              color: 0x111111,
+              shininess: 1,
             });
 
             const mesh = new THREE.Mesh(geometry, material);
@@ -120,7 +119,7 @@ class Airlock {
           const targetMesh = (() => {
             const geometry = (() => {
               const radii = TARGET_RADII;
-              const segments = 7;
+              const segments = 8;
               const numVerticesPerRadius = segments * 9;
 
               const positions = new Float32Array(radii.length * numVerticesPerRadius);
@@ -134,12 +133,12 @@ class Airlock {
               const geometry = new THREE.BufferGeometry();
               geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
               geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-              // geometry.applyMatrix(new THREE.Matrix4().makeRotationY((1 / 20) * (Math.PI * 2)));
+              // geometry.applyMatrix(new THREE.Matrix4().makeRotationY((0.5 + (1 / 28)) * (Math.PI * 2)));
               return geometry;
             })();
 
             const material = new THREE.MeshBasicMaterial({
-              color: 0x808080,
+              color: LINE_COLOR,
               wireframe: true,
               // opacity: 0.5,
               // transparent: true,
@@ -157,15 +156,27 @@ class Airlock {
           return object;
         })();
 
-        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.15);
+        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.25);
+
+        const directionalLight = (() => {
+          const light = new THREE.DirectionalLight(0xFFFFFF, 2);
+          light.position.set(3, 3, 3);
+          light.lookAt(new THREE.Vector3(0, 0, 0));
+          light.shadow.mapSize.width = SHADOW_MAP_SIZE;
+          light.shadow.mapSize.height = SHADOW_MAP_SIZE;
+          light.castShadow = true;
+          return light;
+        })();
 
         const _enable = () => {
           scene.add(mesh);
           scene.add(ambientLight);
+          scene.add(directionalLight);
         };
         const _disable = () => {
           scene.remove(mesh);
           scene.remove(ambientLight);
+          scene.remove(directionalLight);
         };
 
         this._cleanup = () => {

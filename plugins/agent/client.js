@@ -152,10 +152,10 @@ class Agent {
               const mesh = new THREE.Mesh(
                 new THREE.BoxBufferGeometry(0.2, 0.2, 0.2),
                 new THREE.MeshBasicMaterial({
-                  color: 0x333333,
+                  color: 0x808080,
                   wireframe: true,
-                  opacity: 0.5,
-                  transparent: true,
+                  // opacity: 0.5,
+                  // transparent: true,
                 })
               );
               mesh.visible = false;
@@ -168,7 +168,7 @@ class Agent {
               const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
               const material = new THREE.MeshPhongMaterial({
                 color: COLORS.GRAY,
-                shininess: 0,
+                // shininess: 0,
               });
 
               return new THREE.Mesh(geometry, material);

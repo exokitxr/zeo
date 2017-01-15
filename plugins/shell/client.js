@@ -12,7 +12,7 @@ const MESH_WIDTH = 1;
 const MESH_HEIGHT = MESH_WIDTH / ASPECT_RATIO;
 const MESH_DEPTH = MESH_WIDTH / 50;
 
-const BOX_MESH_COLOR = 0x000000;
+const BOX_MESH_COLOR = 0x808080;
 const BOX_MESH_HOVER_COLOR = 0x0000FF;
 const BOX_MESH_FOCUS_COLOR = 0x00FF00;
 
@@ -372,8 +372,8 @@ class Shell {
                 const material = new THREE.MeshBasicMaterial({
                   color: BOX_MESH_COLOR,
                   wireframe: true,
-                  opacity: 0.5,
-                  transparent: true,
+                  // opacity: 0.5,
+                  // transparent: true,
                 });
 
                 const mesh = new THREE.Mesh(geometry, material);

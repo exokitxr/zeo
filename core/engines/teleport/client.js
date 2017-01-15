@@ -32,10 +32,10 @@ class Teleport {
         const world = rend.getCurrentWorld();
 
         const teleportMeshMaterial = new THREE.MeshBasicMaterial({
-          color: 0x000000,
+          color: 0x808080,
           wireframe: true,
-          opacity: 0.25,
-          transparent: true,
+          // opacity: 0.25,
+          // transparent: true,
         });
 
         const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0));
