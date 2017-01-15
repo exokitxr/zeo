@@ -31,6 +31,7 @@ class Rend {
         if (live) {
           const worldModsJsons = new Map();
           const worldElementsJsons = new Map();
+          const worldConfigJsons = new Map();
           const worldModMutex = new MultiMutex();
 
           const worldsPath = path.join(dirname, 'data', 'worlds');
@@ -114,6 +115,51 @@ class Rend {
               if (!err) {
                 const worldElementJsonPath = path.join(worldPath, 'elements.json');
                 fs.writeFile(worldElementJsonPath, JSON.stringify(worldElementsJson, null, 2), 'utf8', err => {
+                  if (!err) {
+                    accept();
+                  } else {
+                    reject(err);
+                  }
+                });
+              } else {
+                reject(err);
+              }
+            });
+          });
+          const _getWorldConfigJson = ({world}) => new Promise((accept, reject) => {
+            const entry = worldConfigJsons.get(world);
+
+            if (entry) {
+              accept(entry);
+            } else {
+              const worldConfigJsonPath = path.join(worldsPath, world, 'config.json');
+
+              fs.readFile(worldConfigJsonPath, 'utf8', (err, s) => {
+                if (!err) {
+                  const entry = JSON.parse(s);
+                  worldConfigJsons.set(world, entry);
+                  accept(entry);
+                } else if (err.code === 'ENOENT') {
+                  const entry = {
+                    airlock: true,
+                    stats: false,
+                  };
+                  worldConfigJsons.set(world, entry);
+                  accept(entry);
+                } else {
+                  reject(err);
+                }
+              });
+            }
+          });
+          const _setWorldConfigJson = ({world, worldConfigJson}) => new Promise((accept, reject) => {
+            worldConfigJsons.set(world, worldConfigJson);
+
+            const worldPath = path.join(worldsPath, world);
+            mkdirp(worldPath, err => {
+              if (!err) {
+                const worldConfigJsonPath = path.join(worldPath, 'config.json');
+                fs.writeFile(worldConfigJsonPath, JSON.stringify(worldConfigJson, null, 2), 'utf8', err => {
                   if (!err) {
                     accept();
                   } else {
@@ -567,7 +613,6 @@ class Rend {
           app.post('/archae/rend/mods/remove', serveModsRemove);
           function serveElementsGet(req, res, next) {
             const {world} = req.params;
-            const worldElementsJsonPath = path.join(worldsPath, world, 'elements.json');
 
             _getWorldElementsJson({world})
               .then(worldElementsJson => {
@@ -617,6 +662,45 @@ class Rend {
             });
           }
           app.put('/archae/rend/worlds/:world/elements.json', serveElementsSet);
+          function serveConfigGet(req, res, next) {
+            const {world} = req.params;
+
+            _getWorldConfigJson({world})
+              .then(worldConfigJson => {
+                res.json(worldConfigJson);
+              })
+              .catch(err => {
+                res.status(500);
+                res.send(err.stack);
+              });
+          }
+          app.get('/archae/rend/worlds/:world/config.json', serveConfigGet);
+          function serveConfigSet(req, res, next) {
+            bodyParserJson(req, res, () => {
+              const {body: data} = req;
+
+              const _respondInvalid = () => {
+                res.status(400);
+                res.send();
+              };
+
+              if (typeof data === 'object' && data !== null) {
+                const {world} = req.params;
+                const worldConfigJson = data;
+                _setWorldConfigJson({world, worldConfigJson})
+                  .then(() => {
+                    res.send();
+                  })
+                  .catch(err => {
+                    res.status(500);
+                    res.send(err.stack);
+                  });
+              } else {
+                _respondInvalid();
+              }
+            });
+          }
+          app.put('/archae/rend/worlds/:world/config.json', serveConfigSet);
 
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
@@ -629,7 +713,9 @@ class Rend {
                 route.handle.name === 'serveModsAdd' ||
                 route.handle.name === 'serveModsRemove' ||
                 route.handle.name === 'serveElementsGet' ||
-                route.handle.name === 'serveElementsSet'
+                route.handle.name === 'serveElementsSet' ||
+                route.handle.name === 'serveConfigGet' ||
+                route.handle.name === 'serveConfigSet'
               ) {
                 routes.splice(i, 1);
               }

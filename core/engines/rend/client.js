@@ -365,16 +365,27 @@ class Rend {
           }).then(res => res.json());
 
           Promise.all([
+            _requestGetConfig(worldName),
             _requestInstalledModSpecs(worldName),
             _requestGetElements(worldName),
             bullet.requestWorld(worldName),
           ])
             .then(([
+              configSpec,
               installedModSpecs,
               elementsStatus,
               physics,
             ]) => {
               const player = heartlink.getPlayer(); // XXX make this per-world
+
+              configState.airlockCheckboxValue = configSpec.airlock;
+              configState.statsCheckboxValue = configSpec.stats;
+
+              menu.updatePages();
+
+              if (configSpec.airlock) {
+                airlock.enable();
+              }
 
               const startTime = Date.now();
               let worldTime = 0;
@@ -542,6 +553,15 @@ class Rend {
             clipboardElements,
           }),
         }).then(res => res.blob().then(() => {}));
+        const _requestGetConfig = world => fetch('/archae/rend/worlds/' + world + '/config.json')
+          .then(res => res.json());
+        const _requestSetConfig = ({world, config}) => fetch('/archae/rend/worlds/' + world + '/config.json', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(config),
+        }).then(res => res.blob().then(() => {}));
         const _saveElements = menuUtils.debounce(next => {
           const {name: worldName} = currentWorld;
 
@@ -552,6 +572,27 @@ class Rend {
           })
             .then(() => {
               console.log('saved elements for', JSON.stringify(worldName));
+
+              next();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              next();
+            });
+        });
+        const _saveConfig = menuUtils.debounce(next => {
+          const {name: worldName} = currentWorld;
+
+          _requestSetConfig({
+            world: worldName,
+            config: {
+              airlock: configState.airlockCheckboxValue,
+              stats: configState.statsCheckboxValue,
+            },
+          })
+            .then(() => {
+              console.log('saved config for', JSON.stringify(worldName));
 
               next();
             })
@@ -746,8 +787,6 @@ class Rend {
                   type: 'main',
                   immediate: true,
                 });
-
-                airlock.enable(); // XXX TEMP until this is part of the saved config
 
                 const transparentMaterial = new THREE.MeshBasicMaterial({
                   opacity: 0,
@@ -1967,6 +2006,8 @@ class Rend {
                             configState.airlockCheckboxValue = false;
                           }
 
+                          _saveConfig();
+
                           _updatePages();
                         } else if (onclick === 'config:stats') {
                           const {statsCheckboxValue} = configState;
@@ -1980,6 +2021,8 @@ class Rend {
                           } else {
                             configState.statsCheckboxValue = false;
                           }
+
+                          _saveConfig();
 
                           _updatePages();
                         } else {
