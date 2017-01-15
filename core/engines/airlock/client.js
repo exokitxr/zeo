@@ -63,7 +63,7 @@ class Airlock {
           })();
           object.add(axisMesh);
 
-          const floorMesh = (() => {
+          const gridMesh = (() => {
             const width = 32;
             const depth = 32;
             const resolution = 4;
@@ -94,39 +94,26 @@ class Airlock {
             });
 
             return new THREE.Points(geometry, material);
+          })();
+          object.add(gridMesh);
 
-            /* const geometry = new THREE.PlaneBufferGeometry(1, 1);
+          const floorMesh = (() => {
+            const geometry = new THREE.PlaneBufferGeometry(128, 128);
             geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
             geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1, 0));
 
-            const texture = new THREE.Texture(
-              transparentGridImg,
-              THREE.UVMapping,
-              THREE.RepeatWrapping,
-              THREE.RepeatWrapping,
-              THREE.LinearFilter,
-              THREE.LinearFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              16
-            );
-
-            const material = new THREE.MeshBasicMaterial({
-              color: 0x333333,
-              map: texture,
+            const material = new THREE.MeshPhongMaterial({
+              color: 0xFFFFFF,
               // shininess: 30,
-              transparent: true,
             });
-            // material.polygonOffset = true;
-            // material.polygonOffsetFactor = 1;
-            // material.polygonOffsetUnits = 1;
 
             const mesh = new THREE.Mesh(geometry, material);
-            return mesh; */
+            mesh.receiveShadow = true;
+            return mesh;
           })();
           object.add(floorMesh);
 
-          const gridMesh = (() => {
+          const targetMesh = (() => {
             const geometry = (() => {
               const radii = [1, 2, 4, 8, 16, 32, 64, 128, 256];
               const segments = 7;
@@ -161,23 +148,25 @@ class Airlock {
             const mesh = new THREE.LineSegments(geometry, material);
             return mesh;
           })();
-          object.add(gridMesh);
-
-          object.visible = false;
+          object.add(targetMesh);
 
           return object;
         })();
-        scene.add(mesh);
+
+        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.15);
 
         const _enable = () => {
-          mesh.visible = true;
+          scene.add(mesh);
+          scene.add(ambientLight);
         };
         const _disable = () => {
-          mesh.visible = false;
+          scene.remove(mesh);
+          scene.remove(ambientLight);
         };
 
         this._cleanup = () => {
           scene.remove(mesh);
+          scene.remove(ambientLight);
         };
 
         return {

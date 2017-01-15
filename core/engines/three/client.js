@@ -30,6 +30,8 @@ class Three {
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     window.document.body.appendChild(renderer.domElement);
 
     window.addEventListener('resize', () => {

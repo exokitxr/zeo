@@ -745,6 +745,10 @@ class Rend {
 
                 airlock.enable(); // XXX TEMP until this is part of the saved config
 
+                const transparentMaterial = new THREE.MeshBasicMaterial({
+                  opacity: 0,
+                  transparent: true,
+                });
                 const solidMaterial = new THREE.MeshBasicMaterial({
                   color: 0xFFFFFF,
                   opacity: 0.5,
@@ -845,11 +849,22 @@ class Rend {
                     const height = WORLD_HEIGHT;
                     const depth = WORLD_DEPTH;
 
-                    const geometry = new THREE.PlaneBufferGeometry(width, height, depth);
+                    const geometry = new THREE.PlaneBufferGeometry(width, height);
                     const materials = [solidMaterial, imageMaterial];
 
                     const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    mesh.receiveShadow = true;
                     mesh.imageMaterial = imageMaterial;
+
+                    const shadowMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                      const material = transparentMaterial;
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.castShadow = true;
+                      return mesh;
+                    })();
+                    mesh.add(shadowMesh);
+
                     return mesh;
                   })();
                   result.add(planeMesh);
@@ -955,6 +970,16 @@ class Rend {
                   mesh.position.y = 1;
                   mesh.rotation.x = -Math.PI * (3 / 8);
                   mesh.keySpecs = keySpecs;
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
+                    const material = transparentMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  mesh.add(shadowMesh);
+
                   return mesh;
                 })();
                 scene.add(keyboardMesh);

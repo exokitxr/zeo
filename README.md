@@ -68,6 +68,7 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
             shininess: 0,
           })
         );
+        sphere.castShadow = true;
         const startY = 1.2;
         sphere.position.y = startY;
         scene.add(sphere);

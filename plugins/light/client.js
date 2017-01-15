@@ -1,3 +1,5 @@
+const SHADOW_MAP_SIZE = 2048;
+
 class Light {
   constructor(archae) {
     this._archae = archae;
@@ -45,7 +47,13 @@ class Light {
           }
 
           createdCallback() {
-            const light = new THREE.DirectionalLight(0xFFFFFF, 2);
+            const light = (() => {
+              const light = new THREE.DirectionalLight(0xFFFFFF, 2);
+              light.shadow.mapSize.width = SHADOW_MAP_SIZE;
+              light.shadow.mapSize.height = SHADOW_MAP_SIZE;
+              light.castShadow = true;
+              return light;
+            })();
             scene.add(light);
             this.light = light;
 
