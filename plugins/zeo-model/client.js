@@ -52,7 +52,7 @@ class Model {
       zeo,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = zeo;
+        const {THREE, scene} = zeo;
 
         const _requestModel = file => file.fetch({
           type: 'json',
