@@ -48,7 +48,7 @@ const getCheckboxSrc = (label, checkboxValue, onclick) => `\
         </div>
       </a>`
     :
-      `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="{onclick}">
+      `<a style="display: flex; width: 100px; height: 100px; justify-content: center; align-items: center;" onclick="${onclick}">
         <div style="display: flex; width: ${(50 * 2) - (6 * 2)}px; height: 50px; padding: 2px; border: 6px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
           <div style="width: ${50 - ((6 * 2) + (2 * 2))}px; height: ${50 - ((6 * 2) + (2 * 2))}px; background-color: #CCC;"></div>
         </div>
