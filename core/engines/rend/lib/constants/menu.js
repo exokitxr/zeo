@@ -6,4 +6,6 @@ export const WORLD_WIDTH = 2;
 export const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 export const WORLD_DEPTH = WORLD_WIDTH / 50;
 
+export const DEFAULT_USER_HEIGHT = 1.6;
+
 export const STATS_REFRESH_RATE = 1000;

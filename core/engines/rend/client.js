@@ -8,6 +8,7 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
+  DEFAULT_USER_HEIGHT,
   STATS_REFRESH_RATE,
 } from './lib/constants/menu';
 import {
@@ -94,6 +95,9 @@ class Rend {
         // main state
         let menu = null;
 
+        const menuState = {
+          open: true,
+        };
         const focusState = {
           type: '',
         };
@@ -769,9 +773,8 @@ class Rend {
                 });
 
                 const menuMesh = (() => {
-                  const result = new THREE.Object3D();
-                  result.position.y = 1.5;
-                  result.position.z = -1;
+                  const object = new THREE.Object3D();
+                  object.position.y = DEFAULT_USER_HEIGHT;
 
                   const imageMaterial = (() => {
                     const shaderUniforms = THREE.UniformsUtils.clone(menuImageShader.uniforms);
@@ -853,6 +856,8 @@ class Rend {
                     const materials = [solidMaterial, imageMaterial];
 
                     const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    // mesh.position.y = 1.5;
+                    mesh.position.z = -1;
                     mesh.receiveShadow = true;
                     mesh.imageMaterial = imageMaterial;
 
@@ -867,10 +872,10 @@ class Rend {
 
                     return mesh;
                   })();
-                  result.add(planeMesh);
-                  result.planeMesh = planeMesh;
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
-                  return result;
+                  return object;
                 })();
                 scene.add(menuMesh);
 
@@ -902,16 +907,6 @@ class Rend {
                 scene.add(menuDotMeshes.right);
 
                 const keyboardMesh = (() => {
-                  const _requestKeyboardImage = () => new Promise((accept, reject) => {
-                    const img = new Image();
-                    img.src = keyboardImgSrc;
-                    img.onload = () => {
-                      accept(img);
-                    };
-                    img.onerror = err => {
-                      reject(err);
-                    };
-                  });
                   const keySpecs = (() => {
                     const div = document.createElement('div');
                     div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
@@ -935,52 +930,72 @@ class Rend {
                     return result;
                   })();
 
-                  const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
-                  const material = (() => {
-                    const texture = new THREE.Texture(
-                      transparentImg,
-                      THREE.UVMapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.LinearFilter,
-                      THREE.LinearFilter,
-                      THREE.RGBAFormat,
-                      THREE.UnsignedByteType,
-                      16
-                    );
+                  const object = new THREE.Object3D();
+                  object.position.y = DEFAULT_USER_HEIGHT;
+                  object.keySpecs = keySpecs;
 
-                    _requestKeyboardImage()
-                      .then(img => {
-                        texture.image = img;
-                        texture.needsUpdate = true;
-                      })
-                      .catch(err => {
-                        console.warn(err);
-                      });
-
-                    const material = new THREE.MeshBasicMaterial({
-                      map: texture,
-                      side: THREE.DoubleSide,
-                      transparent: true,
-                      alphaTest: 0.5,
+                  const planeMesh = (() => {
+                    const _requestKeyboardImage = () => new Promise((accept, reject) => {
+                      const img = new Image();
+                      img.src = keyboardImgSrc;
+                      img.onload = () => {
+                        accept(img);
+                      };
+                      img.onerror = err => {
+                        reject(err);
+                      };
                     });
-                    return material;
-                  })();
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.y = 1;
-                  mesh.rotation.x = -Math.PI * (3 / 8);
-                  mesh.keySpecs = keySpecs;
 
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
-                    const material = transparentMaterial;
+                    const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
+                    const material = (() => {
+                      const texture = new THREE.Texture(
+                        transparentImg,
+                        THREE.UVMapping,
+                        THREE.ClampToEdgeWrapping,
+                        THREE.ClampToEdgeWrapping,
+                        THREE.LinearFilter,
+                        THREE.LinearFilter,
+                        THREE.RGBAFormat,
+                        THREE.UnsignedByteType,
+                        16
+                      );
+
+                      _requestKeyboardImage()
+                        .then(img => {
+                          texture.image = img;
+                          texture.needsUpdate = true;
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
+
+                      const material = new THREE.MeshBasicMaterial({
+                        map: texture,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        alphaTest: 0.5,
+                      });
+                      return material;
+                    })();
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
+                    mesh.position.y = 1 - DEFAULT_USER_HEIGHT;
+                    mesh.rotation.x = -Math.PI * (3 / 8);
+
+                    const shadowMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
+                      const material = transparentMaterial;
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.castShadow = true;
+                      return mesh;
+                    })();
+                    mesh.add(shadowMesh);
+
                     return mesh;
                   })();
-                  mesh.add(shadowMesh);
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
-                  return mesh;
+                  return object;
                 })();
                 scene.add(keyboardMesh);
 
@@ -1109,264 +1124,112 @@ class Rend {
                   }
                 });
                 const trigger = e => {
-                  const oldStates = {
-                    worldsState: {
-                      selectedName: worldsState.selectedName,
-                    },
-                    elementsState: {
-                      selectedKeyPath: elementsState.selectedKeyPath,
-                      draggingKeyPath: elementsState.draggingKeyPath,
-                    },
-                    filesState: {
-                      selectedName: filesState.selectedName,
-                    },
-                    elementAttributeFilesState: {
-                      selectedName: elementAttributeFilesState.selectedName,
-                    },
-                  };
+                  const {open} = menuState;
 
-                  const _doSetPosition = e => {
-                    const {side} = e;
-                    const {positioningSide} = elementsState;
+                  if (open) {
+                    const oldStates = {
+                      worldsState: {
+                        selectedName: worldsState.selectedName,
+                      },
+                      elementsState: {
+                        selectedKeyPath: elementsState.selectedKeyPath,
+                        draggingKeyPath: elementsState.draggingKeyPath,
+                      },
+                      filesState: {
+                        selectedName: filesState.selectedName,
+                      },
+                      elementAttributeFilesState: {
+                        selectedName: elementAttributeFilesState.selectedName,
+                      },
+                    };
 
-                    if (positioningSide && side === positioningSide) {
-                      const {positioningName} = elementsState;
-                      const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
+                    const _doSetPosition = e => {
+                      const {side} = e;
+                      const {positioningSide} = elementsState;
 
-                      const element = menuUtils.getElementKeyPath({
-                        elements: elementsState.elements,
-                        availableElements: elementsState.availableElements,
-                        clipboardElements: elementsState.clipboardElements,
-                      }, oldElementsSelectedKeyPath);
-                      const instance = menuUtils.getElementKeyPath({
-                        elements: elementsState.elementInstances,
-                      }, oldElementsSelectedKeyPath);
+                      if (positioningSide && side === positioningSide) {
+                        const {positioningName} = elementsState;
+                        const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
 
-                      const {position, quaternion, scale} = positioningMesh;
-                      const newValue = position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
-                      const newAttributeValue = JSON.stringify(newValue);
-                      element.setAttribute(positioningName, newAttributeValue);
-                      instance.setAttribute(positioningName, newAttributeValue);
+                        const element = menuUtils.getElementKeyPath({
+                          elements: elementsState.elements,
+                          availableElements: elementsState.availableElements,
+                          clipboardElements: elementsState.clipboardElements,
+                        }, oldElementsSelectedKeyPath);
+                        const instance = menuUtils.getElementKeyPath({
+                          elements: elementsState.elementInstances,
+                        }, oldElementsSelectedKeyPath);
 
-                      elementsState.positioningName = null;
-                      elementsState.positioningSide = null;
+                        const {position, quaternion, scale} = positioningMesh;
+                        const newValue = position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
+                        const newAttributeValue = JSON.stringify(newValue);
+                        element.setAttribute(positioningName, newAttributeValue);
+                        instance.setAttribute(positioningName, newAttributeValue);
 
-                      _saveElements();
+                        elementsState.positioningName = null;
+                        elementsState.positioningSide = null;
 
-                      _updatePages();
+                        _saveElements();
 
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  };
-                  const _doClick = e => {
-                    const {side} = e;
-                    const menuHoverState = menuHoverStates[side];
-                    const {intersectionPoint} = menuHoverState;
+                        _updatePages();
 
-                    if (intersectionPoint) {
-                      const {anchor} = menuHoverState;
-                      const onclick = (anchor && anchor.onclick) || '';
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _doClick = e => {
+                      const {side} = e;
+                      const menuHoverState = menuHoverStates[side];
+                      const {intersectionPoint} = menuHoverState;
 
-                      focusState.type = '';
-                      worldsState.selectedName = '';
-                      filesState.selectedName = '';
-                      elementAttributeFilesState.selectedName = '';
+                      if (intersectionPoint) {
+                        const {anchor} = menuHoverState;
+                        const onclick = (anchor && anchor.onclick) || '';
 
-                      const _ensureFilesLoaded = targetState => {
-                        const {loaded} = targetState;
+                        focusState.type = '';
+                        worldsState.selectedName = '';
+                        filesState.selectedName = '';
+                        elementAttributeFilesState.selectedName = '';
 
-                        if (!loaded) {
-                          targetState.loading = true;
+                        const _ensureFilesLoaded = targetState => {
+                          const {loaded} = targetState;
 
-                          const {cwd} = targetState;
-                          fs.getDirectory(cwd)
-                            .then(files => {
-                              targetState.files = menuUtils.cleanFiles(files);
-                              targetState.loading = false;
+                          if (!loaded) {
+                            targetState.loading = true;
 
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        }
-                      };
+                            const {cwd} = targetState;
+                            fs.getDirectory(cwd)
+                              .then(files => {
+                                targetState.files = menuUtils.cleanFiles(files);
+                                targetState.loading = false;
 
-                      let match;
-                      if (onclick === 'back') {
-                        ui.cancelTransition();
-
-                        if (ui.getPages().length > 1) {
-                          ui.popPage();
-                        }
-                      } else if (onclick === 'worlds') {
-                        ui.cancelTransition();
-
-                        ui.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
-                          {
-                            type: 'html',
-                            src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('worlds'),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
-                            pixelated: true,
+                                _updatePages();
+                              })
+                              .catch(err => {
+                                console.warn(err);
+                              });
                           }
-                        ]), {
-                          type: 'worlds',
-                          state: {
-                            worlds: worldsState,
-                            focus: focusState,
-                          },
-                        });
-                      } else if (match = onclick.match(/^world:(.+)$/)) {
-                        const name = match[1];
+                        };
 
-                        worldsState.selectedName = name;
+                        let match;
+                        if (onclick === 'back') {
+                          ui.cancelTransition();
 
-                        _updatePages();
-                      } else if (onclick === 'worlds:rename') {
-                        const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
-                        if (oldWorldsSelectedName) {
-                          worldsState.inputText = '';
-                          worldsState.inputIndex = 0;
-                          worldsState.inputValue = 0;
-
-                          focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
-
-                          _updatePages();
-                        }
-                      } else if (onclick === 'worlds:remove') {
-                        const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
-                        if (oldWorldsSelectedName) {
-                          const {worlds} = worldsState;
-                          worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
-
-                          _updatePages();
-                        }
-                      } else if (onclick === 'worlds:create') {
-                        worldsState.inputText = '';
-                        worldsState.inputIndex = 0;
-                        worldsState.inputValue = 0;
-                        
-                        focusState.type = 'worlds:create';
-
-                        _updatePages();
-                      } else if (onclick === 'mods') {
-                        ui.cancelTransition();
-
-                        ui.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
-                          {
-                            type: 'html',
-                            src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('mods'),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
-                            pixelated: true,
+                          if (ui.getPages().length > 1) {
+                            ui.popPage();
                           }
-                        ]), {
-                          type: 'mods',
-                          state: {
-                            mods: modsState,
-                            focus: focusState,
-                          },
-                        });
-                      } else if (match = onclick.match(/^mods:(installed|local|remote)$/)) {
-                        const tab = match[1];
+                        } else if (onclick === 'worlds') {
+                          ui.cancelTransition();
 
-                        if (tab === 'local') {
-                          modsState.loadingLocal = true;
-
-                          _getLocalModSpecs()
-                            .then(localMods => {
-                              modsState.localMods = localMods;
-                              modsState.loadingLocal = false;
-
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (tab === 'remote') {
-                          modsState.inputText = '';
-                          modsState.inputIndex = 0;
-                          modsState.inputValue = 0;
-                          modsState.loadingRemote = true;
-
-                          _getRemoteModSpecs(modsState.inputText)
-                            .then(remoteMods => {
-                              modsState.remoteMods = remoteMods;
-                              modsState.loadingRemote = false;
-
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        }
-
-                        modsState.tab = tab;
-
-                        _updatePages();
-                      } else if (match = onclick.match(/^mod:(.+)$/)) {
-                        const name = match[1];
-
-                        ui.cancelTransition();
-
-                        modState.modName = name;
-                        modState.mod = null;
-                        modState.loading = true;
-
-                        _getModSpec(name)
-                          .then(modSpec => {
-                            modState.mod = modSpec;
-                            modState.loading = false;
-
-                            _updatePages();
-                          })
-                          .catch(err => {
-                            console.warn(err);
-
-                            modState.loading = false;
-
-                            _updatePages();
-                          });
-
-                        ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
-                          const displayName = modName.match(/([^\/]*)$/)[1];
-                          const installed = mods.some(m => m.name === modName);
-                          const conflicting = mods.some(m => m.displayName === displayName);
-
-                          return [
+                          ui.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
-                              src: menuRenderer.getModPageSrc({modName, mod, installed, conflicting}),
-                            },
-                            {
-                              type: 'html',
-                              src: menuRenderer.getModPageReadmeSrc({modName, mod, loading}),
-                              x: 500,
-                              y: 150 + 2,
-                              w: WIDTH - 500,
-                              h: HEIGHT - (150 + 2),
-                              scroll: true,
+                              src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
                             },
                             {
                               type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('mod:' + displayName),
+                              img: creatureUtils.makeAnimatedCreature('worlds'),
                               x: 150,
                               y: 0,
                               w: 150,
@@ -1374,95 +1237,203 @@ class Rend {
                               frameTime: 300,
                               pixelated: true,
                             }
-                          ];
-                        }, {
-                          type: 'mod',
-                          state: {
-                            mod: modState,
-                            mods: modsState,
-                          },
-                        });
-                      } else if (match = onclick.match(/^getmod:(.+)$/)) {
-                        const name = match[1];
-
-                        currentWorld.requestAddMod(name)
-                          .then(() => {
-                            _updatePages();
-                          })
-                          .catch(err => {
-                            console.warn(err);
+                          ]), {
+                            type: 'worlds',
+                            state: {
+                              worlds: worldsState,
+                              focus: focusState,
+                            },
                           });
-                      } else if (match = onclick.match(/^removemod:(.+)$/)) {
-                        const name = match[1];
+                        } else if (match = onclick.match(/^world:(.+)$/)) {
+                          const name = match[1];
 
-                        currentWorld.requestRemoveMod(name)
-                          .then(() => {
+                          worldsState.selectedName = name;
+
+                          _updatePages();
+                        } else if (onclick === 'worlds:rename') {
+                          const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
+                          if (oldWorldsSelectedName) {
+                            worldsState.inputText = '';
+                            worldsState.inputIndex = 0;
+                            worldsState.inputValue = 0;
+
+                            focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
+
                             _updatePages();
-                          })
-                          .catch(err => {
-                            console.warn(err);
-                          });
-                      } else if (onclick === 'config') {
-                        ui.cancelTransition();
-
-                        ui.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
-                          {
-                            type: 'html',
-                            src: menuRenderer.getConfigPageSrc(),
-                          },
-                          {
-                            type: 'html',
-                            src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, statsCheckboxValue}),
-                            x: 500,
-                            y: 150 + 2,
-                            w: WIDTH - 500,
-                            h: HEIGHT - (150 + 2),
-                            scroll: true,
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('preferences'),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
-                            pixelated: true,
                           }
-                        ]), {
-                          type: 'config',
-                          state: {
-                            config: configState,
-                            focus: focusState,
+                        } else if (onclick === 'worlds:remove') {
+                          const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
+                          if (oldWorldsSelectedName) {
+                            const {worlds} = worldsState;
+                            worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
+
+                            _updatePages();
                           }
-                        });
-                      } else if (onclick === 'elements') {
-                        ui.cancelTransition();
+                        } else if (onclick === 'worlds:create') {
+                          worldsState.inputText = '';
+                          worldsState.inputIndex = 0;
+                          worldsState.inputValue = 0;
+                          
+                          focusState.type = 'worlds:create';
 
-                        ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
-                          const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
-                          const focusAttribute = match && match[1];
+                          _updatePages();
+                        } else if (onclick === 'mods') {
+                          ui.cancelTransition();
 
-                          return [
+                          ui.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
-                              src: menuRenderer.getElementsPageSrc({selectedKeyPath}),
+                              src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
+                            },
+                            {
+                              type: 'image',
+                              img: creatureUtils.makeAnimatedCreature('mods'),
+                              x: 150,
+                              y: 0,
+                              w: 150,
+                              h: 150,
+                              frameTime: 300,
+                              pixelated: true,
+                            }
+                          ]), {
+                            type: 'mods',
+                            state: {
+                              mods: modsState,
+                              focus: focusState,
+                            },
+                          });
+                        } else if (match = onclick.match(/^mods:(installed|local|remote)$/)) {
+                          const tab = match[1];
+
+                          if (tab === 'local') {
+                            modsState.loadingLocal = true;
+
+                            _getLocalModSpecs()
+                              .then(localMods => {
+                                modsState.localMods = localMods;
+                                modsState.loadingLocal = false;
+
+                                _updatePages();
+                              })
+                              .catch(err => {
+                                console.warn(err);
+                              });
+                          } else if (tab === 'remote') {
+                            modsState.inputText = '';
+                            modsState.inputIndex = 0;
+                            modsState.inputValue = 0;
+                            modsState.loadingRemote = true;
+
+                            _getRemoteModSpecs(modsState.inputText)
+                              .then(remoteMods => {
+                                modsState.remoteMods = remoteMods;
+                                modsState.loadingRemote = false;
+
+                                _updatePages();
+                              })
+                              .catch(err => {
+                                console.warn(err);
+                              });
+                          }
+
+                          modsState.tab = tab;
+
+                          _updatePages();
+                        } else if (match = onclick.match(/^mod:(.+)$/)) {
+                          const name = match[1];
+
+                          ui.cancelTransition();
+
+                          modState.modName = name;
+                          modState.mod = null;
+                          modState.loading = true;
+
+                          _getModSpec(name)
+                            .then(modSpec => {
+                              modState.mod = modSpec;
+                              modState.loading = false;
+
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+
+                              modState.loading = false;
+
+                              _updatePages();
+                            });
+
+                          ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
+                            const displayName = modName.match(/([^\/]*)$/)[1];
+                            const installed = mods.some(m => m.name === modName);
+                            const conflicting = mods.some(m => m.displayName === displayName);
+
+                            return [
+                              {
+                                type: 'html',
+                                src: menuRenderer.getModPageSrc({modName, mod, installed, conflicting}),
+                              },
+                              {
+                                type: 'html',
+                                src: menuRenderer.getModPageReadmeSrc({modName, mod, loading}),
+                                x: 500,
+                                y: 150 + 2,
+                                w: WIDTH - 500,
+                                h: HEIGHT - (150 + 2),
+                                scroll: true,
+                              },
+                              {
+                                type: 'image',
+                                img: creatureUtils.makeAnimatedCreature('mod:' + displayName),
+                                x: 150,
+                                y: 0,
+                                w: 150,
+                                h: 150,
+                                frameTime: 300,
+                                pixelated: true,
+                              }
+                            ];
+                          }, {
+                            type: 'mod',
+                            state: {
+                              mod: modState,
+                              mods: modsState,
+                            },
+                          });
+                        } else if (match = onclick.match(/^getmod:(.+)$/)) {
+                          const name = match[1];
+
+                          currentWorld.requestAddMod(name)
+                            .then(() => {
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (match = onclick.match(/^removemod:(.+)$/)) {
+                          const name = match[1];
+
+                          currentWorld.requestRemoveMod(name)
+                            .then(() => {
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (onclick === 'config') {
+                          ui.cancelTransition();
+
+                          ui.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
+                            {
+                              type: 'html',
+                              src: menuRenderer.getConfigPageSrc(),
                             },
                             {
                               type: 'html',
-                              src: menuRenderer.getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
+                              src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, statsCheckboxValue}),
                               x: 500,
                               y: 150 + 2,
-                              w: WIDTH - (500 + 600),
-                              h: HEIGHT - (150 + 2),
-                              scroll: true,
-                            },
-                            {
-                              type: 'html',
-                              src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue, focusAttribute}),
-                              x: 500 + (WIDTH - (500 + 600)),
-                              y: 150 + 2,
-                              w: 600,
+                              w: WIDTH - 500,
                               h: HEIGHT - (150 + 2),
                               scroll: true,
                             },
@@ -1476,401 +1447,70 @@ class Rend {
                               frameTime: 300,
                               pixelated: true,
                             }
-                          ];
-                        }, {
-                          type: 'elements',
-                          state: {
-                            elements: _cleanElementsState(elementsState),
-                            focus: focusState,
-                          },
-                        });
-                      } else if (onclick === 'files') {
-                        ui.cancelTransition();
-
-                        _ensureFilesLoaded(filesState);
-
-                        ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
-                          {
-                            type: 'html',
-                            src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'file'}),
-                          },
-                          {
-                            type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('files'),
-                            x: 150,
-                            y: 0,
-                            w: 150,
-                            h: 150,
-                            frameTime: 300,
-                            pixelated: true,
-                          }
-                        ]), {
-                          type: 'files',
-                          state: {
-                            files: filesState,
-                            focus: focusState,
-                          },
-                        });
-                      } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
-                        ui.cancelTransition();
-
-                        const target = match[1];
-                        const name = match[2];
-                        const targetState = (() => {
-                          switch (target) {
-                            case 'file': return filesState;
-                            case 'elementAttributeFile': return elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-
-                        const _chdir = newCwd => {
-                          targetState.loading = true;
-
-                          targetState.cwd = newCwd;
-                          fs.setCwd(newCwd);
-                          fs.getDirectory(newCwd)
-                            .then(files => {
-                              targetState.files = menuUtils.cleanFiles(files);
-                              targetState.loading = false;
-
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-
-                          _updatePages();
-                        };
-
-                        if (name !== '..') {
-                          const {files} = targetState;
-                          const file = files.find(f => f.name === name);
-                          const {type} = file;
-
-                          if (type === 'file') {
-                            targetState.selectedName = name;
-
-                            _updatePages();
-                          } else if (type === 'directory') {
-                            const {cwd: oldCwd} = targetState;
-                            const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
-                            _chdir(newCwd);
-                          }
-                        } else {
-                          const {cwd: oldCwd} = targetState;
-                          const newCwd = (() => {
-                            const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
-                            if (replacedCwd !== '') {
-                              return replacedCwd;
-                            } else {
-                              return '/';
+                          ]), {
+                            type: 'config',
+                            state: {
+                              config: configState,
+                              focus: focusState,
                             }
-                          })();
-                          _chdir(newCwd);
-                        }
-                      } else if (onclick === 'elementAttributeFiles:select') {
-                        const {
-                          elementsState: {selectedKeyPath: oldElementsSelectedKeyPath},
-                          elementAttributeFilesState: {selectedName: oldFilesSelectedName},
-                        } = oldStates;
-
-                        if (oldFilesSelectedName) {
+                          });
+                        } else if (onclick === 'elements') {
                           ui.cancelTransition();
 
-                          const {choosingName} = elementsState;
-                          const element = menuUtils.getElementKeyPath({
-                            elements: elementsState.elements,
-                            availableElements: elementsState.availableElements,
-                            clipboardElements: elementsState.clipboardElements,
-                          }, oldElementsSelectedKeyPath);
-                          const instance = menuUtils.getElementKeyPath({
-                            elements: elementsState.elementInstances,
-                          }, oldElementsSelectedKeyPath);
+                          ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
+                            const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
+                            const focusAttribute = match && match[1];
 
-                          const {cwd} = elementAttributeFilesState;
-                          const selectPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-                          const newAttributeValue = JSON.stringify(selectPath);
-                          element.setAttribute(choosingName, newAttributeValue);
-                          instance.setAttribute(choosingName, newAttributeValue);
-
-                          _saveElements();
-
-                          ui.popPage();
-                        }
-                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
-                        const target = match[1];
-                        const type = match[2];
-
-                        const targetState = (() => {
-                          switch (target) {
-                            case 'file': return filesState;
-                            case 'elementAttributeFile': return elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-                        const oldTargetState = (() => {
-                          switch (target) {
-                            case 'file': return oldStates.filesState;
-                            case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-                        const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                        if (oldFilesSelectedName) {
-                          const {cwd} = targetState;
-                          const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-
-                          targetState.selectedName = oldFilesSelectedName;
-                          targetState.clipboardType = type;
-                          targetState.clipboardPath = cutPath;
-
-                          _updatePages();
-                        }
-                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:paste$/)) {
-                        const target = match[1];
-                        const targetState = (() => {
-                          switch (target) {
-                            case 'file': return filesState;
-                            case 'elementAttributeFile': return elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-
-                        const {clipboardPath} = targetState;
-
-                        if (clipboardPath) {
-                          targetState.uploading = true;
-
-                          const {cwd, clipboardType, clipboardPath} = targetState;
-
-                          const src = clipboardPath;
-                          const name = clipboardPath.match(/\/([^\/]*)$/)[1];
-                          const dst = menuUtils.pathJoin(cwd, name);
-                          fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
-                            .then(() => fs.getDirectory(cwd)
-                              .then(files => {
-                                targetState.files = menuUtils.cleanFiles(files);
-                                targetState.selectedName = name;
-                                targetState.uploading = false;
-                                if (clipboardType === 'cut') {
-                                  targetState.clipboardType = 'copy';
-                                  targetState.clipboardPath = dst;
-                                }
-
-                                _updatePages();
-                              })
-                            )
-                            .catch(err => {
-                              console.warn(err);
-
-                              targetState.uploading = true;
-
-                              _updatePages();
-                            });
-
-                          _updatePages();
-                        }
-                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
-                        const target = match[1];
-
-                        focusState.type = target + 's:createdirectory';
-
-                        _updatePages();
-                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:rename$/)) {
-                        const target = match[1];
-                        const targetState = (() => {
-                          switch (target) {
-                            case 'file': return filesState;
-                            case 'elementAttributeFile': return elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-                        const oldTargetState = (() => {
-                          switch (target) {
-                            case 'file': return oldStates.filesState;
-                            case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-                        const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                        if (oldFilesSelectedName) {
-                          targetState.inputText = '';
-                          targetState.inputIndex = 0;
-                          targetState.inputValue = 0;
-
-                          focusState.type = 'files:rename:' + oldFilesSelectedName;
-
-                          _updatePages();
-                        }
-                      } else if (match = onclick.match(/^(file|elementAttributeFile)s:remove$/)) {
-                        const target = match[1];
-                        const targetState = (() => {
-                          switch (target) {
-                            case 'file': return filesState;
-                            case 'elementAttributeFile': return elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-                        const oldTargetState = (() => {
-                          switch (target) {
-                            case 'file': return oldStates.filesState;
-                            case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-                        const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                        if (oldFilesSelectedName) {
-                          targetState.uploading = true;
-
-                          const {cwd} = targetState;
-                          const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-                          fs.remove(p)
-                            .then(() => fs.getDirectory(cwd)
-                              .then(files => {
-                                targetState.files = menuUtils.cleanFiles(files);
-                                const {clipboardPath} = targetState;
-                                if (clipboardPath === p) {
-                                  targetState.clipboardType = null;
-                                  targetState.clipboardPath = '';
-                                }
-                                targetState.uploading = false;
-
-                                _updatePages();
-                              })
-                            )
-                            .catch(err => {
-                              console.warn(err);
-
-                              targetState.uploading = false;
-
-                              _updatePages();
-                            });
-
-                          _updatePages();
-                        }
-                      } else if (onclick === 'elements:remove') {
-                        const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
-                        if (oldElementsSelectedKeyPath.length > 0) {
-                          const elementsSpec = {
-                            elements: elementsState.elements,
-                            availableElements: elementsState.availableElements,
-                            clipboardElements: elementsState.clipboardElements,
-                          };
-                          menuUtils.removeElementKeyPath(elementsSpec, oldElementsSelectedKeyPath);
-                          const elementInstancesSpec = {
-                            elements: elementsState.elementInstances,
-                          };
-                          if (oldElementsSelectedKeyPath[0] === 'elements') {
-                            const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
-                            menuUtils.destructElement(instance);
-                          }
-
-                          elementsState.selectedKeyPath = [];
-                          elementsState.draggingKeyPath = [];
-
-                          _saveElements();
-
-                          _updatePages();
-                        }
-                      } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
-                        const attributeName = match[1];
-                        const action = match[2];
-                        const value = match[3];
-
-                        const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
-
-                        const element = menuUtils.getElementKeyPath({
-                          elements: elementsState.elements,
-                          availableElements: elementsState.availableElements,
-                          clipboardElements: elementsState.clipboardElements,
-                        }, oldElementsSelectedKeyPath);
-                        const instance = menuUtils.getElementKeyPath({
-                          elements: elementsState.elementInstances,
-                        }, oldElementsSelectedKeyPath);
-                        const {attributeConfigs} = element;
-                        const attributeConfig = attributeConfigs[attributeName];
-
-                        if (action === 'position') {
-                          const oldValue = JSON.parse(element.getAttribute(attributeName));
-                          oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
-                          oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
-                          oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
-
-                          elementsState.positioningName = attributeName;
-                          elementsState.positioningSide = side;
-                        } else if (action === 'focus') {
-                          const {value} = menuHoverState;
-
-                          const {type: attributeType} = attributeConfig;
-                          const textProperties = (() => {
-                            if (attributeType === 'text') {
-                              const valuePx = value * 400;
-                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                            } else if (attributeType === 'number') {
-                              const valuePx = value * 100;
-                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                            } else if (attributeType === 'color') {
-                              const valuePx = value * (400 - (40 + 4));
-                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                            } else if (attributeType === 'file') {
-                              const valuePx = value * 260;
-                              return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                            } else {
-                              return null;
-                            }
-                          })();
-                          if (textProperties) {
-                            elementsState.inputText = menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType);
-                            const {index, px} = textProperties;
-                            elementsState.inputIndex = index;
-                            elementsState.inputValue = px;
-                          }
-
-                          focusState.type = 'element:attribute:' + attributeName;
-                        } else if (action === 'set') {
-                          const newAttributeValue = JSON.stringify(value);
-                          element.setAttribute(attributeName, newAttributeValue);
-                          instance.setAttribute(attributeName, newAttributeValue);
-
-                          _saveElements();
-                        } else if (action === 'tweak') {
-                          const {value} = menuHoverState;
-                          const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attributeConfig;
-
-                          const newValue = (() => {
-                            let n = min + (value * (max - min));
-                            if (step > 0) {
-                              n = Math.floor(n / step) * step;
-                            }
-                            return n;
-                          })();
-                          const newAttributeValue = JSON.stringify(newValue);
-                          element.setAttribute(attributeName, newAttributeValue);
-                          instance.setAttribute(attributeName, newAttributeValue);
-
-                          _saveElements();
-                        } else if (action === 'toggle') {
-                          const newValue = !JSON.parse(element.getAttribute(attributeName));
-                          const newAttributeValue = JSON.stringify(newValue);
-                          element.setAttribute(attributeName, newAttributeValue);
-                          instance.setAttribute(attributeName, newAttributeValue);
-
-                          _saveElements();
-                        } else if (action === 'choose') {
+                            return [
+                              {
+                                type: 'html',
+                                src: menuRenderer.getElementsPageSrc({selectedKeyPath}),
+                              },
+                              {
+                                type: 'html',
+                                src: menuRenderer.getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
+                                x: 500,
+                                y: 150 + 2,
+                                w: WIDTH - (500 + 600),
+                                h: HEIGHT - (150 + 2),
+                                scroll: true,
+                              },
+                              {
+                                type: 'html',
+                                src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue, focusAttribute}),
+                                x: 500 + (WIDTH - (500 + 600)),
+                                y: 150 + 2,
+                                w: 600,
+                                h: HEIGHT - (150 + 2),
+                                scroll: true,
+                              },
+                              {
+                                type: 'image',
+                                img: creatureUtils.makeAnimatedCreature('preferences'),
+                                x: 150,
+                                y: 0,
+                                w: 150,
+                                h: 150,
+                                frameTime: 300,
+                                pixelated: true,
+                              }
+                            ];
+                          }, {
+                            type: 'elements',
+                            state: {
+                              elements: _cleanElementsState(elementsState),
+                              focus: focusState,
+                            },
+                          });
+                        } else if (onclick === 'files') {
                           ui.cancelTransition();
 
-                          elementsState.choosingName = attributeName;
+                          _ensureFilesLoaded(filesState);
 
-                          _ensureFilesLoaded(elementAttributeFilesState);
-
-                          ui.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                          ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
-                              src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
+                              src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'file'}),
                             },
                             {
                               type: 'image',
@@ -1883,178 +1523,563 @@ class Rend {
                               pixelated: true,
                             }
                           ]), {
-                            type: 'elementAttributeFiles',
+                            type: 'files',
                             state: {
-                              elementAttributeFiles: elementAttributeFilesState,
+                              files: filesState,
                               focus: focusState,
                             },
                           });
-                        }
+                        } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
+                          ui.cancelTransition();
 
-                        elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
+                          const target = match[1];
+                          const name = match[2];
+                          const targetState = (() => {
+                            switch (target) {
+                              case 'file': return filesState;
+                              case 'elementAttributeFile': return elementAttributeFilesState;
+                              default: return null;
+                            }
+                          })();
 
-                        _updatePages();
-                      } else if (onclick === 'elements:clearclipboard') {
-                        const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
+                          const _chdir = newCwd => {
+                            targetState.loading = true;
 
-                        elementsState.clipboardElements = [];
-                        if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
-                          elementsState.selectedKeyPath = [];
-                        }
-                        if (oldElementsDraggingKeyPath.length > 0 && oldElementsDraggingKeyPath[0] === 'clipboardElements') {
-                          elementsState.draggingKeyPath = [];
-                        }
+                            targetState.cwd = newCwd;
+                            fs.setCwd(newCwd);
+                            fs.getDirectory(newCwd)
+                              .then(files => {
+                                targetState.files = menuUtils.cleanFiles(files);
+                                targetState.loading = false;
 
-                        _saveElements();
+                                _updatePages();
+                              })
+                              .catch(err => {
+                                console.warn(err);
+                              });
 
-                        _updatePages();
-                      } else if (onclick === 'mods:input') {
-                        const {value} = menuHoverState;
-                        const valuePx = value * (WIDTH - (500 + 40));
+                            _updatePages();
+                          };
 
-                        const {index, px} = getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
+                          if (name !== '..') {
+                            const {files} = targetState;
+                            const file = files.find(f => f.name === name);
+                            const {type} = file;
 
-                        modsState.inputIndex = index;
-                        modsState.inputValue = px;
-                        focusState.type = 'mods';
+                            if (type === 'file') {
+                              targetState.selectedName = name;
 
-                        _updatePages();
-                      } else if (onclick === 'config:input') {
-                        const {value} = menuHoverState;
-                        const valuePx = value * (WIDTH - (500 + 40));
+                              _updatePages();
+                            } else if (type === 'directory') {
+                              const {cwd: oldCwd} = targetState;
+                              const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
+                              _chdir(newCwd);
+                            }
+                          } else {
+                            const {cwd: oldCwd} = targetState;
+                            const newCwd = (() => {
+                              const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
+                              if (replacedCwd !== '') {
+                                return replacedCwd;
+                              } else {
+                                return '/';
+                              }
+                            })();
+                            _chdir(newCwd);
+                          }
+                        } else if (onclick === 'elementAttributeFiles:select') {
+                          const {
+                            elementsState: {selectedKeyPath: oldElementsSelectedKeyPath},
+                            elementAttributeFilesState: {selectedName: oldFilesSelectedName},
+                          } = oldStates;
 
-                        const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+                          if (oldFilesSelectedName) {
+                            ui.cancelTransition();
 
-                        configState.inputIndex = index;
-                        configState.inputValue = px;
-                        focusState.type = 'config';
+                            const {choosingName} = elementsState;
+                            const element = menuUtils.getElementKeyPath({
+                              elements: elementsState.elements,
+                              availableElements: elementsState.availableElements,
+                              clipboardElements: elementsState.clipboardElements,
+                            }, oldElementsSelectedKeyPath);
+                            const instance = menuUtils.getElementKeyPath({
+                              elements: elementsState.elementInstances,
+                            }, oldElementsSelectedKeyPath);
 
-                        _updatePages();
-                      } else if (onclick === 'config:resolution') {
-                        const {value} = menuHoverState;
+                            const {cwd} = elementAttributeFilesState;
+                            const selectPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
+                            const newAttributeValue = JSON.stringify(selectPath);
+                            element.setAttribute(choosingName, newAttributeValue);
+                            instance.setAttribute(choosingName, newAttributeValue);
 
-                        configState.sliderValue = value;
+                            _saveElements();
 
-                        _updatePages();
-                      } else if (onclick === 'config:airlock') {
-                        const {airlockCheckboxValue} = configState;
+                            ui.popPage();
+                          }
+                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
+                          const target = match[1];
+                          const type = match[2];
 
-                        if (!airlockCheckboxValue) {
-                          airlock.enable();
+                          const targetState = (() => {
+                            switch (target) {
+                              case 'file': return filesState;
+                              case 'elementAttributeFile': return elementAttributeFilesState;
+                              default: return null;
+                            }
+                          })();
+                          const oldTargetState = (() => {
+                            switch (target) {
+                              case 'file': return oldStates.filesState;
+                              case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                              default: return null;
+                            }
+                          })();
+                          const {selectedName: oldFilesSelectedName} = oldTargetState;
 
-                          configState.airlockCheckboxValue = true;
+                          if (oldFilesSelectedName) {
+                            const {cwd} = targetState;
+                            const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
+
+                            targetState.selectedName = oldFilesSelectedName;
+                            targetState.clipboardType = type;
+                            targetState.clipboardPath = cutPath;
+
+                            _updatePages();
+                          }
+                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:paste$/)) {
+                          const target = match[1];
+                          const targetState = (() => {
+                            switch (target) {
+                              case 'file': return filesState;
+                              case 'elementAttributeFile': return elementAttributeFilesState;
+                              default: return null;
+                            }
+                          })();
+
+                          const {clipboardPath} = targetState;
+
+                          if (clipboardPath) {
+                            targetState.uploading = true;
+
+                            const {cwd, clipboardType, clipboardPath} = targetState;
+
+                            const src = clipboardPath;
+                            const name = clipboardPath.match(/\/([^\/]*)$/)[1];
+                            const dst = menuUtils.pathJoin(cwd, name);
+                            fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
+                              .then(() => fs.getDirectory(cwd)
+                                .then(files => {
+                                  targetState.files = menuUtils.cleanFiles(files);
+                                  targetState.selectedName = name;
+                                  targetState.uploading = false;
+                                  if (clipboardType === 'cut') {
+                                    targetState.clipboardType = 'copy';
+                                    targetState.clipboardPath = dst;
+                                  }
+
+                                  _updatePages();
+                                })
+                              )
+                              .catch(err => {
+                                console.warn(err);
+
+                                targetState.uploading = true;
+
+                                _updatePages();
+                              });
+
+                            _updatePages();
+                          }
+                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
+                          const target = match[1];
+
+                          focusState.type = target + 's:createdirectory';
+
+                          _updatePages();
+                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:rename$/)) {
+                          const target = match[1];
+                          const targetState = (() => {
+                            switch (target) {
+                              case 'file': return filesState;
+                              case 'elementAttributeFile': return elementAttributeFilesState;
+                              default: return null;
+                            }
+                          })();
+                          const oldTargetState = (() => {
+                            switch (target) {
+                              case 'file': return oldStates.filesState;
+                              case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                              default: return null;
+                            }
+                          })();
+                          const {selectedName: oldFilesSelectedName} = oldTargetState;
+
+                          if (oldFilesSelectedName) {
+                            targetState.inputText = '';
+                            targetState.inputIndex = 0;
+                            targetState.inputValue = 0;
+
+                            focusState.type = 'files:rename:' + oldFilesSelectedName;
+
+                            _updatePages();
+                          }
+                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:remove$/)) {
+                          const target = match[1];
+                          const targetState = (() => {
+                            switch (target) {
+                              case 'file': return filesState;
+                              case 'elementAttributeFile': return elementAttributeFilesState;
+                              default: return null;
+                            }
+                          })();
+                          const oldTargetState = (() => {
+                            switch (target) {
+                              case 'file': return oldStates.filesState;
+                              case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                              default: return null;
+                            }
+                          })();
+                          const {selectedName: oldFilesSelectedName} = oldTargetState;
+
+                          if (oldFilesSelectedName) {
+                            targetState.uploading = true;
+
+                            const {cwd} = targetState;
+                            const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
+                            fs.remove(p)
+                              .then(() => fs.getDirectory(cwd)
+                                .then(files => {
+                                  targetState.files = menuUtils.cleanFiles(files);
+                                  const {clipboardPath} = targetState;
+                                  if (clipboardPath === p) {
+                                    targetState.clipboardType = null;
+                                    targetState.clipboardPath = '';
+                                  }
+                                  targetState.uploading = false;
+
+                                  _updatePages();
+                                })
+                              )
+                              .catch(err => {
+                                console.warn(err);
+
+                                targetState.uploading = false;
+
+                                _updatePages();
+                              });
+
+                            _updatePages();
+                          }
+                        } else if (onclick === 'elements:remove') {
+                          const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
+                          if (oldElementsSelectedKeyPath.length > 0) {
+                            const elementsSpec = {
+                              elements: elementsState.elements,
+                              availableElements: elementsState.availableElements,
+                              clipboardElements: elementsState.clipboardElements,
+                            };
+                            menuUtils.removeElementKeyPath(elementsSpec, oldElementsSelectedKeyPath);
+                            const elementInstancesSpec = {
+                              elements: elementsState.elementInstances,
+                            };
+                            if (oldElementsSelectedKeyPath[0] === 'elements') {
+                              const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
+                              menuUtils.destructElement(instance);
+                            }
+
+                            elementsState.selectedKeyPath = [];
+                            elementsState.draggingKeyPath = [];
+
+                            _saveElements();
+
+                            _updatePages();
+                          }
+                        } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
+                          const attributeName = match[1];
+                          const action = match[2];
+                          const value = match[3];
+
+                          const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
+
+                          const element = menuUtils.getElementKeyPath({
+                            elements: elementsState.elements,
+                            availableElements: elementsState.availableElements,
+                            clipboardElements: elementsState.clipboardElements,
+                          }, oldElementsSelectedKeyPath);
+                          const instance = menuUtils.getElementKeyPath({
+                            elements: elementsState.elementInstances,
+                          }, oldElementsSelectedKeyPath);
+                          const {attributeConfigs} = element;
+                          const attributeConfig = attributeConfigs[attributeName];
+
+                          if (action === 'position') {
+                            const oldValue = JSON.parse(element.getAttribute(attributeName));
+                            oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
+                            oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
+                            oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
+
+                            elementsState.positioningName = attributeName;
+                            elementsState.positioningSide = side;
+                          } else if (action === 'focus') {
+                            const {value} = menuHoverState;
+
+                            const {type: attributeType} = attributeConfig;
+                            const textProperties = (() => {
+                              if (attributeType === 'text') {
+                                const valuePx = value * 400;
+                                return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                              } else if (attributeType === 'number') {
+                                const valuePx = value * 100;
+                                return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                              } else if (attributeType === 'color') {
+                                const valuePx = value * (400 - (40 + 4));
+                                return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                              } else if (attributeType === 'file') {
+                                const valuePx = value * 260;
+                                return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                              } else {
+                                return null;
+                              }
+                            })();
+                            if (textProperties) {
+                              elementsState.inputText = menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType);
+                              const {index, px} = textProperties;
+                              elementsState.inputIndex = index;
+                              elementsState.inputValue = px;
+                            }
+
+                            focusState.type = 'element:attribute:' + attributeName;
+                          } else if (action === 'set') {
+                            const newAttributeValue = JSON.stringify(value);
+                            element.setAttribute(attributeName, newAttributeValue);
+                            instance.setAttribute(attributeName, newAttributeValue);
+
+                            _saveElements();
+                          } else if (action === 'tweak') {
+                            const {value} = menuHoverState;
+                            const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attributeConfig;
+
+                            const newValue = (() => {
+                              let n = min + (value * (max - min));
+                              if (step > 0) {
+                                n = Math.floor(n / step) * step;
+                              }
+                              return n;
+                            })();
+                            const newAttributeValue = JSON.stringify(newValue);
+                            element.setAttribute(attributeName, newAttributeValue);
+                            instance.setAttribute(attributeName, newAttributeValue);
+
+                            _saveElements();
+                          } else if (action === 'toggle') {
+                            const newValue = !JSON.parse(element.getAttribute(attributeName));
+                            const newAttributeValue = JSON.stringify(newValue);
+                            element.setAttribute(attributeName, newAttributeValue);
+                            instance.setAttribute(attributeName, newAttributeValue);
+
+                            _saveElements();
+                          } else if (action === 'choose') {
+                            ui.cancelTransition();
+
+                            elementsState.choosingName = attributeName;
+
+                            _ensureFilesLoaded(elementAttributeFilesState);
+
+                            ui.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                              {
+                                type: 'html',
+                                src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
+                              },
+                              {
+                                type: 'image',
+                                img: creatureUtils.makeAnimatedCreature('files'),
+                                x: 150,
+                                y: 0,
+                                w: 150,
+                                h: 150,
+                                frameTime: 300,
+                                pixelated: true,
+                              }
+                            ]), {
+                              type: 'elementAttributeFiles',
+                              state: {
+                                elementAttributeFiles: elementAttributeFilesState,
+                                focus: focusState,
+                              },
+                            });
+                          }
+
+                          elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
+
+                          _updatePages();
+                        } else if (onclick === 'elements:clearclipboard') {
+                          const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
+
+                          elementsState.clipboardElements = [];
+                          if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
+                            elementsState.selectedKeyPath = [];
+                          }
+                          if (oldElementsDraggingKeyPath.length > 0 && oldElementsDraggingKeyPath[0] === 'clipboardElements') {
+                            elementsState.draggingKeyPath = [];
+                          }
+
+                          _saveElements();
+
+                          _updatePages();
+                        } else if (onclick === 'mods:input') {
+                          const {value} = menuHoverState;
+                          const valuePx = value * (WIDTH - (500 + 40));
+
+                          const {index, px} = getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
+
+                          modsState.inputIndex = index;
+                          modsState.inputValue = px;
+                          focusState.type = 'mods';
+
+                          _updatePages();
+                        } else if (onclick === 'config:input') {
+                          const {value} = menuHoverState;
+                          const valuePx = value * (WIDTH - (500 + 40));
+
+                          const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+
+                          configState.inputIndex = index;
+                          configState.inputValue = px;
+                          focusState.type = 'config';
+
+                          _updatePages();
+                        } else if (onclick === 'config:resolution') {
+                          const {value} = menuHoverState;
+
+                          configState.sliderValue = value;
+
+                          _updatePages();
+                        } else if (onclick === 'config:airlock') {
+                          const {airlockCheckboxValue} = configState;
+
+                          if (!airlockCheckboxValue) {
+                            airlock.enable();
+
+                            configState.airlockCheckboxValue = true;
+                          } else {
+                            airlock.disable();
+
+                            configState.airlockCheckboxValue = false;
+                          }
+
+                          _updatePages();
+                        } else if (onclick === 'config:stats') {
+                          const {statsCheckboxValue} = configState;
+
+                          if (!statsCheckboxValue) {
+                            const width = 0.0005;
+                            const height = width * (48 / 80);
+                            const depth = -0.001;
+
+                            configState.statsCheckboxValue = true;
+                          } else {
+                            configState.statsCheckboxValue = false;
+                          }
+
+                          _updatePages();
                         } else {
-                          airlock.disable();
-
-                          configState.airlockCheckboxValue = false;
+                          _updatePages();
                         }
 
-                        _updatePages();
-                      } else if (onclick === 'config:stats') {
-                        const {statsCheckboxValue} = configState;
-
-                        if (!statsCheckboxValue) {
-                          const width = 0.0005;
-                          const height = width * (48 / 80);
-                          const depth = -0.001;
-
-                          configState.statsCheckboxValue = true;
-                        } else {
-                          configState.statsCheckboxValue = false;
-                        }
-
-                        _updatePages();
+                        return true;
                       } else {
-                        _updatePages();
+                        return false;
                       }
+                    };
 
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  };
-
-                  _doSetPosition(e) || _doClick(e);
+                    _doSetPosition(e) || _doClick(e);
+                  }
                 };
                 input.on('trigger', trigger);
                 const triggerdown = e => {
-                  const {side} = e;
-                  const menuHoverState = menuHoverStates[side];
+                  const {open} = menuState;
 
-                  const _doClick = () => {
-                    const {intersectionPoint} = menuHoverState;
+                  if (open) {
+                    const {side} = e;
+                    const menuHoverState = menuHoverStates[side];
 
-                    if (intersectionPoint) {
-                      const {anchor} = menuHoverState;
-                      const onmousedown = (anchor && anchor.onmousedown) || '';
-
-                      if (/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/.test(onmousedown)) {
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  };
-                  const _doDragElement = () => {
-                    const {intersectionPoint} = menuHoverState;
-
-                    if (intersectionPoint) {
-                      const {anchor} = menuHoverState;
-                      const onmousedown = (anchor && anchor.onmousedown) || '';
-
-                      let match;
-                      if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                        const keyPath = menuUtils.parseKeyPath(match[1]);
-
-                        elementsState.selectedKeyPath = keyPath;
-                        elementsState.draggingKeyPath = keyPath;
-
-                        _updatePages();
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  };
-                  const _doScroll = () => {
-                    const {scrollLayer} = menuHoverState;
-
-                    if (scrollLayer) {
+                    const _doClick = () => {
                       const {intersectionPoint} = menuHoverState;
 
-                      const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
-                      const _getMenuMeshCoordinate = _makeMeshCoordinateGetter({
-                        position: menuPosition,
-                        rotation: menuRotation,
-                        width: WIDTH,
-                        height: HEIGHT,
-                        worldWidth: WORLD_WIDTH,
-                        worldHeight: WORLD_HEIGHT,
-                      });
-                      const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
-                      menuHoverState.mousedownScrollLayer = scrollLayer;
-                      menuHoverState.mousedownStartCoord = mousedownStartCoord;
-                      menuHoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
+                      if (intersectionPoint) {
+                        const {anchor} = menuHoverState;
+                        const onmousedown = (anchor && anchor.onmousedown) || '';
 
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  };
+                        if (/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/.test(onmousedown)) {
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _doDragElement = () => {
+                      const {intersectionPoint} = menuHoverState;
 
-                  _doClick() || _doDragElement() || _doScroll();
+                      if (intersectionPoint) {
+                        const {anchor} = menuHoverState;
+                        const onmousedown = (anchor && anchor.onmousedown) || '';
+
+                        let match;
+                        if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                          const keyPath = menuUtils.parseKeyPath(match[1]);
+
+                          elementsState.selectedKeyPath = keyPath;
+                          elementsState.draggingKeyPath = keyPath;
+
+                          _updatePages();
+
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _doScroll = () => {
+                      const {scrollLayer} = menuHoverState;
+
+                      if (scrollLayer) {
+                        const {intersectionPoint} = menuHoverState;
+
+                        const {planeMesh} = menuMesh;
+                        const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
+                        const _getMenuMeshCoordinate = _makeMeshCoordinateGetter({
+                          position: menuPosition,
+                          rotation: menuRotation,
+                          width: WIDTH,
+                          height: HEIGHT,
+                          worldWidth: WORLD_WIDTH,
+                          worldHeight: WORLD_HEIGHT,
+                        });
+                        const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
+                        menuHoverState.mousedownScrollLayer = scrollLayer;
+                        menuHoverState.mousedownStartCoord = mousedownStartCoord;
+                        menuHoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    };
+
+                    _doClick() || _doDragElement() || _doScroll();
+                  }
                 };
                 input.on('triggerdown', triggerdown);
 
                 const _setLayerScrollTop = menuHoverState => {
                   const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = menuHoverState;
 
-                  const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
+                  const {planeMesh} = menuMesh;
+                  const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
                   const _getMenuMeshCoordinate = _makeMeshCoordinateGetter({
                     position: menuPosition,
                     rotation: menuRotation,
@@ -2210,30 +2235,58 @@ class Rend {
                 };
                 input.on('triggerup', triggerup);
                 const grip = e => {
-                  const {side} = e;
-                  const {positioningSide} = elementsState;
+                  const {open} = menuState;
 
-                  if (positioningSide && side === positioningSide) {
-                    const {selectedKeyPath, positioningName} = elementsState;
-                    const element = menuUtils.getElementKeyPath({
-                      elements: elementsState.elements,
-                      availableElements: elementsState.availableElements,
-                      clipboardElements: elementsState.clipboardElements,
-                    }, selectedKeyPath);
-                    const instance = menuUtils.getElementKeyPath({
-                      elements: elementsState.elementInstances,
-                    }, selectedKeyPath);
+                  if (open) {
+                    const {side} = e;
+                    const {positioningSide} = elementsState;
 
-                    const oldValue = element.getAttribute(positioningName);
-                    instance.setAttribute(positioningName, oldValue);
+                    if (positioningSide && side === positioningSide) {
+                      const {selectedKeyPath, positioningName} = elementsState;
+                      const element = menuUtils.getElementKeyPath({
+                        elements: elementsState.elements,
+                        availableElements: elementsState.availableElements,
+                        clipboardElements: elementsState.clipboardElements,
+                      }, selectedKeyPath);
+                      const instance = menuUtils.getElementKeyPath({
+                        elements: elementsState.elementInstances,
+                      }, selectedKeyPath);
 
-                    elementsState.positioningName = null;
-                    elementsState.positioningSide = null;
+                      const oldValue = element.getAttribute(positioningName);
+                      instance.setAttribute(positioningName, oldValue);
 
-                    _updatePages();
+                      elementsState.positioningName = null;
+                      elementsState.positioningSide = null;
+
+                      _updatePages();
+                    }
                   }
                 };
                 input.on('grip', grip);
+                const menudown = () => {
+                  const {open} = menuState;
+
+                  if (open) {
+                    menuState.open = false; // XXX need to cancel other menu states as well
+
+                    menuMesh.visible = false;
+                    keyboardMesh.visible = false;
+                  } else {
+                    menuState.open = true;
+
+                    const newPosition = camera.position;
+                    const newRotation = camera.quaternion;
+
+                    menuMesh.position.copy(newPosition);
+                    menuMesh.quaternion.copy(newRotation);
+                    menuMesh.visible = true;
+
+                    keyboardMesh.position.copy(newPosition);
+                    keyboardMesh.quaternion.copy(newRotation);
+                    keyboardMesh.visible = true;
+                  }
+                };
+                input.on('menudown', menudown);
 
                 const _isPrintableKeycode = keyCode =>
                   (keyCode > 47 && keyCode < 58) || // number keys
@@ -2298,203 +2351,207 @@ class Rend {
                   }
                 };
                 const keydown = e => {
-                  const {type} = focusState;
+                  const {open} = menuState;
 
-                  let match;
-                  if (type === 'worlds:create') {
-                    const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
+                  if (open) {
+                    const {type} = focusState;
 
-                    if (applySpec) {
-                      const {commit} = applySpec;
-                      if (commit) {
-                        const {worlds, inputText} = worldsState;
-                        const name = inputText;
+                    let match;
+                    if (type === 'worlds:create') {
+                      const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
 
-                        if (!worlds.some(world => world.name === name)) {
-                          worldsState.worlds.push({
-                            name,
-                            description: '',
-                          });
-                        }
-                      }
+                      if (applySpec) {
+                        const {commit} = applySpec;
+                        if (commit) {
+                          const {worlds, inputText} = worldsState;
+                          const name = inputText;
 
-                      _updatePages();
-
-                      e.stopImmediatePropagation();
-                    }
-                  } else if (match = type.match(/^worlds:rename:(.+)$/)) {
-                    const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
-
-                    if (applySpec) {
-                      const {commit} = applySpec;
-                      if (commit) {
-                        const {worlds, inputText} = worldsState;
-                        const oldName = match[1];
-                        const newName = inputText;
-
-                        if (!worlds.some(world => world.name === newName && world.name !== oldName)) {
-                          const world = worlds.find(world => world.name === oldName);
-                          world.name = newName;
-
-                          worldsState.selectedName = newName;
-                        }
-                      }
-
-                      _updatePages();
-
-                      e.stopImmediatePropagation();
-                    }
-                  } else if (type === 'mods') {
-                    if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
-                      _getRemoteMods(modsState.inputText)
-                        .then(remoteMods => {
-                          modsState.remoteMods = remoteMods,
-
-                          _updatePages();
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-
-                      _updatePages();
-
-                      e.stopImmediatePropagation();
-                    }
-                  } else if (match = type.match(/^element:attribute:(.+)$/)) {
-                    const applySpec = _applyStateKeyEvent(elementsState, subcontentFontSpec, e);
-
-                    if (applySpec) {
-                      const {commit} = applySpec;
-
-                      if (commit) {
-                        const attributeName = match[1];
-                        const {selectedKeyPath, inputText} = elementsState;
-
-                        const element = menuUtils.getElementKeyPath({
-                          elements: elementsState.elements,
-                          availableElements: elementsState.availableElements,
-                          clipboardElements: elementsState.clipboardElements,
-                        }, selectedKeyPath);
-                        const instance = menuUtils.getElementKeyPath({
-                          elements: elementsState.elementInstances,
-                        }, selectedKeyPath);
-                        const {attributeConfigs} = element;
-                        const attributeConfig = attributeConfigs[attributeName];
-                        const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attributeConfig;
-                        const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
-                        if (newValue !== null) {
-                          const newAttributeValue = JSON.stringify(newValue);
-                          element.setAttribute(attributeName, newAttributeValue);
-                          instance.setAttribute(attributeName, newAttributeValue);
-
-                          _saveElements();
-                        }
-                      }
-
-                      _updatePages();
-
-                      e.stopImmediatePropagation();
-                    }
-                  } else if (match = type.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
-                    const target = match[1];
-                    const targetState = (() => {
-                      switch (target) {
-                        case 'file': return filesState;
-                        case 'elementAttributeFile': return elementAttributeFilesState;
-                        default: return null;
-                      }
-                    })();
-
-                    const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
-
-                    if (applySpec) {
-                      const {commit} = applySpec;
-
-                      if (commit) {
-                        targetState.uploading = true;
-
-                        const {files, inputText} = targetState;
-                        const name = inputText;
-                        if (!files.some(file => file.name === name)) {
-                          const {cwd} = targetState;
-                          fs.createDirectory(menuUtils.pathJoin(cwd, name))
-                            .then(() => fs.getDirectory(cwd)
-                              .then(files => {
-                                targetState.files = menuUtils.cleanFiles(files);
-                                targetState.uploading = false;
-
-                                _updatePages();
-                              })
-                            )
-                            .catch(err => {
-                              console.warn(err);
-
-                              targetState.uploading = false;
-
-                              _updatePages();
+                          if (!worlds.some(world => world.name === name)) {
+                            worldsState.worlds.push({
+                              name,
+                              description: '',
                             });
+                          }
                         }
+
+                        _updatePages();
+
+                        e.stopImmediatePropagation();
                       }
+                    } else if (match = type.match(/^worlds:rename:(.+)$/)) {
+                      const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
 
-                      _updatePages();
+                      if (applySpec) {
+                        const {commit} = applySpec;
+                        if (commit) {
+                          const {worlds, inputText} = worldsState;
+                          const oldName = match[1];
+                          const newName = inputText;
 
-                      e.stopImmediatePropagation();
-                    }
-                  } else if (match = type.match(/^(file|elementAttributeFile)s:rename:(.+)$/)) {
-                    const target = match[1];
-                    const name = match[2];
-                    const targetState = (() => {
-                      switch (target) {
-                        case 'file': return filesState;
-                        case 'elementAttributeFile': return elementAttributeFilesState;
-                        default: return null;
+                          if (!worlds.some(world => world.name === newName && world.name !== oldName)) {
+                            const world = worlds.find(world => world.name === oldName);
+                            world.name = newName;
+
+                            worldsState.selectedName = newName;
+                          }
+                        }
+
+                        _updatePages();
+
+                        e.stopImmediatePropagation();
                       }
-                    })();
+                    } else if (type === 'mods') {
+                      if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
+                        _getRemoteMods(modsState.inputText)
+                          .then(remoteMods => {
+                            modsState.remoteMods = remoteMods,
 
-                    const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
+                            _updatePages();
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
 
-                    if (applySpec) {
-                      const {commit} = applySpec;
-                      if (commit) {
-                        const {files, inputText} = targetState;
-                        const oldName = name;
-                        const newName = inputText;
+                        _updatePages();
 
-                        if (!files.some(file => file.name === newName && file.name !== oldName)) {
+                        e.stopImmediatePropagation();
+                      }
+                    } else if (match = type.match(/^element:attribute:(.+)$/)) {
+                      const applySpec = _applyStateKeyEvent(elementsState, subcontentFontSpec, e);
+
+                      if (applySpec) {
+                        const {commit} = applySpec;
+
+                        if (commit) {
+                          const attributeName = match[1];
+                          const {selectedKeyPath, inputText} = elementsState;
+
+                          const element = menuUtils.getElementKeyPath({
+                            elements: elementsState.elements,
+                            availableElements: elementsState.availableElements,
+                            clipboardElements: elementsState.clipboardElements,
+                          }, selectedKeyPath);
+                          const instance = menuUtils.getElementKeyPath({
+                            elements: elementsState.elementInstances,
+                          }, selectedKeyPath);
+                          const {attributeConfigs} = element;
+                          const attributeConfig = attributeConfigs[attributeName];
+                          const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attributeConfig;
+                          const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
+                          if (newValue !== null) {
+                            const newAttributeValue = JSON.stringify(newValue);
+                            element.setAttribute(attributeName, newAttributeValue);
+                            instance.setAttribute(attributeName, newAttributeValue);
+
+                            _saveElements();
+                          }
+                        }
+
+                        _updatePages();
+
+                        e.stopImmediatePropagation();
+                      }
+                    } else if (match = type.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
+                      const target = match[1];
+                      const targetState = (() => {
+                        switch (target) {
+                          case 'file': return filesState;
+                          case 'elementAttributeFile': return elementAttributeFilesState;
+                          default: return null;
+                        }
+                      })();
+
+                      const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
+
+                      if (applySpec) {
+                        const {commit} = applySpec;
+
+                        if (commit) {
                           targetState.uploading = true;
 
-                          const {cwd} = targetState;
-                          const src = menuUtils.pathJoin(cwd, oldName);
-                          const dst = menuUtils.pathJoin(cwd, newName);
-                          fs.move(src, dst)
-                            .then(() => fs.getDirectory(cwd)
-                              .then(files => {
-                                targetState.files = menuUtils.cleanFiles(files);
-                                targetState.selectedName = newName;
+                          const {files, inputText} = targetState;
+                          const name = inputText;
+                          if (!files.some(file => file.name === name)) {
+                            const {cwd} = targetState;
+                            fs.createDirectory(menuUtils.pathJoin(cwd, name))
+                              .then(() => fs.getDirectory(cwd)
+                                .then(files => {
+                                  targetState.files = menuUtils.cleanFiles(files);
+                                  targetState.uploading = false;
+
+                                  _updatePages();
+                                })
+                              )
+                              .catch(err => {
+                                console.warn(err);
+
                                 targetState.uploading = false;
 
                                 _updatePages();
-                              })
-                            )
-                            .catch(err => {
-                              console.warn(err);
-
-                              targetState.uploading = true;
-
-                              _updatePages();
-                            });
+                              });
+                          }
                         }
+
+                        _updatePages();
+
+                        e.stopImmediatePropagation();
                       }
+                    } else if (match = type.match(/^(file|elementAttributeFile)s:rename:(.+)$/)) {
+                      const target = match[1];
+                      const name = match[2];
+                      const targetState = (() => {
+                        switch (target) {
+                          case 'file': return filesState;
+                          case 'elementAttributeFile': return elementAttributeFilesState;
+                          default: return null;
+                        }
+                      })();
 
-                      _updatePages();
+                      const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
 
-                      e.stopImmediatePropagation();
-                    }
-                  } else if (type === 'config') {
-                    if (_applyStateKeyEvent(configState, mainFontSpec, e)) {
-                      _updatePages();
+                      if (applySpec) {
+                        const {commit} = applySpec;
+                        if (commit) {
+                          const {files, inputText} = targetState;
+                          const oldName = name;
+                          const newName = inputText;
 
-                      e.stopImmediatePropagation();
+                          if (!files.some(file => file.name === newName && file.name !== oldName)) {
+                            targetState.uploading = true;
+
+                            const {cwd} = targetState;
+                            const src = menuUtils.pathJoin(cwd, oldName);
+                            const dst = menuUtils.pathJoin(cwd, newName);
+                            fs.move(src, dst)
+                              .then(() => fs.getDirectory(cwd)
+                                .then(files => {
+                                  targetState.files = menuUtils.cleanFiles(files);
+                                  targetState.selectedName = newName;
+                                  targetState.uploading = false;
+
+                                  _updatePages();
+                                })
+                              )
+                              .catch(err => {
+                                console.warn(err);
+
+                                targetState.uploading = true;
+
+                                _updatePages();
+                              });
+                          }
+                        }
+
+                        _updatePages();
+
+                        e.stopImmediatePropagation();
+                      }
+                    } else if (type === 'config') {
+                      if (_applyStateKeyEvent(configState, mainFontSpec, e)) {
+                        _updatePages();
+
+                        e.stopImmediatePropagation();
+                      }
                     }
                   }
                 };
@@ -2522,6 +2579,8 @@ class Rend {
                   input.removeListener('trigger', trigger);
                   input.removeListener('triggerdown', triggerdown);
                   input.removeListener('triggerup', triggerup);
+                  input.removeListener('grip', grip);
+                  input.removeListener('menudown', menudown);
                   input.removeListener('keydown', keydown);
                   input.removeListener('keyboarddown', keyboarddown);
                 });
@@ -2595,190 +2654,220 @@ class Rend {
                 };
 
                 localUpdates.push(() => {
-                  const _updateMenuMesh = () => {
-                    const {planeMesh: {imageMaterial}} = menuMesh;
-                    const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = imageMaterial;
+                  const {open} = menuState;
 
-                    const layers = ui.getLayers();
-                    const worldTime = currentWorld.getWorldTime();
-                    for (let i = 0; i < maxNumTextures; i++) {
-                      const layer = i < layers.length ? layers[i] : null;
+                  if (open) {
+                    const _updateMenuMesh = () => {
+                      const {planeMesh: {imageMaterial}} = menuMesh;
+                      const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = imageMaterial;
 
-                      if (layer && layer.getValid({worldTime})) {
-                        validTextures.value[i] = 1;
+                      const layers = ui.getLayers();
+                      const worldTime = currentWorld.getWorldTime();
+                      for (let i = 0; i < maxNumTextures; i++) {
+                        const layer = i < layers.length ? layers[i] : null;
 
-                        const texture = textures.value[i];
-                        if (texture.image !== layer.img) {
-                          texture.image = layer.img;
-                          if (!layer.pixelated) {
-                            texture.minFilter = THREE.LinearFilter;
-                            texture.magFilter = THREE.LinearFilter;
-                            texture.anisotropy = 16;
-                          } else {
-                            texture.minFilter = THREE.NearestFilter;
-                            texture.magFilter = THREE.NearestFilter;
-                            texture.anisotropy = 1;
-                          }
-                          texture.needsUpdate = true;
+                        if (layer && layer.getValid({worldTime})) {
+                          validTextures.value[i] = 1;
 
-                          layer.img.needsUpdate = false;
-                        } else if (layer.img.needsUpdate) {
-                          if (!layer.pixelated) {
-                            texture.minFilter = THREE.LinearFilter;
-                            texture.magFilter = THREE.LinearFilter;
-                            texture.anisotropy = 16;
-                          } else {
-                            texture.minFilter = THREE.NearestFilter;
-                            texture.magFilter = THREE.NearestFilter;
-                            texture.anisotropy = 1;
-                          }
-                          texture.needsUpdate = true;
-
-                          layer.img.needsUpdate = false;
-                        }
-
-                        const position = layer.getPosition();
-                        texturePositions.value[(i * 2) + 0] = position.x;
-                        texturePositions.value[(i * 2) + 1] = position.y;
-                        textureLimits.value[(i * 2) + 0] = position.w;
-                        textureLimits.value[(i * 2) + 1] = position.h;
-                        textureOffsets.value[i] = position.st;
-                        textureDimensions.value[i] = position.sh;
-                      } else {
-                        validTextures.value[i] = 0;
-                      }
-                    }
-
-                    SIDES.forEach(side => {
-                      const menuHoverState = menuHoverStates[side];
-
-                      const {mousedownStartCoord} = menuHoverState;
-                      if (mousedownStartCoord) {
-                        _setLayerScrollTop(menuHoverState);
-                      }
-                    });
-                  };
-                  const _updateAnchors = () => {
-                    const status = webvr.getStatus();
-                    const {gamepads: gamepadsStatus} = status;
-
-                    const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(menuMesh);
-                    const menuPlane = (() => {
-                      const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
-                      return new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
-                    })();
-
-                    SIDES.forEach(side => {
-                      const gamepadStatus = gamepadsStatus[side];
-
-                      if (gamepadStatus) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
-
-                        const ray = new THREE.Vector3(0, 0, -1)
-                          .applyQuaternion(controllerRotation);
-                        const controllerLine = new THREE.Line3(
-                          controllerPosition.clone(),
-                          controllerPosition.clone().add(ray.clone().multiplyScalar(15))
-                        );
-
-                        const menuHoverState = menuHoverStates[side];
-                        const menuDotMesh = menuDotMeshes[side];
-                        const menuBoxMesh = menuBoxMeshes[side];
-
-                        const keyboardHoverState = keyboardHoverStates[side];
-                        const keyboardBoxMesh = keyboardBoxMeshes[side];
-
-                        const _updateMenuAnchors = () => {
-                          const menuIntersectionPoint = menuPlane.intersectLine(controllerLine);
-                          if (menuIntersectionPoint) {
-                            menuHoverState.intersectionPoint = menuIntersectionPoint;
-
-                            const _getMenuMeshPoint = _makeMeshPointGetter({
-                              position: menuPosition,
-                              rotation: menuRotation,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                            });
-
-                            const scrollLayerBoxes = ui.getLayers()
-                              .filter(layer => layer.scroll)
-                              .map(layer => {
-                                const rect = layer.getRect();
-                                const layerBox = new THREE.Box3().setFromPoints([
-                                  _getMenuMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
-                                  _getMenuMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
-                                ]);
-                                layerBox.layer = layer;
-                                return layerBox;
-                              });
-                            const scrollLayerBox = (() => {
-                              for (let i = 0; i < scrollLayerBoxes.length; i++) {
-                                const layerBox = scrollLayerBoxes[i];
-                                if (layerBox.containsPoint(menuIntersectionPoint)) {
-                                  return layerBox;
-                                }
-                              }
-                              return null;
-                            })();
-                            if (scrollLayerBox) {
-                              menuHoverState.scrollLayer = scrollLayerBox.layer;
+                          const texture = textures.value[i];
+                          if (texture.image !== layer.img) {
+                            texture.image = layer.img;
+                            if (!layer.pixelated) {
+                              texture.minFilter = THREE.LinearFilter;
+                              texture.magFilter = THREE.LinearFilter;
+                              texture.anisotropy = 16;
                             } else {
-                              menuHoverState.scrollLayer = null;
+                              texture.minFilter = THREE.NearestFilter;
+                              texture.magFilter = THREE.NearestFilter;
+                              texture.anisotropy = 1;
                             }
+                            texture.needsUpdate = true;
 
-                            const anchorBoxes = (() => {
-                              const result = [];
-                              const layers = ui.getLayers();
-                              for (let i = 0; i < layers.length; i++) {
-                                const layer = layers[i];
-                                const anchors = layer.getAnchors();
+                            layer.img.needsUpdate = false;
+                          } else if (layer.img.needsUpdate) {
+                            if (!layer.pixelated) {
+                              texture.minFilter = THREE.LinearFilter;
+                              texture.magFilter = THREE.LinearFilter;
+                              texture.anisotropy = 16;
+                            } else {
+                              texture.minFilter = THREE.NearestFilter;
+                              texture.magFilter = THREE.NearestFilter;
+                              texture.anisotropy = 1;
+                            }
+                            texture.needsUpdate = true;
 
-                                for (let j = 0; j < anchors.length; j++) {
-                                  const anchor = anchors[j];
-                                  const {rect} = anchor;
+                            layer.img.needsUpdate = false;
+                          }
 
-                                  const anchorBox = new THREE.Box3().setFromPoints([
-                                    _getMenuMeshPoint(rect.left, rect.top - layer.scrollTop, -WORLD_DEPTH),
-                                    _getMenuMeshPoint(rect.right, rect.bottom - layer.scrollTop, WORLD_DEPTH),
+                          const position = layer.getPosition();
+                          texturePositions.value[(i * 2) + 0] = position.x;
+                          texturePositions.value[(i * 2) + 1] = position.y;
+                          textureLimits.value[(i * 2) + 0] = position.w;
+                          textureLimits.value[(i * 2) + 1] = position.h;
+                          textureOffsets.value[i] = position.st;
+                          textureDimensions.value[i] = position.sh;
+                        } else {
+                          validTextures.value[i] = 0;
+                        }
+                      }
+
+                      SIDES.forEach(side => {
+                        const menuHoverState = menuHoverStates[side];
+
+                        const {mousedownStartCoord} = menuHoverState;
+                        if (mousedownStartCoord) {
+                          _setLayerScrollTop(menuHoverState);
+                        }
+                      });
+                    };
+                    const _updateAnchors = () => {
+                      const status = webvr.getStatus();
+                      const {gamepads: gamepadsStatus} = status;
+
+                      const {planeMesh} = menuMesh;
+                      const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
+                      const menuPlane = (() => {
+                        const menuNormalZ = new THREE.Vector3(0, 0, 1).applyQuaternion(menuRotation);
+                        return new THREE.Plane().setFromNormalAndCoplanarPoint(menuNormalZ, menuPosition);
+                      })();
+
+                      SIDES.forEach(side => {
+                        const gamepadStatus = gamepadsStatus[side];
+
+                        if (gamepadStatus) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
+
+                          const ray = new THREE.Vector3(0, 0, -1)
+                            .applyQuaternion(controllerRotation);
+                          const controllerLine = new THREE.Line3(
+                            controllerPosition.clone(),
+                            controllerPosition.clone().add(ray.clone().multiplyScalar(15))
+                          );
+
+                          const menuHoverState = menuHoverStates[side];
+                          const menuDotMesh = menuDotMeshes[side];
+                          const menuBoxMesh = menuBoxMeshes[side];
+
+                          const keyboardHoverState = keyboardHoverStates[side];
+                          const keyboardBoxMesh = keyboardBoxMeshes[side];
+
+                          const _updateMenuAnchors = () => {
+                            const menuIntersectionPoint = menuPlane.intersectLine(controllerLine);
+                            if (menuIntersectionPoint) {
+                              menuHoverState.intersectionPoint = menuIntersectionPoint;
+
+                              const _getMenuMeshPoint = _makeMeshPointGetter({
+                                position: menuPosition,
+                                rotation: menuRotation,
+                                width: WIDTH,
+                                height: HEIGHT,
+                                worldWidth: WORLD_WIDTH,
+                                worldHeight: WORLD_HEIGHT,
+                              });
+
+                              const scrollLayerBoxes = ui.getLayers()
+                                .filter(layer => layer.scroll)
+                                .map(layer => {
+                                  const rect = layer.getRect();
+                                  const layerBox = new THREE.Box3().setFromPoints([
+                                    _getMenuMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
+                                    _getMenuMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
                                   ]);
-                                  anchorBox.anchor = anchor;
+                                  layerBox.layer = layer;
+                                  return layerBox;
+                                });
+                              const scrollLayerBox = (() => {
+                                for (let i = 0; i < scrollLayerBoxes.length; i++) {
+                                  const layerBox = scrollLayerBoxes[i];
+                                  if (layerBox.containsPoint(menuIntersectionPoint)) {
+                                    return layerBox;
+                                  }
+                                }
+                                return null;
+                              })();
+                              if (scrollLayerBox) {
+                                menuHoverState.scrollLayer = scrollLayerBox.layer;
+                              } else {
+                                menuHoverState.scrollLayer = null;
+                              }
 
-                                  result.push(anchorBox);
+                              const anchorBoxes = (() => {
+                                const result = [];
+                                const layers = ui.getLayers();
+                                for (let i = 0; i < layers.length; i++) {
+                                  const layer = layers[i];
+                                  const anchors = layer.getAnchors();
+
+                                  for (let j = 0; j < anchors.length; j++) {
+                                    const anchor = anchors[j];
+                                    const {rect} = anchor;
+
+                                    const anchorBox = new THREE.Box3().setFromPoints([
+                                      _getMenuMeshPoint(rect.left, rect.top - layer.scrollTop, -WORLD_DEPTH),
+                                      _getMenuMeshPoint(rect.right, rect.bottom - layer.scrollTop, WORLD_DEPTH),
+                                    ]);
+                                    anchorBox.anchor = anchor;
+
+                                    result.push(anchorBox);
+                                  }
+                                }
+                                return result;
+                              })();
+                              const anchorBox = (() => {
+                                const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(menuIntersectionPoint));
+
+                                if (interstectedAnchorBoxes.length > 0) {
+                                  return interstectedAnchorBoxes[0];
+                                } else {
+                                  return null;
+                                }
+                              })();
+                              if (anchorBox) {
+                                menuBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
+                                menuBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
+
+                                const {anchor} = anchorBox;
+                                menuHoverState.anchor = anchor;
+                                menuHoverState.value = (() => {
+                                  const {rect} = anchor;
+                                  const horizontalLine = new THREE.Line3(
+                                    _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                                    _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                                  );
+                                  const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
+                                  return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                                })();
+
+                                if (!menuBoxMesh.visible) {
+                                  menuBoxMesh.visible = true;
+                                }
+                              } else {
+                                menuHoverState.anchor = null;
+                                menuHoverState.value = 0;
+
+                                if (menuBoxMesh.visible) {
+                                  menuBoxMesh.visible = false;
                                 }
                               }
-                              return result;
-                            })();
-                            const anchorBox = (() => {
-                              const interstectedAnchorBoxes = anchorBoxes.filter(anchorBox => anchorBox.containsPoint(menuIntersectionPoint));
 
-                              if (interstectedAnchorBoxes.length > 0) {
-                                return interstectedAnchorBoxes[0];
+                              const menuBox = new THREE.Box3().setFromPoints([
+                                _getMenuMeshPoint(0, 0, -WORLD_DEPTH),
+                                _getMenuMeshPoint(WIDTH, HEIGHT, WORLD_DEPTH),
+                              ]);
+                              if (menuBox.containsPoint(menuIntersectionPoint)) {
+                                menuDotMesh.position.copy(menuIntersectionPoint);
+
+                                if (!menuDotMesh.visible) {
+                                  menuDotMesh.visible = true;
+                                }
                               } else {
-                                return null;
-                              }
-                            })();
-                            if (anchorBox) {
-                              menuBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
-                              menuBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
-
-                              const {anchor} = anchorBox;
-                              menuHoverState.anchor = anchor;
-                              menuHoverState.value = (() => {
-                                const {rect} = anchor;
-                                const horizontalLine = new THREE.Line3(
-                                  _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                                  _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                                );
-                                const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
-                                return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
-                              })();
-
-                              if (!menuBoxMesh.visible) {
-                                menuBoxMesh.visible = true;
+                                if (menuDotMesh.visible) {
+                                  menuDotMesh.visible = false;
+                                }
                               }
                             } else {
+                              menuHoverState.intersectionPoint = null;
+                              menuHoverState.scrollLayer = null;
                               menuHoverState.anchor = null;
                               menuHoverState.value = 0;
 
@@ -2786,148 +2875,124 @@ class Rend {
                                 menuBoxMesh.visible = false;
                               }
                             }
+                          };
+                          const _updateKeyboardAnchors = () => {
+                            const {planeMesh} = keyboardMesh;
+                            const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
+                            const _getKeyboardMeshPoint = _makeMeshPointGetter({
+                              position: keyboardPosition,
+                              rotation: keyboardRotation,
+                              width: KEYBOARD_WIDTH,
+                              height: KEYBOARD_HEIGHT,
+                              worldWidth: KEYBOARD_WORLD_WIDTH,
+                              worldHeight: KEYBOARD_WORLD_HEIGHT,
+                            });
 
-                            const menuBox = new THREE.Box3().setFromPoints([
-                              _getMenuMeshPoint(0, 0, -WORLD_DEPTH),
-                              _getMenuMeshPoint(WIDTH, HEIGHT, WORLD_DEPTH),
-                            ]);
-                            if (menuBox.containsPoint(menuIntersectionPoint)) {
-                              menuDotMesh.position.copy(menuIntersectionPoint);
+                            const {keySpecs} = keyboardMesh;
+                            const anchorBoxes = keySpecs.map(keySpec => {
+                              const {key, rect} = keySpec;
+                              const anchorBox = new THREE.Box3().setFromPoints([
+                                _getKeyboardMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
+                                _getKeyboardMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
+                              ]);
+                              anchorBox.key = key;
+                              return anchorBox;
+                            });
+                            // NOTE: there should be at most one intersecting anchor box since keys do not overlap
+                            const anchorBox = anchorBoxes.find(anchorBox => anchorBox.containsPoint(controllerPosition)) || null;
 
-                              if (!menuDotMesh.visible) {
-                                menuDotMesh.visible = true;
+                            const {key: oldKey} = keyboardHoverState;
+                            const newKey = anchorBox ? anchorBox.key : null;
+                            keyboardHoverState.key = newKey;
+
+                            if (oldKey && newKey !== oldKey) {
+                              const key = oldKey;
+                              const keyCode = keycode(key);
+
+                              input.triggerEvent('keyboardup', {
+                                key,
+                                keyCode,
+                                side,
+                              });
+                            }
+                            if (newKey && newKey !== oldKey) {
+                              const key = newKey;
+                              const keyCode = keycode(key);
+
+                              input.triggerEvent('keyboarddown', {
+                                key,
+                                keyCode,
+                                side,
+                              });
+                              input.triggerEvent('keyboardpress', {
+                                key,
+                                keyCode,
+                                side,
+                              });
+                            }
+
+                            if (anchorBox) {
+                              keyboardBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
+                              keyboardBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
+
+                              if (!keyboardBoxMesh.visible) {
+                                keyboardBoxMesh.visible = true;
                               }
                             } else {
-                              if (menuDotMesh.visible) {
-                                menuDotMesh.visible = false;
+                              if (keyboardBoxMesh.visible) {
+                                keyboardBoxMesh.visible = false;
                               }
                             }
-                          } else {
-                            menuHoverState.intersectionPoint = null;
-                            menuHoverState.scrollLayer = null;
-                            menuHoverState.anchor = null;
-                            menuHoverState.value = 0;
+                          };
 
-                            if (menuBoxMesh.visible) {
-                              menuBoxMesh.visible = false;
-                            }
-                          }
-                        };
-                        const _updateKeyboardAnchors = () => {
-                          const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(keyboardMesh);
-                          const _getKeyboardMeshPoint = _makeMeshPointGetter({
-                            position: keyboardPosition,
-                            rotation: keyboardRotation,
-                            width: KEYBOARD_WIDTH,
-                            height: KEYBOARD_HEIGHT,
-                            worldWidth: KEYBOARD_WORLD_WIDTH,
-                            worldHeight: KEYBOARD_WORLD_HEIGHT,
-                          });
+                          _updateMenuAnchors();
+                          _updateKeyboardAnchors();
+                        }
+                      });
+                    };
+                    const _updateControllers = () => {
+                      const {selectedKeyPath, positioningName, positioningSide} = elementsState;
 
-                          const {keySpecs} = keyboardMesh;
-                          const anchorBoxes = keySpecs.map(keySpec => {
-                            const {key, rect} = keySpec;
-                            const anchorBox = new THREE.Box3().setFromPoints([
-                              _getKeyboardMeshPoint(rect.left, rect.top, -WORLD_DEPTH),
-                              _getKeyboardMeshPoint(rect.right, rect.bottom, WORLD_DEPTH),
-                            ]);
-                            anchorBox.key = key;
-                            return anchorBox;
-                          });
-                          // NOTE: there should be at most one intersecting anchor box since keys do not overlap
-                          const anchorBox = anchorBoxes.find(anchorBox => anchorBox.containsPoint(controllerPosition)) || null;
+                      if (selectedKeyPath.length > 0 && positioningName && positioningSide) {
+                        const status = webvr.getStatus();
+                        const {gamepads: gamepadsStatus} = status;
+                        const gamepadStatus = gamepadsStatus[positioningSide];
 
-                          const {key: oldKey} = keyboardHoverState;
-                          const newKey = anchorBox ? anchorBox.key : null;
-                          keyboardHoverState.key = newKey;
+                        if (gamepadStatus) {
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepadStatus;
+                          positioningMesh.position.copy(controllerPosition);
+                          positioningMesh.quaternion.copy(controllerRotation);
+                          positioningMesh.scale.copy(controllerScale);
 
-                          if (oldKey && newKey !== oldKey) {
-                            const key = oldKey;
-                            const keyCode = keycode(key);
+                          const {selectedKeyPath, positioningName} = elementsState;
+                          const instance = menuUtils.getElementKeyPath({
+                            elements: elementsState.elementInstances,
+                          }, selectedKeyPath);
+                          const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
+                          const newAttributeValue = JSON.stringify(newValue);
+                          instance.setAttribute(positioningName, newAttributeValue);
+                        }
 
-                            input.triggerEvent('keyboardup', {
-                              key,
-                              keyCode,
-                              side,
-                            });
-                          }
-                          if (newKey && newKey !== oldKey) {
-                            const key = newKey;
-                            const keyCode = keycode(key);
-
-                            input.triggerEvent('keyboarddown', {
-                              key,
-                              keyCode,
-                              side,
-                            });
-                            input.triggerEvent('keyboardpress', {
-                              key,
-                              keyCode,
-                              side,
-                            });
-                          }
-
-                          if (anchorBox) {
-                            keyboardBoxMesh.position.copy(anchorBox.min.clone().add(anchorBox.max).divideScalar(2));
-                            keyboardBoxMesh.scale.copy(anchorBox.max.clone().sub(anchorBox.min));
-
-                            if (!keyboardBoxMesh.visible) {
-                              keyboardBoxMesh.visible = true;
-                            }
-                          } else {
-                            if (keyboardBoxMesh.visible) {
-                              keyboardBoxMesh.visible = false;
-                            }
-                          }
-                        };
-
-                        _updateMenuAnchors();
-                        _updateKeyboardAnchors();
+                        if (!positioningMesh.visible) {
+                          positioningMesh.visible = true;
+                        }
+                        if (!oldPositioningMesh.visible) {
+                          oldPositioningMesh.visible = true;
+                        }
+                      } else {
+                        if (positioningMesh.visible) {
+                          positioningMesh.visible = false;
+                        }
+                        if (oldPositioningMesh.visible) {
+                          oldPositioningMesh.visible = false;
+                        }
                       }
-                    });
-                  };
-                  const _updateControllers = () => {
-                    const {selectedKeyPath, positioningName, positioningSide} = elementsState;
+                    };
 
-                    if (selectedKeyPath.length > 0 && positioningName && positioningSide) {
-                      const status = webvr.getStatus();
-                      const {gamepads: gamepadsStatus} = status;
-                      const gamepadStatus = gamepadsStatus[positioningSide];
-
-                      if (gamepadStatus) {
-                        const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepadStatus;
-                        positioningMesh.position.copy(controllerPosition);
-                        positioningMesh.quaternion.copy(controllerRotation);
-                        positioningMesh.scale.copy(controllerScale);
-
-                        const {selectedKeyPath, positioningName} = elementsState;
-                        const instance = menuUtils.getElementKeyPath({
-                          elements: elementsState.elementInstances,
-                        }, selectedKeyPath);
-                        const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                        const newAttributeValue = JSON.stringify(newValue);
-                        instance.setAttribute(positioningName, newAttributeValue);
-                      }
-
-                      if (!positioningMesh.visible) {
-                        positioningMesh.visible = true;
-                      }
-                      if (!oldPositioningMesh.visible) {
-                        oldPositioningMesh.visible = true;
-                      }
-                    } else {
-                      if (positioningMesh.visible) {
-                        positioningMesh.visible = false;
-                      }
-                      if (oldPositioningMesh.visible) {
-                        oldPositioningMesh.visible = false;
-                      }
-                    }
-                  };
-
-                  _updateMenuMesh();
-                  _updateAnchors();
-                  _updateControllers();
+                    _updateMenuMesh();
+                    _updateAnchors();
+                    _updateControllers();
+                  }
                 });
 
                 menu = {
