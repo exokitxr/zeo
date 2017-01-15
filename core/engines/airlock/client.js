@@ -1,3 +1,7 @@
+const GRID_SIZE = 32;
+const GRID_RESOLUTION = 4;
+const TARGET_RADII = [1, 2, 4, 8, 16, 32, 64, 128, 256];
+
 class Airlock {
   constructor(archae) {
     this._archae = archae;
@@ -64,9 +68,9 @@ class Airlock {
           object.add(axisMesh);
 
           const gridMesh = (() => {
-            const width = 32;
-            const depth = 32;
-            const resolution = 4;
+            const width = GRID_SIZE;
+            const depth = GRID_SIZE;
+            const resolution = GRID_RESOLUTION;
 
             const positions = new Float32Array(width * depth * resolution * resolution * 3);
             for (let i = 0; i < width; i++) {
@@ -98,7 +102,7 @@ class Airlock {
           object.add(gridMesh);
 
           const floorMesh = (() => {
-            const geometry = new THREE.PlaneBufferGeometry(128, 128);
+            const geometry = new THREE.PlaneBufferGeometry(GRID_SIZE, GRID_SIZE);
             geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
             geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1, 0));
 
@@ -115,7 +119,7 @@ class Airlock {
 
           const targetMesh = (() => {
             const geometry = (() => {
-              const radii = [1, 2, 4, 8, 16, 32, 64, 128, 256];
+              const radii = TARGET_RADII;
               const segments = 7;
               const numVerticesPerRadius = segments * 9;
 
