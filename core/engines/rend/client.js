@@ -2314,6 +2314,10 @@ class Rend {
 
                     menuMesh.visible = false;
                     keyboardMesh.visible = false;
+                    SIDES.forEach(side => {
+                      menuBoxMeshes[side].visible = false;
+                      menuDotMeshes[side].visible = false;
+                    });
                   } else {
                     menuState.open = true;
 
