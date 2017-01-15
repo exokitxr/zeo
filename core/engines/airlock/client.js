@@ -156,11 +156,11 @@ class Airlock {
           return object;
         })();
 
-        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.25);
+        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.2);
 
         const directionalLight = (() => {
           const light = new THREE.DirectionalLight(0xFFFFFF, 2);
-          light.position.set(3, 3, 3);
+          light.position.set(4, 3, 2);
           light.lookAt(new THREE.Vector3(0, 0, 0));
           light.shadow.mapSize.width = SHADOW_MAP_SIZE;
           light.shadow.mapSize.height = SHADOW_MAP_SIZE;
