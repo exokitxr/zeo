@@ -2,7 +2,7 @@ const modelsPath = '/archae/models/models/';
 
 const MODELS = { // XXX fold these transforms into the models themselves
   cloud: {
-    path: 'https://cdn.rawgit.com/modulesio/zeo-data/8a67c22f91517e457ddadd9241f594ed5180077f/models/cloud/cloud.json',
+    path: 'https://cdn.rawgit.com/modulesio/zeo-data/9673929107022b9e43697669607a7e5eeff3a6a7/models/cloud/cloud.json',
     position: [0, 0.65, 0],
     rotation: [0, Math.PI, 0],
     scale: [0.5, 0.5, 0.5],
@@ -80,7 +80,7 @@ class Model {
               },
               model: {
                 type: 'file',
-                value: 'https://cdn.rawgit.com/modulesio/zeo-data/8a67c22f91517e457ddadd9241f594ed5180077f/models/cloud/cloud.json',
+                value: 'https://cdn.rawgit.com/modulesio/zeo-data/9673929107022b9e43697669607a7e5eeff3a6a7/models/cloud/cloud.json',
               },
             };
           }
@@ -134,10 +134,10 @@ class Model {
                 _requestModel(file)
                   .then(mesh => {
                     if (live) {
-                      const model = MODELS['cloud'];
+                      /* const model = MODELS['cloud'];
                       mesh.position.fromArray(model.position);
                       mesh.rotation.fromArray(model.rotation.concat(camera.rotation.order));
-                      mesh.scale.fromArray(model.scale);
+                      mesh.scale.fromArray(model.scale); */
 
                       scene.add(mesh);
                       this.mesh = mesh;
@@ -159,20 +159,7 @@ class Model {
           _updateMesh() {
             const {mesh, position} = this;
 
-            const _isDefaultPosition = position => _arrayEquals(
-              position,
-              [
-                0, 0, 0,
-                0, 0, 0, 1,
-                1, 1, 1,
-              ]
-            );
-            const _arrayEquals = (a, b) => a.length === b.length && a.every((ai, i) => {
-              const bi = b[i];
-              return ai === bi;
-            });
-
-            if (mesh && position && !_isDefaultPosition(position)) {
+            if (mesh && position) {
               mesh.position.set(position[0], position[1], position[2]);
               mesh.quaternion.set(position[3], position[4], position[5], position[6]);
               mesh.scale.set(position[7], position[8], position[9]);
