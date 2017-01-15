@@ -103,7 +103,7 @@ class Airlock {
           const floorMesh = (() => {
             const geometry = new THREE.PlaneBufferGeometry(GRID_SIZE, GRID_SIZE);
             geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-            geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1, 0));
+            geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.001, 0));
 
             const material = new THREE.MeshPhongMaterial({
               color: 0x111111,
