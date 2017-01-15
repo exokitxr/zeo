@@ -1,0 +1,8 @@
+{
+  "name": "backpack",
+  "description": "Store 3D models in a backpack.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}
