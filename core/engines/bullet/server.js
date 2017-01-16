@@ -188,6 +188,13 @@ class Context {
     object.deactivate();
   }
 
+  disableDeactivation(id) {
+    const {objects} = this;
+
+    const object = objects.get(id);
+    object.disableDeactivation();
+  }
+
   setIgnoreCollisionCheck(sourceBodyId, targetBodyId, ignore) {
     const {objects} = this;
 
@@ -316,6 +323,11 @@ class BulletServer {
             } else if (method === 'deactivate') {
               const [id] = args;
               context.deactivate(id);
+
+              cb();
+            } else if (method === 'disableDeactivation') {
+              const [id] = args;
+              context.disableDeactivation(id);
 
               cb();
             } else if (method === 'setIgnoreCollisionCheck') {

@@ -407,6 +407,10 @@ class BulletClient {
             _request('deactivate', [this.id], _warnError);
           }
 
+          disableDeactivation() {
+            _request('disableDeactivation', [this.id], _warnError);
+          }
+
           setIgnoreCollisionCheck(targetBody, ignore) {
             _request('setIgnoreCollisionCheck', [this.id, targetBody.id, ignore], _warnError);
           }
@@ -418,7 +422,7 @@ class BulletClient {
             this.setRotation(object.quaternion.toArray());
             // this.setLinearVelocity([0, 0, 0]);
             // this.setAngularVelocity([0, 0, 0]);
-            this.activate();
+            // this.activate();
           }
         }
 

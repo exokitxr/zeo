@@ -297,6 +297,7 @@ class Cyborg {
               physicsBody.setAngularVelocity([0, 0, 0]);
               physicsBody.setLinearFactor([0, 0, 0]);
               physicsBody.setAngularFactor([0, 0, 0]);
+              physicsBody.disableDeactivation();
               physicsBody.setObject(mesh);
               physics.add(physicsBody);
               this.physicsBody = physicsBody;

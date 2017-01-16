@@ -177,6 +177,10 @@ const _deactivateBody = ({id}) => {
   const body = bodies.get(id);
   body.deactivate();
 };
+const _disableDeactivationBody = ({id}) => {
+  const body = bodies.get(id);
+  body.disableDeactivation();
+};
 const _setIgnoreCollisionCheck = ({sourceBodyId, targetBodyId, ignore}) => {
   const sourceBody = bodies.get(sourceBodyId);
   const targetBody = bodies.get(targetBodyId);
@@ -423,6 +427,11 @@ process.on('message', m => {
     case 'deactivateBody': {
       const {args: {id}} = m;
       _deactivateBody({id});
+      break;
+    }
+    case 'disableDeactivationBody': {
+      const {args: {id}} = m;
+      _disableDeactivationBody({id});
       break;
     }
     case 'setIgnoreCollisionCheck': {

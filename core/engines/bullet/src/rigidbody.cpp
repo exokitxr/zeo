@@ -44,6 +44,7 @@ void mox::physics::RigidBody::Init(v8::Local<v8::Object> namespc)
   Nan::SetPrototypeMethod(tpl, "setAngularFactor", setAngularFactor);
   Nan::SetPrototypeMethod(tpl, "activate", activate);
   Nan::SetPrototypeMethod(tpl, "deactivate", deactivate);
+  Nan::SetPrototypeMethod(tpl, "disableDeactivation", disableDeactivation);
   Nan::SetPrototypeMethod(tpl, "setIgnoreCollisionCheck", setIgnoreCollisionCheck);
 
   constructor.Reset(tpl->GetFunction());
@@ -478,6 +479,15 @@ NAN_METHOD(mox::physics::RigidBody::deactivate)
   GET_SELF(mox::physics::RigidBody, self);
 
   self->m_rigidBody->setActivationState(0);
+
+  info.GetReturnValue().Set(info.This());
+}
+
+NAN_METHOD(mox::physics::RigidBody::disableDeactivation)
+{
+  GET_SELF(mox::physics::RigidBody, self);
+
+  self->m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
 
   info.GetReturnValue().Set(info.This());
 }

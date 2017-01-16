@@ -262,6 +262,12 @@ class Antikyth extends EventEmitter {
     });
   }
 
+  disableDeactivationWorldBody(world, body) {
+    this.send('disableDeactivationBody', {
+      id: body.id,
+    });
+  }
+
   setIgnoreCollisionCheckWorldBody(world, sourceBody, targetBody, ignore) {
     this.send('setIgnoreCollisionCheck', {
       sourceBodyId: sourceBody.id,
@@ -441,6 +447,19 @@ class World extends EventEmitter {
     }
   }
 
+  disableDeactivationBody(body) {
+    if (this.parent) {
+      this.parent.disableDeactivationWorldBody(this, body);
+    } else {
+      this.queue.push({
+        method: 'disableDeactivationBody',
+        args: {
+          body,
+        }
+      });
+    }
+  }
+
   setIgnoreCollisionCheckBody(sourceBody, targetBody, ignore) {
     if (this.parent) {
       this.parent.setIgnoreCollisionCheckWorldBody(this, sourceBody, targetBody, ignore);
@@ -521,6 +540,11 @@ class World extends EventEmitter {
           case 'deactivateBody': {
             const {body} = args;
             this.parent.deactivateWorldBody(this, body);
+            break;
+          }
+          case 'disableDeactivationBody': {
+            const {body} = args;
+            this.parent.disableDeactivationWorldBody(this, body);
             break;
           }
           case 'setIgnoreCollisionCheckBody': {
@@ -635,6 +659,16 @@ class Body extends EventEmitter {
     }
   }
 
+  disableDeactivation() {
+    if (this.parent) {
+      this.parent.disableDeactivationBody(this);
+    } else {
+      this.queue.push({
+        method: 'disableDeactivation',
+      });
+    }
+  }
+
   setIgnoreCollisionCheck(targetBody, ignore) {
     if (this.parent) {
       this.parent.setIgnoreCollisionCheckBody(this, targetBody, ignore);
@@ -694,6 +728,10 @@ class Body extends EventEmitter {
           }
           case 'deactivate': {
             this.parent.deactivateBody(this);
+            break;
+          }
+          case 'disableDeactivation': {
+            this.parent.disableDeactivationBody(this);
             break;
           }
           case 'setIgnoreCollisionCheck': {
