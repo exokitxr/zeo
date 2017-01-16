@@ -293,10 +293,10 @@ class Cyborg {
                 ],
                 mass: 1,
               });
-              physicsBody.setLinearVelocity([0, 0, 0]);
-              physicsBody.setAngularVelocity([0, 0, 0]);
               physicsBody.setLinearFactor([0, 0, 0]);
               physicsBody.setAngularFactor([0, 0, 0]);
+              physicsBody.setLinearVelocity([0, 0, 0]);
+              physicsBody.setAngularVelocity([0, 0, 0]);
               physicsBody.disableDeactivation();
               physicsBody.setObject(mesh);
               physics.add(physicsBody);
