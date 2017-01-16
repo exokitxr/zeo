@@ -36,11 +36,13 @@ class Mc {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
+      '/core/engines/cyborg',
       '/core/plugins/geometry-utils',
       '/core/plugins/sprite-utils',
       '/core/plugins/random-utils',
     ]).then(([
       zeo,
+      cyborg,
       geometryUtils,
       spriteUtils,
       randomUtils,
@@ -49,6 +51,7 @@ class Mc {
         const {THREE, scene, camera} = zeo;
         const world = zeo.getCurrentWorld();
         const {physics} = world;
+        const controllers = cyborg.getControllers();
         const {alea} = randomUtils;
 
         const _requestTextureAtlas = () => _requestTextureImages()
@@ -289,6 +292,8 @@ class Mc {
                 });
                 physicsBody.setLinearFactor([0, 0, 0]);
                 physicsBody.setAngularFactor([0, 0, 0]);
+                physicsBody.setLinearVelocity([0, 0, 0]);
+                physicsBody.setAngularVelocity([0, 0, 0]);
                 physicsBody.setObject(itemMesh);
                 return physicsBody;
               });
@@ -317,9 +322,14 @@ class Mc {
                   if (zeo.canGrab(side, itemMesh, {radius: ITEM_SIZE * ITEM_PIXEL_SIZE})) {
                     const itemPhysicsBody = itemPhysicsBodies[itemMeshIndex];
 
-                    const grabber = zeo.grab(side, itemMesh, {
-                      itemMeshIndex: itemMeshIndex,
-                    });
+                    const controller = controllers[side];
+                    itemPhysicsBody.setIgnoreCollisionCheck(controller.physicsBody, true);
+                    itemPhysicsBody.setLinearFactor([0, 0, 0]);
+                    itemPhysicsBody.setAngularFactor([0, 0, 0]);
+                    itemPhysicsBody.setLinearVelocity([0, 0, 0]);
+                    itemPhysicsBody.setAngularVelocity([0, 0, 0]);
+
+                    const grabber = zeo.grab(side, itemMesh);
                     grabber.on('update', ({position, rotation}) => {
                       itemPhysicsBody.setPosition(position.toArray());
                       itemPhysicsBody.setRotation(rotation.toArray());
@@ -327,9 +337,15 @@ class Mc {
                     grabber.on('release', ({linearVelocity, angularVelocity}) => {
                       itemPhysicsBody.setLinearFactor([1, 1, 1]);
                       itemPhysicsBody.setAngularFactor([1, 1, 1]);
-                      itemPhysicsBody.setLinearVelocity([1, 1, 1]);
-                      itemPhysicsBody.setAngularVelocity([1, 1, 1]);
+                      itemPhysicsBody.setLinearVelocity(linearVelocity.toArray());
+                      itemPhysicsBody.setAngularVelocity(angularVelocity.toArray());
                       itemPhysicsBody.activate();
+
+                      setTimeout(() => { // delay to prevent immediate collision
+                        controllers.forEach(controller => {
+                          itemPhysicsBody.setIgnoreCollisionCheck(controller.physicsBody, false);
+                        });
+                      }, 500);
                     });
                   }
                 }
