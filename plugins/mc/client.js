@@ -5,9 +5,20 @@ const TEXTURES = {
   'grass-top': 'assets/minecraft/textures/blocks/grass_top2.png',
   'grass-side': 'assets/minecraft/textures/blocks/grass_side.png',
   'dirt': 'assets/minecraft/textures/blocks/dirt.png',
+  'fern': 'assets/minecraft/textures/blocks/fern2.png',
+  'tallgrass': 'assets/minecraft/textures/blocks/tallgrass2.png',
+  'mushroom-brown': 'assets/minecraft/textures/blocks/mushroom_brown.png',
+  'mushroom-red': 'assets/minecraft/textures/blocks/mushroom_red.png',
 };
+const ITEM_TEXTURE_NAMES = [
+  'fern',
+  'tallgrass',
+  'mushroom-brown',
+  'mushroom-red',
+];
 
 const INITIAL_ATLAS_SIZE = 128;
+const ITEM_PIXEL_SIZE = 0.05;
 
 class Mc {
   constructor(archae) {
@@ -25,12 +36,17 @@ class Mc {
     return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/plugins/geometry-utils',
+      '/core/plugins/sprite-utils',
+      '/core/plugins/random-utils',
     ]).then(([
       zeo,
       geometryUtils,
+      spriteUtils,
+      randomUtils,
     ]) => {
       if (live) {
-        const {THREE, scene} = zeo;
+        const {THREE, scene, camera} = zeo;
+        const {alea} = randomUtils;
 
         const _requestTextureAtlas = () => _requestTextureImages()
           .then(textureImages => new Promise((accept, reject) => {
@@ -47,6 +63,7 @@ class Mc {
             const uvs = atlas.uv();
 
             accept({
+              textureImages,
               canvas,
               uvs,
             });
@@ -98,7 +115,7 @@ class Mc {
         });
 
         return _requestTextureAtlas()
-          .then(({canvas, uvs}) => {
+          .then(({textureImages, canvas, uvs}) => {
             if (live) {
               const blockMaterial = (() => {
                 const texture = new THREE.Texture(
@@ -120,6 +137,12 @@ class Mc {
                 });
                 return material;
               })();
+
+              const itemMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFFFFFF,
+                shininess: 10,
+                vertexColors: THREE.FaceColors,
+              });
 
               const floorMesh = (() => {
                 const geometry = (() => {
@@ -166,7 +189,6 @@ class Mc {
 
               const cubeMesh = (() => {
                 const geometry = (() => {
-                  const size = 256;
                   const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
 
                   geometryUtils.unindexBufferGeometry(geometry);
@@ -199,6 +221,7 @@ class Mc {
                     uvs[baseIndex + 11] = (1 - topUv[1]);
                   };
 
+                  // right left top bottom front back
                   copyUvs(geometryUvs, 0, grassSideUvTop, grassSideUvBottom);
                   copyUvs(geometryUvs, 1, grassSideUvTop, grassSideUvBottom);
                   copyUvs(geometryUvs, 2, grassTopUvTop, grassTopUvBottom);
@@ -216,11 +239,46 @@ class Mc {
               })();
               scene.add(cubeMesh);
 
-              // right left top bottom front back
+              const itemMeshes = (() => {
+                const numItems = 128;
+                const width = 32;
+                const depth = 32;
+                const height = 16 * ITEM_PIXEL_SIZE;
+
+                const rng = new alea();
+
+                const result = Array(numItems);
+                for (let i = 0; i < numItems; i++) {
+                  const itemMesh = (() => {
+                    const textureName = ITEM_TEXTURE_NAMES[Math.floor(rng() * ITEM_TEXTURE_NAMES.length)];
+                    const img = textureImages[textureName];
+                    const geometry = spriteUtils.makeImageGeometry(img, ITEM_PIXEL_SIZE);
+                    const material = itemMaterial;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(-(width / 2) + (rng() * width), height / 2, -(depth / 2) + (rng() * depth));
+                    mesh.rotation.order = camera.rotation.order;
+                    mesh.rotation.y = (rng() < 0.5) ? 0 : (Math.PI / 2);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  result[i] = itemMesh;
+                }
+                return result;
+              })();
+              for (let i = 0; i < itemMeshes.length; i++) {
+                const itemMesh = itemMeshes[i];
+                scene.add(itemMesh);
+              }
 
               this._cleanup = () => {
                 scene.remove(floorMesh);
                 scene.remove(cubeMesh);
+
+                for (let i = 0; i < itemMeshes.length; i++) {
+                  const itemMesh = itemMeshes[i];
+                  scene.remove(itemMesh);
+                }
               };
 
               return {};

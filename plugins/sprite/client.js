@@ -1,7 +1,3 @@
-const SIZE = 0.01;
-const BYTES_PER_PIXEL = 4;
-const CUBE_VERTICES = 108;
-
 class Sprite {
   constructor(archae) {
     this._archae = archae;
@@ -121,7 +117,7 @@ class Sprite {
                       }
 
                       const newMesh = (() => {
-                        const geometry = spriteUtils.makeImageGeometry(img);
+                        const geometry = spriteUtils.makeImageGeometry(img, 0.01);
                         const material = pixelMaterial;
                         
                         const mesh = new THREE.Mesh(geometry, material);

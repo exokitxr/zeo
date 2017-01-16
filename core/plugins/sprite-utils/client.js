@@ -1,4 +1,3 @@
-const SIZE = 0.01;
 const BYTES_PER_PIXEL = 4;
 const CUBE_VERTICES = 108;
 
@@ -26,28 +25,39 @@ const spriteUtils = archae => ({
 
           return ctx.getImageData(0, 0, canvas.width, canvas.height);
         };
-        const pixelGeometryVertices = (() => {
-          const cubeGeometry = new THREE.CubeGeometry(SIZE, SIZE, SIZE);
-          for (let i = 0; i < cubeGeometry.vertices.length; i++) {
-            cubeGeometry.vertices[i].x -= SIZE/2;
-            cubeGeometry.vertices[i].y -= SIZE/2;
-            cubeGeometry.vertices[i].z -= SIZE/2;
-          }
-          const bufferGeometry = new THREE.BufferGeometry().fromGeometry(cubeGeometry);
-          return bufferGeometry.getAttribute('position').array;
-        })();
-        const _getPixelVertices = (x, y, width, height) => {
-          const pixelVertices = pixelGeometryVertices.slice();
+        const pixelGeometryVerticesCache = {};
+        const _getPixelGeometryVertices = size => {
+          const entry = pixelGeometryVerticesCache[size];
+
+          if (entry) {
+            return entry.slice();
+          } else {
+            const newEntry = (() => {
+              const cubeGeometry = new THREE.CubeGeometry(size, size, size);
+              for (let i = 0; i < cubeGeometry.vertices.length; i++) {
+                cubeGeometry.vertices[i].x -= size / 2;
+                cubeGeometry.vertices[i].y -= size / 2;
+                cubeGeometry.vertices[i].z -= size / 2;
+              }
+              const bufferGeometry = new THREE.BufferGeometry().fromGeometry(cubeGeometry);
+              return bufferGeometry.getAttribute('position').array;
+            })();
+            pixelGeometryVerticesCache[size] = newEntry;
+            return newEntry.slice();
+          };
+        };
+        const _getPixelVertices = (x, y, width, height, size) => {
+          const pixelVertices = _getPixelGeometryVertices(size);
           for (let i = 0; i < CUBE_VERTICES; i += 3) {
-            pixelVertices[i] += (-(width / 2) + x) * SIZE;
+            pixelVertices[i] += (-(width / 2) + x) * size;
           }
           for (let i = 1; i < CUBE_VERTICES; i += 3) {
-            pixelVertices[i] -= (-(height / 2) + y) * SIZE;
+            pixelVertices[i] -= (-(height / 2) + y) * size;
           }
           return pixelVertices;
         };
 
-        const _makeImageGeometry = img => {
+        const _makeImageGeometry = (img, size = 1) => {
           const imageData = _getImageData(img);
           const {data: pixelData, width, height} = imageData;
 
@@ -74,7 +84,7 @@ const spriteUtils = archae => ({
                 const gFactor = g / 255;
                 const bFactor = b / 255;
 
-                const pixelVertices = _getPixelVertices(x, y, width, height);
+                const pixelVertices = _getPixelVertices(x, y, width, height, size);
                 for (let i = 0; i < CUBE_VERTICES / 3; i++) {
                   vertices.push(pixelVertices[i * 3 + 0], pixelVertices[i * 3 + 1], pixelVertices[i * 3 + 2]);
                   colors.push(rFactor, gFactor, bFactor);
