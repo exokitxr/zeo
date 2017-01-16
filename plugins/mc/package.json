@@ -1,0 +1,10 @@
+{
+  "name": "mc",
+  "description": "Minecraft-like demo in VR.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {
+    "atlaspack": "^1.0.0"
+  }
+}

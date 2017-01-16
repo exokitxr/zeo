@@ -85,6 +85,8 @@ const geometryUtils = archae => ({
           const vertices = new Float32Array(numIndexes * 3);
           const oldNormals = geometry.getAttribute('normal').array;
           const normals = new Float32Array(numIndexes * 3);
+          const oldUvs = geometry.getAttribute('uv').array;
+          const uvs = new Float32Array(numIndexes * 2);
           for (let i = 0; i < numIndexes; i++) {
             const index = indexes[i];
 
@@ -95,12 +97,17 @@ const geometryUtils = archae => ({
             normals[(i * 3) + 0] = oldNormals[(index * 3) + 0];
             normals[(i * 3) + 1] = oldNormals[(index * 3) + 1];
             normals[(i * 3) + 2] = oldNormals[(index * 3) + 2];
+
+            uvs[(i * 2) + 0] = oldUvs[(index * 2) + 0];
+            uvs[(i * 2) + 1] = oldUvs[(index * 2) + 1];
           }
           geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
-          geometry.removeAttribute('normal');
-          geometry.removeAttribute('uv');
+          geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+          // geometry.removeAttribute('normal');
+          // geometry.removeAttribute('uv');
           geometry.index = null;
-          geometry.computeVertexNormals();
+          // geometry.computeVertexNormals();
           return geometry;
         }
         function mergeBufferGeometry(geometry1, geometry2) {
