@@ -1,0 +1,7 @@
+{
+  "name": "hands",
+  "description": "Provides item grab/release support for tracked controllers.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {}
+}
