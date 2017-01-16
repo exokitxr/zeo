@@ -159,7 +159,9 @@ document.body.appendChild(canvas); // XXX
                 })();
                 const material = blockMaterial;
 
-                return new THREE.Mesh(geometry, material);
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.receiveShadow = true;
+                return mesh;
               })();
               scene.add(mesh);
 
