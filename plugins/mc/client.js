@@ -37,7 +37,6 @@ class Mc {
             const canvas = document.createElement('canvas');
             canvas.width = INITIAL_ATLAS_SIZE;
             canvas.height = INITIAL_ATLAS_SIZE;
-document.body.appendChild(canvas); // XXX
 
             const atlas = new atlaspack.Atlas(canvas);
             for (const textureName in textureImages) {
