@@ -264,7 +264,7 @@ class Mc {
                 mesh.castShadow = true;
                 return mesh;
               };
-              const blockMeshes = [
+              const blockMeshSpecs = [
                 {
                   position: new THREE.Vector3(-1, 0.5 + 0.01, 2),
                   type: 'grass',
@@ -285,7 +285,8 @@ class Mc {
                   position: new THREE.Vector3(-2, 1 + 0.5 + 0.01, 1),
                   type: 'grass',
                 },
-              ].map(_makeBlockMesh);
+              ];
+              const blockMeshes = blockMeshSpecs.map(_makeBlockMesh);
               blockMeshes.forEach(blockMesh => {
                 scene.add(blockMesh);
               });
@@ -327,6 +328,24 @@ class Mc {
                 mass: 0,
               });
               physics.add(floorPhysicsBody);
+
+              const blockPhysicsBodies = blockMeshes.map(blockMesh => {
+                const physicsBody = new physics.Box({
+                  dimensions: [1, 1, 1],
+                  position: blockMesh.position.toArray(),
+                  rotation: blockMesh.quaternion.toArray(),
+                  mass: 1,
+                });
+                physicsBody.setLinearFactor([0, 0, 0]);
+                physicsBody.setAngularFactor([0, 0, 0]);
+                physicsBody.setLinearVelocity([0, 0, 0]);
+                physicsBody.setAngularVelocity([0, 0, 0]);
+                physicsBody.setObject(blockMesh);
+                return physicsBody;
+              });
+              blockPhysicsBodies.forEach(physicsBody => {
+                physics.add(physicsBody);
+              });
 
               const itemPhysicsBodies = itemMeshes.map(itemMesh => {
                 const physicsBody = new physics.Box({
@@ -408,6 +427,9 @@ class Mc {
 
                 blockMeshes.forEach(blockMesh => {
                   scene.remove(blockMesh);
+                });
+                blockPhysicsBodies.forEach(physicsBody => {
+                  physics.remove(physicsBody);
                 });
 
                 itemMeshes.forEach(itmeMesh => {
