@@ -1,5 +1,7 @@
 const DEFAULT_GRAB_RADIUS = 0.1;
 
+const SIDES = ['left', 'right'];
+
 class Hands {
   constructor(archae) {
     this._archae = archae;
@@ -29,10 +31,10 @@ class Hands {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
-          const _makeGrabState = () => {
+          const _makeGrabState = () => ({
             grabber: null,
-          };
-          const grabState = {
+          });
+          const grabStates = {
             left: _makeGrabState(),
             right: _makeGrabState(),
           };
@@ -107,7 +109,7 @@ class Hands {
           const _update = () => {
             const {gamepads} = webvr.getStatus();
 
-            for (let i = 0; i < SIDE.length; i++) {
+            for (let i = 0; i < SIDES.length; i++) {
               const side = SIDES[i];
               const grabState = grabStates[side];
               const {object} = grabState;
