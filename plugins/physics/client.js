@@ -183,6 +183,44 @@ class Physics {
               physics.add(physicsBody);
             });
 
+            const _getClosestBoxMeshIndex = position => boxMeshes.map((boxMesh, index) => {
+              const distance = position.distanceTo(boxMesh.position);
+
+              return {
+                boxMesh,
+                index,
+                distance,
+              };
+            }).sort((a, b) => a.distance - b.distance)[0].index;
+
+            const gripdown = e => {
+              const {side} = e;
+              const {gamepads} = zeo.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {position: controllerPosition} = gamepad;
+                const boxMeshIndex = _getClosestBoxMeshIndex(controllerPosition);
+                const boxMesh = boxMeshes[boxMeshIndex];
+
+                if (zeo.canGrab(side, boxMesh, {radius: 0.1})) {
+                  const boxPhysicsBody = boxPhysicsBodies[boxMeshIndex];
+
+                  console.log('gripping', {boxMesh, boxPhysicsBody}); // XXX use hands.grab();
+                } else {
+                  console.log('not gripping');
+                }
+              } else {
+                console.log('not gripping');
+              }
+            };
+            zeo.on('gripdown', gripdown);
+            const gripup = e => {
+              const {side} = e;
+
+              // XXX use hands.release(side);
+            };
+            zeo.on('gripup', gripup);
             const keydown = e => {
               if (e.keyCode === 86) { // V
                 boxPhysicsBodies.forEach(physicsBody => {
@@ -209,6 +247,8 @@ class Physics {
                 physics.remove(physicsBody);
               });
 
+              zeo.removeListner('gripdown', gripdown);
+              zeo.removeListner('gripup', gripup);
               zeo.removeListner('keydown', keydown);
             };
           }

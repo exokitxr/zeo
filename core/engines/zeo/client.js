@@ -324,7 +324,6 @@ height: 100px;
                     return super.on(eventName, handler);
                   }
                 }
-
                 removeListener(eventName, handler) {
                   if (inputEventsIndex[eventName]) {
                     input.removeListener(eventName, handler);
@@ -333,7 +332,6 @@ height: 100px;
                     return super.removeListener(eventName, handler);
                   }
                 }
-
                 removeAllListeners(eventName) {
                   if (inputEventsIndex[eventName]) {
                     input.removeAllListeners(eventName);
@@ -346,7 +344,6 @@ height: 100px;
                 update() {
                   this.emit('update');
                 }
-
                 updateEye(camera) {
                   this.emit('updateEye', camera);
                 }
@@ -359,10 +356,19 @@ height: 100px;
                   return webvr.getStatus();
                 }
 
+                canGrab(side, object, options) {
+                  return hands.canGrab(side, object, options);
+                }
+                grab(side, object) {
+                  return hands.grab(side, object);
+                }
+                release(side) {
+                  return hands.release(side);
+                }
+
                 registerElement(elementApi) {
                   rend.registerElement(elementApi);
                 }
-
                 unregisterElement(elementApi) {
                   rend.unregisterElement(elementApi);
                 }
