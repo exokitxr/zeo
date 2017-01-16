@@ -2,7 +2,7 @@ const modelsPath = '/archae/models/models/';
 
 const MODELS = { // XXX fold these transforms into the models themselves
   cloud: {
-    path: 'https://cdn.rawgit.com/modulesio/zeo-data/9673929107022b9e43697669607a7e5eeff3a6a7/models/cloud/cloud.json',
+    path: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
     position: [0, 0.65, 0],
     rotation: [0, Math.PI, 0],
     scale: [0.5, 0.5, 0.5],
@@ -81,7 +81,7 @@ class Model {
               },
               model: {
                 type: 'file',
-                value: 'https://cdn.rawgit.com/modulesio/zeo-data/9673929107022b9e43697669607a7e5eeff3a6a7/models/cloud/cloud.json',
+                value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
               },
             };
           }

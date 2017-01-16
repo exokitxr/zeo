@@ -95,7 +95,7 @@ class Sprite {
               },
               image: {
                 type: 'file',
-                value: 'https://cdn.rawgit.com/modulesio/zeo-data/24589753c99fd989e5083bbce394afc4aa6b1e91/img/icons/katana.png',
+                value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/img/icons/katana.png',
               },
             };
           }
