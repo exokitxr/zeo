@@ -91,7 +91,7 @@ class Hands {
               return null;
             }
           };
-          const _release = (side, object) => {
+          const _release = (side) => {
             const grabState = grabStates[side];
             const {grabber} = grabState;
 
