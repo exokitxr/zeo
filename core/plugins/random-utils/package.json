@@ -1,0 +1,10 @@
+{
+  "name": "random-utils",
+  "description": "Provides random generation utilities for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "worker": "worker.js",
+  "dependencies": {
+    "alea": "^0.0.9"
+  }
+}

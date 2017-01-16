@@ -1,5 +1,3 @@
-import Alea from 'alea';
-
 export default class Vegetation {
   constructor(archae) {
     this._archae = archae;
@@ -16,13 +14,16 @@ export default class Vegetation {
     return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/plugins/fun-utils',
+      '/core/plugins/random-utils',
     ])
       .then(([
         zeo,
         funUtils,
+        randomUtils,
       ]) => {
         if (live) {
           const {THREE, scene} = zeo;
+          const {alea} = randomUtils;
 
           class TreeElement extends HTMLElement {
             static get tag() {
@@ -221,7 +222,7 @@ export default class Vegetation {
                 return result;
               };
 
-              const treeRng = new Alea('');
+              const treeRng = new alea('');
 
               const mesh = (() => {
                 // cap, vine, fruit
@@ -734,7 +735,7 @@ export default class Vegetation {
                 return result;
               };
 
-              const grassRng = new Alea('');
+              const grassRng = new alea('');
 
               const mesh = (() => {
                 const mesh = new THREE.Object3D();

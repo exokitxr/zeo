@@ -4,7 +4,6 @@
   "description": "Render polygonal clouds in the sky based on the convex hull algorithm.",
   "client": "client.js",
   "dependencies": {
-    "alea": "^0.0.9",
     "indev": "^3.0.9"
   }
 }

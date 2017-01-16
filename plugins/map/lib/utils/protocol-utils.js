@@ -92,7 +92,7 @@ const _getMapChunkUpdateSize = mapChunkUpdate => {
 
 // stringification
 
-export const stringifyMapChunk = (mapChunk, buffer, byteOffset) => {
+const stringifyMapChunk = (mapChunk, buffer, byteOffset) => {
   const {offset, position, points, caves, positions, normals, colors, heightField} = mapChunk;
 
   if (buffer === undefined || byteOffset === undefined) {
@@ -159,7 +159,7 @@ const _sum = a => {
   return result;
 };
 
-export const stringifyMapChunks = mapChunks => {
+const stringifyMapChunks = mapChunks => {
   const mapChunkSizes = mapChunks.map(_getMapChunkSize);
   const bufferSize = sum_(mapChunkSizes);
   const buffer = new Uint8Array(bufferSize);
@@ -177,7 +177,7 @@ export const stringifyMapChunks = mapChunks => {
   return buffer;
 };
 
-export const stringifyMapChunkUpdate = (mapChunkUpdate, buffer, byteOffset) => {
+const stringifyMapChunkUpdate = (mapChunkUpdate, buffer, byteOffset) => {
   const {offset, position, positions, normals, colors, heightField} = mapChunkUpdate;
 
   if (buffer === undefined || byteOffset === undefined) {
@@ -217,7 +217,7 @@ export const stringifyMapChunkUpdate = (mapChunkUpdate, buffer, byteOffset) => {
 
 // parsing
 
-export const parseMapChunk = (buffer, byteOffset) => {
+const parseMapChunk = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;
   }
@@ -293,7 +293,7 @@ export const parseMapChunk = (buffer, byteOffset) => {
   };
 };
 
-export const parseMapChunks = buffer => {
+const parseMapChunks = buffer => {
   const mapChunks = [];
 
   let byteOffset = 0;
@@ -308,7 +308,7 @@ export const parseMapChunks = buffer => {
   return mapChunks;
 };
 
-export const parseMapChunkUpdate = (buffer, byteOffset) => {
+const parseMapChunkUpdate = (buffer, byteOffset) => {
   if (byteOffset === undefined) {
     byteOffset = 0;
   }
@@ -352,3 +352,13 @@ export const parseMapChunkUpdate = (buffer, byteOffset) => {
     heightField
   };
 };
+
+const api = {
+  stringifyMapChunk,
+  stringifyMapChunks,
+  stringifyMapChunkUpdate,
+  parseMapChunk,
+  parseMapChunks,
+  parseMapChunkUpdate,
+};
+export default api;

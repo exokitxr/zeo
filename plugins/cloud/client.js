@@ -1,4 +1,3 @@
-const Alea = require('alea');
 const indev = require('indev');
 
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
@@ -27,14 +26,17 @@ class Cloud {
       '/core/engines/zeo',
       '/core/engines/rend',
       '/core/engines/cyborg',
+      '/core/plugins/random-utils',
     ]).then(([
       zeo,
       rend,
       cyborg,
+      randomUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
         const THREEConvexGeometry = ConvexGeometry(THREE);
+        const {alea} = randomUtils;
 
         const world = rend.getCurrentWorld();
 
@@ -71,7 +73,7 @@ class Cloud {
           }
 
           createdCallback() {
-            const rng = new Alea();
+            const rng = new alea();
             const generator = indev({
               random: rng,
             });
@@ -154,7 +156,7 @@ class Cloud {
                   const cloudMesh = (() => {
                     const result = new THREE.Object3D();
 
-                    const cloudRng = new Alea(cloudId);
+                    const cloudRng = new alea(cloudId);
                     const numCloudMeshChunks = 2 + Math.floor(cloudRng() * 8);
                     for (let j = 0; j < numCloudMeshChunks; j++) {
                       const geometry = (() => {

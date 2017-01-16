@@ -1,4 +1,3 @@
-import Alea from 'alea';
 import isosurface from 'isosurface';
 import indev from 'indev';
 
@@ -7,7 +6,9 @@ import {
   NUM_CELLS_OVERSCAN,
   DEFAULT_SEED,
 } from '../constants/constants';
-import  {MapPoint} from '../records/records';
+import {MapPoint} from '../records/records';
+
+const getApi = ({alea}) => {
 
 const BIOME_COLORS = {
   // Features
@@ -57,7 +58,7 @@ const DIRECTIONS = [
   [1, 1],
 ];
 const _random = (() => {
-  const rng = new Alea(DEFAULT_SEED);
+  const rng = new alea(DEFAULT_SEED);
   const generator = indev({
     random: rng,
   });
@@ -76,7 +77,7 @@ const _random = (() => {
   };
 })();
 
-export const buildMapChunk = ({offset, position}) => {
+const buildMapChunk = ({offset, position}) => {
   const points = (() => {
     const points = Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
@@ -209,7 +210,7 @@ export const buildMapChunk = ({offset, position}) => {
   };
 };
 
-export const compileMapChunk = mapChunk => {
+const compileMapChunk = mapChunk => {
   const {offset, position, points, caves} = mapChunk;
   const mapChunkUpdate = recompileMapChunk(mapChunk);
   const {positions, normals, colors, heightField} = mapChunkUpdate;
@@ -226,7 +227,7 @@ export const compileMapChunk = mapChunk => {
   };
 };
 
-export const recompileMapChunk = mapChunk => {
+const recompileMapChunk = mapChunk => {
   const {offset, position, points, caves} = mapChunk;
 
   const cubes = isosurface.marchingCubes([ NUM_CELLS_OVERSCAN, NUM_CELLS_OVERSCAN * 2, NUM_CELLS_OVERSCAN ], (x, y, z) => {
@@ -459,3 +460,13 @@ const _getTriangleBiome = (ap, bp, cp) => {
     lava,
   });
 }
+
+const api = {
+  buildMapChunk,
+  compileMapChunk,
+};
+return api;
+
+};
+
+export default getApi;
