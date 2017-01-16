@@ -116,12 +116,12 @@ class Mc {
 
                 const material = new THREE.MeshPhongMaterial({
                   map: texture,
-                  shininess: 0,
+                  shininess: 10,
                 });
                 return material;
               })();
 
-              const mesh = (() => {
+              const floorMesh = (() => {
                 const geometry = (() => {
                   const size = 256;
                   const geometry = new THREE.PlaneBufferGeometry(size, size, size, size);
@@ -162,10 +162,65 @@ class Mc {
                 mesh.receiveShadow = true;
                 return mesh;
               })();
-              scene.add(mesh);
+              scene.add(floorMesh);
+
+              const cubeMesh = (() => {
+                const geometry = (() => {
+                  const size = 256;
+                  const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+
+                  geometryUtils.unindexBufferGeometry(geometry);
+
+                  const grassTopUvs = uvs['grass-top'];
+                  const [grassTopUvTop, grassTopUvRight, grassTopUvBottom, grassTopUvLeft] = grassTopUvs;
+                  const grassSideUvs = uvs['grass-side'];
+                  const [grassSideUvTop, grassSideUvRight, grassSideUvBottom, grassSideUvLeft] = grassSideUvs;
+                  const dirtUvs = uvs['dirt'];
+                  const [dirtUvTop, dirtUvRight, dirtUvBottom, dirtUvLeft] = dirtUvs;
+
+                  const geometryUvsAttribute = geometry.getAttribute('uv');
+                  const geometryUvs = geometryUvsAttribute.array;
+
+                  const copyUvs = (uvs, i, topUv, bottomUv) => {
+                    const baseIndex = i * 6 * 2;
+
+                    uvs[baseIndex + 0] = topUv[0];
+                    uvs[baseIndex + 1] = (1 - topUv[1]);
+                    uvs[baseIndex + 2] = topUv[0];
+                    uvs[baseIndex + 3] = (1 - bottomUv[1]);
+                    uvs[baseIndex + 4] = bottomUv[0];
+                    uvs[baseIndex + 5] = (1 - topUv[1]);
+
+                    uvs[baseIndex + 6] = topUv[0];
+                    uvs[baseIndex + 7] = (1 - bottomUv[1]);
+                    uvs[baseIndex + 8] = bottomUv[0];
+                    uvs[baseIndex + 9] = (1 - bottomUv[1]);
+                    uvs[baseIndex + 10] = bottomUv[0];
+                    uvs[baseIndex + 11] = (1 - topUv[1]);
+                  };
+
+                  copyUvs(geometryUvs, 0, grassSideUvTop, grassSideUvBottom);
+                  copyUvs(geometryUvs, 1, grassSideUvTop, grassSideUvBottom);
+                  copyUvs(geometryUvs, 2, grassTopUvTop, grassTopUvBottom);
+                  copyUvs(geometryUvs, 3, dirtUvTop, dirtUvBottom);
+                  copyUvs(geometryUvs, 4, grassSideUvTop, grassSideUvBottom);
+                  copyUvs(geometryUvs, 5, grassSideUvTop, grassSideUvBottom);
+                  return geometry;
+                })();
+                const material = blockMaterial;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(1, 0.5 + 0.01, 1);
+                mesh.castShadow = true;
+                return mesh;
+              })();
+              scene.add(cubeMesh);
+
+              // right left top bottom front back
 
               this._cleanup = () => {
-                scene.remove(mesh);
+                scene.remove(floorMesh);
+                scene.remove(cubeMesh);
               };
 
               return {};
