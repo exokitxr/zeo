@@ -49,7 +49,7 @@ const spriteUtils = archae => ({
         const _getPixelVertices = (x, y, width, height, size) => {
           const pixelVertices = _getPixelGeometryVertices(size);
           for (let i = 0; i < CUBE_VERTICES; i += 3) {
-            pixelVertices[i] += (-(width / 2) + x) * size;
+            pixelVertices[i] += (-(width / 2) + x + 1) * size;
           }
           for (let i = 1; i < CUBE_VERTICES; i += 3) {
             pixelVertices[i] -= (-(height / 2) + y) * size;

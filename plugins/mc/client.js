@@ -18,7 +18,8 @@ const ITEM_TEXTURE_NAMES = [
 ];
 
 const INITIAL_ATLAS_SIZE = 128;
-const ITEM_PIXEL_SIZE = 0.05;
+const ITEM_SIZE = 16;
+const ITEM_PIXEL_SIZE = 1 / 32;
 
 class Mc {
   constructor(archae) {
@@ -46,6 +47,8 @@ class Mc {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
+        const world = zeo.getCurrentWorld();
+        const {physics} = world;
         const {alea} = randomUtils;
 
         const _requestTextureAtlas = () => _requestTextureImages()
@@ -243,7 +246,7 @@ class Mc {
                 const numItems = 128;
                 const width = 32;
                 const depth = 32;
-                const height = 16 * ITEM_PIXEL_SIZE;
+                const height = ITEM_SIZE * ITEM_PIXEL_SIZE;
 
                 const rng = new alea();
 
@@ -256,7 +259,7 @@ class Mc {
                     const material = itemMaterial;
 
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(-(width / 2) + (rng() * width), height / 2, -(depth / 2) + (rng() * depth));
+                    mesh.position.set(-(width / 2) + (rng() * width), (height / 2) + 0.01, -(depth / 2) + (rng() * depth));
                     mesh.rotation.order = camera.rotation.order;
                     mesh.rotation.y = (rng() < 0.5) ? 0 : (Math.PI / 2);
                     mesh.castShadow = true;
@@ -266,19 +269,43 @@ class Mc {
                 }
                 return result;
               })();
-              for (let i = 0; i < itemMeshes.length; i++) {
-                const itemMesh = itemMeshes[i];
+              itemMeshes.forEach(itemMesh => {
                 scene.add(itemMesh);
-              }
+              });
+
+              const floorPhysicsBody = new physics.Plane({
+                position: [0, 0.01, 0],
+                dimensions: [0, 1, 0],
+                mass: 0,
+              });
+              physics.add(floorPhysicsBody);
+
+              const itemPhysicsBodies = itemMeshes.map(itemMesh => {
+                const physicsBody = new physics.Box({
+                  dimensions: [ITEM_SIZE * ITEM_PIXEL_SIZE, ITEM_SIZE * ITEM_PIXEL_SIZE, ITEM_PIXEL_SIZE],
+                  position: itemMesh.position.toArray(),
+                  rotation: itemMesh.quaternion.toArray(),
+                  mass: 1,
+                });
+                physicsBody.setLinearFactor([0, 0, 0]);
+                physicsBody.setAngularFactor([0, 0, 0]);
+                physicsBody.setObject(itemMesh);
+                return physicsBody;
+              });
+              itemPhysicsBodies.forEach(physicsBody => {
+                physics.add(physicsBody);
+              });
 
               this._cleanup = () => {
                 scene.remove(floorMesh);
                 scene.remove(cubeMesh);
 
-                for (let i = 0; i < itemMeshes.length; i++) {
-                  const itemMesh = itemMeshes[i];
+                itemMeshes.forEach(itmeMesh => {
                   scene.remove(itemMesh);
-                }
+                });
+                itemPhysicsBodies.forEach(physicsBody => {
+                  physics.remove(physicsBody);
+                });
               };
 
               return {};
