@@ -296,6 +296,52 @@ class Mc {
                 physics.add(physicsBody);
               });
 
+              const _getClosestItemMeshIndex = position => itemMeshes.map((itemMesh, index) => {
+                const distance = position.distanceTo(itemMesh.position);
+                return {
+                  index,
+                  distance,
+                };
+              }).sort((a, b) => a.distance - b.distance)[0].index;
+
+              const gripdown = e => {
+                const {side} = e;
+                const {gamepads} = zeo.getStatus();
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {position: controllerPosition} = gamepad;
+                  const itemMeshIndex = _getClosestItemMeshIndex(controllerPosition);
+                  const itemMesh = itemMeshes[itemMeshIndex];
+
+                  if (zeo.canGrab(side, itemMesh, {radius: ITEM_SIZE * ITEM_PIXEL_SIZE})) {
+                    const itemPhysicsBody = itemPhysicsBodies[itemMeshIndex];
+
+                    const grabber = zeo.grab(side, itemMesh, {
+                      itemMeshIndex: itemMeshIndex,
+                    });
+                    grabber.on('update', ({position, rotation}) => {
+                      itemPhysicsBody.setPosition(position.toArray());
+                      itemPhysicsBody.setRotation(rotation.toArray());
+                    });
+                    grabber.on('release', ({linearVelocity, angularVelocity}) => {
+                      itemPhysicsBody.setLinearFactor([1, 1, 1]);
+                      itemPhysicsBody.setAngularFactor([1, 1, 1]);
+                      itemPhysicsBody.setLinearVelocity([1, 1, 1]);
+                      itemPhysicsBody.setAngularVelocity([1, 1, 1]);
+                      itemPhysicsBody.activate();
+                    });
+                  }
+                }
+              };
+              zeo.on('gripdown', gripdown);
+              const gripup = e => {
+                const {side} = e;
+
+                zeo.release(side);
+              };
+              zeo.on('gripup', gripup);
+
               this._cleanup = () => {
                 scene.remove(floorMesh);
                 scene.remove(cubeMesh);
@@ -306,6 +352,9 @@ class Mc {
                 itemPhysicsBodies.forEach(physicsBody => {
                   physics.remove(physicsBody);
                 });
+
+                zeo.removeListener('gripdown', gripdown);
+                zeo.removeListener('gripup', gripup);
               };
 
               return {};

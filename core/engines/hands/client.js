@@ -28,6 +28,8 @@ class Hands {
         jsUtils,
       ]) => {
         if (live) {
+          const player = cyborg.getPlayer();
+
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
@@ -54,6 +56,7 @@ class Hands {
               const angularVelocity = player.getControllerAngularVelocity(side);
               const result = {
                 side,
+                object,
                 linearVelocity,
                 angularVelocity,
               };
@@ -83,7 +86,7 @@ class Hands {
             const {grabber} = grabState;
 
             if (!grabber) {
-              const newGrabber = new Grabber(object);
+              const newGrabber = new Grabber(side, object);
               grabState.grabber = newGrabber;
 
               return newGrabber;
@@ -112,16 +115,22 @@ class Hands {
             for (let i = 0; i < SIDES.length; i++) {
               const side = SIDES[i];
               const grabState = grabStates[side];
-              const {object} = grabState;
+              const {grabber} = grabState;
 
-              if (object) {
+              if (grabber) {
                 const gamepad = gamepads[side];
 
                 if (gamepad) {
-                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  const {object} = grabber;
+                  const {position, rotation} = gamepad;
 
-                  object.position.copy(controllerPosition);
-                  object.quaternion.copy(controllerRotation);
+                  object.position.copy(position);
+                  object.quaternion.copy(rotation);
+
+                  grabber.emit('update', {
+                    position,
+                    rotation,
+                  });
                 }
               }
             }

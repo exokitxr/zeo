@@ -185,9 +185,7 @@ class Physics {
 
             const _getClosestBoxMeshIndex = position => boxMeshes.map((boxMesh, index) => {
               const distance = position.distanceTo(boxMesh.position);
-
               return {
-                boxMesh,
                 index,
                 distance,
               };
