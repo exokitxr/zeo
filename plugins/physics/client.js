@@ -247,9 +247,9 @@ class Physics {
                 physics.remove(physicsBody);
               });
 
-              zeo.removeListner('gripdown', gripdown);
-              zeo.removeListner('gripup', gripup);
-              zeo.removeListner('keydown', keydown);
+              zeo.removeListener('gripdown', gripdown);
+              zeo.removeListener('gripup', gripup);
+              zeo.removeListener('keydown', keydown);
             };
           }
         });
