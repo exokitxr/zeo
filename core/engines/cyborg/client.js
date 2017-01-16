@@ -4,7 +4,7 @@ const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
-const NUM_PREV_STATUSES = 2;
+const NUM_PREV_STATUSES = 3;
 
 const BUTTON_COLOR = 0xFF4444;
 const BUTTON_COLOR_HIGHLIGHT = 0xffbb33;
@@ -84,14 +84,6 @@ class Cyborg {
               };
             }
 
-            getFirstStatus() {
-              return this.prevStatuses[0];
-            }
-
-            getLastStatus() {
-              return this.prevStatuses[this.prevStatuses.length - 1];
-            }
-
             snapshotStatus() {
               const snapshot = {
                 status: this.getStatus(),
@@ -109,12 +101,26 @@ class Cyborg {
               const {prevStatuses} = this;
 
               if (prevStatuses.length > 1) {
-                const firstStatus = this.getFirstStatus();
-                const lastStatus = this.getLastStatus();
+                const positionDiffs = (() => {
+                  const result = Array(prevStatuses.length - 1);
+                  for (let i = 0; i < prevStatuses.length - 1; i++) {
+                    const prevStatus = prevStatuses[i];
+                    const nextStatus = prevStatuses[i + 1];
+                    const positionDiff = nextStatus.status.controllers[side].position.clone()
+                      .sub(prevStatus.status.controllers[side].position);
+                    result[i] = positionDiff;
+                  }
+                  return result;
+                })();
+                const positionDiffAcc = new THREE.Vector3(0, 0, 0);
+                for (let i = 0; i < positionDiffs.length; i++) {
+                  const positionDiff = positionDiffs[positionDiffs.length - 1 - i];
+                  positionDiffAcc.add(positionDiff.clone().divideScalar(Math.pow(2, i)));
+                }
 
-                return lastStatus.status.controllers[side].position.clone()
-                  .sub(firstStatus.status.controllers[side].position)
-                  .divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
+                const firstStatus = prevStatuses[0];
+                const lastStatus = prevStatuses[prevStatuses.length - 1];
+                return positionDiffAcc.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
               } else {
                 return new THREE.Vector3(0, 0, 0);
               }
@@ -124,33 +130,46 @@ class Cyborg {
               const {prevStatuses} = this;
 
               if (prevStatuses.length > 1) {
-                const firstStatus = this.getFirstStatus();
-                const lastStatus = this.getLastStatus();
+                const angleDiffs = (() => {
+                  const result = Array(prevStatuses.length - 1);
+                  for (let i = 0; i < prevStatuses.length - 1; i++) {
+                    const prevStatus = prevStatuses[i];
+                    const nextStatus = prevStatuses[i + 1];
+                    const quaternionDiff = nextStatus.status.controllers[side].rotation.clone()
+                      .multiply(prevStatus.status.controllers[side].rotation.clone().inverse());
+                    const axisAngle = (() => {
+                      const x = quaternionDiff.x / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                      const y = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                      const z = quaternionDiff.y / Math.sqrt(1 - (quaternionDiff.w * quaternionDiff.w));
+                      const angle = 2 * Math.acos(quaternionDiff.w);
 
-                const diff = lastStatus.status.controllers[side].rotation.clone()
-                  .multiply(firstStatus.status.controllers[side].rotation.clone().inverse());
-                const axisAngle = (() => {
-                  const x = diff.x / Math.sqrt(1 - (diff.w * diff.w));
-                  const y = diff.y / Math.sqrt(1 - (diff.w * diff.w));
-                  const z = diff.y / Math.sqrt(1 - (diff.w * diff.w));
-                  const angle = 2 * Math.acos(diff.w);
-
-                  return {
-                    axis: new THREE.Vector3(x, y, z),
-                    angle: angle,
-                  };
+                      return {
+                        axis: new THREE.Vector3(x, y, z),
+                        angle: angle,
+                      };
+                    })();
+                    const angleDiff = axisAngle.axis.clone().multiplyScalar(axisAngle.angle);
+                    result[i] = angleDiff;
+                  }
+                  return result;
                 })();
-                const angularDiff = axisAngle.axis.clone().multiplyScalar(axisAngle.angle);
-                const angularVelocity = angularDiff.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
+                const angleDiffAcc = new THREE.Vector3(0, 0, 0);
+                for (let i = 0; i < angleDiffs.length; i++) {
+                  const angleDiff = angleDiffs[angleDiffs.length - 1 - i];
+                  angleDiffAcc.add(angleDiff.clone().divideScalar(Math.pow(2, i)));
+                }
 
-                return angularVelocity;
+                const firstStatus = prevStatuses[0];
+                const lastStatus = prevStatuses[prevStatuses.length - 1];
+                return angleDiffAcc.divideScalar((lastStatus.timestamp - firstStatus.timestamp) / 1000);
               } else {
                 return new THREE.Vector3(0, 0, 0);
               }
             }
 
             updateHmd({position, rotation}) {
-              const lastStatus = player.getLastStatus();
+              const {prevStatuses} = this;
+              const lastStatus = prevStatuses[prevStatuses.length - 1];
 
               if (!position.equals(lastStatus.status.hmd.position) || !rotation.equals(lastStatus.status.hmd.rotation)) {
                 this.emit('hmdUpdate', {
@@ -161,7 +180,8 @@ class Cyborg {
             }
 
             updateController({side, position, rotation}) {
-              const lastStatus = this.getLastStatus();
+              const {prevStatuses} = this;
+              const lastStatus = prevStatuses[prevStatuses.length - 1];
 
               if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
                 const controller = controllers[side];
