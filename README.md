@@ -134,9 +134,9 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
 
         // set up a callback to call when we want to clean up after the plugin
         this._cleanup = () => {
-          zeo.removeListener('update', _update);
-
           scene.remove(sphere);
+
+          zeo.removeListener('update', _update);
         };
       });
   },
