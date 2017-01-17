@@ -111,7 +111,7 @@ module.exports = archae => ({
 
           const starGeometries = starImgs.map(starImg => spriteUtils.makeImageGeometry(starImg, PIXEL_SIZE));
           const wireframeMaterial = new THREE.MeshBasicMaterial({
-            color: 0x808080,
+            color: 0xCCCCCC,
             wireframe: true,
           });
           const pixelMaterial = new THREE.MeshPhongMaterial({
@@ -123,7 +123,7 @@ module.exports = archae => ({
             color: 0x003466,
             shininess: 10,
             side: THREE.DoubleSide,
-            opacity: 0.5,
+            opacity: 0.9,
             transparent: true,
           });
 
@@ -135,6 +135,43 @@ module.exports = archae => ({
 
             const rng = new alea('');
 
+            const adMesh = (() => {
+              const shape = new THREE.Shape();
+              shape.moveTo(0, 0);
+              shape.lineTo(0, 0.4 * 0.2);
+              shape.lineTo(0.1 * 0.2, 0.5 * 0.2);
+              shape.lineTo(0.9 * 0.2, 0.5 * 0.2);
+              shape.lineTo(1 * 0.2, 0.4 * 0.2);
+              shape.lineTo(1* 0.2 , 0);
+              shape.lineTo(0, 0);
+              const extrudeSettings = {
+                steps: 1,
+                amount: 0.01,
+                bevelEnabled: false,
+              };
+              const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+              const material = new THREE.MeshPhongMaterial({
+                color: 0xCCCCCC,
+                shininess: 10,
+              });
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.set(-0.5, 0.5, 0.5 - 0.01);
+              return mesh;
+            })();
+            object.add(adMesh);
+
+            const closeMesh = (() => {
+              const geometry = new THREE.BoxBufferGeometry(0.3, 0.1, 0.01);
+              const material = new THREE.MeshPhongMaterial({
+                color: 0x800000,
+                shininess: 10,
+              });
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.set(0.5 - (0.3 / 2), 0.5 + (0.1 / 2), 0.5 - (0.01 / 2));
+              return mesh;
+            })();
+            object.add(closeMesh);
+
             const boxMesh = (() => {
               const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
               const material = wireframeMaterial;
@@ -144,15 +181,15 @@ module.exports = archae => ({
             object.add(boxMesh);
 
             const yourThingHereMesh = (() => {
-              const geometry = spriteUtils.makeImageGeometry(yourThingHereImg, PIXEL_SIZE * 2.25);
+              const geometry = spriteUtils.makeImageGeometry(yourThingHereImg, PIXEL_SIZE * 2);
               const material = new THREE.MeshPhongMaterial({
-                color: 0x000000,
+                color: 0xCCCCCC,
                 shininess: 10,
               });
 
               const mesh = new THREE.Mesh(geometry, material);
               mesh.position.y = 0.25;
-              mesh.position.z = 0.1;
+              // mesh.position.z = 0.1;
               mesh.castShadow = true;
               return mesh;
             })();
@@ -172,13 +209,13 @@ module.exports = archae => ({
             const clickMesh = (() => {
               const geometry = spriteUtils.makeImageGeometry(clickImg, PIXEL_SIZE * 1.5);
               const material = new THREE.MeshPhongMaterial({
-                color: 0x000000,
+                color: 0xCCCCCC,
                 shininess: 10,
               });
 
               const mesh = new THREE.Mesh(geometry, material);
               mesh.position.y = -0.175;
-              mesh.position.z = 0.1;
+              // mesh.position.z = 0.1;
               mesh.castShadow = true;
               return mesh;
             })();
@@ -187,13 +224,13 @@ module.exports = archae => ({
             const supportMesh = (() => {
               const geometry = spriteUtils.makeImageGeometry(supportImg, PIXEL_SIZE * 1);
               const material = new THREE.MeshPhongMaterial({
-                color: 0x000000,
+                color: 0xCCCCCC,
                 shininess: 10,
               });
 
               const mesh = new THREE.Mesh(geometry, material);
               mesh.position.y = -0.35;
-              mesh.position.z = 0.1;
+              // mesh.position.z = 0.1;
               mesh.castShadow = true;
               return mesh;
             })();
@@ -293,9 +330,9 @@ module.exports = archae => ({
 
                 if (((currentFrame / HIGHLIGHT_LOOP_FRAMES) % 1) < HIGHLIGHT_FRAME_RATIO) {
                   yourThingHereMesh.material.color.set(0xFF0000);
-                  yourThingHereMesh.scale.set(1.1, 1.1, 1.1);
+                  yourThingHereMesh.scale.set(1.05, 1.05, 1.05);
                 } else {
-                  yourThingHereMesh.material.color.set(0x000000);
+                  yourThingHereMesh.material.color.set(0xCCCCCC);
                   yourThingHereMesh.scale.set(1, 1, 1);
                 }
               }
