@@ -2,19 +2,21 @@ const mod = require('mod-loop');
 
 const PIXEL_SIZE = 0.008;
 
-const ICON_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/icons/nyancat.png';
+const ICON_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/icons/nyancat.png';
 const STAR_IMG_URLS = (() => {
   const numUrls = 7;
   const result = Array(numUrls)
   for (let i = 0; i < numUrls; i++) {
-    result[i] = `https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/icons/nyancat-star${i + 1}.png`;
+    result[i] = `https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/icons/nyancat-star${i + 1}.png`;
   }
   return result;
 })();
-const AUDIO_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/audio/nyancat-loop.ogg';
-const YOUR_THING_HERE_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/text/yourthinghere.png';
-const CLICK_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/text/click.png';
-const SUPPORT_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/text/support.png';
+const AUDIO_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/audio/nyancat-loop.ogg';
+const AD_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/ad.png';
+const CLOSE_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/close.png';
+const YOUR_THING_HERE_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/yourthinghere.png';
+const CLICK_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/click.png';
+const SUPPORT_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/support.png';
 
 const FRAME_INTERVAL = 50;
 const STARS_FRAME_SKIP = 4;
@@ -43,6 +45,8 @@ module.exports = archae => ({
     });
     const _requestIconImg = () => _requestImg(ICON_IMG_URL);
     const _requestStarImgs = () => Promise.all(STAR_IMG_URLS.map(starImgUrl => _requestImg(starImgUrl)));
+    const _requestAdImg = () => _requestImg(AD_IMG_URL);
+    const _requestCloseImg = () => _requestImg(CLOSE_IMG_URL);
     const _requestYourThingHereImg = () => _requestImg(YOUR_THING_HERE_IMG_URL);
     const _requestClickImg = () => _requestImg(CLICK_IMG_URL);
     const _requestSupportImg = () => _requestImg(SUPPORT_IMG_URL);
@@ -61,6 +65,8 @@ module.exports = archae => ({
     const _requestResources = () => Promise.all([
       _requestIconImg(),
       _requestStarImgs(),
+      _requestAdImg(),
+      _requestCloseImg(),
       _requestYourThingHereImg(),
       _requestClickImg(),
       _requestSupportImg(),
@@ -68,6 +74,8 @@ module.exports = archae => ({
     ]).then(([
       iconImg,
       starImgs,
+      adImg,
+      closeImg,
       yourThingHereImg,
       clickImg,
       supportImg,
@@ -75,6 +83,8 @@ module.exports = archae => ({
     ]) => ({
       iconImg,
       starImgs,
+      adImg,
+      closeImg,
       yourThingHereImg,
       clickImg,
       supportImg,
@@ -98,6 +108,8 @@ module.exports = archae => ({
         {
           iconImg,
           starImgs,
+          adImg,
+          closeImg,
           yourThingHereImg,
           clickImg,
           supportImg,
@@ -110,6 +122,18 @@ module.exports = archae => ({
           const {alea} = randomUtils;
 
           const starGeometries = starImgs.map(starImg => spriteUtils.makeImageGeometry(starImg, PIXEL_SIZE));
+          const textMaterialDark = new THREE.MeshPhongMaterial({
+            color: 0x000000,
+            shininess: 10,
+          });
+          const textMaterialLight = new THREE.MeshPhongMaterial({
+            color: 0xFFFFFF,
+            shininess: 10,
+          });
+          const textMaterialGray = new THREE.MeshPhongMaterial({
+            color: 0xCCCCCC,
+            shininess: 10,
+          });
           const wireframeMaterial = new THREE.MeshBasicMaterial({
             color: 0xCCCCCC,
             wireframe: true,
@@ -156,6 +180,20 @@ module.exports = archae => ({
               });
               const mesh = new THREE.Mesh(geometry, material);
               mesh.position.set(-0.5, 0.5, 0.5 - 0.01);
+
+              const adTextMesh = (() => {
+                const geometry = spriteUtils.makeImageGeometry(adImg, PIXEL_SIZE * 1.5);
+                const material = textMaterialDark;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.x = 0.2 / 2;
+                mesh.position.y = 0.1 / 2;
+                mesh.position.z = 0.01;
+                mesh.castShadow = true;
+                return mesh;
+              })();
+              mesh.add(adTextMesh);
+
               return mesh;
             })();
             object.add(adMesh);
@@ -168,6 +206,18 @@ module.exports = archae => ({
               });
               const mesh = new THREE.Mesh(geometry, material);
               mesh.position.set(0.5 - (0.3 / 2), 0.5 + (0.1 / 2), 0.5 - (0.01 / 2));
+
+              const closeTextMesh = (() => {
+                const geometry = spriteUtils.makeImageGeometry(closeImg, PIXEL_SIZE * 1.5);
+                const material = textMaterialLight;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.z = 0.01;
+                mesh.castShadow = true;
+                return mesh;
+              })();
+              mesh.add(closeTextMesh);
+
               return mesh;
             })();
             object.add(closeMesh);
@@ -223,10 +273,7 @@ module.exports = archae => ({
 
             const supportMesh = (() => {
               const geometry = spriteUtils.makeImageGeometry(supportImg, PIXEL_SIZE * 1);
-              const material = new THREE.MeshPhongMaterial({
-                color: 0xCCCCCC,
-                shininess: 10,
-              });
+              const material = textMaterialGray;
 
               const mesh = new THREE.Mesh(geometry, material);
               mesh.position.y = -0.35;
