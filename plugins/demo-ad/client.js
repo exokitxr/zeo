@@ -1,3 +1,5 @@
+const mod = require('mod-loop');
+
 const PIXEL_SIZE = 0.008;
 
 const ICON_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/801e4d635292eb7c919e8ebfd625848202901145/img/icons/nyancat.png';
@@ -10,6 +12,9 @@ const STAR_IMG_URLS = (() => {
   return result;
 })();
 const AUDIO_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/801e4d635292eb7c919e8ebfd625848202901145/audio/nyancat-loop.ogg';
+
+const STARS_FRAME_INTERVAL = 50;
+const STARS_FRAME_SKIP = 4;
 
 const SIDES = ['left', 'right'];
 
@@ -106,6 +111,7 @@ module.exports = archae => ({
           const backgroundMaterial = new THREE.MeshPhongMaterial({
             color: 0x003466,
             shininess: 10,
+            side: THREE.DoubleSide,
             opacity: 0.5,
             transparent: true,
           });
@@ -174,10 +180,12 @@ module.exports = archae => ({
             starMeshes.forEach(starMesh => {
               object.add(starMesh);
             });
+            object.starMeshes = starMeshes;
 
             return object;
           })();
           scene.add(mesh);
+          this.mesh = mesh;
 
           const soundBody = (() => {
             const result = new sound.Body();
@@ -186,24 +194,51 @@ module.exports = archae => ({
             return result;
           })();
 
+          let lastTime = world.getWorldTime();
           const _update = () => {
-            const status = zeo.getStatus();
-            const {gamepads} = zeo.getStatus();
-            const touchingNyancat = SIDES.some(side => {
-              const gamepad = gamepads[side];
+            const _updateControllers = () => {
+              const status = zeo.getStatus();
+              const {gamepads} = zeo.getStatus();
+              const touchingNyancat = SIDES.some(side => {
+                const gamepad = gamepads[side];
 
-              if (gamepad) {
-                const {position: controllerPosition} = gamepad;
-                return controllerPosition.distanceTo(mesh.position) < 0.1;
-              } else {
-                return false;
+                if (gamepad) {
+                  const {position: controllerPosition} = gamepad;
+                  return controllerPosition.distanceTo(mesh.position) < 0.1;
+                } else {
+                  return false;
+                }
+              });
+              if (touchingNyancat && audio.paused) {
+                audio.play();
+              } else if (!touchingNyancat && !audio.paused) {
+                audio.pause();
               }
-            });
-            if (touchingNyancat && audio.paused) {
-              audio.play();
-            } else if (!touchingNyancat && !audio.paused) {
-              audio.pause();
-            }
+            };
+            const _updateAnimations = () => {
+              const {mesh} = this;
+              const {starMeshes} = mesh;
+
+              const currentTime = world.getWorldTime();
+
+              const lastFrame = Math.floor(lastTime / STARS_FRAME_INTERVAL);
+              const currentFrame = Math.floor(currentTime / STARS_FRAME_INTERVAL);
+              const frameDiff = currentFrame - lastFrame;
+              if (frameDiff > 0) {
+                for (let i = 0; i < starMeshes.length; i++) {
+                  const starMesh = starMeshes[i];
+                  starMesh.position.x -= PIXEL_SIZE * STARS_FRAME_SKIP * frameDiff;
+                  if (starMesh.position.x < -0.5) {
+                    starMesh.position.x = mod(starMesh.position.x, 1);
+                  }
+                }
+              }
+
+              lastTime = currentTime;
+            };
+
+            _updateControllers();
+            _updateAnimations();
           };
 
           zeo.on('update', _update);
