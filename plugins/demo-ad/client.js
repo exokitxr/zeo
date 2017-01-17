@@ -2,18 +2,19 @@ const mod = require('mod-loop');
 
 const PIXEL_SIZE = 0.008;
 
-const ICON_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/d6d60e5fb37beeaa1af38b70ddbbcc87d18a9a58/img/icons/nyancat.png';
+const ICON_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/icons/nyancat.png';
 const STAR_IMG_URLS = (() => {
   const numUrls = 7;
   const result = Array(numUrls)
   for (let i = 0; i < numUrls; i++) {
-    result[i] = `https://cdn.rawgit.com/modulesio/zeo-data/d6d60e5fb37beeaa1af38b70ddbbcc87d18a9a58/img/icons/nyancat-star${i + 1}.png`;
+    result[i] = `https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/icons/nyancat-star${i + 1}.png`;
   }
   return result;
 })();
-const AUDIO_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/d6d60e5fb37beeaa1af38b70ddbbcc87d18a9a58/audio/nyancat-loop.ogg';
-const YOUR_AD_HERE_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/d6d60e5fb37beeaa1af38b70ddbbcc87d18a9a58/img/text/youradher.png';
-const CLICK_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/d6d60e5fb37beeaa1af38b70ddbbcc87d18a9a58/img/text/click.png';
+const AUDIO_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/audio/nyancat-loop.ogg';
+const YOUR_THING_HERE_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/text/yourthinghere.png';
+const CLICK_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/text/click.png';
+const SUPPORT_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/7e7cdf4bf1a62010f851cfc38742e945e381ad08/img/text/support.png';
 
 const FRAME_INTERVAL = 50;
 const STARS_FRAME_SKIP = 4;
@@ -42,8 +43,9 @@ module.exports = archae => ({
     });
     const _requestIconImg = () => _requestImg(ICON_IMG_URL);
     const _requestStarImgs = () => Promise.all(STAR_IMG_URLS.map(starImgUrl => _requestImg(starImgUrl)));
-    const _requestYourAdHereImg = () => _requestImg(YOUR_AD_HERE_IMG_URL);
+    const _requestYourThingHereImg = () => _requestImg(YOUR_THING_HERE_IMG_URL);
     const _requestClickImg = () => _requestImg(CLICK_IMG_URL);
+    const _requestSupportImg = () => _requestImg(SUPPORT_IMG_URL);
     const _requestAudio = () => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
       audio.src = AUDIO_URL;
@@ -59,20 +61,23 @@ module.exports = archae => ({
     const _requestResources = () => Promise.all([
       _requestIconImg(),
       _requestStarImgs(),
-      _requestYourAdHereImg(),
+      _requestYourThingHereImg(),
       _requestClickImg(),
+      _requestSupportImg(),
       _requestAudio(),
     ]).then(([
       iconImg,
       starImgs,
-      yourAdHereImg,
+      yourThingHereImg,
       clickImg,
+      supportImg,
       audio,
     ]) => ({
       iconImg,
       starImgs,
-      yourAdHereImg,
+      yourThingHereImg,
       clickImg,
+      supportImg,
       audio
     }));
 
@@ -93,8 +98,9 @@ module.exports = archae => ({
         {
           iconImg,
           starImgs,
-          yourAdHereImg,
+          yourThingHereImg,
           clickImg,
+          supportImg,
           audio,
         },
       ]) => {
@@ -137,8 +143,8 @@ module.exports = archae => ({
             })();
             object.add(boxMesh);
 
-            const yourAdHereMesh = (() => {
-              const geometry = spriteUtils.makeImageGeometry(yourAdHereImg, PIXEL_SIZE * 2.5);
+            const yourThingHereMesh = (() => {
+              const geometry = spriteUtils.makeImageGeometry(yourThingHereImg, PIXEL_SIZE * 2.25);
               const material = new THREE.MeshPhongMaterial({
                 color: 0x000000,
                 shininess: 10,
@@ -150,8 +156,8 @@ module.exports = archae => ({
               mesh.castShadow = true;
               return mesh;
             })();
-            object.add(yourAdHereMesh);
-            object.yourAdHereMesh = yourAdHereMesh;
+            object.add(yourThingHereMesh);
+            object.yourThingHereMesh = yourThingHereMesh;
 
             const nyancatMesh = (() => {
               const geometry = spriteUtils.makeImageGeometry(iconImg, PIXEL_SIZE);
@@ -171,12 +177,27 @@ module.exports = archae => ({
               });
 
               const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.y = -0.25;
+              mesh.position.y = -0.175;
               mesh.position.z = 0.1;
               mesh.castShadow = true;
               return mesh;
             })();
             object.add(clickMesh);
+
+            const supportMesh = (() => {
+              const geometry = spriteUtils.makeImageGeometry(supportImg, PIXEL_SIZE * 1);
+              const material = new THREE.MeshPhongMaterial({
+                color: 0x000000,
+                shininess: 10,
+              });
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.y = -0.35;
+              mesh.position.z = 0.1;
+              mesh.castShadow = true;
+              return mesh;
+            })();
+            object.add(supportMesh);
 
             const backgroundMesh = (() => {
               const geometry = new THREE.PlaneBufferGeometry(1, 1, 1);
@@ -253,7 +274,7 @@ module.exports = archae => ({
             };
             const _updateAnimations = () => {
               const {mesh} = this;
-              const {starMeshes, yourAdHereMesh} = mesh;
+              const {starMeshes, yourThingHereMesh} = mesh;
 
               const currentTime = world.getWorldTime();
 
@@ -271,11 +292,11 @@ module.exports = archae => ({
 
 
                 if (((currentFrame / HIGHLIGHT_LOOP_FRAMES) % 1) < HIGHLIGHT_FRAME_RATIO) {
-                  yourAdHereMesh.material.color.set(0xFF0000);
-                  yourAdHereMesh.scale.set(1.1, 1.1, 1.1);
+                  yourThingHereMesh.material.color.set(0xFF0000);
+                  yourThingHereMesh.scale.set(1.1, 1.1, 1.1);
                 } else {
-                  yourAdHereMesh.material.color.set(0x000000);
-                  yourAdHereMesh.scale.set(1, 1, 1);
+                  yourThingHereMesh.material.color.set(0x000000);
+                  yourThingHereMesh.scale.set(1, 1, 1);
                 }
               }
 
