@@ -2,21 +2,23 @@ const mod = require('mod-loop');
 
 const PIXEL_SIZE = 0.008;
 
-const ICON_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/icons/nyancat.png';
+const GIT_HASH = '9ed4f16e002c737435912377813aeac0e8c94fb7';
+
+const ICON_IMG_URL = `https://cdn.rawgit.com/modulesio/zeo-data/${GIT_HASH}/img/icons/nyancat.png`;
 const STAR_IMG_URLS = (() => {
   const numUrls = 7;
   const result = Array(numUrls)
   for (let i = 0; i < numUrls; i++) {
-    result[i] = `https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/icons/nyancat-star${i + 1}.png`;
+    result[i] = `https://cdn.rawgit.com/modulesio/zeo-data/${GIT_HASH}/img/icons/nyancat-star${i + 1}.png`;
   }
   return result;
 })();
-const AUDIO_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/audio/nyancat-loop.ogg';
-const AD_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/ad.png';
-const CLOSE_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/close.png';
-const YOUR_THING_HERE_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/yourthinghere.png';
-const CLICK_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/click.png';
-const SUPPORT_IMG_URL = 'https://cdn.rawgit.com/modulesio/zeo-data/86ca1fa699b809a4d65931a4ff679003e83faaaa/img/text/support.png';
+const AUDIO_URL = `https://cdn.rawgit.com/modulesio/zeo-data/${GIT_HASH}/audio/nyancat-loop.ogg`;
+const AD_IMG_URL = `https://cdn.rawgit.com/modulesio/zeo-data/${GIT_HASH}/img/text/ad.png`;
+const CLOSE_IMG_URL = `https://cdn.rawgit.com/modulesio/zeo-data/${GIT_HASH}/img/text/close.png`;
+const YOUR_THING_HERE_IMG_URL = `https://cdn.rawgit.com/modulesio/zeo-data/${GIT_HASH}/img/text/yourthinghere.png`;
+const CLICK_IMG_URL = `https://cdn.rawgit.com/modulesio/zeo-data/${GIT_HASH}/img/text/click.png`;
+const SUPPORT_IMG_URL = `https://cdn.rawgit.com/modulesio/zeo-data/${GIT_HASH}/img/text/support.png`;
 
 const FRAME_INTERVAL = 50;
 const STARS_FRAME_SKIP = 4;
