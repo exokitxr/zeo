@@ -54,6 +54,9 @@ const spriteUtils = archae => ({
           for (let i = 1; i < CUBE_VERTICES; i += 3) {
             pixelVertices[i] -= (-(height / 2) + y) * size;
           }
+          for (let i = 2; i < CUBE_VERTICES; i += 3) {
+            pixelVertices[i] += size / 2;
+          }
           return pixelVertices;
         };
 
