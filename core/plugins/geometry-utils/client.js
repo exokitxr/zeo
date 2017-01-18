@@ -18,6 +18,118 @@ const geometryUtils = archae => ({
       if (live) {
         const {THREE} = three;
 
+        class BoxTarget {
+          constructor(position, quaternion, scale, size) {
+            const leftPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+              new THREE.Vector3(-1, 0, 0).applyQuaternion(quaternion),
+              position.clone().add(new THREE.Vector3(-size.x / 2, 0, 0).applyQuaternion(quaternion))
+            );
+            leftPlane.xAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(-size.x / 2, 0, -size.z / 2).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(-size.x / 2, 0, size.z / 2).applyQuaternion(quaternion))
+            );
+            leftPlane.yAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(-size.x / 2, -size.y / 2, 0).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(-size.x / 2, size.y /2, 0).applyQuaternion(quaternion))
+            );
+            const rightPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+              new THREE.Vector3(1, 0, 0).applyQuaternion(quaternion),
+              position.clone().add(new THREE.Vector3(size.x / 2, 0, 0).applyQuaternion(quaternion))
+            );
+            rightPlane.xAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(size.x / 2, 0, -size.z / 2).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(size.x / 2, 0, size.z / 2).applyQuaternion(quaternion))
+            );
+            rightPlane.yAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(size.x / 2, -size.y / 2, 0).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(size.x / 2, size.y / 2, 0).applyQuaternion(quaternion))
+            );
+            const topPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+              new THREE.Vector3(0, 1, 0).applyQuaternion(quaternion),
+              position.clone().add(new THREE.Vector3(0, size.y / 2, 0).applyQuaternion(quaternion))
+            );
+            topPlane.xAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(-size.x / 2, size.y / 2, 0).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(size.x / 2, size.y / 2, 0).applyQuaternion(quaternion))
+            );
+            topPlane.yAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(0, size.y / 2, -size.z / 2).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(0, size.y / 2, size.z / 2).applyQuaternion(quaternion))
+            );
+            const bottomPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+              new THREE.Vector3(0, -1, 0).applyQuaternion(quaternion),
+              position.clone().add(new THREE.Vector3(0, -size.y / 2, 0).applyQuaternion(quaternion))
+            );
+            bottomPlane.xAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(-size.x / 2, -size.y / 2, 0).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(size.x / 2, -size.y / 2, 0).applyQuaternion(quaternion))
+            );
+            bottomPlane.yAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(0, -size.y / 2, -size.z / 2).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(0, -size.y / 2, size.z / 2).applyQuaternion(quaternion))
+            );
+            const frontPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+              new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion),
+              position.clone().add(new THREE.Vector3(0, 0, size.z / 2).applyQuaternion(quaternion))
+            );
+            frontPlane.xAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(-size.x / 2, 0, size.z / 2).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(size.x / 2, 0, size.z / 2).applyQuaternion(quaternion))
+            );
+            frontPlane.yAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(0, -size.y / 2, size.z / 2).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(0, size.y / 2, size.z / 2).applyQuaternion(quaternion))
+            );
+            const backPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+              new THREE.Vector3(0, 0, -1).applyQuaternion(quaternion),
+              position.clone().add(new THREE.Vector3(0, 0, -size.z / 2).applyQuaternion(quaternion))
+            );
+            backPlane.xAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(-size.x / 2, 0, -size.z / 2).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(size.x / 2, 0, -size.z / 2).applyQuaternion(quaternion))
+            );
+            backPlane.yAxis = new THREE.Line3(
+              position.clone().add(new THREE.Vector3(0, -size.y / 2, -size.z / 2).applyQuaternion(quaternion)),
+              position.clone().add(new THREE.Vector3(0, size.y / 2, -size.z / 2).applyQuaternion(quaternion))
+            );
+            this.planes = [
+              leftPlane,
+              rightPlane,
+              topPlane,
+              bottomPlane,
+              frontPlane,
+              backPlane,
+            ];
+          }
+
+          intersectLine(line) {
+            const intersectionPoints = [];
+
+            for (let i = 0; i < 6; i++) {
+              const plane = this.planes[i];
+              const intersectionPoint = plane.intersectLine(line);
+              if (
+                intersectionPoint &&
+                intersectionPoint.distanceTo(plane.xAxis.closestPointToPoint(intersectionPoint, false)) < (plane.yAxis.distance() / 2) &&
+                intersectionPoint.distanceTo(plane.yAxis.closestPointToPoint(intersectionPoint, false)) < (plane.xAxis.distance() / 2)
+              ) {
+                intersectionPoints.push(intersectionPoint);
+              }
+            }
+
+            if (intersectionPoints.length > 0) {
+              return intersectionPoints
+                .map(intersectionPoint => ({
+                  intersectionPoint,
+                  distance: line.start.distanceTo(intersectionPoint),
+                }))
+                .sort((a, b) => a.distance - b.distance)[0].intersectionPoint;
+            } else {
+              return null;
+            }
+          }
+        }
+
         /* const VOXEL_VERTICES = (() => {
           const cubeGeometry = new THREE.CubeGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
           for (let i = 0; i < cubeGeometry.vertices.length; i++) {
@@ -606,12 +718,15 @@ const geometryUtils = archae => ({
           };
         })(); */
 
+        const makeBoxTarget = (position, rotation, quaterionion, size) => new BoxTarget(position, rotation, quaterionion, size);
+
         return {
           // makeVoxelGeometry,
           unindexBufferGeometry,
           mergeBufferGeometry,
           concatBufferGeometry,
           // sliceBufferGeometry,
+          makeBoxTarget,
         };
       }
     });

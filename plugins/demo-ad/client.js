@@ -96,6 +96,7 @@ module.exports = archae => ({
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/zeo',
+        '/core/plugins/geometry-utils',
         '/core/plugins/sprite-utils',
         '/core/plugins/random-utils',
       ]),
@@ -104,6 +105,7 @@ module.exports = archae => ({
       .then(([
         [
           zeo,
+          geometryUtils,
           spriteUtils,
           randomUtils,
         ],
@@ -152,6 +154,22 @@ module.exports = archae => ({
             opacity: 0.9,
             transparent: true,
           });
+          const pointsMaterial = new THREE.PointsMaterial({
+            color: 0x000000,
+            size: 0.01,
+          });
+
+          const _decomposeObjectMatrixWorld = object => {
+            const position = new THREE.Vector3();
+            const rotation = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            object.matrixWorld.decompose(position, rotation, scale);
+            return {position, rotation, scale};
+          };
+
+          const hoverState = {
+            target: null,
+          };
 
           const mesh = (() => {
             const object = new THREE.Object3D();
@@ -223,6 +241,7 @@ module.exports = archae => ({
               return mesh;
             })();
             object.add(closeMesh);
+            object.closeMesh = closeMesh;
 
             const boxMesh = (() => {
               const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
@@ -330,6 +349,14 @@ module.exports = archae => ({
           scene.add(mesh);
           this.mesh = mesh;
 
+          const dotMesh = (() => {
+            const geometry = new THREE.BufferGeometry();
+            geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
+            const material = pointsMaterial;
+            return new THREE.Points(geometry, material);
+          })();
+          scene.add(dotMesh);
+
           const soundBody = (() => {
             const result = new sound.Body();
             result.setInput(audio);
@@ -337,26 +364,68 @@ module.exports = archae => ({
             return result;
           })();
 
+          const _trigger = () => {
+            scene.remove(mesh);
+          };
+          zeo.on('trigger', _trigger);
+
           let lastTime = world.getWorldTime();
           const _update = () => {
             const _updateControllers = () => {
               const status = zeo.getStatus();
               const {gamepads} = zeo.getStatus();
-              const touchingNyancat = SIDES.some(side => {
-                const gamepad = gamepads[side];
 
-                if (gamepad) {
-                  const {position: controllerPosition} = gamepad;
-                  return controllerPosition.distanceTo(mesh.position) < 0.1;
-                } else {
-                  return false;
+              const _updateNyancatMesh = () => {
+                const touchingNyancat = SIDES.some(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition} = gamepad;
+                    return controllerPosition.distanceTo(mesh.position) < 0.1;
+                  } else {
+                    return false;
+                  }
+                });
+                if (touchingNyancat && audio.paused) {
+                  audio.play();
+                } else if (!touchingNyancat && !audio.paused) {
+                  audio.pause();
                 }
-              });
-              if (touchingNyancat && audio.paused) {
-                audio.play();
-              } else if (!touchingNyancat && !audio.paused) {
-                audio.pause();
-              }
+              };
+              const _updateCloseMesh = () => {
+                const {closeMesh} = mesh;
+                const {position: closeMeshPosition, rotation: closeMeshRotation, scale: closeMeshScale} = _decomposeObjectMatrixWorld(closeMesh);
+
+                const boxTarget = geometryUtils.makeBoxTarget(closeMeshPosition, closeMeshRotation, closeMeshScale, new THREE.Vector3(0.3, 0.1, 0.01));
+
+                let intersectionPoint = null;
+                SIDES.some(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const controllerLine = new THREE.Line3(
+                      controllerPosition,
+                      controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation).multiplyScalar(15))
+                    );
+                    intersectionPoint = boxTarget.intersectLine(controllerLine);
+                    return Boolean(intersectionPoint);
+                  } else {
+                    return false;
+                  }
+                });
+                if (intersectionPoint) {
+                  hoverState.target = 'close';
+
+                  dotMesh.position.copy(intersectionPoint);
+                  closeMesh.material.color = new THREE.Color(0xFF0000);
+                } else {
+                  closeMesh.material.color = new THREE.Color(0x800000);
+                }
+              };
+
+              _updateNyancatMesh();
+              _updateCloseMesh();
             };
             const _updateAnimations = () => {
               const {mesh} = this;
@@ -392,12 +461,12 @@ module.exports = archae => ({
             _updateControllers();
             _updateAnimations();
           };
-
           zeo.on('update', _update);
 
           this._cleanup = () => {
             scene.remove(mesh);
 
+            zeo.removeListener('trigger', _trigger);
             zeo.removeListener('update', _update);
           };
         }
