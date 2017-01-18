@@ -53,7 +53,9 @@ class Biolumi {
       _requestTransparentImg(),
     ])
       .then(([
-        anima,
+        [
+          anima
+        ],
         font,
         transparentImg,
       ]) => {

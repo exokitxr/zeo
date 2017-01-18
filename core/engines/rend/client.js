@@ -9,6 +9,7 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
   DEFAULT_USER_HEIGHT,
+  TRANSITION_TIME,
   STATS_REFRESH_RATE,
 } from './lib/constants/menu';
 import {
@@ -60,6 +61,7 @@ class Rend {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/biolumi',
+      '/core/engines/anima',
       '/core/engines/airlock',
       '/core/engines/fs',
       '/core/engines/bullet',
@@ -71,6 +73,7 @@ class Rend {
       three,
       webvr,
       biolumi,
+      anima,
       airlock,
       fs,
       bullet,
@@ -97,6 +100,7 @@ class Rend {
 
         const menuState = {
           open: true,
+          animation: null,
         };
         const focusState = {
           type: '',
@@ -2307,30 +2311,32 @@ class Rend {
                 };
                 input.on('grip', grip);
                 const menudown = () => {
-                  const {open} = menuState;
+                  const {open, animation} = menuState;
 
                   if (open) {
                     menuState.open = false; // XXX need to cancel other menu states as well
+                    menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-                    menuMesh.visible = false;
-                    keyboardMesh.visible = false;
+                    /* menuMesh.visible = false;
+                    keyboardMesh.visible = false; */
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
                       menuDotMeshes[side].visible = false;
                     });
                   } else {
                     menuState.open = true;
+                    menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
                     const newPosition = camera.position;
                     const newRotation = camera.quaternion;
 
                     menuMesh.position.copy(newPosition);
                     menuMesh.quaternion.copy(newRotation);
-                    menuMesh.visible = true;
+                    // menuMesh.visible = true;
 
                     keyboardMesh.position.copy(newPosition);
                     keyboardMesh.quaternion.copy(newRotation);
-                    keyboardMesh.visible = true;
+                    // keyboardMesh.visible = true;
                   }
                 };
                 input.on('menudown', menudown);
@@ -2701,10 +2707,50 @@ class Rend {
                 };
 
                 localUpdates.push(() => {
+                  const _updateMeshes = () => {
+                    const {animation} = menuState;
+
+                    if (animation) {
+                      const {open} = menuState;
+
+                      const startValue = open ? 0 : 1;
+                      const endValue = 1 - startValue;
+                      const factor = animation.getValue();
+                      const value = ((1 - factor) * startValue) + (factor * endValue);
+
+                      if (factor < 1) {
+                        if (value > 0.001) {
+                          menuMesh.scale.set(1, value, 1);
+                          keyboardMesh.scale.set(value, 1, 1);
+
+                          menuMesh.visible = true;
+                          keyboardMesh.visible = true;
+                        } else {
+                          menuMesh.visible = false;
+                          keyboardMesh.visible = false;
+                        }
+                      } else {
+                        menuMesh.scale.set(1, 1, 1);
+                        keyboardMesh.scale.set(1, 1, 1);
+
+                        if (open) {
+                          menuMesh.visible = true;
+                          keyboardMesh.visible = true;
+                        } else {
+                          menuMesh.visible = false;
+                          keyboardMesh.visible = false;
+                        }
+
+                        menuState.animation = null;
+                      }
+                    }
+                  };
+                  _updateMeshes();
+
                   const {open} = menuState;
 
                   if (open) {
-                    const _updateMenuMesh = () => {
+                    const _updateTextures = () => {
                       const {planeMesh: {imageMaterial}} = menuMesh;
                       const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = imageMaterial;
 
@@ -3036,7 +3082,7 @@ class Rend {
                       }
                     };
 
-                    _updateMenuMesh();
+                    _updateTextures();
                     _updateAnchors();
                     _updateControllers();
                   }
