@@ -1,13 +1,16 @@
 const FontFaceObserver = require('fontfaceobserver');
-const BezierEasing = require('bezier-easing');
-
-const bezierEasing = BezierEasing(0, 1, 0, 1);
 
 const MAX_NUM_TEXTURES = 16;
 const TRANSITION_TIME = 1000;
 
 class Biolumi {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
+
     let live = true;
     const cleanups = [];
     this._cleanup = () => {
@@ -43,10 +46,14 @@ class Biolumi {
     });
 
     return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/anima',
+      ]),
       _requestFont(),
       _requestTransparentImg(),
     ])
       .then(([
+        anima,
         font,
         transparentImg,
       ]) => {
@@ -366,8 +373,7 @@ class Biolumi {
               _validatePages(pages);
 
               let animationFrame = null;
-              const startTime = Date.now();
-              const endTime = startTime + TRANSITION_TIME;
+              const animation = anima.makeAnimation(TRANSITION_TIME);
               const pageSchedule = (() => {
                 if (direction === 'right') {
                   return [
@@ -399,8 +405,7 @@ class Biolumi {
                 animationFrame = requestAnimationFrame(() => {
                   animationFrame = null;
 
-                  const now = Date.now();
-                  const timeFactor = bezierEasing(Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0));
+                  const timeFactor = animation.getValue();
                   const pagePositions = pageSchedule.map(pageScheduleSpec => {
                     const {start, end} = pageScheduleSpec;
 

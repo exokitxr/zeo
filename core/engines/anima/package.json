@@ -1,0 +1,9 @@
+{
+  "name": "anima",
+  "description": "Provides animation timing functions for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {
+    "bezier-easing": "^2.0.3"
+  }
+}
