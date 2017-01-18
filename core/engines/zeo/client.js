@@ -24,6 +24,7 @@ class Zeo {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/three',
+      '/core/engines/anima',
       '/core/engines/cyborg',
       '/core/engines/hands',
       '/core/engines/rend',
@@ -39,6 +40,7 @@ class Zeo {
       input,
       webvr,
       three,
+      anima,
       cyborg,
       hands,
       rend,
@@ -306,7 +308,7 @@ height: 100px;
               };
 
               class ZeoApi extends EventEmitter {
-                constructor({THREE, scene, camera, renderer, sound}) {
+                constructor({THREE, scene, camera, renderer, sound, anima}) {
                   super();
 
                   this.THREE = THREE;
@@ -314,6 +316,7 @@ height: 100px;
                   this.camera = camera;
                   this.renderer = renderer;
                   this.sound = sound;
+                  this.anima = anima;
                 }
 
                 on(eventName, handler, options) {
@@ -380,6 +383,7 @@ height: 100px;
                 camera,
                 renderer,
                 sound,
+                anima,
               });
               rend.on('update', () => {
                 api.update();

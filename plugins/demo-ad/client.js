@@ -1,6 +1,7 @@
 const mod = require('mod-loop');
 
 const PIXEL_SIZE = 0.008;
+const TRANSITION_DURATION = 1000;
 
 const GIT_HASH = '9ed4f16e002c737435912377813aeac0e8c94fb7';
 
@@ -121,7 +122,7 @@ module.exports = archae => ({
         },
       ]) => {
         if (live) {
-          const {THREE, scene, camera, sound} = zeo;
+          const {THREE, scene, camera, sound, anima} = zeo;
           const world = zeo.getCurrentWorld();
           const {alea} = randomUtils;
 
@@ -167,8 +168,16 @@ module.exports = archae => ({
             return {position, rotation, scale};
           };
 
-          const hoverState = {
+          const adState = {
+            open: true,
+            animation: null,
+          };
+          const _makeHoverState = () => ({
             target: null,
+          });
+          const hoverStates = {
+            left: _makeHoverState(),
+            right: _makeHoverState(),
           };
 
           const mesh = (() => {
@@ -349,13 +358,22 @@ module.exports = archae => ({
           scene.add(mesh);
           this.mesh = mesh;
 
-          const dotMesh = (() => {
+          const _makeDotMesh = () => {
             const geometry = new THREE.BufferGeometry();
             geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
             const material = pointsMaterial;
-            return new THREE.Points(geometry, material);
-          })();
-          scene.add(dotMesh);
+
+            const mesh = new THREE.Points(geometry, material);
+            mesh.visible = false;
+            return mesh;
+          };
+          const dotMeshes = {
+            left: _makeDotMesh(),
+            right: _makeDotMesh(),
+          };
+          SIDES.forEach(side => {
+            scene.add(dotMeshes[side]);
+          });
 
           const soundBody = (() => {
             const result = new sound.Body();
@@ -364,13 +382,39 @@ module.exports = archae => ({
             return result;
           })();
 
-          const _trigger = () => {
-            scene.remove(mesh);
+          const _trigger = e => {
+            const {side} = e;
+            const hoverState = hoverStates[side];
+            const {target} = hoverState;
+
+            if (target) {
+              adState.open = false;
+              adState.animation = anima.makeAnimation(TRANSITION_DURATION);
+
+              const dotMesh = dotMeshes[side];
+              dotMesh.visible = false;
+            }
           };
           zeo.on('trigger', _trigger);
 
           let lastTime = world.getWorldTime();
           const _update = () => {
+            const _updateMesh = () => {
+              const {open} = adState;
+
+              if (!open) {
+                const {animation} = adState;
+                const factor = animation.getValue();
+                const value = 1 - factor;
+
+                if (value > 0) {
+                   mesh.scale.set(1, value, 1);
+                } else {
+                   mesh.scale.set(1, 1, 1);
+                   mesh.visible = false;
+                }
+              }
+            };
             const _updateControllers = () => {
               const status = zeo.getStatus();
               const {gamepads} = zeo.getStatus();
@@ -393,34 +437,48 @@ module.exports = archae => ({
                 }
               };
               const _updateCloseMesh = () => {
-                const {closeMesh} = mesh;
-                const {position: closeMeshPosition, rotation: closeMeshRotation, scale: closeMeshScale} = _decomposeObjectMatrixWorld(closeMesh);
+                const {open} = adState;
 
-                const boxTarget = geometryUtils.makeBoxTarget(closeMeshPosition, closeMeshRotation, closeMeshScale, new THREE.Vector3(0.3, 0.1, 0.01));
+                if (open) {
+                  const {closeMesh} = mesh;
+                  const {position: closeMeshPosition, rotation: closeMeshRotation, scale: closeMeshScale} = _decomposeObjectMatrixWorld(closeMesh);
 
-                let intersectionPoint = null;
-                SIDES.some(side => {
-                  const gamepad = gamepads[side];
+                  const boxTarget = geometryUtils.makeBoxTarget(closeMeshPosition, closeMeshRotation, closeMeshScale, new THREE.Vector3(0.3, 0.1, 0.01));
 
-                  if (gamepad) {
-                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                    const controllerLine = new THREE.Line3(
-                      controllerPosition,
-                      controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation).multiplyScalar(15))
-                    );
-                    intersectionPoint = boxTarget.intersectLine(controllerLine);
-                    return Boolean(intersectionPoint);
-                  } else {
-                    return false;
-                  }
-                });
-                if (intersectionPoint) {
-                  hoverState.target = 'close';
+                  SIDES.forEach(side => {
+                    const intersectionPoint = (() => {
+                      const gamepad = gamepads[side];
 
-                  dotMesh.position.copy(intersectionPoint);
-                  closeMesh.material.color = new THREE.Color(0xFF0000);
-                } else {
-                  closeMesh.material.color = new THREE.Color(0x800000);
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const controllerLine = new THREE.Line3(
+                          controllerPosition,
+                          controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation).multiplyScalar(15))
+                        );
+                        return boxTarget.intersectLine(controllerLine);
+                      } else {
+                        return null;
+                      }
+                    })();
+
+                    const hoverState = hoverStates[side];
+                    const dotMesh = dotMeshes[side];
+                    if (intersectionPoint) {
+                      hoverState.target = 'close';
+
+                      dotMesh.position.copy(intersectionPoint);
+                      dotMesh.visible = true;
+                    } else {
+                      hoverState.target = null;
+                      dotMesh.visible = false;
+                    }
+                  });
+                  const hovered = SIDES.some(side => {
+                    const hoverState = hoverStates[side];
+                    const {target} = hoverState;
+                    return Boolean(target);
+                  });
+                  closeMesh.material.color = new THREE.Color(hovered ? 0xFF0000 : 0x800000);
                 }
               };
 
@@ -458,6 +516,7 @@ module.exports = archae => ({
               lastTime = currentTime;
             };
 
+            _updateMesh();
             _updateControllers();
             _updateAnimations();
           };
@@ -465,6 +524,9 @@ module.exports = archae => ({
 
           this._cleanup = () => {
             scene.remove(mesh);
+            SIDES.forEach(side => {
+              scene.remove(dotMeshes[side]);
+            });
 
             zeo.removeListener('trigger', _trigger);
             zeo.removeListener('update', _update);
