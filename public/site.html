@@ -5,6 +5,7 @@
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Droid+Sans+Mono:400" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/font/octicons.min.css" rel="stylesheet">
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <style>
     body {
       display: flex;
@@ -66,7 +67,7 @@
       bottom: 0;
       left: 0;
       right: 0;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
       flex-direction: column;
     }
@@ -74,14 +75,53 @@
       display: flex;
       position: relative;
       width: 480px;
+      margin-top: 20px;
       padding: 0 40px;
-      padding-bottom: 30px;
-      background-color: rgba(220, 220, 220, 0.7);
+      padding-bottom: 10px;
+      background-color: rgb(220, 220, 220);
       border-radius: 5px;
       color: #000;
+      align-items: center;
+      flex-direction: column;
+    }
+    .navbar {
+      display: flex;
+      position: relative;
+      width: 560px;
+      margin: 0 -50px;
+      justify-content: center;
+      align-items: center;
+    }
+    .nav {
+      display: flex;
+      color: #808080;
+      border-bottom: 3px solid rgb(210, 210, 210);
+      flex-grow: 1;
       justify-content: center;
       align-items: center;
       flex-direction: column;
+    }
+    .nav:hover {
+      color: #000;
+    }
+    .nav.highlight {
+      color: #000;
+      border-bottom-color: #FF1744;
+      cursor: default;
+    }
+    .nav > i {
+      font-size: 44px !important;
+      line-height: 1.4;
+      filter: blur(1px);
+    }
+    .nav:hover > i, .nav.highlight > i {
+      filter: none;
+    }
+    .nav > span {
+      display: inline-block;
+      margin-left: -11px;
+      font-size: 11px;
+      margin-bottom: 10px;
     }
     .video-wrapper {
       position: absolute;
@@ -98,34 +138,101 @@
       width: 100%;
       background-color: #FFF;
     }
+    .container-header {
+      width: 560px;
+      margin: 0 -50px;
+      padding: 5px;
+      background-color: rgb(210, 210, 210);
+      border-top-left-radius: 5px;
+      border-top-right-radius: 5px;
+      box-sizing: border-box;
+    }
     h1, h2, h3 {
       margin: 0;
       line-height: 1.4;
       font-weight: inherit;
     }
     h1 {
-      font-size: 80px;
+      font-size: 13px;
+      font-weight: 400;
     }
     h2 {
+      margin: 10px 0;
       font-size: 26px;
-    }
-    h3 {
-      font-size: 22px;
-      text-align: center;
+      font-weight: 400;
+      line-height: 2;
     }
     section {
-      margin: 20px 0;
-      font-size: 13px;
+      display: none;
+    }
+    section.highlight {
+      display: block;
+    }
+    .subsections {
+      display: flex;
+      width: 480px;
+    }
+    .subsection.center {
+       padding-right: 100px;
+    }
+    .subsection.main {
+      width: 340px;
+    }
+    .subsection.aside {
+      display: flex;
+      margin-top: 15px;
+      margin-right: 20px;
+      align-items: flex-end;
+      flex-grow: 1;
+      flex-direction: column;
+    }
+    .aside-icon {
+      font-size: 50px;
+      line-height: 80px;
+      text-align:center;
+    }
+    .aside-icon.purple {
+      color: #3F51B5;
+    }
+    .aside-icon.gray {
+      color: #333;
+    }
+    .aside-icon.large {
+      font-size: 60px;
+    }
+    .intermission {
+      display: flex;
+      margin: 0 -40px;
+      margin-bottom: 20px;
+      height: 80px;
+      background-color: #CCC;
+      justify-content: center;
+      align-items: center;
+    }
+    .intermission-icon {
+      font-size: 50px;
+      color: #4CAF50;
     }
     p {
       margin: 0;
       margin-bottom: 20px;
+      font-size: 13px;
+      line-height: 1.6;
       font-weight: 400;
     }
+    p.big {
+      font-size: 16px;
+    }
     pre {
-      padding: 15px;
+      margin: 0;
+      margin-left: -40px;
+      margin-bottom: 20px;
+      padding: 10px;
+      padding-left: 40px;
       background-color: #000;
-      border-radius: 3px;
+      border-top-right-radius: 5px;
+      border-bottom-right-radius: 5px;
+      font-size: 12px;
       color: #FFF;
       font-family: 'Droid Sans Mono';
     }
@@ -135,9 +242,22 @@
     .dollar {
       user-select: none;
     }
+    code {
+      display: inline-block;
+      padding: 0 5px;
+      background-color: #CCC;
+      border-radius: 3px;
+    }
+    .link {
+      text-decoration: underline;
+    }
+    .link:hover {
+      color: #666;
+    }
     a {
       color: inherit;
       text-decoration: none;
+      outline: none;
       cursor: pointer;
     }
     .cta {
@@ -145,36 +265,33 @@
       width: 100%;
     }
     .cta-item {
-      display: block;
-      padding: 10px;
+      display: inline-block;
+      margin-right: 2px;
+      padding: 3px 5px;
       background-color: #DCDCDC;
       border-radius: 5px;
-      border: 3px solid;
+      border: 2px solid;
       font-size: 13px;
-      color: #000;
       flex: 1;
       box-sizing: border-box;
     }
-    .cta-item:hover {
-      background-color: #BBB;
+    .cta-item.red {
+      color: #E91E63;
     }
-    .cta-item.highlight {
-      background-color: #FF1744;
-      border: 0;
-      color: #FFF;
+    .cta-item.red:hover {
+      color: #AD1457;
     }
-    .cta-item.highlight:hover {
-      background-color: #D50000;
+    .cta-item.purple {
+      color: #3F51B5;
     }
-    .cta-icon {
-      display: flex;
-      justify-content: center;
+    .cta-item.purple:hover {
+      color: #4527A0;
     }
-    .cta-icon > i {
-      font-size: 44px !important;
+    .cta-item.green {
+      color: #4CAF50;
     }
-    .cta-spacer {
-      margin: 0 20px;
+    .cta-item.green:hover {
+      color: #2E7D32;
     }
     footer {
       display: flex;
@@ -205,29 +322,63 @@
     </div>
     <div class=container-overlay>
       <div class=container-wrapper>
-        <h1>zeo</h1>
-        <h2>WebVR worlds in Javascript</h2>
-        <section>
-          <p><b>NPM</b> modules delivered to your face, from your browser.</p>
-          <p>Supports <b>WebVR</b> or keyboard + mouse. Includes server-side persistence, design interface, multiplayer, physics, plugin API, and more.</p>
-          <pre><span class=dollar>$ </span>npm install zeo<span class=comment> # requires node 6+</span></pre>
-        </section>
-        <div class=cta>
-          <a class="cta-item highlight" href="https://github.com/modulesio/zeo/blob/master/core/engines/zeo/README.md">
-            <div class=cta-icon>
-              <i class="octicon octicon-terminal"></i>
-            </div>
-            <h3>Get started</h3>
-          </a>
-          <div class=cta-spacer>
-          </div>
-          <a class=cta-item href="https://github.com/modulesio/zeo/blob/master/core/engines/zeo/README.md">
-            <div class=cta-icon>
-              <i class="octicon octicon-code"></i>
-            </div>
-            <h3>API docs</h3>
-          </a>
+        <div class=container-header>
+          <h1>zeo.sh</h1>
         </div>
+        <nav class=navbar>
+          <a href="#" class=nav>
+            <i class="octicon octicon-gist"></i>
+            <span>Developer</span>
+          </a>
+          <a href="#" class="nav highlight">
+            <i class="octicon octicon-location"></i>
+            <span>Explorer</span>
+          </a>
+          <a href="#" class=nav>
+            <i class="octicon octicon-dashboard"></i>
+            <span>Advertiser</span>
+          </a>
+        </nav>
+        <section>
+<div class=subsections>
+  <div class="subsection main">
+    <h2>Make VR, make money</h2>
+    <p><b>Zeo lets you build WebVR worlds with Javascript + <a class=link href="https://npmjs.org">npm</a> and get paid for it.</b></p>
+    <p>Headset + controller tracking, server-side physics, multiplayer, UI framework, positional audio and more. It's all plain JS, <a class=link href="https://threejs.org/">THREE.js</a>, and <a class=link href="https://npmjs.org">npm</a>.</p>
+    <p>Zeo pays you with in-world VR advertising and analytics.</p>
+    <p><a class="cta-item purple" href="https://github.com/modulesio/zeo">Start developing</a> or <a class=link href="https://github.com/modulesio/zeo">How Zeo works</a>.</p>
+  </div>
+  <div class="subsection aside">
+    <i class="aside-icon purple octicon octicon-tools"></i>
+    <i class="aside-icon purple fa fa-money"></i>
+    <i class="aside-icon purple octicon octicon-heart" style="position: relative; left: 7px;"></i>
+  </div>
+</div>
+        </section>
+        <section class=highlight>
+<div class=subsections>
+  <div class="subsection main">
+    <h2>WebVR worlds with NPM</h2>
+    <pre><span class=dollar>$ </span>npm install zeo<span class=comment> # requires node 6+</span></pre>
+    <p><b>Zeo is a WebVR server powered by Javascript + <a class=link href="https://npmjs.org">npm</a>.</b></p>
+    <p>Npm install objects from the browser without taking off your headset. Or just use keyboard + mouse.</p>
+    <p>Open source on Github. Plugins are funded by in-world ads.</b></p>
+    <p><a class="cta-item red" href="https://github.com/modulesio/zeo">Get started with Zeo</a></p>
+  </div>
+  <div class="subsection aside">
+    <i class="aside-icon gray large octicon octicon-telescope"></i>
+  </div>
+</div>
+        </section>
+        <section>
+<h2>VR advertising is here</h2>
+<p class=big>Start a conversation that touches your audience. Literally.</p>
+<div class=intermission>
+  <i class="intermission-icon octicon octicon-hubot"></i>
+</div>
+<p>In-world advertising uses the same Javascript VR content engine that powers Zeo to deliver custom ad experiences for your brand.<br/><b>Immersive analytics</b> give you insights through the eyes of your customer.</p>
+<p><a class="cta-item green" href="mailto:a@modules.io">Contact us</a> or <a class=link href="mailto:a@modules.io">discover the Zeo ad program</a>.</p>
+        </section>
       </div>
     </div>
   </div>
@@ -235,5 +386,27 @@
     <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></aside>
     <aside class=footer-right>&copy; 2017 <a href="mailto:a@modules.io">Avaer Kazmer</a></aside>
   </footer>
+  <script>
+window.onload = () => {
+  const $ = s => document.querySelectorAll(s);
+  const navs = $('.nav');
+  const sections = $('section');
+  navs.forEach((a, i) => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+
+      navs.forEach(a => {
+        a.classList.remove('highlight');
+      });
+      a.classList.add('highlight');
+
+      sections.forEach(s => {
+        s.classList.remove('highlight');
+      });
+      sections[i].classList.add('highlight');
+    });
+  });
+};
+  </script>
 </body>
 </html>
