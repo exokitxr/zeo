@@ -10,7 +10,8 @@
     "node-gyp": "^3.4.0"
   },
   "scripts": {
-    "preinstall": "./build.sh",
+    "preinstall": "./scripts/preinstall.sh",
+    "postinstall": "./scripts/postinstall.sh",
     "test": "node test.js"
   }
 }
