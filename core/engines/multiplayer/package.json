@@ -1,6 +1,6 @@
 {
   "name": "multiplayer",
-  "description": "Allow others to join your world and interact with them in real time.",
+  "description": "Provides multiplayer support for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",

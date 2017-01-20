@@ -15,16 +15,16 @@ class Multiplayer {
     };
 
     return archae.requestPlugins([
-      '/core/engines/zeo',
+      '/core/engines/three',
       '/core/engines/rend',
       '/core/engines/cyborg',
     ]).then(([
-      zeo,
+      three,
       rend,
       cyborg,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = zeo;
+        const {THREE, scene, camera} = three;
         const world = rend.getCurrentWorld();
         const {player} = world;
 
