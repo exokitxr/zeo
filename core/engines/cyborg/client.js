@@ -363,14 +363,6 @@ class Cyborg {
 
           const _getPlayer = () => player;
           const _getControllers = () => controllers;
-          const _getMode = () => {
-            const display = webvr.getDisplay();
-            if (display && display.getMode) {
-              return display.getMode();
-            } else {
-              return 'move';
-            }
-          };
           const _update = () => {
             // update camera
             const status = webvr.getStatus();
@@ -422,7 +414,6 @@ class Cyborg {
           return {
             getPlayer: _getPlayer,
             getControllers: _getControllers,
-            getMode: _getMode,
             update: _update,
           };
         }
