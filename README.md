@@ -31,13 +31,13 @@ If you know how to run `node`, you can pick up your headset + controllers and bu
 npm install zeo # requires node 6+
 ```
 
-:point_right: The _required dependencies_ are `build-essential` and `cmake`. These are needed to build the included third-party [Bullet physics engine](https://github.com/bulletphysics/bullet3). On Debian/Ubuntu you can get these dependencies with:
+:point_right: The _required dependencies_ are `build-essential cmake python`. These are needed to build some native node modules -- most notably the third-party [Bullet physics engine](https://github.com/bulletphysics/bullet3). On Debian/Ubuntu you can get these dependencies with:
 
 ```bash
-sudo apt-get install build-essential cmake
+sudo apt-get install build-essential cmake python
 ```
 
-If you're using a different package manager it almost certainly has these, though under a different name.
+If you're using a different package manager it almost certainly has these, under slightly different names.
 
 ## Example: Bouncy ball
 
