@@ -14,12 +14,18 @@ class Backpack {
     };
 
     return archae.requestPlugins([
-      '/core/engines/zeo',
+      '/core/engines/three',
+      '/core/engines/input',
+      '/core/engines/webvr',
+      '/core/engines/rend',
     ]).then(([
-      zeo,
+      three,
+      input,
+      webvr,
+      rend,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = zeo;
+        const {THREE, scene, camera} = three;
 
         const _makeHoverState = () => ({
           target: null,
@@ -156,7 +162,7 @@ class Backpack {
           let showBoxMesh = false;
           SIDES.forEach(side => {
             const hoverState = hoverStates[side];
-            const {gamepads} = zeo.getStatus();
+            const {gamepads} = webvr.getStatus();
             const gamepad = gamepads[side];
 
             if (gamepad) {
@@ -221,7 +227,7 @@ class Backpack {
             boxMesh.visible = false;
           }
         };
-        zeo.on('update', _update);
+        rend.on('update', _update);
 
         const _gripdown = e => {
           const {side} = e;
@@ -253,7 +259,7 @@ class Backpack {
             }
           }
         };
-        zeo.on('gripdown', _gripdown);
+        input.on('gripdown', _gripdown);
         const _gripup = e => {
           const {side} = e;
           const hoverState = hoverStates[side];
@@ -270,14 +276,14 @@ class Backpack {
             }
           }
         };
-        zeo.on('gripup', _gripup);
+        input.on('gripup', _gripup);
 
         this._cleanup = () => {
           scene.remove(mesh);
 
-          zeo.removeListener('update', _update);
-          zeo.removeListener('gripdown', _gripdown);
-          zeo.removeListener('gripup', _gripup);
+          rend.removeListener('update', _update);
+          input.removeListener('gripdown', _gripdown);
+          input.removeListener('gripup', _gripup);
         };
       }
     });
