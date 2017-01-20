@@ -69,7 +69,7 @@ class Backpack {
               .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, depth / 2))
               .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 4))
               .applyMatrix(new THREE.Matrix4().makeTranslation(0, height / 2, -(depth / 2)))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(depth / 2) - (0.05 / 2) - (thickness / 2))),
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, -(thickness / 4), -(depth / 2) - (0.05 / 2) - (thickness / 2))),
             outerMaterial
           );
           object.add(top);
