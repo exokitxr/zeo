@@ -71,12 +71,20 @@ class Hands {
             options = options || {};
             const {radius = DEFAULT_GRAB_RADIUS} = options;
 
-            const {gamepads} = webvr.getStatus();
-            const gamepad = gamepads[side];
-            if (gamepad) {
-              const {position: controllerPosition} = gamepad;
+            const grabState = grabStates[side];
+            const {grabber} = grabState;
 
-              return controllerPosition.distanceTo(object.position) <= radius;
+            if (!grabber) {
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {position: controllerPosition} = gamepad;
+
+                return controllerPosition.distanceTo(object.position) <= radius;
+              } else {
+                return false;
+              }
             } else {
               return false;
             }
