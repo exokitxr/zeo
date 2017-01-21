@@ -25,6 +25,8 @@ const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 1080;
 const DEFAULT_ASPECT_RATIO = DEFAULT_WIDTH / DEFAULT_HEIGHT;
 
+const CONTROLLER_DEFAULT_OFFSETS = [0.2, -0.1, -0.2];
+
 const POSITION_SPEED = 0.05;
 const POSITION_SPEED_FAST = POSITION_SPEED * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
@@ -99,6 +101,26 @@ class WebVR {
           }
         })[0];
 
+        const _getMatrixFromPose = (pose, stageMatrix) => {
+          const position = pose.position !== null ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
+          const rotation = pose.orientation !== null ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
+          const scale = new THREE.Vector3(1, 1, 1);
+          const matrix = stageMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
+          return matrix;
+        };
+        const _getPropertiesFromMatrix = matrix => {
+          const position = new THREE.Vector3();
+          const rotation = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          matrix.decompose(position, rotation, scale);
+
+          return {
+            position,
+            rotation,
+            scale,
+          };
+        };
+
         class WebvrInstance extends EventEmitter {
           constructor() {
             super();
@@ -108,22 +130,52 @@ class WebVR {
             this.isOpen = false;
             this.isOpening = false;
 
-            this.stageMatrix = new THREE.Matrix4();
+            const stageMatrix = new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
+            this.stageMatrix = stageMatrix;
 
-            const _makeDefaultHmdStatus = () => {
+            const _makeDefaultHmdStatus = () => ({
+              pose: null,
+              position: camera.position.clone(),
+              rotation: camera.quaternion.clone(),
+              scale: camera.scale.clone(),
+              matrix: camera.matrix.clone(),
+            });
+            const _makeDefaultGamepadStatus = (stageMatrix, index) => {
+              const pose = {
+                position: [CONTROLLER_DEFAULT_OFFSETS[0] * ((index === 0) ? -1 : 1), CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
+                orientation: [0, 0, 0, 1],
+              };
+              const matrix = _getMatrixFromPose(pose, stageMatrix);
+              const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
+
+              const _makeDefaultButtonStatus = () => ({
+                touched: false,
+                pressed: false,
+                value: 0,
+              });
+              const buttons = {
+                pad: _makeDefaultButtonStatus(),
+                trigger: _makeDefaultButtonStatus(),
+                grip: _makeDefaultButtonStatus(),
+                menu: _makeDefaultButtonStatus(),
+              };
+              const axes = [0, 0];
+
               return {
-                pose: null,
-                position: camera.position.clone(),
-                rotation: camera.quaternion.clone(),
-                scale: camera.scale.clone(),
-                matrix: camera.matrix.clone(),
+                pose,
+                matrix,
+                position,
+                rotation,
+                scale,
+                buttons,
+                axes,
               };
             };
             this.status = {
               hmd: _makeDefaultHmdStatus(),
               gamepads: {
-                left: null,
-                right: null,
+                left: _makeDefaultGamepadStatus(stageMatrix, 0),
+                right: _makeDefaultGamepadStatus(stageMatrix, 1),
               },
             };
           }
@@ -196,6 +248,8 @@ class WebVR {
                     }
                   })();
                   this.setStageMatrix(stageMatrix);
+
+                  this.updateStatus();
 
                   const _renderLoop = () => {
                     const _render = () => {
@@ -393,25 +447,6 @@ class WebVR {
             const {display} = this;
 
             if (display) {
-              const _getMatrixFromPose = (pose, stageMatrix) => {
-                const position = pose.position !== null ? new THREE.Vector3().fromArray(pose.position) : new THREE.Vector3(0, 0, 0);
-                const rotation = pose.orientation !== null ? new THREE.Quaternion().fromArray(pose.orientation) : new THREE.Quaternion(0, 0, 0, 1);
-                const scale = new THREE.Vector3(1, 1, 1);
-                const matrix = stageMatrix.clone().multiply(new THREE.Matrix4().compose(position, rotation, scale));
-                return matrix;
-              };
-              const _getPropertiesFromMatrix = matrix => {
-                const position = new THREE.Vector3();
-                const rotation = new THREE.Quaternion();
-                const scale = new THREE.Vector3();
-                matrix.decompose(position, rotation, scale);
-
-                return {
-                  position,
-                  rotation,
-                  scale,
-                };
-              };
               const _getHmdStatus = ({stageMatrix}) => {
                 const frameData = new VRFrameData();
                 display.getFrameData(frameData);
@@ -950,9 +985,9 @@ class WebVR {
             this.axes = [0, 0];
 
             const positionOffset = new THREE.Vector3(
-              0.2 * (index === 0 ? -1 : 1),
-              -0.1,
-              -0.2
+              CONTROLLER_DEFAULT_OFFSETS[0] * (index === 0 ? -1 : 1),
+              CONTROLLER_DEFAULT_OFFSETS[1],
+              CONTROLLER_DEFAULT_OFFSETS[2]
             );
             this.positionOffset = positionOffset;
 

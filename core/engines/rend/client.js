@@ -65,7 +65,6 @@ class Rend {
       '/core/engines/airlock',
       '/core/engines/fs',
       '/core/engines/bullet',
-      '/core/engines/heartlink',
       '/core/plugins/js-utils',
       '/core/plugins/creature-utils',
     ]).then(([
@@ -77,7 +76,6 @@ class Rend {
       airlock,
       fs,
       bullet,
-      heartlink,
       jsUtils,
       creatureUtils,
     ]) => {
@@ -380,8 +378,6 @@ class Rend {
               elementsStatus,
               physics,
             ]) => {
-              const player = heartlink.getPlayer(); // XXX make this per-world
-
               configState.airlockCheckboxValue = configSpec.airlock;
               configState.statsCheckboxValue = configSpec.stats;
 
@@ -435,10 +431,9 @@ class Rend {
                 });
 
               class World {
-                constructor({name, physics, player}) {
+                constructor({name, physics}) {
                   this.name = name;
                   this.physics = physics;
-                  this.player = player;
                 }
 
                 getWorldTime() {
@@ -523,7 +518,6 @@ class Rend {
               const world = new World({
                 name: worldName,
                 physics,
-                player,
               });
 
               currentWorld = world;
