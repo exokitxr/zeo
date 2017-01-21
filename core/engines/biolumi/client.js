@@ -49,6 +49,7 @@ class Biolumi {
 
     return Promise.all([
       archae.requestPlugins([
+        '/core/engines/three',
         '/core/engines/anima',
       ]),
       _requestFont(),
@@ -56,12 +57,15 @@ class Biolumi {
     ])
       .then(([
         [
+          three,
           anima
         ],
         font,
         transparentImg,
       ]) => {
         if (live) {
+          const {THREE} = three;
+
           const _requestUi = ({width, height}) => new Promise((accept, reject) => {
             const pages = [];
 
@@ -538,7 +542,78 @@ class Biolumi {
           const _getFontStyle = () => fontStyle;
           const _getTransparentImg = () => transparentImg;
           const _getMaxNumTextures = () => MAX_NUM_TEXTURES;
-          const _getMenuShader = () => menuShaders.getShader({maxNumTextures: MAX_NUM_TEXTURES});
+
+          const menuShader = menuShaders.getShader({maxNumTextures: MAX_NUM_TEXTURES});
+          const _makeMenuMaterial = () => {
+            const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
+            shaderUniforms.textures.value = (() => {
+              const result = Array(MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                const texture = new THREE.Texture(
+                  transparentImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.LinearFilter,
+                  THREE.LinearFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  16
+                );
+                // texture.needsUpdate = true;
+
+                result[i] = texture;
+              }
+              return result;
+            })();
+            shaderUniforms.validTextures.value = (() => {
+              const result = Array(MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[i] = 0;
+              }
+              return result;
+            })();
+            shaderUniforms.texturePositions.value = (() => {
+              const result = Array(2 * MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[(i * 2) + 0] = 0;
+                result[(i * 2) + 1] = 0;
+              }
+              return result;
+            })();
+            shaderUniforms.textureLimits.value = (() => {
+              const result = Array(2 * MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[(i * 2) + 0] = 0;
+                result[(i * 2) + 1] = 0;
+              }
+              return result;
+            })();
+            shaderUniforms.textureOffsets.value = (() => {
+              const result = Array(MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[i] = 0;
+              }
+              return result;
+            })();
+            shaderUniforms.textureDimensions.value = (() => {
+              const result = Array(MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[i] = 0;
+              }
+              return result;
+            })();
+            const shaderMaterial = new THREE.ShaderMaterial({
+              uniforms: shaderUniforms,
+              vertexShader: menuShader.vertexShader,
+              fragmentShader: menuShader.fragmentShader,
+              side: THREE.DoubleSide,
+              transparent: true,
+            });
+            // shaderMaterial.polygonOffset = true;
+            // shaderMaterial.polygonOffsetFactor = 1;
+            return shaderMaterial;
+          };
 
           return {
             requestUi: _requestUi,
@@ -547,7 +622,7 @@ class Biolumi {
             getFontStyle: _getFontStyle,
             getTransparentImg: _getTransparentImg,
             getMaxNumTextures: _getMaxNumTextures,
-            getMenuShader: _getMenuShader,
+            makeMenuMaterial: _makeMenuMaterial,
           };
         }
       });

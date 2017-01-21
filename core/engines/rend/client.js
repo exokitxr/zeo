@@ -85,7 +85,6 @@ class Rend {
 
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
-        const menuShader = biolumi.getMenuShader();
 
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
@@ -811,81 +810,12 @@ class Rend {
                   const object = new THREE.Object3D();
                   object.position.y = DEFAULT_USER_HEIGHT;
 
-                  const imageMaterial = (() => {
-                    const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
-                    shaderUniforms.textures.value = (() => {
-                      const result = Array(maxNumTextures);
-                      for (let i = 0; i < maxNumTextures; i++) {
-                        const texture = new THREE.Texture(
-                          transparentImg,
-                          THREE.UVMapping,
-                          THREE.ClampToEdgeWrapping,
-                          THREE.ClampToEdgeWrapping,
-                          THREE.LinearFilter,
-                          THREE.LinearFilter,
-                          THREE.RGBAFormat,
-                          THREE.UnsignedByteType,
-                          16
-                        );
-                        // texture.needsUpdate = true;
-
-                        result[i] = texture;
-                      }
-                      return result;
-                    })();
-                    shaderUniforms.validTextures.value = (() => {
-                      const result = Array(maxNumTextures);
-                      for (let i = 0; i < maxNumTextures; i++) {
-                        result[i] = 0;
-                      }
-                      return result;
-                    })();
-                    shaderUniforms.texturePositions.value = (() => {
-                      const result = Array(2 * maxNumTextures);
-                      for (let i = 0; i < maxNumTextures; i++) {
-                        result[(i * 2) + 0] = 0;
-                        result[(i * 2) + 1] = 0;
-                      }
-                      return result;
-                    })();
-                    shaderUniforms.textureLimits.value = (() => {
-                      const result = Array(2 * maxNumTextures);
-                      for (let i = 0; i < maxNumTextures; i++) {
-                        result[(i * 2) + 0] = 0;
-                        result[(i * 2) + 1] = 0;
-                      }
-                      return result;
-                    })();
-                    shaderUniforms.textureOffsets.value = (() => {
-                      const result = Array(maxNumTextures);
-                      for (let i = 0; i < maxNumTextures; i++) {
-                        result[i] = 0;
-                      }
-                      return result;
-                    })();
-                    shaderUniforms.textureDimensions.value = (() => {
-                      const result = Array(maxNumTextures);
-                      for (let i = 0; i < maxNumTextures; i++) {
-                        result[i] = 0;
-                      }
-                      return result;
-                    })();
-                    const shaderMaterial = new THREE.ShaderMaterial({
-                      uniforms: shaderUniforms,
-                      vertexShader: menuShader.vertexShader,
-                      fragmentShader: menuShader.fragmentShader,
-                      side: THREE.DoubleSide,
-                      transparent: true,
-                    });
-                    // shaderMaterial.polygonOffset = true;
-                    // shaderMaterial.polygonOffsetFactor = 1;
-                    return shaderMaterial;
-                  })();
-
                   const planeMesh = (() => {
                     const width = WORLD_WIDTH;
                     const height = WORLD_HEIGHT;
                     const depth = WORLD_DEPTH;
+
+                    const imageMaterial = biolumi.makeMenuMaterial();
 
                     const geometry = new THREE.PlaneBufferGeometry(width, height);
                     const materials = [solidMaterial, imageMaterial];
