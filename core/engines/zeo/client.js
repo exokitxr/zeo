@@ -36,7 +36,6 @@ class Zeo {
       '/core/engines/fs',
       '/core/engines/somnifer',
       '/core/engines/bullet',
-      '/core/engines/heartlink',
       '/core/plugins/js-utils',
     ]).then(([
       input,
@@ -54,7 +53,6 @@ class Zeo {
       fs,
       somnifer,
       bullet,
-      heartlink,
       jsUtils,
     ]) => {
       if (live) {
