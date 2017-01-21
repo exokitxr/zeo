@@ -1,5 +1,7 @@
 const SIDES = ['left', 'right'];
 
+const DEFAULT_GRAB_DISTANCE = 0.12;
+
 class Backpack {
   constructor(archae) {
     this._archae = archae;
@@ -18,22 +20,32 @@ class Backpack {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/rend',
+      '/core/engines/hands',
     ]).then(([
       three,
       input,
       webvr,
       rend,
+      hands,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
 
+        const numItems = 4;
+
         const _makeHoverState = () => ({
           target: null,
-          gripped: false,
         });
         const hoverStates = {
           left: _makeHoverState(),
           right: _makeHoverState(),
+        };
+        const _makeGrabState = () => ({
+          grabber: null,
+        });
+        const grabStates = {
+          left: _makeGrabState(),
+          right: _makeGrabState(),
         };
         const backpackState = {
           visible: true,
@@ -145,8 +157,6 @@ class Backpack {
           object.handleBoxMesh = handleBoxMesh;
 
           const itemBoxMeshes = (() => {
-            const numItems = 4;
-
             const _makeItemBoxMesh = index => {
               const size = 0.075;
               const padding = size / 2;
@@ -180,123 +190,176 @@ class Backpack {
         scene.add(mesh);
 
         const _update = e => {
-          const {visible: backbackVisible} = backpackState;
+          const _updateTarget = () => {
+            const status = webvr.getStatus();
+            const {gamepads} = status;
+            const {visible: backbackVisible} = backpackState;
 
-          let showBoxMesh = false;
-          SIDES.forEach(side => {
-            const hoverState = hoverStates[side];
-            const {gamepads} = webvr.getStatus();
-            const gamepad = gamepads[side];
+            SIDES.forEach(side => {
+              const hoverState = hoverStates[side];
+              const grabState = grabStates[side];
+              const gamepad = gamepads[side];
 
-            if (gamepad) {
-              const {gripped} = hoverState;
-              const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+              if (gamepad) {
+                const target = (() => {
+                  const {grabber} = grabState;
+                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-              const _isBehindCamera = position => {
-                const nearPlaneDistance = 1;
-                const farPlaneDistance = 15;
+                  const _isBehindCamera = position => {
+                    const nearPlaneDistance = 1;
+                    const farPlaneDistance = 15;
 
-                const nearPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                  new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion),
-                  camera.position
-                );
-                const farPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                  new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion),
-                  camera.position.clone().add(new THREE.Vector3(0, 0, farPlaneDistance).applyQuaternion(camera.quaternion))
-                );
+                    const nearPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                      new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion),
+                      camera.position
+                    );
+                    const farPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                      new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion),
+                      camera.position.clone().add(new THREE.Vector3(0, 0, farPlaneDistance).applyQuaternion(camera.quaternion))
+                    );
 
-                const closestNearPoint = nearPlane.projectPoint(position);
-                const closestFarPoint = farPlane.projectPoint(position);
+                    const closestNearPoint = nearPlane.projectPoint(position);
+                    const closestFarPoint = farPlane.projectPoint(position);
 
-                const nearLine = new THREE.Line3(position, closestNearPoint);
-                const farLine = new THREE.Line3(position, closestFarPoint);
+                    const nearLine = new THREE.Line3(position, closestNearPoint);
+                    const farLine = new THREE.Line3(position, closestFarPoint);
 
-                const nearDistance = nearLine.distance();
-                const farDistance = farLine.distance();
+                    const nearDistance = nearLine.distance();
+                    const farDistance = farLine.distance();
 
-                return nearDistance < nearPlaneDistance && farDistance < farPlaneDistance;
-              };
+                    return nearDistance < nearPlaneDistance && farDistance < farPlaneDistance;
+                  };
 
-              if (!gripped) {
-                if (backbackVisible && controllerPosition.distanceTo(mesh.position) < 0.12) {
-                  hoverState.target = 'handle';
+                  const _isBackTarget = () => _isBehindCamera(controllerPosition);
+                  const _getHandleOrItemTarget = () => {
+                    const validTargets = [];
 
-                  showBoxMesh = true;
-                } else {
-                  if (_isBehindCamera(controllerPosition)) {
-                    hoverState.target = 'back';
+                    if (!grabber && backbackVisible) {
+                      const distance = controllerPosition.distanceTo(mesh.position);
+
+                      if (distance < DEFAULT_GRAB_DISTANCE) {
+                        validTargets.push({
+                          type: 'handle',
+                          distance,
+                        });
+                      }
+                    }
+
+                    const {itemBoxMeshes} = mesh;
+                    for (let i = 0; i < numItems; i++) {
+                      const itemBoxMesh = itemBoxMeshes[i];
+                      const {position} = _decomposeObjectWorldMatrix(itemBoxMesh);
+                      const distance = controllerPosition.distanceTo(position);
+                      if (distance < DEFAULT_GRAB_DISTANCE) {
+                        validTargets.push({
+                          type: 'item',
+                          index: i,
+                          distance,
+                        });
+                      }
+                    }
+
+                    if (validTargets.length > 0) {
+                      const closestTarget = validTargets.sort((a, b) => a.distance - b.distance)[0];
+                      const {type} = closestTarget;
+
+                      if (type === 'handle') {
+                        return 'handle';
+                      } else if (type === 'item') {
+                        const {index} = closestTarget;
+                        return 'item:' + index;
+                      } else {
+                        return null;
+                      }
+                    } else {
+                      return null;
+                    }
+                  };
+
+                  const handleOrItemTarget = _getHandleOrItemTarget();
+                  if (handleOrItemTarget !== null) {
+                    return handleOrItemTarget;
+                  } else if (_isBackTarget()) {
+                    return 'back';
                   } else {
-                    hoverState.target = null;
+                    return null;
                   }
-                }
-              } else {
-                mesh.position.copy(controllerPosition);
-                mesh.quaternion.copy(controllerRotation);
-
-                if (_isBehindCamera(controllerPosition)) {
-                  hoverState.target = 'back';
-                } else {
-                  hoverState.target = null;
-                }
+                })();
+                hoverState.target = target;
               }
-            }
-          });
+            });
+          };
+          const _updateBoxMeshes = () => {
+            const _isHandleTarget = () => SIDES.some(side => {
+              const hoverState = hoverStates[side];
+              const {target} = hoverState;
+              return target === 'handle';
+            });
+            const _isItemTarget = index => SIDES.some(side => {
+              const hoverState = hoverStates[side];
+              const {target} = hoverState;
+              const match = target !== null ? target.match(/^item:([0-9]+)$/) : null;
 
-          const {handleBoxMesh} = mesh;
-          if (showBoxMesh && !handleBoxMesh.visible) {
-            handleBoxMesh.visible = true;
-          } else if (!showBoxMesh && handleBoxMesh.visible) {
-            handleBoxMesh.visible = false;
-          }
+              if (match) {
+                const matchIndex = parseInt(match[1], 10);
+                return matchIndex === index;
+              } else {
+                return false;
+              }
+            });
+
+            const isHandleTarget = _isHandleTarget();
+            const {handleBoxMesh} = mesh;
+            if (isHandleTarget && !handleBoxMesh.visible) {
+              handleBoxMesh.visible = true;
+            } else if (!isHandleTarget && handleBoxMesh.visible) {
+              handleBoxMesh.visible = false;
+            }
+
+            const {itemBoxMeshes} = mesh;
+            for (let i = 0; i < numItems; i++) {
+              itemBoxMeshes[i].material.color = new THREE.Color(_isItemTarget(i) ? 0x0000FF : 0x808080);
+            }
+          };
+
+          _updateTarget();
+          _updateBoxMeshes();
         };
         rend.on('update', _update);
 
         const _gripdown = e => {
           const {side} = e;
-
-          SIDES.forEach(side => {
-            const hoverState = hoverStates[side];
-            hoverState.gripped = false;
-          });
-
           const hoverState = hoverStates[side];
           const {target} = hoverState;
 
-          if (target) {
-            hoverState.gripped = true;
+          if (target === 'back' || target == 'handle') {
+            const grabber = hands.grab(side, mesh);
+            grabber.on('update', ({position, rotation}) => {
+              mesh.position.copy(position);
+              mesh.quaternion.copy(rotation);
+            });
+            grabber.on('release', ({position, rotation}) => {
+              grabState.grabber = null;
 
-            const otherSide = side === 'left' ? 'right' : 'left';
-            const otherHoverState = hoverStates[otherSide];
-            const {gripped: otherGripped} = otherHoverState;
-            if (otherGripped) {
-              otherHoverState.gripped = false;
-            }
+              const {target} = hoverState;
+              if (target === 'back') {
+                mesh.visible = false;
+                backpackState.visible = false;
+              }
+            });
 
-            if (target === 'back') {
-              backpackState.visible = true;
+            const grabState = grabStates[side];
+            grabState.grabber = grabber;
 
-              mesh.visible = true;
-
-              hoverState.target = null;
-            }
+            mesh.visible = true;
+            backpackState.visible = true;
           }
         };
         input.on('gripdown', _gripdown);
         const _gripup = e => {
           const {side} = e;
-          const hoverState = hoverStates[side];
-          const {gripped} = hoverState;
 
-          if (gripped) {
-            hoverState.gripped = false;
-
-            const {target} = hoverState;
-            if (target === 'back') {
-              backpackState.visible = false;
-
-              mesh.visible = false;
-            }
-          }
+          hands.release(side);
         };
         input.on('gripup', _gripup);
 
@@ -315,5 +378,14 @@ class Backpack {
     this._cleanup();
   }
 }
+
+const _decomposeObjectWorldMatrix = object => {
+  const {matrixWorld} = object;
+  const position = new THREE.Vector3();
+  const rotation = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  matrixWorld.decompose(position, rotation, scale);
+  return {position, rotation, scale};
+};
 
 module.exports = Backpack;
