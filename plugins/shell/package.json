@@ -8,8 +8,7 @@
     "preinstall": "scripts/preinstall.sh"
   },
   "dependencies": {
-    "get-random-port": "0.0.1",
-    "http-proxy": "^1.15.2",
+    "http-proxy": "^1.16.2",
     "socket.io": "^1.7.0",
     "socket.io-client": "^1.7.0"
   }

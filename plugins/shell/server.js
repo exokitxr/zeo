@@ -3,7 +3,7 @@ const http = require('http');
 
 const socketIo = require('socket.io');
 const httpProxy = require('http-proxy');
-const getRandomPort = require('get-random-port');
+const getPort = require('get-port');
 
 const pty = require('./lib/pty.js');
 
@@ -30,7 +30,7 @@ class Shell {
       live = false;
     });
 
-    return getRandomPort()
+    return getPort()
       .then(port => {
         if (live) {
           return new Promise((accept, reject) => {
