@@ -143,12 +143,19 @@ class Mc {
                 });
                 return material;
               })();
-
               const itemMaterial = new THREE.MeshPhongMaterial({
                 color: 0xFFFFFF,
                 shininess: 10,
                 vertexColors: THREE.FaceColors,
               });
+
+              const _makeGrabState = () => ({
+                grabber: null,
+              });
+              const grabStates = {
+                left: _makeGrabState(),
+                right: _makeGrabState(),
+              };
 
               const floorMesh = (() => {
                 const geometry = (() => {
@@ -410,15 +417,24 @@ class Mc {
                           itemPhysicsBody.setIgnoreCollisionCheck(controller.physicsBody, false);
                         });
                       }, 500);
+
+                      grabState.grabber = null;
                     });
+
+                    const grabState = grabStates[side];
+                    grabState.grabber = grabber;
                   }
                 }
               };
               zeo.on('gripdown', gripdown);
               const gripup = e => {
                 const {side} = e;
+                const grabState = grabStates[side];
+                const {grabber} = grabState;
 
-                zeo.release(side);
+                if (grabber) {
+                  grabber.release();
+                }
               };
               zeo.on('gripup', gripup);
 

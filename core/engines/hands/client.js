@@ -52,6 +52,15 @@ class Hands {
             release() {
               const {side, object} = this;
 
+              SIDES.forEach(side => {
+                const grabState = grabStates[side];
+                const {grabber} = grabState;
+
+                if (grabber === this) {
+                  grabState.grabber = null;
+                }
+              });
+
               const linearVelocity = player.getControllerLinearVelocity(side);
               const angularVelocity = player.getControllerAngularVelocity(side);
               const result = {
@@ -102,19 +111,10 @@ class Hands {
               return null;
             }
           };
-          const _release = (side) => {
+          const _peek = side => {
             const grabState = grabStates[side];
             const {grabber} = grabState;
-
-            if (grabber) {
-              const result = grabber.release();
-
-              grabState.grabber = null;
-
-              return result;
-            } else {
-              return null;
-            }
+            return grabber || null;
           };
 
           const _update = () => {
@@ -152,7 +152,7 @@ class Hands {
           return {
             canGrab: _canGrab,
             grab: _grab,
-            release: _release,
+            peek: _peek,
           };
         }
       });

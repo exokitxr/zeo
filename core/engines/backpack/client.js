@@ -21,17 +21,28 @@ class Backpack {
       '/core/engines/webvr',
       '/core/engines/rend',
       '/core/engines/hands',
+      '/core/engines/tags',
     ]).then(([
       three,
       input,
       webvr,
       rend,
       hands,
+      tags,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
 
         const numItems = 4;
+
+        const _decomposeObjectWorldMatrix = object => {
+          const {matrixWorld} = object;
+          const position = new THREE.Vector3();
+          const rotation = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          matrixWorld.decompose(position, rotation, scale);
+          return {position, rotation, scale};
+        };
 
         const _makeHoverState = () => ({
           target: null,
@@ -339,13 +350,13 @@ class Backpack {
               mesh.quaternion.copy(rotation);
             });
             grabber.on('release', ({position, rotation}) => {
-              grabState.grabber = null;
-
               const {target} = hoverState;
               if (target === 'back') {
                 mesh.visible = false;
                 backpackState.visible = false;
               }
+
+              grabState.grabber = null;
             });
 
             const grabState = grabStates[side];
@@ -359,9 +370,39 @@ class Backpack {
         const _gripup = e => {
           const {side} = e;
 
-          hands.release(side);
+          const grabState = grabStates[side];
+          const {grabber: localGrabber} = grabState;
+          if (localGrabber) {
+            localGrabber.release();
+          }
+
+          const handsGrabber = hands.peek(side);
+          if (handsGrabber) {
+            const {object: handsGrabberObject} = handsGrabber;
+
+            if (tags.isTag(handsGrabberObject)) {
+              const tagMesh = handsGrabberObject;
+
+              handsGrabber.release();
+
+              const hoverState = hoverStates[side];
+              const {target} = hoverState;
+              const match = target !== null ? target.match(/^item:([0-9]+)$/) : null;
+              if (match) {
+                const {itemBoxMeshes} = mesh;
+                const index = parseInt(match[1], 10);
+                const itemBoxMesh = itemBoxMeshes[index];
+
+                const {position, rotation} = _decomposeObjectWorldMatrix(itemBoxMesh);
+                tagMesh.position.copy(position);
+                tagMesh.quaternion.copy(rotation);
+              }
+            }
+          }
         };
-        input.on('gripup', _gripup);
+        input.on('gripup', _gripup, {
+          priority: 1,
+        });
 
         this._cleanup = () => {
           scene.remove(mesh);
@@ -378,14 +419,5 @@ class Backpack {
     this._cleanup();
   }
 }
-
-const _decomposeObjectWorldMatrix = object => {
-  const {matrixWorld} = object;
-  const position = new THREE.Vector3();
-  const rotation = new THREE.Quaternion();
-  const scale = new THREE.Vector3();
-  matrixWorld.decompose(position, rotation, scale);
-  return {position, rotation, scale};
-};
 
 module.exports = Backpack;

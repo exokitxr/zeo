@@ -11,6 +11,8 @@ const DEFAULT_GRAB_RADIUS = 0.1;
 
 const SIDES = ['left', 'right'];
 
+const tagFlagSymbol = Symbol();
+
 class Tags {
   constructor(archae) {
     this._archae = archae;
@@ -100,7 +102,8 @@ class Tags {
                 const object = new THREE.Object3D();
                 object.position.y = 1.2;
                 object.rotation.order = camera.rotation.order;
-                object.rotation.y = Math.PI / 2;
+                object.rotation.y = Math.PI / 2
+                object[tagFlagSymbol] = true;
 
                 const planeMesh = (() => {
                   const width = WORLD_WIDTH;
@@ -172,7 +175,12 @@ class Tags {
               input.on('gripdown', _gripdown);
               const _gripup = e => {
                 const {side} = e;
-                hands.release(side);
+                const grabState = grabStates[side];
+                const {grabber} = grabState;
+
+                if (grabber) {
+                  grabber.release();
+                }
               };
               input.on('gripup', _gripup);
               const _update = () => {
@@ -217,7 +225,11 @@ class Tags {
                 rend.removeListener('update', _update);
               };
 
-              return {};
+              const _isTag = object => object[tagFlagSymbol] === true;
+
+              return {
+                isTag: _isTag,
+              };
             });
         }
       });
