@@ -130,31 +130,54 @@ class Backpack {
           );
           object.add(handleRight);
 
-          /* const lid = new THREE.Mesh(
-            new THREE.BoxBufferGeometry(width, thickness, depth / 2)
-              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, height, 0)),
-            outerMaterial
-          );
-          object.add(lid); */
+          const handleBoxMesh = (() => {
+            const geometry = new THREE.BoxBufferGeometry(0.12, 0.05, 0.05);
+            const material = new THREE.MeshBasicMaterial({
+              color: 0x0000FF,
+              wireframe: true,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.visible = false;
+            return mesh;
+          })();
+          object.add(handleBoxMesh);
+          object.handleBoxMesh = handleBoxMesh;
+
+          const itemBoxMeshes = (() => {
+            const numItems = 4;
+
+            const _makeItemBoxMesh = index => {
+              const size = 0.075;
+              const padding = size / 2;
+
+              const geometry = new THREE.BoxBufferGeometry(size, size, size);
+              const material = new THREE.MeshBasicMaterial({
+                color: 0x808080,
+                wireframe: true,
+              });
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.x = -(((size * numItems) + (padding * (numItems - 1))) / 2) + ((size + padding) * index) + (size / 2);
+              mesh.position.y = 0.1;
+              mesh.position.z = -(size * 2);
+              return mesh;
+            };
+
+            const result = Array(numItems);
+            for (let i = 0; i < numItems; i++) {
+              result[i] = _makeItemBoxMesh(i);
+            }
+            return result;
+          })();
+          itemBoxMeshes.forEach(itemBoxMesh => {
+            object.add(itemBoxMesh);
+          });
+          object.itemBoxMeshes = itemBoxMeshes;
 
           return object;
         })();
         scene.add(mesh);
-
-        const boxMesh = (() => {
-          const geometry = new THREE.BoxBufferGeometry(0.12, 0.05, 0.05);
-          const material = new THREE.MeshBasicMaterial({
-            color: 0x0000FF,
-            wireframe: true,
-          });
-
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.set(1, 1, 1);
-          mesh.visible = false;
-          return mesh;
-        })();
-        scene.add(boxMesh);
 
         const _update = e => {
           const {visible: backbackVisible} = backpackState;
@@ -209,8 +232,6 @@ class Backpack {
               } else {
                 mesh.position.copy(controllerPosition);
                 mesh.quaternion.copy(controllerRotation);
-                boxMesh.position.copy(controllerPosition);
-                boxMesh.quaternion.copy(controllerRotation);
 
                 if (_isBehindCamera(controllerPosition)) {
                   hoverState.target = 'back';
@@ -221,10 +242,11 @@ class Backpack {
             }
           });
 
-          if (showBoxMesh && !boxMesh.visible) {
-            boxMesh.visible = true;
-          } else if (!showBoxMesh && boxMesh.visible) {
-            boxMesh.visible = false;
+          const {handleBoxMesh} = mesh;
+          if (showBoxMesh && !handleBoxMesh.visible) {
+            handleBoxMesh.visible = true;
+          } else if (!showBoxMesh && handleBoxMesh.visible) {
+            handleBoxMesh.visible = false;
           }
         };
         rend.on('update', _update);
