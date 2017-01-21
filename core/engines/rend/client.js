@@ -4,7 +4,6 @@ import keycode from 'keycode';
 import {
   WIDTH,
   HEIGHT,
-  ASPECT_RATIO,
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
@@ -85,6 +84,8 @@ class Rend {
 
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
+        const transparentMaterial = biolumi.getTransparentMaterial();
+        const solidMaterial = biolumi.getSolidMaterial();
 
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
@@ -783,18 +784,6 @@ class Rend {
                   immediate: true,
                 });
 
-                const transparentMaterial = new THREE.MeshBasicMaterial({
-                  opacity: 0,
-                  transparent: true,
-                });
-                const solidMaterial = new THREE.MeshBasicMaterial({
-                  color: 0xFFFFFF,
-                  opacity: 0.5,
-                  side: THREE.DoubleSide,
-                  transparent: true,
-                  // alphaTest: 0.5,
-                  depthWrite: false,
-                });
                 const wireframeMaterial = new THREE.MeshBasicMaterial({
                   color: 0x0000FF,
                   wireframe: true,

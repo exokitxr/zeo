@@ -543,6 +543,21 @@ class Biolumi {
           const _getTransparentImg = () => transparentImg;
           const _getMaxNumTextures = () => MAX_NUM_TEXTURES;
 
+          const transparentMaterial = new THREE.MeshBasicMaterial({
+            opacity: 0,
+            transparent: true,
+          });
+          const _getTransparentMaterial = () => transparentMaterial;
+          const solidMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFFFFF,
+            opacity: 0.5,
+            side: THREE.DoubleSide,
+            transparent: true,
+            // alphaTest: 0.5,
+            depthWrite: false,
+          });
+          const _getSolidMaterial = () => solidMaterial;
+
           const menuShader = menuShaders.getShader({maxNumTextures: MAX_NUM_TEXTURES});
           const _makeMenuMaterial = () => {
             const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
@@ -674,6 +689,8 @@ class Biolumi {
             getFontStyle: _getFontStyle,
             getTransparentImg: _getTransparentImg,
             getMaxNumTextures: _getMaxNumTextures,
+            getTransparentMaterial: _getTransparentMaterial,
+            getSolidMaterial: _getSolidMaterial,
             makeMenuMaterial: _makeMenuMaterial,
             updateMenuMaterial: _updateMenuMaterial,
           };
