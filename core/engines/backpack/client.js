@@ -35,7 +35,7 @@ class Backpack {
 
         const numItems = 4;
 
-        const _decomposeObjectWorldMatrix = object => {
+        const _decomposeObjectMatrixWorld = object => {
           const {matrixWorld} = object;
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
@@ -259,7 +259,7 @@ class Backpack {
                     const {itemBoxMeshes} = mesh;
                     for (let i = 0; i < numItems; i++) {
                       const itemBoxMesh = itemBoxMeshes[i];
-                      const {position} = _decomposeObjectWorldMatrix(itemBoxMesh);
+                      const {position} = _decomposeObjectMatrixWorld(itemBoxMesh);
                       const distance = controllerPosition.distanceTo(position);
                       if (distance < DEFAULT_GRAB_DISTANCE) {
                         validTargets.push({
@@ -393,9 +393,10 @@ class Backpack {
                 const index = parseInt(match[1], 10);
                 const itemBoxMesh = itemBoxMeshes[index];
 
-                const {position, rotation} = _decomposeObjectWorldMatrix(itemBoxMesh);
-                tagMesh.position.copy(position);
-                tagMesh.quaternion.copy(rotation);
+                itemBoxMesh.add(tagMesh);
+                tagMesh.position.copy(new THREE.Vector3());
+                tagMesh.quaternion.copy(new THREE.Quaternion());
+                tagMesh.scale.set(1, 1, 1);
               }
             }
           }

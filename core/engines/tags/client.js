@@ -47,7 +47,6 @@ class Tags {
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
-
           const world = rend.getCurrentWorld();
 
           return Promise.all([
@@ -159,6 +158,8 @@ class Tags {
                 const {side} = e;
 
                 if (hands.canGrab(side, menuMesh, {radius: DEFAULT_GRAB_RADIUS})) {
+                  scene.add(menuMesh);
+
                   const grabber = hands.grab(side, menuMesh);
                   grabber.on('update', ({position, rotation}) => {
                     menuMesh.position.copy(position);
@@ -172,7 +173,9 @@ class Tags {
                   grabState.grabber = grabber;
                 }
               };
-              input.on('gripdown', _gripdown);
+              input.on('gripdown', _gripdown, {
+                priority: 1,
+              });
               const _gripup = e => {
                 const {side} = e;
                 const grabState = grabStates[side];
@@ -217,7 +220,7 @@ class Tags {
               rend.on('update', _update);
 
               this._cleanup = () => {
-                scene.remove(menuMesh);
+                menuMesh.parent.remove(menuMesh);
                 scene.remove(boxMesh);
 
                 input.removeListener('gripdown', _gripdown);

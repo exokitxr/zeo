@@ -16,22 +16,34 @@ class Hands {
     };
 
     return archae.requestPlugins([
+      '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/rend',
       '/core/engines/cyborg',
       '/core/plugins/js-utils',
     ])
       .then(([
+        three,
         webvr,
         rend,
         cyborg,
         jsUtils,
       ]) => {
         if (live) {
+          const {THREE} = three;
           const player = cyborg.getPlayer();
 
           const {events} = jsUtils;
           const {EventEmitter} = events;
+
+          const _decomposeObjectMatrixWorld = object => {
+            const {matrixWorld} = object;
+            const position = new THREE.Vector3();
+            const rotation = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            matrixWorld.decompose(position, rotation, scale);
+            return {position, rotation, scale};
+          };
 
           const _makeGrabState = () => ({
             grabber: null,
@@ -89,8 +101,9 @@ class Hands {
 
               if (gamepad) {
                 const {position: controllerPosition} = gamepad;
+                const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
 
-                return controllerPosition.distanceTo(object.position) <= radius;
+                return controllerPosition.distanceTo(objectPosition) <= radius;
               } else {
                 return false;
               }
