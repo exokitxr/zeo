@@ -121,6 +121,40 @@ class WebVR {
           };
         };
 
+        class HmdStatus {
+          constructor(pose, position, rotation, scale) {
+            this.pose = pose;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+          }
+        }
+        class GamepadStatus {
+          constructor(pose, position, rotation, scale, buttons, axes) {
+            this.pose = pose;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+            this.buttons = buttons;
+            this.axes = axes;
+          }
+        }
+        class GamepadButtons {
+          constructor(pad, trigger, grip, menu) {
+            this.pad = pad;
+            this.trigger = trigger;
+            this.grip = grip;
+            this.menu = menu;
+          }
+        }
+        class GamepadButton {
+          constructor(touched, pressed, value) {
+            this.touched = touched;
+            this.pressed = pressed;
+            this.value = value;
+          }
+        }
+
         class WebvrInstance extends EventEmitter {
           constructor() {
             super();
@@ -133,13 +167,12 @@ class WebVR {
             const stageMatrix = new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
             this.stageMatrix = stageMatrix;
 
-            const _makeDefaultHmdStatus = () => ({
-              pose: null,
-              position: camera.position.clone(),
-              rotation: camera.quaternion.clone(),
-              scale: camera.scale.clone(),
-              matrix: camera.matrix.clone(),
-            });
+            const _makeDefaultHmdStatus = () => new HmdStatus(
+              null,
+              camera.position.clone(),
+              camera.quaternion.clone(),
+              camera.scale.clone()
+            );
             const _makeDefaultGamepadStatus = (stageMatrix, index) => {
               const pose = {
                 position: [CONTROLLER_DEFAULT_OFFSETS[0] * ((index === 0) ? -1 : 1), CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
@@ -148,28 +181,23 @@ class WebVR {
               const matrix = _getMatrixFromPose(pose, stageMatrix);
               const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
 
-              const _makeDefaultButtonStatus = () => ({
-                touched: false,
-                pressed: false,
-                value: 0,
-              });
-              const buttons = {
-                pad: _makeDefaultButtonStatus(),
-                trigger: _makeDefaultButtonStatus(),
-                grip: _makeDefaultButtonStatus(),
-                menu: _makeDefaultButtonStatus(),
-              };
+              const _makeDefaultButtonStatus = () => new GamepadButton(false, false, 0);
+              const buttons = new GamepadButtons(
+                _makeDefaultButtonStatus(),
+                _makeDefaultButtonStatus(),
+                _makeDefaultButtonStatus(),
+                _makeDefaultButtonStatus()
+              );
               const axes = [0, 0];
 
-              return {
+              return new GamepadStatus(
                 pose,
-                matrix,
                 position,
                 rotation,
                 scale,
                 buttons,
-                axes,
-              };
+                axes
+              );
             };
             this.status = {
               hmd: _makeDefaultHmdStatus(),
@@ -455,13 +483,12 @@ class WebVR {
                 const matrix = _getMatrixFromPose(pose, stageMatrix);
                 const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
 
-                return {
+                return new HmdStatus(
                   pose,
-                  matrix,
                   position,
                   rotation,
-                  scale,
-                };
+                  scale
+                );
               };
               const _getGamepadsStatus = ({stageMatrix}) => {
                 const gamepads = (() => {
@@ -481,11 +508,7 @@ class WebVR {
                   const _getGamepadButtonStatus = button => {
                     if (button) {
                       const {touched, pressed, value} = button;
-                      return {
-                        touched,
-                        pressed,
-                        value,
-                      };
+                      return new GamepadButton(touched, pressed, value);
                     } else {
                       return null;
                     }
@@ -493,23 +516,22 @@ class WebVR {
 
                   const matrix = _getMatrixFromPose(pose, stageMatrix);
                   const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
-                  const buttons = {
-                    pad: _getGamepadButtonStatus(padButton),
-                    trigger: _getGamepadButtonStatus(triggerButton),
-                    grip: _getGamepadButtonStatus(gripButton),
-                    menu: _getGamepadButtonStatus(menuButton),
-                  };
+                  const buttons = new GamepadButtons(
+                    _getGamepadButtonStatus(padButton),
+                    _getGamepadButtonStatus(triggerButton),
+                    _getGamepadButtonStatus(gripButton),
+                    _getGamepadButtonStatus(menuButton)
+                  );
                   const axes = [x, y];
 
-                  return {
+                  return new GamepadStatus(
                     pose,
-                    matrix,
                     position,
                     rotation,
                     scale,
                     buttons,
-                    axes,
-                  };
+                    axes
+                  );
                 };
 
                 return {
