@@ -815,16 +815,16 @@ class Rend {
                     const height = WORLD_HEIGHT;
                     const depth = WORLD_DEPTH;
 
-                    const imageMaterial = biolumi.makeMenuMaterial();
+                    const menuMaterial = biolumi.makeMenuMaterial();
 
                     const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, imageMaterial];
+                    const materials = [solidMaterial, menuMaterial];
 
                     const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                     // mesh.position.y = 1.5;
                     mesh.position.z = -1;
                     mesh.receiveShadow = true;
-                    mesh.imageMaterial = imageMaterial;
+                    mesh.menuMaterial = menuMaterial;
 
                     const shadowMesh = (() => {
                       const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
@@ -2673,58 +2673,14 @@ class Rend {
 
                   if (open) {
                     const _updateTextures = () => {
-                      const {planeMesh: {imageMaterial}} = menuMesh;
-                      const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = imageMaterial;
-
-                      const layers = ui.getLayers();
+                      const {planeMesh: {menuMaterial}} = menuMesh;
                       const worldTime = currentWorld.getWorldTime();
-                      for (let i = 0; i < maxNumTextures; i++) {
-                        const layer = i < layers.length ? layers[i] : null;
 
-                        if (layer && layer.getValid({worldTime})) {
-                          validTextures.value[i] = 1;
-
-                          const texture = textures.value[i];
-                          if (texture.image !== layer.img) {
-                            texture.image = layer.img;
-                            if (!layer.pixelated) {
-                              texture.minFilter = THREE.LinearFilter;
-                              texture.magFilter = THREE.LinearFilter;
-                              texture.anisotropy = 16;
-                            } else {
-                              texture.minFilter = THREE.NearestFilter;
-                              texture.magFilter = THREE.NearestFilter;
-                              texture.anisotropy = 1;
-                            }
-                            texture.needsUpdate = true;
-
-                            layer.img.needsUpdate = false;
-                          } else if (layer.img.needsUpdate) {
-                            if (!layer.pixelated) {
-                              texture.minFilter = THREE.LinearFilter;
-                              texture.magFilter = THREE.LinearFilter;
-                              texture.anisotropy = 16;
-                            } else {
-                              texture.minFilter = THREE.NearestFilter;
-                              texture.magFilter = THREE.NearestFilter;
-                              texture.anisotropy = 1;
-                            }
-                            texture.needsUpdate = true;
-
-                            layer.img.needsUpdate = false;
-                          }
-
-                          const position = layer.getPosition();
-                          texturePositions.value[(i * 2) + 0] = position.x;
-                          texturePositions.value[(i * 2) + 1] = position.y;
-                          textureLimits.value[(i * 2) + 0] = position.w;
-                          textureLimits.value[(i * 2) + 1] = position.h;
-                          textureOffsets.value[i] = position.st;
-                          textureDimensions.value[i] = position.sh;
-                        } else {
-                          validTextures.value[i] = 0;
-                        }
-                      }
+                      biolumi.updateMenuMaterial({
+                        ui,
+                        menuMaterial,
+                        worldTime,
+                      });
 
                       SIDES.forEach(side => {
                         const menuHoverState = menuHoverStates[side];
