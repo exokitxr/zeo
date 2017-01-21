@@ -1,4 +1,4 @@
-const getMenuImageShader = ({maxNumTextures}) => ({
+const getShader = ({maxNumTextures}) => ({
   uniforms: {
     textures: {
       type: 'tv',
@@ -70,5 +70,5 @@ const getMenuImageShader = ({maxNumTextures}) => ({
 });
 
 module.exports = {
-  getMenuImageShader,
+  getShader,
 };

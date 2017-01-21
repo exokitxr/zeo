@@ -20,7 +20,6 @@ import {
 } from './lib/constants/keyboard';
 import menuUtils from './lib/utils/menu';
 import keyboardImg from './lib/images/keyboard';
-import menuShaders from './lib/shaders/menu';
 import menuRender from './lib/render/menu';
 
 const keyboardImgSrc = 'data:image/svg+xml,' + keyboardImg;
@@ -86,6 +85,7 @@ class Rend {
 
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
+        const menuShader = biolumi.getMenuShader();
 
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
@@ -625,8 +625,6 @@ class Rend {
               fontStyle: biolumi.getFontStyle(),
             };
 
-            const menuImageShader = menuShaders.getMenuImageShader({maxNumTextures});
-
             return Promise.all([
               biolumi.requestUi({
                 width: WIDTH,
@@ -814,7 +812,7 @@ class Rend {
                   object.position.y = DEFAULT_USER_HEIGHT;
 
                   const imageMaterial = (() => {
-                    const shaderUniforms = THREE.UniformsUtils.clone(menuImageShader.uniforms);
+                    const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
                     shaderUniforms.textures.value = (() => {
                       const result = Array(maxNumTextures);
                       for (let i = 0; i < maxNumTextures; i++) {
@@ -874,8 +872,8 @@ class Rend {
                     })();
                     const shaderMaterial = new THREE.ShaderMaterial({
                       uniforms: shaderUniforms,
-                      vertexShader: menuImageShader.vertexShader,
-                      fragmentShader: menuImageShader.fragmentShader,
+                      vertexShader: menuShader.vertexShader,
+                      fragmentShader: menuShader.fragmentShader,
                       side: THREE.DoubleSide,
                       transparent: true,
                     });

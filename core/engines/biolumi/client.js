@@ -1,4 +1,6 @@
-const FontFaceObserver = require('fontfaceobserver');
+import FontFaceObserver from 'fontfaceobserver';
+
+import menuShaders from './lib/shaders/menu';
 
 const MAX_NUM_TEXTURES = 16;
 const TRANSITION_TIME = 1000;
@@ -536,6 +538,7 @@ class Biolumi {
           const _getFontStyle = () => fontStyle;
           const _getTransparentImg = () => transparentImg;
           const _getMaxNumTextures = () => MAX_NUM_TEXTURES;
+          const _getMenuShader = () => menuShaders.getShader({maxNumTextures: MAX_NUM_TEXTURES});
 
           return {
             requestUi: _requestUi,
@@ -544,6 +547,7 @@ class Biolumi {
             getFontStyle: _getFontStyle,
             getTransparentImg: _getTransparentImg,
             getMaxNumTextures: _getMaxNumTextures,
+            getMenuShader: _getMenuShader,
           };
         }
       });
