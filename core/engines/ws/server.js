@@ -1,5 +1,3 @@
-console.log('load wss server');
-
 class Ws {
   constructor(archae) {
     this._archae = archae;
