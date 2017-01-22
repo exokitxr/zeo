@@ -34,7 +34,7 @@ class Multiplayer {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const _requestPlayerInterface = () => new Promise((accept, reject) => {
+        const _requestMultiplayerInterface = () => new Promise((accept, reject) => {
           const playerStatuses = new Map();
 
           const connection = new WebSocket('wss://' + location.host + '/archae/multiplayer');
@@ -56,12 +56,17 @@ class Multiplayer {
             const m = JSON.parse(msg.data);
             const {type} = m;
 
-            if (type === 'statuses') {
-              const {statuses} = m;
+            if (type === 'init') {
+              const {id, statuses} = m;
+
+              _handleId(id);
+
               for (let i = 0; i < statuses.length; i++) {
                 const statusEntry = statuses[i];
                 _handleStatusEntry(statusEntry);
               }
+
+              accept(multiplayerInterface);
             } else if (type === 'status') {
               const statusEntry = m;
               _handleStatusEntry(statusEntry);
@@ -70,25 +75,43 @@ class Multiplayer {
             }
           };
 
+          const _handleId = id => {
+            multiplayerInterface.setId(id);
+          };
           const _handleStatusEntry = statusEntry => {
             const {id, status} = statusEntry;
 
             if (status) {
               if (!playerStatuses.has(id)) {
-                playerInterface.emit('playerEnter', {id, status});
+                multiplayerInterface.emit('playerEnter', {id, status});
               } else {
-                playerInterface.emit('playerStatusUpdate', {id, status});
+                multiplayerInterface.emit('playerStatusUpdate', {id, status});
               }
 
               playerStatuses.set(id, status);
             } else {
-              playerInterface.emit('playerLeave', {id});
+              multiplayerInterface.emit('playerLeave', {id});
 
               playerStatuses.delete(id);
             }
           };
 
-          class PlayerInterface extends EventEmitter {
+          class MutiplayerInterface extends EventEmitter {
+            constructor() {
+              super();
+
+              this.id = null;
+              this.remotePlayerMeshes = new Map();
+            }
+
+            getId() {
+              return this.id;
+            }
+
+            setId(id) {
+              this.id = id;
+            }
+
             getPlayerStatuses() {
               return playerStatuses;
             }
@@ -107,13 +130,32 @@ class Multiplayer {
               }
             }
 
+            getRemotePlayerMesh(id) {
+              const {remotePlayerMeshes} = this;
+              return remotePlayerMeshes.get(id);
+            }
+
+            addRemotePlayerMesh(id, mesh) {
+              const {remotePlayerMeshes} = this;
+              remotePlayerMeshes.set(id, mesh);
+            }
+
+            removeRemotePlayerMesh(id) {
+              const {remotePlayerMeshes} = this;
+              remotePlayerMeshes.delete(id);
+            }
+
             destroy() {
+              const {remotePlayerMeshes} = this;
+              remotePlayerMeshes.forEach(mesh => {
+                scene.remove(mesh);
+              });
+
               connection.close();
             }
           }
 
-          const playerInterface = new PlayerInterface();
-          accept(playerInterface);
+          const multiplayerInterface = new MutiplayerInterface();
         });
 
         const _requestMesh = modelPath => new Promise((accept, reject) => {
@@ -143,18 +185,16 @@ class Multiplayer {
         const _requestControllerMesh = () => _requestMesh(controllerModelPath);
 
         return Promise.all([
-          _requestPlayerInterface(),
+          _requestMultiplayerInterface(),
           _requestHmdMesh(),
           _requestControllerMesh(),
         ]).then(([
-          playerInterface,
+          multiplayerInterface,
           hmdMesh,
           controllerMesh,
         ]) => {
           const zeroVector = new THREE.Vector3();
           const zeroQuaternion = new THREE.Quaternion();
-
-          const remotePlayerMeshes = new Map();
 
           const _makeRemotePlayerMesh = status => {
             const object = new THREE.Object3D();
@@ -195,33 +235,33 @@ class Multiplayer {
             rightController.quaternion.fromArray(rightControllerStatus.rotation);
           };
 
-          const playerStatuses = playerInterface.getPlayerStatuses();
+          const playerStatuses = multiplayerInterface.getPlayerStatuses();
           playerStatuses.forEach((status, id) => {
             const remotePlayerMesh = _makeRemotePlayerMesh(status);
             scene.add(remotePlayerMesh);
-            remotePlayerMeshes.set(id, remotePlayerMesh);
+            multiplayerInterface.addRemotePlayerMesh(id, remotePlayerMesh);
           });
 
           const playerStatusUpdate = update => {
             const {id, status} = update;
-            const remotePlayerMesh = remotePlayerMeshes.get(id);
+            const remotePlayerMesh = multiplayerInterface.getRemotePlayerMesh(id);
             _updateRemotePlayerMesh(remotePlayerMesh, status);
           };
           const playerEnter = update => {
             const {id, status} = update;
             const remotePlayerMesh = _makeRemotePlayerMesh(status);
             scene.add(remotePlayerMesh);
-            remotePlayerMeshes.set(id, remotePlayerMesh);
+            multiplayerInterface.addRemotePlayerMesh(id, remotePlayerMesh);
           };
           const playerLeave = update => {
             const {id} = update;
-            const remotePlayerMesh = remotePlayerMeshes.get(id);
+            const remotePlayerMesh = multiplayerInterface.getRemotePlayerMesh(id);
             scene.remove(remotePlayerMesh);
-            remotePlayerMeshes.delete(id);
+            multiplayerInterface.removeRemotePlayerMesh(id);
           };
-          playerInterface.on('playerStatusUpdate', playerStatusUpdate);
-          playerInterface.on('playerEnter', playerEnter);
-          playerInterface.on('playerLeave', playerLeave);
+          multiplayerInterface.on('playerStatusUpdate', playerStatusUpdate);
+          multiplayerInterface.on('playerEnter', playerEnter);
+          multiplayerInterface.on('playerLeave', playerLeave);
 
           const localStatus = {
             hmd: {
@@ -252,7 +292,7 @@ class Multiplayer {
                 localStatus.hmd.position = position.toArray();
                 localStatus.hmd.rotation = rotation.toArray();
 
-                playerInterface.updateStatus(localStatus);
+                multiplayerInterface.updateStatus(localStatus);
               }
             };
             const _updateControllers = () => {
@@ -268,7 +308,7 @@ class Multiplayer {
                     localStatus.controllers[side].position = position.toArray();
                     localStatus.controllers[side].rotation = rotation.toArray();
 
-                    playerInterface.updateStatus(localStatus);
+                    multiplayerInterface.updateStatus(localStatus);
                   };
 
                   if (!lastStatus) {
@@ -292,18 +332,16 @@ class Multiplayer {
           rend.on('update', _update);
 
           this._cleanup = () => {
-            playerInterface.close();
+            multiplayerInterface.close();
 
-            remotePlayerMeshes.forEach(remotePlayerMesh => {
-              scene.remove(remotePlayerMesh);
-            });
-
-            playerInterface.removeListener('playerStatusUpdate', playerStatusUpdate);
-            playerInterface.removeListener('playerEnter', playerEnter);
-            playerInterface.removeListener('playerLeave', playerLeave);
+            multiplayerInterface.removeListener('playerStatusUpdate', playerStatusUpdate);
+            multiplayerInterface.removeListener('playerEnter', playerEnter);
+            multiplayerInterface.removeListener('playerLeave', playerLeave);
 
             rend.removeListener('update', _update);
           };
+
+          return multiplayerInterface;
         });
       }
     });
@@ -313,5 +351,7 @@ class Multiplayer {
     this._cleanup();
   }
 }
+
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Multiplayer;

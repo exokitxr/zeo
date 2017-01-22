@@ -94,7 +94,7 @@ class Youtube {
                               texture.image = video;
                               texture.needsUpdate = true;
 
-                              soundBody.setInput(video);
+                              soundBody.setInputElement(video);
 
                               // video.play();
                               // video.currentTime = 0.5 * video.duration;
@@ -142,7 +142,7 @@ class Youtube {
 
                 const soundBody = (() => {
                   const result = new sound.Body();
-                  // result.setInput(video);
+                  // result.setInputElement(video);
                   result.setObject(mesh);
                   return result;
                 })();

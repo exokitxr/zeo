@@ -191,7 +191,7 @@ class Agent {
 
             const soundBody = (() => {
               const result = new sound.Body();
-              // result.setInput(audio);
+              // result.setInputElement(audio);
               result.setObject(mesh);
               return result;
             })();
@@ -288,7 +288,7 @@ class Agent {
                           .then(audio => {
                             if (live) {
                               const {soundBody} = this;
-                              soundBody.setInput(audio);
+                              soundBody.setInputElement(audio);
 
                               streamState.ttsStream = null;
                               streamState.audio = audio;

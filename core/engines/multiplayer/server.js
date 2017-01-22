@@ -44,12 +44,16 @@ class Multiplayer {
 
         const id = _makeId();
 
-        const e = {
-          type: 'statuses',
-          statuses: _getAllStatuses(),
+        const _sendInit = () => {
+          const e = {
+            type: 'init',
+            id: id,
+            statuses: _getAllStatuses(),
+          };
+          const es = JSON.stringify(e);
+          c.send(es);
         };
-        const es = JSON.stringify(e);
-        c.send(es);
+        _sendInit();
 
         c.on('message', s => {
           const m = JSON.parse(s);

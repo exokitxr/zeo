@@ -892,7 +892,7 @@ class WebVR {
           }
 
           getFrameData(frameData) {
-            const eyeCamera = camera.clone();
+            const eyeCamera = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far);
             eyeCamera.fov = DEFAULT_USER_FOV;
             eyeCamera.aspect = DEFAULT_ASPECT_RATIO;
             eyeCamera.updateProjectionMatrix();

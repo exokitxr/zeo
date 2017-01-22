@@ -39,10 +39,17 @@ class Somnifer {
             bodies.push(this);
           }
 
-          setInput(inputEl) {
+          setInputElement(el) {
             const {sound} = this;
 
-            const source = sound.context.createMediaElementSource(inputEl);
+            const source = sound.context.createMediaElementSource(el);
+            sound.setNodeSource(source);
+          }
+
+          setInputMediaStream(mediaStream) {
+            const {sound} = this;
+
+            const source = sound.context.createMediaStreamSource(mediaStream);
             sound.setNodeSource(source);
           }
 

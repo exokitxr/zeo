@@ -377,7 +377,7 @@ module.exports = archae => ({
 
           const soundBody = (() => {
             const result = new sound.Body();
-            result.setInput(audio);
+            result.setInputElement(audio);
             result.setObject(mesh);
             return result;
           })();
