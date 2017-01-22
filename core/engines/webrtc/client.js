@@ -9,29 +9,101 @@ export default class WebRtc {
   mount() {
     const {_archae: archae} = this;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     return archae.requestPlugins([
       '/core/engines/somnifer',
       '/core/engines/multiplayer',
+      '/core/plugins/js-utils',
     ])
       .then(([
         somnifer,
         multiplayer,
+        jsUtils,
       ]) => {
         if (live) {
           const {sound} = somnifer;
+          const {events} = jsUtils;
+          const {EventEmitter} = events;
+
           const peerId = multiplayer.getId();
 
+          const _requestCallInterface = () => new Promise((accept, reject) => {
+            const connection = new WebSocket('wss://' + location.host + '/archae/webrtc');
+            connection.binaryType = 'arraybuffer';
+            connection.onopen = () => {
+              accept(callInterface);
+            };
+            connection.onerror = err => {
+              reject(err);
+            };
+            connection.onmessage = msg => {
+              callInterface.emit('data', msg.data);
+            };
+
+            class CallInterface extends EventEmitter {
+              write(d) {
+                connection.send(d);
+              }
+
+              destroy() {
+                connection.close();
+              }
+            }
+
+            const callInterface = new CallInterface();
+
+            cleanups.push(() => {
+              callInterface.destroy();
+            });
+
+            return callInterface;
+          });
           const _requestMicrophoneMediaStream = () => navigator.mediaDevices.getUserMedia({
             audio: true,
+          }).then(mediaStream => {
+            cleanups.push(() => {
+              _closeMediaStream(mediaStream);
+            });
+
+            return mediaStream;
           });
 
-          _requestMicrophoneMediaStream()
-            .then(mediaStream => {
+          return Promise.all([
+            _requestCallInterface(),
+            _requestMicrophoneMediaStream(),
+          ])
+            .then(([
+              callInterface,
+              mediaStream,
+            ]) => {
+              callInterface.on('data', arrayBuffer => {
+                audioContext.decodeAudioData(arrayBuffer, decodedData => {
+                  inputNode.write(decodedData);
+                }, err => {
+                  console.warn(err);
+                });
+              });
+
+              const audioContext = new AudioContext();
+              const inputNode = new WebAudioBufferQueue({
+                audioContext,
+                channels: 2,
+                // bufferSize: 256,
+                objectMode: true,
+              });
+              inputNode.connect(audioContext.destination)
+
               const mediaStreamRecorder = new MediaStreamRecorder(mediaStream);
               mediaStreamRecorder.mimeType = 'audio/wav';
               mediaStreamRecorder.start(50);
@@ -40,26 +112,10 @@ export default class WebRtc {
                 fileReader.onload = () => {
                   const arrayBuffer = fileReader.result;
 
-                  audioContext.decodeAudioData(arrayBuffer, decodedData => {
-                    node.write(decodedData);
-                  }, err => {
-                    console.warn(err);
-                  });
+                  callInterface.write(arrayBuffer);
                 };
                 fileReader.readAsArrayBuffer(blob);
               };
-
-              const audioContext = new AudioContext();
-              const node = new WebAudioBufferQueue({
-                audioContext,
-                channels: 2,
-                // bufferSize: 256,
-                objectMode: true,
-              });
-              node.connect(audioContext.destination)
-            })
-            .catch(err => {
-              console.warn(err);
             });
 
           /* const _handleRemoteMediaStream = (remotePeerId, remoteMediaStream) => {
