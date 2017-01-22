@@ -60,7 +60,6 @@ class Rend {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/anima',
-      '/core/engines/airlock',
       '/core/engines/fs',
       '/core/engines/bullet',
       '/core/plugins/js-utils',
@@ -71,7 +70,6 @@ class Rend {
       webvr,
       biolumi,
       anima,
-      airlock,
       fs,
       bullet,
       jsUtils,
@@ -94,6 +92,7 @@ class Rend {
         const localUpdates = [];
 
         // main state
+        let api = null;
         let menu = null;
 
         const menuState = {
@@ -148,6 +147,7 @@ class Rend {
           inputValue: 0,
           sliderValue: 0.5,
           airlockCheckboxValue: true,
+          voiceChatCheckboxValue: true,
           statsCheckboxValue: false,
         };
         const statsState = {
@@ -379,13 +379,10 @@ class Rend {
               physics,
             ]) => {
               configState.airlockCheckboxValue = configSpec.airlock;
+              configState.voiceChatCheckboxValue = configSpec.voiceChat;
               configState.statsCheckboxValue = configSpec.stats;
 
               menu.updatePages();
-
-              if (configSpec.airlock) {
-                airlock.enable();
-              }
 
               const startTime = Date.now();
               let worldTime = 0;
@@ -579,15 +576,17 @@ class Rend {
               next();
             });
         });
+        const _getConfig = () => ({
+          airlock: configState.airlockCheckboxValue,
+          voiceChat: configState.voiceChatCheckboxValue,
+          stats: configState.statsCheckboxValue,
+        });
         const _saveConfig = menuUtils.debounce(next => {
           const {name: worldName} = currentWorld;
 
           _requestSetConfig({
             world: worldName,
-            config: {
-              airlock: configState.airlockCheckboxValue,
-              stats: configState.statsCheckboxValue,
-            },
+            config: _getConfig(),
           })
             .then(() => {
               console.log('saved config for', JSON.stringify(worldName));
@@ -1377,14 +1376,14 @@ class Rend {
                         } else if (onclick === 'config') {
                           ui.cancelTransition();
 
-                          ui.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
+                          ui.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getConfigPageSrc(),
                             },
                             {
                               type: 'html',
-                              src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, statsCheckboxValue}),
+                              src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}),
                               x: 500,
                               y: 150 + 2,
                               w: WIDTH - 500,
@@ -1911,17 +1910,19 @@ class Rend {
                         } else if (onclick === 'config:airlock') {
                           const {airlockCheckboxValue} = configState;
 
-                          if (!airlockCheckboxValue) {
-                            airlock.enable();
-
-                            configState.airlockCheckboxValue = true;
-                          } else {
-                            airlock.disable();
-
-                            configState.airlockCheckboxValue = false;
-                          }
+                          configState.airlockCheckboxValue = !airlockCheckboxValue;
 
                           _saveConfig();
+                          api.updateConfig();
+
+                          _updatePages();
+                        } else if (onclick === 'config:voiceChat') {
+                          const {voiceChatCheckboxValue} = configState;
+
+                          configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
+
+                          _saveConfig();
+                          api.updateConfig();
 
                           _updatePages();
                         } else if (onclick === 'config:stats') {
@@ -1938,6 +1939,7 @@ class Rend {
                           }
 
                           _saveConfig();
+                          api.updateConfig();
 
                           _updatePages();
                         } else {
@@ -2985,6 +2987,14 @@ class Rend {
                 return currentWorld;
               }
 
+              getConfig() {
+                return _getConfig();
+              }
+
+              updateConfig() {
+                this.emit('config', _getConfig());
+              }
+
               update() {
                 this.emit('update');
 
@@ -3011,7 +3021,7 @@ class Rend {
                 _removeModApiElement(elementApi);
               }
             }
-            const api = new RendApi();
+            api = new RendApi();
             api.on('update', () => {
               for (let i = 0; i < localUpdates.length; i++) {
                 const localUpdate = localUpdates[i];

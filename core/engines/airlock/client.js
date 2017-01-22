@@ -21,9 +21,11 @@ class Airlock {
 
     return archae.requestPlugins([
       '/core/engines/three',
+      '/core/engines/rend',
       '/core/plugins/geometry-utils',
     ]).then(([
       three,
+      rend,
       geometryUtils,
     ]) => {
       if (live) {
@@ -168,26 +170,52 @@ class Airlock {
           return light;
         })();
 
+        let live = false;
+
         const _enable = () => {
+          live = true;
+
           scene.add(mesh);
           scene.add(ambientLight);
           scene.add(directionalLight);
         };
         const _disable = () => {
+          live = false;
+
           scene.remove(mesh);
           scene.remove(ambientLight);
           scene.remove(directionalLight);
         };
 
+        const _init = () => {
+          const config = rend.getConfig();
+          const {airlock} = config;
+
+          if (airlock) {
+            _enable();
+          }
+        };
+        _init();
+
+        const _config = config => {
+          const {airlock} = config;
+
+          if (airlock && !live) {
+            _enable();
+          } else if (!airlock && live) {
+            _disable();
+          };
+        };
+        rend.on('config', _config);
+
         this._cleanup = () => {
           scene.remove(mesh);
           scene.remove(ambientLight);
+
+          rend.removeListener('config', _config);
         };
 
-        return {
-          enable: _enable,
-          disable: _disable,
-        };
+        return {};
       }
     });
   }

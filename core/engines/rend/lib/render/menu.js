@@ -212,11 +212,12 @@ ${getHeaderSrc('preferences', '', '', true)}
 </div>
 `;
 
-const getConfigPageContentSrc = ({inputText, inputValue, focus, sliderValue, airlockCheckboxValue, statsCheckboxValue}) => `\
+const getConfigPageContentSrc = ({inputText, inputValue, focus, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}) => `\
 <div style="width: ${WIDTH - (500 + 40)}px; margin: 40px 0; padding-right: 40px;">
   ${getInputSrc(inputText, '', inputValue, focus, 'config:input')}
   ${getSliderSrc(sliderValue)}
   ${getCheckboxSrc('Airlock', airlockCheckboxValue, 'config:airlock')}
+  ${getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat')}
   ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
 </div>
 `;
