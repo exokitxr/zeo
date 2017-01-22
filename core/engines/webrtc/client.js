@@ -138,6 +138,15 @@ export default class WebRtc {
 
               return mediaStream;
             });
+            const _requestCameraMediaStream = () => navigator.mediaDevices.getUserMedia({
+              audio: true,
+            }).then(mediaStream => {
+              cleanups.push(() => {
+                _closeMediaStream(mediaStream);
+              });
+
+              return mediaStream;
+            });
 
             Promise.all([
               _requestCallInterface(),
@@ -235,9 +244,9 @@ export default class WebRtc {
 
           const _init = () => {
             const config = rend.getConfig();
-            const {airlock} = config;
+            const {voiceChat} = config;
 
-            if (airlock) {
+            if (voiceChat) {
               _enable();
             }
           };
