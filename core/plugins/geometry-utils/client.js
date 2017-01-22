@@ -20,6 +20,11 @@ const geometryUtils = archae => ({
 
         class BoxTarget {
           constructor(position, quaternion, scale, size) {
+            this.position = position;
+            this.quaternion = quaternion;
+            this.scale = scale;
+            this.size = size;
+
             const leftPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
               new THREE.Vector3(-1, 0, 0).applyQuaternion(quaternion),
               position.clone().add(new THREE.Vector3(-size.x / 2, 0, 0).applyQuaternion(quaternion))
@@ -127,6 +132,12 @@ const geometryUtils = archae => ({
             } else {
               return null;
             }
+          }
+
+          containsPoint(point) {
+            const innerLine = new THREE.Line3(point, this.position);
+            const outerLine = new THREE.Line3(this.position.clone().add(point.clone().sub(this.position).normalize()), this.position);
+            return this.intersectLine(innerLine) === null && this.intersectLine(outerLine) !== null;
           }
         }
 
@@ -718,7 +729,18 @@ const geometryUtils = archae => ({
           };
         })(); */
 
-        const makeBoxTarget = (position, rotation, quaterionion, size) => new BoxTarget(position, rotation, quaterionion, size);
+        const makeBoxTarget = (position, rotation, scale, size) => new BoxTarget(position, rotation, scale, size);
+        const makeBoxTargetOffset = (position, rotation, scale, start, end) => {
+          const topLeft = position.clone().add(
+            start.clone().applyQuaternion(rotation)
+          );
+          const bottomRight = position.clone().add(
+            end.clone().applyQuaternion(rotation)
+          );
+          const newPosition = new THREE.Vector3((topLeft.x + bottomRight.x) / 2, (topLeft.y + bottomRight.y) / 2, (topLeft.z + bottomRight.z) / 2);
+          const newSize = new THREE.Vector3(Math.abs(start.x - end.x), Math.abs(start.y - end.y), Math.abs(start.z - end.z));
+          return makeBoxTarget(newPosition, rotation, scale, newSize);
+        };
 
         return {
           // makeVoxelGeometry,
@@ -727,6 +749,7 @@ const geometryUtils = archae => ({
           concatBufferGeometry,
           // sliceBufferGeometry,
           makeBoxTarget,
+          makeBoxTargetOffset,
         };
       }
     });
