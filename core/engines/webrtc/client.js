@@ -1,6 +1,7 @@
-require('./lib/peerjs/peer');
+import MediaStreamRecorder from './lib/msr/msr.js';
+import WebAudioBufferQueue from './lib/web-audio-buffer-queue/web-audio-buffer-queue.js';
 
-class WebRtc {
+export default class WebRtc {
   constructor(archae) {
     this._archae = archae;
   }
@@ -28,7 +29,40 @@ class WebRtc {
           const _requestMicrophoneMediaStream = () => navigator.mediaDevices.getUserMedia({
             audio: true,
           });
-          const _handleRemoteMediaStream = (remotePeerId, remoteMediaStream) => {
+
+          _requestMicrophoneMediaStream()
+            .then(mediaStream => {
+              const mediaStreamRecorder = new MediaStreamRecorder(mediaStream);
+              mediaStreamRecorder.mimeType = 'audio/wav';
+              mediaStreamRecorder.start(50);
+              mediaStreamRecorder.ondataavailable = blob => {
+                const fileReader = new FileReader();
+                fileReader.onload = () => {
+                  const arrayBuffer = fileReader.result;
+
+                  audioContext.decodeAudioData(arrayBuffer, decodedData => {
+                    node.write(decodedData);
+                  }, err => {
+                    console.warn(err);
+                  });
+                };
+                fileReader.readAsArrayBuffer(blob);
+              };
+
+              const audioContext = new AudioContext();
+              const node = new WebAudioBufferQueue({
+                audioContext,
+                channels: 2,
+                // bufferSize: 256,
+                objectMode: true,
+              });
+              node.connect(audioContext.destination)
+            })
+            .catch(err => {
+              console.warn(err);
+            });
+
+          /* const _handleRemoteMediaStream = (remotePeerId, remoteMediaStream) => {
             const audio = document.createElement('audio');
             audio.src = URL.createObjectURL(remoteMediaStream);
             audio.play();
@@ -137,7 +171,7 @@ class WebRtc {
 
                 open = false;
               });
-          });
+          }); */
         }
       });
   }
@@ -150,5 +184,3 @@ class WebRtc {
 const _closeMediaStream = mediaStream => {
   mediaStream.getTracks()[0].stop();
 };
-
-module.exports = WebRtc;
