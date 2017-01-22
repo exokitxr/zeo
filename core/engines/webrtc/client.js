@@ -50,10 +50,21 @@ export default class WebRtc {
             connection.onmessage = msg => {
               callInterface.emit('data', msg.data);
             };
+            connection.onclose = () => {
+              callInterface.close();
+            };
 
             class CallInterface extends EventEmitter {
+              constructor() {
+                this.open = true;
+              }
+
               write(d) {
                 connection.send(d);
+              }
+
+              close() {
+                this.open = false;
               }
 
               destroy() {
@@ -87,35 +98,45 @@ export default class WebRtc {
               callInterface,
               mediaStream,
             ]) => {
-              callInterface.on('data', arrayBuffer => {
-                audioContext.decodeAudioData(arrayBuffer, decodedData => {
-                  inputNode.write(decodedData);
-                }, err => {
-                  console.warn(err);
+              if (callInterface.open) {
+                callInterface.on('data', arrayBuffer => {
+                  audioContext.decodeAudioData(arrayBuffer, decodedData => {
+                    inputNode.write(decodedData);
+                  }, err => {
+                    console.warn(err);
+                  });
                 });
-              });
 
-              const audioContext = new AudioContext();
-              const inputNode = new WebAudioBufferQueue({
-                audioContext,
-                channels: 2,
-                // bufferSize: 256,
-                objectMode: true,
-              });
-              inputNode.connect(audioContext.destination)
+                const audioContext = new AudioContext();
+                const inputNode = new WebAudioBufferQueue({
+                  audioContext,
+                  channels: 2,
+                  // bufferSize: 256,
+                  objectMode: true,
+                });
+                inputNode.connect(audioContext.destination)
 
-              const mediaStreamRecorder = new MediaStreamRecorder(mediaStream);
-              mediaStreamRecorder.mimeType = 'audio/wav';
-              mediaStreamRecorder.start(50);
-              mediaStreamRecorder.ondataavailable = blob => {
-                const fileReader = new FileReader();
-                fileReader.onload = () => {
-                  const arrayBuffer = fileReader.result;
+                const mediaStreamRecorder = new MediaStreamRecorder(mediaStream);
+                mediaStreamRecorder.mimeType = 'audio/wav';
+                mediaStreamRecorder.start(50);
+                mediaStreamRecorder.ondataavailable = blob => {
+                  const fileReader = new FileReader();
+                  fileReader.onload = () => {
+                    const arrayBuffer = fileReader.result;
 
-                  callInterface.write(arrayBuffer);
+                    callInterface.write(arrayBuffer);
+                  };
+                  fileReader.readAsArrayBuffer(blob);
                 };
-                fileReader.readAsArrayBuffer(blob);
-              };
+
+                cleanups.push(() => {
+                  mediaStreamRecorder.stop();
+
+                  _closeMediaStream(mediaStream);
+                });
+              } else {
+                _closeMediaStream(mediaStream);
+              }
             });
 
           /* const _handleRemoteMediaStream = (remotePeerId, remoteMediaStream) => {
