@@ -53,6 +53,12 @@ class Somnifer {
             sound.setNodeSource(source);
           }
 
+          setInputSource(source) {
+            const {sound} = this;
+
+            sound.setNodeSource(source);
+          }
+
           setObject(object) {
             const {sound} = this;
 

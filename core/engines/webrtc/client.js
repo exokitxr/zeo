@@ -22,16 +22,19 @@ export default class WebRtc {
     });
 
     return archae.requestPlugins([
+      '/core/engines/three',
       '/core/engines/somnifer',
       '/core/engines/multiplayer',
       '/core/plugins/js-utils',
     ])
       .then(([
+        three,
         somnifer,
         multiplayer,
         jsUtils,
       ]) => {
         if (live) {
+          const {THREE} = three;
           const {sound} = somnifer;
           const {events} = jsUtils;
           const {EventEmitter} = events;
@@ -39,16 +42,44 @@ export default class WebRtc {
           const peerId = multiplayer.getId();
 
           const _requestCallInterface = () => new Promise((accept, reject) => {
+            let remotePeerId = null;
+
             const connection = new WebSocket('wss://' + location.host + '/archae/webrtc');
             connection.binaryType = 'arraybuffer';
             connection.onopen = () => {
+              const e = {
+                type: 'init',
+                id: peerId,
+              };
+              const es = JSON.stringify(e);
+              connection.send(es);
+
               accept(callInterface);
             };
             connection.onerror = err => {
               reject(err);
             };
             connection.onmessage = msg => {
-              callInterface.emit('data', msg.data);
+              if (typeof msg.data === 'string') {
+                const e = JSON.parse(msg.data) ;
+                const {type} = e;
+
+                if (type === 'id') {
+                  const {id: messageId} = e;
+                  remotePeerId = messageId;
+                } else {
+                  console.warn('unknown message type', JSON.stringify(type));
+                }
+              } else {
+                if (remotePeerId !== null) {
+                  callInterface.emit('buffer', {
+                    id: remotePeerId,
+                    data: msg.data,
+                  });
+                } else {
+                  console.warn('buffer data before remote peer id', msg);
+                }
+              }
             };
             connection.onclose = () => {
               callInterface.close();
@@ -56,6 +87,8 @@ export default class WebRtc {
 
             class CallInterface extends EventEmitter {
               constructor() {
+                super();
+
                 this.open = true;
               }
 
@@ -65,6 +98,8 @@ export default class WebRtc {
 
               close() {
                 this.open = false;
+
+                this.emit('close');
               }
 
               destroy() {
@@ -99,22 +134,65 @@ export default class WebRtc {
               mediaStream,
             ]) => {
               if (callInterface.open) {
-                callInterface.on('data', arrayBuffer => {
-                  audioContext.decodeAudioData(arrayBuffer, decodedData => {
-                    inputNode.write(decodedData);
-                  }, err => {
-                    console.warn(err);
+                const audioContext = THREE.AudioContext.getContext();
+
+                const _makeSoundBody = id => {
+                  const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
+
+                  const inputNode = new WebAudioBufferQueue({
+                    audioContext,
+                    channels: 2,
+                    // bufferSize: 256,
+                    objectMode: true,
                   });
+
+                  const result = new sound.Body();
+                  result.setInputSource(inputNode);
+                  result.inputNode = inputNode;
+                  result.setObject(remotePlayerMesh);
+                  return result;
+                };
+                const soundBodies = (() => {
+                  const playerStatuses = multiplayer.getPlayerStatuses();
+
+                  const result = new Map();
+                  playerStatuses.forEach((status, id) => {
+                    result.set(id, _makeSoundBody(id));
+                  });
+                  return result;
+                })();
+
+                const _playerEnter = ({id}) => {
+                  soundBodies.set(id, _makeSoundBody(id));
+                };
+                multiplayer.on('playerEnter', _playerEnter);
+                const _playerLeave = ({id}) => {
+                  const soundBody = soundBodies.get(id);
+                  soundBody.destroy();
+
+                  soundBodies.delete(id);
+                };
+                multiplayer.on('playerLeave', _playerLeave);
+                cleanups.push(() => {
+                  multiplayer.removeListener('playerEnter', _playerEnter);
+                  multiplayer.removeListener('playerLeave', _playerLeave);
                 });
 
-                const audioContext = new AudioContext();
-                const inputNode = new WebAudioBufferQueue({
-                  audioContext,
-                  channels: 2,
-                  // bufferSize: 256,
-                  objectMode: true,
+                callInterface.on('buffer', ({id, data}) => {
+                  const soundBody = soundBodies.get(id);
+
+                  if (soundBody) {
+                    audioContext.decodeAudioData(data, decodedData => {
+                      const {inputNode} = soundBody;
+                      inputNode.write(decodedData);
+                    }, err => {
+                      console.warn(err);
+                    });
+                  }
                 });
-                inputNode.connect(audioContext.destination)
+                callInterface.on('close', () => {
+                  cleanup();
+                });
 
                 const mediaStreamRecorder = new MediaStreamRecorder(mediaStream);
                 mediaStreamRecorder.mimeType = 'audio/wav';
@@ -129,126 +207,16 @@ export default class WebRtc {
                   fileReader.readAsArrayBuffer(blob);
                 };
 
-                cleanups.push(() => {
+                const cleanup = () => {
                   mediaStreamRecorder.stop();
-
                   _closeMediaStream(mediaStream);
-                });
+                };
+
+                cleanups.push(cleanup);
               } else {
                 _closeMediaStream(mediaStream);
               }
             });
-
-          /* const _handleRemoteMediaStream = (remotePeerId, remoteMediaStream) => {
-            const audio = document.createElement('audio');
-            audio.src = URL.createObjectURL(remoteMediaStream);
-            audio.play();
-
-            const soundBody = (() => {
-              const remotePlayerMesh = multiplayer.getRemotePlayerMesh(remotePeerId).children[0];
-
-              const result = new sound.Body();
-              result.setInputElement(audio);
-              result.setObject(remotePlayerMesh);
-              return result;
-            })();
-
-            const _destroy = () => {
-              audio.pause();
-              URL.revokeObjectURL(audio.src);
-
-              soundBody.destroy();
-
-              _closeMediaStream(remoteMediaStream);
-            };
-
-            return {
-              destroy: _destroy,
-            };
-          };
-
-          const peer = new Peer(peerId, {
-            host: window.location.hostname,
-            port: parseInt(window.location.port, 10),
-            path: '/archae/webrtc',
-            secure: true,
-            debug: 2,
-          });
-          peer.on('open', c => {
-            console.log('local webrtc peer open', peerId); // XXX
-
-            const remotePeerIds = (() => {
-              const playerStatuses = multiplayer.getPlayerStatuses();
-
-              const result = Array(playerStatuses.size);
-              let i = 0;
-              playerStatuses.forEach((status, id) => {
-                result[i++] = id;
-              });
-              return result;
-            })();
-            remotePeerIds.forEach(remotePeerId => {
-              _requestMicrophoneMediaStream()
-                .then(mediaStream => {
-                  console.log('local webrtc peer call', remotePeerId); // XXX
-
-                  let streamHandler = null;
-
-                  const call = peer.call(remotePeerId, mediaStream);
-                  call.on('stream', remoteMediaStream => {
-                    if (streamHandler) {
-                      streamHandler.destroy();
-                    }
-
-                    streamHandler = _handleRemoteMediaStream(remotePeerId, remoteMediaStream);
-                  });
-                  call.on('error', err => {
-                    console.log('stream error', err);
-                  });
-                  call.on('close', () => {
-                    console.log('call request closed'); // XXX
-
-                    if (streamHandler) {
-                      streamHandler.destroy();
-                    }
-                  });
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-            });
-          });
-          peer.on('error', err => {
-            console.warn(err);
-          });
-          peer.on('call', call => {
-            console.log('remote webrtc peer call', call); // XXX
-
-            _requestMicrophoneMediaStream()
-              .then(mediaStream => {
-                if (open) {
-                  call.answer(mediaStream);
-
-                  const streamHandler = _handleRemoteMediaStream(call.peer, remoteMediaStream);
-
-                  call.on('close', () => {
-                    streamHandler.destroy();
-                  });
-                } else {
-                  _closeMediaStream(mediaStream);
-                }
-              })
-              .catch(err => {
-                console.warn(err);
-              });
-
-              let open = true;
-              call.on('close', () => {
-                console.log('call response closed'); // XXX
-
-                open = false;
-              });
-          }); */
         }
       });
   }

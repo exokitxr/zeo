@@ -13,22 +13,40 @@ class WebRtc {
       const {url} = c.upgradeReq;
 
       if (url === '/archae/webrtc') {
+        let id = null; // XXX
         c.on('message', (msg, flags) => {
-          // if (flags.binary) {
-            for (let i = 0; i < connections.length; i++) {
-              const connection = connections[i];
-              // if (connection !== c) {
-                connection.send(msg);
-              // }
+          if (!flags.binary) {
+            const e = JSON.parse(msg);
+            const {type} = e;
+
+            if (type === 'init') {
+              const {id: messageId} = e;
+              id = messageId;
+            } else {
+              console.warn('unknown message type', JSON.stringify(type));
             }
-          // }
+          } else {
+            if (id !== null) {
+              const e = {
+                type: 'id',
+                id: id,
+              };
+              const es = JSON.stringify(e);
+
+              for (let i = 0; i < connections.length; i++) {
+                const connection = connections[i];
+                if (connection !== c) {
+                  connection.send(es);
+                  connection.send(msg);
+                }
+              }
+            } else {
+              console.warn('webrtc broadcast before init');
+            }
+          }
         });
         c.on('close', () => {
           connections.splice(connections.indexOf(c), 1);
-
-          if (connectionSubscriptionIds.length > 0) {
-            _filterSubscriptions(subscription => !connectionSubscriptionIds.includes(subscription.id));
-          }
         });
 
         connections.push(c);
