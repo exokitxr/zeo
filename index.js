@@ -12,15 +12,9 @@ const a = archae({
   staticSite: mode === 'site',
 });
 if (mode === 'site') {
-  a.app.get('/', (req, res, next) => {
-    req.url = '/site.html';
-    a.app(req, res, next);
-  });
+  require('./lib/site')(a)
 } else if (mode === 'app') {
-  a.app.get('/', (req, res, next) => {
-    req.url = '/vr.html';
-    a.app(req, res, next);
-  });
+  require('./lib/app')(a);
 }
 a.listen(err => {
   if (!err) {
