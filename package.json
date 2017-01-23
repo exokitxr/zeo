@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
-    "archae": "0.0.13"
+    "archae": "0.0.13",
+    "dockerode": "^2.3.1"
   }
 }

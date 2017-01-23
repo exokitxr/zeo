@@ -27,31 +27,40 @@ const a = archae({
   staticSite: modes.site,
 });
 
+const modePromises = [];
 if (modes.app) {
-  require('./lib/app')(a);
+  modePromises.push(require('./lib/app')(a));
 }
 if (modes.site) {
-  require('./lib/site')(a);
+  modePromises.push(require('./lib/site')(a));
 }
 if (modes.hub) {
-  require('./lib/hub')(a);
+  modePromises.push(require('./lib/hub')(a));
 }
 
-const modeList = (() => {
-  const result = [];
-  for (const k in modes) {
-    if (modes[k]) {
-      result.push(k);
-    }
-  }
-  return result;
-})();
+Promise.all(modePromises)
+  .then(() => {
+    const modeList = (() => {
+      const result = [];
+      for (const k in modes) {
+        if (modes[k]) {
+          result.push(k);
+        }
+      }
+      return result;
+    })();
 
-a.listen(err => {
-  if (!err) {
-    console.log('listening:', JSON.stringify(modeList));
-    console.log('https://zeo.sh:8000/');
-  } else {
+    a.listen(err => {
+      if (!err) {
+        console.log('listening:', JSON.stringify(modeList));
+        console.log('https://zeo.sh:8000/');
+      } else {
+        console.warn(err);
+      }
+    });
+  })
+  .catch(err => {
     console.warn(err);
-  }
-});
+
+    process.exit(1);
+  });
