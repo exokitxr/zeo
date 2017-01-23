@@ -142,7 +142,7 @@ class Rend {
                 } else if (err.code === 'ENOENT') {
                   const entry = {
                     airlock: true,
-                    voiceChat: true,
+                    voiceChat: false,
                     stats: false,
                   };
                   worldConfigJsons.set(world, entry);

@@ -152,7 +152,7 @@ class Rend {
           inputValue: 0,
           sliderValue: 0.5,
           airlockCheckboxValue: true,
-          voiceChatCheckboxValue: true,
+          voiceChatCheckboxValue: false,
           statsCheckboxValue: false,
         };
         const statsState = {
