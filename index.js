@@ -20,19 +20,24 @@ if (!hasFlag) {
   flags.app = true;
 }
 
-const a = archae({
+const config = {
   dirname: __dirname,
   hostname: 'zeo.sh',
   port: 8000,
   publicDirectory: 'public',
   dataDirectory: 'data',
   staticSite: flags.site,
-});
+  hub: {
+    numContainers: 10,
+    startPort: 9000,
+  },
+};
+const a = archae(config);
 
 const _stop = () => {
   const stopPromises = [];
   if (flags.stop || flags.reboot) {
-    stopPromises.push(require('./lib/hub').stop(a));
+    stopPromises.push(require('./lib/hub').stop(a, config));
   }
 
   return Promise.all(stopPromises);
@@ -41,15 +46,15 @@ const _stop = () => {
 const _start = () => {
   const startPromises = [];
   if (flags.app) {
-    startPromises.push(require('./lib/app')(a));
+    startPromises.push(require('./lib/app')(a, config));
   }
   if (flags.site) {
-    startPromises.push(require('./lib/site')(a));
+    startPromises.push(require('./lib/site')(a, config));
   }
   if (flags.start || flags.reboot) {
     const hub = require('./lib/hub');
-    const promise = hub.check(a)
-      .then(() => hub.start(a));
+    const promise = hub.check(a, config)
+      .then(() => hub.start(a, config));
     startPromises.push(promise);
   }
 

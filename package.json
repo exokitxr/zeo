@@ -29,6 +29,7 @@
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
     "archae": "0.0.14",
-    "dockerode": "^2.3.1"
+    "dockerode": "^2.3.1",
+    "fs-extra": "^2.0.0"
   }
 }
