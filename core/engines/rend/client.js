@@ -1,5 +1,8 @@
 import Stats from 'stats.js';
 import keycode from 'keycode';
+import Heap from 'heap';
+import indev from 'indev'; // XXX source these from utils
+import Kruskal from 'kruskal';
 
 import {
   WIDTH,
@@ -791,9 +794,16 @@ class Rend {
                   opacity: 0.5,
                   transparent: true,
                 });
-                const pointsMaterial = new THREE.PointsMaterial({
+                const pointsHighlightMaterial = new THREE.PointsMaterial({
                   color: 0xFF0000,
                   size: 0.01,
+                });
+                const pointsMaterial = new THREE.PointsMaterial({
+                  color: 0x808080,
+                  size: 0.01,
+                });
+                const linesMaterial = new THREE.LineBasicMaterial({
+                  color: 0x808080,
                 });
 
                 const menuMesh = (() => {
@@ -852,7 +862,7 @@ class Rend {
                   const geometry = new THREE.BufferGeometry();
                   geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
 
-                  return new THREE.Points(geometry, pointsMaterial);
+                  return new THREE.Points(geometry, pointsHighlightMaterial);
                 };
                 const menuDotMeshes = {
                   left: _makeDotMesh(),
@@ -960,6 +970,109 @@ class Rend {
                 };
                 scene.add(keyboardBoxMeshes.left);
                 scene.add(keyboardBoxMeshes.right);
+
+                const universeMesh = (() => {
+                  const object = new THREE.Object3D();
+                  object.position.set(0, 1.2, 1);
+                  object.scale.set(0.5, 0.5, 0.5);
+
+                  class Point extends THREE.Vector3 {
+                    constructor(x, y, z, value) {
+                      super(x, y, z);
+
+                      this.value = value;
+                    }
+                  }
+
+                  const points = (() => {
+                    const numPoints = 10;
+                    const resolution = 16;
+                    const generator = indev({
+                      seed: '',
+                    });
+                    const noise = generator.simplex({
+                      frequency: 100,
+                      octaves: 8,
+                    });
+
+                    const heap = new Heap((a, b) => a.value - b.value);
+                    for (let i = 0; i < resolution; i++) {
+                      for (let j = 0; j < resolution; j++) {
+                        for (let k = 0; k < resolution; k++) {
+                          const value = noise.in3D(i, j, k);
+                          const point = new Point(
+                            -0.5 + (i / resolution),
+                            -0.5 + (j / resolution),
+                            -0.5 + (k / resolution),
+                            value
+                          );
+                          heap.push(point);
+                        }
+                      }
+                    }
+
+                    const result = Array(numPoints);
+                    for (let i = 0; i < numPoints; i++) {
+                      result[i] = heap.pop();
+                    }
+                    return result;
+                  })();
+
+                  const pointsMesh = (() => {
+                    const geometry = new THREE.BufferGeometry();
+                    const positions = (() => {
+                      const result = new Float32Array(points.length * 3);
+                      for (let i = 0; i < points.length; i++) {
+                        const point = points[i];
+                        const index = i * 3;
+                        result[index + 0] = point.x;
+                        result[index + 1] = point.y;
+                        result[index + 2] = point.z;
+                      }
+                      return result;
+                    })();
+                    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    const material = pointsMaterial;
+
+                    const mesh = new THREE.Points(geometry, material);
+                    return mesh;
+                  })();
+                  object.add(pointsMesh);
+
+                  const linesMesh = (() => {
+                    const geometry = new THREE.BufferGeometry();
+                    const positions = (() => {
+                      const result = [];
+
+                      const edges = (() => {
+                        const result = Array(points.length * points.length);
+                        for (let i = 0; i < points.length; i++) {
+                          for (let j = 0; j < points.length; j++) {
+                            result[(i * points.length) + j] = [i, j];
+                          }
+                        }
+                        return result;
+                      })();
+                      const edgeMST = Kruskal.kruskal(points, edges, (a, b) => a.distanceTo(b));
+                      for (let i = 0; i < edgeMST.length; i++) {
+                        const u = points[edgeMST[i][0]];
+                        const v = points[edgeMST[i][1]];
+                        result.push(u.x, u.y, u.z, v.x, v.y, v.z);
+                      }
+
+                      return Float32Array.from(result);
+                    })();
+                    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    const material = linesMaterial;
+
+                    const mesh = new THREE.LineSegments(geometry, material);
+                    return mesh;
+                  })();
+                  object.add(linesMesh);
+
+                  return object;
+                })();
+                scene.add(universeMesh);
 
                 const _makePositioningMesh = ({opacity = 1} = {}) => {
                   const geometry = (() => {
@@ -2537,6 +2650,7 @@ class Rend {
                 cleanups.push(() => {
                   scene.remove(menuMesh);
                   scene.remove(keyboardMesh);
+                  scene.remove(universeMesh);
 
                   SIDES.forEach(side => {
                     scene.remove(menuBoxMeshes[side]);
