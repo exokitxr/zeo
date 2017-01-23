@@ -799,7 +799,8 @@ class Rend {
                   size: 0.01,
                 });
                 const pointsMaterial = new THREE.PointsMaterial({
-                  color: 0x808080,
+                  // color: 0x808080,
+                  vertexColors: THREE.VertexColors,
                   size: 0.01,
                 });
                 const linesMaterial = new THREE.LineBasicMaterial({
@@ -1032,6 +1033,24 @@ class Rend {
                       return result;
                     })();
                     geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    const colors = (() => {
+                      const result = new Float32Array(points.length * 3);
+
+                      const grayColor = new THREE.Color(0x808080).toArray();
+                      const redColor = new THREE.Color(0xFF0000).toArray();
+                      for (let i = 0; i < points.length; i++) {
+                        const index = i * 3;
+                        result[index + 0] = grayColor[0];
+                        result[index + 1] = grayColor[1];
+                        result[index + 2] = grayColor[2];
+                      }
+                      result[0] = redColor[0];
+                      result[1] = redColor[1];
+                      result[2] = redColor[2];
+
+                      return result;
+                    })();
+                    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
                     const material = pointsMaterial;
 
                     const mesh = new THREE.Points(geometry, material);
