@@ -7,6 +7,7 @@ const flags = {
   start: args.includes('start'),
   stop: args.includes('stop'),
   reboot: args.includes('reboot'),
+  install: args.includes('install'),
 };
 const hasFlag = (() => {
   for (const k in flags) {
@@ -33,6 +34,15 @@ const config = {
   },
 };
 const a = archae(config);
+
+const _install = () => {
+  if (flags.install) {
+    return a.requestPlugin('/core/engines/zeo')
+      .then(() => {});
+  } else {
+    return Promise.resolve();
+  }
+}
 
 const _stop = () => {
   const stopPromises = [];
@@ -61,7 +71,8 @@ const _start = () => {
   return Promise.all(startPromises);
 };
 
-_stop()
+_install()
+  .then(() => _stop())
   .then(() => _start())
   .then(() => {
     const flagList = (() => {
