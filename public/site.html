@@ -99,11 +99,11 @@
     }
     h1, h2, h3 {
       margin: 0;
+      font-weight: 300;
       line-height: 1.4;
     }
     h1 {
       font-size: 36px;
-      font-weight: 300;
     }
     p {
       width: 100%;
@@ -175,6 +175,77 @@
     .button + .button {
       margin-left: 20px;
     }
+    aside.right {
+      position: absolute;
+      right: 0;
+      width: 350px;
+      margin-top: 70px;
+      padding: 0 20px;
+      background-color: #333;
+      border-top: 3px solid #8BC34A;
+      border-top-left-radius: 5px;
+      border-bottom-left-radius: 5px;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    h3 {
+      display: flex;
+      margin: 0 -20px;
+      padding: 0 20px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      background-color: #222;
+      border-bottom: 1px solid #000;
+    }
+    h3 > .left {
+      font-size: 13px;
+      font-weight: 600;
+      flex-grow: 1;
+    }
+    h3 > .right {
+      display: flex;
+      font-size: 13px;
+      text-decoration: underline;
+      align-items: center;
+    }
+    h3 > .right:hover {
+      color: #AAA;
+    }
+    ul {
+      margin: 0 -20px;
+      padding: 0 20px;
+      list-style: none;
+    }
+    li {
+      display: flex;
+      margin: 0 -20px;
+      padding: 10px 20px;
+    }
+    li:not(:last-child) {
+      border-bottom: 1px solid #000;
+    }
+    li > img {
+      width: 75px;
+      height: 75px;
+      margin-right: 10px;
+    }
+    li > .wrap {
+      width: 225px;
+    }
+    li > .wrap > .title {
+      font-size: 14px;
+      font-weight: 400;
+    }
+    li > .wrap > .description {
+      font-size: 12px;
+    }
+    li > .wrap > .author {
+      font-size: 12px;
+    }
+    li:hover {
+      background-color: #666;
+      cursor: pointer;
+    }
     .video {
       display: flex;
       margin-bottom: -300px;
@@ -219,10 +290,42 @@
     <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=icon>zeo</a>
     <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
   </header>
+  <aside class=right>
+    <h3>
+      <span class=left>Weekly free modules</span>
+      <a href="#" class=right>Learn more</a>
+    </h3>
+    <ul>
+      <li>
+        <img src="http://placehold.it/75x75" width=75 height=75>
+        <div class=wrap>
+          <div class=title>bouncy-ball</div>
+          <div class=description>A simple bouncy ball plugin.</div>
+          <div class=author>by <b>Avaer</b></div>
+        </div>
+      </li>
+      <li>
+        <img src="http://placehold.it/75x75" width=75 height=75>
+        <div class=wrap>
+          <div class=title>mc</div>
+          <div class=description>Minecraft-like demo in VR.</div>
+          <div class=author>by <b>Avaer</b></div>
+        </div>
+      </li>
+      <li>
+        <img src="http://placehold.it/75x75" width=75 height=75>
+        <div class=wrap>
+          <div class=title>zeo-model</div>
+          <div class=description>Load 3D models from various formats and place them in the world scene.</div>
+          <div class=author>by <b>Avaer</b></div>
+        </div>
+      </li>
+    </ul>
+  </aside>
   <div class=container>
     <div class=container-wrapper>
       <h1>WebVR universes powered by NPM</h1>
-      <p>Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more.<br/><br/><b>No headset required.</b> Just a browser with mouse + keyboard.</p>
+      <p>Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more.<br/><br/><b>No headset required.</b> Just a browser, mouse + keyboard.</p>
       <form>
         <input type=email placeholder="your@email.com" autofocus>
         <input type=password placeholder="password">
