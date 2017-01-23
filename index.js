@@ -1,21 +1,23 @@
 const archae = require('archae');
 
 const args = process.argv.slice(2);
-const modes = {
-  app: false,
-  site: args.includes('--site'),
-  hub: args.includes('--hub'),
+const flags = {
+  app: args.includes('app'),
+  site: args.includes('site'),
+  start: args.includes('start'),
+  stop: args.includes('stop'),
+  reboot: args.includes('reboot'),
 };
-const hasMode = (() => {
-  for (const k in modes) {
-    if (modes[k]) {
+const hasFlag = (() => {
+  for (const k in flags) {
+    if (flags[k]) {
       return true;
     }
   }
   return false;
 })();
-if (!hasMode) {
-  modes.app = true;
+if (!hasFlag) {
+  flags.app = true;
 }
 
 const a = archae({
@@ -24,40 +26,60 @@ const a = archae({
   port: 8000,
   publicDirectory: 'public',
   dataDirectory: 'data',
-  staticSite: modes.site,
+  staticSite: flags.site,
 });
 
-const modePromises = [];
-if (modes.app) {
-  modePromises.push(require('./lib/app')(a));
-}
-if (modes.site) {
-  modePromises.push(require('./lib/site')(a));
-}
-if (modes.hub) {
-  modePromises.push(require('./lib/hub')(a));
-}
+const _stop = () => {
+  const stopPromises = [];
+  if (flags.stop || flags.reboot) {
+    stopPromises.push(require('./lib/hub').stop(a));
+  }
 
-Promise.all(modePromises)
+  return Promise.all(stopPromises);
+};
+
+const _start = () => {
+  const startPromises = [];
+  if (flags.app) {
+    startPromises.push(require('./lib/app')(a));
+  }
+  if (flags.site) {
+    startPromises.push(require('./lib/site')(a));
+  }
+  if (flags.start || flags.reboot) {
+    const hub = require('./lib/hub');
+    const promise = hub.check(a)
+      .then(() => hub.start(a));
+    startPromises.push(promise);
+  }
+
+  return Promise.all(startPromises);
+};
+
+_stop()
+  .then(() => _start())
   .then(() => {
-    const modeList = (() => {
+    const flagList = (() => {
       const result = [];
-      for (const k in modes) {
-        if (modes[k]) {
+      for (const k in flags) {
+        if (flags[k]) {
           result.push(k);
         }
       }
       return result;
     })();
 
-    a.listen(err => {
-      if (!err) {
-        console.log('listening:', JSON.stringify(modeList));
-        console.log('https://zeo.sh:8000/');
-      } else {
-        console.warn(err);
-      }
-    });
+    console.log('modes:', JSON.stringify(flagList));
+
+    if (flags.app || flags.site) {
+      a.listen(err => {
+        if (!err) {
+          console.log('https://zeo.sh:8000/');
+        } else {
+          a.close();
+        }
+      });
+    }
   })
   .catch(err => {
     console.warn(err);
