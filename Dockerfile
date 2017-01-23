@@ -7,4 +7,4 @@ RUN mkdir -p /root/zeo/
 ENV PATH $PATH:/root/.nvm/versions/node/v7.4.0/bin/
 WORKDIR /root/zeo/
 
-# ENTRYPOINT ["npm", "start"]
+ENTRYPOINT ["npm", "start"]
