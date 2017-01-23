@@ -8,8 +8,6 @@
   <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <style>
     body {
-      display: flex;
-      height: 100vh;
       min-width: 1024px;
       min-height: 720px;
       margin: 0;
@@ -17,14 +15,21 @@
       font-family: 'Open Sans';
       font-weight: 300;
       color: #FFF;
-      flex-direction: column;
     }
     header {
       display: flex;
+      position: relative;
       height: 100px;
       padding: 0 30px;
       background-color: #000;
       align-items: center;
+      z-index: 1;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+      outline: none;
+      cursor: pointer;
     }
     .icon {
       margin-right: 10px;
@@ -55,243 +60,62 @@
     }
     .container {
       display: flex;
-      position: relative;
-      flex-grow: 1;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .container-overlay {
-      display: flex;
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      width: 100%;
+      height: 720px;
+      margin-top: -100px;
+      margin-bottom: -400px;
+      padding-top: 100px;
+      padding-bottom: 400px;
+      background-color: #000;
       justify-content: flex-start;
       align-items: center;
       flex-direction: column;
+      box-sizing: border-box;
     }
     .container-wrapper {
       display: flex;
       position: relative;
       width: 480px;
       margin-top: 20px;
-      padding: 0 40px;
-      padding-bottom: 10px;
-      background-color: rgb(220, 220, 220);
-      border-radius: 5px;
-      color: #000;
+      color: #FFF;
       align-items: center;
       flex-direction: column;
     }
-    .navbar {
-      display: flex;
-      position: relative;
-      width: 560px;
-      margin: 0 -50px;
-      justify-content: center;
-      align-items: center;
-    }
-    .nav {
-      display: flex;
-      color: #808080;
-      border-bottom: 3px solid rgb(210, 210, 210);
-      flex-grow: 1;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    .nav:hover {
-      color: #000;
-    }
-    .nav.highlight {
-      color: #000;
-      border-bottom-color: #FF1744;
-      cursor: default;
-    }
-    .nav > i {
-      font-size: 44px !important;
-      line-height: 1.4;
-      filter: blur(1px);
-    }
-    .nav:hover > i, .nav.highlight > i {
-      filter: none;
-    }
-    .nav > span {
-      display: inline-block;
-      margin-left: -11px;
-      font-size: 11px;
-      margin-bottom: 10px;
-    }
-    .video-wrapper {
+    .container-footer {
+      width: 200%;
+      height: 400px;
+      margin-left: -50%;
+      margin-top: -200px;
       position: absolute;
+      background-color: #000;
+      transform: rotateZ(-10deg);
+    }
+    section {
       display: flex;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      justify-content: center;
-      align-items: center;
-      z-index: -1;
-    }
-    video {
       width: 100%;
+      height: 600px;
       background-color: #FFF;
-    }
-    .container-header {
-      width: 560px;
-      margin: 0 -50px;
-      padding: 5px;
-      background-color: rgb(210, 210, 210);
-      border-top-left-radius: 5px;
-      border-top-right-radius: 5px;
-      box-sizing: border-box;
     }
     h1, h2, h3 {
       margin: 0;
       line-height: 1.4;
-      font-weight: inherit;
     }
     h1 {
-      font-size: 13px;
-      font-weight: 400;
+      font-size: 30px;
+      font-weight: 300;
     }
-    h2 {
-      margin: 10px 0;
-      font-size: 26px;
-      font-weight: 400;
-      line-height: 2;
-    }
-    section {
-      display: none;
-    }
-    section.highlight {
-      display: block;
-    }
-    .subsections {
+    .video {
       display: flex;
-      width: 480px;
-    }
-    .subsection.center {
-       padding-right: 100px;
-    }
-    .subsection.main {
-      width: 340px;
-    }
-    .subsection.aside {
-      display: flex;
-      margin-top: 15px;
-      margin-right: 20px;
-      align-items: flex-end;
-      flex-grow: 1;
-      flex-direction: column;
-    }
-    .aside-icon {
-      font-size: 50px;
-      line-height: 80px;
-      text-align:center;
-    }
-    .aside-icon.purple {
-      color: #3F51B5;
-    }
-    .aside-icon.gray {
-      color: #333;
-    }
-    .aside-icon.large {
-      font-size: 60px;
-    }
-    .intermission {
-      display: flex;
-      margin: 0 -40px;
-      margin-bottom: 20px;
-      height: 80px;
-      background-color: #CCC;
+      margin-bottom: -300px;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
     }
-    .intermission-icon {
-      font-size: 50px;
-      color: #4CAF50;
-    }
-    p {
-      margin: 0;
-      margin-bottom: 20px;
-      font-size: 13px;
-      line-height: 1.6;
-      font-weight: 400;
-    }
-    p.big {
-      font-size: 16px;
-    }
-    pre {
-      margin: 0;
-      margin-left: -40px;
-      margin-bottom: 20px;
-      padding: 10px;
-      padding-left: 40px;
-      background-color: #000;
-      border-top-right-radius: 5px;
-      border-bottom-right-radius: 5px;
-      font-size: 12px;
-      color: #FFF;
-      font-family: 'Droid Sans Mono';
-    }
-    .dollar, .comment {
-      color: #666;
-    }
-    .dollar {
-      user-select: none;
-    }
-    code {
-      display: inline-block;
-      padding: 0 5px;
-      background-color: #CCC;
-      border-radius: 3px;
-    }
-    .link {
-      text-decoration: underline;
-    }
-    .link:hover {
-      color: #666;
-    }
-    a {
-      color: inherit;
-      text-decoration: none;
-      outline: none;
-      cursor: pointer;
-    }
-    .cta {
-      display: flex;
-      width: 100%;
-    }
-    .cta-item {
-      display: inline-block;
-      margin-right: 2px;
-      padding: 3px 5px;
-      background-color: #DCDCDC;
-      border-radius: 5px;
-      border: 2px solid;
-      font-size: 13px;
-      flex: 1;
-      box-sizing: border-box;
-    }
-    .cta-item.red {
-      color: #E91E63;
-    }
-    .cta-item.red:hover {
-      color: #AD1457;
-    }
-    .cta-item.purple {
-      color: #3F51B5;
-    }
-    .cta-item.purple:hover {
-      color: #4527A0;
-    }
-    .cta-item.green {
-      color: #4CAF50;
-    }
-    .cta-item.green:hover {
-      color: #2E7D32;
+    video {
+      position: relative;
+      width: 600px;
+      background-color: #FFF;
+      z-index: 1;
     }
     footer {
       display: flex;
@@ -311,10 +135,25 @@
 </head>
 <body>
   <header>
-    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=icon>zeo.sh</a>
+    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=icon>zeo</a>
     <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
   </header>
   <div class=container>
+    <div class=container-wrapper>
+      <h1>Javascript WebVR powered by NPM</h1>
+      <p></p>
+    </div>
+  </div>
+  <div class=video>
+    <video autoplay loop>
+      <source src="https://cdn.rawgit.com/modulesio/zeo-data/fa848ef03608c5079237565c8389afafaf5e93ba/video/demo.webm" type="video/webm">
+    </video>
+  </div>
+  <div class=container-footer>
+  </div>
+  <section>
+  </section>
+  <!-- <div class=container>
     <div class=video-wrapper>
       <video autoplay loop>
         <source src="https://cdn.rawgit.com/modulesio/zeo-data/fa848ef03608c5079237565c8389afafaf5e93ba/video/demo.webm" type="video/webm">
@@ -381,32 +220,10 @@
         </section>
       </div>
     </div>
-  </div>
+  </div> -->
   <footer>
     <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></aside>
     <aside class=footer-right>&copy; 2017 <a href="mailto:a@modules.io">Avaer Kazmer</a></aside>
   </footer>
-  <script>
-window.onload = () => {
-  const $ = s => document.querySelectorAll(s);
-  const navs = $('.nav');
-  const sections = $('section');
-  navs.forEach((a, i) => {
-    a.addEventListener('click', e => {
-      e.preventDefault();
-
-      navs.forEach(a => {
-        a.classList.remove('highlight');
-      });
-      a.classList.add('highlight');
-
-      sections.forEach(s => {
-        s.classList.remove('highlight');
-      });
-      sections[i].classList.add('highlight');
-    });
-  });
-};
-  </script>
 </body>
 </html>
