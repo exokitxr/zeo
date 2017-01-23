@@ -199,6 +199,55 @@ class Rend {
           loading: false,
           uploading: fs.getUploading(),
         };
+        const universeState = (() => {
+          class Point extends THREE.Vector3 {
+            constructor(x, y, z, value, selected) {
+              super(x, y, z);
+
+              this.value = value;
+              this.selected = selected;
+            }
+          }
+
+          const points = (() => {
+            const numPoints = 10;
+            const resolution = 16;
+            const generator = indev({
+              seed: '',
+            });
+            const noise = generator.simplex({
+              frequency: 100,
+              octaves: 8,
+            });
+
+            const heap = new Heap((a, b) => a.value - b.value);
+            for (let i = 0; i < resolution; i++) {
+              for (let j = 0; j < resolution; j++) {
+                for (let k = 0; k < resolution; k++) {
+                  const value = noise.in3D(i, j, k);
+                  const point = new Point(
+                    -0.5 + (i / resolution),
+                    -0.5 + (j / resolution),
+                    -0.5 + (k / resolution),
+                    value,
+                    i === 0 && j === 0 && k === 0
+                  );
+                  heap.push(point);
+                }
+              }
+            }
+
+            const result = Array(numPoints);
+            for (let i = 0; i < numPoints; i++) {
+              result[i] = heap.pop();
+            }
+            return result;
+          })();
+
+          return {
+            points,
+          };
+        })();
 
         const worlds = new Map();
         let currentWorld = null;
@@ -803,6 +852,11 @@ class Rend {
                   vertexColors: THREE.VertexColors,
                   size: 0.01,
                 });
+                const pointsLargeMaterial = new THREE.PointsMaterial({
+                  // color: 0x808080,
+                  vertexColors: THREE.VertexColors,
+                  size: 0.02,
+                });
                 const linesMaterial = new THREE.LineBasicMaterial({
                   color: 0x808080,
                 });
@@ -859,18 +913,36 @@ class Rend {
                 scene.add(menuBoxMeshes.left);
                 scene.add(menuBoxMeshes.right);
 
-                const _makeDotMesh = () => {
+                const _makeMenuDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
                   geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
+                  geometry.addAttribute('color', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
+                  const material = pointsHighlightMaterial;
 
-                  return new THREE.Points(geometry, pointsHighlightMaterial);
+                  return new THREE.Points(geometry, material);
                 };
                 const menuDotMeshes = {
-                  left: _makeDotMesh(),
-                  right: _makeDotMesh(),
+                  left: _makeMenuDotMesh(),
+                  right: _makeMenuDotMesh(),
                 };
                 scene.add(menuDotMeshes.left);
                 scene.add(menuDotMeshes.right);
+
+                const _makeUniverseDotMesh = () => {
+                  const geometry = new THREE.BufferGeometry();
+                  geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
+                  const colors = Float32Array.from(new THREE.Color(0x808080).toArray());
+                  geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                  const material = pointsLargeMaterial;
+
+                  return new THREE.Points(geometry, material);
+                };
+                const universeDotMeshes = {
+                  left: _makeUniverseDotMesh(),
+                  right: _makeUniverseDotMesh(),
+                };
+                scene.add(universeDotMeshes.left);
+                scene.add(universeDotMeshes.right);
 
                 const keyboardMesh = (() => {
                   const keySpecs = (() => {
@@ -977,48 +1049,7 @@ class Rend {
                   object.position.set(0, 1.2, 1);
                   object.scale.set(0.5, 0.5, 0.5);
 
-                  class Point extends THREE.Vector3 {
-                    constructor(x, y, z, value) {
-                      super(x, y, z);
-
-                      this.value = value;
-                    }
-                  }
-
-                  const points = (() => {
-                    const numPoints = 10;
-                    const resolution = 16;
-                    const generator = indev({
-                      seed: '',
-                    });
-                    const noise = generator.simplex({
-                      frequency: 100,
-                      octaves: 8,
-                    });
-
-                    const heap = new Heap((a, b) => a.value - b.value);
-                    for (let i = 0; i < resolution; i++) {
-                      for (let j = 0; j < resolution; j++) {
-                        for (let k = 0; k < resolution; k++) {
-                          const value = noise.in3D(i, j, k);
-                          const point = new Point(
-                            -0.5 + (i / resolution),
-                            -0.5 + (j / resolution),
-                            -0.5 + (k / resolution),
-                            value
-                          );
-                          heap.push(point);
-                        }
-                      }
-                    }
-
-                    const result = Array(numPoints);
-                    for (let i = 0; i < numPoints; i++) {
-                      result[i] = heap.pop();
-                    }
-                    return result;
-                  })();
-
+                  const {points} = universeState;
                   const pointsMesh = (() => {
                     const geometry = new THREE.BufferGeometry();
                     const positions = (() => {
@@ -1039,14 +1070,15 @@ class Rend {
                       const grayColor = new THREE.Color(0x808080).toArray();
                       const redColor = new THREE.Color(0xFF0000).toArray();
                       for (let i = 0; i < points.length; i++) {
+                        const point = points[i];
+                        const {selected} = point;
+
                         const index = i * 3;
-                        result[index + 0] = grayColor[0];
-                        result[index + 1] = grayColor[1];
-                        result[index + 2] = grayColor[2];
+                        const color = selected ? redColor : grayColor;
+                        result[index + 0] = color[0];
+                        result[index + 1] = color[1];
+                        result[index + 2] = color[2];
                       }
-                      result[0] = redColor[0];
-                      result[1] = redColor[1];
-                      result[2] = redColor[2];
 
                       return result;
                     })();
@@ -2674,6 +2706,7 @@ class Rend {
                   SIDES.forEach(side => {
                     scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
+                    scene.remove(universeDotMeshes[side]);
                     scene.remove(keyboardBoxMeshes[side]);
                   });
 
@@ -2755,6 +2788,14 @@ class Rend {
                 const keyboardHoverStates = {
                   left: _makeKeyboardHoverState(),
                   right: _makeKeyboardHoverState(),
+                };
+
+                const _makeUniverseHoverState = () => ({
+                  hoverPoint: null,
+                });
+                const universeHoverStates = {
+                  left: _makeUniverseHoverState(),
+                  right: _makeUniverseHoverState(),
                 };
 
                 localUpdates.push(() => {
@@ -3073,42 +3114,100 @@ class Rend {
                       });
                     };
                     const _updateControllers = () => {
-                      const {selectedKeyPath, positioningName, positioningSide} = elementsState;
+                      const status = webvr.getStatus();
+                      const {gamepads} = status;
 
-                      if (selectedKeyPath.length > 0 && positioningName && positioningSide) {
-                        const status = webvr.getStatus();
-                        const {gamepads: gamepadsStatus} = status;
-                        const gamepadStatus = gamepadsStatus[positioningSide];
+                      const _updateElements = () => {
+                        const {selectedKeyPath, positioningName, positioningSide} = elementsState;
 
-                        if (gamepadStatus) {
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepadStatus;
-                          positioningMesh.position.copy(controllerPosition);
-                          positioningMesh.quaternion.copy(controllerRotation);
-                          positioningMesh.scale.copy(controllerScale);
+                        if (selectedKeyPath.length > 0 && positioningName && positioningSide) {
+                          const gamepad = gamepads[positioningSide];
 
-                          const {selectedKeyPath, positioningName} = elementsState;
-                          const instance = menuUtils.getElementKeyPath({
-                            elements: elementsState.elementInstances,
-                          }, selectedKeyPath);
-                          const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                          const newAttributeValue = JSON.stringify(newValue);
-                          instance.setAttribute(positioningName, newAttributeValue);
-                        }
+                          if (gamepad) {
+                            const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                            positioningMesh.position.copy(controllerPosition);
+                            positioningMesh.quaternion.copy(controllerRotation);
+                            positioningMesh.scale.copy(controllerScale);
 
-                        if (!positioningMesh.visible) {
-                          positioningMesh.visible = true;
+                            const {selectedKeyPath, positioningName} = elementsState;
+                            const instance = menuUtils.getElementKeyPath({
+                              elements: elementsState.elementInstances,
+                            }, selectedKeyPath);
+                            const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
+                            const newAttributeValue = JSON.stringify(newValue);
+                            instance.setAttribute(positioningName, newAttributeValue);
+                          }
+
+                          if (!positioningMesh.visible) {
+                            positioningMesh.visible = true;
+                          }
+                          if (!oldPositioningMesh.visible) {
+                            oldPositioningMesh.visible = true;
+                          }
+                        } else {
+                          if (positioningMesh.visible) {
+                            positioningMesh.visible = false;
+                          }
+                          if (oldPositioningMesh.visible) {
+                            oldPositioningMesh.visible = false;
+                          }
                         }
-                        if (!oldPositioningMesh.visible) {
-                          oldPositioningMesh.visible = true;
-                        }
-                      } else {
-                        if (positioningMesh.visible) {
-                          positioningMesh.visible = false;
-                        }
-                        if (oldPositioningMesh.visible) {
-                          oldPositioningMesh.visible = false;
-                        }
-                      }
+                      };
+                      const _updateUniverse = () => {
+                        const {points} = universeState;
+
+                        SIDES.forEach(side => {
+                          const gamepad = gamepads[side];
+                          const universeHoverState = universeHoverStates[side];
+                          const universeDotMesh = universeDotMeshes[side];
+
+                          if (gamepad) {
+                            const {position: controllerPosition} = gamepad;
+
+                            const pointDistances = points
+                              .map(point => {
+                                const position = point.clone().applyMatrix4(universeMesh.matrixWorld);
+                                const distance = controllerPosition.distanceTo(position);
+
+                                return {
+                                  point,
+                                  position,
+                                  distance,
+                                };
+                              })
+                              .filter(({distance}) => distance < 0.1);
+                            if (pointDistances.length > 0) {
+                              const closestPoint = pointDistances.sort((a, b) => a.distance - b.distance)[0];
+                              universeHoverState.hoverPoint = closestPoint;
+                            } else {
+                              universeHoverState.hoverPoint = null;
+                            }
+                          } else {
+                            universeHoverState.hoverPoint = null;
+                          }
+
+                          const {hoverPoint} = universeHoverState;
+                          if (hoverPoint !== null) {
+                            const {point, position} = hoverPoint;
+                            const {selected} = point;
+                            universeDotMesh.position.copy(position);
+                            const colorAttribute = universeDotMesh.geometry.getAttribute('color');
+                            colorAttribute.array.set(Float32Array.from(new THREE.Color(selected ? 0xFF0000 : 0x808080).toArray()));
+                            colorAttribute.needsUpdate = true;
+
+                            if (!universeDotMesh.visible) {
+                              universeDotMesh.visible = true;
+                            }
+                          } else {
+                            if (universeDotMesh.visible) {
+                              universeDotMesh.visible = false;
+                            }
+                          }
+                        });
+                      };
+
+                      _updateElements();
+                      _updateUniverse();
                     };
 
                     _updateTextures();
