@@ -17,15 +17,6 @@
       color: #FFF;
       overflow-x: hidden;
     }
-    header {
-      display: flex;
-      position: relative;
-      height: 100px;
-      padding: 0 30px;
-      background-color: #000;
-      align-items: center;
-      z-index: 1;
-    }
     a {
       color: inherit;
       text-decoration: none;
@@ -38,13 +29,41 @@
     .link:hover {
       color: rgba(255, 255, 255, 0.5);
     }
-    .canvas-login-arrow {
-      position: absolute;
-      width: 600px;
-      height: 600px;
-      filter: brightness(1000000%);
-      pointer-events: none;
-      z-index: 2;
+    header {
+      display: flex;
+      position: relative;
+      height: 80px;
+      margin-bottom: 30px;
+      padding: 0 30px;
+      background-color: #000;
+      align-items: center;
+      z-index: 1;
+    }
+    .logged-in header {
+      background-color: #2196F3;
+    }
+    .logged-in header > .header-github-anchor {
+      display: none;
+    }
+    body:not(.logged-in) header > .header-login-bar {
+      display: none;
+    }
+    .header-button {
+      margin-right: 10px;
+      padding: 8px 20px;
+      background-color: transparent;
+      border: 1px solid;
+      border-radius: 100px;
+      font-family: 'Open Sans';
+      font-size: 15px;
+      font-weight: 300;
+      color: #FFF;
+      cursor: pointer;
+    }
+    .header-button:hover {
+      background-color: #FFF;
+      border-color: transparent;
+      color: #2196F3;
     }
     .header-icon {
       margin-right: 10px;
@@ -73,14 +92,31 @@
       display: block;
       font-size: 30px !important;
     }
+    .header-login-bar {
+      display: flex;
+      align-items: center;
+    }
+    .header-login-bar > h2 {
+      margin-right: 15px;
+    }
+    .logged-in .canvas-login-arrow, .logged-in .canvas-login-arrow-tail {
+      display: none;
+    }
+    .canvas-login-arrow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      filter: brightness(1000000%);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .logged-in .container {
+      height: 300px;
+    }
     .container {
       display: flex;
       width: 100%;
-      height: 720px;
-      margin-top: -50px;
-      margin-bottom: -100px;
-      padding-top: 50px;
-      padding-bottom: 100px;
+      height: 550px;
       background-color: #000;
       justify-content: flex-start;
       align-items: center;
@@ -273,7 +309,6 @@
       font-size: 36px;
     }
     h2 {
-      margin-bottom: 10px;
       font-size: 18px;
     }
     h3 {
@@ -300,17 +335,8 @@
     .login-form {
       background-color: #202020;
     }
-    .connect-form {
-      padding: 0;
-    }
-    .connect-form > h2 {
-      margin: 0;
-      padding: 20px;
-      background-color: #4CAF50;
-    }
-    .connect-form > .buttons {
-      padding: 20px;
-      background-color: #333;
+    .login-form > h2 {
+      margin-bottom: 10px;
     }
     input[type=email], input[type=password] {
       margin-bottom: 20px;
@@ -564,9 +590,14 @@
   </style>
 </head>
 <body>
-  <header>
+  <header id=header>
     <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo</a>
     <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
+    <div class=header-login-bar>
+      <h2>Welcome back, <span id=header-login-username>username</span>!</h2>
+      <input type=submit value='Connect' class=header-button>
+      <input type=button value='Log out' id=log-out-button class="header-button sub">
+    </div>
   </header>
   <aside class="aside left">
     <div class=stat>
@@ -670,7 +701,7 @@
       <p>
         Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more.<br/><br/>
         From your browser.<br/><br/>
-        It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>. Or, pay me for hosting!
+        It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>.<span class=canvas-login-arrow-tail> Or, pay me for hosting!</span>
       </p>
       <canvas id=canvas-login-arrow class=canvas-login-arrow width=1200 height=1200></canvas>
       <form id=login-form class=login-form>
@@ -680,13 +711,6 @@
         <div class=buttons>
           <input type=submit value='Connect' class=button>
           <a href class="button sub">Learn more</a>
-        </div>
-      </form>
-      <form id=connect-form class=connect-form style="display: none;">
-        <h2>Welcome back, <span id=connect-form-username>username</span>!</h2>
-        <div class=buttons>
-          <input type=submit value='Connect' class=button>
-          <input type=button value='Log out' id=log-out-button class="button sub">
         </div>
       </form>
       <div id=login-loader style="display: none;">
@@ -787,13 +811,15 @@
   <script src="https://js.stripe.com/v2/"></script>
   <script>
 const $ = s => document.querySelectorAll(s);
+
+const body = $('body')[0];
+const header = $('#header')[0];
+const headerLoginUsername = $('#header-login-username')[0];
 const loginForm = $('#login-form')[0];
-const connectForm = $('#connect-form')[0];
 const emailInput = $('#email')[0];
 const passwordInput = $('#password')[0];
 const loginLoader = $('#login-loader')[0];
 const canvasLoginArrow = $('#canvas-login-arrow')[0];
-const connectFormUsername = $('#connect-form-username')[0];
 const logOutButton = $('#log-out-button')[0];
 const signUpButton = $('#sign-up-button')[0];
 
@@ -872,10 +898,10 @@ if (tokenString) {
       .then(j => {
         const {username} = j;
 
-        connectFormUsername.innerText = username;
-
-        connectForm.style.display = null;
+        headerLoginUsername.innerText = username;
         loginLoader.style.display = 'none';
+
+        body.classList.add('logged-in');
       })
       .catch(err => {
         console.warn(err);
@@ -893,21 +919,24 @@ loginForm.addEventListener('submit', e => {
 
     const {value: username} = emailInput;
     const {value: password} = passwordInput;
+
+    emailInput.value = '';
+    passwordInput.value = '';
+
     _login({
       username,
       password,
     })
-
       .then(j => {
         const {token} = j;
 
         const s = JSON.stringify(token);
         localStorage.setItem('token', s);
 
-        connectFormUsername.innerText = username;
-
-        connectForm.style.display = null; // XXX just do the connect here
+        headerLoginUsername.innerText = username;
         loginLoader.style.display = 'none';
+
+        body.classList.add('logged-in');
       })
       .catch(err => {
         loginForm.style.display = null;
@@ -921,8 +950,8 @@ loginForm.addEventListener('submit', e => {
 logOutButton.addEventListener('click', e => {
   localStorage.removeItem('token');
 
-  connectForm.style.display = 'none';
   loginForm.style.display = null;
+  body.classList.remove('logged-in');
 });
 
 signUpButton.addEventListener('click', e => {
