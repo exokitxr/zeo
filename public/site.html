@@ -46,7 +46,7 @@
       pointer-events: none;
       z-index: 2;
     }
-    .icon {
+    .header-icon {
       margin-right: 10px;
     }
     .header-logo-anchor {
@@ -94,6 +94,13 @@
       align-items: center;
       flex-direction: column;
     }
+    .container-wrapper > p {
+      width: 100%;
+      margin: 30px 0;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.6;
+    }
     .container-footer {
       width: 200%;
       height: 400px;
@@ -107,9 +114,48 @@
       display: flex;
       width: 100%;
       height: 600px;
+      padding-top: 350px;
       background-color: #222;
+      justify-content: center;
     }
-    h1, h2, h3 {
+    .section-wrap {
+      width: 760px;
+    }
+    .section-wrap > h3 {
+      display: flex;
+      justify-content: center;
+    }
+    .grid {
+      display: flex;
+    }
+    .grid-item {
+      display: flex;
+      width: 50%;
+      padding: 30px;
+      flex-direction: column;
+      align-items: center;
+    }
+    .grid-item > .icon {
+      display: flex;
+      width: 200px;
+      height: 120px;
+      font-size: 100px;
+      justify-content: center;
+      align-items: center;
+    }
+    .grid-item > h4 {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .grid-item > p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .grid-item > p > .link {
+      display: block;
+      margin-top: 15px;
+    }
+    h1, h2, h3, h4, p {
       margin: 0;
       font-weight: 300;
       line-height: 1.4;
@@ -121,12 +167,11 @@
       margin-bottom: 10px;
       font-size: 18px;
     }
-    p {
-      width: 100%;
-      margin: 30px 0;
-      font-size: 14px;
-      font-weight: 300;
-      line-height: 1.6;
+    h3 {
+      font-size: 40px;
+    }
+    h4 {
+      font-size: 24px;
     }
     form, .login-loader {
       display: flex;
@@ -229,7 +274,7 @@
       box-sizing: border-box;
       z-index: 1;
     }
-    h3 {
+    .aside-heading {
       display: flex;
       margin: 0 -20px;
       padding: 0 20px;
@@ -238,12 +283,12 @@
       background-color: #222;
       border-bottom: 1px solid #000;
     }
-    h3 > .left {
+    .aside-heading > .left {
       font-size: 13px;
       font-weight: 600;
       flex-grow: 1;
     }
-    h3 > .right {
+    .aside-heading > .right {
       display: flex;
       font-size: 13px;
       align-items: center;
@@ -408,7 +453,7 @@
 </head>
 <body>
   <header>
-    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=icon>zeo</a>
+    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo</a>
     <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
   </header>
   <aside class="aside left">
@@ -474,7 +519,7 @@
     </div>
   </aside>
   <aside class="aside right">
-    <h3>
+    <h3 class=aside-heading>
       <span class=left>This week's free modules</span>
       <span class=right>
         <a href="#" class=link>Learn more</a>
@@ -511,8 +556,9 @@
     <div class=container-wrapper>
       <h1>WebVR universes powered by NPM</h1>
       <p>
-        Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more. From your browser.<br/><br/>
-        It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>. Or pay me for hosting.
+        Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more.<br/><br/>
+        From your browser.<br/><br/>
+        It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>. Or, pay me for hosting!
       </p>
       <canvas id=canvas-login-arrow class=canvas-login-arrow width=1200 height=1200></canvas>
       <form id=login-form class=login-form>
@@ -545,6 +591,28 @@
   <div class=container-footer>
   </div>
   <section>
+    <div class=section-wrap>
+      <div class=grid>
+        <div class=grid-item>
+          <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
+          <h4>Powered by npm</h4>
+          <p>
+            You know Javascript. Now meet face-to-face.<br/>
+            Publish to NPM and experience living modules in your headset.<br/>
+            <a href="https://github.com/modulesio/zeo" class=link>Read API docs</a>
+          </p>
+        </div>
+        <div class=grid-item>
+          <i class="icon octicon octicon-circuit-board"></i>
+          <h4>Multiplayer multiverse</h4>
+          <p>
+            Multiplayer networking, server-side physics, plugin management, inter-world linking.<br/>
+            It's in the box.<br/>
+            <a href="https://github.com/modulesio/zeo" class=link>See all features</a>
+          </p>
+        </div>
+      </div>
+    </div>
   </section>
   <!-- <div class=container>
     <div class=video-wrapper>
@@ -635,9 +703,9 @@ const _drawCanvasLoginArrow = canvas => {
   ctx.strokeStyle = '#FFF';
   ctx.lineWidth = 1;
 
-  const startX = 630;
+  const startX = 640;
   const endX = 930;
-  const startY = 412;
+  const startY = 500;
 
   const tick = 55;
   const tock = Math.sqrt((tick * tick) + (tick * tick));
