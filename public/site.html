@@ -44,6 +44,7 @@
       height: 600px;
       filter: brightness(1000000%);
       pointer-events: none;
+      z-index: 2;
     }
     .icon {
       margin-right: 10px;
@@ -88,12 +89,10 @@
     }
     .container-wrapper {
       display: flex;
-      position: relative;
       width: 480px;
       color: #FFF;
       align-items: center;
       flex-direction: column;
-      z-index: 1;
     }
     .container-footer {
       width: 200%;
@@ -132,15 +131,29 @@
     form, .login-loader {
       display: flex;
       width: 350px;
-      /* height: 193px; */
+      height: 226px;
+      flex-direction: column;
     }
     form {
       margin-bottom: 20px;
       padding: 20px;
-      /* border: 1px solid rgba(255, 255, 255, 0.2); */
-      background-color: #202020;
-      flex-direction: column;
       box-sizing: border-box;
+      z-index: 1;
+    }
+    .login-form {
+      background-color: #202020;
+    }
+    .connect-form {
+      padding: 0;
+    }
+    .connect-form > h2 {
+      margin: 0;
+      padding: 20px;
+      background-color: #4CAF50;
+    }
+    .connect-form > .buttons {
+      padding: 20px;
+      background-color: #333;
     }
     input[type=email], input[type=password] {
       margin-bottom: 20px;
@@ -502,13 +515,20 @@
         It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>. Or pay me for hosting.
       </p>
       <canvas id=canvas-login-arrow class=canvas-login-arrow width=1200 height=1200></canvas>
-      <form id=login-form>
+      <form id=login-form class=login-form>
         <h2>Log in</h2>
         <input type=email placeholder="your@email.com" autofocus id=email>
         <input type=password placeholder="password" id=password>
         <div class=buttons>
           <input type=submit value='Connect' class=button>
           <a href class="button sub">Learn more</a>
+        </div>
+      </form>
+      <form id=connect-form class=connect-form style="display: none;">
+        <h2>Welcome back, <span id=connect-form-username>username</span>!</h2>
+        <div class=buttons>
+          <input type=submit value='Connect' class=button>
+          <input type=button value='Log out' id=log-out-button class="button sub">
         </div>
       </form>
       <div id=login-loader style="display: none;">
@@ -601,10 +621,13 @@
   <script>
 const $ = s => document.querySelectorAll(s);
 const loginForm = $('#login-form')[0];
+const connectForm = $('#connect-form')[0];
 const emailInput = $('#email')[0];
 const passwordInput = $('#password')[0];
 const loginLoader = $('#login-loader')[0];
 const canvasLoginArrow = $('#canvas-login-arrow')[0];
+const connectFormUsername = $('#connect-form-username')[0];
+const logOutButton = $('#log-out-button')[0];
 
 const _drawCanvasLoginArrow = canvas => {
   const ctx = canvas.getContext('2d');
@@ -637,34 +660,101 @@ const _drawCanvasLoginArrow = canvas => {
 };
 _drawCanvasLoginArrow(canvasLoginArrow);
 
+const _login = j => fetch('/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(j),
+}).then(res => {
+  if (res.status >= 200 && res.status < 300) {
+    return res.json();
+  } else {
+    const err = new Error('failed to log in');
+    return Promise.reject(err);
+  }
+});
+
+const _jsonParse = s => {
+  let err = null;
+  let result;
+  try {
+    result = JSON.parse(tokenString);
+  } catch (e) {
+    err = e;
+  }
+  if (!err) {
+    return result;
+  } else {
+    return null;
+  }
+};
+
+const tokenString = localStorage.getItem('token');
+if (tokenString) {
+  const token = _jsonParse(tokenString);
+
+  if (token) {
+    loginForm.style.display = 'none';
+    loginLoader.style.display = null;
+
+    _login({
+      token,
+    })
+      .then(j => {
+        const {username} = j;
+
+        connectFormUsername.innerText = username;
+
+        connectForm.style.display = null;
+        loginLoader.style.display = 'none';
+      })
+      .catch(err => {
+        console.warn(err);
+
+        loginForm.style.display = null;
+        loginLoader.style.display = 'none';
+      });
+  }
+}
+
 loginForm.addEventListener('submit', e => {
   if (emailInput.value && emailInput.checkValidity() && passwordInput.value && passwordInput.checkValidity()) {
     loginForm.style.display = 'none';
     loginLoader.style.display = null;
-  }
 
-  const {value: username} = emailInput;
-  const {value: password} = passwordInput;
-  fetch('/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+    const {value: username} = emailInput;
+    const {value: password} = passwordInput;
+    _login({
       username,
       password,
-    }),
-  })
-    .then(res => res.json()
+    })
+
       .then(j => {
-        console.log(j); // XXX
+        const {token} = j;
+
+        const s = JSON.stringify(token);
+        localStorage.setItem('token', s);
+
+        connectFormUsername.innerText = username;
+
+        connectForm.style.display = null; // XXX just do the connect here
+        loginLoader.style.display = 'none';
       })
-    )
-    .catch(err => {
-      console.warn(err);
-    });
+      .catch(err => {
+        loginForm.style.display = null;
+        loginLoader.style.display = 'none';
+      });
+  }
 
   e.preventDefault();
+});
+
+logOutButton.addEventListener('click', e => {
+  localStorage.removeItem('token');
+
+  connectForm.style.display = 'none';
+  loginForm.style.display = null;
 });
   </script>
 </body>
