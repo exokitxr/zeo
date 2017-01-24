@@ -774,7 +774,7 @@
             <div class=dollars>$7</div>
             <div class=per-month>/mo</div>
           </div>
-          <div class="pricing-button highlight">Sign up</div>
+          <a class="pricing-button highlight" id=sign-up-button>Sign up</a>
         </div>
       </div>
       <div class=pricing-details></div>
@@ -784,6 +784,7 @@
     <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></aside>
     <aside class=footer-right>&copy; 2017 <a href="mailto:a@modules.io">Avaer Kazmer</a></aside>
   </footer>
+  <script src="https://js.stripe.com/v2/"></script>
   <script>
 const $ = s => document.querySelectorAll(s);
 const loginForm = $('#login-form')[0];
@@ -794,6 +795,7 @@ const loginLoader = $('#login-loader')[0];
 const canvasLoginArrow = $('#canvas-login-arrow')[0];
 const connectFormUsername = $('#connect-form-username')[0];
 const logOutButton = $('#log-out-button')[0];
+const signUpButton = $('#sign-up-button')[0];
 
 const _drawCanvasLoginArrow = canvas => {
   const ctx = canvas.getContext('2d');
@@ -922,6 +924,56 @@ logOutButton.addEventListener('click', e => {
   connectForm.style.display = 'none';
   loginForm.style.display = null;
 });
+
+signUpButton.addEventListener('click', e => {
+  publishableKeyPromise
+    .then(() => {
+      Stripe.card.createToken({
+        number: '4242424242424242',
+        cvc: '123',
+        exp_month: 12,
+        exp_year: 2020,
+      }, (status, response) => {
+        if (response.error) {
+          console.warn(err);
+        } else {
+          const {id: stripeToken} = response;
+
+          fetch('/signUp', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: 'lol@lol.com', // XXX
+              stripeToken,
+            }),
+          })
+            .then(res => res.json()
+              .then(j => {
+                console.log(j);
+              })
+            )
+            .catch(err => {
+              console.warn(err);
+            });
+        }
+      });
+    })
+    .catch(err => {
+      console.warn(err);
+    });
+});
+
+const publishableKeyPromise = fetch('/stripe/publishableKey.json')
+  .then(res => res.json()
+    .then(publishableKey => {
+      Stripe.setPublishableKey(publishableKey);
+    })
+  )
+  .catch(err => {
+    console.warn(err);
+  });
   </script>
 </body>
 </html>
