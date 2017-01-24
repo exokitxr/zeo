@@ -36,7 +36,7 @@
       text-decoration: underline;
     }
     .link:hover {
-      color: #AAA;
+      color: rgba(255, 255, 255, 0.5);
     }
     .canvas-login-arrow {
       position: absolute;
@@ -77,9 +77,9 @@
       display: flex;
       width: 100%;
       height: 720px;
-      margin-top: -100px;
+      margin-top: -50px;
       margin-bottom: -100px;
-      padding-top: 100px;
+      padding-top: 50px;
       padding-bottom: 100px;
       background-color: #000;
       justify-content: flex-start;
@@ -110,28 +110,27 @@
       background-color: #000;
       transform: rotateZ(-10deg);
     }
-    section {
+    section.list {
       display: flex;
       width: 100%;
       padding-top: 350px;
       background-color: #222;
       justify-content: center;
     }
-    .section-wrap {
-      width: 760px;
+    .grid {
+      width: 100%;
     }
-    .section-wrap > h3 {
+    .grid-item-wrap {
       display: flex;
       justify-content: center;
     }
-    .grid {
-      display: flex;
-      flex-wrap: wrap;
+    .grid-item-wrap:nth-child(even) {
+      background-color: #333;
     }
     .grid-item {
       display: flex;
-      width: 50%;
-      padding: 30px;
+      width: 400px;
+      padding: 30px 0;
       flex-direction: column;
       align-items: center;
       box-sizing: border-box;
@@ -150,22 +149,117 @@
       color: #2196F3;
     }
     .grid-item-3 > .icon {
-      color: #9C27B0;
-    }
-    .grid-item-4 > .icon {
       color: #4CAF50;
     }
     .grid-item > h4 {
       width: 100%;
-      margin-bottom: 10px;
+      margin: 15px 0;
     }
     .grid-item > p {
+      width: 100%;
       font-size: 14px;
       line-height: 1.6;
     }
-    .grid-item > p > .link {
+    .grid-item > p > .link:last-child {
       display: block;
-      margin-top: 15px;
+      margin: 15px 0;
+    }
+    section.pricing {
+      display: flex;
+      background-color: #03A9F4;
+      justify-content: center;
+    }
+    .pricing {
+      padding: 30px 0;
+    }
+    .pricing-wrap {
+      width: 720px;
+    }
+    .pricing-details {
+      /* display: flex; */
+    }
+    .pricing-details > img {
+      width: 200px;
+      height: 200px;
+      border-radius: 100px;
+    }
+    .pricing-grid {
+      display: flex;
+      width: 520px;
+      margin: 20px auto;
+    }
+    .pricing-item {
+      display: flex;
+      width: 50%;
+      padding-top: 10px;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .pricing-item:not(.highlight) {
+      background-color: #01579B;
+    }
+    .pricing-item.highlight {
+      background-color: #4CAF50;
+    }
+    .pricing-heading {
+      display: flex;
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      line-height: 2;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .pricing-footer {
+      display: flex;
+      padding: 10px 20px;
+      justify-content: center;
+      align-items: flex-end;
+      flex-grow: 1;
+    }
+    .pricing-button {
+      display: flex;
+      margin: 20px;
+      padding: 10px;
+      border: 1px solid;
+      border-radius: 100px;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.8);
+      justify-content: center;
+      align-items: center;
+    }
+    .pricing-button.highlight {
+      background-color: #F44336;
+      border-color: transparent;
+      font-weight: 400;
+      color: #FFF;
+    }
+    .pricing-point {
+      display: flex;
+      padding-right: 20px;
+      padding-left: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 13px;
+      line-height: 3;
+      align-items: center;
+    }
+    .pricing-point.dim {
+      opacity: 0.5;
+    }
+    .pricing-point > i {
+      width: 50px;
+      font-size: 18px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .plan, .dollars, .per-month {
+      line-height: 1;
+    }
+    .plan {
+      font-size: 30px;
+    }
+    .dollars {
+      font-size: 30px;
     }
     h1, h2, h3, h4, p {
       margin: 0;
@@ -180,9 +274,11 @@
       font-size: 18px;
     }
     h3 {
+      margin-bottom: 20px;
       font-size: 40px;
     }
     h4 {
+      margin-bottom: 40px;
       font-size: 24px;
     }
     form, .login-loader {
@@ -532,7 +628,7 @@
   </aside>
   <aside class="aside right">
     <h3 class=aside-heading>
-      <span class=left>This week's free modules</span>
+      <span class=left>This week's featured modules</span>
       <span class=right>
         <a href="#" class=link>Learn more</a>
       </span>
@@ -602,116 +698,84 @@
   </div>
   <div class=container-footer>
   </div>
-  <section>
-    <div class=section-wrap>
-      <div class=grid>
+  <section class=list>
+    <div class=grid>
+      <div class=grid-item-wrap>
         <div class="grid-item grid-item-1">
           <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
-          <h4>Powered by npm</h4>
+          <h4>Powered by npm.</h4>
           <p>
-            You know Javascript. Now meet face-to-face.<br/>
-            Publish to NPM and experience living modules in your headset.<br/>
+            You know Javascript. Now meet Javascript face-to-face.<br/>
+            Publish to NPM and experience your creations in your headset.<br/>
+            The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
             <a href="https://github.com/modulesio/zeo" class=link>Read API docs</a>
           </p>
         </div>
+      </div>
+      <div class=grid-item-wrap>
         <div class="grid-item grid-item-2">
           <i class="icon octicon octicon-circuit-board"></i>
-          <h4>Multiplayer multiverse</h4>
+          <h4>Persistent multiverse tech.</h4>
           <p>
-            Multiplayer networking, voice chat, server-side physics, plugin management, metaverse links.<br/>
-            It's in the box.<br/>
+            World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
+            We did the hard work so you don't have to.<br/>
             <a href="https://github.com/modulesio/zeo" class=link>See all features</a>
           </p>
         </div>
+      </div>
+      <div class=grid-item-wrap>
         <div class="grid-item grid-item-3">
-          <i class="icon octicon octicon-heart"></i>
-          <h4>Let's do it together</h4>
+          <i class="icon octicon octicon-mark-github"></i>
+          <h4>Open source. Or hosted.</h4>
           <p>
-            Multiplayer networking, server-side physics, plugin management, inter-world linking.<br/>
-            It's in the box.<br/>
-            <a href="https://github.com/modulesio/zeo" class=link>See all features</a>
-          </p>
-        </div>
-        <div class="grid-item grid-item-4">
-          <i class="icon octicon octicon-broadcast"></i>
-          <h4>Let's do it together</h4>
-          <p>
-            Multiplayer networking, server-side physics, plugin management, inter-world linking.<br/>
-            It's in the box.<br/>
-            <a href="https://github.com/modulesio/zeo" class=link>See all features</a>
+            Run your own server or join us on the public Zeo Multiverse.<br/>
+            Test it out with just your browser.<br/>
+            When you're ready to keep your work, get a Gold Account.<br/>
+            <a href="https://github.com/modulesio/zeo" class=link>See pricing</a>
           </p>
         </div>
       </div>
     </div>
   </section>
-  <!-- <div class=container>
-    <div class=video-wrapper>
-      <video autoplay loop>
-        <source src="https://cdn.rawgit.com/modulesio/zeo-data/fa848ef03608c5079237565c8389afafaf5e93ba/video/demo.webm" type="video/webm">
-      </video>
-    </div>
-    <div class=container-overlay>
-      <div class=container-wrapper>
-        <div class=container-header>
-          <h1>zeo.sh</h1>
+  <section class=pricing>
+    <div class=pricing-wrap>
+      <h3>Pricing</h3>
+      <h4>Try Zeo Multiverse free. When you're ready to keep your work, we've got your back with a Gold Account.</h4>
+      <div class=pricing-grid>
+        <div class=pricing-item>
+          <div class=pricing-heading>
+            <div class=plan>Demo</div>
+          </div>
+          <div class=pricing-point><i class="fa fa-minus"></i> Public worlds only</div>
+          <div class=pricing-point><i class="fa fa-minus"></i> Autokicked after 30 minutes :(</div>
+          <div class=pricing-point><i class="fa fa-minus"></i> Lose your module inventory</div>
+          <div class=pricing-point><i class="fa fa-minus"></i> You might get kicked</div>
+          <div class=pricing-footer>
+            <div class=dollars>&nbsp;</div>
+            <div class=per-month>&nbsp;</div>
+          </div>
+          <div class=pricing-button>Try it</div>
         </div>
-        <nav class=navbar>
-          <a href="#" class=nav>
-            <i class="octicon octicon-gist"></i>
-            <span>Developer</span>
-          </a>
-          <a href="#" class="nav highlight">
-            <i class="octicon octicon-location"></i>
-            <span>Explorer</span>
-          </a>
-          <a href="#" class=nav>
-            <i class="octicon octicon-dashboard"></i>
-            <span>Advertiser</span>
-          </a>
-        </nav>
-        <section>
-<div class=subsections>
-  <div class="subsection main">
-    <h2>Make VR, make money</h2>
-    <p><b>Zeo lets you build WebVR worlds with Javascript + <a class=link href="https://npmjs.org">npm</a> and get paid for it.</b></p>
-    <p>Headset + controller tracking, server-side physics, multiplayer, UI framework, positional audio and more. It's all plain JS, <a class=link href="https://threejs.org/">THREE.js</a>, and <a class=link href="https://npmjs.org">npm</a>.</p>
-    <p>Zeo pays you with in-world VR advertising and analytics.</p>
-    <p><a class="cta-item purple" href="https://github.com/modulesio/zeo">Start developing</a> or <a class=link href="https://github.com/modulesio/zeo">How Zeo works</a>.</p>
-  </div>
-  <div class="subsection aside">
-    <i class="aside-icon purple octicon octicon-tools"></i>
-    <i class="aside-icon purple fa fa-money"></i>
-    <i class="aside-icon purple octicon octicon-heart" style="position: relative; left: 7px;"></i>
-  </div>
-</div>
-        </section>
-        <section class=highlight>
-<div class=subsections>
-  <div class="subsection main">
-    <h2>WebVR worlds with NPM</h2>
-    <pre><span class=dollar>$ </span>npm install zeo<span class=comment> # requires node 6+</span></pre>
-    <p><b>Zeo is a WebVR server powered by Javascript + <a class=link href="https://npmjs.org">npm</a>.</b></p>
-    <p>Npm install objects from the browser without taking off your headset. Or just use keyboard + mouse.</p>
-    <p>Open source on Github. Plugins are funded by in-world ads.</b></p>
-    <p><a class="cta-item red" href="https://github.com/modulesio/zeo">Get started with Zeo</a></p>
-  </div>
-  <div class="subsection aside">
-    <i class="aside-icon gray large octicon octicon-telescope"></i>
-  </div>
-</div>
-        </section>
-        <section>
-<h2>VR advertising is here</h2>
-<p class=big>Start a conversation that touches your audience. Literally.</p>
-<div class=intermission>
-  <i class="intermission-icon octicon octicon-hubot"></i>
-</div>
-<p>In-world advertising uses the same Javascript VR content engine that powers Zeo to deliver custom ad experiences for your brand.<br/><b>Immersive analytics</b> give you insights through the eyes of your customer.</p>
-<p><a class="cta-item green" href="mailto:a@modules.io">Contact us</a> or <a class=link href="mailto:a@modules.io">discover the Zeo ad program</a>.</p>
-        </section>
+        <div class="pricing-item highlight">
+          <div class=pricing-heading>
+            <div class=plan>Gold</div>
+          </div>
+          <div class=pricing-point><i class="fa fa-lock"></i> Private world just for you</div>
+          <div class=pricing-point><i class="fa fa-hdd-o"></i> Reserved server access</div>
+          <div class=pricing-point><i class="fa fa-shopping-basket"></i> Keep your module inventory!</div>
+          <div class=pricing-point><i class="fa fa-user-times"></i> Kick any demo user :)</div>
+          <div class=pricing-point><i class="fa fa-id-card-o"></i> Custom logo for your avatar</div>
+          <div class=pricing-point><i class="fa fa-question"></i> Hidden secrets</div>
+          <div class=pricing-footer>
+            <div class=dollars>$7</div>
+            <div class=per-month>/mo</div>
+          </div>
+          <div class="pricing-button highlight">Sign up</div>
+        </div>
       </div>
+      <div class=pricing-details></div>
     </div>
-  </div> -->
+  </section>
   <footer>
     <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></aside>
     <aside class=footer-right>&copy; 2017 <a href="mailto:a@modules.io">Avaer Kazmer</a></aside>
