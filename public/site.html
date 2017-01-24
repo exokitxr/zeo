@@ -32,6 +32,19 @@
       outline: none;
       cursor: pointer;
     }
+    .link {
+      text-decoration: underline;
+    }
+    .link:hover {
+      color: #AAA;
+    }
+    .canvas-login-arrow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      filter: brightness(1000000%);
+      pointer-events: none;
+    }
     .icon {
       margin-right: 10px;
     }
@@ -64,9 +77,9 @@
       width: 100%;
       height: 720px;
       margin-top: -100px;
-      margin-bottom: -150px;
+      margin-bottom: -100px;
       padding-top: 100px;
-      padding-bottom: 150px;
+      padding-bottom: 100px;
       background-color: #000;
       justify-content: flex-start;
       align-items: center;
@@ -105,6 +118,10 @@
     h1 {
       font-size: 36px;
     }
+    h2 {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
     p {
       width: 100%;
       margin: 30px 0;
@@ -115,12 +132,13 @@
     form, .login-loader {
       display: flex;
       width: 350px;
-      height: 193px;
+      /* height: 193px; */
     }
     form {
       margin-bottom: 20px;
       padding: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      /* border: 1px solid rgba(255, 255, 255, 0.2); */
+      background-color: #202020;
       flex-direction: column;
       box-sizing: border-box;
     }
@@ -179,6 +197,10 @@
     .aside {
       position: absolute;
       margin-top: 70px;
+      opacity: 0.5;
+    }
+    .aside:hover {
+      opacity: 1;
     }
     .aside.left {
       padding: 0 10px;
@@ -211,11 +233,7 @@
     h3 > .right {
       display: flex;
       font-size: 13px;
-      text-decoration: underline;
       align-items: center;
-    }
-    h3 > .right:hover {
-      color: #AAA;
     }
     ul {
       margin: 0 -20px;
@@ -445,7 +463,9 @@
   <aside class="aside right">
     <h3>
       <span class=left>This week's free modules</span>
-      <a href="#" class=right>Learn more</a>
+      <span class=right>
+        <a href="#" class=link>Learn more</a>
+      </span>
     </h3>
     <ul>
       <li>
@@ -477,8 +497,13 @@
   <div class=container>
     <div class=container-wrapper>
       <h1>WebVR universes powered by NPM</h1>
-      <p>Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more. From your browser.<br/><br/><b>Headset not required.</b> Mouse + keyboard support.</p>
+      <p>
+        Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more. From your browser.<br/><br/>
+        It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>. Or pay me for hosting.
+      </p>
+      <canvas id=canvas-login-arrow class=canvas-login-arrow width=1200 height=1200></canvas>
       <form id=login-form>
+        <h2>Log in</h2>
         <input type=email placeholder="your@email.com" autofocus id=email>
         <input type=password placeholder="password" id=password>
         <div class=buttons>
@@ -579,6 +604,39 @@ const loginForm = $('#login-form')[0];
 const emailInput = $('#email')[0];
 const passwordInput = $('#password')[0];
 const loginLoader = $('#login-loader')[0];
+const canvasLoginArrow = $('#canvas-login-arrow')[0];
+
+const _drawCanvasLoginArrow = canvas => {
+  const ctx = canvas.getContext('2d');
+
+  ctx.strokeStyle = '#FFF';
+  ctx.lineWidth = 1;
+
+  const startX = 630;
+  const endX = 930;
+  const startY = 412;
+
+  const tick = 55;
+  const tock = Math.sqrt((tick * tick) + (tick * tick));
+  const tack = 50;
+
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, startY);
+  ctx.lineTo(endX + tick, startY + tick);
+  ctx.lineTo(endX + tick, startY + tick + tock);
+  ctx.lineTo(endX + tick - tack, startY + tick + tock + tack);
+
+  ctx.moveTo(endX + tick - tack, startY + tick + tock + tack);
+  ctx.lineTo(endX + tick - tack, startY + tick + tock + tack - tack);
+
+  ctx.moveTo(endX + tick - tack, startY + tick + tock + tack);
+  ctx.lineTo(endX + tick - tack + tack, startY + tick + tock + tack);
+
+  ctx.stroke();
+};
+_drawCanvasLoginArrow(canvasLoginArrow);
+
 loginForm.addEventListener('submit', e => {
   if (emailInput.value && emailInput.checkValidity() && passwordInput.value && passwordInput.checkValidity()) {
     loginForm.style.display = 'none';
