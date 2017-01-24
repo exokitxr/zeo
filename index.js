@@ -4,6 +4,7 @@ const args = process.argv.slice(2);
 const flags = {
   app: args.includes('app'),
   site: args.includes('site'),
+  hub: args.includes('hub'),
   start: args.includes('start'),
   stop: args.includes('stop'),
   reboot: args.includes('reboot'),
@@ -56,15 +57,21 @@ const _stop = () => {
 const _start = () => {
   const startPromises = [];
   if (flags.app) {
-    startPromises.push(require('./lib/app')(a, config));
+    const app = require('./lib/app');
+    startPromises.push(app.listen(a, config));
   }
   if (flags.site) {
-    startPromises.push(require('./lib/site')(a, config));
+    const site = require('./lib/site');
+    startPromises.push(site.listen(a, config));
+  }
+  if (flags.hub) {
+    const hub = require('./lib/hub');
+    startPromises.push(hub.listen(a, config));
   }
   if (flags.start || flags.reboot) {
     const hub = require('./lib/hub');
     const promise = hub.check(a, config)
-      .then(() => hub.start(a, config));
+      .then(() => hub.start(a, config))
     startPromises.push(promise);
   }
 

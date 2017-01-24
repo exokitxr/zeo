@@ -585,6 +585,27 @@ loginForm.addEventListener('submit', e => {
     loginLoader.style.display = null;
   }
 
+  const {value: username} = emailInput;
+  const {value: password} = passwordInput;
+  fetch('/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username,
+      password,
+    }),
+  })
+    .then(res => res.json()
+      .then(j => {
+        console.log(j); // XXX
+      })
+    )
+    .catch(err => {
+      console.warn(err);
+    });
+
   e.preventDefault();
 });
   </script>

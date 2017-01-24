@@ -30,7 +30,10 @@
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
     "archae": "0.0.14",
+    "body-parser": "^1.16.0",
     "dockerode": "^2.3.1",
-    "fs-extra": "^2.0.0"
+    "fs-extra": "^2.0.0",
+    "nedb": "^1.8.0",
+    "password-hash-and-salt": "^0.1.4"
   }
 }
