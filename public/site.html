@@ -8,6 +8,7 @@
   <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <style>
     body {
+      position: relative;
       min-width: 1024px;
       min-height: 720px;
       margin: 0;
@@ -37,7 +38,7 @@
       padding: 0 30px;
       background-color: #000;
       align-items: center;
-      z-index: 1;
+      z-index: 3;
     }
     .logged-in header {
       background-color: #2196F3;
@@ -61,6 +62,19 @@
       left: 0;
       right: 0;
       justify-content: center;
+      z-index: 3;
+    }
+    .signing-up .signing-up-overlay {
+      display: block;
+    }
+    .signing-up-overlay {
+      display: none;
+      background-color: rgba(0, 0, 0, 0.5);
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
       z-index: 2;
     }
     .details-wrap {}
@@ -683,6 +697,7 @@
       <input type=submit value='Sign up' id=sign-up-button class=header-button>
     </div>
   </div>
+  <div class=signing-up-overlay id=signing-up-overlay></div>
   <aside class="aside left">
     <div class=stat>
       <div class=label>10 Worlds</div>
@@ -907,6 +922,7 @@ const canvasLoginArrow = $('#canvas-login-arrow')[0];
 const logOutButton = $('#log-out-button')[0];
 const signUpButton = $('#sign-up-button')[0];
 const gotoSignUpButton = $('#goto-sign-up-button')[0];
+const signingUpOverlay = $('#signing-up-overlay')[0];
 
 const _drawCanvasLoginArrow = canvas => {
   const ctx = canvas.getContext('2d');
@@ -1083,6 +1099,10 @@ signUpButton.addEventListener('click', e => {
     .catch(err => {
       console.warn(err);
     });
+});
+
+signingUpOverlay.addEventListener('click', e => {
+  body.classList.remove('signing-up');
 });
 
 const publishableKeyPromise = fetch('/stripe/publishableKey.json')
