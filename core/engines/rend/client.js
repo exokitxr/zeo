@@ -733,6 +733,14 @@ class Rend {
                   fs.removeEventListener('uploadEnd', uploadEnd);
                 });
 
+                const unload = e => {
+                  hub.saveUserStateAsync();
+                };
+                window.addEventListener('unload', unload);
+                cleanups.push(() => {
+                  window.removeEventListener('unload', unload);
+                });
+
                 const measureText = (() => {
                   const measureContexts = {};
 

@@ -50,6 +50,7 @@ class Hub {
         const world = j ? j.world : null;
         const matrix = j ? j.matrix : null;
         const plan = j ? j.plan : null;
+        const token = j ? j.token : null;
 
         const _isEnabled = () => hubEnabled;
         const _getWorldName = () => worldName;
@@ -59,11 +60,37 @@ class Hub {
           matrix,
           plan,
         });
+        const _getUserStateJson = () => ({
+          token,
+          state: {
+            world,
+            matrix,
+          },
+        });
+        const _saveUserState = () => {
+          if (hubEnabled && username) {
+            return fetch('/hub/userState', {
+              method: 'POST',
+              body: JSON.stringify(_getUserStateJson()),
+            });
+          } else {
+            return Promise.resolve();
+          }
+        };
+        const _saveUserStateAsync = () => {
+console.log('save user state async', {hubEnabled, username}); // XXX
+debugger;
+          if (hubEnabled && username) {
+            navigator.sendBeacon('/hub/userState', JSON.stringify(_getUserStateJson()));
+          }
+        };
 
         return {
           isEnabled: _isEnabled,
           getWorldName: _getWorldName,
           getUser: _getUser,
+          saveUserState: _saveUserState,
+          saveUserStateAsync: _saveUserStateAsync,
         };
       })
       .catch(err => {
