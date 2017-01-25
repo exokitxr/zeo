@@ -733,6 +733,12 @@ class Rend {
                   fs.removeEventListener('uploadEnd', uploadEnd);
                 });
 
+                const {matrix: matrixArray} = hub.getUserState();
+                if (matrixArray) {
+                  webvr.setStageMatrix(new THREE.Matrix4().fromArray(matrixArray));
+                  webvr.updateStatus();
+                }
+
                 const unload = e => {
                   hub.saveUserStateAsync();
                 };

@@ -945,7 +945,7 @@ const _tryLogin = () => {
 
             headerLoginUsername.innerText = username;
             connectButton.innerText = 'Connect - ' + world;
-            connectButton.href = _getConnectUrl(world);
+            connectButton.href = _getConnectUrl(world, token);
             loginLoader.style.display = 'none';
 
             if (plan !== null) {
@@ -969,7 +969,7 @@ const _tryLogin = () => {
 };
 _tryLogin();
 
-const _getConnectUrl = worldName => window.location.protocol + '//' + worldName + '.' + window.location.host;
+const _getConnectUrl = (worldName, token) => window.location.protocol + '//' + worldName + '.' + window.location.host + '?token=' + token;
 
 loginForm.addEventListener('submit', e => {
   if (emailInput.value && emailInput.checkValidity() && passwordInput.value && passwordInput.checkValidity()) {
@@ -1000,7 +1000,7 @@ loginForm.addEventListener('submit', e => {
 
         headerLoginUsername.innerText = username;
         connectButton.innerText = 'Connect - ' + world;
-        connectButton.href = _getConnectUrl(world);
+        connectButton.href = _getConnectUrl(world, token);
         loginLoader.style.display = 'none';
 
         if (plan !== null) {

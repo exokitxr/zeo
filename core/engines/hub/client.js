@@ -12,15 +12,32 @@ class Hub {
       live = false;
     };
 
+    const hubUrlPrefix = window.location.protocol + '//' + hubUrl + (window.location.port ? (':' + window.location.port) : '');
+
     const _requestLogin = () => {
       if (hubEnabled) {
-        const tokenString = getQueryParameterByName('token') || localStorage.getItem('token') || null;
+        const token = (() => {
+          const tokenParam = getQueryParameterByName('token');
 
-        if (typeof tokenString === 'string') {
-          const token = _parseJson(tokenString);
+          if (tokenParam) {
+            return tokenParam;
+          } else {
+            const tokenString = localStorage.getItem('token');
 
-          return fetch(hubUrl + '/hub/login', {
+            if (tokenString) {
+              return _parseJson(tokenString);
+            } else {
+              return null;
+            }
+          }
+        })();
+
+        if (token !== null) {
+          return fetch(hubUrlPrefix + '/hub/login', {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
               token,
             }),
@@ -33,8 +50,18 @@ class Hub {
       }
     };
 
-    return _requestLogin()
-      .then(j => {
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/webvr',
+      ]),
+      _requestLogin(),
+    ])
+      .then(([
+        [
+          webvr,
+        ],
+        j,
+      ]) => {
         console.log('got login result', j); // XXX
 
         const worldName = (() => {
@@ -54,23 +81,30 @@ class Hub {
 
         const _isEnabled = () => hubEnabled;
         const _getWorldName = () => worldName;
-        const _getUser = () => ({
+        const _getUserState = () => ({
           username,
           world,
           matrix,
           plan,
         });
-        const _getUserStateJson = () => ({
-          token,
-          state: {
-            world,
-            matrix,
-          },
-        });
+        const _getUserStateJson = () => {
+          const matrix = webvr.getStageMatrix().toArray();
+
+          return {
+            token,
+            state: {
+              world,
+              matrix,
+            },
+          };
+        };
         const _saveUserState = () => {
           if (hubEnabled && username) {
-            return fetch('/hub/userState', {
+            return fetch(hubUrlPrefix + '/hub/userState', {
               method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
               body: JSON.stringify(_getUserStateJson()),
             });
           } else {
@@ -78,17 +112,17 @@ class Hub {
           }
         };
         const _saveUserStateAsync = () => {
-console.log('save user state async', {hubEnabled, username}); // XXX
-debugger;
           if (hubEnabled && username) {
-            navigator.sendBeacon('/hub/userState', JSON.stringify(_getUserStateJson()));
+            navigator.sendBeacon(hubUrlPrefix + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
+              type: 'application/json',
+            }));
           }
         };
 
         return {
           isEnabled: _isEnabled,
           getWorldName: _getWorldName,
-          getUser: _getUser,
+          getUserState: _getUserState,
           saveUserState: _saveUserState,
           saveUserStateAsync: _saveUserStateAsync,
         };
