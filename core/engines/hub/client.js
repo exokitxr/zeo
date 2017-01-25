@@ -19,7 +19,7 @@ class Hub {
         if (typeof tokenString === 'string') {
           const token = _parseJson(tokenString);
 
-          return fetch(hubUrl + '/login', {
+          return fetch(hubUrl + '/hub/login', {
             method: 'POST',
             body: JSON.stringify({
               token,

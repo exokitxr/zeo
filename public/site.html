@@ -972,7 +972,7 @@ const _drawCanvasLoginArrow = canvas => {
 };
 _drawCanvasLoginArrow(canvasLoginArrow);
 
-const _login = j => fetch('/login', {
+const _login = j => fetch('/hub/login', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -1155,7 +1155,7 @@ signUpButton.addEventListener('click', e => {
         if (!response.error) {
           const {id: stripeToken} = response;
 
-          fetch('/signUp', {
+          fetch('/hub/signUp', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1174,7 +1174,7 @@ signUpButton.addEventListener('click', e => {
               console.warn(err);
             });
         } else {
-          console.warn(err);
+          console.warn(response.error);
         }
       });
     })
