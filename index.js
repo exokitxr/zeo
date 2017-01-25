@@ -81,7 +81,7 @@ const _start = () => {
 _install()
   .then(() => _stop())
   .then(() => _start())
-  .then(() => {
+  .then(() => new Promise((accept, reject) => {
     const flagList = (() => {
       const result = [];
       for (const k in flags) {
@@ -99,11 +99,11 @@ _install()
         if (!err) {
           console.log('https://zeo.sh:8000/');
         } else {
-          a.close();
+          console.warn(err);
         }
       });
     }
-  })
+  }))
   .catch(err => {
     console.warn(err);
 
