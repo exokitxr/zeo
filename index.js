@@ -64,6 +64,7 @@ const config = {
       url: flags.hubUrl || 'zeo.sh',
       numContainers: 10,
       startPort: 9000,
+      enabled: flags.hub,
     },
   },
 };

@@ -5,7 +5,7 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}}} = archae;
+    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -13,19 +13,23 @@ class Hub {
     };
 
     const _requestLogin = () => {
-      const tokenString = getQueryParameterByName('token') || localStorage.getItem('token') || null;
+      if (hubEnabled) {
+        const tokenString = getQueryParameterByName('token') || localStorage.getItem('token') || null;
 
-      if (typeof tokenString === 'string') {
-        const token = _parseJson(tokenString);
+        if (typeof tokenString === 'string') {
+          const token = _parseJson(tokenString);
 
-        return fetch(hubUrl + '/login', {
-          method: 'POST',
-          body: JSON.stringify({
-            token,
-          }),
-        }).then(res => res.json());
+          return fetch(hubUrl + '/login', {
+            method: 'POST',
+            body: JSON.stringify({
+              token,
+            }),
+          }).then(res => res.json());
+        } else {
+          return Promise.resolve(null);
+        }
       } else {
-        return Promise.resolve();
+        return Promise.resolve(null);
       }
     };
 
@@ -37,6 +41,7 @@ class Hub {
         const matrix = j ? j.matrix : null;
         const plan = j ? j.plan : null;
 
+        const _isEnabled = () => hubEnabled;
         const _getUser = () => ({
           username,
           matrix,
@@ -44,6 +49,7 @@ class Hub {
         });
 
         return {
+          isEnabled: _isEnabled,
           getUser: _getUser,
         };
       })
