@@ -9,6 +9,26 @@ const flags = {
   stop: args.includes('stop'),
   reboot: args.includes('reboot'),
   install: args.includes('install'),
+  host: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^host=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
+  port: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^port=([0-9]+)$/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+    return null;
+  })(),
 };
 const hasFlag = (() => {
   for (const k in flags) {
@@ -24,8 +44,8 @@ if (!hasFlag) {
 
 const config = {
   dirname: __dirname,
-  hostname: 'zeo.sh',
-  port: 8000,
+  hostname: flags.host || 'zeo.sh',
+  port: flags.port || 8000,
   publicDirectory: 'public',
   dataDirectory: 'data',
   staticSite: flags.site,
@@ -56,18 +76,7 @@ const _stop = () => {
 
 const _start = () => {
   const startPromises = [];
-  if (flags.app) {
-    const app = require('./lib/app');
-    startPromises.push(app.listen(a, config));
-  }
-  if (flags.site) {
-    const site = require('./lib/site');
-    startPromises.push(site.listen(a, config));
-  }
-  if (flags.hub) {
-    const hub = require('./lib/hub');
-    startPromises.push(hub.listen(a, config));
-  }
+
   if (flags.start || flags.reboot) {
     const hub = require('./lib/hub');
     const promise = hub.check(a, config)
@@ -78,9 +87,29 @@ const _start = () => {
   return Promise.all(startPromises);
 };
 
+const _listen = () => {
+  const listenPromises = [];
+
+  if (flags.app) {
+    const app = require('./lib/app');
+    listenPromises.push(app.listen(a, config));
+  }
+  if (flags.site) {
+    const site = require('./lib/site');
+    listenPromises.push(site.listen(a, config));
+  }
+  if (flags.hub) {
+    const hub = require('./lib/hub');
+    listenPromises.push(hub.listen(a, config));
+  }
+
+  return Promise.all(listenPromises);
+};
+
 _install()
   .then(() => _stop())
   .then(() => _start())
+  .then(() => _listen())
   .then(() => new Promise((accept, reject) => {
     const flagList = (() => {
       const result = [];
@@ -97,7 +126,7 @@ _install()
     if (flags.app || flags.site) {
       a.listen(err => {
         if (!err) {
-          console.log('https://zeo.sh:8000/');
+          console.log('https://' + config.hostname + ':' + config.port + '/');
         } else {
           console.warn(err);
         }
