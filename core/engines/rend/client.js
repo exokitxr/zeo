@@ -59,6 +59,7 @@ class Rend {
     };
 
     return archae.requestPlugins([
+      '/core/engines/hub',
       '/core/engines/input',
       '/core/engines/three',
       '/core/engines/webvr',
@@ -70,6 +71,7 @@ class Rend {
       '/core/plugins/geometry-utils',
       '/core/plugins/creature-utils',
     ]).then(([
+      hub,
       input,
       three,
       webvr,
@@ -202,15 +204,21 @@ class Rend {
         };
         const universeState = (() => {
           class Point extends THREE.Vector3 {
-            constructor(x, y, z, value, selected) {
+            constructor(x, y, z, value) {
               super(x, y, z);
 
               this.value = value;
-              this.selected = selected;
             }
           }
 
-          const points = (() => {
+          class World {
+            constructor(worldName, point) {
+              this.worldName = worldName;
+              this.point = point;
+            }
+          }
+
+          const worlds = (() => {
             const numPoints = 10;
             const resolution = 16;
             const generator = indev({
@@ -230,9 +238,9 @@ class Rend {
                     -0.5 + (i / resolution),
                     -0.5 + (j / resolution),
                     -0.5 + (k / resolution),
-                    value,
-                    i === 0 && j === 0 && k === 0
+                    value
                   );
+                  point.value = value;
                   heap.push(point);
                 }
               }
@@ -240,13 +248,15 @@ class Rend {
 
             const result = Array(numPoints);
             for (let i = 0; i < numPoints; i++) {
-              result[i] = heap.pop();
+              const point = heap.pop();
+              const world = new World('world' + _pad(i, 2), point);
+              result[i] = world;
             }
             return result;
           })();
 
           return {
-            points,
+            worlds,
           };
         })();
 
@@ -1050,13 +1060,15 @@ class Rend {
                   object.position.set(0, 1.2, 1);
                   object.scale.set(0.5, 0.5, 0.5);
 
-                  const {points} = universeState;
+                  const {worlds} = universeState;
                   const pointsMesh = (() => {
                     const geometry = new THREE.BufferGeometry();
                     const positions = (() => {
-                      const result = new Float32Array(points.length * 3);
-                      for (let i = 0; i < points.length; i++) {
-                        const point = points[i];
+                      const result = new Float32Array(worlds.length * 3);
+                      for (let i = 0; i < worlds.length; i++) {
+                        const world = worlds[i];
+                        const {point} = world;
+
                         const index = i * 3;
                         result[index + 0] = point.x;
                         result[index + 1] = point.y;
@@ -1066,13 +1078,16 @@ class Rend {
                     })();
                     geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
                     const colors = (() => {
-                      const result = new Float32Array(points.length * 3);
+                      const result = new Float32Array(worlds.length * 3);
+
+                      const hubWorldName = hub.getWorldName();
 
                       const grayColor = new THREE.Color(0x808080).toArray();
                       const redColor = new THREE.Color(0xFF0000).toArray();
-                      for (let i = 0; i < points.length; i++) {
-                        const point = points[i];
-                        const {selected} = point;
+                      for (let i = 0; i < worlds.length; i++) {
+                        const world = worlds[i];
+                        const {worldName} = world;
+                        const selected = worldName === hubWorldName;
 
                         const index = i * 3;
                         const color = selected ? redColor : grayColor;
@@ -1097,18 +1112,18 @@ class Rend {
                       const result = [];
 
                       const edges = (() => {
-                        const result = Array(points.length * points.length);
-                        for (let i = 0; i < points.length; i++) {
-                          for (let j = 0; j < points.length; j++) {
-                            result[(i * points.length) + j] = [i, j];
+                        const result = Array(worlds.length * worlds.length);
+                        for (let i = 0; i < worlds.length; i++) {
+                          for (let j = 0; j < worlds.length; j++) {
+                            result[(i * worlds.length) + j] = [i, j];
                           }
                         }
                         return result;
                       })();
-                      const edgeMST = Kruskal.kruskal(points, edges, (a, b) => a.distanceTo(b));
+                      const edgeMST = Kruskal.kruskal(worlds, edges, (a, b) => a.point.distanceTo(b.point));
                       for (let i = 0; i < edgeMST.length; i++) {
-                        const u = points[edgeMST[i][0]];
-                        const v = points[edgeMST[i][1]];
+                        const u = worlds[edgeMST[i][0]].point;
+                        const v = worlds[edgeMST[i][1]].point;
                         result.push(u.x, u.y, u.z, v.x, v.y, v.z);
                       }
 
@@ -1301,15 +1316,19 @@ class Rend {
                     const _doClickUniverse = e => {
                       const {side} = e;
                       const universeHoverState = universeHoverStates[side];
-                      const {hoverPoint} = universeHoverState;
+                      const {hoverWorld} = universeHoverState;
 
-                      if (hoverPoint) {
-                        const {index} = hoverPoint;
+                      if (hoverWorld) {
+                        const {world} = hoverWorld;
+                        const {worldName} = world;
 
                         const {hub: {url: hubUrl}} = metadata;
-                        window.location = window.location.protocol + '//world' + _pad(index, 2) + '.' + hubUrl + (window.location.port ? (':' + window.location.port) : ''); // XXX actually load points from the backend here
-
-                        return true;
+                        if (worldName !== hub.getWorldName()) {
+                          window.location = window.location.protocol + '//' + worldName + '.' + hubUrl + (window.location.port ? (':' + window.location.port) : ''); // XXX actually load points from the backend here
+                          return true;
+                        } else {
+                          return false;
+                        }
                       } else {
                         return false;
                       }
@@ -2808,7 +2827,7 @@ class Rend {
                 };
 
                 const _makeUniverseHoverState = () => ({
-                  hoverPoint: null,
+                  hoverWorld: null,
                 });
                 const universeHoverStates = {
                   left: _makeUniverseHoverState(),
@@ -3171,7 +3190,7 @@ class Rend {
                         }
                       };
                       const _updateUniverse = () => {
-                        const {points} = universeState;
+                        const {worlds} = universeState;
 
                         SIDES.forEach(side => {
                           const gamepad = gamepads[side];
@@ -3181,33 +3200,34 @@ class Rend {
                           if (gamepad) {
                             const {position: controllerPosition} = gamepad;
 
-                            const pointDistances = points
-                              .map((point, index) => {
-                                const position = point.clone().applyMatrix4(universeMesh.matrixWorld);
+                            const worldDistances = worlds
+                              .map(world => {
+                                const position = world.point.clone().applyMatrix4(universeMesh.matrixWorld);
                                 const distance = controllerPosition.distanceTo(position);
 
                                 return {
-                                  point,
-                                  index,
+                                  world,
                                   position,
                                   distance,
                                 };
                               })
                               .filter(({distance}) => distance < 0.1);
-                            if (pointDistances.length > 0) {
-                              const closestPoint = pointDistances.sort((a, b) => a.distance - b.distance)[0];
-                              universeHoverState.hoverPoint = closestPoint;
+                            if (worldDistances.length > 0) {
+                              const closestWorld = worldDistances.sort((a, b) => a.distance - b.distance)[0];
+                              universeHoverState.hoverWorld = closestWorld;
                             } else {
-                              universeHoverState.hoverPoint = null;
+                              universeHoverState.hoverWorld = null;
                             }
                           } else {
-                            universeHoverState.hoverPoint = null;
+                            universeHoverState.hoverWorld = null;
                           }
 
-                          const {hoverPoint} = universeHoverState;
-                          if (hoverPoint !== null) {
-                            const {point, position} = hoverPoint;
-                            const {selected} = point;
+                          const {hoverWorld} = universeHoverState;
+                          if (hoverWorld !== null) {
+                            const {world, position} = hoverWorld;
+                            const {worldName} = world;
+                            const selected = worldName === hub.getWorldName();
+
                             universeDotMesh.position.copy(position);
                             const colorAttribute = universeDotMesh.geometry.getAttribute('color');
                             colorAttribute.array.set(Float32Array.from(new THREE.Color(selected ? 0xFF0000 : 0x808080).toArray()));

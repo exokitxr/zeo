@@ -37,19 +37,32 @@ class Hub {
       .then(j => {
         console.log('got login result', j); // XXX
 
+        const worldName = (() => {
+          if (hubEnabled) {
+            const {hostname} = window.location;
+            const match = hostname.match(/^([^.]+)\./);
+            return match && match[1];
+          } else {
+            return null;
+          }
+        })();
         const username = j ? j.username : null;
+        const world = j ? j.world : null;
         const matrix = j ? j.matrix : null;
         const plan = j ? j.plan : null;
 
         const _isEnabled = () => hubEnabled;
+        const _getWorldName = () => worldName;
         const _getUser = () => ({
           username,
+          world,
           matrix,
           plan,
         });
 
         return {
           isEnabled: _isEnabled,
+          getWorldName: _getWorldName,
           getUser: _getUser,
         };
       })
