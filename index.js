@@ -29,6 +29,16 @@ const flags = {
     }
     return null;
   })(),
+  hubUrl: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^hubUrl=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
 };
 const hasFlag = (() => {
   for (const k in flags) {
@@ -49,9 +59,12 @@ const config = {
   publicDirectory: 'public',
   dataDirectory: 'data',
   staticSite: flags.site,
-  hub: {
-    numContainers: 10,
-    startPort: 9000,
+  metadata: {
+    hub: {
+      url: flags.hubUrl || 'zeo.sh',
+      numContainers: 10,
+      startPort: 9000,
+    },
   },
 };
 const a = archae(config);

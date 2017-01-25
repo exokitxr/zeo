@@ -21,6 +21,7 @@ class Zeo {
     });
 
     return archae.requestPlugins([
+      '/core/engines/hub',
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/three',
@@ -41,6 +42,7 @@ class Zeo {
       '/core/engines/bullet',
       '/core/plugins/js-utils',
     ]).then(([
+      hub,
       input,
       webvr,
       three,

@@ -1,0 +1,10 @@
+{
+  "name": "hub",
+  "description": "Provides world hub integration for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {
+    "nedb": "^1.8.0",
+    "mkdirp": "^0.5.1"
+  }
+}
