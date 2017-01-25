@@ -693,15 +693,15 @@
     <div class=details-wrap>
       <h4>Sign up for Gold Account</h4>
       <div class=line>
-        <label><span class=left>Email</span><input type=email placeholder="your@email.com"></label>
+        <label><span class=left>Email</span><input type=email placeholder="your@email.com" id=sign-up-email autofocus></label>
       </div>
       <div class=line>
-        <label><span class=left>Cardholder name</span><input type=text placeholder="Awesome McCoolname"></label>
+        <label><span class=left>Cardholder name</span><input type=text placeholder="Awesome McCoolname" id=sign-up-name></label>
       </div>
       <div class=line>
-        <label><span class=left>CC #</span><input type=text pattern="[0-9]{13,16}" class=ccn placeholder="4242424242424242"><input type=text pattern="[0-9]{3}" class=cvc placeholder="CVC"></label></div>
+        <label><span class=left>CC #</span><input type=text pattern="[0-9]{13,16}" class=ccn placeholder="4242424242424242" id=sign-up-ccn><input type=text pattern="[0-9]{3}" class=cvc placeholder="CVC" id=sign-up-cvc></label></div>
       <div class=line>
-        <label><span class=left>Expiry</span><input type=month></label>
+        <label><span class=left>Expiry</span><input type=month id=sign-up-expiry></label>
       </div>
       <input type=submit value='Sign up' id=sign-up-button class=header-button>
     </div>
@@ -930,6 +930,11 @@ const passwordInput = $('#password')[0];
 const loginLoader = $('#login-loader')[0];
 const canvasLoginArrow = $('#canvas-login-arrow')[0];
 const logOutButton = $('#log-out-button')[0];
+const signUpEmail = $('#sign-up-email')[0];
+const signUpName = $('#sign-up-name')[0];
+const signUpCcn = $('#sign-up-ccn')[0];
+const signUpCvc = $('#sign-up-cvc')[0];
+const signUpExpiry = $('#sign-up-expiry')[0];
 const signUpButton = $('#sign-up-button')[0];
 const gotoSignUpButton = $('#goto-sign-up-button')[0];
 const signingUpOverlay = $('#signing-up-overlay')[0];
@@ -1020,8 +1025,8 @@ if (tokenString) {
           headerLoginUsername.innerText = username;
           loginLoader.style.display = 'none';
 
-          if (plan === null) {
-            planNagger.style.display = null;
+          if (plan !== null) {
+            planNagger.style.display = 'none';
           }
 
           body.classList.add('logged-in');
@@ -1068,8 +1073,8 @@ loginForm.addEventListener('submit', e => {
         headerLoginUsername.innerText = username;
         loginLoader.style.display = 'none';
 
-        if (plan === null) {
-          planNagger.style.display = null;
+        if (plan !== null) {
+          planNagger.style.display = 'none';
         }
 
         body.classList.add('logged-in');
@@ -1092,10 +1097,18 @@ logOutButton.addEventListener('click', e => {
 
 planNagger.addEventListener('click', e => {
   body.classList.add('signing-up');
+
+  if (user) {
+    signUpEmail.value = user.username;
+  }
 });
 
 gotoSignUpButton.addEventListener('click', e => {
   body.classList.add('signing-up');
+
+  if (user) {
+    signUpEmail.value = user.username;
+  }
 
   window.scrollTo(0, 0);
 });
@@ -1103,15 +1116,43 @@ gotoSignUpButton.addEventListener('click', e => {
 signUpButton.addEventListener('click', e => {
   publishableKeyPromise
     .then(() => {
-      Stripe.card.createToken({
-        number: '4242424242424242',
-        cvc: '123',
-        exp_month: 12,
-        exp_year: 2020,
-      }, (status, response) => {
-        if (response.error) {
-          console.warn(err);
+      const {value: email} = signUpEmail;
+      const {value: name} = signUpName;
+      const {value: number} = signUpCcn;
+      const {value: cvc} = signUpCvc;
+      const expiry = (() => {
+        const {value} = signUpExpiry;
+        const match = value.match(/^([0-9]+)\-([0-9]+)$/);
+        if (match) {
+          return {
+            month: parseInt(match[2], 10),
+            year: parseInt(match[1], 10),
+          };
         } else {
+          return {
+            month: 0,
+            year: 0,
+          };
+        }
+      })();
+
+      console.log('submitting', {
+        email,
+        name,
+        number,
+        cvc,
+        exp_month: expiry.month,
+        exp_year: expiry.year,
+      });
+
+      Stripe.card.createToken({
+        name,
+        number,
+        cvc,
+        exp_month: expiry.month,
+        exp_year: expiry.year,
+      }, (status, response) => {
+        if (!response.error) {
           const {id: stripeToken} = response;
 
           fetch('/signUp', {
@@ -1120,7 +1161,7 @@ signUpButton.addEventListener('click', e => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              username: 'lol@lol.com', // XXX
+              username: email,
               stripeToken,
             }),
           })
@@ -1132,6 +1173,8 @@ signUpButton.addEventListener('click', e => {
             .catch(err => {
               console.warn(err);
             });
+        } else {
+          console.warn(err);
         }
       });
     })
