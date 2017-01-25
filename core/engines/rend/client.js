@@ -44,6 +44,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata} = archae;
 
     let live = true;
     const cleanups = [];
@@ -1297,7 +1298,23 @@ class Rend {
                         return false;
                       }
                     };
-                    const _doClick = e => {
+                    const _doClickUniverse = e => {
+                      const {side} = e;
+                      const universeHoverState = universeHoverStates[side];
+                      const {hoverPoint} = universeHoverState;
+
+                      if (hoverPoint) {
+                        const {index} = hoverPoint;
+
+                        const {hub: {url: hubUrl}} = metadata;
+                        window.location = window.location.protocol + '//world' + _pad(index, 2) + '.' + hubUrl + (window.location.port ? (':' + window.location.port) : ''); // XXX actually load points from the backend here
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _doClickMenu = e => {
                       const {side} = e;
                       const menuHoverState = menuHoverStates[side];
                       const {intersectionPoint} = menuHoverState;
@@ -2118,7 +2135,7 @@ class Rend {
                       }
                     };
 
-                    _doSetPosition(e) || _doClick(e);
+                    _doSetPosition(e) || _doClickUniverse(e) || _doClickMenu(e);
                   }
                 };
                 input.on('trigger', trigger);
@@ -3165,12 +3182,13 @@ class Rend {
                             const {position: controllerPosition} = gamepad;
 
                             const pointDistances = points
-                              .map(point => {
+                              .map((point, index) => {
                                 const position = point.clone().applyMatrix4(universeMesh.matrixWorld);
                                 const distance = controllerPosition.distanceTo(position);
 
                                 return {
                                   point,
+                                  index,
                                   position,
                                   distance,
                                 };
@@ -3298,5 +3316,10 @@ class Rend {
     this._cleanup();
   }
 }
+
+const _pad = (n, width) => {
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+};
 
 module.exports = Rend;
