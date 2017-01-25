@@ -685,8 +685,8 @@
     <div class=header-login-bar>
       <h2>Welcome back, <span id=header-login-username>username</span></h2>
       <div class=plan-nagger id=plan-nagger>Demo account - <b>Get Gold</b></div>
-      <input type=submit value='Connect' class=header-button>
-      <input type=button value='Log out' id=log-out-button class="header-button sub">
+      <a href="#" id=connect-button class=header-button>Connect</a>
+      <input type=button value="Log out" id=log-out-button class="header-button sub">
     </div>
   </header>
   <div class=header-details>
@@ -929,6 +929,7 @@ const emailInput = $('#email')[0];
 const passwordInput = $('#password')[0];
 const loginLoader = $('#login-loader')[0];
 const canvasLoginArrow = $('#canvas-login-arrow')[0];
+const connectButton = $('#connect-button')[0];
 const logOutButton = $('#log-out-button')[0];
 const signUpEmail = $('#sign-up-email')[0];
 const signUpName = $('#sign-up-name')[0];
@@ -991,7 +992,7 @@ const _jsonParse = s => {
   let err = null;
   let result;
   try {
-    result = JSON.parse(tokenString);
+    result = JSON.parse(s);
   } catch (e) {
     err = e;
   }
@@ -1002,47 +1003,55 @@ const _jsonParse = s => {
   }
 };
 
-const tokenString = localStorage.getItem('token');
-if (tokenString) {
-  const token = _jsonParse(tokenString);
+const _tryLogin = () => {
+  const tokenString = localStorage.getItem('token');
+  if (tokenString) {
+    const token = _jsonParse(tokenString);
 
-  if (token) {
-    loginForm.style.display = 'none';
-    loginLoader.style.display = null;
+    if (token) {
+      loginForm.style.display = 'none';
+      loginLoader.style.display = null;
 
-    _login({
-      token,
-    })
-      .then(j => {
-        if (j) {
-          const {username, plan} = j;
+      _login({
+        token,
+      })
+        .then(j => {
+          if (j) {
+            const {username, world, plan} = j;
 
-          user = {
-            username,
-            plan,
-          };
+            user = {
+              username,
+              world,
+              plan,
+            };
 
-          headerLoginUsername.innerText = username;
-          loginLoader.style.display = 'none';
+            headerLoginUsername.innerText = username;
+            connectButton.innerText = 'Connect - ' + world;
+            connectButton.href = _getConnectUrl(world);
+            loginLoader.style.display = 'none';
 
-          if (plan !== null) {
-            planNagger.style.display = 'none';
+            if (plan !== null) {
+              planNagger.style.display = 'none';
+            }
+
+            body.classList.add('logged-in');
+          } else {
+            loginForm.style.display = null;
+            loginLoader.style.display = 'none';
           }
+        })
+        .catch(err => {
+          console.warn(err);
 
-          body.classList.add('logged-in');
-        } else {
           loginForm.style.display = null;
           loginLoader.style.display = 'none';
-        }
-      })
-      .catch(err => {
-        console.warn(err);
-
-        loginForm.style.display = null;
-        loginLoader.style.display = 'none';
-      });
+        });
+    }
   }
-}
+};
+_tryLogin();
+
+const _getConnectUrl = worldName => window.location.protocol + '//' + worldName + '.' + window.location.host;
 
 loginForm.addEventListener('submit', e => {
   if (emailInput.value && emailInput.checkValidity() && passwordInput.value && passwordInput.checkValidity()) {
@@ -1060,17 +1069,20 @@ loginForm.addEventListener('submit', e => {
       password,
     })
       .then(j => {
-        const {username, plan, token} = j;
+        const {username, world, plan, token} = j;
 
         const s = JSON.stringify(token);
         localStorage.setItem('token', s);
 
         user = {
           username,
+          world,
           plan,
         };
 
         headerLoginUsername.innerText = username;
+        connectButton.innerText = 'Connect - ' + world;
+        connectButton.href = _getConnectUrl(world);
         loginLoader.style.display = 'none';
 
         if (plan !== null) {
@@ -1093,6 +1105,7 @@ logOutButton.addEventListener('click', e => {
 
   loginForm.style.display = null;
   body.classList.remove('logged-in');
+  body.classList.remove('signing-up');
 });
 
 planNagger.addEventListener('click', e => {
