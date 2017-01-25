@@ -41,7 +41,7 @@
       z-index: 3;
     }
     .logged-in header {
-      background-color: #2196F3;
+      background-color: #333;
     }
     .logged-in header > .header-github-anchor {
       display: none;
@@ -52,8 +52,8 @@
     .signing-up .header-details {
       display: flex;
       padding: 30px 0;
-      background-color: #2196F3;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: #333;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
     .header-details {
       display: none;
@@ -86,21 +86,17 @@
       width: 300px;
       margin-bottom: 10px;
       background-color: #DDD;
-      box-shadow: inset 0 5px 0 #4CAF50;
     }
     .details-wrap input[type=text]::-webkit-input-placeholder, .details-wrap input[type=email]::-webkit-input-placeholder, .details-wrap input[type=password]::-webkit-input-placeholder {
       color: #AAA;
     }
     .details-wrap .header-button {
       margin-left: 115px;
-      margin-top: 20px;
-      background-color: #F44336;
-      border-color: transparent;
-      border-radius: 5px;
-      font-size: 16px;
+      margin-top: 10px;
+      color: #FFF;
     }
     .details-wrap .header-button:hover, .details-wrap .header-button:focus {
-      background-color: #C62828;
+      background-color: #2196F3;
       color: #FFF;
     }
     .details-wrap label {
@@ -130,13 +126,14 @@
       font-family: 'Open Sans';
       font-size: 15px;
       font-weight: 300;
-      color: #FFF;
+      color: #4CAF50;
       cursor: pointer;
     }
-    .header-button:hover {
-      background-color: #FFF;
+    .header-button:hover, .header-button:focus {
+      background-color: #4CAF50;
       border-color: transparent;
-      color: #2196F3;
+      color: #333;
+      outline: none;
     }
     .header-icon {
       margin-right: 10px;
@@ -171,6 +168,18 @@
     }
     .header-login-bar > h2 {
       margin-right: 15px;
+      color: #4CAF50;
+    }
+    .header-login-bar > .plan-nagger {
+      margin-right: 10px;
+      padding: 5px 10px;
+      background-color: #E91E63;
+      border-radius: 5px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .header-login-bar > .plan-nagger:hover {
+      background-color: #AD1457;
     }
     .logged-in .canvas-login-arrow, .logged-in .canvas-login-arrow-tail {
       display: none;
@@ -674,7 +683,8 @@
     <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo</a>
     <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
     <div class=header-login-bar>
-      <h2>Welcome back, <span id=header-login-username>username</span>!</h2>
+      <h2>Welcome back, <span id=header-login-username>username</span></h2>
+      <div class=plan-nagger id=plan-nagger>Demo account - <b>Get Gold</b></div>
       <input type=submit value='Connect' class=header-button>
       <input type=button value='Log out' id=log-out-button class="header-button sub">
     </div>
@@ -913,6 +923,7 @@ const $ = s => document.querySelectorAll(s);
 const body = $('body')[0];
 const header = $('#header')[0];
 const headerLoginUsername = $('#header-login-username')[0];
+const planNagger = $('#plan-nagger')[0];
 const loginForm = $('#login-form')[0];
 const emailInput = $('#email')[0];
 const passwordInput = $('#password')[0];
@@ -922,6 +933,8 @@ const logOutButton = $('#log-out-button')[0];
 const signUpButton = $('#sign-up-button')[0];
 const gotoSignUpButton = $('#goto-sign-up-button')[0];
 const signingUpOverlay = $('#signing-up-overlay')[0];
+
+let user = null;
 
 const _drawCanvasLoginArrow = canvas => {
   const ctx = canvas.getContext('2d');
@@ -996,12 +1009,26 @@ if (tokenString) {
       token,
     })
       .then(j => {
-        const {username} = j;
+        if (j) {
+          const {username, plan} = j;
 
-        headerLoginUsername.innerText = username;
-        loginLoader.style.display = 'none';
+          user = {
+            username,
+            plan,
+          };
 
-        body.classList.add('logged-in');
+          headerLoginUsername.innerText = username;
+          loginLoader.style.display = 'none';
+
+          if (plan === null) {
+            planNagger.style.display = null;
+          }
+
+          body.classList.add('logged-in');
+        } else {
+          loginForm.style.display = null;
+          loginLoader.style.display = 'none';
+        }
       })
       .catch(err => {
         console.warn(err);
@@ -1028,13 +1055,22 @@ loginForm.addEventListener('submit', e => {
       password,
     })
       .then(j => {
-        const {token} = j;
+        const {username, plan, token} = j;
 
         const s = JSON.stringify(token);
         localStorage.setItem('token', s);
 
+        user = {
+          username,
+          plan,
+        };
+
         headerLoginUsername.innerText = username;
         loginLoader.style.display = 'none';
+
+        if (plan === null) {
+          planNagger.style.display = null;
+        }
 
         body.classList.add('logged-in');
       })
@@ -1052,6 +1088,10 @@ logOutButton.addEventListener('click', e => {
 
   loginForm.style.display = null;
   body.classList.remove('logged-in');
+});
+
+planNagger.addEventListener('click', e => {
+  body.classList.add('signing-up');
 });
 
 gotoSignUpButton.addEventListener('click', e => {
