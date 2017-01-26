@@ -23,122 +23,9 @@ class Zeo {
     const $ = s => document.querySelectorAll(s);
 
     const _requestLoader = () => new Promise((accept, reject) => {
-      const style = document.createElement('style');
-      style.innerHTML = `\
-        .loader,
-        .loader:before,
-        .loader:after {
-          border-radius: 50%;
-        }
-        .loader {
-          color: #ffffff;
-          font-size: 11px;
-          text-indent: -99999em;
-          position: relative;
-          width: 10em;
-          height: 10em;
-          box-shadow: inset 0 0 0 2px;
-          -webkit-transform: scale(0.5) translateZ(0);
-          -ms-transform: scale(0.5) translateZ(0);
-          transform: scale(0.5) translateZ(0);
-        }
-        .loader:before,
-        .loader:after {
-          position: absolute;
-          content: '';
-        }
-        .loader:before {
-          width: 5.2em;
-          height: 10.2em;
-          background: #000;
-          border-radius: 10.2em 0 0 10.2em;
-          top: -0.1em;
-          left: -0.1em;
-          -webkit-transform-origin: 5.2em 5.1em;
-          transform-origin: 5.2em 5.1em;
-          -webkit-animation: load2 1s infinite ease 0.75s;
-          animation: load2 1s infinite ease 0.75s;
-        }
-        .loader:after {
-          width: 5.2em;
-          height: 10.2em;
-          background: #000;
-          border-radius: 0 10.2em 10.2em 0;
-          top: -0.1em;
-          left: 5.1em;
-          -webkit-transform-origin: 0px 5.1em;
-          transform-origin: 0px 5.1em;
-          -webkit-animation: load2 1s infinite ease;
-          animation: load2 1s infinite ease;
-        }
-        .loader-overlay {
-          display: flex;
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background-color: #000;
-          justify-content: center;
-          align-items: center;
-          z-index: 1;
-        }
-        .loader-wrap {
-          display: flex;
-          width: 400px;
-          justify-content: center;
-          align-items: center;
-          flex-direction: column;
-        }
-        .loader-wrap > h1, .loader-wrap > p {
-          margin: 0;
-          font-family: 'Open Sans';
-          font-weight: 300;
-        }
-        .loader-wrap > h1 {
-          margin-bottom: 10px;
-          font-size: 30px;
-          color: #FFF;
-        }
-        .loader-wrap > p {
-          font-size: 13px;
-          color: rgba(255, 255, 255, 0.5);
-        }
-        @-webkit-keyframes load2 {
-          0% {
-            -webkit-transform: rotate(0deg);
-            transform: rotate(0deg);
-          }
-          100% {
-            -webkit-transform: rotate(360deg);
-            transform: rotate(360deg);
-          }
-        }
-        @keyframes load2 {
-          0% {
-            -webkit-transform: rotate(0deg);
-            transform: rotate(0deg);
-          }
-          100% {
-            -webkit-transform: rotate(360deg);
-            transform: rotate(360deg);
-          }
-        }
-      `;
-      document.head.appendChild(style);
-
-      const loader = document.createElement('div');
-      loader.classList.add('loader-overlay');
-      loader.innerHTML = `\
-        <div class=loader-wrap>
-          <div class=loader></div>
-          <h1>Loading world</h1>
-          <p id=loader-plugin></p>
-        </div>
-      `;
-      document.body.appendChild(loader);
-
+      const loaderOverlay = $('#loader-overlay')[0];
       const loaderPlugin = $('#loader-plugin')[0];
+
       const loadingPlugins = [];
       const pluginloadstart = plugin => {
         loadingPlugins.push(plugin);
@@ -152,8 +39,7 @@ class Zeo {
       archae.on('pluginload', pluginload);
 
       const cleanup = () => {
-        document.body.removeChild(loader);
-        document.head.removeChild(style);
+        loaderOverlay.style.display = 'none';
 
         archae.removeListener('pluginloadstart', pluginloadstart);
         archae.removeListener('pluginload', pluginload);
