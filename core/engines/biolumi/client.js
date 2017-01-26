@@ -189,7 +189,7 @@ class Biolumi {
                           pend();
                         };
                         img.onerror = err => {
-                          console.warn('biolumi image load error', err);
+                          console.warn('biolumi image load error', {innerSrc}, err);
                         };
 
                         const layer = new Layer(this);

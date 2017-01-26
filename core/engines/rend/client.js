@@ -10,6 +10,11 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
+  SIDEBAR_WIDTH,
+  SIDEBAR_HEIGHT,
+  SIDEBAR_WORLD_WIDTH,
+  SIDEBAR_WORLD_HEIGHT,
+  SIDEBAR_WORLD_DEPTH,
   DEFAULT_USER_HEIGHT,
   TRANSITION_TIME,
   STATS_REFRESH_RATE,
@@ -689,19 +694,43 @@ class Rend {
               fontStyle: biolumi.getFontStyle(),
             };
 
-            return Promise.all([
-              biolumi.requestUi({
-                width: WIDTH,
-                height: HEIGHT,
+            const _requestUis = () => Promise.all([
+               biolumi.requestUi({
+                 width: WIDTH,
+                 height: HEIGHT,
               }),
+              biolumi.requestUi({
+                width: SIDEBAR_WIDTH,
+                height: SIDEBAR_HEIGHT,
+              }),
+              biolumi.requestUi({
+                width: SIDEBAR_WIDTH,
+                height: SIDEBAR_HEIGHT,
+              }),
+            ]).then(([
+              menuUi,
+              worldUi,
+              npmUi,
+            ]) => ({
+              menuUi,
+              worldUi,
+              npmUi,
+            }));
+
+            return Promise.all([
+              _requestUis(),
               _requestMainReadme(),
             ]).then(([
-              ui,
+              {
+                menuUi,
+                worldUi,
+                npmUi,
+              },
               mainReadme,
             ]) => {
               if (live) {
                 const uploadStart = () => {
-                  const pages = ui.getPages();
+                  const pages = menuUi.getPages();
                   if (pages.length > 0 && pages[pages.length - 1].type === 'files') { // XXX handle multiple uploads and elementAttributeFiles page
                     filesState.uploading = true;
                   }
@@ -801,7 +830,7 @@ class Rend {
                   return {index, px};
                 };
 
-                ui.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
+                menuUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
                   const img = (() => {
                     if (statsCheckboxValue) {
                       const statsImg = stats.dom.childNodes[0];
@@ -833,7 +862,7 @@ class Rend {
                   immediate: true,
                 });
 
-                ui.pushPage([
+                menuUi.pushPage([
                   {
                     type: 'html',
                     src: menuRenderer.getMainPageSrc(),
@@ -860,6 +889,35 @@ class Rend {
                 ], {
                   type: 'main',
                   immediate: true,
+                });
+
+                worldUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}}) => {
+                  return [
+                    {
+                      type: 'html',
+                      src: menuRenderer.getWorldSidebarSrc({elements: availableElements}),
+                      x: 0,
+                      y: 0,
+                      w: SIDEBAR_WIDTH,
+                      h: SIDEBAR_HEIGHT,
+                      scroll: true,
+                    },
+                    {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature('world'),
+                      x: 0,
+                      y: 0,
+                      w: 150,
+                      h: 150,
+                      frameTime: 300,
+                      pixelated: true,
+                    }
+                  ];
+                }, {
+                  type: 'world',
+                  state: {
+                    elements: _cleanElementsState(elementsState),
+                  },
                 });
 
                 const wireframeMaterial = new THREE.MeshBasicMaterial({
@@ -919,6 +977,68 @@ class Rend {
                   })();
                   object.add(planeMesh);
                   object.planeMesh = planeMesh;
+
+                  const worldMesh = (() => {
+                    const width = SIDEBAR_WORLD_WIDTH;
+                    const height = SIDEBAR_WORLD_HEIGHT;
+                    const depth = SIDEBAR_WORLD_DEPTH;
+
+                    const menuMaterial = biolumi.makeMenuMaterial();
+
+                    const geometry = new THREE.PlaneBufferGeometry(width, height);
+                    const materials = [solidMaterial, menuMaterial];
+
+                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    mesh.position.x = -0.25;
+                    // mesh.position.z = -0.5;
+                    mesh.rotation.y = Math.PI / 8;
+                    mesh.receiveShadow = true;
+                    mesh.menuMaterial = menuMaterial;
+
+                    const shadowMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                      const material = transparentMaterial;
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.castShadow = true;
+                      return mesh;
+                    })();
+                    mesh.add(shadowMesh);
+
+                    return mesh;
+                  })();
+                  object.add(worldMesh);
+                  object.worldMesh = worldMesh;
+
+                  const npmMesh = (() => {
+                    const width = SIDEBAR_WORLD_WIDTH;
+                    const height = SIDEBAR_WORLD_HEIGHT;
+                    const depth = SIDEBAR_WORLD_DEPTH;
+
+                    const menuMaterial = biolumi.makeMenuMaterial();
+
+                    const geometry = new THREE.PlaneBufferGeometry(width, height);
+                    const materials = [solidMaterial, menuMaterial];
+
+                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    mesh.position.x = 0.25;
+                    // mesh.position.z = -0.5;
+                    mesh.rotation.y = -Math.PI / 8;
+                    mesh.receiveShadow = true;
+                    mesh.menuMaterial = menuMaterial;
+
+                    const shadowMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                      const material = transparentMaterial;
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.castShadow = true;
+                      return mesh;
+                    })();
+                    mesh.add(shadowMesh);
+
+                    return mesh;
+                  })();
+                  object.add(npmMesh);
+                  object.npmMesh = npmMesh;
 
                   return object;
                 })();
@@ -1207,7 +1327,10 @@ class Rend {
                 };
 
                 const _updatePages = menuUtils.debounce(next => {
-                  const pages = ui.getPages();
+                  const menuPages = menuUi.getPages();
+                  const worldPages = worldUi.getPages();
+                  const npmPages = npmUi.getPages();
+                  const pages = menuPages.concat(worldPages).concat(npmPages);
 
                   if (pages.length > 0) {
                     let pending = pages.length;
@@ -1263,6 +1386,10 @@ class Rend {
                         page.update({
                           config: configState,
                           focus: focusState,
+                        }, pend);
+                      } else if (type === 'world') {
+                        page.update({
+                          elements: _cleanElementsState(elementsState),
                         }, pend);
                       } else {
                         pend();
@@ -1383,15 +1510,15 @@ class Rend {
 
                         let match;
                         if (onclick === 'back') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          if (ui.getPages().length > 1) {
-                            ui.popPage();
+                          if (menuUi.getPages().length > 1) {
+                            menuUi.popPage();
                           }
                         } else if (onclick === 'worlds') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          ui.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
+                          menuUi.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
@@ -1447,9 +1574,9 @@ class Rend {
 
                           _updatePages();
                         } else if (onclick === 'mods') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          ui.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
+                          menuUi.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
@@ -1511,7 +1638,7 @@ class Rend {
                         } else if (match = onclick.match(/^mod:(.+)$/)) {
                           const name = match[1];
 
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
                           modState.modName = name;
                           modState.mod = null;
@@ -1532,7 +1659,7 @@ class Rend {
                               _updatePages();
                             });
 
-                          ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
+                          menuUi.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
                             const displayName = modName.match(/([^\/]*)$/)[1];
                             const installed = mods.some(m => m.name === modName);
                             const conflicting = mods.some(m => m.displayName === displayName);
@@ -1590,9 +1717,9 @@ class Rend {
                               console.warn(err);
                             });
                         } else if (onclick === 'config') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          ui.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
+                          menuUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getConfigPageSrc(),
@@ -1624,9 +1751,9 @@ class Rend {
                             }
                           });
                         } else if (onclick === 'elements') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
+                          menuUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
                             const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
                             const focusAttribute = match && match[1];
 
@@ -1672,11 +1799,11 @@ class Rend {
                             },
                           });
                         } else if (onclick === 'files') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
                           _ensureFilesLoaded(filesState);
 
-                          ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                          menuUi.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'file'}),
@@ -1699,7 +1826,7 @@ class Rend {
                             },
                           });
                         } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
                           const target = match[1];
                           const name = match[2];
@@ -1763,7 +1890,7 @@ class Rend {
                           } = oldStates;
 
                           if (oldFilesSelectedName) {
-                            ui.cancelTransition();
+                            menuUi.cancelTransition();
 
                             const {choosingName} = elementsState;
                             const element = menuUtils.getElementKeyPath({
@@ -1783,7 +1910,7 @@ class Rend {
 
                             _saveElements();
 
-                            ui.popPage();
+                            menuUi.popPage();
                           }
                         } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
                           const target = match[1];
@@ -2048,13 +2175,13 @@ class Rend {
 
                             _saveElements();
                           } else if (action === 'choose') {
-                            ui.cancelTransition();
+                            menuUi.cancelTransition();
 
                             elementsState.choosingName = attributeName;
 
                             _ensureFilesLoaded(elementAttributeFilesState);
 
-                            ui.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                            menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                               {
                                 type: 'html',
                                 src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
@@ -2893,12 +3020,22 @@ class Rend {
 
                   if (open) {
                     const _updateTextures = () => {
-                      const {planeMesh: {menuMaterial}} = menuMesh;
+                      const {planeMesh: {menuMaterial: planeMenuMaterial}, worldMesh: {menuMaterial: worldMenuMaterial}, npmMesh: {menuMaterial: npmMenuMaterial}} = menuMesh;
                       const worldTime = currentWorld.getWorldTime();
 
                       biolumi.updateMenuMaterial({
-                        ui,
-                        menuMaterial,
+                        ui: menuUi,
+                        menuMaterial: planeMenuMaterial,
+                        worldTime,
+                      });
+                      biolumi.updateMenuMaterial({
+                        ui: worldUi,
+                        menuMaterial: worldMenuMaterial,
+                        worldTime,
+                      });
+                      biolumi.updateMenuMaterial({
+                        ui: worldUi,
+                        menuMaterial: npmMenuMaterial,
                         worldTime,
                       });
 
@@ -2958,7 +3095,7 @@ class Rend {
                                 worldHeight: WORLD_HEIGHT,
                               });
 
-                              const scrollLayerBoxTargets = ui.getLayers()
+                              const scrollLayerBoxTargets = menuUi.getLayers()
                                 .filter(layer => layer.scroll)
                                 .map(layer => {
                                   const rect = layer.getRect();
@@ -2997,7 +3134,7 @@ class Rend {
 
                               const anchorBoxTargets = (() => {
                                 const result = [];
-                                const layers = ui.getLayers();
+                                const layers = menuUi.getLayers();
                                 for (let i = 0; i < layers.length; i++) {
                                   const layer = layers[i];
                                   const anchors = layer.getAnchors();
