@@ -787,12 +787,6 @@ class WebVR {
               const isPresenting = document.pointerLockElement !== null;
               this.isPresenting = isPresenting;
 
-              if (!wasPresenting && isPresenting) {
-                this.emit('open');
-              } else if (wasPresenting && !isPresenting) {
-                this.emit('close');
-              }
-
               if (!isPresenting) {
                 _resetKeys();
               }

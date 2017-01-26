@@ -1,3 +1,5 @@
+const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
 class Hub {
   constructor(archae) {
     this._archae = archae;
@@ -68,7 +70,7 @@ class Hub {
         const userState = {
           username: j ? j.username : null,
           world: j ? j.world : null,
-          matrix: j ? j.matrix : null,
+          matrix: j ? j.matrix : DEFAULT_MATRIX,
         };
 
         const _isEnabled = () => hubEnabled;
