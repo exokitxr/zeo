@@ -274,29 +274,23 @@ class WebVR {
 
                   const {stageMatrix} = this;
                   const userStageMatrix = new THREE.Matrix4().fromArray(hub.getUserState().matrix);
-                  const displayStageMatrix = (display && display.stageParameters) ? new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform) : new THREE.Matrix4();
+                  const displayStageMatrix = (display && display.stageParameters) ?
+                    new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform)
+                  :
+                    new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
                   const externalStageMatrix = userStageMatrix.clone().multiply(displayStageMatrix);
-                  this.setStageMatrix(stageMatrix.clone().multiply(externalStageMatrix));
+                  this.setStageMatrix(externalStageMatrix);
                   this.updateStatus();
 
                   cleanups.push(() => {
-                    const {display, stageMatrix} = this;
+                    const {display} = this;
 
-                    if (display && (display instanceof FakeVRDisplay)) {
-                      const userStageMatrix = new THREE.Matrix4().fromArray(hub.getUserState().matrix);
-                      const {position: userPosition, rotation: userRotation, scale: userScale} = _getPropertiesFromMatrix(userStageMatrix);
-                      const {position: displayPosition} = display;
-                      const newUserStageMatrix = new THREE.Matrix4().compose(
-                        userPosition.clone().add(displayPosition),
-                        userRotation,
-                        userScale
-                      );
-
-                      hub.setUserStateMatrix(newUserStageMatrix.toArray());
+                    this.updateUserStageMatrix();
+                    if (display) {
+                      display.resetPoseHard();
                     }
 
-                    const externalStageMatrixInverse = new THREE.Matrix4().getInverse(externalStageMatrix);
-                    this.setStageMatrix(stageMatrix.clone().multiply(externalStageMatrixInverse));
+                    this.setStageMatrix(new THREE.Matrix4());
                     this.updateStatus();
                   });
 
@@ -603,8 +597,31 @@ class WebVR {
             this.stageMatrix.copy(stageMatrix);
           }
 
-          multiplyStageMatrix(matrix) {
-            this.stageMatrix.multiply(matrix);
+          updateUserStageMatrix() {
+            const {display} = this;
+
+            if (display) {
+              const {stageMatrix} = this;
+              const displayStageMatrix = (display && display.stageParameters) ?
+                new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform)
+              :
+                new THREE.Matrix4().makeTranslation(0, DEFAULT_USER_HEIGHT, 0);
+
+              const userStageMatrix = stageMatrix.clone().multiply(new THREE.Matrix4().getInverse(displayStageMatrix));
+              const {position: userPosition, rotation: userQuaternion, scale: userScale} = _getPropertiesFromMatrix(userStageMatrix);
+              const userRotationY = new THREE.Euler().setFromQuaternion(userQuaternion, camera.rotation.order).y;
+
+              const {position: displayPosition, rotation: displayQuaternion, scale: displayScale} = _getPropertiesFromMatrix(display.matrix);
+              const displayRotationY = new THREE.Euler().setFromQuaternion(displayQuaternion, camera.rotation.order).y;
+
+              const newUserStageMatrix = new THREE.Matrix4().compose(
+                userPosition.clone().add(displayPosition.clone().applyQuaternion(userQuaternion)),
+                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, userRotationY + displayRotationY, 0, camera.rotation.order)),
+                userScale.clone().multiply(displayScale)
+              );
+
+              hub.setUserStateMatrix(newUserStageMatrix.toArray());
+            }
           }
         }
 
@@ -879,6 +896,14 @@ class WebVR {
               euler.z, // destinationRotation.z,
               camera.rotation.order
             ));
+
+            this.updateMatrix();
+            this.updateGamepads();
+          }
+
+          resetPoseHard() {
+            this.position.copy(new THREE.Vector3());
+            this.rotation.copy(new THREE.Quaternion());
 
             this.updateMatrix();
             this.updateGamepads();
