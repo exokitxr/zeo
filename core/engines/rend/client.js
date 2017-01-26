@@ -920,6 +920,35 @@ class Rend {
                   },
                 });
 
+                npmUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}}) => {
+                  return [
+                    {
+                      type: 'html',
+                      src: menuRenderer.getWorldSidebarSrc({elements: availableElements}),
+                      x: 0,
+                      y: 0,
+                      w: SIDEBAR_WIDTH,
+                      h: SIDEBAR_HEIGHT,
+                      scroll: true,
+                    },
+                    /* {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature('world'),
+                      x: 0,
+                      y: 0,
+                      w: 150,
+                      h: 150,
+                      frameTime: 300,
+                      pixelated: true,
+                    } */
+                  ];
+                }, {
+                  type: 'world',
+                  state: {
+                    elements: _cleanElementsState(elementsState),
+                  },
+                });
+
                 const wireframeMaterial = new THREE.MeshBasicMaterial({
                   color: 0x0000FF,
                   wireframe: true,
@@ -3072,7 +3101,7 @@ class Rend {
                         worldTime,
                       });
                       biolumi.updateMenuMaterial({
-                        ui: worldUi,
+                        ui: npmUi,
                         menuMaterial: npmMenuMaterial,
                         worldTime,
                       });
