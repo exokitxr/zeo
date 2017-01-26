@@ -1162,6 +1162,13 @@ class Rend {
                 scene.add(npmBoxMeshes.left);
                 scene.add(npmBoxMeshes.right);
 
+                const navbarBoxMeshes = {
+                  left: _makeBoxMesh(),
+                  right: _makeBoxMesh(),
+                };
+                scene.add(navbarBoxMeshes.left);
+                scene.add(navbarBoxMeshes.right);
+
                 const _makeMenuDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
                   geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
@@ -2700,6 +2707,9 @@ class Rend {
                     keyboardMesh.visible = false; */
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
+                      worldBoxMeshes[side].visible = false;
+                      npmBoxMeshes[side].visible = false;
+
                       menuDotMeshes[side].visible = false;
                       worldDotMeshes[side].visible = false;
                       npmDotMeshes[side].visible = false;
@@ -3200,10 +3210,11 @@ class Rend {
                       const status = webvr.getStatus();
                       const {gamepads: gamepadsStatus} = status;
 
-                      const {planeMesh, worldMesh, npmMesh} = menuMesh;
+                      const {planeMesh, worldMesh, npmMesh, navbarMesh} = menuMesh;
                       const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
                       const worldMatrixObject = _decomposeObjectMatrixWorld(worldMesh);
                       const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
+                      const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
 
                       SIDES.forEach(side => {
                         const gamepadStatus = gamepadsStatus[side];
@@ -3229,6 +3240,8 @@ class Rend {
                           const npmHoverState = npmHoverStates[side];
                           const npmDotMesh = npmDotMeshes[side];
                           const npmBoxMesh = npmBoxMeshes[side];
+
+                          const navbarBoxMesh = navbarBoxMeshes[side];
 
                           const keyboardHoverState = keyboardHoverStates[side];
                           const keyboardBoxMesh = keyboardBoxMeshes[side];
@@ -3432,6 +3445,72 @@ class Rend {
                               worldDepth: SIDEBAR_WORLD_DEPTH,
                             });
                           };
+                          const _updateNavbarAnchors = () => {
+                            const {position: navbarPosition, rotation: navbarRotation, scale: navbarScale} = navbarMatrixObject;
+
+                            const anchorBoxTargets = (() => {
+                              const result = [];
+                              const layers = navbarUi.getLayers();
+                              for (let i = 0; i < layers.length; i++) {
+                                const layer = layers[i];
+                                const anchors = layer.getAnchors();
+
+                                for (let j = 0; j < anchors.length; j++) {
+                                  const anchor = anchors[j];
+                                  const {rect} = anchor;
+
+                                  const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                                    navbarPosition,
+                                    navbarRotation,
+                                    navbarScale,
+                                    new THREE.Vector3(
+                                      -(NAVBAR_WORLD_WIDTH / 2) + (rect.left / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
+                                      (NAVBAR_WORLD_HEIGHT / 2) + (-rect.top / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
+                                      -NAVBAR_WORLD_DEPTH
+                                    ),
+                                    new THREE.Vector3(
+                                      -(NAVBAR_WORLD_WIDTH / 2) + (rect.right / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
+                                      (NAVBAR_WORLD_HEIGHT / 2) + (-rect.bottom / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
+                                      NAVBAR_WORLD_DEPTH
+                                    )
+                                  );
+                                  anchorBoxTarget.anchor = anchor;
+
+                                  result.push(anchorBoxTarget);
+                                }
+                              }
+                              return result;
+                            })();
+                            const anchorBoxTarget = (() => {
+                              const nearAnchorBoxTargets = anchorBoxTargets
+                                .map(anchorBoxTarget => ({
+                                  anchorBoxTarget,
+                                  distance: anchorBoxTarget.position.distanceTo(controllerPosition),
+                                }))
+                                .filter(({distance}) => distance < 0.1)
+                                .sort((a, b) => a.distance - b.distance)
+                                .map(({anchorBoxTarget}) => anchorBoxTarget);
+
+                              if (nearAnchorBoxTargets.length > 0) {
+                                return nearAnchorBoxTargets[0];
+                              } else {
+                                return null;
+                              }
+                            })();
+                            if (anchorBoxTarget) {
+                              navbarBoxMesh.position.copy(anchorBoxTarget.position);
+                              navbarBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                              navbarBoxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
+
+                              if (!navbarBoxMesh.visible) {
+                                navbarBoxMesh.visible = true;
+                              }
+                            } else {
+                              if (navbarBoxMesh.visible) {
+                                navbarBoxMesh.visible = false;
+                              }
+                            }
+                          };
                           const _updateKeyboardAnchors = () => {
                             const {planeMesh} = keyboardMesh;
                             const {position: keyboardPosition, rotation: keyboardRotation, scale: keyboardScale} = _decomposeObjectMatrixWorld(planeMesh);
@@ -3507,6 +3586,7 @@ class Rend {
                           };
 
                           _updateMenuAnchors();
+                          _updateNavbarAnchors();
                           _updateKeyboardAnchors();
                         }
                       });
