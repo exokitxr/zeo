@@ -1058,6 +1058,20 @@ class Rend {
                 scene.add(menuBoxMeshes.left);
                 scene.add(menuBoxMeshes.right);
 
+                const worldBoxMeshes = {
+                  left: _makeBoxMesh(),
+                  right: _makeBoxMesh(),
+                };
+                scene.add(worldBoxMeshes.left);
+                scene.add(worldBoxMeshes.right);
+
+                const npmBoxMeshes = {
+                  left: _makeBoxMesh(),
+                  right: _makeBoxMesh(),
+                };
+                scene.add(npmBoxMeshes.left);
+                scene.add(npmBoxMeshes.right);
+
                 const _makeMenuDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
                   geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
@@ -1072,6 +1086,20 @@ class Rend {
                 };
                 scene.add(menuDotMeshes.left);
                 scene.add(menuDotMeshes.right);
+
+                const worldDotMeshes = {
+                  left: _makeMenuDotMesh(),
+                  right: _makeMenuDotMesh(),
+                };
+                scene.add(worldDotMeshes.left);
+                scene.add(worldDotMeshes.right);
+
+                const npmDotMeshes = {
+                  left: _makeMenuDotMesh(),
+                  right: _makeMenuDotMesh(),
+                };
+                scene.add(npmDotMeshes.left);
+                scene.add(npmDotMeshes.right);
 
                 const _makeUniverseDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
@@ -2581,6 +2609,8 @@ class Rend {
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
                       menuDotMeshes[side].visible = false;
+                      worldDotMeshes[side].visible = false;
+                      npmDotMeshes[side].visible = false;
                     });
                   } else {
                     menuState.open = true;
@@ -2591,11 +2621,9 @@ class Rend {
 
                     menuMesh.position.copy(newPosition);
                     menuMesh.quaternion.copy(newRotation);
-                    // menuMesh.visible = true;
 
                     keyboardMesh.position.copy(newPosition);
                     keyboardMesh.quaternion.copy(newRotation);
-                    // keyboardMesh.visible = true;
                   }
                 };
                 input.on('menudown', menudown);
@@ -2883,6 +2911,8 @@ class Rend {
                   SIDES.forEach(side => {
                     scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
+                    scene.remove(worldDotMeshes[side]);
+                    scene.remove(npmDotMeshes[side]);
                     scene.remove(universeDotMeshes[side]);
                     scene.remove(keyboardBoxMeshes[side]);
                   });
@@ -2955,6 +2985,14 @@ class Rend {
                   mousedownStartScrollTop: null,
                 });
                 const menuHoverStates = {
+                  left: _makeMenuHoverState(),
+                  right: _makeMenuHoverState(),
+                };
+                const worldHoverStates = {
+                  left: _makeMenuHoverState(),
+                  right: _makeMenuHoverState(),
+                };
+                const npmHoverStates = {
                   left: _makeMenuHoverState(),
                   right: _makeMenuHoverState(),
                 };
@@ -3052,8 +3090,10 @@ class Rend {
                       const status = webvr.getStatus();
                       const {gamepads: gamepadsStatus} = status;
 
-                      const {planeMesh} = menuMesh;
-                      const {position: menuPosition, rotation: menuRotation, scale: menuScale} = _decomposeObjectMatrixWorld(planeMesh);
+                      const {planeMesh, worldMesh, npmMesh} = menuMesh;
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const worldMatrixObject = _decomposeObjectMatrixWorld(worldMesh);
+                      const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
 
                       SIDES.forEach(side => {
                         const gamepadStatus = gamepadsStatus[side];
@@ -3072,154 +3112,215 @@ class Rend {
                           const menuDotMesh = menuDotMeshes[side];
                           const menuBoxMesh = menuBoxMeshes[side];
 
+                          const worldHoverState = worldHoverStates[side];
+                          const worldDotMesh = worldDotMeshes[side];
+                          const worldBoxMesh = worldBoxMeshes[side];
+
+                          const npmHoverState = npmHoverStates[side];
+                          const npmDotMesh = npmDotMeshes[side];
+                          const npmBoxMesh = npmBoxMeshes[side];
+
                           const keyboardHoverState = keyboardHoverStates[side];
                           const keyboardBoxMesh = keyboardBoxMeshes[side];
 
                           const _updateMenuAnchors = () => {
-                            const menuBoxTarget = geometryUtils.makeBoxTarget(
-                              menuPosition,
-                              menuRotation,
-                              menuScale,
-                              new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0)
-                            );
-                            const menuIntersectionPoint = menuBoxTarget.intersectLine(controllerLine);
-                            if (menuIntersectionPoint) {
-                              menuHoverState.intersectionPoint = menuIntersectionPoint;
+                            const _updateMenuSpecAnchors = ({
+                              matrixObject,
+                              ui,
+                              hoverState,
+                              dotMesh,
+                              boxMesh,
+                              width,
+                              height,
+                              worldWidth,
+                              worldHeight,
+                              worldDepth,
+                            }) => {
+                              const {position, rotation, scale} = matrixObject;
 
-                              const _getMenuMeshPoint = _makeMeshPointGetter({
-                                position: menuPosition,
-                                rotation: menuRotation,
-                                width: WIDTH,
-                                height: HEIGHT,
-                                worldWidth: WORLD_WIDTH,
-                                worldHeight: WORLD_HEIGHT,
-                              });
+                              const menuBoxTarget = geometryUtils.makeBoxTarget(
+                                position,
+                                rotation,
+                                scale,
+                                new THREE.Vector3(worldWidth, worldHeight, 0)
+                              );
+                              const menuIntersectionPoint = menuBoxTarget.intersectLine(controllerLine);
+                              if (menuIntersectionPoint) {
+                                hoverState.intersectionPoint = menuIntersectionPoint;
 
-                              const scrollLayerBoxTargets = menuUi.getLayers()
-                                .filter(layer => layer.scroll)
-                                .map(layer => {
-                                  const rect = layer.getRect();
-                                  const scrollLayerBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                    menuPosition,
-                                    menuRotation,
-                                    menuScale,
-                                    new THREE.Vector3(
-                                      -(WORLD_WIDTH / 2) + (rect.left / WIDTH) * WORLD_WIDTH,
-                                      (WORLD_HEIGHT / 2) + (-rect.top / HEIGHT) * WORLD_HEIGHT,
-                                      -WORLD_DEPTH
-                                    ),
-                                    new THREE.Vector3(
-                                      -(WORLD_WIDTH / 2) + (rect.right / WIDTH) * WORLD_WIDTH,
-                                      (WORLD_HEIGHT / 2) + (-rect.bottom / HEIGHT) * WORLD_HEIGHT,
-                                      WORLD_DEPTH
-                                    )
-                                  );
-                                  scrollLayerBoxTarget.layer = layer;
-                                  return scrollLayerBoxTarget;
+                                const _getMenuMeshPoint = _makeMeshPointGetter({
+                                  position,
+                                  rotation,
+                                  width,
+                                  height,
+                                  worldWidth,
+                                  worldHeight,
+                                  worldDepth,
                                 });
-                              const scrollLayerBoxTarget = (() => {
-                                for (let i = 0; i < scrollLayerBoxTargets.length; i++) {
-                                  const layerBoxTarget = scrollLayerBoxTargets[i];
-                                  if (layerBoxTarget.intersectLine(controllerLine)) {
-                                    return layerBoxTarget;
-                                  }
-                                }
-                                return null;
-                              })();
-                              if (scrollLayerBoxTarget) {
-                                menuHoverState.scrollLayer = scrollLayerBoxTarget.layer;
-                              } else {
-                                menuHoverState.scrollLayer = null;
-                              }
 
-                              const anchorBoxTargets = (() => {
-                                const result = [];
-                                const layers = menuUi.getLayers();
-                                for (let i = 0; i < layers.length; i++) {
-                                  const layer = layers[i];
-                                  const anchors = layer.getAnchors();
-
-                                  for (let j = 0; j < anchors.length; j++) {
-                                    const anchor = anchors[j];
-                                    const {rect} = anchor;
-
-                                    const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                      menuPosition,
-                                      menuRotation,
-                                      menuScale,
+                                const scrollLayerBoxTargets = ui.getLayers()
+                                  .filter(layer => layer.scroll)
+                                  .map(layer => {
+                                    const rect = layer.getRect();
+                                    const scrollLayerBoxTarget = geometryUtils.makeBoxTargetOffset(
+                                      position,
+                                      rotation,
+                                      scale,
                                       new THREE.Vector3(
-                                        -(WORLD_WIDTH / 2) + (rect.left / WIDTH) * WORLD_WIDTH,
-                                        (WORLD_HEIGHT / 2) + ((-rect.top + layer.scrollTop) / HEIGHT) * WORLD_HEIGHT,
-                                        -WORLD_DEPTH
+                                        -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                                        (worldHeight / 2) + (-rect.top / height) * worldHeight,
+                                        -worldDepth
                                       ),
                                       new THREE.Vector3(
-                                        -(WORLD_WIDTH / 2) + (rect.right / WIDTH) * WORLD_WIDTH,
-                                        (WORLD_HEIGHT / 2) + ((-rect.bottom + layer.scrollTop) / HEIGHT) * WORLD_HEIGHT,
-                                        WORLD_DEPTH
+                                        -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                                        (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
+                                        worldDepth
                                       )
                                     );
-                                    anchorBoxTarget.anchor = anchor;
+                                    scrollLayerBoxTarget.layer = layer;
+                                    return scrollLayerBoxTarget;
+                                  });
+                                const scrollLayerBoxTarget = (() => {
+                                  for (let i = 0; i < scrollLayerBoxTargets.length; i++) {
+                                    const layerBoxTarget = scrollLayerBoxTargets[i];
+                                    if (layerBoxTarget.intersectLine(controllerLine)) {
+                                      return layerBoxTarget;
+                                    }
+                                  }
+                                  return null;
+                                })();
+                                if (scrollLayerBoxTarget) {
+                                  hoverState.scrollLayer = scrollLayerBoxTarget.layer;
+                                } else {
+                                  hoverState.scrollLayer = null;
+                                }
 
-                                    result.push(anchorBoxTarget);
+                                const anchorBoxTargets = (() => {
+                                  const result = [];
+                                  const layers = ui.getLayers();
+                                  for (let i = 0; i < layers.length; i++) {
+                                    const layer = layers[i];
+                                    const anchors = layer.getAnchors();
+
+                                    for (let j = 0; j < anchors.length; j++) {
+                                      const anchor = anchors[j];
+                                      const {rect} = anchor;
+
+                                      const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                                        position,
+                                        rotation,
+                                        scale,
+                                        new THREE.Vector3(
+                                          -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                                          (worldHeight / 2) + ((-rect.top + layer.scrollTop) / height) * worldHeight,
+                                          -worldDepth
+                                        ),
+                                        new THREE.Vector3(
+                                          -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                                          (worldHeight / 2) + ((-rect.bottom + layer.scrollTop) / height) * worldHeight,
+                                          worldDepth
+                                        )
+                                      );
+                                      anchorBoxTarget.anchor = anchor;
+
+                                      result.push(anchorBoxTarget);
+                                    }
+                                  }
+                                  return result;
+                                })();
+                                const anchorBoxTarget = (() => {
+                                  const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
+
+                                  if (interstectedAnchorBoxTargets.length > 0) {
+                                    return interstectedAnchorBoxTargets[0];
+                                  } else {
+                                    return null;
+                                  }
+                                })();
+                                if (anchorBoxTarget) {
+                                  boxMesh.position.copy(anchorBoxTarget.position);
+                                  boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                                  boxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
+
+                                  const {anchor} = anchorBoxTarget;
+                                  hoverState.anchor = anchor;
+                                  hoverState.value = (() => {
+                                    const {rect} = anchor;
+                                    const horizontalLine = new THREE.Line3(
+                                      _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                                      _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                                    );
+                                    const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
+                                    return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                                  })();
+
+                                  if (!boxMesh.visible) {
+                                    boxMesh.visible = true;
+                                  }
+                                } else {
+                                  hoverState.anchor = null;
+                                  hoverState.value = 0;
+
+                                  if (boxMesh.visible) {
+                                    boxMesh.visible = false;
                                   }
                                 }
-                                return result;
-                              })();
-                              const anchorBoxTarget = (() => {
-                                const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
 
-                                if (interstectedAnchorBoxTargets.length > 0) {
-                                  return interstectedAnchorBoxTargets[0];
-                                } else {
-                                  return null;
-                                }
-                              })();
-                              if (anchorBoxTarget) {
-                                menuBoxMesh.position.copy(anchorBoxTarget.position);
-                                menuBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                                menuBoxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
-
-                                const {anchor} = anchorBoxTarget;
-                                menuHoverState.anchor = anchor;
-                                menuHoverState.value = (() => {
-                                  const {rect} = anchor;
-                                  const horizontalLine = new THREE.Line3(
-                                    _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                                    _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                                  );
-                                  const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
-                                  return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
-                                })();
-
-                                if (!menuBoxMesh.visible) {
-                                  menuBoxMesh.visible = true;
+                                dotMesh.position.copy(menuIntersectionPoint);
+                                if (!dotMesh.visible) {
+                                  dotMesh.visible = true;
                                 }
                               } else {
-                                menuHoverState.anchor = null;
-                                menuHoverState.value = 0;
+                                hoverState.intersectionPoint = null;
+                                hoverState.scrollLayer = null;
+                                hoverState.anchor = null;
+                                hoverState.value = 0;
 
                                 if (menuBoxMesh.visible) {
-                                  menuBoxMesh.visible = false;
+                                  boxMesh.visible = false;
+                                }
+                                if (dotMesh.visible) {
+                                  dotMesh.visible = false;
                                 }
                               }
+                            };
 
-                              menuDotMesh.position.copy(menuIntersectionPoint);
-                              if (!menuDotMesh.visible) {
-                                menuDotMesh.visible = true;
-                              }
-                            } else {
-                              menuHoverState.intersectionPoint = null;
-                              menuHoverState.scrollLayer = null;
-                              menuHoverState.anchor = null;
-                              menuHoverState.value = 0;
-
-                              if (menuBoxMesh.visible) {
-                                menuBoxMesh.visible = false;
-                              }
-                              if (menuDotMesh.visible) {
-                                menuDotMesh.visible = false;
-                              }
-                            }
+                            _updateMenuSpecAnchors({
+                              matrixObject: menuMatrixObject,
+                              ui: menuUi,
+                              hoverState: menuHoverState,
+                              dotMesh: menuDotMesh,
+                              boxMesh: menuBoxMesh,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                            });
+                            _updateMenuSpecAnchors({
+                              matrixObject: worldMatrixObject,
+                              ui: worldUi,
+                              hoverState: worldHoverState,
+                              dotMesh: worldDotMesh,
+                              boxMesh: worldBoxMesh,
+                              width: SIDEBAR_WIDTH,
+                              height: SIDEBAR_HEIGHT,
+                              worldWidth: SIDEBAR_WORLD_WIDTH,
+                              worldHeight: SIDEBAR_WORLD_HEIGHT,
+                              worldDepth: SIDEBAR_WORLD_DEPTH,
+                            });
+                            _updateMenuSpecAnchors({
+                              matrixObject: npmMatrixObject,
+                              ui: npmUi,
+                              hoverState: npmHoverState,
+                              dotMesh: npmDotMesh,
+                              boxMesh: npmBoxMesh,
+                              width: SIDEBAR_WIDTH,
+                              height: SIDEBAR_HEIGHT,
+                              worldWidth: SIDEBAR_WORLD_WIDTH,
+                              worldHeight: SIDEBAR_WORLD_HEIGHT,
+                              worldDepth: SIDEBAR_WORLD_DEPTH,
+                            });
                           };
                           const _updateKeyboardAnchors = () => {
                             const {planeMesh} = keyboardMesh;
