@@ -902,7 +902,7 @@ class Rend {
                       h: SIDEBAR_HEIGHT,
                       scroll: true,
                     },
-                    {
+                    /* {
                       type: 'image',
                       img: creatureUtils.makeAnimatedCreature('world'),
                       x: 0,
@@ -911,7 +911,7 @@ class Rend {
                       h: 150,
                       frameTime: 300,
                       pixelated: true,
-                    }
+                    } */
                   ];
                 }, {
                   type: 'world',
