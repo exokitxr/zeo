@@ -170,6 +170,7 @@ class Teleport {
                   webvr.setStageMatrix(stageMatrix);
 
                   webvr.updateStatus();
+                  webvr.updateUserStageMatrix();
                   cyborg.update();
 
                   teleportState.teleportFloorPoint = null;
@@ -186,6 +187,7 @@ class Teleport {
                   webvr.setStageMatrix(stageMatrix);
 
                   webvr.updateStatus();
+                  webvr.updateUserStageMatrix();
                   cyborg.update();
 
                   teleportState.teleportAirPoint = null;
