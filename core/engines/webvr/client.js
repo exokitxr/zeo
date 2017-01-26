@@ -424,7 +424,7 @@ class WebVR {
                   .then(() => new Promise((accept, reject) => {
                     const _listen = () => {
                       if (display instanceof FakeVRDisplay) {
-                        const fullscreenchange = () => {
+                        const pointerlockchange = () => {
                           const {isPresenting} = display;
                           if (!isPresenting) {
                             _destroy();
@@ -432,14 +432,12 @@ class WebVR {
                             onExit();
                           }
                         };
-                        // document.addEventListener('fullscreenchange', fullscreenchange);
-                        document.addEventListener('webkitfullscreenchange', fullscreenchange);
+                        document.addEventListener('pointerlockchange', pointerlockchange);
 
                         cleanups.push(() => {
                           display.destroy();
 
-                          // document.removeEventListener('fullscreenchange', fullscreenchange);
-                          document.removeEventListener('webkitfullscreenchange', fullscreenchange);
+                          document.removeEventListener('pointerlockchange', pointerlockchange);
                         });
                       } else {
                         const vrdisplaypresentchange = () => {
@@ -602,7 +600,6 @@ class WebVR {
           }
 
           setStageMatrix(stageMatrix) {
-console.log('set stage matrix', stageMatrix.toArray()); // XXX
             this.stageMatrix.copy(stageMatrix);
           }
 
@@ -628,21 +625,6 @@ console.log('set stage matrix', stageMatrix.toArray()); // XXX
             this.stageParameters = {
               sittingToStandingTransform: sittingToStandingTransform.toArray(),
             };
-
-            const fullscreenchange = e => {
-              const {isPresenting: wasPresenting} = this;
-
-              const isPresenting = !!(document.fullscreenElement || document.webkitFullscreenElement);
-              this.isPresenting = isPresenting;
-
-              if (!wasPresenting && isPresenting) {
-                this.emit('open');
-              } else if (wasPresenting && !isPresenting) {
-                this.emit('close');
-              }
-            };
-            // document.addEventListener('fullscreenchange', fullscreenchange);
-            document.addEventListener('webkitfullscreenchange', fullscreenchange);
 
             const keys = {
               up: false,
@@ -800,7 +782,18 @@ console.log('set stage matrix', stageMatrix.toArray()); // XXX
               }
             };
             const pointerlockchange = e => {
-              if (!document.pointerLockElement) {
+              const {isPresenting: wasPresenting} = this;
+
+              const isPresenting = document.pointerLockElement !== null;
+              this.isPresenting = isPresenting;
+
+              if (!wasPresenting && isPresenting) {
+                this.emit('open');
+              } else if (wasPresenting && !isPresenting) {
+                this.emit('close');
+              }
+
+              if (!isPresenting) {
                 _resetKeys();
               }
             };
@@ -809,13 +802,14 @@ console.log('set stage matrix', stageMatrix.toArray()); // XXX
 
               console.warn('pointer lock error', err);
             };
+
             input.on('keydown', keydown);
             input.on('keyup', keyup);
             input.on('mousedown', mousedown);
             input.on('mouseup', mouseup);
             input.on('mousemove', mousemove);
-            input.on('pointerlockchange', pointerlockchange);
-            input.on('pointerlockerror', pointerlockerror);
+            document.addEventListener('pointerlockchange', pointerlockchange);
+            document.addEventListener('pointerlockerror', pointerlockerror);
 
             this._cleanup = () => {
               for (let i = 0; i < gamepads.length; i++) {
@@ -823,21 +817,17 @@ console.log('set stage matrix', stageMatrix.toArray()); // XXX
                 gamepad.destroy();
               }
 
-              // document.removeEventListener('fullscreenchange', fullscreenchange);
-              document.removeEventListener('webkitfullscreenchange', fullscreenchange);
-
               input.removeListener('keydown', keydown);
               input.removeListener('keyup', keyup);
               input.removeListener('mousedown', mousedown);
               input.removeListener('mouseup', mouseup);
               input.removeListener('mousemove', mousemove);
-              input.removeListener('pointerlockchange', pointerlockchange);
-              input.removeListener('pointerlockerror', pointerlockerror);
+              document.removeEventListener('pointerlockchange', pointerlockchange);
+              document.removeEventListener('pointerlockerror', pointerlockerror);
             };
           }
 
-          requestPresent([{source}]) {
-            source.webkitRequestFullscreen();
+          requestPresent(/*[{source}]*/) {
             domElement.requestPointerLock();
 
             return Promise.resolve();
