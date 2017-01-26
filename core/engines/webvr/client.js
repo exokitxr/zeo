@@ -71,6 +71,7 @@ class WebVR {
 
     return Promise.all([
       archae.requestPlugins([
+        '/core/engines/hub',
         '/core/engines/input',
         '/core/engines/three',
         '/core/plugins/js-utils',
@@ -78,6 +79,7 @@ class WebVR {
       navigator.getVRDisplays(),
     ]).then(([
       [
+        hub,
         input,
         three,
         jsUtils,
@@ -113,7 +115,6 @@ class WebVR {
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
-
           return {
             position,
             rotation,
@@ -271,19 +272,33 @@ class WebVR {
                     });
                   }
 
-                  if (display && display.stageParameters) {
-                    const {stageMatrix} = this;
-                    const displayStageMatrix = new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform);
-                    this.setStageMatrix(stageMatrix.clone().multiply(displayStageMatrix));
-                    this.updateStatus();
+                  const {stageMatrix} = this;
+                  const userStageMatrix = new THREE.Matrix4().fromArray(hub.getUserState().matrix);
+                  const displayStageMatrix = (display && display.stageParameters) ? new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform) : new THREE.Matrix4();
+                  const externalStageMatrix = userStageMatrix.clone().multiply(displayStageMatrix);
+                  this.setStageMatrix(stageMatrix.clone().multiply(externalStageMatrix));
+                  this.updateStatus();
 
-                    cleanups.push(() => {
-                      const {stageMatrix} = this;
-                      const displayStageMatrixInverse = new THREE.Matrix4().getInverse(displayStageMatrix);
-                      this.setStageMatrix(stageMatrix.clone().multiply(displayStageMatrixInverse));
-                      this.updateStatus();
-                    });
-                  }
+                  cleanups.push(() => {
+                    const {display, stageMatrix} = this;
+
+                    if (display && (display instanceof FakeVRDisplay)) {
+                      const userStageMatrix = new THREE.Matrix4().fromArray(hub.getUserState().matrix);
+                      const {position: userPosition, rotation: userRotation, scale: userScale} = _getPropertiesFromMatrix(userStageMatrix);
+                      const {position: displayPosition} = display;
+                      const newUserStageMatrix = new THREE.Matrix4().compose(
+                        userPosition.clone().add(displayPosition),
+                        userRotation,
+                        userScale
+                      );
+
+                      hub.setUserStateMatrix(newUserStageMatrix.toArray());
+                    }
+
+                    const externalStageMatrixInverse = new THREE.Matrix4().getInverse(externalStageMatrix);
+                    this.setStageMatrix(stageMatrix.clone().multiply(externalStageMatrixInverse));
+                    this.updateStatus();
+                  });
 
                   const _renderLoop = () => {
                     const _render = () => {
@@ -855,7 +870,6 @@ console.log('set stage matrix', stageMatrix.toArray()); // XXX
 
                 if (moved) {
                   moveVector.applyQuaternion(rotation);
-
                   position.add(moveVector);
 
                   this.updateMatrix();

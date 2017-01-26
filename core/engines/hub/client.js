@@ -50,18 +50,8 @@ class Hub {
       }
     };
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/webvr',
-      ]),
-      _requestLogin(),
-    ])
-      .then(([
-        [
-          webvr,
-        ],
-        j,
-      ]) => {
+    return _requestLogin()
+      .then(j => {
         console.log('got login result', j); // XXX
 
         const worldName = (() => {
@@ -73,23 +63,19 @@ class Hub {
             return null;
           }
         })();
-        const username = j ? j.username : null;
-        const world = j ? j.world : null;
-        const matrix = j ? j.matrix : null;
         const plan = j ? j.plan : null;
         const token = j ? j.token : null;
+        const userState = {
+          username: j ? j.username : null,
+          world: j ? j.world : null,
+          matrix: j ? j.matrix : null,
+        };
 
         const _isEnabled = () => hubEnabled;
         const _getWorldName = () => worldName;
-        const _getUserState = () => ({
-          username,
-          world,
-          matrix,
-          plan,
-        });
+        const _getUserState = () => userState;
         const _getUserStateJson = () => {
-          const matrix = webvr.getStageMatrix().toArray();
-
+          const {world, matrix} = userState;
           return {
             token,
             state: {
@@ -98,7 +84,12 @@ class Hub {
             },
           };
         };
+        const _setUserStateMatrix = matrix => {
+          userState.matrix = matrix;
+        };
         const _saveUserState = () => {
+          const {username} = userState;
+
           if (hubEnabled && username) {
             return fetch(hubUrlPrefix + '/hub/userState', {
               method: 'POST',
@@ -112,6 +103,7 @@ class Hub {
           }
         };
         const _saveUserStateAsync = () => {
+          const {username} = userState;
           if (hubEnabled && username) {
             navigator.sendBeacon(hubUrlPrefix + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
               type: 'application/json',
@@ -123,6 +115,7 @@ class Hub {
           isEnabled: _isEnabled,
           getWorldName: _getWorldName,
           getUserState: _getUserState,
+          setUserStateMatrix: _setUserStateMatrix,
           saveUserState: _saveUserState,
           saveUserStateAsync: _saveUserStateAsync,
         };
