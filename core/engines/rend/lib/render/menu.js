@@ -774,11 +774,22 @@ const getWorldSidebarSrc = ({elements}) => `\
 
 const getWorldNavbarSrc = () => `\
   <div style="display: flex; width: 1000px; height: 50px;">
-    <a style="display: flex; width: 200px; border-top: 5px solid #F00; justify-content: center; align-items: center; font-size: 36px; text-decoration: none; box-sizing: border-box;" onclick="navbar:readme">Readme</a>
-    <a style="display: flex; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 36px; text-decoration: none; box-sizing: border-box;" onclick="navbar:multiverse">Multiverse</a>
-    <a style="display: flex; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 36px; text-decoration: none; box-sizing: border-box;" onclick="navbar:world">World</a>
-    <a style="display: flex; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 36px; text-decoration: none; box-sizing: border-box;" onclick="navbar:inventory">Inventory</a>
-    <a style="display: flex; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 36px; text-decoration: none; box-sizing: border-box;" onclick="navbar:options">Options</a>
+    <a style="display: flex; position: relative; width: 200px; justify-content: center; align-items: center; font-size: 30px; text-decoration: none;" onclick="navbar:readme">
+      <div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>
+      <span>Readme</span>
+    </a>
+    <a style="display: flex; position: relative; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:multiverse">
+      <span>Multiverse</span>
+    </a>
+    <a style="display: flex; position: relative; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:world">
+      <span>World</span>
+    </a>
+    <a style="display: flex; position: relative; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:inventory">
+      <span>Inventory</span>
+    </a>
+    <a style="display: flex; position: relative; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:options">
+      <span>Options</span>
+    </a>
   </div>
 `;
 
