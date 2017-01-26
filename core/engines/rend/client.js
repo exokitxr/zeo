@@ -10,11 +10,19 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
+
   SIDEBAR_WIDTH,
   SIDEBAR_HEIGHT,
   SIDEBAR_WORLD_WIDTH,
   SIDEBAR_WORLD_HEIGHT,
   SIDEBAR_WORLD_DEPTH,
+
+  NAVBAR_WIDTH,
+  NAVBAR_HEIGHT,
+  NAVBAR_WORLD_WIDTH,
+  NAVBAR_WORLD_HEIGHT,
+  NAVBAR_WORLD_DEPTH,
+
   DEFAULT_USER_HEIGHT,
   TRANSITION_TIME,
   STATS_REFRESH_RATE,
@@ -707,14 +715,20 @@ class Rend {
                 width: SIDEBAR_WIDTH,
                 height: SIDEBAR_HEIGHT,
               }),
+              biolumi.requestUi({
+                width: NAVBAR_WIDTH,
+                height: NAVBAR_HEIGHT,
+              }),
             ]).then(([
               menuUi,
               worldUi,
               npmUi,
+              navbarUi,
             ]) => ({
               menuUi,
               worldUi,
               npmUi,
+              navbarUi,
             }));
 
             return Promise.all([
@@ -725,6 +739,7 @@ class Rend {
                 menuUi,
                 worldUi,
                 npmUi,
+                navbarUi,
               },
               mainReadme,
             ]) => {
@@ -949,6 +964,23 @@ class Rend {
                   },
                 });
 
+                navbarUi.pushPage(() => {
+                  return [
+                    {
+                      type: 'html',
+                      src: menuRenderer.getWorldNavbarSrc(),
+                      x: 0,
+                      y: 0,
+                      w: NAVBAR_WIDTH,
+                      h: NAVBAR_HEIGHT,
+                      scroll: true,
+                    },
+                  ];
+                }, {
+                  type: 'navbar',
+                  state: {},
+                });
+
                 const wireframeMaterial = new THREE.MeshBasicMaterial({
                   color: 0x0000FF,
                   wireframe: true,
@@ -1068,6 +1100,35 @@ class Rend {
                   })();
                   object.add(npmMesh);
                   object.npmMesh = npmMesh;
+
+                  const navbarMesh = (() => {
+                    const width = NAVBAR_WORLD_WIDTH;
+                    const height = NAVBAR_WORLD_HEIGHT;
+                    const depth = NAVBAR_WORLD_DEPTH;
+
+                    const menuMaterial = biolumi.makeMenuMaterial();
+
+                    const geometry = new THREE.PlaneBufferGeometry(width, height);
+                    const materials = [solidMaterial, menuMaterial];
+
+                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    mesh.position.z = -0.25;
+                    mesh.receiveShadow = true;
+                    mesh.menuMaterial = menuMaterial;
+
+                    const shadowMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                      const material = transparentMaterial;
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.castShadow = true;
+                      return mesh;
+                    })();
+                    mesh.add(shadowMesh);
+
+                    return mesh;
+                  })();
+                  object.add(navbarMesh);
+                  object.navbarMesh = navbarMesh;
 
                   return object;
                 })();
@@ -1448,6 +1509,8 @@ class Rend {
                         page.update({
                           elements: _cleanElementsState(elementsState),
                         }, pend);
+                      } else if (type === 'navbar') {
+                        page.update({}, pend);
                       } else {
                         pend();
                       }
@@ -3087,7 +3150,20 @@ class Rend {
 
                   if (open) {
                     const _updateTextures = () => {
-                      const {planeMesh: {menuMaterial: planeMenuMaterial}, worldMesh: {menuMaterial: worldMenuMaterial}, npmMesh: {menuMaterial: npmMenuMaterial}} = menuMesh;
+                      const {
+                        planeMesh: {
+                          menuMaterial: planeMenuMaterial,
+                        },
+                        worldMesh: {
+                          menuMaterial: worldMenuMaterial,
+                        },
+                        npmMesh: {
+                          menuMaterial: npmMenuMaterial,
+                        },
+                        navbarMesh: {
+                          menuMaterial: navbarMenuMaterial,
+                        },
+                      } = menuMesh;
                       const worldTime = currentWorld.getWorldTime();
 
                       biolumi.updateMenuMaterial({
@@ -3103,6 +3179,11 @@ class Rend {
                       biolumi.updateMenuMaterial({
                         ui: npmUi,
                         menuMaterial: npmMenuMaterial,
+                        worldTime,
+                      });
+                      biolumi.updateMenuMaterial({
+                        ui: navbarUi,
+                        menuMaterial: navbarMenuMaterial,
                         worldTime,
                       });
 
