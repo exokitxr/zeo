@@ -189,7 +189,7 @@ class Biolumi {
                           pend();
                         };
                         img.onerror = err => {
-                          console.warn('biolumi image load error', err);
+                          console.warn('biolumi image load error', {innerSrc}, err);
                         };
 
                         const layer = new Layer(this);
@@ -550,7 +550,7 @@ class Biolumi {
           const _getTransparentMaterial = () => transparentMaterial;
           const solidMaterial = new THREE.MeshBasicMaterial({
             color: 0xFFFFFF,
-            opacity: 0.5,
+            opacity: 0.9,
             side: THREE.DoubleSide,
             transparent: true,
             // alphaTest: 0.5,

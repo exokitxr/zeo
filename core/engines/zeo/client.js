@@ -59,7 +59,7 @@ class Zeo {
     return _requestLoader()
       .then(loader => {
         if (live) {
-          archae.requestPlugins([
+          return archae.requestPlugins([
             '/core/engines/hub',
             '/core/engines/input',
             '/core/engines/webvr',
@@ -266,7 +266,6 @@ class Zeo {
                     if (supportsWebVR) {
                       errorMessage.style.display = 'none';
                     }
-
 
                     const userState = hub.getUserState();
                     const {username, world} = userState;

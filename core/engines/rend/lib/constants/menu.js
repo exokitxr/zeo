@@ -1,10 +1,23 @@
 export const WIDTH = 2 * 1024;
 export const HEIGHT = WIDTH / 1.5;
 export const ASPECT_RATIO = WIDTH / HEIGHT;
-
 export const WORLD_WIDTH = 2;
 export const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 export const WORLD_DEPTH = WORLD_WIDTH / 50;
+
+export const SIDEBAR_WIDTH = 400;
+export const SIDEBAR_HEIGHT = 150 * 10;
+export const SIDEBAR_ASPECT_RATIO = SIDEBAR_WIDTH / SIDEBAR_HEIGHT;
+export const SIDEBAR_WORLD_WIDTH = 0.1;
+export const SIDEBAR_WORLD_HEIGHT = SIDEBAR_WORLD_WIDTH / SIDEBAR_ASPECT_RATIO;
+export const SIDEBAR_WORLD_DEPTH = 0.01;
+
+export const NAVBAR_WIDTH = 1000;
+export const NAVBAR_HEIGHT = 50;
+export const NAVBAR_ASPECT_RATIO = NAVBAR_WIDTH / NAVBAR_HEIGHT;
+export const NAVBAR_WORLD_WIDTH = 0.5;
+export const NAVBAR_WORLD_HEIGHT = NAVBAR_WORLD_WIDTH / NAVBAR_ASPECT_RATIO;
+export const NAVBAR_WORLD_DEPTH = 0.01;
 
 export const DEFAULT_USER_HEIGHT = 1.6;
 

@@ -10,6 +10,19 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
+
+  SIDEBAR_WIDTH,
+  SIDEBAR_HEIGHT,
+  SIDEBAR_WORLD_WIDTH,
+  SIDEBAR_WORLD_HEIGHT,
+  SIDEBAR_WORLD_DEPTH,
+
+  NAVBAR_WIDTH,
+  NAVBAR_HEIGHT,
+  NAVBAR_WORLD_WIDTH,
+  NAVBAR_WORLD_HEIGHT,
+  NAVBAR_WORLD_DEPTH,
+
   DEFAULT_USER_HEIGHT,
   TRANSITION_TIME,
   STATS_REFRESH_RATE,
@@ -259,6 +272,9 @@ class Rend {
             worlds,
           };
         })();
+        const navbarState = {
+          tab: 'readme',
+        };
 
         const worlds = new Map();
         let currentWorld = null;
@@ -689,19 +705,50 @@ class Rend {
               fontStyle: biolumi.getFontStyle(),
             };
 
-            return Promise.all([
-              biolumi.requestUi({
-                width: WIDTH,
-                height: HEIGHT,
+            const _requestUis = () => Promise.all([
+               biolumi.requestUi({
+                 width: WIDTH,
+                 height: HEIGHT,
               }),
+              biolumi.requestUi({
+                width: SIDEBAR_WIDTH,
+                height: SIDEBAR_HEIGHT,
+              }),
+              biolumi.requestUi({
+                width: SIDEBAR_WIDTH,
+                height: SIDEBAR_HEIGHT,
+              }),
+              biolumi.requestUi({
+                width: NAVBAR_WIDTH,
+                height: NAVBAR_HEIGHT,
+              }),
+            ]).then(([
+              menuUi,
+              elementsUi,
+              npmUi,
+              navbarUi,
+            ]) => ({
+              menuUi,
+              elementsUi,
+              npmUi,
+              navbarUi,
+            }));
+
+            return Promise.all([
+              _requestUis(),
               _requestMainReadme(),
             ]).then(([
-              ui,
+              {
+                menuUi,
+                elementsUi,
+                npmUi,
+                navbarUi,
+              },
               mainReadme,
             ]) => {
               if (live) {
                 const uploadStart = () => {
-                  const pages = ui.getPages();
+                  const pages = menuUi.getPages();
                   if (pages.length > 0 && pages[pages.length - 1].type === 'files') { // XXX handle multiple uploads and elementAttributeFiles page
                     filesState.uploading = true;
                   }
@@ -801,7 +848,7 @@ class Rend {
                   return {index, px};
                 };
 
-                ui.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
+                menuUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
                   const img = (() => {
                     if (statsCheckboxValue) {
                       const statsImg = stats.dom.childNodes[0];
@@ -833,7 +880,7 @@ class Rend {
                   immediate: true,
                 });
 
-                ui.pushPage([
+                menuUi.pushPage([
                   {
                     type: 'html',
                     src: menuRenderer.getMainPageSrc(),
@@ -862,7 +909,88 @@ class Rend {
                   immediate: true,
                 });
 
+                elementsUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}}) => {
+                  return [
+                    {
+                      type: 'html',
+                      src: menuRenderer.getWorldSidebarSrc({elements: availableElements}),
+                      x: 0,
+                      y: 0,
+                      w: SIDEBAR_WIDTH,
+                      h: SIDEBAR_HEIGHT,
+                      scroll: true,
+                    },
+                    /* {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature('world'),
+                      x: 0,
+                      y: 0,
+                      w: 150,
+                      h: 150,
+                      frameTime: 300,
+                      pixelated: true,
+                    } */
+                  ];
+                }, {
+                  type: 'world',
+                  state: {
+                    elements: _cleanElementsState(elementsState),
+                  },
+                });
+
+                npmUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}}) => {
+                  return [
+                    {
+                      type: 'html',
+                      src: menuRenderer.getWorldSidebarSrc({elements: availableElements}),
+                      x: 0,
+                      y: 0,
+                      w: SIDEBAR_WIDTH,
+                      h: SIDEBAR_HEIGHT,
+                      scroll: true,
+                    },
+                    /* {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature('world'),
+                      x: 0,
+                      y: 0,
+                      w: 150,
+                      h: 150,
+                      frameTime: 300,
+                      pixelated: true,
+                    } */
+                  ];
+                }, {
+                  type: 'world',
+                  state: {
+                    elements: _cleanElementsState(elementsState),
+                  },
+                });
+
+                navbarUi.pushPage(({navbar: {tab}}) => {
+                  return [
+                    {
+                      type: 'html',
+                      src: menuRenderer.getWorldNavbarSrc({tab}),
+                      x: 0,
+                      y: 0,
+                      w: NAVBAR_WIDTH,
+                      h: NAVBAR_HEIGHT,
+                      scroll: true,
+                    },
+                  ];
+                }, {
+                  type: 'navbar',
+                  state: {
+                    navbar: navbarState,
+                  },
+                });
+
                 const wireframeMaterial = new THREE.MeshBasicMaterial({
+                  color: 0x808080,
+                  wireframe: true,
+                });
+                const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
                   color: 0x0000FF,
                   wireframe: true,
                   opacity: 0.5,
@@ -920,6 +1048,106 @@ class Rend {
                   object.add(planeMesh);
                   object.planeMesh = planeMesh;
 
+                  const worldMesh = (() => {
+                    const result = new THREE.Object3D();
+                    result.visible = false;
+
+                    const elementsMesh = (() => {
+                      const width = SIDEBAR_WORLD_WIDTH;
+                      const height = SIDEBAR_WORLD_HEIGHT;
+                      const depth = SIDEBAR_WORLD_DEPTH;
+
+                      const menuMaterial = biolumi.makeMenuMaterial();
+
+                      const geometry = new THREE.PlaneBufferGeometry(width, height);
+                      const materials = [solidMaterial, menuMaterial];
+
+                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.position.x = -0.25;
+                      // mesh.position.z = -0.5;
+                      mesh.rotation.y = Math.PI / 8;
+                      mesh.receiveShadow = true;
+                      mesh.menuMaterial = menuMaterial;
+
+                      const shadowMesh = (() => {
+                        const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                        const material = transparentMaterial;
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.castShadow = true;
+                        return mesh;
+                      })();
+                      mesh.add(shadowMesh);
+
+                      return mesh;
+                    })();
+                    result.add(elementsMesh);
+                    result.elementsMesh = elementsMesh;
+
+                    const npmMesh = (() => {
+                      const width = SIDEBAR_WORLD_WIDTH;
+                      const height = SIDEBAR_WORLD_HEIGHT;
+                      const depth = SIDEBAR_WORLD_DEPTH;
+
+                      const menuMaterial = biolumi.makeMenuMaterial();
+
+                      const geometry = new THREE.PlaneBufferGeometry(width, height);
+                      const materials = [solidMaterial, menuMaterial];
+
+                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.position.x = 0.25;
+                      // mesh.position.z = -0.5;
+                      mesh.rotation.y = -Math.PI / 8;
+                      mesh.receiveShadow = true;
+                      mesh.menuMaterial = menuMaterial;
+
+                      const shadowMesh = (() => {
+                        const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                        const material = transparentMaterial;
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.castShadow = true;
+                        return mesh;
+                      })();
+                      mesh.add(shadowMesh);
+
+                      return mesh;
+                    })();
+                    result.add(npmMesh);
+                    result.npmMesh = npmMesh;
+
+                    return result;
+                  })();
+                  object.add(worldMesh);
+                  object.worldMesh = worldMesh;
+
+                  const navbarMesh = (() => {
+                    const width = NAVBAR_WORLD_WIDTH;
+                    const height = NAVBAR_WORLD_HEIGHT;
+                    const depth = NAVBAR_WORLD_DEPTH;
+
+                    const menuMaterial = biolumi.makeMenuMaterial();
+
+                    const geometry = new THREE.PlaneBufferGeometry(width, height);
+                    const materials = [solidMaterial, menuMaterial];
+
+                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    mesh.position.z = -0.25;
+                    mesh.receiveShadow = true;
+                    mesh.menuMaterial = menuMaterial;
+
+                    const shadowMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                      const material = transparentMaterial;
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.castShadow = true;
+                      return mesh;
+                    })();
+                    mesh.add(shadowMesh);
+
+                    return mesh;
+                  })();
+                  object.add(navbarMesh);
+                  object.navbarMesh = navbarMesh;
+
                   return object;
                 })();
                 scene.add(menuMesh);
@@ -927,7 +1155,7 @@ class Rend {
                 const _makeBoxMesh = () => {
                   const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
 
-                  const mesh = new THREE.Mesh(geometry, wireframeMaterial);
+                  const mesh = new THREE.Mesh(geometry, wireframeHighlightMaterial);
                   mesh.visible = false;
                   return mesh;
                 };
@@ -937,6 +1165,27 @@ class Rend {
                 };
                 scene.add(menuBoxMeshes.left);
                 scene.add(menuBoxMeshes.right);
+
+                const elementsBoxMeshes = {
+                  left: _makeBoxMesh(),
+                  right: _makeBoxMesh(),
+                };
+                scene.add(elementsBoxMeshes.left);
+                scene.add(elementsBoxMeshes.right);
+
+                const npmBoxMeshes = {
+                  left: _makeBoxMesh(),
+                  right: _makeBoxMesh(),
+                };
+                scene.add(npmBoxMeshes.left);
+                scene.add(npmBoxMeshes.right);
+
+                const navbarBoxMeshes = {
+                  left: _makeBoxMesh(),
+                  right: _makeBoxMesh(),
+                };
+                scene.add(navbarBoxMeshes.left);
+                scene.add(navbarBoxMeshes.right);
 
                 const _makeMenuDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
@@ -952,6 +1201,20 @@ class Rend {
                 };
                 scene.add(menuDotMeshes.left);
                 scene.add(menuDotMeshes.right);
+
+                const elementsDotMeshes = {
+                  left: _makeMenuDotMesh(),
+                  right: _makeMenuDotMesh(),
+                };
+                scene.add(elementsDotMeshes.left);
+                scene.add(elementsDotMeshes.right);
+
+                const npmDotMeshes = {
+                  left: _makeMenuDotMesh(),
+                  right: _makeMenuDotMesh(),
+                };
+                scene.add(npmDotMeshes.left);
+                scene.add(npmDotMeshes.right);
 
                 const _makeUniverseDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
@@ -1071,8 +1334,9 @@ class Rend {
 
                 const universeMesh = (() => {
                   const object = new THREE.Object3D();
-                  object.position.set(0, 1.2, 1);
-                  object.scale.set(0.5, 0.5, 0.5);
+                  object.position.set(0, 1.2, -0.5);
+                  // object.scale.set(0.5, 0.5, 0.5);
+                  object.visible = false;
 
                   const {worlds} = universeState;
                   const pointsMesh = (() => {
@@ -1151,6 +1415,64 @@ class Rend {
                   })();
                   object.add(linesMesh);
 
+                  const floorMesh = (() => {
+                    const size = 0.5;
+                    const resolution = 16;
+
+                    const geometry = (() => {
+                      const generator = indev({
+                        seed: '',
+                      });
+                      const noise = generator.simplex({
+                        frequency: 0.05,
+                        octaves: 4,
+                      });
+
+                      const result = new THREE.PlaneBufferGeometry(size, size, resolution, resolution);
+                      result.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+                      const positionAttribute = result.getAttribute('position');
+                      const positions = positionAttribute.array;
+                      const numPositions = positions.length / 3;
+                      for (let i = 0; i < numPositions; i++) {
+                        const baseIndex = i * 3;
+                        const x = Math.round((positions[baseIndex + 0] + (size / 2)) / size * resolution);
+                        const y = Math.round((-positions[baseIndex + 2] + (size / 2)) / size * resolution);
+
+                        const height = noise.in2D(x, y) * 0.2;
+                        positions[baseIndex + 1] = height;
+                      }
+                      // positionAttribute.needsUpdate = true;
+                      return result;
+                    })();
+
+                    const material = wireframeMaterial;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.size = size;
+                    mesh.resolution = resolution;
+                    return mesh;
+                  })();
+                  object.add(floorMesh);
+                  object.floorMesh = floorMesh;
+
+                  const _makeFloorBoxMesh = () => {
+                    const {size} = floorMesh;
+
+                    const geometry = new THREE.BoxBufferGeometry(size, size, size);
+                    const material = wireframeHighlightMaterial;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.visible = false;
+                    return mesh;
+                  };
+                  const floorBoxMeshes = {
+                    left: _makeFloorBoxMesh(),
+                    right: _makeFloorBoxMesh(),
+                  };
+                  object.add(floorBoxMeshes.left);
+                  object.add(floorBoxMeshes.right);
+                  object.floorBoxMeshes = floorBoxMeshes;
+
                   return object;
                 })();
                 scene.add(universeMesh);
@@ -1207,7 +1529,11 @@ class Rend {
                 };
 
                 const _updatePages = menuUtils.debounce(next => {
-                  const pages = ui.getPages();
+                  const menuPages = menuUi.getPages();
+                  const elementsPages = elementsUi.getPages();
+                  const npmPages = npmUi.getPages();
+                  const navbarPages = navbarUi.getPages();
+                  const pages = menuPages.concat(elementsPages).concat(npmPages).concat(navbarPages);
 
                   if (pages.length > 0) {
                     let pending = pages.length;
@@ -1263,6 +1589,14 @@ class Rend {
                         page.update({
                           config: configState,
                           focus: focusState,
+                        }, pend);
+                      } else if (type === 'world') {
+                        page.update({
+                          elements: _cleanElementsState(elementsState),
+                        }, pend);
+                      } else if (type === 'navbar') {
+                        page.update({
+                          navbar: navbarState,
                         }, pend);
                       } else {
                         pend();
@@ -1327,6 +1661,43 @@ class Rend {
                         return false;
                       }
                     };
+                    const _doClickNavbar = e => {
+                      const {side} = e;
+                      const navbarHoverState = navbarHoverStates[side];
+                      const {anchor} = navbarHoverState;
+                      const onclick = (anchor && anchor.onclick) || '';
+
+                      let match;
+                      if (match = onclick.match(/^navbar:(readme|multiverse|world|inventory|options)$/)) {
+                        const newTab = match[1];
+
+                        const _getTabMesh = tab => {
+                          switch (tab) {
+                            case 'readme': return menuMesh.planeMesh;
+                            case 'multiverse': return universeMesh;
+                            case 'world': return menuMesh.worldMesh;
+                            case 'inventory': return menuMesh.planeMesh;
+                            case 'options': return menuMesh.planeMesh;
+                            default: return null;
+                          }
+                        };
+
+                        const {tab: oldTab} = navbarState;
+                        const oldMesh = _getTabMesh(oldTab);
+                        const newMesh = _getTabMesh(newTab);
+
+                        oldMesh.visible = false;
+                        newMesh.visible = true;
+
+                        navbarState.tab = newTab;
+
+                        _updatePages();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    };
                     const _doClickUniverse = e => {
                       const {side} = e;
                       const universeHoverState = universeHoverStates[side];
@@ -1383,15 +1754,15 @@ class Rend {
 
                         let match;
                         if (onclick === 'back') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          if (ui.getPages().length > 1) {
-                            ui.popPage();
+                          if (menuUi.getPages().length > 1) {
+                            menuUi.popPage();
                           }
                         } else if (onclick === 'worlds') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          ui.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
+                          menuUi.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
@@ -1447,9 +1818,9 @@ class Rend {
 
                           _updatePages();
                         } else if (onclick === 'mods') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          ui.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
+                          menuUi.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
@@ -1511,7 +1882,7 @@ class Rend {
                         } else if (match = onclick.match(/^mod:(.+)$/)) {
                           const name = match[1];
 
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
                           modState.modName = name;
                           modState.mod = null;
@@ -1532,7 +1903,7 @@ class Rend {
                               _updatePages();
                             });
 
-                          ui.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
+                          menuUi.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
                             const displayName = modName.match(/([^\/]*)$/)[1];
                             const installed = mods.some(m => m.name === modName);
                             const conflicting = mods.some(m => m.displayName === displayName);
@@ -1590,9 +1961,9 @@ class Rend {
                               console.warn(err);
                             });
                         } else if (onclick === 'config') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          ui.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
+                          menuUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getConfigPageSrc(),
@@ -1624,9 +1995,9 @@ class Rend {
                             }
                           });
                         } else if (onclick === 'elements') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
-                          ui.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
+                          menuUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
                             const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
                             const focusAttribute = match && match[1];
 
@@ -1672,11 +2043,11 @@ class Rend {
                             },
                           });
                         } else if (onclick === 'files') {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
                           _ensureFilesLoaded(filesState);
 
-                          ui.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                          menuUi.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'file'}),
@@ -1699,7 +2070,7 @@ class Rend {
                             },
                           });
                         } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
-                          ui.cancelTransition();
+                          menuUi.cancelTransition();
 
                           const target = match[1];
                           const name = match[2];
@@ -1763,7 +2134,7 @@ class Rend {
                           } = oldStates;
 
                           if (oldFilesSelectedName) {
-                            ui.cancelTransition();
+                            menuUi.cancelTransition();
 
                             const {choosingName} = elementsState;
                             const element = menuUtils.getElementKeyPath({
@@ -1783,7 +2154,7 @@ class Rend {
 
                             _saveElements();
 
-                            ui.popPage();
+                            menuUi.popPage();
                           }
                         } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
                           const target = match[1];
@@ -2048,13 +2419,13 @@ class Rend {
 
                             _saveElements();
                           } else if (action === 'choose') {
-                            ui.cancelTransition();
+                            menuUi.cancelTransition();
 
                             elementsState.choosingName = attributeName;
 
                             _ensureFilesLoaded(elementAttributeFilesState);
 
-                            ui.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                            menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                               {
                                 type: 'html',
                                 src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
@@ -2168,7 +2539,7 @@ class Rend {
                       }
                     };
 
-                    _doSetPosition(e) || _doClickUniverse(e) || _doClickMenu(e);
+                    _doSetPosition(e) || _doClickNavbar(e) || _doClickUniverse(e) || _doClickMenu(e);
                   }
                 };
                 input.on('trigger', trigger);
@@ -2453,7 +2824,12 @@ class Rend {
                     keyboardMesh.visible = false; */
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
+                      elementsBoxMeshes[side].visible = false;
+                      npmBoxMeshes[side].visible = false;
+
                       menuDotMeshes[side].visible = false;
+                      elementsDotMeshes[side].visible = false;
+                      npmDotMeshes[side].visible = false;
                     });
                   } else {
                     menuState.open = true;
@@ -2464,11 +2840,9 @@ class Rend {
 
                     menuMesh.position.copy(newPosition);
                     menuMesh.quaternion.copy(newRotation);
-                    // menuMesh.visible = true;
 
                     keyboardMesh.position.copy(newPosition);
                     keyboardMesh.quaternion.copy(newRotation);
-                    // keyboardMesh.visible = true;
                   }
                 };
                 input.on('menudown', menudown);
@@ -2756,6 +3130,8 @@ class Rend {
                   SIDES.forEach(side => {
                     scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
+                    scene.remove(elementsDotMeshes[side]);
+                    scene.remove(npmDotMeshes[side]);
                     scene.remove(universeDotMeshes[side]);
                     scene.remove(keyboardBoxMeshes[side]);
                   });
@@ -2831,6 +3207,21 @@ class Rend {
                   left: _makeMenuHoverState(),
                   right: _makeMenuHoverState(),
                 };
+                const elementsHoverStates = {
+                  left: _makeMenuHoverState(),
+                  right: _makeMenuHoverState(),
+                };
+                const npmHoverStates = {
+                  left: _makeMenuHoverState(),
+                  right: _makeMenuHoverState(),
+                };
+                const _makeNavbarHoverState = () => ({
+                  anchor: null,
+                });
+                const navbarHoverStates = {
+                  left: _makeNavbarHoverState(),
+                  right: _makeNavbarHoverState(),
+                };
 
                 const _makeKeyboardHoverState = () => ({
                   key: null,
@@ -2893,12 +3284,42 @@ class Rend {
 
                   if (open) {
                     const _updateTextures = () => {
-                      const {planeMesh: {menuMaterial}} = menuMesh;
+                      const {
+                        planeMesh: {
+                          menuMaterial: planeMenuMaterial,
+                        },
+                        worldMesh: {
+                          elementsMesh: {
+                            menuMaterial: elementsMenuMaterial,
+                          },
+                          npmMesh: {
+                            menuMaterial: npmMenuMaterial,
+                          },
+                        },
+                        navbarMesh: {
+                          menuMaterial: navbarMenuMaterial,
+                        },
+                      } = menuMesh;
                       const worldTime = currentWorld.getWorldTime();
 
                       biolumi.updateMenuMaterial({
-                        ui,
-                        menuMaterial,
+                        ui: menuUi,
+                        menuMaterial: planeMenuMaterial,
+                        worldTime,
+                      });
+                      biolumi.updateMenuMaterial({
+                        ui: elementsUi,
+                        menuMaterial: elementsMenuMaterial,
+                        worldTime,
+                      });
+                      biolumi.updateMenuMaterial({
+                        ui: npmUi,
+                        menuMaterial: npmMenuMaterial,
+                        worldTime,
+                      });
+                      biolumi.updateMenuMaterial({
+                        ui: navbarUi,
+                        menuMaterial: navbarMenuMaterial,
                         worldTime,
                       });
 
@@ -2915,8 +3336,11 @@ class Rend {
                       const status = webvr.getStatus();
                       const {gamepads: gamepadsStatus} = status;
 
-                      const {planeMesh} = menuMesh;
-                      const {position: menuPosition, rotation: menuRotation, scale: menuScale} = _decomposeObjectMatrixWorld(planeMesh);
+                      const {planeMesh, worldMesh: {elementsMesh, npmMesh}, navbarMesh} = menuMesh;
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const elementsMatrixObject = _decomposeObjectMatrixWorld(elementsMesh);
+                      const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
+                      const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
 
                       SIDES.forEach(side => {
                         const gamepadStatus = gamepadsStatus[side];
@@ -2935,152 +3359,287 @@ class Rend {
                           const menuDotMesh = menuDotMeshes[side];
                           const menuBoxMesh = menuBoxMeshes[side];
 
+                          const elementsHoverState = elementsHoverStates[side];
+                          const elementsDotMesh = elementsDotMeshes[side];
+                          const elementsBoxMesh = elementsBoxMeshes[side];
+
+                          const npmHoverState = npmHoverStates[side];
+                          const npmDotMesh = npmDotMeshes[side];
+                          const npmBoxMesh = npmBoxMeshes[side];
+
+                          const navbarHoverState = navbarHoverStates[side];
+                          const navbarBoxMesh = navbarBoxMeshes[side];
+
                           const keyboardHoverState = keyboardHoverStates[side];
                           const keyboardBoxMesh = keyboardBoxMeshes[side];
 
                           const _updateMenuAnchors = () => {
-                            const menuBoxTarget = geometryUtils.makeBoxTarget(
-                              menuPosition,
-                              menuRotation,
-                              menuScale,
-                              new THREE.Vector3(WORLD_WIDTH, WORLD_HEIGHT, 0)
-                            );
-                            const menuIntersectionPoint = menuBoxTarget.intersectLine(controllerLine);
-                            if (menuIntersectionPoint) {
-                              menuHoverState.intersectionPoint = menuIntersectionPoint;
+                            const _updateMenuSpecAnchors = ({
+                              matrixObject,
+                              ui,
+                              hoverState,
+                              dotMesh,
+                              boxMesh,
+                              width,
+                              height,
+                              worldWidth,
+                              worldHeight,
+                              worldDepth,
+                            }) => {
+                              const {position, rotation, scale} = matrixObject;
 
-                              const _getMenuMeshPoint = _makeMeshPointGetter({
-                                position: menuPosition,
-                                rotation: menuRotation,
-                                width: WIDTH,
-                                height: HEIGHT,
-                                worldWidth: WORLD_WIDTH,
-                                worldHeight: WORLD_HEIGHT,
-                              });
+                              const menuBoxTarget = geometryUtils.makeBoxTarget(
+                                position,
+                                rotation,
+                                scale,
+                                new THREE.Vector3(worldWidth, worldHeight, 0)
+                              );
+                              const menuIntersectionPoint = menuBoxTarget.intersectLine(controllerLine);
+                              if (menuIntersectionPoint) {
+                                hoverState.intersectionPoint = menuIntersectionPoint;
 
-                              const scrollLayerBoxTargets = ui.getLayers()
-                                .filter(layer => layer.scroll)
-                                .map(layer => {
-                                  const rect = layer.getRect();
-                                  const scrollLayerBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                    menuPosition,
-                                    menuRotation,
-                                    menuScale,
-                                    new THREE.Vector3(
-                                      -(WORLD_WIDTH / 2) + (rect.left / WIDTH) * WORLD_WIDTH,
-                                      (WORLD_HEIGHT / 2) + (-rect.top / HEIGHT) * WORLD_HEIGHT,
-                                      -WORLD_DEPTH
-                                    ),
-                                    new THREE.Vector3(
-                                      -(WORLD_WIDTH / 2) + (rect.right / WIDTH) * WORLD_WIDTH,
-                                      (WORLD_HEIGHT / 2) + (-rect.bottom / HEIGHT) * WORLD_HEIGHT,
-                                      WORLD_DEPTH
-                                    )
-                                  );
-                                  scrollLayerBoxTarget.layer = layer;
-                                  return scrollLayerBoxTarget;
+                                const _getMenuMeshPoint = _makeMeshPointGetter({
+                                  position,
+                                  rotation,
+                                  width,
+                                  height,
+                                  worldWidth,
+                                  worldHeight,
+                                  worldDepth,
                                 });
-                              const scrollLayerBoxTarget = (() => {
-                                for (let i = 0; i < scrollLayerBoxTargets.length; i++) {
-                                  const layerBoxTarget = scrollLayerBoxTargets[i];
-                                  if (layerBoxTarget.intersectLine(controllerLine)) {
-                                    return layerBoxTarget;
-                                  }
-                                }
-                                return null;
-                              })();
-                              if (scrollLayerBoxTarget) {
-                                menuHoverState.scrollLayer = scrollLayerBoxTarget.layer;
-                              } else {
-                                menuHoverState.scrollLayer = null;
-                              }
 
-                              const anchorBoxTargets = (() => {
-                                const result = [];
-                                const layers = ui.getLayers();
-                                for (let i = 0; i < layers.length; i++) {
-                                  const layer = layers[i];
-                                  const anchors = layer.getAnchors();
-
-                                  for (let j = 0; j < anchors.length; j++) {
-                                    const anchor = anchors[j];
-                                    const {rect} = anchor;
-
-                                    const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                      menuPosition,
-                                      menuRotation,
-                                      menuScale,
+                                const scrollLayerBoxTargets = ui.getLayers()
+                                  .filter(layer => layer.scroll)
+                                  .map(layer => {
+                                    const rect = layer.getRect();
+                                    const scrollLayerBoxTarget = geometryUtils.makeBoxTargetOffset(
+                                      position,
+                                      rotation,
+                                      scale,
                                       new THREE.Vector3(
-                                        -(WORLD_WIDTH / 2) + (rect.left / WIDTH) * WORLD_WIDTH,
-                                        (WORLD_HEIGHT / 2) + ((-rect.top + layer.scrollTop) / HEIGHT) * WORLD_HEIGHT,
-                                        -WORLD_DEPTH
+                                        -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                                        (worldHeight / 2) + (-rect.top / height) * worldHeight,
+                                        -worldDepth
                                       ),
                                       new THREE.Vector3(
-                                        -(WORLD_WIDTH / 2) + (rect.right / WIDTH) * WORLD_WIDTH,
-                                        (WORLD_HEIGHT / 2) + ((-rect.bottom + layer.scrollTop) / HEIGHT) * WORLD_HEIGHT,
-                                        WORLD_DEPTH
+                                        -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                                        (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
+                                        worldDepth
                                       )
                                     );
-                                    anchorBoxTarget.anchor = anchor;
+                                    scrollLayerBoxTarget.layer = layer;
+                                    return scrollLayerBoxTarget;
+                                  });
+                                const scrollLayerBoxTarget = (() => {
+                                  for (let i = 0; i < scrollLayerBoxTargets.length; i++) {
+                                    const layerBoxTarget = scrollLayerBoxTargets[i];
+                                    if (layerBoxTarget.intersectLine(controllerLine)) {
+                                      return layerBoxTarget;
+                                    }
+                                  }
+                                  return null;
+                                })();
+                                if (scrollLayerBoxTarget) {
+                                  hoverState.scrollLayer = scrollLayerBoxTarget.layer;
+                                } else {
+                                  hoverState.scrollLayer = null;
+                                }
 
-                                    result.push(anchorBoxTarget);
+                                const anchorBoxTargets = (() => {
+                                  const result = [];
+                                  const layers = ui.getLayers();
+                                  for (let i = 0; i < layers.length; i++) {
+                                    const layer = layers[i];
+                                    const anchors = layer.getAnchors();
+
+                                    for (let j = 0; j < anchors.length; j++) {
+                                      const anchor = anchors[j];
+                                      const {rect} = anchor;
+
+                                      const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                                        position,
+                                        rotation,
+                                        scale,
+                                        new THREE.Vector3(
+                                          -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                                          (worldHeight / 2) + ((-rect.top + layer.scrollTop) / height) * worldHeight,
+                                          -worldDepth
+                                        ),
+                                        new THREE.Vector3(
+                                          -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                                          (worldHeight / 2) + ((-rect.bottom + layer.scrollTop) / height) * worldHeight,
+                                          worldDepth
+                                        )
+                                      );
+                                      anchorBoxTarget.anchor = anchor;
+
+                                      result.push(anchorBoxTarget);
+                                    }
+                                  }
+                                  return result;
+                                })();
+                                const anchorBoxTarget = (() => {
+                                  const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
+
+                                  if (interstectedAnchorBoxTargets.length > 0) {
+                                    return interstectedAnchorBoxTargets[0];
+                                  } else {
+                                    return null;
+                                  }
+                                })();
+                                if (anchorBoxTarget) {
+                                  boxMesh.position.copy(anchorBoxTarget.position);
+                                  boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                                  boxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
+
+                                  const {anchor} = anchorBoxTarget;
+                                  hoverState.anchor = anchor;
+                                  hoverState.value = (() => {
+                                    const {rect} = anchor;
+                                    const horizontalLine = new THREE.Line3(
+                                      _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                                      _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                                    );
+                                    const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
+                                    return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                                  })();
+
+                                  if (!boxMesh.visible) {
+                                    boxMesh.visible = true;
+                                  }
+                                } else {
+                                  hoverState.anchor = null;
+                                  hoverState.value = 0;
+
+                                  if (boxMesh.visible) {
+                                    boxMesh.visible = false;
                                   }
                                 }
-                                return result;
-                              })();
-                              const anchorBoxTarget = (() => {
-                                const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
 
-                                if (interstectedAnchorBoxTargets.length > 0) {
-                                  return interstectedAnchorBoxTargets[0];
-                                } else {
-                                  return null;
-                                }
-                              })();
-                              if (anchorBoxTarget) {
-                                menuBoxMesh.position.copy(anchorBoxTarget.position);
-                                menuBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                                menuBoxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
-
-                                const {anchor} = anchorBoxTarget;
-                                menuHoverState.anchor = anchor;
-                                menuHoverState.value = (() => {
-                                  const {rect} = anchor;
-                                  const horizontalLine = new THREE.Line3(
-                                    _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                                    _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                                  );
-                                  const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
-                                  return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
-                                })();
-
-                                if (!menuBoxMesh.visible) {
-                                  menuBoxMesh.visible = true;
+                                dotMesh.position.copy(menuIntersectionPoint);
+                                if (!dotMesh.visible) {
+                                  dotMesh.visible = true;
                                 }
                               } else {
-                                menuHoverState.anchor = null;
-                                menuHoverState.value = 0;
+                                hoverState.intersectionPoint = null;
+                                hoverState.scrollLayer = null;
+                                hoverState.anchor = null;
+                                hoverState.value = 0;
 
                                 if (menuBoxMesh.visible) {
-                                  menuBoxMesh.visible = false;
+                                  boxMesh.visible = false;
+                                }
+                                if (dotMesh.visible) {
+                                  dotMesh.visible = false;
                                 }
                               }
+                            };
 
-                              menuDotMesh.position.copy(menuIntersectionPoint);
-                              if (!menuDotMesh.visible) {
-                                menuDotMesh.visible = true;
+                            _updateMenuSpecAnchors({
+                              matrixObject: menuMatrixObject,
+                              ui: menuUi,
+                              hoverState: menuHoverState,
+                              dotMesh: menuDotMesh,
+                              boxMesh: menuBoxMesh,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                            });
+                            _updateMenuSpecAnchors({
+                              matrixObject: elementsMatrixObject,
+                              ui: elementsUi,
+                              hoverState: elementsHoverState,
+                              dotMesh: elementsDotMesh,
+                              boxMesh: elementsBoxMesh,
+                              width: SIDEBAR_WIDTH,
+                              height: SIDEBAR_HEIGHT,
+                              worldWidth: SIDEBAR_WORLD_WIDTH,
+                              worldHeight: SIDEBAR_WORLD_HEIGHT,
+                              worldDepth: SIDEBAR_WORLD_DEPTH,
+                            });
+                            _updateMenuSpecAnchors({
+                              matrixObject: npmMatrixObject,
+                              ui: npmUi,
+                              hoverState: npmHoverState,
+                              dotMesh: npmDotMesh,
+                              boxMesh: npmBoxMesh,
+                              width: SIDEBAR_WIDTH,
+                              height: SIDEBAR_HEIGHT,
+                              worldWidth: SIDEBAR_WORLD_WIDTH,
+                              worldHeight: SIDEBAR_WORLD_HEIGHT,
+                              worldDepth: SIDEBAR_WORLD_DEPTH,
+                            });
+                          };
+                          const _updateNavbarAnchors = () => {
+                            const {position: navbarPosition, rotation: navbarRotation, scale: navbarScale} = navbarMatrixObject;
+
+                            const anchorBoxTargets = (() => {
+                              const result = [];
+                              const layers = navbarUi.getLayers();
+                              for (let i = 0; i < layers.length; i++) {
+                                const layer = layers[i];
+                                const anchors = layer.getAnchors();
+
+                                for (let j = 0; j < anchors.length; j++) {
+                                  const anchor = anchors[j];
+                                  const {rect} = anchor;
+
+                                  const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                                    navbarPosition,
+                                    navbarRotation,
+                                    navbarScale,
+                                    new THREE.Vector3(
+                                      -(NAVBAR_WORLD_WIDTH / 2) + (rect.left / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
+                                      (NAVBAR_WORLD_HEIGHT / 2) + (-rect.top / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
+                                      -NAVBAR_WORLD_DEPTH
+                                    ),
+                                    new THREE.Vector3(
+                                      -(NAVBAR_WORLD_WIDTH / 2) + (rect.right / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
+                                      (NAVBAR_WORLD_HEIGHT / 2) + (-rect.bottom / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
+                                      NAVBAR_WORLD_DEPTH
+                                    )
+                                  );
+                                  anchorBoxTarget.anchor = anchor;
+
+                                  result.push(anchorBoxTarget);
+                                }
+                              }
+                              return result;
+                            })();
+                            const anchorBoxTarget = (() => {
+                              const nearAnchorBoxTargets = anchorBoxTargets
+                                .map(anchorBoxTarget => ({
+                                  anchorBoxTarget,
+                                  distance: anchorBoxTarget.position.distanceTo(controllerPosition),
+                                }))
+                                .filter(({distance}) => distance < 0.1)
+                                .sort((a, b) => a.distance - b.distance)
+                                .map(({anchorBoxTarget}) => anchorBoxTarget);
+
+                              if (nearAnchorBoxTargets.length > 0) {
+                                return nearAnchorBoxTargets[0];
+                              } else {
+                                return null;
+                              }
+                            })();
+                            if (anchorBoxTarget) {
+                              const {anchor} = anchorBoxTarget;
+                              navbarHoverState.anchor = anchor;
+
+                              navbarBoxMesh.position.copy(anchorBoxTarget.position);
+                              navbarBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                              navbarBoxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
+
+                              if (!navbarBoxMesh.visible) {
+                                navbarBoxMesh.visible = true;
                               }
                             } else {
-                              menuHoverState.intersectionPoint = null;
-                              menuHoverState.scrollLayer = null;
-                              menuHoverState.anchor = null;
-                              menuHoverState.value = 0;
+                              navbarHoverState.anchor = null;
 
-                              if (menuBoxMesh.visible) {
-                                menuBoxMesh.visible = false;
-                              }
-                              if (menuDotMesh.visible) {
-                                menuDotMesh.visible = false;
+                              if (navbarBoxMesh.visible) {
+                                navbarBoxMesh.visible = false;
                               }
                             }
                           };
@@ -3157,9 +3716,38 @@ class Rend {
                               }
                             }
                           };
+                          const _updateUniverseAnchors = () => {
+                            const {visible} = universeMesh;
+
+                            if (visible) {
+                              const {floorMesh, floorBoxMeshes} = universeMesh;
+                              const {size} = floorMesh;
+                              const floorBoxMesh = floorBoxMeshes[side];
+
+                              const {position: universePosition, rotation: universeRotation, scale: universeScale} = _decomposeObjectMatrixWorld(universeMesh);
+
+                              const boxTarget = geometryUtils.makeBoxTarget(
+                                universePosition,
+                                universeRotation,
+                                universeScale,
+                                new THREE.Vector3(size, size, size)
+                              );
+                              if (boxTarget.containsPoint(controllerPosition)) {
+                                if (!floorBoxMesh.visible) {
+                                  floorBoxMesh.visible = true;
+                                }
+                              } else {
+                                if (floorBoxMesh.visible) {
+                                  floorBoxMesh.visible = false;
+                                }
+                              }
+                            }
+                          };
 
                           _updateMenuAnchors();
+                          _updateNavbarAnchors();
                           _updateKeyboardAnchors();
+                          _updateUniverseAnchors();
                         }
                       });
                     };
