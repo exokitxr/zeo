@@ -933,7 +933,7 @@ class Rend {
                   size: 0.02,
                 });
                 const linesMaterial = new THREE.LineBasicMaterial({
-                  color: 0x808080,
+                  color: 0xFFFFFF,
                 });
                 const worldMaterial = new THREE.MeshPhongMaterial({
                   color: 0xFFFFFF,
