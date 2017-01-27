@@ -169,9 +169,7 @@ class Tags {
                   _grabTag(side, tagMesh);
                 }
               };
-              input.on('gripdown', _gripdown, {
-                priority: 1,
-              });
+              input.on('gripdown', _gripdown);
               const _gripup = e => {
                 const {side} = e;
                 const grabState = grabStates[side];
