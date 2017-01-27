@@ -115,6 +115,7 @@ class Rend {
         // main state
         let api = null;
         let menu = null;
+        let menuMesh = null;
 
         const menuState = {
           open: true,
@@ -1014,7 +1015,7 @@ class Rend {
                   color: 0x808080,
                 });
 
-                const menuMesh = (() => {
+                menuMesh = (() => {
                   const object = new THREE.Object3D();
                   object.position.y = DEFAULT_USER_HEIGHT;
 
@@ -1147,6 +1148,8 @@ class Rend {
                   })();
                   object.add(navbarMesh);
                   object.navbarMesh = navbarMesh;
+
+                  object.inventoryMesh = null;
 
                   return object;
                 })();
@@ -1676,7 +1679,7 @@ class Rend {
                             case 'readme': return menuMesh.planeMesh;
                             case 'multiverse': return universeMesh;
                             case 'world': return menuMesh.worldMesh;
-                            case 'inventory': return menuMesh.planeMesh;
+                            case 'inventory': return menuMesh.inventoryMesh;
                             case 'options': return menuMesh.planeMesh;
                             default: return null;
                           }
@@ -3884,6 +3887,17 @@ class Rend {
 
               getCurrentWorld() {
                 return currentWorld;
+              }
+
+              addMenuMesh(name, object) {
+                menuMesh.add(object);
+                menuMesh[name] = object;
+              }
+
+              removeMenuMesh(name) {
+                const object = menuMesh[name];
+                menuMesh.remove(object);
+                menuMesh[name] = null;
               }
 
               getConfig() {
