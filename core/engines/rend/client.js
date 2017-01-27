@@ -2828,7 +2828,7 @@ class Rend {
                       npmBoxMeshes[side].visible = false;
 
                       menuDotMeshes[side].visible = false;
-                      worldDotMeshes[side].visible = false;
+                      elementsDotMeshes[side].visible = false;
                       npmDotMeshes[side].visible = false;
                     });
                   } else {
@@ -3130,7 +3130,7 @@ class Rend {
                   SIDES.forEach(side => {
                     scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
-                    scene.remove(worldDotMeshes[side]);
+                    scene.remove(elementsDotMeshes[side]);
                     scene.remove(npmDotMeshes[side]);
                     scene.remove(universeDotMeshes[side]);
                     scene.remove(keyboardBoxMeshes[side]);
