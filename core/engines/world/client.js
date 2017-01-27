@@ -170,9 +170,7 @@ class World {
 
                   const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   mesh.visible = false;
-                  mesh.position.x = -0.25;
-                  // mesh.position.z = -0.5;
-                  // mesh.rotation.y = Math.PI / 8;
+                  mesh.position.y = -0.25;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
 
