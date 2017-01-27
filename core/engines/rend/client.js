@@ -1335,7 +1335,7 @@ class Rend {
                 const universeMesh = (() => {
                   const object = new THREE.Object3D();
                   object.position.set(0, 1.2, -0.5);
-                  object.scale.set(0.5, 0.5, 0.5);
+                  // object.scale.set(0.5, 0.5, 0.5);
                   object.visible = false;
 
                   const {worlds} = universeState;
@@ -1416,10 +1416,10 @@ class Rend {
                   object.add(linesMesh);
 
                   const floorMesh = (() => {
-                    const geometry = (() => {
-                      const size = 0.5;
-                      const resolution = 16;
+                    const size = 0.5;
+                    const resolution = 16;
 
+                    const geometry = (() => {
                       const generator = indev({
                         seed: '',
                       });
@@ -1447,9 +1447,31 @@ class Rend {
 
                     const material = wireframeMaterial;
 
-                    return new THREE.Mesh(geometry, material);
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.size = size;
+                    mesh.resolution = resolution;
+                    return mesh;
                   })();
                   object.add(floorMesh);
+                  object.floorMesh = floorMesh;
+
+                  const _makeFloorBoxMesh = () => {
+                    const {size} = floorMesh;
+
+                    const geometry = new THREE.BoxBufferGeometry(size, size, size);
+                    const material = wireframeHighlightMaterial;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.visible = false;
+                    return mesh;
+                  };
+                  const floorBoxMeshes = {
+                    left: _makeFloorBoxMesh(),
+                    right: _makeFloorBoxMesh(),
+                  };
+                  object.add(floorBoxMeshes.left);
+                  object.add(floorBoxMeshes.right);
+                  object.floorBoxMeshes = floorBoxMeshes;
 
                   return object;
                 })();
@@ -3694,10 +3716,38 @@ class Rend {
                               }
                             }
                           };
+                          const _updateUniverseAnchors = () => {
+                            const {visible} = universeMesh;
+
+                            if (visible) {
+                              const {floorMesh, floorBoxMeshes} = universeMesh;
+                              const {size} = floorMesh;
+                              const floorBoxMesh = floorBoxMeshes[side];
+
+                              const {position: universePosition, rotation: universeRotation, scale: universeScale} = _decomposeObjectMatrixWorld(universeMesh);
+
+                              const boxTarget = geometryUtils.makeBoxTarget(
+                                universePosition,
+                                universeRotation,
+                                universeScale,
+                                new THREE.Vector3(size, size, size)
+                              );
+                              if (boxTarget.containsPoint(controllerPosition)) {
+                                if (!floorBoxMesh.visible) {
+                                  floorBoxMesh.visible = true;
+                                }
+                              } else {
+                                if (floorBoxMesh.visible) {
+                                  floorBoxMesh.visible = false;
+                                }
+                              }
+                            }
+                          };
 
                           _updateMenuAnchors();
                           _updateNavbarAnchors();
                           _updateKeyboardAnchors();
+                          _updateUniverseAnchors();
                         }
                       });
                     };
