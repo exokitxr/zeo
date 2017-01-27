@@ -4,7 +4,7 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-} from './lib/constants/menu';
+} from './lib/constants/tags';
 import tagsRenderer from './lib/render/tags';
 
 const DEFAULT_GRAB_RADIUS = 0.1;

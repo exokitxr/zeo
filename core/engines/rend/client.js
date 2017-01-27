@@ -10,11 +10,11 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
-  ATTRIBUTES_WIDTH,
+  /* ATTRIBUTES_WIDTH, // XXX port this
   ATTRIBUTES_HEIGHT,
   ATTRIBUTES_WORLD_WIDTH,
   ATTRIBUTES_WORLD_HEIGHT,
-  ATTRIBUTES_WORLD_DEPTH,
+  ATTRIBUTES_WORLD_DEPTH, */
 
   NAVBAR_WIDTH,
   NAVBAR_HEIGHT,
@@ -219,9 +219,6 @@ class Rend {
           loaded: false,
           loading: false,
           uploading: fs.getUploading(),
-        };
-        const elementsState2 = {
-          element: null,
         };
         const _makeUniverseState = () => {
           const generator = indev({
@@ -723,20 +720,14 @@ class Rend {
                  height: HEIGHT,
               }),
               biolumi.requestUi({
-                width: ATTRIBUTES_WIDTH,
-                height: ATTRIBUTES_HEIGHT,
-              }),
-              biolumi.requestUi({
                 width: NAVBAR_WIDTH,
                 height: NAVBAR_HEIGHT,
               }),
             ]).then(([
               menuUi,
-              attributesUi,
               navbarUi,
             ]) => ({
               menuUi,
-              attributesUi,
               navbarUi,
             }));
 
@@ -746,8 +737,6 @@ class Rend {
             ]).then(([
               {
                 menuUi,
-                attributesUi,
-                npmUi,
                 navbarUi,
               },
               mainReadme,
@@ -915,25 +904,6 @@ class Rend {
                   immediate: true,
                 });
 
-                attributesUi.pushPage(({elements: {element}}) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: menuRenderer.getAttributesPageSrc({element}),
-                      x: 0,
-                      y: 0,
-                      w: ATTRIBUTES_WIDTH,
-                      h: ATTRIBUTES_HEIGHT,
-                      scroll: true,
-                    },
-                  ];
-                }, {
-                  type: 'world',
-                  state: {
-                    elements: elementsState2,
-                  },
-                });
-
                 navbarUi.pushPage(({navbar: {tab}}) => {
                   return [
                     {
@@ -1015,88 +985,7 @@ class Rend {
                   object.add(planeMesh);
                   object.planeMesh = planeMesh;
 
-                  const worldMesh = (() => {
-                    const result = new THREE.Object3D();
-                    result.visible = false;
-
-                    const elementsMesh = (() => {
-                      const size = 0.3;
-
-                      const geometry = new THREE.BoxBufferGeometry(size, size, size);
-                      const material = new THREE.MeshBasicMaterial({
-                        color: 0x808080,
-                        wireframe: true,
-                      });
-
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.position.x = -0.5;
-                      mesh.position.y = -0.25;
-                      // mesh.position.z = -0.5;
-                      mesh.rotation.y = Math.PI / 8;
-                      mesh.size = size;
-
-                      return mesh;
-                    })();
-                    result.add(elementsMesh);
-                    result.elementsMesh = elementsMesh;
-
-                    const npmMesh = (() => {
-                      const size = 0.3;
-
-                      const geometry = new THREE.BoxBufferGeometry(size, size, size);
-                      const material = new THREE.MeshBasicMaterial({
-                        color: 0x808080,
-                        wireframe: true,
-                      });
-
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.position.x = 0.5;
-                      mesh.position.y = -0.25;
-                      // mesh.position.z = -0.5;
-                      mesh.rotation.y = Math.PI / 8;
-                      mesh.size = size;
-
-                      return mesh;
-                    })();
-                    result.add(npmMesh);
-                    result.npmMesh = npmMesh;
-
-                    const attributesMesh = (() => {
-                      const width = ATTRIBUTES_WORLD_WIDTH;
-                      const height = ATTRIBUTES_WORLD_HEIGHT;
-                      const depth = ATTRIBUTES_WORLD_DEPTH;
-
-                      const menuMaterial = biolumi.makeMenuMaterial();
-
-                      const geometry = new THREE.PlaneBufferGeometry(width, height);
-                      const materials = [solidMaterial, menuMaterial];
-
-                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                      mesh.visible = false;
-                      mesh.position.x = -0.25;
-                      // mesh.position.z = -0.5;
-                      // mesh.rotation.y = Math.PI / 8;
-                      mesh.receiveShadow = true;
-                      mesh.menuMaterial = menuMaterial;
-
-                      const shadowMesh = (() => {
-                        const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                        const material = transparentMaterial;
-                        const mesh = new THREE.Mesh(geometry, material);
-                        mesh.castShadow = true;
-                        return mesh;
-                      })();
-                      mesh.add(shadowMesh);
-
-                      return mesh;
-                    })();
-                    result.add(attributesMesh);
-                    result.attributesMesh = attributesMesh;
-
-                    return result;
-                  })();
-                  object.add(worldMesh);
-                  object.worldMesh = worldMesh;
+                  object.worldMesh = null;
 
                   const navbarMesh = (() => {
                     const width = NAVBAR_WORLD_WIDTH;
@@ -1494,10 +1383,18 @@ class Rend {
                 };
 
                 const _updatePages = menuUtils.debounce(next => {
+                  /* const { // XXX port this
+                    worldMesh: {
+                      attributesMesh: {
+                        ui: attributesUi,
+                      },
+                    },
+                  } = menuMesh; */
+
                   const menuPages = menuUi.getPages();
-                  const attributesPages = attributesUi.getPages();
+                  // const attributesPages = attributesUi.getPages();
                   const navbarPages = navbarUi.getPages();
-                  const pages = menuPages.concat(attributesPages).concat(navbarPages);
+                  const pages = menuPages/*.concat(attributesPages)*/.concat(navbarPages);
 
                   if (pages.length > 0) {
                     let pending = pages.length;
@@ -1554,10 +1451,10 @@ class Rend {
                           config: configState,
                           focus: focusState,
                         }, pend);
-                      } else if (type === 'world') {
+                      /* } else if (type === 'world') { // XXX port this
                         page.update({
                           elements: _cleanElementsState(elementsState),
-                        }, pend);
+                        }, pend); */
                       } else if (type === 'navbar') {
                         page.update({
                           navbar: navbarState,
@@ -3325,10 +3222,11 @@ class Rend {
                           worldTime,
                         });
                       }
-                      if (tab === 'world') {
+                      /* if (tab === 'world') { // XXX port this
                         const {
                           worldMesh: {
                             attributesMesh: {
+                              ui: attributesUi,
                               menuMaterial: attributesMenuMaterial,
                             },
                           },
@@ -3339,7 +3237,7 @@ class Rend {
                           menuMaterial: attributesMenuMaterial,
                           worldTime,
                         });
-                      }
+                      } */
 
                       const {
                         navbarMesh: {
@@ -3415,7 +3313,15 @@ class Rend {
                                   controllerRotation,
                                 });
                               }
-                              if (tab === 'world') {
+                              /* if (tab === 'world') { // XXX port this
+                                const {
+                                  worldMesh: {
+                                    attributesMesh: {
+                                      ui: attributesUi,
+                                    },
+                                  },
+                                } = menuMesh;
+
                                 biolumi.updateAnchors({
                                   matrixObject: attributesMatrixObject,
                                   ui: attributesUi,
@@ -3448,7 +3354,7 @@ class Rend {
                                   new THREE.Vector3(npmMesh.size, npmMesh.size, npmMesh.size)
                                 );
                                 npmHoverState.hovered = npmBoxTarget.containsPoint(controllerPosition);
-                              }
+                              } */
                             };
                             const _updateNavbarAnchors = () => {
                               const {position: navbarPosition, rotation: navbarRotation, scale: navbarScale} = navbarMatrixObject;

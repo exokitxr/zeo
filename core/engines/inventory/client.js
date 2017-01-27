@@ -189,29 +189,30 @@ class Inventory {
             const {object: handsGrabberObject} = handsGrabber;
 
             if (tags.isTag(handsGrabberObject)) {
-              const tagMesh = handsGrabberObject;
-
-              handsGrabber.release();
-
               const hoverState = hoverStates[side];
               const {index} = hoverState;
+
               if (index !== null) {
                 const {itemBoxMeshes} = mesh;
                 const itemBoxMesh = itemBoxMeshes[index];
                 const oldTagMesh = itemBoxMesh.getItemMesh();
 
                 if (!oldTagMesh) {
-                  itemBoxMesh.setItemMesh(tagMesh);
-                  tagMesh.position.copy(new THREE.Vector3());
-                  tagMesh.quaternion.copy(new THREE.Quaternion());
-                  tagMesh.scale.set(1, 1, 1);
+                  const newTagMesh = handsGrabberObject;
 
-                  const {item} = tagMesh;
+                  handsGrabber.release();
+
+                  itemBoxMesh.setItemMesh(newTagMesh);
+                  newTagMesh.position.copy(new THREE.Vector3());
+                  newTagMesh.quaternion.copy(new THREE.Quaternion());
+                  newTagMesh.scale.set(1, 1, 1);
+
+                  const {item} = newTagMesh;
                   hub.setUserStateInventoryItem(index, item);
+
+                  e.stopImmediatePropagation(); // so tags engine doesn't pick it up
                 }
               }
-
-              e.stopImmediatePropagation(); // so tags engine doesn't pick it up
             }
           }
         };
