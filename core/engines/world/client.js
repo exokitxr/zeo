@@ -115,7 +115,6 @@ class World {
               const mesh = (() => {
                 const result = new THREE.Object3D();
                 result.visible = false;
-                result.ui = attributesUi;
 
                 const elementsMesh = (() => {
                   const size = 0.3;
@@ -265,7 +264,6 @@ class World {
 
                     if (tab === 'world') {
                       const {elementsMesh, npmMesh, attributesMesh} = mesh;
-                      const {ui: attributesUi} = attributesMesh;
 
                       const elementsMatrixObject = _decomposeObjectMatrixWorld(elementsMesh);
                       const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
