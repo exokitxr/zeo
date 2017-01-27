@@ -216,7 +216,7 @@ class Rend {
           loading: false,
           uploading: fs.getUploading(),
         };
-        const universeState = (() => {
+        const _makeWorlds = () => {
           class Point extends THREE.Vector3 {
             constructor(x, y, z, value) {
               super(x, y, z);
@@ -268,11 +268,11 @@ class Rend {
             }
             return result;
           })();
-
-          return {
-            worlds,
-          };
-        })();
+          return worlds;
+        };
+        const universeState = {
+          worlds: _makeWorlds(),
+        };
         const navbarState = {
           tab: 'readme',
         };
@@ -1344,6 +1344,8 @@ class Rend {
 
                   const {worlds} = universeState;
                   const pointsMesh = (() => {
+                    return new THREE.Object3D(); // XXX
+
                     const geometry = new THREE.BufferGeometry();
                     const positions = (() => {
                       const result = new Float32Array(worlds.length * 3);
@@ -1389,6 +1391,8 @@ class Rend {
                   object.add(pointsMesh);
 
                   const linesMesh = (() => {
+                    return new THREE.Object3D(); // XXX
+
                     const geometry = new THREE.BufferGeometry();
                     const positions = (() => {
                       const result = [];
@@ -2620,8 +2624,28 @@ class Rend {
                         return false;
                       }
                     };
+                    const _doDragUniverse = () => {
+                      const universeHoverState = universeHoverStates[side];
+                      const {hovered} = universeHoverState;
 
-                    _doClick() || _doDragElement() || _doScroll();
+                      if (hovered) {
+                        const {side} = e;
+                        const {gamepads} = webvr.getStatus();
+                        const gamepad = gamepads[side];
+                        const {position: controllerPosition} = gamepad;
+                        universeHoverState.dragStartPoint = controllerPosition.clone();
+
+                        const {floorMesh} = universeMesh;
+                        const {position: floorMeshPosition} = floorMesh;
+                        universeHoverState.dragStartPosition = floorMeshPosition.clone();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    };
+
+                    _doClick() || _doDragElement() || _doScroll() || _doDragUniverse();
                   }
                 };
                 input.on('triggerdown', triggerdown);
@@ -2658,9 +2682,9 @@ class Rend {
                 };
                 const triggerup = e => {
                   const {side} = e;
-                  const menuHoverState = menuHoverStates[side];
 
                   const _doDrag = () => {
+                    const menuHoverState = menuHoverStates[side];
                     const {mousedownStartCoord} = menuHoverState;
 
                     if (mousedownStartCoord) {
@@ -2768,6 +2792,7 @@ class Rend {
                     return false;
                   };
                   const _doScroll = () => {
+                    const menuHoverState = menuHoverStates[side ];
                     const {mousedownStartCoord} = menuHoverState;
 
                     if (mousedownStartCoord) {
@@ -2784,8 +2809,21 @@ class Rend {
                       return false;
                     }
                   };
+                  const _doDragUniverse = () => {
+                    const universeHoverState = universeHoverStates[side];
+                    const {dragStartPoint} = universeHoverState;
 
-                  _doDrag() || _doScroll();
+                    if (dragStartPoint) {
+                      universeHoverState.dragStartPoint = null;
+                      universeHoverState.dragStartPosition = null;
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  };
+
+                  _doDrag() || _doScroll() || _doDragUniverse();
                 };
                 input.on('triggerup', triggerup);
                 const grip = e => {
@@ -3236,7 +3274,10 @@ class Rend {
                 };
 
                 const _makeUniverseHoverState = () => ({
+                  hovered: null,
                   hoverWorld: null,
+                  dragStartPoint: null,
+                  dragStartPosition: null,
                 });
                 const universeHoverStates = {
                   left: _makeUniverseHoverState(),
@@ -3338,7 +3379,7 @@ class Rend {
                     };
                     const _updateAnchors = () => {
                       const status = webvr.getStatus();
-                      const {gamepads: gamepadsStatus} = status;
+                      const {gamepads} = status;
 
                       const {planeMesh, worldMesh: {elementsMesh, npmMesh}, navbarMesh} = menuMesh;
                       const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
@@ -3347,10 +3388,10 @@ class Rend {
                       const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
 
                       SIDES.forEach(side => {
-                        const gamepadStatus = gamepadsStatus[side];
+                        const gamepad = gamepads[side];
 
-                        if (gamepadStatus) {
-                          const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
                           const ray = new THREE.Vector3(0, 0, -1)
                             .applyQuaternion(controllerRotation);
@@ -3721,9 +3762,10 @@ class Rend {
                             }
                           };
                           const _updateUniverseAnchors = () => {
-                            const {visible} = universeMesh;
+                            const {tab} = navbarState;
 
-                            if (visible) {
+                            if (tab === 'multiverse') {
+                              const universeHoverState = universeHoverStates[side];
                               const {floorMesh, floorBoxMeshes} = universeMesh;
                               const {size} = floorMesh;
                               const floorBoxMesh = floorBoxMeshes[side];
@@ -3737,10 +3779,14 @@ class Rend {
                                 new THREE.Vector3(size, size, size)
                               );
                               if (boxTarget.containsPoint(controllerPosition)) {
+                                universeHoverState.hovered = true;
+
                                 if (!floorBoxMesh.visible) {
                                   floorBoxMesh.visible = true;
                                 }
                               } else {
+                                universeHoverState.hovered = false;
+
                                 if (floorBoxMesh.visible) {
                                   floorBoxMesh.visible = false;
                                 }
@@ -3796,58 +3842,90 @@ class Rend {
                         }
                       };
                       const _updateUniverse = () => {
-                        const {worlds} = universeState;
+                        const _updateUniverseHover = () => {
+                          const {worlds} = universeState;
 
-                        SIDES.forEach(side => {
-                          const gamepad = gamepads[side];
-                          const universeHoverState = universeHoverStates[side];
-                          const universeDotMesh = universeDotMeshes[side];
+                          SIDES.forEach(side => {
+                            const gamepad = gamepads[side];
+                            const universeHoverState = universeHoverStates[side];
+                            const universeDotMesh = universeDotMeshes[side];
 
-                          if (gamepad) {
-                            const {position: controllerPosition} = gamepad;
+                            if (gamepad) {
+                              const {position: controllerPosition} = gamepad;
 
-                            const worldDistances = worlds
-                              .map(world => {
-                                const position = world.point.clone().applyMatrix4(universeMesh.matrixWorld);
-                                const distance = controllerPosition.distanceTo(position);
+                              const worldDistances = worlds
+                                .map(world => {
+                                  const position = world.point.clone().applyMatrix4(universeMesh.matrixWorld);
+                                  const distance = controllerPosition.distanceTo(position);
 
-                                return {
-                                  world,
-                                  position,
-                                  distance,
-                                };
-                              })
-                              .filter(({distance}) => distance < 0.1);
-                            if (worldDistances.length > 0) {
-                              const closestWorld = worldDistances.sort((a, b) => a.distance - b.distance)[0];
-                              universeHoverState.hoverWorld = closestWorld;
+                                  return {
+                                    world,
+                                    position,
+                                    distance,
+                                  };
+                                })
+                                .filter(({distance}) => distance < 0.1);
+                              if (worldDistances.length > 0) {
+                                const closestWorld = worldDistances.sort((a, b) => a.distance - b.distance)[0];
+                                universeHoverState.hoverWorld = closestWorld;
+                              } else {
+                                universeHoverState.hoverWorld = null;
+                              }
                             } else {
                               universeHoverState.hoverWorld = null;
                             }
-                          } else {
-                            universeHoverState.hoverWorld = null;
-                          }
 
-                          const {hoverWorld} = universeHoverState;
-                          if (hoverWorld !== null) {
-                            const {world, position} = hoverWorld;
-                            const {worldName} = world;
-                            const selected = worldName === hub.getWorldName();
+                            const {hoverWorld} = universeHoverState;
+                            if (hoverWorld !== null) {
+                              const {world, position} = hoverWorld;
+                              const {worldName} = world;
+                              const selected = worldName === hub.getWorldName();
 
-                            universeDotMesh.position.copy(position);
-                            const colorAttribute = universeDotMesh.geometry.getAttribute('color');
-                            colorAttribute.array.set(Float32Array.from(new THREE.Color(selected ? 0xFF0000 : 0x808080).toArray()));
-                            colorAttribute.needsUpdate = true;
+                              universeDotMesh.position.copy(position);
+                              const colorAttribute = universeDotMesh.geometry.getAttribute('color');
+                              colorAttribute.array.set(Float32Array.from(new THREE.Color(selected ? 0xFF0000 : 0x808080).toArray()));
+                              colorAttribute.needsUpdate = true;
 
-                            if (!universeDotMesh.visible) {
-                              universeDotMesh.visible = true;
+                              if (!universeDotMesh.visible) {
+                                universeDotMesh.visible = true;
+                              }
+                            } else {
+                              if (universeDotMesh.visible) {
+                                universeDotMesh.visible = false;
+                              }
                             }
-                          } else {
-                            if (universeDotMesh.visible) {
-                              universeDotMesh.visible = false;
+                          });
+                        };
+                        const _updateUniverseDrag = () => {
+                          const {floorMesh} = universeMesh;
+                          const {position: floorMeshPosition} = _decomposeObjectMatrixWorld(floorMesh);
+                          const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), floorMeshPosition);
+
+                          SIDES.some(side => {
+                            const gamepad = gamepads[side];
+                            const universeHoverState = universeHoverStates[side];
+                            const {dragStartPoint} = universeHoverState;
+
+                            if (dragStartPoint) {
+                              const {dragStartPoint, dragStartPosition} = universeHoverState;
+                              const gamepad = gamepads[side];
+                              const {position: controllerPosition} = gamepad;
+
+                              const startPointPlanePoint = floorPlane.projectPoint(dragStartPoint);
+                              const currentPointPlanePoint = floorPlane.projectPoint(controllerPosition);
+
+                              const newFloorMeshPosition = dragStartPosition.clone().add(currentPointPlanePoint.clone().sub(startPointPlanePoint));
+                              floorMesh.position.copy(newFloorMeshPosition);
+
+                              return true;
+                            } else {
+                              return false;
                             }
-                          }
-                        });
+                          });
+                        };
+
+                        _updateUniverseHover();
+                        _updateUniverseDrag();
                       };
 
                       _updateElements();
