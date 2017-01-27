@@ -220,50 +220,67 @@ class Rend {
           loading: false,
           uploading: fs.getUploading(),
         };
-        const _makeWorlds = () => {
-          class World {
-            constructor(worldName, point) {
-              this.worldName = worldName;
-              this.point = point;
+        const _makeUniverseState = () => {
+          const generator = indev({
+            seed: '',
+          });
+          const noise = generator.simplex({
+            frequency: 0.05,
+            octaves: 4,
+          });
+
+          const _makeWorlds = () => {
+            class Point extends THREE.Vector3 {
+              constructor(x, y, z, value) {
+                super(x, y, z);
+
+                this.value = value;
+              }
             }
-          }
 
-          const worlds = (() => {
-            const numPoints = 10;
-            const size = 0.5;
-            const heightScale = 0.2;
-            const heightOffset = -0.01 / 2;
-
-            const rng = new alea('');
-            const generator = indev({
-              seed: '',
-            });
-            const noise = generator.simplex({
-              frequency: 100,
-              octaves: 8,
-            });
-
-            const result = Array(numPoints);
-            for (let i = 0; i < numPoints; i++) {
-              const x = rng();
-              const y = rng();
-              const height = noise.in2D(x, y);
-
-              const point = new THREE.Vector3(
-                (-0.5 + x) * size,
-                (height * heightScale) + heightOffset,
-                (-0.5 + y) * size
-              );
-              const world = new World('world' + _pad(i, 2), point);
-              result[i] = world;
+            class World {
+              constructor(worldName, point) {
+                this.worldName = worldName;
+                this.point = point;
+              }
             }
-            return result;
-          })();
-          return worlds;
+
+            const worlds = (() => {
+              const numPoints = 10;
+              const size = 0.5;
+              const resolution = 16;
+              const heightScale = 0.2;
+              const heightOffset = (0.005 * 12) / 2;
+
+              const rng = new alea('');
+
+              const result = Array(numPoints);
+              for (let i = 0; i < numPoints; i++) {
+                const x = rng();
+                const y = rng();
+                const height = noise.in2D(x * resolution, y * resolution);
+                const value = rng();
+
+                const point = new Point(
+                  (-0.5 + x) * size,
+                  (height * heightScale) + heightOffset,
+                  (-0.5 + y) * size,
+                  value
+                );
+                const world = new World('world' + _pad(i, 2), point);
+                result[i] = world;
+              }
+              return result;
+            })();
+            return worlds;
+          };
+
+          return {
+            worlds: _makeWorlds(),
+            noise,
+          };
         };
-        const universeState = {
-          worlds: _makeWorlds(),
-        };
+        const universeState = _makeUniverseState();
         const navbarState = {
           tab: 'readme',
         };
@@ -1385,7 +1402,8 @@ class Rend {
                       const img = new Image();
                       img.src = creatureUtils.makeStaticCreature('world:' + worldName);
                       img.onload = () => {
-                        const geometry = spriteUtils.makeImageGeometry(img, 0.01);
+                        const geometry = spriteUtils.makeImageGeometry(img, 0.005);
+                        geometry.applyMatrix(new THREE.Matrix4().makeRotationY(point.value * (Math.PI * 2)));
                         const material = worldMaterial;
 
                         const mesh = new THREE.Mesh(geometry, material);
@@ -1414,8 +1432,6 @@ class Rend {
                   object.add(worldsMesh);
 
                   const linesMesh = (() => {
-                    return new THREE.Object3D(); // XXX make this creatures instead
-
                     const geometry = new THREE.BufferGeometry();
                     const positions = (() => {
                       const result = [];
@@ -1452,13 +1468,7 @@ class Rend {
                     const heightScale = 0.2;
 
                     const geometry = (() => {
-                      const generator = indev({
-                        seed: '',
-                      });
-                      const noise = generator.simplex({
-                        frequency: 0.05,
-                        octaves: 4,
-                      });
+                      const {noise} = universeState;
 
                       const result = new THREE.PlaneBufferGeometry(size, size, resolution, resolution);
                       result.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
@@ -1467,8 +1477,8 @@ class Rend {
                       const numPositions = positions.length / 3;
                       for (let i = 0; i < numPositions; i++) {
                         const baseIndex = i * 3;
-                        const x = Math.round((positions[baseIndex + 0] + (size / 2)) / size * resolution);
-                        const y = Math.round((-positions[baseIndex + 2] + (size / 2)) / size * resolution);
+                        const x = (positions[baseIndex + 0] + (size / 2)) / size * resolution;
+                        const y = (-positions[baseIndex + 2] + (size / 2)) / size * resolution;
 
                         const height = noise.in2D(x, y) * heightScale;
                         positions[baseIndex + 1] = height;
