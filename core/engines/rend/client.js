@@ -2589,7 +2589,7 @@ class Rend {
 
                           const {planeMesh} = menuMesh;
                           const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
-                          const _getMenuMeshCoordinate = _makeMeshCoordinateGetter({
+                          const _getMenuMeshCoordinate = biolumi.makeMeshCoordinateGetter({
                             position: menuPosition,
                             rotation: menuRotation,
                             width: WIDTH,
@@ -2647,7 +2647,7 @@ class Rend {
 
                   const {planeMesh} = menuMesh;
                   const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
-                  const _getMenuMeshCoordinate = _makeMeshCoordinateGetter({
+                  const _getMenuMeshCoordinate = biolumi.makeMeshCoordinateGetter({
                     position: menuPosition,
                     rotation: menuRotation,
                     width: WIDTH,
@@ -3205,44 +3205,6 @@ class Rend {
                   object.matrixWorld.decompose(position, rotation, scale);
                   return {position, rotation, scale};
                 };
-                const _makeMeshPointGetter = ({position, rotation, width, height, worldWidth, worldHeight}) => (x, y, z) => position.clone()
-                  .add(
-                    new THREE.Vector3(
-                      -worldWidth / 2,
-                      worldHeight / 2,
-                      0
-                    )
-                    .add(
-                      new THREE.Vector3(
-                        (x / width) * worldWidth,
-                        (-y / height) * worldHeight,
-                        z
-                      )
-                    ).applyQuaternion(rotation)
-                  );
-                const _makeMeshCoordinateGetter = ({position, rotation, width, height, worldWidth, worldHeight}) => {
-                  const _getMenuMeshPoint = _makeMeshPointGetter({position, rotation, width, height, worldWidth, worldHeight});
-
-                  return intersectionPoint => {
-                    const x = (() => {
-                      const horizontalLine = new THREE.Line3(
-                        _getMenuMeshPoint(0, 0, 0),
-                        _getMenuMeshPoint(width, 0, 0)
-                      );
-                      const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
-                      return horizontalLine.start.distanceTo(closestHorizontalPoint);
-                    })();
-                    const y = (() => {
-                      const verticalLine = new THREE.Line3(
-                        _getMenuMeshPoint(0, 0, 0),
-                        _getMenuMeshPoint(0, height, 0)
-                      );
-                      const closestVerticalPoint = verticalLine.closestPointToPoint(intersectionPoint, true);
-                      return verticalLine.start.distanceTo(closestVerticalPoint);
-                    })();
-                    return new THREE.Vector2(x, y);
-                  };
-                };
 
                 const _makeMenuHoverState = () => ({
                   intersectionPoint: null,
@@ -3417,13 +3379,6 @@ class Rend {
                           if (gamepad) {
                             const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                            const ray = new THREE.Vector3(0, 0, -1)
-                              .applyQuaternion(controllerRotation);
-                            const controllerLine = new THREE.Line3(
-                              controllerPosition.clone(),
-                              controllerPosition.clone().add(ray.clone().multiplyScalar(15))
-                            );
-
                             const menuHoverState = menuHoverStates[side];
                             const menuDotMesh = menuDotMeshes[side];
                             const menuBoxMesh = menuBoxMeshes[side];
@@ -3442,170 +3397,10 @@ class Rend {
                             const keyboardBoxMesh = keyboardBoxMeshes[side];
 
                             const _updateMenuAnchors = () => {
-                              const _updateMenuSpecAnchors = ({
-                                matrixObject,
-                                ui,
-                                hoverState,
-                                dotMesh,
-                                boxMesh,
-                                width,
-                                height,
-                                worldWidth,
-                                worldHeight,
-                                worldDepth,
-                              }) => {
-                                const {position, rotation, scale} = matrixObject;
-
-                                const menuBoxTarget = geometryUtils.makeBoxTarget(
-                                  position,
-                                  rotation,
-                                  scale,
-                                  new THREE.Vector3(worldWidth, worldHeight, 0)
-                                );
-                                const menuIntersectionPoint = menuBoxTarget.intersectLine(controllerLine);
-                                if (menuIntersectionPoint) {
-                                  hoverState.intersectionPoint = menuIntersectionPoint;
-
-                                  const _getMenuMeshPoint = _makeMeshPointGetter({
-                                    position,
-                                    rotation,
-                                    width,
-                                    height,
-                                    worldWidth,
-                                    worldHeight,
-                                    worldDepth,
-                                  });
-
-                                  const scrollLayerBoxTargets = ui.getLayers()
-                                    .filter(layer => layer.scroll)
-                                    .map(layer => {
-                                      const rect = layer.getRect();
-                                      const scrollLayerBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                        position,
-                                        rotation,
-                                        scale,
-                                        new THREE.Vector3(
-                                          -(worldWidth / 2) + (rect.left / width) * worldWidth,
-                                          (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                                          -worldDepth
-                                        ),
-                                        new THREE.Vector3(
-                                          -(worldWidth / 2) + (rect.right / width) * worldWidth,
-                                          (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                                          worldDepth
-                                        )
-                                      );
-                                      scrollLayerBoxTarget.layer = layer;
-                                      return scrollLayerBoxTarget;
-                                    });
-                                  const scrollLayerBoxTarget = (() => {
-                                    for (let i = 0; i < scrollLayerBoxTargets.length; i++) {
-                                      const layerBoxTarget = scrollLayerBoxTargets[i];
-                                      if (layerBoxTarget.intersectLine(controllerLine)) {
-                                        return layerBoxTarget;
-                                      }
-                                    }
-                                    return null;
-                                  })();
-                                  if (scrollLayerBoxTarget) {
-                                    hoverState.scrollLayer = scrollLayerBoxTarget.layer;
-                                  } else {
-                                    hoverState.scrollLayer = null;
-                                  }
-
-                                  const anchorBoxTargets = (() => {
-                                    const result = [];
-                                    const layers = ui.getLayers();
-                                    for (let i = 0; i < layers.length; i++) {
-                                      const layer = layers[i];
-                                      const anchors = layer.getAnchors();
-
-                                      for (let j = 0; j < anchors.length; j++) {
-                                        const anchor = anchors[j];
-                                        const {rect} = anchor;
-
-                                        const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                          position,
-                                          rotation,
-                                          scale,
-                                          new THREE.Vector3(
-                                            -(worldWidth / 2) + (rect.left / width) * worldWidth,
-                                            (worldHeight / 2) + ((-rect.top + layer.scrollTop) / height) * worldHeight,
-                                            -worldDepth
-                                          ),
-                                          new THREE.Vector3(
-                                            -(worldWidth / 2) + (rect.right / width) * worldWidth,
-                                            (worldHeight / 2) + ((-rect.bottom + layer.scrollTop) / height) * worldHeight,
-                                            worldDepth
-                                          )
-                                        );
-                                        anchorBoxTarget.anchor = anchor;
-
-                                        result.push(anchorBoxTarget);
-                                      }
-                                    }
-                                    return result;
-                                  })();
-                                  const anchorBoxTarget = (() => {
-                                    const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
-
-                                    if (interstectedAnchorBoxTargets.length > 0) {
-                                      return interstectedAnchorBoxTargets[0];
-                                    } else {
-                                      return null;
-                                    }
-                                  })();
-                                  if (anchorBoxTarget) {
-                                    boxMesh.position.copy(anchorBoxTarget.position);
-                                    boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                                    boxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
-
-                                    const {anchor} = anchorBoxTarget;
-                                    hoverState.anchor = anchor;
-                                    hoverState.value = (() => {
-                                      const {rect} = anchor;
-                                      const horizontalLine = new THREE.Line3(
-                                        _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                                        _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                                      );
-                                      const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
-                                      return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
-                                    })();
-
-                                    if (!boxMesh.visible) {
-                                      boxMesh.visible = true;
-                                    }
-                                  } else {
-                                    hoverState.anchor = null;
-                                    hoverState.value = 0;
-
-                                    if (boxMesh.visible) {
-                                      boxMesh.visible = false;
-                                    }
-                                  }
-
-                                  dotMesh.position.copy(menuIntersectionPoint);
-                                  if (!dotMesh.visible) {
-                                    dotMesh.visible = true;
-                                  }
-                                } else {
-                                  hoverState.intersectionPoint = null;
-                                  hoverState.scrollLayer = null;
-                                  hoverState.anchor = null;
-                                  hoverState.value = 0;
-
-                                  if (menuBoxMesh.visible) {
-                                    boxMesh.visible = false;
-                                  }
-                                  if (dotMesh.visible) {
-                                    dotMesh.visible = false;
-                                  }
-                                }
-                              };
-
                               const {tab} = navbarState;
+
                               if (tab === 'readme') {
-                                _updateMenuSpecAnchors({
+                                biolumi.updateAnchors({
                                   matrixObject: menuMatrixObject,
                                   ui: menuUi,
                                   hoverState: menuHoverState,
@@ -3616,10 +3411,12 @@ class Rend {
                                   worldWidth: WORLD_WIDTH,
                                   worldHeight: WORLD_HEIGHT,
                                   worldDepth: WORLD_DEPTH,
+                                  controllerPosition,
+                                  controllerRotation,
                                 });
                               }
                               if (tab === 'world') {
-                                _updateMenuSpecAnchors({
+                                biolumi.updateAnchors({
                                   matrixObject: attributesMatrixObject,
                                   ui: attributesUi,
                                   hoverState: attributesHoverState,
@@ -3630,6 +3427,8 @@ class Rend {
                                   worldWidth: ATTRIBUTES_WORLD_WIDTH,
                                   worldHeight: ATTRIBUTES_WORLD_HEIGHT,
                                   worldDepth: ATTRIBUTES_WORLD_DEPTH,
+                                  controllerPosition,
+                                  controllerRotation,
                                 });
 
                                 const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsMatrixObject;

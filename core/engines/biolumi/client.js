@@ -51,6 +51,7 @@ class Biolumi {
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/anima',
+        '/core/plugins/geometry-utils',
       ]),
       _requestFont(),
       _requestTransparentImg(),
@@ -58,7 +59,8 @@ class Biolumi {
       .then(([
         [
           three,
-          anima
+          anima,
+          geometryUtils,
         ],
         font,
         transparentImg,
@@ -629,6 +631,212 @@ class Biolumi {
             // shaderMaterial.polygonOffsetFactor = 1;
             return shaderMaterial;
           };
+          const _makeMeshPointGetter = ({position, rotation, width, height, worldWidth, worldHeight}) => (x, y, z) => position.clone()
+            .add(
+              new THREE.Vector3(
+                -worldWidth / 2,
+                worldHeight / 2,
+                0
+              )
+              .add(
+                new THREE.Vector3(
+                  (x / width) * worldWidth,
+                  (-y / height) * worldHeight,
+                  z
+                )
+              ).applyQuaternion(rotation)
+            );
+          const _makeMeshCoordinateGetter = ({position, rotation, width, height, worldWidth, worldHeight}) => {
+            const _getMenuMeshPoint = _makeMeshPointGetter({position, rotation, width, height, worldWidth, worldHeight});
+
+            return intersectionPoint => {
+              const x = (() => {
+                const horizontalLine = new THREE.Line3(
+                  _getMenuMeshPoint(0, 0, 0),
+                  _getMenuMeshPoint(width, 0, 0)
+                );
+                const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
+                return horizontalLine.start.distanceTo(closestHorizontalPoint);
+              })();
+              const y = (() => {
+                const verticalLine = new THREE.Line3(
+                  _getMenuMeshPoint(0, 0, 0),
+                  _getMenuMeshPoint(0, height, 0)
+                );
+                const closestVerticalPoint = verticalLine.closestPointToPoint(intersectionPoint, true);
+                return verticalLine.start.distanceTo(closestVerticalPoint);
+              })();
+              return new THREE.Vector2(x, y);
+            };
+          };
+          const _updateAnchors = ({
+            matrixObject,
+            ui,
+            hoverState,
+            dotMesh,
+            boxMesh,
+            width,
+            height,
+            worldWidth,
+            worldHeight,
+            worldDepth,
+            controllerPosition,
+            controllerRotation,
+          }) => {
+            const {position, rotation, scale} = matrixObject;
+            const controllerRay = new THREE.Vector3(0, 0, -1)
+              .applyQuaternion(controllerRotation);
+            const controllerLine = new THREE.Line3(
+              controllerPosition.clone(),
+              controllerPosition.clone().add(controllerRay.clone().multiplyScalar(15))
+            );
+
+            const menuBoxTarget = geometryUtils.makeBoxTarget(
+              position,
+              rotation,
+              scale,
+              new THREE.Vector3(worldWidth, worldHeight, 0)
+            );
+            const menuIntersectionPoint = menuBoxTarget.intersectLine(controllerLine);
+            if (menuIntersectionPoint) {
+              hoverState.intersectionPoint = menuIntersectionPoint;
+
+              const _getMenuMeshPoint = _makeMeshPointGetter({
+                position,
+                rotation,
+                width,
+                height,
+                worldWidth,
+                worldHeight,
+                worldDepth,
+              });
+
+              const scrollLayerBoxTargets = ui.getLayers()
+                .filter(layer => layer.scroll)
+                .map(layer => {
+                  const rect = layer.getRect();
+                  const scrollLayerBoxTarget = geometryUtils.makeBoxTargetOffset(
+                    position,
+                    rotation,
+                    scale,
+                    new THREE.Vector3(
+                      -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                      (worldHeight / 2) + (-rect.top / height) * worldHeight,
+                      -worldDepth
+                    ),
+                    new THREE.Vector3(
+                      -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                      (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
+                      worldDepth
+                    )
+                  );
+                  scrollLayerBoxTarget.layer = layer;
+                  return scrollLayerBoxTarget;
+                });
+              const scrollLayerBoxTarget = (() => {
+                for (let i = 0; i < scrollLayerBoxTargets.length; i++) {
+                  const layerBoxTarget = scrollLayerBoxTargets[i];
+                  if (layerBoxTarget.intersectLine(controllerLine)) {
+                    return layerBoxTarget;
+                  }
+                }
+                return null;
+              })();
+              if (scrollLayerBoxTarget) {
+                hoverState.scrollLayer = scrollLayerBoxTarget.layer;
+              } else {
+                hoverState.scrollLayer = null;
+              }
+
+              const anchorBoxTargets = (() => {
+                const result = [];
+                const layers = ui.getLayers();
+                for (let i = 0; i < layers.length; i++) {
+                  const layer = layers[i];
+                  const anchors = layer.getAnchors();
+
+                  for (let j = 0; j < anchors.length; j++) {
+                    const anchor = anchors[j];
+                    const {rect} = anchor;
+
+                    const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                      position,
+                      rotation,
+                      scale,
+                      new THREE.Vector3(
+                        -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                        (worldHeight / 2) + ((-rect.top + layer.scrollTop) / height) * worldHeight,
+                        -worldDepth
+                      ),
+                      new THREE.Vector3(
+                        -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                        (worldHeight / 2) + ((-rect.bottom + layer.scrollTop) / height) * worldHeight,
+                        worldDepth
+                      )
+                    );
+                    anchorBoxTarget.anchor = anchor;
+
+                    result.push(anchorBoxTarget);
+                  }
+                }
+                return result;
+              })();
+              const anchorBoxTarget = (() => {
+                const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
+
+                if (interstectedAnchorBoxTargets.length > 0) {
+                  return interstectedAnchorBoxTargets[0];
+                } else {
+                  return null;
+                }
+              })();
+              if (anchorBoxTarget) {
+                boxMesh.position.copy(anchorBoxTarget.position);
+                boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                boxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
+
+                const {anchor} = anchorBoxTarget;
+                hoverState.anchor = anchor;
+                hoverState.value = (() => {
+                  const {rect} = anchor;
+                  const horizontalLine = new THREE.Line3(
+                    _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                    _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                  );
+                  const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
+                  return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                })();
+
+                if (!boxMesh.visible) {
+                  boxMesh.visible = true;
+                }
+              } else {
+                hoverState.anchor = null;
+                hoverState.value = 0;
+
+                if (boxMesh.visible) {
+                  boxMesh.visible = false;
+                }
+              }
+
+              dotMesh.position.copy(menuIntersectionPoint);
+              if (!dotMesh.visible) {
+                dotMesh.visible = true;
+              }
+            } else {
+              hoverState.intersectionPoint = null;
+              hoverState.scrollLayer = null;
+              hoverState.anchor = null;
+              hoverState.value = 0;
+
+              if (boxMesh.visible) {
+                boxMesh.visible = false;
+              }
+              if (dotMesh.visible) {
+                dotMesh.visible = false;
+              }
+            }
+          };
           const _updateMenuMaterial = ({ui, menuMaterial, worldTime}) => {
             const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = menuMaterial;
 
@@ -692,6 +900,9 @@ class Biolumi {
             getTransparentMaterial: _getTransparentMaterial,
             getSolidMaterial: _getSolidMaterial,
             makeMenuMaterial: _makeMenuMaterial,
+            makeMeshPointGetter: _makeMeshPointGetter,
+            makeMeshCoordinateGetter: _makeMeshCoordinateGetter,
+            updateAnchors: _updateAnchors,
             updateMenuMaterial: _updateMenuMaterial,
           };
         }
@@ -702,27 +913,6 @@ class Biolumi {
     this._cleanup();
   }
 }
-
-/* const _isMultiFrameImage = img => Array.isArray(img);
-const _getCurrentImageFrameIndex = img => Math.floor(((Date.now() % ANIMATION_TIME) / ANIMATION_TIME) * img.length);
-
-const _scaleImageData = (imageData, {width, height}) => {
-  const sideCanvas = document.createElement('canvas');
-  sideCanvas.width = imageData.width;
-  sideCanvas.height = imageData.height;
-  const sideCtx = sideCanvas.getContext('2d');
-  sideCtx.imageSmoothingEnabled = false;
-  sideCtx.putImageData(imageData, 0, 0);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(sideCanvas, 0, 0, width, height);
-
-  return canvas;
-}; */
 
 const fonts = '"Open Sans"';
 const fontWeight = 300;
