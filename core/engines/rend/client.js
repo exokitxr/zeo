@@ -1131,6 +1131,7 @@ class Rend {
                     const materials = [solidMaterial, menuMaterial];
 
                     const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    mesh.position.y = -0.25;
                     mesh.position.z = -0.25;
                     mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
