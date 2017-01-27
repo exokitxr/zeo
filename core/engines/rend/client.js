@@ -233,9 +233,10 @@ class Rend {
             }
 
             class World {
-              constructor(worldName, point) {
+              constructor(worldName, point, rotation) {
                 this.worldName = worldName;
                 this.point = point;
+                this.rotation = rotation;
               }
             }
 
@@ -261,7 +262,8 @@ class Rend {
                   (-0.5 + y) * size,
                   value
                 );
-                const world = new World('world' + _pad(i, 2), point);
+                const rotation = value * (Math.PI * 2);
+                const world = new World('world' + _pad(i, 2), point, rotation);
                 result[i] = world;
               }
               return result;
@@ -927,11 +929,6 @@ class Rend {
                   opacity: 0.5,
                   transparent: true,
                 });
-                const pointsLargeMaterial = new THREE.PointsMaterial({
-                  // color: 0x808080,
-                  vertexColors: THREE.VertexColors,
-                  size: 0.02,
-                });
                 const linesMaterial = new THREE.LineBasicMaterial({
                   color: 0xFFFFFF,
                 });
@@ -1034,21 +1031,12 @@ class Rend {
                 scene.add(menuDotMeshes.left);
                 scene.add(menuDotMeshes.right);
 
-                const _makeUniverseDotMesh = () => {
-                  const geometry = new THREE.BufferGeometry();
-                  geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
-                  const colors = Float32Array.from(new THREE.Color(0x808080).toArray());
-                  geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-                  const material = pointsLargeMaterial;
-
-                  return new THREE.Points(geometry, material);
+                const universeBoxMeshes = {
+                  left: biolumi.makeMenuBoxMesh(),
+                  right: biolumi.makeMenuBoxMesh(),
                 };
-                const universeDotMeshes = {
-                  left: _makeUniverseDotMesh(),
-                  right: _makeUniverseDotMesh(),
-                };
-                scene.add(universeDotMeshes.left);
-                scene.add(universeDotMeshes.right);
+                scene.add(universeBoxMeshes.left);
+                scene.add(universeBoxMeshes.right);
 
                 const keyboardMesh = (() => {
                   const keySpecs = (() => {
@@ -1171,13 +1159,13 @@ class Rend {
                       const result = new THREE.Object3D();
 
                       const _requestWorldMesh = world => new Promise((accept, reject) => {
-                        const {worldName, point} = world;
+                        const {worldName, point, rotation} = world;
 
                         const img = new Image();
                         img.src = creatureUtils.makeStaticCreature('world:' + worldName);
                         img.onload = () => {
                           const geometry = spriteUtils.makeImageGeometry(img, 0.005);
-                          geometry.applyMatrix(new THREE.Matrix4().makeRotationY(point.value * (Math.PI * 2)));
+                          geometry.applyMatrix(new THREE.Matrix4().makeRotationY(rotation));
                           const material = worldMaterial;
 
                           const mesh = new THREE.Mesh(geometry, material);
@@ -3022,7 +3010,7 @@ class Rend {
                     scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
 
-                    scene.remove(universeDotMeshes[side]);
+                    scene.remove(universeBoxMeshes[side]);
                     scene.remove(keyboardBoxMeshes[side]);
                   });
 
@@ -3442,7 +3430,7 @@ class Rend {
                             SIDES.forEach(side => {
                               const gamepad = gamepads[side];
                               const universeHoverState = universeHoverStates[side];
-                              const universeDotMesh = universeDotMeshes[side];
+                              const universeBoxMesh = universeBoxMeshes[side];
 
                               if (gamepad) {
                                 const {position: controllerPosition} = gamepad;
@@ -3472,20 +3460,19 @@ class Rend {
                               const {hoverWorld} = universeHoverState;
                               if (hoverWorld !== null) {
                                 const {world, position} = hoverWorld;
-                                const {worldName} = world;
+                                const {worldName, rotation} = world;
                                 const selected = worldName === hub.getWorldName();
 
-                                universeDotMesh.position.copy(position);
-                                const colorAttribute = universeDotMesh.geometry.getAttribute('color');
-                                colorAttribute.array.set(Float32Array.from(new THREE.Color(selected ? 0xFF0000 : 0x808080).toArray()));
-                                colorAttribute.needsUpdate = true;
+                                universeBoxMesh.position.copy(position);
+                                universeBoxMesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotation, 0, camera.rotation.order)));
+                                universeBoxMesh.scale.set(0.005 * (12 + 2), 0.005 * (12 + 2), 0.005 * (12 + 2));
 
-                                if (!universeDotMesh.visible) {
-                                  universeDotMesh.visible = true;
+                                if (!universeBoxMesh.visible) {
+                                  universeBoxMesh.visible = true;
                                 }
                               } else {
-                                if (universeDotMesh.visible) {
-                                  universeDotMesh.visible = false;
+                                if (universeBoxMesh.visible) {
+                                  universeBoxMesh.visible = false;
                                 }
                               }
                             });
