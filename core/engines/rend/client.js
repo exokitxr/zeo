@@ -937,6 +937,11 @@ class Rend {
                   shininess: 10,
                   vertexColors: THREE.FaceColors,
                 });
+                const cursorMaterial = new THREE.MeshPhongMaterial({
+                  color: 0xFF0000,
+                  shininess: 10,
+                  shading: THREE.FlatShading,
+                });
 
                 menuMesh = (() => {
                   const object = new THREE.Object3D();
@@ -1223,6 +1228,23 @@ class Rend {
                       return mesh;
                     })();
                     object.add(linesMesh);
+
+                    const cursorMesh = (() => {
+                      const currentWorldName = hub.getWorldName();
+                      const selectedWorld = worlds.find(world => world.worldName === currentWorldName) || worlds[0];
+                      const {point} = selectedWorld;
+
+                      const geometry = new THREE.TetrahedronBufferGeometry(0.01, 0);
+                      geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI * (1/6 + 1/12)));
+                      geometry.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI * (1/3 - 1/64)));
+                      geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
+                      const material = cursorMaterial;
+
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.position.copy(point.clone().add(new THREE.Vector3(0, 0.005 * (12 + 1), 0)));
+                      return mesh;
+                    })();
+                    object.add(cursorMesh);
 
                     const floorMesh = (() => {
                       const geometry = (() => {
@@ -3460,8 +3482,7 @@ class Rend {
                               const {hoverWorld} = universeHoverState;
                               if (hoverWorld !== null) {
                                 const {world, position} = hoverWorld;
-                                const {worldName, rotation} = world;
-                                const selected = worldName === hub.getWorldName();
+                                const {rotation} = world;
 
                                 universeBoxMesh.position.copy(position);
                                 universeBoxMesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotation, 0, camera.rotation.order)));
