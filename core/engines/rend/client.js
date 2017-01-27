@@ -1392,113 +1392,122 @@ class Rend {
                   // object.scale.set(0.5, 0.5, 0.5);
                   object.visible = false;
 
-                  const {worlds} = universeState;
-                  const worldsMesh = (() => {
-                    const result = new THREE.Object3D();
-
-                    const _requestWorldMesh = world => new Promise((accept, reject) => {
-                      const {worldName, point} = world;
-
-                      const img = new Image();
-                      img.src = creatureUtils.makeStaticCreature('world:' + worldName);
-                      img.onload = () => {
-                        const geometry = spriteUtils.makeImageGeometry(img, 0.005);
-                        geometry.applyMatrix(new THREE.Matrix4().makeRotationY(point.value * (Math.PI * 2)));
-                        const material = worldMaterial;
-
-                        const mesh = new THREE.Mesh(geometry, material);
-                        mesh.position.copy(point);
-
-                        accept(mesh);
-                      };
-                      img.onerror = err => {
-                        reject(err);
-                      };
-                    });
-
-                    for (let i = 0; i < worlds.length; i++) {
-                      const world = worlds[i];
-                      _requestWorldMesh(world)
-                        .then(worldMesh => {
-                          result.add(worldMesh);
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-                    }
-
-                    return result;
-                  })();
-                  object.add(worldsMesh);
-
-                  const linesMesh = (() => {
-                    const geometry = new THREE.BufferGeometry();
-                    const positions = (() => {
-                      const result = [];
-
-                      const edges = (() => {
-                        const result = Array(worlds.length * worlds.length);
-                        for (let i = 0; i < worlds.length; i++) {
-                          for (let j = 0; j < worlds.length; j++) {
-                            result[(i * worlds.length) + j] = [i, j];
-                          }
-                        }
-                        return result;
-                      })();
-                      const edgeMST = Kruskal.kruskal(worlds, edges, (a, b) => a.point.distanceTo(b.point));
-                      for (let i = 0; i < edgeMST.length; i++) {
-                        const u = worlds[edgeMST[i][0]].point;
-                        const v = worlds[edgeMST[i][1]].point;
-                        result.push(u.x, u.y, u.z, v.x, v.y, v.z);
-                      }
-
-                      return Float32Array.from(result);
-                    })();
-                    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                    const material = linesMaterial;
-
-                    const mesh = new THREE.LineSegments(geometry, material);
-                    return mesh;
-                  })();
-                  object.add(linesMesh);
-
-                  const floorMesh = (() => {
+                  const innerMesh = (() => {
                     const size = 0.5;
                     const resolution = 16;
                     const heightScale = 0.2;
 
-                    const geometry = (() => {
-                      const {noise} = universeState;
+                    const object = new THREE.Object3D();
+                    object.size = size;
+                    object.resolution = resolution;
+                    object.heightScale = heightScale;
 
-                      const result = new THREE.PlaneBufferGeometry(size, size, resolution, resolution);
-                      result.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
-                      const positionAttribute = result.getAttribute('position');
-                      const positions = positionAttribute.array;
-                      const numPositions = positions.length / 3;
-                      for (let i = 0; i < numPositions; i++) {
-                        const baseIndex = i * 3;
-                        const x = (positions[baseIndex + 0] + (size / 2)) / size * resolution;
-                        const y = (-positions[baseIndex + 2] + (size / 2)) / size * resolution;
+                    const {worlds} = universeState;
+                    const worldsMesh = (() => {
+                      const result = new THREE.Object3D();
 
-                        const height = noise.in2D(x, y) * heightScale;
-                        positions[baseIndex + 1] = height;
+                      const _requestWorldMesh = world => new Promise((accept, reject) => {
+                        const {worldName, point} = world;
+
+                        const img = new Image();
+                        img.src = creatureUtils.makeStaticCreature('world:' + worldName);
+                        img.onload = () => {
+                          const geometry = spriteUtils.makeImageGeometry(img, 0.005);
+                          geometry.applyMatrix(new THREE.Matrix4().makeRotationY(point.value * (Math.PI * 2)));
+                          const material = worldMaterial;
+
+                          const mesh = new THREE.Mesh(geometry, material);
+                          mesh.position.copy(point);
+
+                          accept(mesh);
+                        };
+                        img.onerror = err => {
+                          reject(err);
+                        };
+                      });
+
+                      for (let i = 0; i < worlds.length; i++) {
+                        const world = worlds[i];
+                        _requestWorldMesh(world)
+                          .then(worldMesh => {
+                            result.add(worldMesh);
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
                       }
-                      // positionAttribute.needsUpdate = true;
+
                       return result;
                     })();
+                    object.add(worldsMesh);
 
-                    const material = wireframeMaterial;
+                    const linesMesh = (() => {
+                      const geometry = new THREE.BufferGeometry();
+                      const positions = (() => {
+                        const result = [];
 
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.size = size;
-                    mesh.resolution = resolution;
-                    return mesh;
+                        const edges = (() => {
+                          const result = Array(worlds.length * worlds.length);
+                          for (let i = 0; i < worlds.length; i++) {
+                            for (let j = 0; j < worlds.length; j++) {
+                              result[(i * worlds.length) + j] = [i, j];
+                            }
+                          }
+                          return result;
+                        })();
+                        const edgeMST = Kruskal.kruskal(worlds, edges, (a, b) => a.point.distanceTo(b.point));
+                        for (let i = 0; i < edgeMST.length; i++) {
+                          const u = worlds[edgeMST[i][0]].point;
+                          const v = worlds[edgeMST[i][1]].point;
+                          result.push(u.x, u.y, u.z, v.x, v.y, v.z);
+                        }
+
+                        return Float32Array.from(result);
+                      })();
+                      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                      const material = linesMaterial;
+
+                      const mesh = new THREE.LineSegments(geometry, material);
+                      return mesh;
+                    })();
+                    object.add(linesMesh);
+
+                    const floorMesh = (() => {
+                      const geometry = (() => {
+                        const {noise} = universeState;
+
+                        const result = new THREE.PlaneBufferGeometry(size, size, resolution, resolution);
+                        result.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+                        const positionAttribute = result.getAttribute('position');
+                        const positions = positionAttribute.array;
+                        const numPositions = positions.length / 3;
+                        for (let i = 0; i < numPositions; i++) {
+                          const baseIndex = i * 3;
+                          const x = (positions[baseIndex + 0] + (size / 2)) / size * resolution;
+                          const y = (-positions[baseIndex + 2] + (size / 2)) / size * resolution;
+
+                          const height = noise.in2D(x, y) * heightScale;
+                          positions[baseIndex + 1] = height;
+                        }
+                        // positionAttribute.needsUpdate = true;
+                        return result;
+                      })();
+
+                      const material = wireframeMaterial;
+
+                      const mesh = new THREE.Mesh(geometry, material);
+                      return mesh;
+                    })();
+                    object.add(floorMesh);
+                    object.floorMesh = floorMesh;
+
+                    return object;
                   })();
-                  object.add(floorMesh);
-                  object.floorMesh = floorMesh;
+                  object.add(innerMesh);
+                  object.innerMesh = innerMesh;
 
                   const _makeFloorBoxMesh = () => {
-                    const {size} = floorMesh;
+                    const {size} = innerMesh;
 
                     const geometry = new THREE.BoxBufferGeometry(size, size, size);
                     const material = wireframeHighlightMaterial;
@@ -2702,9 +2711,9 @@ class Rend {
                           const {position: controllerPosition} = gamepad;
                           universeHoverState.dragStartPoint = controllerPosition.clone();
 
-                          const {floorMesh} = universeMesh;
-                          const {position: floorMeshPosition} = floorMesh;
-                          universeHoverState.dragStartPosition = floorMeshPosition.clone();
+                          const {innerMesh} = universeMesh;
+                          const {position: innerMeshPosition} = innerMesh;
+                          universeHoverState.dragStartPosition = innerMeshPosition.clone();
 
                           return true;
                         } else {
@@ -3894,8 +3903,8 @@ class Rend {
 
                               if (tab === 'multiverse') {
                                 const universeHoverState = universeHoverStates[side];
-                                const {floorMesh, floorBoxMeshes} = universeMesh;
-                                const {size} = floorMesh;
+                                const {innerMesh, floorBoxMeshes} = universeMesh;
+                                const {size} = innerMesh;
                                 const floorBoxMesh = floorBoxMeshes[side];
 
                                 const {position: universePosition, rotation: universeRotation, scale: universeScale} = _decomposeObjectMatrixWorld(universeMesh);
@@ -4057,9 +4066,9 @@ class Rend {
                             });
                           };
                           const _updateUniverseDrag = () => {
-                            const {floorMesh} = universeMesh;
-                            const {position: floorMeshPosition} = _decomposeObjectMatrixWorld(floorMesh);
-                            const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), floorMeshPosition);
+                            const {innerMesh} = universeMesh;
+                            const {position: innerMeshPosition} = _decomposeObjectMatrixWorld(innerMesh);
+                            const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), innerMeshPosition);
 
                             SIDES.some(side => {
                               const gamepad = gamepads[side];
@@ -4074,8 +4083,8 @@ class Rend {
                                 const startPointPlanePoint = floorPlane.projectPoint(dragStartPoint);
                                 const currentPointPlanePoint = floorPlane.projectPoint(controllerPosition);
 
-                                const newFloorMeshPosition = dragStartPosition.clone().add(currentPointPlanePoint.clone().sub(startPointPlanePoint));
-                                floorMesh.position.copy(newFloorMeshPosition);
+                                const newInnerMeshPosition = dragStartPosition.clone().add(currentPointPlanePoint.clone().sub(startPointPlanePoint));
+                                innerMesh.position.copy(newInnerMeshPosition);
 
                                 return true;
                               } else {
