@@ -987,6 +987,10 @@ class Rend {
                 });
 
                 const wireframeMaterial = new THREE.MeshBasicMaterial({
+                  color: 0x808080,
+                  wireframe: true,
+                });
+                const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
                   color: 0x0000FF,
                   wireframe: true,
                   opacity: 0.5,
@@ -1151,7 +1155,7 @@ class Rend {
                 const _makeBoxMesh = () => {
                   const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
 
-                  const mesh = new THREE.Mesh(geometry, wireframeMaterial);
+                  const mesh = new THREE.Mesh(geometry, wireframeHighlightMaterial);
                   mesh.visible = false;
                   return mesh;
                 };
@@ -1410,6 +1414,42 @@ class Rend {
                     return mesh;
                   })();
                   object.add(linesMesh);
+
+                  const floorMesh = (() => {
+                    const geometry = (() => {
+                      const size = 0.5;
+                      const resolution = 16;
+
+                      const generator = indev({
+                        seed: '',
+                      });
+                      const noise = generator.simplex({
+                        frequency: 0.05,
+                        octaves: 4,
+                      });
+
+                      const result = new THREE.PlaneBufferGeometry(size, size, resolution, resolution);
+                      result.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+                      const positionAttribute = result.getAttribute('position');
+                      const positions = positionAttribute.array;
+                      const numPositions = positions.length / 3;
+                      for (let i = 0; i < numPositions; i++) {
+                        const baseIndex = i * 3;
+                        const x = Math.round((positions[baseIndex + 0] + (size / 2)) / size * resolution);
+                        const y = Math.round((-positions[baseIndex + 2] + (size / 2)) / size * resolution);
+
+                        const height = noise.in2D(x, y) * 0.2;
+                        positions[baseIndex + 1] = height;
+                      }
+                      // positionAttribute.needsUpdate = true;
+                      return result;
+                    })();
+
+                    const material = wireframeMaterial;
+
+                    return new THREE.Mesh(geometry, material);
+                  })();
+                  object.add(floorMesh);
 
                   return object;
                 })();
