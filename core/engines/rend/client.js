@@ -724,12 +724,12 @@ class Rend {
               }),
             ]).then(([
               menuUi,
-              worldUi,
+              elementsUi,
               npmUi,
               navbarUi,
             ]) => ({
               menuUi,
-              worldUi,
+              elementsUi,
               npmUi,
               navbarUi,
             }));
@@ -740,7 +740,7 @@ class Rend {
             ]).then(([
               {
                 menuUi,
-                worldUi,
+                elementsUi,
                 npmUi,
                 navbarUi,
               },
@@ -909,7 +909,7 @@ class Rend {
                   immediate: true,
                 });
 
-                worldUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}}) => {
+                elementsUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}}) => {
                   return [
                     {
                       type: 'html',
@@ -1045,66 +1045,75 @@ class Rend {
                   object.planeMesh = planeMesh;
 
                   const worldMesh = (() => {
-                    const width = SIDEBAR_WORLD_WIDTH;
-                    const height = SIDEBAR_WORLD_HEIGHT;
-                    const depth = SIDEBAR_WORLD_DEPTH;
+                    const result = new THREE.Object3D();
+                    result.visible = false;
 
-                    const menuMaterial = biolumi.makeMenuMaterial();
+                    const elementsMesh = (() => {
+                      const width = SIDEBAR_WORLD_WIDTH;
+                      const height = SIDEBAR_WORLD_HEIGHT;
+                      const depth = SIDEBAR_WORLD_DEPTH;
 
-                    const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, menuMaterial];
+                      const menuMaterial = biolumi.makeMenuMaterial();
 
-                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                    mesh.position.x = -0.25;
-                    // mesh.position.z = -0.5;
-                    mesh.rotation.y = Math.PI / 8;
-                    mesh.receiveShadow = true;
-                    mesh.menuMaterial = menuMaterial;
+                      const geometry = new THREE.PlaneBufferGeometry(width, height);
+                      const materials = [solidMaterial, menuMaterial];
 
-                    const shadowMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                      const material = transparentMaterial;
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.castShadow = true;
+                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.position.x = -0.25;
+                      // mesh.position.z = -0.5;
+                      mesh.rotation.y = Math.PI / 8;
+                      mesh.receiveShadow = true;
+                      mesh.menuMaterial = menuMaterial;
+
+                      const shadowMesh = (() => {
+                        const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                        const material = transparentMaterial;
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.castShadow = true;
+                        return mesh;
+                      })();
+                      mesh.add(shadowMesh);
+
                       return mesh;
                     })();
-                    mesh.add(shadowMesh);
+                    result.add(elementsMesh);
+                    result.elementsMesh = elementsMesh;
 
-                    return mesh;
+                    const npmMesh = (() => {
+                      const width = SIDEBAR_WORLD_WIDTH;
+                      const height = SIDEBAR_WORLD_HEIGHT;
+                      const depth = SIDEBAR_WORLD_DEPTH;
+
+                      const menuMaterial = biolumi.makeMenuMaterial();
+
+                      const geometry = new THREE.PlaneBufferGeometry(width, height);
+                      const materials = [solidMaterial, menuMaterial];
+
+                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.position.x = 0.25;
+                      // mesh.position.z = -0.5;
+                      mesh.rotation.y = -Math.PI / 8;
+                      mesh.receiveShadow = true;
+                      mesh.menuMaterial = menuMaterial;
+
+                      const shadowMesh = (() => {
+                        const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                        const material = transparentMaterial;
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.castShadow = true;
+                        return mesh;
+                      })();
+                      mesh.add(shadowMesh);
+
+                      return mesh;
+                    })();
+                    result.add(npmMesh);
+                    result.npmMesh = npmMesh;
+
+                    return result;
                   })();
                   object.add(worldMesh);
                   object.worldMesh = worldMesh;
-
-                  const npmMesh = (() => {
-                    const width = SIDEBAR_WORLD_WIDTH;
-                    const height = SIDEBAR_WORLD_HEIGHT;
-                    const depth = SIDEBAR_WORLD_DEPTH;
-
-                    const menuMaterial = biolumi.makeMenuMaterial();
-
-                    const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, menuMaterial];
-
-                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                    mesh.position.x = 0.25;
-                    // mesh.position.z = -0.5;
-                    mesh.rotation.y = -Math.PI / 8;
-                    mesh.receiveShadow = true;
-                    mesh.menuMaterial = menuMaterial;
-
-                    const shadowMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                      const material = transparentMaterial;
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.castShadow = true;
-                      return mesh;
-                    })();
-                    mesh.add(shadowMesh);
-
-                    return mesh;
-                  })();
-                  object.add(npmMesh);
-                  object.npmMesh = npmMesh;
 
                   const navbarMesh = (() => {
                     const width = NAVBAR_WORLD_WIDTH;
@@ -1153,12 +1162,12 @@ class Rend {
                 scene.add(menuBoxMeshes.left);
                 scene.add(menuBoxMeshes.right);
 
-                const worldBoxMeshes = {
+                const elementsBoxMeshes = {
                   left: _makeBoxMesh(),
                   right: _makeBoxMesh(),
                 };
-                scene.add(worldBoxMeshes.left);
-                scene.add(worldBoxMeshes.right);
+                scene.add(elementsBoxMeshes.left);
+                scene.add(elementsBoxMeshes.right);
 
                 const npmBoxMeshes = {
                   left: _makeBoxMesh(),
@@ -1189,12 +1198,12 @@ class Rend {
                 scene.add(menuDotMeshes.left);
                 scene.add(menuDotMeshes.right);
 
-                const worldDotMeshes = {
+                const elementsDotMeshes = {
                   left: _makeMenuDotMesh(),
                   right: _makeMenuDotMesh(),
                 };
-                scene.add(worldDotMeshes.left);
-                scene.add(worldDotMeshes.right);
+                scene.add(elementsDotMeshes.left);
+                scene.add(elementsDotMeshes.right);
 
                 const npmDotMeshes = {
                   left: _makeMenuDotMesh(),
@@ -1321,8 +1330,9 @@ class Rend {
 
                 const universeMesh = (() => {
                   const object = new THREE.Object3D();
-                  object.position.set(0, 1.2, 1);
+                  object.position.set(0, 1.2, -0.5);
                   object.scale.set(0.5, 0.5, 0.5);
+                  object.visible = false;
 
                   const {worlds} = universeState;
                   const pointsMesh = (() => {
@@ -1458,10 +1468,10 @@ class Rend {
 
                 const _updatePages = menuUtils.debounce(next => {
                   const menuPages = menuUi.getPages();
-                  const worldPages = worldUi.getPages();
+                  const elementsPages = elementsUi.getPages();
                   const npmPages = npmUi.getPages();
                   const navbarPages = navbarUi.getPages();
-                  const pages = menuPages.concat(worldPages).concat(npmPages).concat(navbarPages);
+                  const pages = menuPages.concat(elementsPages).concat(npmPages).concat(navbarPages);
 
                   if (pages.length > 0) {
                     let pending = pages.length;
@@ -1597,8 +1607,27 @@ class Rend {
 
                       let match;
                       if (match = onclick.match(/^navbar:(readme|multiverse|world|inventory|options)$/)) {
-                        const tab = match[1];
-                        navbarState.tab = tab;
+                        const newTab = match[1];
+
+                        const _getTabMesh = tab => {
+                          switch (tab) {
+                            case 'readme': return menuMesh.planeMesh;
+                            case 'multiverse': return universeMesh;
+                            case 'world': return menuMesh.worldMesh;
+                            case 'inventory': return menuMesh.planeMesh;
+                            case 'options': return menuMesh.planeMesh;
+                            default: return null;
+                          }
+                        };
+
+                        const {tab: oldTab} = navbarState;
+                        const oldMesh = _getTabMesh(oldTab);
+                        const newMesh = _getTabMesh(newTab);
+
+                        oldMesh.visible = false;
+                        newMesh.visible = true;
+
+                        navbarState.tab = newTab;
 
                         _updatePages();
 
@@ -2733,7 +2762,7 @@ class Rend {
                     keyboardMesh.visible = false; */
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
-                      worldBoxMeshes[side].visible = false;
+                      elementsBoxMeshes[side].visible = false;
                       npmBoxMeshes[side].visible = false;
 
                       menuDotMeshes[side].visible = false;
@@ -3116,7 +3145,7 @@ class Rend {
                   left: _makeMenuHoverState(),
                   right: _makeMenuHoverState(),
                 };
-                const worldHoverStates = {
+                const elementsHoverStates = {
                   left: _makeMenuHoverState(),
                   right: _makeMenuHoverState(),
                 };
@@ -3198,10 +3227,12 @@ class Rend {
                           menuMaterial: planeMenuMaterial,
                         },
                         worldMesh: {
-                          menuMaterial: worldMenuMaterial,
-                        },
-                        npmMesh: {
-                          menuMaterial: npmMenuMaterial,
+                          elementsMesh: {
+                            menuMaterial: elementsMenuMaterial,
+                          },
+                          npmMesh: {
+                            menuMaterial: npmMenuMaterial,
+                          },
                         },
                         navbarMesh: {
                           menuMaterial: navbarMenuMaterial,
@@ -3215,8 +3246,8 @@ class Rend {
                         worldTime,
                       });
                       biolumi.updateMenuMaterial({
-                        ui: worldUi,
-                        menuMaterial: worldMenuMaterial,
+                        ui: elementsUi,
+                        menuMaterial: elementsMenuMaterial,
                         worldTime,
                       });
                       biolumi.updateMenuMaterial({
@@ -3243,9 +3274,9 @@ class Rend {
                       const status = webvr.getStatus();
                       const {gamepads: gamepadsStatus} = status;
 
-                      const {planeMesh, worldMesh, npmMesh, navbarMesh} = menuMesh;
+                      const {planeMesh, worldMesh: {elementsMesh, npmMesh}, navbarMesh} = menuMesh;
                       const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                      const worldMatrixObject = _decomposeObjectMatrixWorld(worldMesh);
+                      const elementsMatrixObject = _decomposeObjectMatrixWorld(elementsMesh);
                       const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
                       const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
 
@@ -3266,9 +3297,9 @@ class Rend {
                           const menuDotMesh = menuDotMeshes[side];
                           const menuBoxMesh = menuBoxMeshes[side];
 
-                          const worldHoverState = worldHoverStates[side];
-                          const worldDotMesh = worldDotMeshes[side];
-                          const worldBoxMesh = worldBoxMeshes[side];
+                          const elementsHoverState = elementsHoverStates[side];
+                          const elementsDotMesh = elementsDotMeshes[side];
+                          const elementsBoxMesh = elementsBoxMeshes[side];
 
                           const npmHoverState = npmHoverStates[side];
                           const npmDotMesh = npmDotMeshes[side];
@@ -3455,11 +3486,11 @@ class Rend {
                               worldDepth: WORLD_DEPTH,
                             });
                             _updateMenuSpecAnchors({
-                              matrixObject: worldMatrixObject,
-                              ui: worldUi,
-                              hoverState: worldHoverState,
-                              dotMesh: worldDotMesh,
-                              boxMesh: worldBoxMesh,
+                              matrixObject: elementsMatrixObject,
+                              ui: elementsUi,
+                              hoverState: elementsHoverState,
+                              dotMesh: elementsDotMesh,
+                              boxMesh: elementsBoxMesh,
                               width: SIDEBAR_WIDTH,
                               height: SIDEBAR_HEIGHT,
                               worldWidth: SIDEBAR_WORLD_WIDTH,
