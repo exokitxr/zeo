@@ -1,6 +1,5 @@
 import Stats from 'stats.js';
 import keycode from 'keycode';
-import Heap from 'heap';
 import indev from 'indev'; // XXX source these from utils
 import Kruskal from 'kruskal';
 
@@ -222,14 +221,6 @@ class Rend {
           uploading: fs.getUploading(),
         };
         const _makeWorlds = () => {
-          class Point extends THREE.Vector3 {
-            constructor(x, y, z, value) {
-              super(x, y, z);
-
-              this.value = value;
-            }
-          }
-
           class World {
             constructor(worldName, point) {
               this.worldName = worldName;
@@ -240,37 +231,29 @@ class Rend {
           const worlds = (() => {
             const numPoints = 10;
             const size = 0.5;
-            const resolution = 32;
             const heightScale = 0.2;
             const heightOffset = -0.01 / 2;
 
             const rng = new alea('');
             const generator = indev({
-              random: rng,
+              seed: '',
             });
             const noise = generator.simplex({
               frequency: 100,
               octaves: 8,
             });
 
-            const heap = new Heap((a, b) => a.value - b.value);
-            for (let i = 0; i < resolution; i++) {
-              for (let j = 0; j < resolution; j++) {
-                const height = noise.in2D(i, j);
-                const value = rng();
-                const point = new Point(
-                  (-0.5 + (i / resolution)) * size,
-                  (height * heightScale) + heightOffset,
-                  (-0.5 + (j / resolution)) * size,
-                  value
-                );
-                heap.push(point);
-              }
-            }
-
             const result = Array(numPoints);
             for (let i = 0; i < numPoints; i++) {
-              const point = heap.pop();
+              const x = rng();
+              const y = rng();
+              const height = noise.in2D(x, y);
+
+              const point = new THREE.Vector3(
+                (-0.5 + x) * size,
+                (height * heightScale) + heightOffset,
+                (-0.5 + y) * size
+              );
               const world = new World('world' + _pad(i, 2), point);
               result[i] = world;
             }
