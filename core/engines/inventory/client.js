@@ -16,6 +16,7 @@ class Inventory {
     };
 
     return archae.requestPlugins([
+      '/core/engines/hub',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
@@ -23,6 +24,7 @@ class Inventory {
       '/core/engines/hands',
       '/core/engines/tags',
     ]).then(([
+      hub,
       three,
       input,
       webvr,
@@ -45,18 +47,11 @@ class Inventory {
         };
 
         const _makeHoverState = () => ({
-          target: null,
+          index: null,
         });
         const hoverStates = {
           left: _makeHoverState(),
           right: _makeHoverState(),
-        };
-        const _makeGrabState = () => ({
-          grabber: null,
-        });
-        const grabStates = {
-          left: _makeGrabState(),
-          right: _makeGrabState(),
         };
 
         const mesh = (() => {
@@ -65,7 +60,7 @@ class Inventory {
           object.position.z = -0.25;
           object.visible = false;
 
-          const itemMeshes = (() => {
+          const itemBoxMeshes = (() => {
             const _makeItemBoxMesh = index => {
               const size = 0.075;
               const padding = size / 2;
@@ -80,6 +75,14 @@ class Inventory {
               mesh.position.x = -(((size * numItems) + (padding * (numItems - 1))) / 2) + ((size + padding) * index) + (size / 2);
               mesh.position.y = 0.1;
               mesh.position.z = -(size * 2);
+
+              let itemMesh = null;
+              mesh.setItemMesh = newItemMesh => {
+                mesh.add(newItemMesh);
+                itemMesh = newItemMesh;
+              };
+              mesh.getItemMesh = () => itemMesh;
+
               return mesh;
             };
 
@@ -89,10 +92,10 @@ class Inventory {
             }
             return result;
           })();
-          itemMeshes.forEach(itemMesh => {
-            object.add(itemMesh);
+          itemBoxMeshes.forEach(itemBoxMesh => {
+            object.add(itemBoxMesh);
           });
-          object.itemMeshes = itemMeshes;
+          object.itemBoxMeshes = itemBoxMeshes;
 
           return object;
         })();
@@ -105,76 +108,49 @@ class Inventory {
 
             SIDES.forEach(side => {
               const hoverState = hoverStates[side];
-              const grabState = grabStates[side];
               const gamepad = gamepads[side];
 
               if (gamepad) {
-                const target = (() => {
-                  const {grabber} = grabState;
+                const index = (() => {
                   const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                  const _getItemTarget = () => {
-                    const validTargets = [];
+                  const validTargets = [];
 
-                    const {itemMeshes} = mesh;
-                    for (let i = 0; i < numItems; i++) {
-                      const itemMesh = itemMeshes[i];
-                      const {position} = _decomposeObjectMatrixWorld(itemMesh);
-                      const distance = controllerPosition.distanceTo(position);
-                      if (distance < DEFAULT_GRAB_DISTANCE) {
-                        validTargets.push({
-                          type: 'item',
-                          index: i,
-                          distance,
-                        });
-                      }
+                  const {itemBoxMeshes} = mesh;
+                  for (let i = 0; i < numItems; i++) {
+                    const itemBoxMesh = itemBoxMeshes[i];
+                    const {position} = _decomposeObjectMatrixWorld(itemBoxMesh);
+                    const distance = controllerPosition.distanceTo(position);
+                    if (distance < DEFAULT_GRAB_DISTANCE) {
+                      validTargets.push({
+                        index: i,
+                        distance,
+                      });
                     }
+                  }
 
-                    if (validTargets.length > 0) {
-                      const closestTarget = validTargets.sort((a, b) => a.distance - b.distance)[0];
-                      const {type} = closestTarget;
-
-                      if (type === 'handle') {
-                        return 'handle';
-                      } else if (type === 'item') {
-                        const {index} = closestTarget;
-                        return 'item:' + index;
-                      } else {
-                        return null;
-                      }
-                    } else {
-                      return null;
-                    }
-                  };
-
-                  const itemTarget = _getItemTarget();
-                  if (itemTarget !== null) {
-                    return itemTarget;
+                  if (validTargets.length > 0) {
+                    const closestTarget = validTargets.sort((a, b) => a.distance - b.distance)[0];
+                    const {index} = closestTarget;
+                    return index;
                   } else {
                     return null;
                   }
                 })();
-                hoverState.target = target;
+                hoverState.index = index;
               }
             });
           };
           const _updateBoxMeshes = () => {
-            const _isItemTarget = index => SIDES.some(side => {
+            const _isHovered = testIndex => SIDES.some(side => {
               const hoverState = hoverStates[side];
-              const {target} = hoverState;
-              const match = target !== null ? target.match(/^item:([0-9]+)$/) : null;
-
-              if (match) {
-                const matchIndex = parseInt(match[1], 10);
-                return matchIndex === index;
-              } else {
-                return false;
-              }
+              const {index} = hoverState;
+              return index === testIndex;
             });
 
-            const {itemMeshes} = mesh;
+            const {itemBoxMeshes} = mesh;
             for (let i = 0; i < numItems; i++) {
-              itemMeshes[i].material.color = new THREE.Color(_isItemTarget(i) ? 0x0000FF : 0x808080);
+              itemBoxMeshes[i].material.color = new THREE.Color(_isHovered(i) ? 0x0000FF : 0x808080);
             }
           };
 
@@ -186,40 +162,27 @@ class Inventory {
         const _gripdown = e => {
           const {side} = e;
           const hoverState = hoverStates[side];
-          const {target} = hoverState;
+          const {index} = hoverState;
 
-          if (target === 'back' || target == 'handle') {
-            const grabber = hands.grab(side, mesh);
-            grabber.on('update', ({position, rotation}) => {
-              mesh.position.copy(position);
-              mesh.quaternion.copy(rotation);
-            });
-            grabber.on('release', ({position, rotation}) => {
-              const {target} = hoverState;
-              if (target === 'back') {
-                mesh.visible = false;
-                backpackState.visible = false;
-              }
+          if (index !== null) {
+            const {itemBoxMeshes} = mesh;
+            const itemBoxMesh = itemBoxMeshes[index];
+            const tagMesh = itemBoxMesh.getItemMesh();
 
-              grabState.grabber = null;
-            });
+            if (tagMesh) {
+              tags.grabTag(side, tagMesh);
 
-            const grabState = grabStates[side];
-            grabState.grabber = grabber;
+              hub.setUserStateInventoryItem(index, null);
 
-            mesh.visible = true;
-            backpackState.visible = true;
+              e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+            }
           }
         };
-        input.on('gripdown', _gripdown);
+        input.on('gripdown', _gripdown, {
+          priority: 1,
+        });
         const _gripup = e => {
           const {side} = e;
-
-          const grabState = grabStates[side];
-          const {grabber: localGrabber} = grabState;
-          if (localGrabber) {
-            localGrabber.release();
-          }
 
           const handsGrabber = hands.peek(side);
           if (handsGrabber) {
@@ -231,18 +194,24 @@ class Inventory {
               handsGrabber.release();
 
               const hoverState = hoverStates[side];
-              const {target} = hoverState;
-              const match = target !== null ? target.match(/^item:([0-9]+)$/) : null;
-              if (match) {
-                const index = parseInt(match[1], 10);
-                const {itemMeshes} = mesh;
-                const itemMesh = itemMeshes[index];
+              const {index} = hoverState;
+              if (index !== null) {
+                const {itemBoxMeshes} = mesh;
+                const itemBoxMesh = itemBoxMeshes[index];
+                const oldTagMesh = itemBoxMesh.getItemMesh();
 
-                itemMesh.add(tagMesh);
-                tagMesh.position.copy(new THREE.Vector3());
-                tagMesh.quaternion.copy(new THREE.Quaternion());
-                tagMesh.scale.set(1, 1, 1);
+                if (!oldTagMesh) {
+                  itemBoxMesh.setItemMesh(tagMesh);
+                  tagMesh.position.copy(new THREE.Vector3());
+                  tagMesh.quaternion.copy(new THREE.Quaternion());
+                  tagMesh.scale.set(1, 1, 1);
+
+                  const {item} = tagMesh;
+                  hub.setUserStateInventoryItem(index, item);
+                }
               }
+
+              e.stopImmediatePropagation(); // so tags engine doesn't pick it up
             }
           }
         };
@@ -258,10 +227,10 @@ class Inventory {
           input.removeListener('gripup', _gripup);
         };
 
-        const _getMesh = () => mesh;
+        // const _getMesh = () => mesh;
 
         return {
-          getMesh: _getMesh,
+          // getMesh: _getMesh,
         };
       }
     });

@@ -97,7 +97,7 @@ class Tags {
                 immediate: true,
               });
 
-              const menuMesh = (() => {
+              const tagMesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.y = 1.2;
                 object.rotation.order = camera.rotation.order;
@@ -133,9 +133,17 @@ class Tags {
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
+                const item = {
+                  tag: 'zeo-model',
+                  attributes: {
+                    position: new THREE.Matrix4().toArray(),
+                  },
+                };
+                object.item = item;
+
                 return object;
               })();
-              scene.add(menuMesh);
+              scene.add(tagMesh);
 
               const boxMesh = (() => {
                 const width = WORLD_WIDTH;
@@ -157,20 +165,8 @@ class Tags {
               const _gripdown = e => {
                 const {side} = e;
 
-                if (hands.canGrab(side, menuMesh, {radius: DEFAULT_GRAB_RADIUS})) {
-                  scene.add(menuMesh);
-
-                  const grabber = hands.grab(side, menuMesh);
-                  grabber.on('update', ({position, rotation}) => {
-                    menuMesh.position.copy(position);
-                    menuMesh.quaternion.copy(rotation);
-                  });
-                  grabber.on('release', ({linearVelocity, angularVelocity}) => {
-                    grabState.grabber = null;
-                  });
-
-                  const grabState = grabStates[side];
-                  grabState.grabber = grabber;
+                if (hands.canGrab(side, tagMesh, {radius: DEFAULT_GRAB_RADIUS})) {
+                  _grabTag(side, tagMesh);
                 }
               };
               input.on('gripdown', _gripdown, {
@@ -188,11 +184,11 @@ class Tags {
               input.on('gripup', _gripup);
               const _update = () => {
                 const _updateControllers = () => {
-                  const grabbable = SIDES.some(side => hands.canGrab(side, menuMesh, {radius: DEFAULT_GRAB_RADIUS}));
+                  const grabbable = SIDES.some(side => hands.canGrab(side, tagMesh, {radius: DEFAULT_GRAB_RADIUS}));
 
                   if (grabbable) {
-                    boxMesh.position.copy(menuMesh.position);
-                    boxMesh.quaternion.copy(menuMesh.quaternion);
+                    boxMesh.position.copy(tagMesh.position);
+                    boxMesh.quaternion.copy(tagMesh.quaternion);
 
                     if (!boxMesh.visible) {
                       boxMesh.visible = true;
@@ -204,7 +200,7 @@ class Tags {
                   }
                 };
                 const _updateTextures = () => {
-                  const {planeMesh: {menuMaterial}} = menuMesh;
+                  const {planeMesh: {menuMaterial}} = tagMesh;
                   const worldTime = world.getWorldTime();
 
                   biolumi.updateMenuMaterial({
@@ -220,7 +216,7 @@ class Tags {
               rend.on('update', _update);
 
               this._cleanup = () => {
-                menuMesh.parent.remove(menuMesh);
+                tagMesh.parent.remove(tagMesh);
                 scene.remove(boxMesh);
 
                 input.removeListener('gripdown', _gripdown);
@@ -229,9 +225,25 @@ class Tags {
               };
 
               const _isTag = object => object[tagFlagSymbol] === true;
+              const _grabTag = (side, tagMesh) => {
+                scene.add(tagMesh);
+
+                const grabber = hands.grab(side, tagMesh);
+                grabber.on('update', ({position, rotation}) => {
+                  tagMesh.position.copy(position);
+                  tagMesh.quaternion.copy(rotation);
+                });
+                grabber.on('release', ({linearVelocity, angularVelocity}) => {
+                  grabState.grabber = null;
+                });
+
+                const grabState = grabStates[side];
+                grabState.grabber = grabber;
+              };
 
               return {
                 isTag: _isTag,
+                grabTag: _grabTag,
               };
             });
         }

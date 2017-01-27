@@ -1,4 +1,5 @@
 const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+const NUM_INVENTORY_ITEMS = 4;
 
 class Hub {
   constructor(archae) {
@@ -71,6 +72,13 @@ class Hub {
           username: j ? j.username : null,
           world: j ? j.world : null,
           matrix: j ? j.matrix : DEFAULT_MATRIX,
+          inventory: j ? j.inventory : (() => {
+            const result = Array(NUM_INVENTORY_ITEMS);
+            for (let i = 0; i < NUM_INVENTORY_ITEMS; i++) {
+              result[i] = null;
+            }
+            return result;
+          })(),
         };
 
         const _isEnabled = () => hubEnabled;
@@ -83,11 +91,18 @@ class Hub {
             state: {
               world,
               matrix,
+              inventory,
             },
           };
         };
         const _setUserStateMatrix = matrix => {
           userState.matrix = matrix;
+        };
+        const _getUserStateInventoryItem = index => {
+          return userState.inventory[index] || null;
+        };
+        const _setUserStateInventoryItem = (index, item) => {
+          userState.inventory[index] = item;
         };
         const _saveUserState = () => {
           const {username} = userState;
@@ -118,6 +133,8 @@ class Hub {
           getWorldName: _getWorldName,
           getUserState: _getUserState,
           setUserStateMatrix: _setUserStateMatrix,
+          getUserStateInventoryItem: _getUserStateInventoryItem,
+          setUserStateInventoryItem: _setUserStateInventoryItem,
           saveUserState: _saveUserState,
           saveUserStateAsync: _saveUserStateAsync,
         };
