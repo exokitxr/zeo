@@ -10,12 +10,6 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
-  /* ATTRIBUTES_WIDTH, // XXX port this
-  ATTRIBUTES_HEIGHT,
-  ATTRIBUTES_WORLD_WIDTH,
-  ATTRIBUTES_WORLD_HEIGHT,
-  ATTRIBUTES_WORLD_DEPTH, */
-
   NAVBAR_WIDTH,
   NAVBAR_HEIGHT,
   NAVBAR_WORLD_WIDTH,
@@ -933,10 +927,6 @@ class Rend {
                   opacity: 0.5,
                   transparent: true,
                 });
-                const pointsHighlightMaterial = new THREE.PointsMaterial({
-                  color: 0xFF0000,
-                  size: 0.01,
-                });
                 const pointsLargeMaterial = new THREE.PointsMaterial({
                   // color: 0x808080,
                   vertexColors: THREE.VertexColors,
@@ -1023,55 +1013,26 @@ class Rend {
                 })();
                 scene.add(menuMesh);
 
-                const _makeBoxMesh = () => {
-                  const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-
-                  const mesh = new THREE.Mesh(geometry, wireframeHighlightMaterial);
-                  mesh.visible = false;
-                  return mesh;
-                };
                 const menuBoxMeshes = {
-                  left: _makeBoxMesh(),
-                  right: _makeBoxMesh(),
+                  left: biolumi.makeMenuBoxMesh(),
+                  right: biolumi.makeMenuBoxMesh(),
                 };
                 scene.add(menuBoxMeshes.left);
                 scene.add(menuBoxMeshes.right);
 
-                const attributesBoxMeshes = {
-                  left: _makeBoxMesh(),
-                  right: _makeBoxMesh(),
-                };
-                scene.add(attributesBoxMeshes.left);
-                scene.add(attributesBoxMeshes.right);
-
                 const navbarBoxMeshes = {
-                  left: _makeBoxMesh(),
-                  right: _makeBoxMesh(),
+                  left: biolumi.makeMenuBoxMesh(),
+                  right: biolumi.makeMenuBoxMesh(),
                 };
                 scene.add(navbarBoxMeshes.left);
                 scene.add(navbarBoxMeshes.right);
 
-                const _makeMenuDotMesh = () => {
-                  const geometry = new THREE.BufferGeometry();
-                  geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
-                  geometry.addAttribute('color', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
-                  const material = pointsHighlightMaterial;
-
-                  return new THREE.Points(geometry, material);
-                };
                 const menuDotMeshes = {
-                  left: _makeMenuDotMesh(),
-                  right: _makeMenuDotMesh(),
+                  left: biolumi.makeMenuDotMesh(),
+                  right: biolumi.makeMenuDotMesh(),
                 };
                 scene.add(menuDotMeshes.left);
                 scene.add(menuDotMeshes.right);
-
-                const attributesDotMeshes = {
-                  left: _makeMenuDotMesh(),
-                  right: _makeMenuDotMesh(),
-                };
-                scene.add(attributesDotMeshes.left);
-                scene.add(attributesDotMeshes.right);
 
                 const _makeUniverseDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
@@ -1183,8 +1144,8 @@ class Rend {
                 scene.add(keyboardMesh);
 
                 const keyboardBoxMeshes = {
-                  left: _makeBoxMesh(),
-                  right: _makeBoxMesh(),
+                  left: biolumi.makeMenuBoxMesh(),
+                  right: biolumi.makeMenuBoxMesh(),
                 };
                 scene.add(keyboardBoxMeshes.left);
                 scene.add(keyboardBoxMeshes.right);
@@ -1383,18 +1344,10 @@ class Rend {
                 };
 
                 const _updatePages = menuUtils.debounce(next => {
-                  /* const { // XXX port this
-                    worldMesh: {
-                      attributesMesh: {
-                        ui: attributesUi,
-                      },
-                    },
-                  } = menuMesh; */
 
                   const menuPages = menuUi.getPages();
-                  // const attributesPages = attributesUi.getPages();
                   const navbarPages = navbarUi.getPages();
-                  const pages = menuPages/*.concat(attributesPages)*/.concat(navbarPages);
+                  const pages = menuPages.concat(navbarPages);
 
                   if (pages.length > 0) {
                     let pending = pages.length;
@@ -1451,10 +1404,6 @@ class Rend {
                           config: configState,
                           focus: focusState,
                         }, pend);
-                      /* } else if (type === 'world') { // XXX port this
-                        page.update({
-                          elements: _cleanElementsState(elementsState),
-                        }, pend); */
                       } else if (type === 'navbar') {
                         page.update({
                           navbar: navbarState,
@@ -2771,10 +2720,7 @@ class Rend {
                     keyboardMesh.visible = false; */
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
-                      attributesDotMeshes[side].visible = false;
-
                       menuDotMeshes[side].visible = false;
-                      attributesDotMeshes[side].visible = false;
                     });
                   } else {
                     menuState.open = true;
@@ -3076,9 +3022,6 @@ class Rend {
                     scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
 
-                    scene.remove(attributesDotMeshes[side]);
-                    scene.remove(attributesBoxMeshes[side]);
-
                     scene.remove(universeDotMeshes[side]);
                     scene.remove(keyboardBoxMeshes[side]);
                   });
@@ -3103,35 +3046,9 @@ class Rend {
                   return {position, rotation, scale};
                 };
 
-                const _makeMenuHoverState = () => ({
-                  intersectionPoint: null,
-                  scrollLayer: null,
-                  anchor: null,
-                  value: 0,
-                  mousedownScrollLayer: null,
-                  mousedownStartCoord: null,
-                  mousedownStartScrollTop: null,
-                });
                 const menuHoverStates = {
-                  left: _makeMenuHoverState(),
-                  right: _makeMenuHoverState(),
-                };
-
-                const _makeWorldHoverState = () => ({
-                  hovered: false,
-                });
-                const elementsHoverStates = {
-                  left: _makeWorldHoverState(),
-                  right: _makeWorldHoverState(),
-                };
-                const npmHoverStates = {
-                  left: _makeWorldHoverState(),
-                  right: _makeWorldHoverState(),
-                };
-
-                const attributesHoverStates = {
-                  left: _makeMenuHoverState(),
-                  right: _makeMenuHoverState(),
+                  left: biolumi.makeMenuHoverState(),
+                  right: biolumi.makeMenuHoverState(),
                 };
 
                 const _makeNavbarHoverState = () => ({
@@ -3222,22 +3139,6 @@ class Rend {
                           worldTime,
                         });
                       }
-                      /* if (tab === 'world') { // XXX port this
-                        const {
-                          worldMesh: {
-                            attributesMesh: {
-                              ui: attributesUi,
-                              menuMaterial: attributesMenuMaterial,
-                            },
-                          },
-                        } = menuMesh;
-
-                        biolumi.updateMenuMaterial({
-                          ui: attributesUi,
-                          menuMaterial: attributesMenuMaterial,
-                          worldTime,
-                        });
-                      } */
 
                       const {
                         navbarMesh: {
@@ -3260,310 +3161,232 @@ class Rend {
                       });
                     };
                     const _updateAnchors = () => {
-                      const _updateAnchorHovers = () => {
-                        const status = webvr.getStatus();
-                        const {gamepads} = status;
+                      const status = webvr.getStatus();
+                      const {gamepads} = status;
 
-                        const {planeMesh, worldMesh: {elementsMesh, npmMesh, attributesMesh}, navbarMesh} = menuMesh;
-                        const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                        const elementsMatrixObject = _decomposeObjectMatrixWorld(elementsMesh);
-                        const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
-                        const attributesMatrixObject = _decomposeObjectMatrixWorld(attributesMesh);
-                        const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
+                      const {planeMesh, navbarMesh} = menuMesh;
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
 
-                        SIDES.forEach(side => {
-                          const gamepad = gamepads[side];
+                      SIDES.forEach(side => {
+                        const gamepad = gamepads[side];
 
-                          if (gamepad) {
-                            const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                            const menuHoverState = menuHoverStates[side];
-                            const menuDotMesh = menuDotMeshes[side];
-                            const menuBoxMesh = menuBoxMeshes[side];
+                          const menuHoverState = menuHoverStates[side];
+                          const menuDotMesh = menuDotMeshes[side];
+                          const menuBoxMesh = menuBoxMeshes[side];
 
-                            const attributesHoverState = attributesHoverStates[side];
-                            const attributesDotMesh = attributesDotMeshes[side];
-                            const attributesBoxMesh = attributesBoxMeshes[side];
+                          const navbarHoverState = navbarHoverStates[side];
+                          const navbarBoxMesh = navbarBoxMeshes[side];
 
-                            const elementsHoverState = elementsHoverStates[side];
-                            const npmHoverState = npmHoverStates[side];
+                          const keyboardHoverState = keyboardHoverStates[side];
+                          const keyboardBoxMesh = keyboardBoxMeshes[side];
 
-                            const navbarHoverState = navbarHoverStates[side];
-                            const navbarBoxMesh = navbarBoxMeshes[side];
+                          const _updateMenuAnchors = () => {
+                            const {tab} = navbarState;
 
-                            const keyboardHoverState = keyboardHoverStates[side];
-                            const keyboardBoxMesh = keyboardBoxMeshes[side];
-
-                            const _updateMenuAnchors = () => {
-                              const {tab} = navbarState;
-
-                              if (tab === 'readme') {
-                                biolumi.updateAnchors({
-                                  matrixObject: menuMatrixObject,
-                                  ui: menuUi,
-                                  hoverState: menuHoverState,
-                                  dotMesh: menuDotMesh,
-                                  boxMesh: menuBoxMesh,
-                                  width: WIDTH,
-                                  height: HEIGHT,
-                                  worldWidth: WORLD_WIDTH,
-                                  worldHeight: WORLD_HEIGHT,
-                                  worldDepth: WORLD_DEPTH,
-                                  controllerPosition,
-                                  controllerRotation,
-                                });
-                              }
-                              /* if (tab === 'world') { // XXX port this
-                                const {
-                                  worldMesh: {
-                                    attributesMesh: {
-                                      ui: attributesUi,
-                                    },
-                                  },
-                                } = menuMesh;
-
-                                biolumi.updateAnchors({
-                                  matrixObject: attributesMatrixObject,
-                                  ui: attributesUi,
-                                  hoverState: attributesHoverState,
-                                  dotMesh: attributesDotMesh,
-                                  boxMesh: attributesBoxMesh,
-                                  width: ATTRIBUTES_WIDTH,
-                                  height: ATTRIBUTES_HEIGHT,
-                                  worldWidth: ATTRIBUTES_WORLD_WIDTH,
-                                  worldHeight: ATTRIBUTES_WORLD_HEIGHT,
-                                  worldDepth: ATTRIBUTES_WORLD_DEPTH,
-                                  controllerPosition,
-                                  controllerRotation,
-                                });
-
-                                const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsMatrixObject;
-                                const elementsBoxTarget = geometryUtils.makeBoxTarget(
-                                  elementsPosition,
-                                  elementsRotation,
-                                  elementsScale,
-                                  new THREE.Vector3(elementsMesh.size, elementsMesh.size, elementsMesh.size)
-                                );
-                                elementsHoverState.hovered = elementsBoxTarget.containsPoint(controllerPosition);
-
-                                const {position: npmPosition, rotation: npmRotation, scale: npmScale} = npmMatrixObject;
-                                const npmBoxTarget = geometryUtils.makeBoxTarget(
-                                  npmPosition,
-                                  npmRotation,
-                                  npmScale,
-                                  new THREE.Vector3(npmMesh.size, npmMesh.size, npmMesh.size)
-                                );
-                                npmHoverState.hovered = npmBoxTarget.containsPoint(controllerPosition);
-                              } */
-                            };
-                            const _updateNavbarAnchors = () => {
-                              const {position: navbarPosition, rotation: navbarRotation, scale: navbarScale} = navbarMatrixObject;
-
-                              const anchorBoxTargets = (() => {
-                                const result = [];
-                                const layers = navbarUi.getLayers();
-                                for (let i = 0; i < layers.length; i++) {
-                                  const layer = layers[i];
-                                  const anchors = layer.getAnchors();
-
-                                  for (let j = 0; j < anchors.length; j++) {
-                                    const anchor = anchors[j];
-                                    const {rect} = anchor;
-
-                                    const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                      navbarPosition,
-                                      navbarRotation,
-                                      navbarScale,
-                                      new THREE.Vector3(
-                                        -(NAVBAR_WORLD_WIDTH / 2) + (rect.left / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
-                                        (NAVBAR_WORLD_HEIGHT / 2) + (-rect.top / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
-                                        -NAVBAR_WORLD_DEPTH
-                                      ),
-                                      new THREE.Vector3(
-                                        -(NAVBAR_WORLD_WIDTH / 2) + (rect.right / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
-                                        (NAVBAR_WORLD_HEIGHT / 2) + (-rect.bottom / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
-                                        NAVBAR_WORLD_DEPTH
-                                      )
-                                    );
-                                    anchorBoxTarget.anchor = anchor;
-
-                                    result.push(anchorBoxTarget);
-                                  }
-                                }
-                                return result;
-                              })();
-                              const anchorBoxTarget = (() => {
-                                const nearAnchorBoxTargets = anchorBoxTargets
-                                  .map(anchorBoxTarget => ({
-                                    anchorBoxTarget,
-                                    distance: anchorBoxTarget.position.distanceTo(controllerPosition),
-                                  }))
-                                  .filter(({distance}) => distance < 0.1)
-                                  .sort((a, b) => a.distance - b.distance)
-                                  .map(({anchorBoxTarget}) => anchorBoxTarget);
-
-                                if (nearAnchorBoxTargets.length > 0) {
-                                  return nearAnchorBoxTargets[0];
-                                } else {
-                                  return null;
-                                }
-                              })();
-                              if (anchorBoxTarget) {
-                                const {anchor} = anchorBoxTarget;
-                                navbarHoverState.anchor = anchor;
-
-                                navbarBoxMesh.position.copy(anchorBoxTarget.position);
-                                navbarBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                                navbarBoxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
-
-                                if (!navbarBoxMesh.visible) {
-                                  navbarBoxMesh.visible = true;
-                                }
-                              } else {
-                                navbarHoverState.anchor = null;
-
-                                if (navbarBoxMesh.visible) {
-                                  navbarBoxMesh.visible = false;
-                                }
-                              }
-                            };
-                            const _updateKeyboardAnchors = () => {
-                              const {planeMesh} = keyboardMesh;
-                              const {position: keyboardPosition, rotation: keyboardRotation, scale: keyboardScale} = _decomposeObjectMatrixWorld(planeMesh);
-
-                              const {keySpecs} = keyboardMesh;
-                              const anchorBoxTargets = keySpecs.map(keySpec => {
-                                const {key, rect} = keySpec;
-
-                                const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                  keyboardPosition,
-                                  keyboardRotation,
-                                  keyboardScale,
-                                  new THREE.Vector3(
-                                    -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                                    (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                                    -WORLD_DEPTH
-                                  ),
-                                  new THREE.Vector3(
-                                    -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                                    (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                                    WORLD_DEPTH
-                                  )
-                                );
-                                anchorBoxTarget.key = key;
-                                return anchorBoxTarget;
+                            if (tab === 'readme') {
+                              biolumi.updateAnchors({
+                                matrixObject: menuMatrixObject,
+                                ui: menuUi,
+                                hoverState: menuHoverState,
+                                dotMesh: menuDotMesh,
+                                boxMesh: menuBoxMesh,
+                                width: WIDTH,
+                                height: HEIGHT,
+                                worldWidth: WORLD_WIDTH,
+                                worldHeight: WORLD_HEIGHT,
+                                worldDepth: WORLD_DEPTH,
+                                controllerPosition,
+                                controllerRotation,
                               });
-                              // NOTE: there should be at most one intersecting anchor box since keys do not overlap
-                              const anchorBoxTarget = anchorBoxTargets.find(anchorBoxTarget => anchorBoxTarget.containsPoint(controllerPosition));
+                            }
+                          };
+                          const _updateNavbarAnchors = () => {
+                            const {position: navbarPosition, rotation: navbarRotation, scale: navbarScale} = navbarMatrixObject;
 
-                              const {key: oldKey} = keyboardHoverState;
-                              const newKey = anchorBoxTarget ? anchorBoxTarget.key : null;
-                              keyboardHoverState.key = newKey;
+                            const anchorBoxTargets = (() => {
+                              const result = [];
+                              const layers = navbarUi.getLayers();
+                              for (let i = 0; i < layers.length; i++) {
+                                const layer = layers[i];
+                                const anchors = layer.getAnchors();
 
-                              if (oldKey && newKey !== oldKey) {
-                                const key = oldKey;
-                                const keyCode = keycode(key);
+                                for (let j = 0; j < anchors.length; j++) {
+                                  const anchor = anchors[j];
+                                  const {rect} = anchor;
 
-                                input.triggerEvent('keyboardup', {
-                                  key,
-                                  keyCode,
-                                  side,
-                                });
+                                  const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                                    navbarPosition,
+                                    navbarRotation,
+                                    navbarScale,
+                                    new THREE.Vector3(
+                                      -(NAVBAR_WORLD_WIDTH / 2) + (rect.left / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
+                                      (NAVBAR_WORLD_HEIGHT / 2) + (-rect.top / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
+                                      -NAVBAR_WORLD_DEPTH
+                                    ),
+                                    new THREE.Vector3(
+                                      -(NAVBAR_WORLD_WIDTH / 2) + (rect.right / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
+                                      (NAVBAR_WORLD_HEIGHT / 2) + (-rect.bottom / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
+                                      NAVBAR_WORLD_DEPTH
+                                    )
+                                  );
+                                  anchorBoxTarget.anchor = anchor;
+
+                                  result.push(anchorBoxTarget);
+                                }
                               }
-                              if (newKey && newKey !== oldKey) {
-                                const key = newKey;
-                                const keyCode = keycode(key);
+                              return result;
+                            })();
+                            const anchorBoxTarget = (() => {
+                              const nearAnchorBoxTargets = anchorBoxTargets
+                                .map(anchorBoxTarget => ({
+                                  anchorBoxTarget,
+                                  distance: anchorBoxTarget.position.distanceTo(controllerPosition),
+                                }))
+                                .filter(({distance}) => distance < 0.1)
+                                .sort((a, b) => a.distance - b.distance)
+                                .map(({anchorBoxTarget}) => anchorBoxTarget);
 
-                                input.triggerEvent('keyboarddown', {
-                                  key,
-                                  keyCode,
-                                  side,
-                                });
-                                input.triggerEvent('keyboardpress', {
-                                  key,
-                                  keyCode,
-                                  side,
-                                });
+                              if (nearAnchorBoxTargets.length > 0) {
+                                return nearAnchorBoxTargets[0];
+                              } else {
+                                return null;
                               }
+                            })();
+                            if (anchorBoxTarget) {
+                              const {anchor} = anchorBoxTarget;
+                              navbarHoverState.anchor = anchor;
 
-                              if (anchorBoxTarget) {
-                                keyboardBoxMesh.position.copy(anchorBoxTarget.position);
-                                keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                                keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
+                              navbarBoxMesh.position.copy(anchorBoxTarget.position);
+                              navbarBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                              navbarBoxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
 
-                                if (!keyboardBoxMesh.visible) {
-                                  keyboardBoxMesh.visible = true;
+                              if (!navbarBoxMesh.visible) {
+                                navbarBoxMesh.visible = true;
+                              }
+                            } else {
+                              navbarHoverState.anchor = null;
+
+                              if (navbarBoxMesh.visible) {
+                                navbarBoxMesh.visible = false;
+                              }
+                            }
+                          };
+                          const _updateKeyboardAnchors = () => {
+                            const {planeMesh} = keyboardMesh;
+                            const {position: keyboardPosition, rotation: keyboardRotation, scale: keyboardScale} = _decomposeObjectMatrixWorld(planeMesh);
+
+                            const {keySpecs} = keyboardMesh;
+                            const anchorBoxTargets = keySpecs.map(keySpec => {
+                              const {key, rect} = keySpec;
+
+                              const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                                keyboardPosition,
+                                keyboardRotation,
+                                keyboardScale,
+                                new THREE.Vector3(
+                                  -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
+                                  (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
+                                  -WORLD_DEPTH
+                                ),
+                                new THREE.Vector3(
+                                  -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
+                                  (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
+                                  WORLD_DEPTH
+                                )
+                              );
+                              anchorBoxTarget.key = key;
+                              return anchorBoxTarget;
+                            });
+                            // NOTE: there should be at most one intersecting anchor box since keys do not overlap
+                            const anchorBoxTarget = anchorBoxTargets.find(anchorBoxTarget => anchorBoxTarget.containsPoint(controllerPosition));
+
+                            const {key: oldKey} = keyboardHoverState;
+                            const newKey = anchorBoxTarget ? anchorBoxTarget.key : null;
+                            keyboardHoverState.key = newKey;
+
+                            if (oldKey && newKey !== oldKey) {
+                              const key = oldKey;
+                              const keyCode = keycode(key);
+
+                              input.triggerEvent('keyboardup', {
+                                key,
+                                keyCode,
+                                side,
+                              });
+                            }
+                            if (newKey && newKey !== oldKey) {
+                              const key = newKey;
+                              const keyCode = keycode(key);
+
+                              input.triggerEvent('keyboarddown', {
+                                key,
+                                keyCode,
+                                side,
+                              });
+                              input.triggerEvent('keyboardpress', {
+                                key,
+                                keyCode,
+                                side,
+                              });
+                            }
+
+                            if (anchorBoxTarget) {
+                              keyboardBoxMesh.position.copy(anchorBoxTarget.position);
+                              keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                              keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
+
+                              if (!keyboardBoxMesh.visible) {
+                                keyboardBoxMesh.visible = true;
+                              }
+                            } else {
+                              if (keyboardBoxMesh.visible) {
+                                keyboardBoxMesh.visible = false;
+                              }
+                            }
+                          };
+                          const _updateUniverseAnchors = () => {
+                            const {tab} = navbarState;
+
+                            if (tab === 'multiverse') {
+                              const universeHoverState = universeHoverStates[side];
+                              const {innerMesh, floorBoxMeshes} = universeMesh;
+                              const {size} = innerMesh;
+                              const floorBoxMesh = floorBoxMeshes[side];
+
+                              const {position: universePosition, rotation: universeRotation, scale: universeScale} = _decomposeObjectMatrixWorld(universeMesh);
+
+                              const boxTarget = geometryUtils.makeBoxTarget(
+                                universePosition,
+                                universeRotation,
+                                universeScale,
+                                new THREE.Vector3(size, size, size)
+                              );
+                              if (boxTarget.containsPoint(controllerPosition)) {
+                                universeHoverState.hovered = true;
+
+                                if (!floorBoxMesh.visible) {
+                                  floorBoxMesh.visible = true;
                                 }
                               } else {
-                                if (keyboardBoxMesh.visible) {
-                                  keyboardBoxMesh.visible = false;
+                                universeHoverState.hovered = false;
+
+                                if (floorBoxMesh.visible) {
+                                  floorBoxMesh.visible = false;
                                 }
                               }
-                            };
-                            const _updateUniverseAnchors = () => {
-                              const {tab} = navbarState;
+                            }
+                          };
 
-                              if (tab === 'multiverse') {
-                                const universeHoverState = universeHoverStates[side];
-                                const {innerMesh, floorBoxMeshes} = universeMesh;
-                                const {size} = innerMesh;
-                                const floorBoxMesh = floorBoxMeshes[side];
-
-                                const {position: universePosition, rotation: universeRotation, scale: universeScale} = _decomposeObjectMatrixWorld(universeMesh);
-
-                                const boxTarget = geometryUtils.makeBoxTarget(
-                                  universePosition,
-                                  universeRotation,
-                                  universeScale,
-                                  new THREE.Vector3(size, size, size)
-                                );
-                                if (boxTarget.containsPoint(controllerPosition)) {
-                                  universeHoverState.hovered = true;
-
-                                  if (!floorBoxMesh.visible) {
-                                    floorBoxMesh.visible = true;
-                                  }
-                                } else {
-                                  universeHoverState.hovered = false;
-
-                                  if (floorBoxMesh.visible) {
-                                    floorBoxMesh.visible = false;
-                                  }
-                                }
-                              }
-                            };
-
-                            _updateMenuAnchors();
-                            _updateNavbarAnchors();
-                            _updateKeyboardAnchors();
-                            _updateUniverseAnchors();
-                          }
-                        });
-                      };
-                      const _updateAnchorStyles = () => {
-                        const {tab} = navbarState;
-
-                        if (tab === 'world') {
-                          const {worldMesh: {elementsMesh}} = menuMesh;
-                          const elementsHovered = SIDES.some(side => {
-                            const elementsHoverState = elementsHoverStates[side];
-                            const {hovered} = elementsHoverState;
-                            return hovered;
-                          });
-                          elementsMesh.material.color = new THREE.Color(elementsHovered ? 0x0000FF : 0x808080);
-
-                          const {worldMesh: {npmMesh}} = menuMesh;
-                          const npmHovered = SIDES.some(side => {
-                            const npmHoverState = npmHoverStates[side];
-                            const {hovered} = npmHoverState;
-                            return hovered;
-                          });
-                          npmMesh.material.color = new THREE.Color(npmHovered ? 0x0000FF : 0x808080);
+                          _updateMenuAnchors();
+                          _updateNavbarAnchors();
+                          _updateKeyboardAnchors();
+                          _updateUniverseAnchors();
                         }
-                      };
-
-                      _updateAnchorHovers();
-                      _updateAnchorStyles();
+                      });
                     };
                     const _updateControllers = () => {
                       const status = webvr.getStatus();
@@ -3738,6 +3561,11 @@ class Rend {
 
               getCurrentWorld() {
                 return currentWorld;
+              }
+
+              getTab() {
+                const {tab} = navbarState;
+                return tab;
               }
 
               addMenuMesh(name, object) {

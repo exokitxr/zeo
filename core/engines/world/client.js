@@ -6,6 +6,9 @@ import {
   WORLD_DEPTH,
 } from './lib/constants/world';
 import worldRenderer from './lib/render/world';
+import menuUtils from './lib/utils/menu';
+
+const SIDES = ['left', 'right'];
 
 class World {
   constructor(archae) {
@@ -23,20 +26,28 @@ class World {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/input',
+      '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
       '/core/engines/tags',
+      '/core/plugins/geometry-utils',
     ]).then(([
       three,
       input,
+      webvr,
       biolumi,
       rend,
       hands,
       tags,
+      geometryUtils,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = three;
+        const {THREE, scene} = three;
+
+        const transparentMaterial = biolumi.getTransparentMaterial();
+        const solidMaterial = biolumi.getSolidMaterial();
+        const currentWorld = rend.getCurrentWorld();
 
         const _decomposeObjectMatrixWorld = object => {
           const {matrixWorld} = object;
@@ -55,9 +66,6 @@ class World {
           right: _makeHoverState(),
         };
 
-        const transparentMaterial = biolumi.getTransparentMaterial();
-        const solidMaterial = biolumi.getSolidMaterial();
-
         return biolumi.requestUi({
           width: WIDTH,
           height: HEIGHT,
@@ -66,6 +74,23 @@ class World {
             if (live) {
               const attributesState = {
                 element: null,
+              };
+
+              const _makeWorldHoverState = () => ({
+                hovered: false,
+              });
+              const elementsHoverStates = {
+                left: _makeWorldHoverState(),
+                right: _makeWorldHoverState(),
+              };
+              const npmHoverStates = {
+                left: _makeWorldHoverState(),
+                right: _makeWorldHoverState(),
+              };
+
+              const attributesHoverStates = {
+                left: biolumi.makeMenuHoverState(),
+                right: biolumi.makeMenuHoverState(),
               };
 
               attributesUi.pushPage(({attributes: {element}}) => {
@@ -170,8 +195,155 @@ class World {
               })();
               rend.addMenuMesh('worldMesh', mesh);
 
+              const attributesDotMeshes = {
+                left: biolumi.makeMenuDotMesh(),
+                right: biolumi.makeMenuDotMesh(),
+              };
+              scene.add(attributesDotMeshes.left);
+              scene.add(attributesDotMeshes.right);
+
+              const attributesBoxMeshes = {
+                left: biolumi.makeMenuBoxMesh(),
+                right: biolumi.makeMenuBoxMesh(),
+              };
+              scene.add(attributesBoxMeshes.left);
+              scene.add(attributesBoxMeshes.right);
+
+              /* const _updatePages = menuUtils.debounce(next => { // XXX hook this in when pages update
+                const {
+                  attributesMesh: {
+                    menuMaterial: attributesMenuMaterial,
+                  },
+                } = mesh;
+                const pages = attributesUi.getPages();
+
+                if (pages.length > 0) {
+                  let pending = pages.length;
+                  const pend = () => {
+                    if (--pending === 0) {
+                      next();
+                    }
+                  };
+
+                  for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    const {type} = page;
+
+                    if (type === 'world') {
+                      page.update({
+                        elements: _cleanElementsState(elementsState),
+                      }, pend);
+                    } else {
+                      pend();
+                    }
+                  }
+                } else {
+                  next();
+                }
+              }); */
+
               const _update = e => {
-                // XXX
+                const tab = rend.getTab();
+
+                if (tab === 'world') {
+                  const _updateTextures = () => {
+                    const {
+                      attributesMesh: {
+                        menuMaterial: attributesMenuMaterial,
+                      },
+                    } = mesh;
+                    const worldTime = currentWorld.getWorldTime();
+
+                    biolumi.updateMenuMaterial({
+                      ui: attributesUi,
+                      menuMaterial: attributesMenuMaterial,
+                      worldTime,
+                    });
+                  };
+                  const _updateAnchors = () => {
+                    const tab = rend.getTab();
+
+                    if (tab === 'world') {
+                      const {elementsMesh, npmMesh, attributesMesh} = mesh;
+                      const {ui: attributesUi} = attributesMesh;
+
+                      const elementsMatrixObject = _decomposeObjectMatrixWorld(elementsMesh);
+                      const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
+                      const attributesMatrixObject = _decomposeObjectMatrixWorld(attributesMesh);
+
+                      const {gamepads} = webvr.getStatus();
+
+                      SIDES.forEach(side => {
+                        const gamepad = gamepads[side];
+
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                          const attributesHoverState = attributesHoverStates[side];
+                          const attributesDotMesh = attributesDotMeshes[side];
+                          const attributesBoxMesh = attributesBoxMeshes[side];
+
+                          const elementsHoverState = elementsHoverStates[side];
+                          const npmHoverState = npmHoverStates[side];
+
+                          biolumi.updateAnchors({
+                            matrixObject: attributesMatrixObject,
+                            ui: attributesUi,
+                            hoverState: attributesHoverState,
+                            dotMesh: attributesDotMesh,
+                            boxMesh: attributesBoxMesh,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                            controllerPosition,
+                            controllerRotation,
+                          });
+
+                          const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsMatrixObject;
+                          const elementsBoxTarget = geometryUtils.makeBoxTarget(
+                            elementsPosition,
+                            elementsRotation,
+                            elementsScale,
+                            new THREE.Vector3(elementsMesh.size, elementsMesh.size, elementsMesh.size)
+                          );
+                          elementsHoverState.hovered = elementsBoxTarget.containsPoint(controllerPosition);
+
+                          const {position: npmPosition, rotation: npmRotation, scale: npmScale} = npmMatrixObject;
+                          const npmBoxTarget = geometryUtils.makeBoxTarget(
+                            npmPosition,
+                            npmRotation,
+                            npmScale,
+                            new THREE.Vector3(npmMesh.size, npmMesh.size, npmMesh.size)
+                          );
+                          npmHoverState.hovered = npmBoxTarget.containsPoint(controllerPosition);
+                        }
+                      });
+                    }
+                  };
+                  const _updateAnchorStyles = () => {
+                    const {elementsMesh} = mesh;
+                    const elementsHovered = SIDES.some(side => {
+                      const elementsHoverState = elementsHoverStates[side];
+                      const {hovered} = elementsHoverState;
+                      return hovered;
+                    });
+                    elementsMesh.material.color = new THREE.Color(elementsHovered ? 0x0000FF : 0x808080);
+
+                    const {npmMesh} = mesh;
+                    const npmHovered = SIDES.some(side => {
+                      const npmHoverState = npmHoverStates[side];
+                      const {hovered} = npmHoverState;
+                      return hovered;
+                    });
+                    npmMesh.material.color = new THREE.Color(npmHovered ? 0x0000FF : 0x808080);
+                  };
+
+                  _updateTextures();
+                  _updateAnchors();
+                  _updateAnchorStyles();
+                }
               };
               rend.on('update', _update);
 
@@ -235,6 +407,11 @@ class World {
 
               this._cleanup = () => {
                 rend.removeMenuMesh(mesh);
+
+                SIDES.forEach(side => {
+                  scene.remove(attributesDotMeshes[side]);
+                  scene.remove(attributesBoxMeshes[side]);
+                });
 
                 rend.removeListener('update', _update);
                 input.removeListener('gripdown', _gripdown);

@@ -560,6 +560,15 @@ class Biolumi {
           });
           const _getSolidMaterial = () => solidMaterial;
 
+          const _makeMenuHoverState = () => ({
+            intersectionPoint: null,
+            scrollLayer: null,
+            anchor: null,
+            value: 0,
+            mousedownScrollLayer: null,
+            mousedownStartCoord: null,
+            mousedownStartScrollTop: null,
+          });
           const menuShader = menuShaders.getShader({maxNumTextures: MAX_NUM_TEXTURES});
           const _makeMenuMaterial = () => {
             const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
@@ -630,6 +639,33 @@ class Biolumi {
             // shaderMaterial.polygonOffset = true;
             // shaderMaterial.polygonOffsetFactor = 1;
             return shaderMaterial;
+          };
+
+          const pointsHighlightMaterial = new THREE.PointsMaterial({
+            color: 0xFF0000,
+            size: 0.01,
+          });
+          const _makeMenuDotMesh = () => {
+            const geometry = new THREE.BufferGeometry();
+            geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
+            geometry.addAttribute('color', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
+            const material = pointsHighlightMaterial;
+
+            return new THREE.Points(geometry, material);
+          };
+
+          const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0000FF,
+            wireframe: true,
+            opacity: 0.5,
+            transparent: true,
+          });
+          const _makeMenuBoxMesh = () => {
+            const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+
+            const mesh = new THREE.Mesh(geometry, wireframeHighlightMaterial);
+            mesh.visible = false;
+            return mesh;
           };
           const _makeMeshPointGetter = ({position, rotation, width, height, worldWidth, worldHeight}) => (x, y, z) => position.clone()
             .add(
@@ -899,7 +935,10 @@ class Biolumi {
             getMaxNumTextures: _getMaxNumTextures,
             getTransparentMaterial: _getTransparentMaterial,
             getSolidMaterial: _getSolidMaterial,
+            makeMenuHoverState: _makeMenuHoverState,
             makeMenuMaterial: _makeMenuMaterial,
+            makeMenuDotMesh: _makeMenuDotMesh,
+            makeMenuBoxMesh: _makeMenuBoxMesh,
             makeMeshPointGetter: _makeMeshPointGetter,
             makeMeshCoordinateGetter: _makeMeshCoordinateGetter,
             updateAnchors: _updateAnchors,
