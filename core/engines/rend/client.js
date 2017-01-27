@@ -1344,7 +1344,7 @@ class Rend {
 
                   const {worlds} = universeState;
                   const pointsMesh = (() => {
-                    return new THREE.Object3D(); // XXX
+                    return new THREE.Object3D(); // XXX make this creatures instead
 
                     const geometry = new THREE.BufferGeometry();
                     const positions = (() => {
@@ -1391,7 +1391,7 @@ class Rend {
                   object.add(pointsMesh);
 
                   const linesMesh = (() => {
-                    return new THREE.Object3D(); // XXX
+                    return new THREE.Object3D(); // XXX make this creatures instead
 
                     const geometry = new THREE.BufferGeometry();
                     const positions = (() => {
@@ -1707,18 +1707,24 @@ class Rend {
                       }
                     };
                     const _doClickUniverse = e => {
-                      const {side} = e;
-                      const universeHoverState = universeHoverStates[side];
-                      const {hoverWorld} = universeHoverState;
+                      const {tab} = navbarState;
 
-                      if (hoverWorld) {
-                        const {world} = hoverWorld;
-                        const {worldName} = world;
+                      if (tab === 'multiverse') {
+                        const {side} = e;
+                        const universeHoverState = universeHoverStates[side];
+                        const {hoverWorld} = universeHoverState;
 
-                        const {hub: {url: hubUrl}} = metadata;
-                        if (worldName !== hub.getWorldName()) {
-                          window.location = window.location.protocol + '//' + worldName + '.' + hubUrl + (window.location.port ? (':' + window.location.port) : ''); // XXX actually load points from the backend here
-                          return true;
+                        if (hoverWorld) {
+                          const {world} = hoverWorld;
+                          const {worldName} = world;
+
+                          const {hub: {url: hubUrl}} = metadata;
+                          if (worldName !== hub.getWorldName()) {
+                            window.location = window.location.protocol + '//' + worldName + '.' + hubUrl + (window.location.port ? (':' + window.location.port) : ''); // XXX actually load points from the backend here
+                            return true;
+                          } else {
+                            return false;
+                          }
                         } else {
                           return false;
                         }
@@ -1727,212 +1733,60 @@ class Rend {
                       }
                     };
                     const _doClickMenu = e => {
-                      const {side} = e;
-                      const menuHoverState = menuHoverStates[side];
-                      const {intersectionPoint} = menuHoverState;
+                      const {tab} = navbarState;
 
-                      if (intersectionPoint) {
-                        const {anchor} = menuHoverState;
-                        const onclick = (anchor && anchor.onclick) || '';
+                      if (tab === 'readme') {
+                        const {side} = e;
+                        const menuHoverState = menuHoverStates[side];
+                        const {intersectionPoint} = menuHoverState;
 
-                        focusState.type = '';
-                        worldsState.selectedName = '';
-                        filesState.selectedName = '';
-                        elementAttributeFilesState.selectedName = '';
+                        if (intersectionPoint) {
+                          const {anchor} = menuHoverState;
+                          const onclick = (anchor && anchor.onclick) || '';
 
-                        const _ensureFilesLoaded = targetState => {
-                          const {loaded} = targetState;
+                          focusState.type = '';
+                          worldsState.selectedName = '';
+                          filesState.selectedName = '';
+                          elementAttributeFilesState.selectedName = '';
 
-                          if (!loaded) {
-                            targetState.loading = true;
+                          const _ensureFilesLoaded = targetState => {
+                            const {loaded} = targetState;
 
-                            const {cwd} = targetState;
-                            fs.getDirectory(cwd)
-                              .then(files => {
-                                targetState.files = menuUtils.cleanFiles(files);
-                                targetState.loading = false;
+                            if (!loaded) {
+                              targetState.loading = true;
 
-                                _updatePages();
-                              })
-                              .catch(err => {
-                                console.warn(err);
-                              });
-                          }
-                        };
+                              const {cwd} = targetState;
+                              fs.getDirectory(cwd)
+                                .then(files => {
+                                  targetState.files = menuUtils.cleanFiles(files);
+                                  targetState.loading = false;
 
-                        let match;
-                        if (onclick === 'back') {
-                          menuUi.cancelTransition();
-
-                          if (menuUi.getPages().length > 1) {
-                            menuUi.popPage();
-                          }
-                        } else if (onclick === 'worlds') {
-                          menuUi.cancelTransition();
-
-                          menuUi.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
-                            {
-                              type: 'html',
-                              src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
-                            },
-                            {
-                              type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('worlds'),
-                              x: 150,
-                              y: 0,
-                              w: 150,
-                              h: 150,
-                              frameTime: 300,
-                              pixelated: true,
+                                  _updatePages();
+                                })
+                                .catch(err => {
+                                  console.warn(err);
+                                });
                             }
-                          ]), {
-                            type: 'worlds',
-                            state: {
-                              worlds: worldsState,
-                              focus: focusState,
-                            },
-                          });
-                        } else if (match = onclick.match(/^world:(.+)$/)) {
-                          const name = match[1];
+                          };
 
-                          worldsState.selectedName = name;
+                          let match;
+                          if (onclick === 'back') {
+                            menuUi.cancelTransition();
 
-                          _updatePages();
-                        } else if (onclick === 'worlds:rename') {
-                          const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
-                          if (oldWorldsSelectedName) {
-                            worldsState.inputText = '';
-                            worldsState.inputIndex = 0;
-                            worldsState.inputValue = 0;
-
-                            focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
-
-                            _updatePages();
-                          }
-                        } else if (onclick === 'worlds:remove') {
-                          const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
-                          if (oldWorldsSelectedName) {
-                            const {worlds} = worldsState;
-                            worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
-
-                            _updatePages();
-                          }
-                        } else if (onclick === 'worlds:create') {
-                          worldsState.inputText = '';
-                          worldsState.inputIndex = 0;
-                          worldsState.inputValue = 0;
-                          
-                          focusState.type = 'worlds:create';
-
-                          _updatePages();
-                        } else if (onclick === 'mods') {
-                          menuUi.cancelTransition();
-
-                          menuUi.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
-                            {
-                              type: 'html',
-                              src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
-                            },
-                            {
-                              type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('mods'),
-                              x: 150,
-                              y: 0,
-                              w: 150,
-                              h: 150,
-                              frameTime: 300,
-                              pixelated: true,
+                            if (menuUi.getPages().length > 1) {
+                              menuUi.popPage();
                             }
-                          ]), {
-                            type: 'mods',
-                            state: {
-                              mods: modsState,
-                              focus: focusState,
-                            },
-                          });
-                        } else if (match = onclick.match(/^mods:(installed|local|remote)$/)) {
-                          const tab = match[1];
+                          } else if (onclick === 'worlds') {
+                            menuUi.cancelTransition();
 
-                          if (tab === 'local') {
-                            modsState.loadingLocal = true;
-
-                            _getLocalModSpecs()
-                              .then(localMods => {
-                                modsState.localMods = localMods;
-                                modsState.loadingLocal = false;
-
-                                _updatePages();
-                              })
-                              .catch(err => {
-                                console.warn(err);
-                              });
-                          } else if (tab === 'remote') {
-                            modsState.inputText = '';
-                            modsState.inputIndex = 0;
-                            modsState.inputValue = 0;
-                            modsState.loadingRemote = true;
-
-                            _getRemoteModSpecs(modsState.inputText)
-                              .then(remoteMods => {
-                                modsState.remoteMods = remoteMods;
-                                modsState.loadingRemote = false;
-
-                                _updatePages();
-                              })
-                              .catch(err => {
-                                console.warn(err);
-                              });
-                          }
-
-                          modsState.tab = tab;
-
-                          _updatePages();
-                        } else if (match = onclick.match(/^mod:(.+)$/)) {
-                          const name = match[1];
-
-                          menuUi.cancelTransition();
-
-                          modState.modName = name;
-                          modState.mod = null;
-                          modState.loading = true;
-
-                          _getModSpec(name)
-                            .then(modSpec => {
-                              modState.mod = modSpec;
-                              modState.loading = false;
-
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-
-                              modState.loading = false;
-
-                              _updatePages();
-                            });
-
-                          menuUi.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
-                            const displayName = modName.match(/([^\/]*)$/)[1];
-                            const installed = mods.some(m => m.name === modName);
-                            const conflicting = mods.some(m => m.displayName === displayName);
-
-                            return [
+                            menuUi.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
                               {
                                 type: 'html',
-                                src: menuRenderer.getModPageSrc({modName, mod, installed, conflicting}),
-                              },
-                              {
-                                type: 'html',
-                                src: menuRenderer.getModPageReadmeSrc({modName, mod, loading}),
-                                x: 500,
-                                y: 150 + 2,
-                                w: WIDTH - 500,
-                                h: HEIGHT - (150 + 2),
-                                scroll: true,
+                                src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
                               },
                               {
                                 type: 'image',
-                                img: creatureUtils.makeAnimatedCreature('mod:' + displayName),
+                                img: creatureUtils.makeAnimatedCreature('worlds'),
                                 x: 150,
                                 y: 0,
                                 w: 150,
@@ -1940,95 +1794,203 @@ class Rend {
                                 frameTime: 300,
                                 pixelated: true,
                               }
-                            ];
-                          }, {
-                            type: 'mod',
-                            state: {
-                              mod: modState,
-                              mods: modsState,
-                            },
-                          });
-                        } else if (match = onclick.match(/^getmod:(.+)$/)) {
-                          const name = match[1];
-
-                          currentWorld.requestAddMod(name)
-                            .then(() => {
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
+                            ]), {
+                              type: 'worlds',
+                              state: {
+                                worlds: worldsState,
+                                focus: focusState,
+                              },
                             });
-                        } else if (match = onclick.match(/^removemod:(.+)$/)) {
-                          const name = match[1];
+                          } else if (match = onclick.match(/^world:(.+)$/)) {
+                            const name = match[1];
 
-                          currentWorld.requestRemoveMod(name)
-                            .then(() => {
+                            worldsState.selectedName = name;
+
+                            _updatePages();
+                          } else if (onclick === 'worlds:rename') {
+                            const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
+                            if (oldWorldsSelectedName) {
+                              worldsState.inputText = '';
+                              worldsState.inputIndex = 0;
+                              worldsState.inputValue = 0;
+
+                              focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
+
                               _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-                        } else if (onclick === 'config') {
-                          menuUi.cancelTransition();
-
-                          menuUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
-                            {
-                              type: 'html',
-                              src: menuRenderer.getConfigPageSrc(),
-                            },
-                            {
-                              type: 'html',
-                              src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}),
-                              x: 500,
-                              y: 150 + 2,
-                              w: WIDTH - 500,
-                              h: HEIGHT - (150 + 2),
-                              scroll: true,
-                            },
-                            {
-                              type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('preferences'),
-                              x: 150,
-                              y: 0,
-                              w: 150,
-                              h: 150,
-                              frameTime: 300,
-                              pixelated: true,
                             }
-                          ]), {
-                            type: 'config',
-                            state: {
-                              config: configState,
-                              focus: focusState,
+                          } else if (onclick === 'worlds:remove') {
+                            const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
+                            if (oldWorldsSelectedName) {
+                              const {worlds} = worldsState;
+                              worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
+
+                              _updatePages();
                             }
-                          });
-                        } else if (onclick === 'elements') {
-                          menuUi.cancelTransition();
+                          } else if (onclick === 'worlds:create') {
+                            worldsState.inputText = '';
+                            worldsState.inputIndex = 0;
+                            worldsState.inputValue = 0;
 
-                          menuUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
-                            const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
-                            const focusAttribute = match && match[1];
+                            focusState.type = 'worlds:create';
 
-                            return [
+                            _updatePages();
+                          } else if (onclick === 'mods') {
+                            menuUi.cancelTransition();
+
+                            menuUi.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
                               {
                                 type: 'html',
-                                src: menuRenderer.getElementsPageSrc({selectedKeyPath}),
+                                src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
+                              },
+                              {
+                                type: 'image',
+                                img: creatureUtils.makeAnimatedCreature('mods'),
+                                x: 150,
+                                y: 0,
+                                w: 150,
+                                h: 150,
+                                frameTime: 300,
+                                pixelated: true,
+                              }
+                            ]), {
+                              type: 'mods',
+                              state: {
+                                mods: modsState,
+                                focus: focusState,
+                              },
+                            });
+                          } else if (match = onclick.match(/^mods:(installed|local|remote)$/)) {
+                            const tab = match[1];
+
+                            if (tab === 'local') {
+                              modsState.loadingLocal = true;
+
+                              _getLocalModSpecs()
+                                .then(localMods => {
+                                  modsState.localMods = localMods;
+                                  modsState.loadingLocal = false;
+
+                                  _updatePages();
+                                })
+                                .catch(err => {
+                                  console.warn(err);
+                                });
+                            } else if (tab === 'remote') {
+                              modsState.inputText = '';
+                              modsState.inputIndex = 0;
+                              modsState.inputValue = 0;
+                              modsState.loadingRemote = true;
+
+                              _getRemoteModSpecs(modsState.inputText)
+                                .then(remoteMods => {
+                                  modsState.remoteMods = remoteMods;
+                                  modsState.loadingRemote = false;
+
+                                  _updatePages();
+                                })
+                                .catch(err => {
+                                  console.warn(err);
+                                });
+                            }
+
+                            modsState.tab = tab;
+
+                            _updatePages();
+                          } else if (match = onclick.match(/^mod:(.+)$/)) {
+                            const name = match[1];
+
+                            menuUi.cancelTransition();
+
+                            modState.modName = name;
+                            modState.mod = null;
+                            modState.loading = true;
+
+                            _getModSpec(name)
+                              .then(modSpec => {
+                                modState.mod = modSpec;
+                                modState.loading = false;
+
+                                _updatePages();
+                              })
+                              .catch(err => {
+                                console.warn(err);
+
+                                modState.loading = false;
+
+                                _updatePages();
+                              });
+
+                            menuUi.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
+                              const displayName = modName.match(/([^\/]*)$/)[1];
+                              const installed = mods.some(m => m.name === modName);
+                              const conflicting = mods.some(m => m.displayName === displayName);
+
+                              return [
+                                {
+                                  type: 'html',
+                                  src: menuRenderer.getModPageSrc({modName, mod, installed, conflicting}),
+                                },
+                                {
+                                  type: 'html',
+                                  src: menuRenderer.getModPageReadmeSrc({modName, mod, loading}),
+                                  x: 500,
+                                  y: 150 + 2,
+                                  w: WIDTH - 500,
+                                  h: HEIGHT - (150 + 2),
+                                  scroll: true,
+                                },
+                                {
+                                  type: 'image',
+                                  img: creatureUtils.makeAnimatedCreature('mod:' + displayName),
+                                  x: 150,
+                                  y: 0,
+                                  w: 150,
+                                  h: 150,
+                                  frameTime: 300,
+                                  pixelated: true,
+                                }
+                              ];
+                            }, {
+                              type: 'mod',
+                              state: {
+                                mod: modState,
+                                mods: modsState,
+                              },
+                            });
+                          } else if (match = onclick.match(/^getmod:(.+)$/)) {
+                            const name = match[1];
+
+                            currentWorld.requestAddMod(name)
+                              .then(() => {
+                                _updatePages();
+                              })
+                              .catch(err => {
+                                console.warn(err);
+                              });
+                          } else if (match = onclick.match(/^removemod:(.+)$/)) {
+                            const name = match[1];
+
+                            currentWorld.requestRemoveMod(name)
+                              .then(() => {
+                                _updatePages();
+                              })
+                              .catch(err => {
+                                console.warn(err);
+                              });
+                          } else if (onclick === 'config') {
+                            menuUi.cancelTransition();
+
+                            menuUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
+                              {
+                                type: 'html',
+                                src: menuRenderer.getConfigPageSrc(),
                               },
                               {
                                 type: 'html',
-                                src: menuRenderer.getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
+                                src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}),
                                 x: 500,
                                 y: 150 + 2,
-                                w: WIDTH - (500 + 600),
-                                h: HEIGHT - (150 + 2),
-                                scroll: true,
-                              },
-                              {
-                                type: 'html',
-                                src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue, focusAttribute}),
-                                x: 500 + (WIDTH - (500 + 600)),
-                                y: 150 + 2,
-                                w: 600,
+                                w: WIDTH - 500,
                                 h: HEIGHT - (150 + 2),
                                 scroll: true,
                               },
@@ -2042,401 +2004,70 @@ class Rend {
                                 frameTime: 300,
                                 pixelated: true,
                               }
-                            ];
-                          }, {
-                            type: 'elements',
-                            state: {
-                              elements: _cleanElementsState(elementsState),
-                              focus: focusState,
-                            },
-                          });
-                        } else if (onclick === 'files') {
-                          menuUi.cancelTransition();
-
-                          _ensureFilesLoaded(filesState);
-
-                          menuUi.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
-                            {
-                              type: 'html',
-                              src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'file'}),
-                            },
-                            {
-                              type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('files'),
-                              x: 150,
-                              y: 0,
-                              w: 150,
-                              h: 150,
-                              frameTime: 300,
-                              pixelated: true,
-                            }
-                          ]), {
-                            type: 'files',
-                            state: {
-                              files: filesState,
-                              focus: focusState,
-                            },
-                          });
-                        } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
-                          menuUi.cancelTransition();
-
-                          const target = match[1];
-                          const name = match[2];
-                          const targetState = (() => {
-                            switch (target) {
-                              case 'file': return filesState;
-                              case 'elementAttributeFile': return elementAttributeFilesState;
-                              default: return null;
-                            }
-                          })();
-
-                          const _chdir = newCwd => {
-                            targetState.loading = true;
-
-                            targetState.cwd = newCwd;
-                            fs.setCwd(newCwd);
-                            fs.getDirectory(newCwd)
-                              .then(files => {
-                                targetState.files = menuUtils.cleanFiles(files);
-                                targetState.loading = false;
-
-                                _updatePages();
-                              })
-                              .catch(err => {
-                                console.warn(err);
-                              });
-
-                            _updatePages();
-                          };
-
-                          if (name !== '..') {
-                            const {files} = targetState;
-                            const file = files.find(f => f.name === name);
-                            const {type} = file;
-
-                            if (type === 'file') {
-                              targetState.selectedName = name;
-
-                              _updatePages();
-                            } else if (type === 'directory') {
-                              const {cwd: oldCwd} = targetState;
-                              const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
-                              _chdir(newCwd);
-                            }
-                          } else {
-                            const {cwd: oldCwd} = targetState;
-                            const newCwd = (() => {
-                              const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
-                              if (replacedCwd !== '') {
-                                return replacedCwd;
-                              } else {
-                                return '/';
+                            ]), {
+                              type: 'config',
+                              state: {
+                                config: configState,
+                                focus: focusState,
                               }
-                            })();
-                            _chdir(newCwd);
-                          }
-                        } else if (onclick === 'elementAttributeFiles:select') {
-                          const {
-                            elementsState: {selectedKeyPath: oldElementsSelectedKeyPath},
-                            elementAttributeFilesState: {selectedName: oldFilesSelectedName},
-                          } = oldStates;
-
-                          if (oldFilesSelectedName) {
+                            });
+                          } else if (onclick === 'elements') {
                             menuUi.cancelTransition();
 
-                            const {choosingName} = elementsState;
-                            const element = menuUtils.getElementKeyPath({
-                              elements: elementsState.elements,
-                              availableElements: elementsState.availableElements,
-                              clipboardElements: elementsState.clipboardElements,
-                            }, oldElementsSelectedKeyPath);
-                            const instance = menuUtils.getElementKeyPath({
-                              elements: elementsState.elementInstances,
-                            }, oldElementsSelectedKeyPath);
+                            menuUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
+                              const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
+                              const focusAttribute = match && match[1];
 
-                            const {cwd} = elementAttributeFilesState;
-                            const selectPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-                            const newAttributeValue = JSON.stringify(selectPath);
-                            element.setAttribute(choosingName, newAttributeValue);
-                            instance.setAttribute(choosingName, newAttributeValue);
-
-                            _saveElements();
-
-                            menuUi.popPage();
-                          }
-                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
-                          const target = match[1];
-                          const type = match[2];
-
-                          const targetState = (() => {
-                            switch (target) {
-                              case 'file': return filesState;
-                              case 'elementAttributeFile': return elementAttributeFilesState;
-                              default: return null;
-                            }
-                          })();
-                          const oldTargetState = (() => {
-                            switch (target) {
-                              case 'file': return oldStates.filesState;
-                              case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                              default: return null;
-                            }
-                          })();
-                          const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                          if (oldFilesSelectedName) {
-                            const {cwd} = targetState;
-                            const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-
-                            targetState.selectedName = oldFilesSelectedName;
-                            targetState.clipboardType = type;
-                            targetState.clipboardPath = cutPath;
-
-                            _updatePages();
-                          }
-                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:paste$/)) {
-                          const target = match[1];
-                          const targetState = (() => {
-                            switch (target) {
-                              case 'file': return filesState;
-                              case 'elementAttributeFile': return elementAttributeFilesState;
-                              default: return null;
-                            }
-                          })();
-
-                          const {clipboardPath} = targetState;
-
-                          if (clipboardPath) {
-                            targetState.uploading = true;
-
-                            const {cwd, clipboardType, clipboardPath} = targetState;
-
-                            const src = clipboardPath;
-                            const name = clipboardPath.match(/\/([^\/]*)$/)[1];
-                            const dst = menuUtils.pathJoin(cwd, name);
-                            fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
-                              .then(() => fs.getDirectory(cwd)
-                                .then(files => {
-                                  targetState.files = menuUtils.cleanFiles(files);
-                                  targetState.selectedName = name;
-                                  targetState.uploading = false;
-                                  if (clipboardType === 'cut') {
-                                    targetState.clipboardType = 'copy';
-                                    targetState.clipboardPath = dst;
-                                  }
-
-                                  _updatePages();
-                                })
-                              )
-                              .catch(err => {
-                                console.warn(err);
-
-                                targetState.uploading = true;
-
-                                _updatePages();
-                              });
-
-                            _updatePages();
-                          }
-                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
-                          const target = match[1];
-
-                          focusState.type = target + 's:createdirectory';
-
-                          _updatePages();
-                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:rename$/)) {
-                          const target = match[1];
-                          const targetState = (() => {
-                            switch (target) {
-                              case 'file': return filesState;
-                              case 'elementAttributeFile': return elementAttributeFilesState;
-                              default: return null;
-                            }
-                          })();
-                          const oldTargetState = (() => {
-                            switch (target) {
-                              case 'file': return oldStates.filesState;
-                              case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                              default: return null;
-                            }
-                          })();
-                          const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                          if (oldFilesSelectedName) {
-                            targetState.inputText = '';
-                            targetState.inputIndex = 0;
-                            targetState.inputValue = 0;
-
-                            focusState.type = 'files:rename:' + oldFilesSelectedName;
-
-                            _updatePages();
-                          }
-                        } else if (match = onclick.match(/^(file|elementAttributeFile)s:remove$/)) {
-                          const target = match[1];
-                          const targetState = (() => {
-                            switch (target) {
-                              case 'file': return filesState;
-                              case 'elementAttributeFile': return elementAttributeFilesState;
-                              default: return null;
-                            }
-                          })();
-                          const oldTargetState = (() => {
-                            switch (target) {
-                              case 'file': return oldStates.filesState;
-                              case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                              default: return null;
-                            }
-                          })();
-                          const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                          if (oldFilesSelectedName) {
-                            targetState.uploading = true;
-
-                            const {cwd} = targetState;
-                            const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-                            fs.remove(p)
-                              .then(() => fs.getDirectory(cwd)
-                                .then(files => {
-                                  targetState.files = menuUtils.cleanFiles(files);
-                                  const {clipboardPath} = targetState;
-                                  if (clipboardPath === p) {
-                                    targetState.clipboardType = null;
-                                    targetState.clipboardPath = '';
-                                  }
-                                  targetState.uploading = false;
-
-                                  _updatePages();
-                                })
-                              )
-                              .catch(err => {
-                                console.warn(err);
-
-                                targetState.uploading = false;
-
-                                _updatePages();
-                              });
-
-                            _updatePages();
-                          }
-                        } else if (onclick === 'elements:remove') {
-                          const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
-                          if (oldElementsSelectedKeyPath.length > 0) {
-                            const elementsSpec = {
-                              elements: elementsState.elements,
-                              availableElements: elementsState.availableElements,
-                              clipboardElements: elementsState.clipboardElements,
-                            };
-                            menuUtils.removeElementKeyPath(elementsSpec, oldElementsSelectedKeyPath);
-                            const elementInstancesSpec = {
-                              elements: elementsState.elementInstances,
-                            };
-                            if (oldElementsSelectedKeyPath[0] === 'elements') {
-                              const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
-                              menuUtils.destructElement(instance);
-                            }
-
-                            elementsState.selectedKeyPath = [];
-                            elementsState.draggingKeyPath = [];
-
-                            _saveElements();
-
-                            _updatePages();
-                          }
-                        } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
-                          const attributeName = match[1];
-                          const action = match[2];
-                          const value = match[3];
-
-                          const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
-
-                          const element = menuUtils.getElementKeyPath({
-                            elements: elementsState.elements,
-                            availableElements: elementsState.availableElements,
-                            clipboardElements: elementsState.clipboardElements,
-                          }, oldElementsSelectedKeyPath);
-                          const instance = menuUtils.getElementKeyPath({
-                            elements: elementsState.elementInstances,
-                          }, oldElementsSelectedKeyPath);
-                          const {attributeConfigs} = element;
-                          const attributeConfig = attributeConfigs[attributeName];
-
-                          if (action === 'position') {
-                            const oldValue = JSON.parse(element.getAttribute(attributeName));
-                            oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
-                            oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
-                            oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
-
-                            elementsState.positioningName = attributeName;
-                            elementsState.positioningSide = side;
-                          } else if (action === 'focus') {
-                            const {value} = menuHoverState;
-
-                            const {type: attributeType} = attributeConfig;
-                            const textProperties = (() => {
-                              if (attributeType === 'text') {
-                                const valuePx = value * 400;
-                                return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                              } else if (attributeType === 'number') {
-                                const valuePx = value * 100;
-                                return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                              } else if (attributeType === 'color') {
-                                const valuePx = value * (400 - (40 + 4));
-                                return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                              } else if (attributeType === 'file') {
-                                const valuePx = value * 260;
-                                return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                              } else {
-                                return null;
-                              }
-                            })();
-                            if (textProperties) {
-                              elementsState.inputText = menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType);
-                              const {index, px} = textProperties;
-                              elementsState.inputIndex = index;
-                              elementsState.inputValue = px;
-                            }
-
-                            focusState.type = 'element:attribute:' + attributeName;
-                          } else if (action === 'set') {
-                            const newAttributeValue = JSON.stringify(value);
-                            element.setAttribute(attributeName, newAttributeValue);
-                            instance.setAttribute(attributeName, newAttributeValue);
-
-                            _saveElements();
-                          } else if (action === 'tweak') {
-                            const {value} = menuHoverState;
-                            const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attributeConfig;
-
-                            const newValue = (() => {
-                              let n = min + (value * (max - min));
-                              if (step > 0) {
-                                n = Math.floor(n / step) * step;
-                              }
-                              return n;
-                            })();
-                            const newAttributeValue = JSON.stringify(newValue);
-                            element.setAttribute(attributeName, newAttributeValue);
-                            instance.setAttribute(attributeName, newAttributeValue);
-
-                            _saveElements();
-                          } else if (action === 'toggle') {
-                            const newValue = !JSON.parse(element.getAttribute(attributeName));
-                            const newAttributeValue = JSON.stringify(newValue);
-                            element.setAttribute(attributeName, newAttributeValue);
-                            instance.setAttribute(attributeName, newAttributeValue);
-
-                            _saveElements();
-                          } else if (action === 'choose') {
+                              return [
+                                {
+                                  type: 'html',
+                                  src: menuRenderer.getElementsPageSrc({selectedKeyPath}),
+                                },
+                                {
+                                  type: 'html',
+                                  src: menuRenderer.getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
+                                  x: 500,
+                                  y: 150 + 2,
+                                  w: WIDTH - (500 + 600),
+                                  h: HEIGHT - (150 + 2),
+                                  scroll: true,
+                                },
+                                {
+                                  type: 'html',
+                                  src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue, focusAttribute}),
+                                  x: 500 + (WIDTH - (500 + 600)),
+                                  y: 150 + 2,
+                                  w: 600,
+                                  h: HEIGHT - (150 + 2),
+                                  scroll: true,
+                                },
+                                {
+                                  type: 'image',
+                                  img: creatureUtils.makeAnimatedCreature('preferences'),
+                                  x: 150,
+                                  y: 0,
+                                  w: 150,
+                                  h: 150,
+                                  frameTime: 300,
+                                  pixelated: true,
+                                }
+                              ];
+                            }, {
+                              type: 'elements',
+                              state: {
+                                elements: _cleanElementsState(elementsState),
+                                focus: focusState,
+                              },
+                            });
+                          } else if (onclick === 'files') {
                             menuUi.cancelTransition();
 
-                            elementsState.choosingName = attributeName;
+                            _ensureFilesLoaded(filesState);
 
-                            _ensureFilesLoaded(elementAttributeFilesState);
-
-                            menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                            menuUi.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                               {
                                 type: 'html',
-                                src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
+                                src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'file'}),
                               },
                               {
                                 type: 'image',
@@ -2449,99 +2080,480 @@ class Rend {
                                 pixelated: true,
                               }
                             ]), {
-                              type: 'elementAttributeFiles',
+                              type: 'files',
                               state: {
-                                elementAttributeFiles: elementAttributeFilesState,
+                                files: filesState,
                                 focus: focusState,
                               },
                             });
-                          }
+                          } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
+                            menuUi.cancelTransition();
 
-                          elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
+                            const target = match[1];
+                            const name = match[2];
+                            const targetState = (() => {
+                              switch (target) {
+                                case 'file': return filesState;
+                                case 'elementAttributeFile': return elementAttributeFilesState;
+                                default: return null;
+                              }
+                            })();
 
-                          _updatePages();
-                        } else if (onclick === 'elements:clearclipboard') {
-                          const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
+                            const _chdir = newCwd => {
+                              targetState.loading = true;
 
-                          elementsState.clipboardElements = [];
-                          if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
-                            elementsState.selectedKeyPath = [];
-                          }
-                          if (oldElementsDraggingKeyPath.length > 0 && oldElementsDraggingKeyPath[0] === 'clipboardElements') {
-                            elementsState.draggingKeyPath = [];
-                          }
+                              targetState.cwd = newCwd;
+                              fs.setCwd(newCwd);
+                              fs.getDirectory(newCwd)
+                                .then(files => {
+                                  targetState.files = menuUtils.cleanFiles(files);
+                                  targetState.loading = false;
 
-                          _saveElements();
+                                  _updatePages();
+                                })
+                                .catch(err => {
+                                  console.warn(err);
+                                });
 
-                          _updatePages();
-                        } else if (onclick === 'mods:input') {
-                          const {value} = menuHoverState;
-                          const valuePx = value * (WIDTH - (500 + 40));
+                              _updatePages();
+                            };
 
-                          const {index, px} = getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
+                            if (name !== '..') {
+                              const {files} = targetState;
+                              const file = files.find(f => f.name === name);
+                              const {type} = file;
 
-                          modsState.inputIndex = index;
-                          modsState.inputValue = px;
-                          focusState.type = 'mods';
+                              if (type === 'file') {
+                                targetState.selectedName = name;
 
-                          _updatePages();
-                        } else if (onclick === 'config:input') {
-                          const {value} = menuHoverState;
-                          const valuePx = value * (WIDTH - (500 + 40));
+                                _updatePages();
+                              } else if (type === 'directory') {
+                                const {cwd: oldCwd} = targetState;
+                                const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
+                                _chdir(newCwd);
+                              }
+                            } else {
+                              const {cwd: oldCwd} = targetState;
+                              const newCwd = (() => {
+                                const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
+                                if (replacedCwd !== '') {
+                                  return replacedCwd;
+                                } else {
+                                  return '/';
+                                }
+                              })();
+                              _chdir(newCwd);
+                            }
+                          } else if (onclick === 'elementAttributeFiles:select') {
+                            const {
+                              elementsState: {selectedKeyPath: oldElementsSelectedKeyPath},
+                              elementAttributeFilesState: {selectedName: oldFilesSelectedName},
+                            } = oldStates;
 
-                          const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+                            if (oldFilesSelectedName) {
+                              menuUi.cancelTransition();
 
-                          configState.inputIndex = index;
-                          configState.inputValue = px;
-                          focusState.type = 'config';
+                              const {choosingName} = elementsState;
+                              const element = menuUtils.getElementKeyPath({
+                                elements: elementsState.elements,
+                                availableElements: elementsState.availableElements,
+                                clipboardElements: elementsState.clipboardElements,
+                              }, oldElementsSelectedKeyPath);
+                              const instance = menuUtils.getElementKeyPath({
+                                elements: elementsState.elementInstances,
+                              }, oldElementsSelectedKeyPath);
 
-                          _updatePages();
-                        } else if (onclick === 'config:resolution') {
-                          const {value} = menuHoverState;
+                              const {cwd} = elementAttributeFilesState;
+                              const selectPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
+                              const newAttributeValue = JSON.stringify(selectPath);
+                              element.setAttribute(choosingName, newAttributeValue);
+                              instance.setAttribute(choosingName, newAttributeValue);
 
-                          configState.sliderValue = value;
+                              _saveElements();
 
-                          _updatePages();
-                        } else if (onclick === 'config:airlock') {
-                          const {airlockCheckboxValue} = configState;
+                              menuUi.popPage();
+                            }
+                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
+                            const target = match[1];
+                            const type = match[2];
 
-                          configState.airlockCheckboxValue = !airlockCheckboxValue;
+                            const targetState = (() => {
+                              switch (target) {
+                                case 'file': return filesState;
+                                case 'elementAttributeFile': return elementAttributeFilesState;
+                                default: return null;
+                              }
+                            })();
+                            const oldTargetState = (() => {
+                              switch (target) {
+                                case 'file': return oldStates.filesState;
+                                case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                                default: return null;
+                              }
+                            })();
+                            const {selectedName: oldFilesSelectedName} = oldTargetState;
 
-                          _saveConfig();
-                          api.updateConfig();
+                            if (oldFilesSelectedName) {
+                              const {cwd} = targetState;
+                              const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
 
-                          _updatePages();
-                        } else if (onclick === 'config:voiceChat') {
-                          const {voiceChatCheckboxValue} = configState;
+                              targetState.selectedName = oldFilesSelectedName;
+                              targetState.clipboardType = type;
+                              targetState.clipboardPath = cutPath;
 
-                          configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
+                              _updatePages();
+                            }
+                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:paste$/)) {
+                            const target = match[1];
+                            const targetState = (() => {
+                              switch (target) {
+                                case 'file': return filesState;
+                                case 'elementAttributeFile': return elementAttributeFilesState;
+                                default: return null;
+                              }
+                            })();
 
-                          _saveConfig();
-                          api.updateConfig();
+                            const {clipboardPath} = targetState;
 
-                          _updatePages();
-                        } else if (onclick === 'config:stats') {
-                          const {statsCheckboxValue} = configState;
+                            if (clipboardPath) {
+                              targetState.uploading = true;
 
-                          if (!statsCheckboxValue) {
-                            const width = 0.0005;
-                            const height = width * (48 / 80);
-                            const depth = -0.001;
+                              const {cwd, clipboardType, clipboardPath} = targetState;
 
-                            configState.statsCheckboxValue = true;
+                              const src = clipboardPath;
+                              const name = clipboardPath.match(/\/([^\/]*)$/)[1];
+                              const dst = menuUtils.pathJoin(cwd, name);
+                              fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
+                                .then(() => fs.getDirectory(cwd)
+                                  .then(files => {
+                                    targetState.files = menuUtils.cleanFiles(files);
+                                    targetState.selectedName = name;
+                                    targetState.uploading = false;
+                                    if (clipboardType === 'cut') {
+                                      targetState.clipboardType = 'copy';
+                                      targetState.clipboardPath = dst;
+                                    }
+
+                                    _updatePages();
+                                  })
+                                )
+                                .catch(err => {
+                                  console.warn(err);
+
+                                  targetState.uploading = true;
+
+                                  _updatePages();
+                                });
+
+                              _updatePages();
+                            }
+                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
+                            const target = match[1];
+
+                            focusState.type = target + 's:createdirectory';
+
+                            _updatePages();
+                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:rename$/)) {
+                            const target = match[1];
+                            const targetState = (() => {
+                              switch (target) {
+                                case 'file': return filesState;
+                                case 'elementAttributeFile': return elementAttributeFilesState;
+                                default: return null;
+                              }
+                            })();
+                            const oldTargetState = (() => {
+                              switch (target) {
+                                case 'file': return oldStates.filesState;
+                                case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                                default: return null;
+                              }
+                            })();
+                            const {selectedName: oldFilesSelectedName} = oldTargetState;
+
+                            if (oldFilesSelectedName) {
+                              targetState.inputText = '';
+                              targetState.inputIndex = 0;
+                              targetState.inputValue = 0;
+
+                              focusState.type = 'files:rename:' + oldFilesSelectedName;
+
+                              _updatePages();
+                            }
+                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:remove$/)) {
+                            const target = match[1];
+                            const targetState = (() => {
+                              switch (target) {
+                                case 'file': return filesState;
+                                case 'elementAttributeFile': return elementAttributeFilesState;
+                                default: return null;
+                              }
+                            })();
+                            const oldTargetState = (() => {
+                              switch (target) {
+                                case 'file': return oldStates.filesState;
+                                case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
+                                default: return null;
+                              }
+                            })();
+                            const {selectedName: oldFilesSelectedName} = oldTargetState;
+
+                            if (oldFilesSelectedName) {
+                              targetState.uploading = true;
+
+                              const {cwd} = targetState;
+                              const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
+                              fs.remove(p)
+                                .then(() => fs.getDirectory(cwd)
+                                  .then(files => {
+                                    targetState.files = menuUtils.cleanFiles(files);
+                                    const {clipboardPath} = targetState;
+                                    if (clipboardPath === p) {
+                                      targetState.clipboardType = null;
+                                      targetState.clipboardPath = '';
+                                    }
+                                    targetState.uploading = false;
+
+                                    _updatePages();
+                                  })
+                                )
+                                .catch(err => {
+                                  console.warn(err);
+
+                                  targetState.uploading = false;
+
+                                  _updatePages();
+                                });
+
+                              _updatePages();
+                            }
+                          } else if (onclick === 'elements:remove') {
+                            const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
+                            if (oldElementsSelectedKeyPath.length > 0) {
+                              const elementsSpec = {
+                                elements: elementsState.elements,
+                                availableElements: elementsState.availableElements,
+                                clipboardElements: elementsState.clipboardElements,
+                              };
+                              menuUtils.removeElementKeyPath(elementsSpec, oldElementsSelectedKeyPath);
+                              const elementInstancesSpec = {
+                                elements: elementsState.elementInstances,
+                              };
+                              if (oldElementsSelectedKeyPath[0] === 'elements') {
+                                const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
+                                menuUtils.destructElement(instance);
+                              }
+
+                              elementsState.selectedKeyPath = [];
+                              elementsState.draggingKeyPath = [];
+
+                              _saveElements();
+
+                              _updatePages();
+                            }
+                          } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
+                            const attributeName = match[1];
+                            const action = match[2];
+                            const value = match[3];
+
+                            const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
+
+                            const element = menuUtils.getElementKeyPath({
+                              elements: elementsState.elements,
+                              availableElements: elementsState.availableElements,
+                              clipboardElements: elementsState.clipboardElements,
+                            }, oldElementsSelectedKeyPath);
+                            const instance = menuUtils.getElementKeyPath({
+                              elements: elementsState.elementInstances,
+                            }, oldElementsSelectedKeyPath);
+                            const {attributeConfigs} = element;
+                            const attributeConfig = attributeConfigs[attributeName];
+
+                            if (action === 'position') {
+                              const oldValue = JSON.parse(element.getAttribute(attributeName));
+                              oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
+                              oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
+                              oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
+
+                              elementsState.positioningName = attributeName;
+                              elementsState.positioningSide = side;
+                            } else if (action === 'focus') {
+                              const {value} = menuHoverState;
+
+                              const {type: attributeType} = attributeConfig;
+                              const textProperties = (() => {
+                                if (attributeType === 'text') {
+                                  const valuePx = value * 400;
+                                  return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                                } else if (attributeType === 'number') {
+                                  const valuePx = value * 100;
+                                  return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                                } else if (attributeType === 'color') {
+                                  const valuePx = value * (400 - (40 + 4));
+                                  return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                                } else if (attributeType === 'file') {
+                                  const valuePx = value * 260;
+                                  return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                                } else {
+                                  return null;
+                                }
+                              })();
+                              if (textProperties) {
+                                elementsState.inputText = menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType);
+                                const {index, px} = textProperties;
+                                elementsState.inputIndex = index;
+                                elementsState.inputValue = px;
+                              }
+
+                              focusState.type = 'element:attribute:' + attributeName;
+                            } else if (action === 'set') {
+                              const newAttributeValue = JSON.stringify(value);
+                              element.setAttribute(attributeName, newAttributeValue);
+                              instance.setAttribute(attributeName, newAttributeValue);
+
+                              _saveElements();
+                            } else if (action === 'tweak') {
+                              const {value} = menuHoverState;
+                              const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attributeConfig;
+
+                              const newValue = (() => {
+                                let n = min + (value * (max - min));
+                                if (step > 0) {
+                                  n = Math.floor(n / step) * step;
+                                }
+                                return n;
+                              })();
+                              const newAttributeValue = JSON.stringify(newValue);
+                              element.setAttribute(attributeName, newAttributeValue);
+                              instance.setAttribute(attributeName, newAttributeValue);
+
+                              _saveElements();
+                            } else if (action === 'toggle') {
+                              const newValue = !JSON.parse(element.getAttribute(attributeName));
+                              const newAttributeValue = JSON.stringify(newValue);
+                              element.setAttribute(attributeName, newAttributeValue);
+                              instance.setAttribute(attributeName, newAttributeValue);
+
+                              _saveElements();
+                            } else if (action === 'choose') {
+                              menuUi.cancelTransition();
+
+                              elementsState.choosingName = attributeName;
+
+                              _ensureFilesLoaded(elementAttributeFilesState);
+
+                              menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                                {
+                                  type: 'html',
+                                  src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
+                                },
+                                {
+                                  type: 'image',
+                                  img: creatureUtils.makeAnimatedCreature('files'),
+                                  x: 150,
+                                  y: 0,
+                                  w: 150,
+                                  h: 150,
+                                  frameTime: 300,
+                                  pixelated: true,
+                                }
+                              ]), {
+                                type: 'elementAttributeFiles',
+                                state: {
+                                  elementAttributeFiles: elementAttributeFilesState,
+                                  focus: focusState,
+                                },
+                              });
+                            }
+
+                            elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
+
+                            _updatePages();
+                          } else if (onclick === 'elements:clearclipboard') {
+                            const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
+
+                            elementsState.clipboardElements = [];
+                            if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
+                              elementsState.selectedKeyPath = [];
+                            }
+                            if (oldElementsDraggingKeyPath.length > 0 && oldElementsDraggingKeyPath[0] === 'clipboardElements') {
+                              elementsState.draggingKeyPath = [];
+                            }
+
+                            _saveElements();
+
+                            _updatePages();
+                          } else if (onclick === 'mods:input') {
+                            const {value} = menuHoverState;
+                            const valuePx = value * (WIDTH - (500 + 40));
+
+                            const {index, px} = getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
+
+                            modsState.inputIndex = index;
+                            modsState.inputValue = px;
+                            focusState.type = 'mods';
+
+                            _updatePages();
+                          } else if (onclick === 'config:input') {
+                            const {value} = menuHoverState;
+                            const valuePx = value * (WIDTH - (500 + 40));
+
+                            const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+
+                            configState.inputIndex = index;
+                            configState.inputValue = px;
+                            focusState.type = 'config';
+
+                            _updatePages();
+                          } else if (onclick === 'config:resolution') {
+                            const {value} = menuHoverState;
+
+                            configState.sliderValue = value;
+
+                            _updatePages();
+                          } else if (onclick === 'config:airlock') {
+                            const {airlockCheckboxValue} = configState;
+
+                            configState.airlockCheckboxValue = !airlockCheckboxValue;
+
+                            _saveConfig();
+                            api.updateConfig();
+
+                            _updatePages();
+                          } else if (onclick === 'config:voiceChat') {
+                            const {voiceChatCheckboxValue} = configState;
+
+                            configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
+
+                            _saveConfig();
+                            api.updateConfig();
+
+                            _updatePages();
+                          } else if (onclick === 'config:stats') {
+                            const {statsCheckboxValue} = configState;
+
+                            if (!statsCheckboxValue) {
+                              const width = 0.0005;
+                              const height = width * (48 / 80);
+                              const depth = -0.001;
+
+                              configState.statsCheckboxValue = true;
+                            } else {
+                              configState.statsCheckboxValue = false;
+                            }
+
+                            _saveConfig();
+                            api.updateConfig();
+
+                            _updatePages();
                           } else {
-                            configState.statsCheckboxValue = false;
+                            _updatePages();
                           }
 
-                          _saveConfig();
-                          api.updateConfig();
-
-                          _updatePages();
+                          return true;
                         } else {
-                          _updatePages();
+                          return false;
                         }
-
-                        return true;
                       } else {
                         return false;
                       }
@@ -2559,14 +2571,20 @@ class Rend {
                     const menuHoverState = menuHoverStates[side];
 
                     const _doClick = () => {
-                      const {intersectionPoint} = menuHoverState;
+                      const {tab} = navbarState;
 
-                      if (intersectionPoint) {
-                        const {anchor} = menuHoverState;
-                        const onmousedown = (anchor && anchor.onmousedown) || '';
+                      if (tab === 'readme') {
+                        const {intersectionPoint} = menuHoverState;
 
-                        if (/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/.test(onmousedown)) {
-                          return true;
+                        if (intersectionPoint) {
+                          const {anchor} = menuHoverState;
+                          const onmousedown = (anchor && anchor.onmousedown) || '';
+
+                          if (/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/.test(onmousedown)) {
+                            return true;
+                          } else {
+                            return false;
+                          }
                         } else {
                           return false;
                         }
@@ -2575,20 +2593,58 @@ class Rend {
                       }
                     };
                     const _doDragElement = () => {
-                      const {intersectionPoint} = menuHoverState;
+                      const {tab} = navbarState;
 
-                      if (intersectionPoint) {
-                        const {anchor} = menuHoverState;
-                        const onmousedown = (anchor && anchor.onmousedown) || '';
+                      if (tab === 'readme') {
+                        const {intersectionPoint} = menuHoverState;
 
-                        let match;
-                        if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                          const keyPath = menuUtils.parseKeyPath(match[1]);
+                        if (intersectionPoint) {
+                          const {anchor} = menuHoverState;
+                          const onmousedown = (anchor && anchor.onmousedown) || '';
 
-                          elementsState.selectedKeyPath = keyPath;
-                          elementsState.draggingKeyPath = keyPath;
+                          let match;
+                          if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                            const keyPath = menuUtils.parseKeyPath(match[1]);
 
-                          _updatePages();
+                            elementsState.selectedKeyPath = keyPath;
+                            elementsState.draggingKeyPath = keyPath;
+
+                            _updatePages();
+
+                            return true;
+                          } else {
+                            return false;
+                          }
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _doScroll = () => {
+                      const {tab} = navbarState;
+
+                      if (tab === 'readme') {
+                        const {scrollLayer} = menuHoverState;
+
+                        if (scrollLayer) {
+                          const {intersectionPoint} = menuHoverState;
+
+                          const {planeMesh} = menuMesh;
+                          const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
+                          const _getMenuMeshCoordinate = _makeMeshCoordinateGetter({
+                            position: menuPosition,
+                            rotation: menuRotation,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                          });
+                          const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
+                          menuHoverState.mousedownScrollLayer = scrollLayer;
+                          menuHoverState.mousedownStartCoord = mousedownStartCoord;
+                          menuHoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
 
                           return true;
                         } else {
@@ -2598,48 +2654,28 @@ class Rend {
                         return false;
                       }
                     };
-                    const _doScroll = () => {
-                      const {scrollLayer} = menuHoverState;
-
-                      if (scrollLayer) {
-                        const {intersectionPoint} = menuHoverState;
-
-                        const {planeMesh} = menuMesh;
-                        const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
-                        const _getMenuMeshCoordinate = _makeMeshCoordinateGetter({
-                          position: menuPosition,
-                          rotation: menuRotation,
-                          width: WIDTH,
-                          height: HEIGHT,
-                          worldWidth: WORLD_WIDTH,
-                          worldHeight: WORLD_HEIGHT,
-                        });
-                        const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
-                        menuHoverState.mousedownScrollLayer = scrollLayer;
-                        menuHoverState.mousedownStartCoord = mousedownStartCoord;
-                        menuHoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    };
                     const _doDragUniverse = () => {
-                      const universeHoverState = universeHoverStates[side];
-                      const {hovered} = universeHoverState;
+                      const {tab} = navbarState;
 
-                      if (hovered) {
-                        const {side} = e;
-                        const {gamepads} = webvr.getStatus();
-                        const gamepad = gamepads[side];
-                        const {position: controllerPosition} = gamepad;
-                        universeHoverState.dragStartPoint = controllerPosition.clone();
+                      if (tab === 'multiverse') {
+                        const universeHoverState = universeHoverStates[side];
+                        const {hovered} = universeHoverState;
 
-                        const {floorMesh} = universeMesh;
-                        const {position: floorMeshPosition} = floorMesh;
-                        universeHoverState.dragStartPosition = floorMeshPosition.clone();
+                        if (hovered) {
+                          const {side} = e;
+                          const {gamepads} = webvr.getStatus();
+                          const gamepad = gamepads[side];
+                          const {position: controllerPosition} = gamepad;
+                          universeHoverState.dragStartPoint = controllerPosition.clone();
 
-                        return true;
+                          const {floorMesh} = universeMesh;
+                          const {position: floorMeshPosition} = floorMesh;
+                          universeHoverState.dragStartPosition = floorMeshPosition.clone();
+
+                          return true;
+                        } else {
+                          return false;
+                        }
                       } else {
                         return false;
                       }
@@ -2684,140 +2720,156 @@ class Rend {
                   const {side} = e;
 
                   const _doDrag = () => {
-                    const menuHoverState = menuHoverStates[side];
-                    const {mousedownStartCoord} = menuHoverState;
+                    const {tab} = navbarState;
 
-                    if (mousedownStartCoord) {
-                      const {anchor} = menuHoverState;
-                      const onmouseup = (anchor && anchor.onmouseup) || '';
+                    if (tab === 'readme') {
+                      const menuHoverState = menuHoverStates[side];
+                      const {mousedownStartCoord} = menuHoverState;
 
-                      const oldStates = {
-                        elementsState: {
-                          draggingKeyPath: elementsState.draggingKeyPath,
-                        },
-                      };
-                      const {elementsState: {draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
+                      if (mousedownStartCoord) {
+                        const {anchor} = menuHoverState;
+                        const onmouseup = (anchor && anchor.onmouseup) || '';
 
-                      if (oldElementsDraggingKeyPath.length > 0) {
-                        elementsState.selectedKeyPath = [];
-                        elementsState.draggingKeyPath = [];
-
-                        const _getKeyPathDragFn = (oldKeyPath, newKeyPath) => {
-                          const oldCollection = oldKeyPath[0];
-                          const newCollection = newKeyPath[0];
-
-                          return (elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath) => {
-                            if (oldCollection === 'elements') {
-                              if (newCollection === 'elements') {
-                                menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                menuUtils.moveElementKeyPath(elementInstancesSpec, oldKeyPath, newKeyPath);
-                              } else if (newCollection === 'clipboardElements') {
-                                menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldKeyPath);
-                                menuUtils.destructElement(instance);
-                              }
-                            } else if (oldCollection === 'availableElements') {
-                              if (newCollection !== 'availableElements') {
-                                const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                if (newCollection === 'elements') {
-                                  const instance = menuUtils.constructElement(modElementApis, element);
-                                  menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
-                                }
-                              }
-                            } else if (oldCollection === 'clipboardElements') {
-                              if (newCollection !== 'availableElements') {
-                                const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                if (newCollection === 'elements') {
-                                  const instance = menuUtils.constructElement(modElementApis, element);
-                                  menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
-                                }
-                              }
-                            }
-                          };
+                        const oldStates = {
+                          elementsState: {
+                            draggingKeyPath: elementsState.draggingKeyPath,
+                          },
                         };
+                        const {elementsState: {draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
 
-                        let match;
-                        if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                          const parentKeyPath = menuUtils.parseKeyPath(match[1]);
+                        if (oldElementsDraggingKeyPath.length > 0) {
+                          elementsState.selectedKeyPath = [];
+                          elementsState.draggingKeyPath = [];
 
-                          const elementsSpec = {
-                            elements: elementsState.elements,
-                            availableElements: elementsState.availableElements,
-                            clipboardElements: elementsState.clipboardElements,
-                          };
-                          const childKeyPath = parentKeyPath.concat(menuUtils.getElementKeyPath(elementsSpec, parentKeyPath).children.length);
+                          const _getKeyPathDragFn = (oldKeyPath, newKeyPath) => {
+                            const oldCollection = oldKeyPath[0];
+                            const newCollection = newKeyPath[0];
 
-                          if (!menuUtils.isSubKeyPath(childKeyPath, oldElementsDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(childKeyPath, oldElementsDraggingKeyPath)) {
-                            const oldKeyPath = oldElementsDraggingKeyPath;
-                            const newKeyPath = childKeyPath;
-                            const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
-                            const elementInstancesSpec = {
-                              elements: elementsState.elementInstances,
+                            return (elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath) => {
+                              if (oldCollection === 'elements') {
+                                if (newCollection === 'elements') {
+                                  menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
+                                  menuUtils.moveElementKeyPath(elementInstancesSpec, oldKeyPath, newKeyPath);
+                                } else if (newCollection === 'clipboardElements') {
+                                  menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
+                                  const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldKeyPath);
+                                  menuUtils.destructElement(instance);
+                                }
+                              } else if (oldCollection === 'availableElements') {
+                                if (newCollection !== 'availableElements') {
+                                  const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
+                                  if (newCollection === 'elements') {
+                                    const instance = menuUtils.constructElement(modElementApis, element);
+                                    menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
+                                  }
+                                }
+                              } else if (oldCollection === 'clipboardElements') {
+                                if (newCollection !== 'availableElements') {
+                                  const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
+                                  if (newCollection === 'elements') {
+                                    const instance = menuUtils.constructElement(modElementApis, element);
+                                    menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
+                                  }
+                                }
+                              }
                             };
-                            dragFn(elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath);
+                          };
 
-                            _saveElements();
-                          } else {
-                            elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
-                          }
-                        } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                          const keyPath = menuUtils.parseKeyPath(match[1]);
+                          let match;
+                          if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                            const parentKeyPath = menuUtils.parseKeyPath(match[1]);
 
-                          if (!menuUtils.isSubKeyPath(keyPath, oldElementsDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(keyPath, oldElementsDraggingKeyPath)) {
                             const elementsSpec = {
                               elements: elementsState.elements,
                               availableElements: elementsState.availableElements,
                               clipboardElements: elementsState.clipboardElements,
                             };
-                            const elementInstancesSpec = {
-                              elements: elementsState.elementInstances,
-                            };
-                            const oldKeyPath = oldElementsDraggingKeyPath;
-                            const newKeyPath = keyPath;
-                            const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
-                            dragFn(elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath);
+                            const childKeyPath = parentKeyPath.concat(menuUtils.getElementKeyPath(elementsSpec, parentKeyPath).children.length);
 
-                            _saveElements();
+                            if (!menuUtils.isSubKeyPath(childKeyPath, oldElementsDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(childKeyPath, oldElementsDraggingKeyPath)) {
+                              const oldKeyPath = oldElementsDraggingKeyPath;
+                              const newKeyPath = childKeyPath;
+                              const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
+                              const elementInstancesSpec = {
+                                elements: elementsState.elementInstances,
+                              };
+                              dragFn(elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath);
+
+                              _saveElements();
+                            } else {
+                              elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
+                            }
+                          } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
+                            const keyPath = menuUtils.parseKeyPath(match[1]);
+
+                            if (!menuUtils.isSubKeyPath(keyPath, oldElementsDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(keyPath, oldElementsDraggingKeyPath)) {
+                              const elementsSpec = {
+                                elements: elementsState.elements,
+                                availableElements: elementsState.availableElements,
+                                clipboardElements: elementsState.clipboardElements,
+                              };
+                              const elementInstancesSpec = {
+                                elements: elementsState.elementInstances,
+                              };
+                              const oldKeyPath = oldElementsDraggingKeyPath;
+                              const newKeyPath = keyPath;
+                              const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
+                              dragFn(elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath);
+
+                              _saveElements();
+                            } else {
+                              elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
+                            }
                           } else {
                             elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
                           }
-                        } else {
-                          elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
-                        }
 
-                        _updatePages();
+                          _updatePages();
+                        }
                       }
                     }
 
                     return false;
                   };
                   const _doScroll = () => {
-                    const menuHoverState = menuHoverStates[side ];
-                    const {mousedownStartCoord} = menuHoverState;
+                    const {tab} = navbarState;
 
-                    if (mousedownStartCoord) {
-                      const {intersectionPoint} = menuHoverState;
-                      if (intersectionPoint) {
-                        _setLayerScrollTop(menuHoverState);
+                    if (tab === 'readme') {
+                      const menuHoverState = menuHoverStates[side ];
+                      const {mousedownStartCoord} = menuHoverState;
+
+                      if (mousedownStartCoord) {
+                        const {intersectionPoint} = menuHoverState;
+                        if (intersectionPoint) {
+                          _setLayerScrollTop(menuHoverState);
+                        }
+
+                        menuHoverState.mousedownScrollLayer = null;
+                        menuHoverState.mousedownStartCoord = null;
+
+                        return true;
+                      } else {
+                        return false;
                       }
-
-                      menuHoverState.mousedownScrollLayer = null;
-                      menuHoverState.mousedownStartCoord = null;
-
-                      return true;
                     } else {
                       return false;
                     }
                   };
                   const _doDragUniverse = () => {
-                    const universeHoverState = universeHoverStates[side];
-                    const {dragStartPoint} = universeHoverState;
+                    const {tab} = navbarState;
 
-                    if (dragStartPoint) {
-                      universeHoverState.dragStartPoint = null;
-                      universeHoverState.dragStartPosition = null;
+                    if (tab === 'multiverse') {
+                      const universeHoverState = universeHoverStates[side];
+                      const {dragStartPoint} = universeHoverState;
 
-                      return true;
+                      if (dragStartPoint) {
+                        universeHoverState.dragStartPoint = null;
+                        universeHoverState.dragStartPosition = null;
+
+                        return true;
+                      } else {
+                        return false;
+                      }
                     } else {
                       return false;
                     }
@@ -3329,39 +3381,51 @@ class Rend {
 
                   if (open) {
                     const _updateTextures = () => {
-                      const {
-                        planeMesh: {
+                      const {tab} = navbarState;
+                      const worldTime = currentWorld.getWorldTime();
+
+                      if (tab === 'readme') {
+                        const {
+                          planeMesh: {
+                            menuMaterial: planeMenuMaterial,
+                          },
+                        } = menuMesh;
+
+                        biolumi.updateMenuMaterial({
+                          ui: menuUi,
                           menuMaterial: planeMenuMaterial,
-                        },
-                        worldMesh: {
-                          elementsMesh: {
-                            menuMaterial: elementsMenuMaterial,
+                          worldTime,
+                        });
+                      }
+                      if (tab === 'world') {
+                        const {
+                          worldMesh: {
+                            elementsMesh: {
+                              menuMaterial: elementsMenuMaterial,
+                            },
+                            npmMesh: {
+                              menuMaterial: npmMenuMaterial,
+                            },
                           },
-                          npmMesh: {
-                            menuMaterial: npmMenuMaterial,
-                          },
-                        },
+                        } = menuMesh;
+
+                        biolumi.updateMenuMaterial({
+                          ui: elementsUi,
+                          menuMaterial: elementsMenuMaterial,
+                          worldTime,
+                        });
+                        biolumi.updateMenuMaterial({
+                          ui: npmUi,
+                          menuMaterial: npmMenuMaterial,
+                          worldTime,
+                        });
+                      }
+
+                      const {
                         navbarMesh: {
                           menuMaterial: navbarMenuMaterial,
                         },
                       } = menuMesh;
-                      const worldTime = currentWorld.getWorldTime();
-
-                      biolumi.updateMenuMaterial({
-                        ui: menuUi,
-                        menuMaterial: planeMenuMaterial,
-                        worldTime,
-                      });
-                      biolumi.updateMenuMaterial({
-                        ui: elementsUi,
-                        menuMaterial: elementsMenuMaterial,
-                        worldTime,
-                      });
-                      biolumi.updateMenuMaterial({
-                        ui: npmUi,
-                        menuMaterial: npmMenuMaterial,
-                        worldTime,
-                      });
                       biolumi.updateMenuMaterial({
                         ui: navbarUi,
                         menuMaterial: navbarMenuMaterial,
@@ -3580,42 +3644,47 @@ class Rend {
                               }
                             };
 
-                            _updateMenuSpecAnchors({
-                              matrixObject: menuMatrixObject,
-                              ui: menuUi,
-                              hoverState: menuHoverState,
-                              dotMesh: menuDotMesh,
-                              boxMesh: menuBoxMesh,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            });
-                            _updateMenuSpecAnchors({
-                              matrixObject: elementsMatrixObject,
-                              ui: elementsUi,
-                              hoverState: elementsHoverState,
-                              dotMesh: elementsDotMesh,
-                              boxMesh: elementsBoxMesh,
-                              width: SIDEBAR_WIDTH,
-                              height: SIDEBAR_HEIGHT,
-                              worldWidth: SIDEBAR_WORLD_WIDTH,
-                              worldHeight: SIDEBAR_WORLD_HEIGHT,
-                              worldDepth: SIDEBAR_WORLD_DEPTH,
-                            });
-                            _updateMenuSpecAnchors({
-                              matrixObject: npmMatrixObject,
-                              ui: npmUi,
-                              hoverState: npmHoverState,
-                              dotMesh: npmDotMesh,
-                              boxMesh: npmBoxMesh,
-                              width: SIDEBAR_WIDTH,
-                              height: SIDEBAR_HEIGHT,
-                              worldWidth: SIDEBAR_WORLD_WIDTH,
-                              worldHeight: SIDEBAR_WORLD_HEIGHT,
-                              worldDepth: SIDEBAR_WORLD_DEPTH,
-                            });
+                            const {tab} = navbarState;
+                            if (tab === 'readme') {
+                              _updateMenuSpecAnchors({
+                                matrixObject: menuMatrixObject,
+                                ui: menuUi,
+                                hoverState: menuHoverState,
+                                dotMesh: menuDotMesh,
+                                boxMesh: menuBoxMesh,
+                                width: WIDTH,
+                                height: HEIGHT,
+                                worldWidth: WORLD_WIDTH,
+                                worldHeight: WORLD_HEIGHT,
+                                worldDepth: WORLD_DEPTH,
+                              });
+                            }
+                            if (tab === 'world') {
+                              _updateMenuSpecAnchors({
+                                matrixObject: elementsMatrixObject,
+                                ui: elementsUi,
+                                hoverState: elementsHoverState,
+                                dotMesh: elementsDotMesh,
+                                boxMesh: elementsBoxMesh,
+                                width: SIDEBAR_WIDTH,
+                                height: SIDEBAR_HEIGHT,
+                                worldWidth: SIDEBAR_WORLD_WIDTH,
+                                worldHeight: SIDEBAR_WORLD_HEIGHT,
+                                worldDepth: SIDEBAR_WORLD_DEPTH,
+                              });
+                              _updateMenuSpecAnchors({
+                                matrixObject: npmMatrixObject,
+                                ui: npmUi,
+                                hoverState: npmHoverState,
+                                dotMesh: npmDotMesh,
+                                boxMesh: npmBoxMesh,
+                                width: SIDEBAR_WIDTH,
+                                height: SIDEBAR_HEIGHT,
+                                worldWidth: SIDEBAR_WORLD_WIDTH,
+                                worldHeight: SIDEBAR_WORLD_HEIGHT,
+                                worldDepth: SIDEBAR_WORLD_DEPTH,
+                              });
+                            }
                           };
                           const _updateNavbarAnchors = () => {
                             const {position: navbarPosition, rotation: navbarRotation, scale: navbarScale} = navbarMatrixObject;
@@ -3806,126 +3875,134 @@ class Rend {
                       const {gamepads} = status;
 
                       const _updateElements = () => {
-                        const {selectedKeyPath, positioningName, positioningSide} = elementsState;
+                        const {tab} = navbarState;
 
-                        if (selectedKeyPath.length > 0 && positioningName && positioningSide) {
-                          const gamepad = gamepads[positioningSide];
+                        if (tab === 'readme') {
+                          const {selectedKeyPath, positioningName, positioningSide} = elementsState;
 
-                          if (gamepad) {
-                            const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                            positioningMesh.position.copy(controllerPosition);
-                            positioningMesh.quaternion.copy(controllerRotation);
-                            positioningMesh.scale.copy(controllerScale);
+                          if (selectedKeyPath.length > 0 && positioningName && positioningSide) {
+                            const gamepad = gamepads[positioningSide];
 
-                            const {selectedKeyPath, positioningName} = elementsState;
-                            const instance = menuUtils.getElementKeyPath({
-                              elements: elementsState.elementInstances,
-                            }, selectedKeyPath);
-                            const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                            const newAttributeValue = JSON.stringify(newValue);
-                            instance.setAttribute(positioningName, newAttributeValue);
-                          }
+                            if (gamepad) {
+                              const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                              positioningMesh.position.copy(controllerPosition);
+                              positioningMesh.quaternion.copy(controllerRotation);
+                              positioningMesh.scale.copy(controllerScale);
 
-                          if (!positioningMesh.visible) {
-                            positioningMesh.visible = true;
-                          }
-                          if (!oldPositioningMesh.visible) {
-                            oldPositioningMesh.visible = true;
-                          }
-                        } else {
-                          if (positioningMesh.visible) {
-                            positioningMesh.visible = false;
-                          }
-                          if (oldPositioningMesh.visible) {
-                            oldPositioningMesh.visible = false;
+                              const {selectedKeyPath, positioningName} = elementsState;
+                              const instance = menuUtils.getElementKeyPath({
+                                elements: elementsState.elementInstances,
+                              }, selectedKeyPath);
+                              const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
+                              const newAttributeValue = JSON.stringify(newValue);
+                              instance.setAttribute(positioningName, newAttributeValue);
+                            }
+
+                            if (!positioningMesh.visible) {
+                              positioningMesh.visible = true;
+                            }
+                            if (!oldPositioningMesh.visible) {
+                              oldPositioningMesh.visible = true;
+                            }
+                          } else {
+                            if (positioningMesh.visible) {
+                              positioningMesh.visible = false;
+                            }
+                            if (oldPositioningMesh.visible) {
+                              oldPositioningMesh.visible = false;
+                            }
                           }
                         }
                       };
                       const _updateUniverse = () => {
-                        const _updateUniverseHover = () => {
-                          const {worlds} = universeState;
+                        const {tab} = navbarState;
 
-                          SIDES.forEach(side => {
-                            const gamepad = gamepads[side];
-                            const universeHoverState = universeHoverStates[side];
-                            const universeDotMesh = universeDotMeshes[side];
+                        if (tab === 'multiverse') {
+                          const _updateUniverseHover = () => {
+                            const {worlds} = universeState;
 
-                            if (gamepad) {
-                              const {position: controllerPosition} = gamepad;
+                            SIDES.forEach(side => {
+                              const gamepad = gamepads[side];
+                              const universeHoverState = universeHoverStates[side];
+                              const universeDotMesh = universeDotMeshes[side];
 
-                              const worldDistances = worlds
-                                .map(world => {
-                                  const position = world.point.clone().applyMatrix4(universeMesh.matrixWorld);
-                                  const distance = controllerPosition.distanceTo(position);
+                              if (gamepad) {
+                                const {position: controllerPosition} = gamepad;
 
-                                  return {
-                                    world,
-                                    position,
-                                    distance,
-                                  };
-                                })
-                                .filter(({distance}) => distance < 0.1);
-                              if (worldDistances.length > 0) {
-                                const closestWorld = worldDistances.sort((a, b) => a.distance - b.distance)[0];
-                                universeHoverState.hoverWorld = closestWorld;
+                                const worldDistances = worlds
+                                  .map(world => {
+                                    const position = world.point.clone().applyMatrix4(universeMesh.matrixWorld);
+                                    const distance = controllerPosition.distanceTo(position);
+
+                                    return {
+                                      world,
+                                      position,
+                                      distance,
+                                    };
+                                  })
+                                  .filter(({distance}) => distance < 0.1);
+                                if (worldDistances.length > 0) {
+                                  const closestWorld = worldDistances.sort((a, b) => a.distance - b.distance)[0];
+                                  universeHoverState.hoverWorld = closestWorld;
+                                } else {
+                                  universeHoverState.hoverWorld = null;
+                                }
                               } else {
                                 universeHoverState.hoverWorld = null;
                               }
-                            } else {
-                              universeHoverState.hoverWorld = null;
-                            }
 
-                            const {hoverWorld} = universeHoverState;
-                            if (hoverWorld !== null) {
-                              const {world, position} = hoverWorld;
-                              const {worldName} = world;
-                              const selected = worldName === hub.getWorldName();
+                              const {hoverWorld} = universeHoverState;
+                              if (hoverWorld !== null) {
+                                const {world, position} = hoverWorld;
+                                const {worldName} = world;
+                                const selected = worldName === hub.getWorldName();
 
-                              universeDotMesh.position.copy(position);
-                              const colorAttribute = universeDotMesh.geometry.getAttribute('color');
-                              colorAttribute.array.set(Float32Array.from(new THREE.Color(selected ? 0xFF0000 : 0x808080).toArray()));
-                              colorAttribute.needsUpdate = true;
+                                universeDotMesh.position.copy(position);
+                                const colorAttribute = universeDotMesh.geometry.getAttribute('color');
+                                colorAttribute.array.set(Float32Array.from(new THREE.Color(selected ? 0xFF0000 : 0x808080).toArray()));
+                                colorAttribute.needsUpdate = true;
 
-                              if (!universeDotMesh.visible) {
-                                universeDotMesh.visible = true;
+                                if (!universeDotMesh.visible) {
+                                  universeDotMesh.visible = true;
+                                }
+                              } else {
+                                if (universeDotMesh.visible) {
+                                  universeDotMesh.visible = false;
+                                }
                               }
-                            } else {
-                              if (universeDotMesh.visible) {
-                                universeDotMesh.visible = false;
-                              }
-                            }
-                          });
-                        };
-                        const _updateUniverseDrag = () => {
-                          const {floorMesh} = universeMesh;
-                          const {position: floorMeshPosition} = _decomposeObjectMatrixWorld(floorMesh);
-                          const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), floorMeshPosition);
+                            });
+                          };
+                          const _updateUniverseDrag = () => {
+                            const {floorMesh} = universeMesh;
+                            const {position: floorMeshPosition} = _decomposeObjectMatrixWorld(floorMesh);
+                            const floorPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), floorMeshPosition);
 
-                          SIDES.some(side => {
-                            const gamepad = gamepads[side];
-                            const universeHoverState = universeHoverStates[side];
-                            const {dragStartPoint} = universeHoverState;
-
-                            if (dragStartPoint) {
-                              const {dragStartPoint, dragStartPosition} = universeHoverState;
+                            SIDES.some(side => {
                               const gamepad = gamepads[side];
-                              const {position: controllerPosition} = gamepad;
+                              const universeHoverState = universeHoverStates[side];
+                              const {dragStartPoint} = universeHoverState;
 
-                              const startPointPlanePoint = floorPlane.projectPoint(dragStartPoint);
-                              const currentPointPlanePoint = floorPlane.projectPoint(controllerPosition);
+                              if (dragStartPoint) {
+                                const {dragStartPoint, dragStartPosition} = universeHoverState;
+                                const gamepad = gamepads[side];
+                                const {position: controllerPosition} = gamepad;
 
-                              const newFloorMeshPosition = dragStartPosition.clone().add(currentPointPlanePoint.clone().sub(startPointPlanePoint));
-                              floorMesh.position.copy(newFloorMeshPosition);
+                                const startPointPlanePoint = floorPlane.projectPoint(dragStartPoint);
+                                const currentPointPlanePoint = floorPlane.projectPoint(controllerPosition);
 
-                              return true;
-                            } else {
-                              return false;
-                            }
-                          });
-                        };
+                                const newFloorMeshPosition = dragStartPosition.clone().add(currentPointPlanePoint.clone().sub(startPointPlanePoint));
+                                floorMesh.position.copy(newFloorMeshPosition);
 
-                        _updateUniverseHover();
-                        _updateUniverseDrag();
+                                return true;
+                              } else {
+                                return false;
+                              }
+                            });
+                          };
+
+                          _updateUniverseHover();
+                          _updateUniverseDrag();
+                        }
                       };
 
                       _updateElements();
