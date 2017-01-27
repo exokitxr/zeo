@@ -82,7 +82,9 @@ class Rend {
       '/core/engines/bullet',
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
+      '/core/plugins/random-utils',
       '/core/plugins/creature-utils',
+      '/core/plugins/sprite-utils',
     ]).then(([
       hub,
       input,
@@ -94,12 +96,15 @@ class Rend {
       bullet,
       jsUtils,
       geometryUtils,
+      randomUtils,
       creatureUtils,
+      spriteUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {alea} = randomUtils;
 
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
@@ -234,9 +239,14 @@ class Rend {
 
           const worlds = (() => {
             const numPoints = 10;
-            const resolution = 16;
+            const size = 0.5;
+            const resolution = 32;
+            const heightScale = 0.2;
+            const heightOffset = -0.01 / 2;
+
+            const rng = new alea('');
             const generator = indev({
-              seed: '',
+              random: rng,
             });
             const noise = generator.simplex({
               frequency: 100,
@@ -246,17 +256,15 @@ class Rend {
             const heap = new Heap((a, b) => a.value - b.value);
             for (let i = 0; i < resolution; i++) {
               for (let j = 0; j < resolution; j++) {
-                for (let k = 0; k < resolution; k++) {
-                  const value = noise.in3D(i, j, k);
-                  const point = new Point(
-                    -0.5 + (i / resolution),
-                    -0.5 + (j / resolution),
-                    -0.5 + (k / resolution),
-                    value
-                  );
-                  point.value = value;
-                  heap.push(point);
-                }
+                const height = noise.in2D(i, j);
+                const value = rng();
+                const point = new Point(
+                  (-0.5 + (i / resolution)) * size,
+                  (height * heightScale) + heightOffset,
+                  (-0.5 + (j / resolution)) * size,
+                  value
+                );
+                heap.push(point);
               }
             }
 
@@ -1001,11 +1009,6 @@ class Rend {
                   color: 0xFF0000,
                   size: 0.01,
                 });
-                const pointsMaterial = new THREE.PointsMaterial({
-                  // color: 0x808080,
-                  vertexColors: THREE.VertexColors,
-                  size: 0.01,
-                });
                 const pointsLargeMaterial = new THREE.PointsMaterial({
                   // color: 0x808080,
                   vertexColors: THREE.VertexColors,
@@ -1013,6 +1016,11 @@ class Rend {
                 });
                 const linesMaterial = new THREE.LineBasicMaterial({
                   color: 0x808080,
+                });
+                const worldMaterial = new THREE.MeshPhongMaterial({
+                  color: 0xFFFFFF,
+                  shininess: 10,
+                  vertexColors: THREE.FaceColors,
                 });
 
                 menuMesh = (() => {
@@ -1385,52 +1393,42 @@ class Rend {
                   object.visible = false;
 
                   const {worlds} = universeState;
-                  const pointsMesh = (() => {
-                    return new THREE.Object3D(); // XXX make this creatures instead
+                  const worldsMesh = (() => {
+                    const result = new THREE.Object3D();
 
-                    const geometry = new THREE.BufferGeometry();
-                    const positions = (() => {
-                      const result = new Float32Array(worlds.length * 3);
-                      for (let i = 0; i < worlds.length; i++) {
-                        const world = worlds[i];
-                        const {point} = world;
+                    const _requestWorldMesh = world => new Promise((accept, reject) => {
+                      const {worldName, point} = world;
 
-                        const index = i * 3;
-                        result[index + 0] = point.x;
-                        result[index + 1] = point.y;
-                        result[index + 2] = point.z;
-                      }
-                      return result;
-                    })();
-                    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                    const colors = (() => {
-                      const result = new Float32Array(worlds.length * 3);
+                      const img = new Image();
+                      img.src = creatureUtils.makeStaticCreature('world:' + worldName);
+                      img.onload = () => {
+                        const geometry = spriteUtils.makeImageGeometry(img, 0.01);
+                        const material = worldMaterial;
 
-                      const hubWorldName = hub.getWorldName();
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.position.copy(point);
 
-                      const grayColor = new THREE.Color(0x808080).toArray();
-                      const redColor = new THREE.Color(0xFF0000).toArray();
-                      for (let i = 0; i < worlds.length; i++) {
-                        const world = worlds[i];
-                        const {worldName} = world;
-                        const selected = worldName === hubWorldName;
+                        accept(mesh);
+                      };
+                      img.onerror = err => {
+                        reject(err);
+                      };
+                    });
 
-                        const index = i * 3;
-                        const color = selected ? redColor : grayColor;
-                        result[index + 0] = color[0];
-                        result[index + 1] = color[1];
-                        result[index + 2] = color[2];
-                      }
+                    for (let i = 0; i < worlds.length; i++) {
+                      const world = worlds[i];
+                      _requestWorldMesh(world)
+                        .then(worldMesh => {
+                          result.add(worldMesh);
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    }
 
-                      return result;
-                    })();
-                    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-                    const material = pointsMaterial;
-
-                    const mesh = new THREE.Points(geometry, material);
-                    return mesh;
+                    return result;
                   })();
-                  object.add(pointsMesh);
+                  object.add(worldsMesh);
 
                   const linesMesh = (() => {
                     return new THREE.Object3D(); // XXX make this creatures instead
@@ -1468,6 +1466,7 @@ class Rend {
                   const floorMesh = (() => {
                     const size = 0.5;
                     const resolution = 16;
+                    const heightScale = 0.2;
 
                     const geometry = (() => {
                       const generator = indev({
@@ -1488,7 +1487,7 @@ class Rend {
                         const x = Math.round((positions[baseIndex + 0] + (size / 2)) / size * resolution);
                         const y = Math.round((-positions[baseIndex + 2] + (size / 2)) / size * resolution);
 
-                        const height = noise.in2D(x, y) * 0.2;
+                        const height = noise.in2D(x, y) * heightScale;
                         positions[baseIndex + 1] = height;
                       }
                       // positionAttribute.needsUpdate = true;
