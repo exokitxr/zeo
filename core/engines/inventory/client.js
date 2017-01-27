@@ -78,7 +78,13 @@ class Inventory {
 
               let itemMesh = null;
               mesh.setItemMesh = newItemMesh => {
-                mesh.add(newItemMesh);
+                if (newItemMesh) {
+                  mesh.add(newItemMesh);
+                } else {
+                  if (itemMesh) {
+                    mesh.remove(itemMesh);
+                  }
+                }
                 itemMesh = newItemMesh;
               };
               mesh.getItemMesh = () => itemMesh;
@@ -170,8 +176,8 @@ class Inventory {
             const tagMesh = itemBoxMesh.getItemMesh();
 
             if (tagMesh) {
+              itemBoxMesh.setItemMesh(index, null);
               tags.grabTag(side, tagMesh);
-
               hub.setUserStateInventoryItem(index, null);
 
               e.stopImmediatePropagation(); // so tags engine doesn't pick it up
