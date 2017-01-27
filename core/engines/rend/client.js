@@ -10,11 +10,11 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
-  SIDEBAR_WIDTH,
-  SIDEBAR_HEIGHT,
-  SIDEBAR_WORLD_WIDTH,
-  SIDEBAR_WORLD_HEIGHT,
-  SIDEBAR_WORLD_DEPTH,
+  ATTRIBUTES_WIDTH,
+  ATTRIBUTES_HEIGHT,
+  ATTRIBUTES_WORLD_WIDTH,
+  ATTRIBUTES_WORLD_HEIGHT,
+  ATTRIBUTES_WORLD_DEPTH,
 
   NAVBAR_WIDTH,
   NAVBAR_HEIGHT,
@@ -219,6 +219,9 @@ class Rend {
           loaded: false,
           loading: false,
           uploading: fs.getUploading(),
+        };
+        const elementsState2 = {
+          element: null,
         };
         const _makeUniverseState = () => {
           const generator = indev({
@@ -720,12 +723,8 @@ class Rend {
                  height: HEIGHT,
               }),
               biolumi.requestUi({
-                width: SIDEBAR_WIDTH,
-                height: SIDEBAR_HEIGHT,
-              }),
-              biolumi.requestUi({
-                width: SIDEBAR_WIDTH,
-                height: SIDEBAR_HEIGHT,
+                width: ATTRIBUTES_WIDTH,
+                height: ATTRIBUTES_HEIGHT,
               }),
               biolumi.requestUi({
                 width: NAVBAR_WIDTH,
@@ -733,13 +732,11 @@ class Rend {
               }),
             ]).then(([
               menuUi,
-              elementsUi,
-              npmUi,
+              attributesUi,
               navbarUi,
             ]) => ({
               menuUi,
-              elementsUi,
-              npmUi,
+              attributesUi,
               navbarUi,
             }));
 
@@ -749,7 +746,7 @@ class Rend {
             ]).then(([
               {
                 menuUi,
-                elementsUi,
+                attributesUi,
                 npmUi,
                 navbarUi,
               },
@@ -918,61 +915,22 @@ class Rend {
                   immediate: true,
                 });
 
-                elementsUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}}) => {
+                attributesUi.pushPage(({elements: {element}}) => {
                   return [
                     {
                       type: 'html',
-                      src: menuRenderer.getWorldSidebarSrc({elements: availableElements}),
+                      src: menuRenderer.getAttributesPageSrc({element}),
                       x: 0,
                       y: 0,
-                      w: SIDEBAR_WIDTH,
-                      h: SIDEBAR_HEIGHT,
+                      w: ATTRIBUTES_WIDTH,
+                      h: ATTRIBUTES_HEIGHT,
                       scroll: true,
                     },
-                    /* {
-                      type: 'image',
-                      img: creatureUtils.makeAnimatedCreature('world'),
-                      x: 0,
-                      y: 0,
-                      w: 150,
-                      h: 150,
-                      frameTime: 300,
-                      pixelated: true,
-                    } */
                   ];
                 }, {
                   type: 'world',
                   state: {
-                    elements: _cleanElementsState(elementsState),
-                  },
-                });
-
-                npmUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}}) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: menuRenderer.getWorldSidebarSrc({elements: availableElements}),
-                      x: 0,
-                      y: 0,
-                      w: SIDEBAR_WIDTH,
-                      h: SIDEBAR_HEIGHT,
-                      scroll: true,
-                    },
-                    /* {
-                      type: 'image',
-                      img: creatureUtils.makeAnimatedCreature('world'),
-                      x: 0,
-                      y: 0,
-                      w: 150,
-                      h: 150,
-                      frameTime: 300,
-                      pixelated: true,
-                    } */
-                  ];
-                }, {
-                  type: 'world',
-                  state: {
-                    elements: _cleanElementsState(elementsState),
+                    elements: elementsState2,
                   },
                 });
 
@@ -1061,68 +1019,6 @@ class Rend {
                     const result = new THREE.Object3D();
                     result.visible = false;
 
-                    /* const elementsMesh = (() => { // XXX delete these
-                      const width = SIDEBAR_WORLD_WIDTH;
-                      const height = SIDEBAR_WORLD_HEIGHT;
-                      const depth = SIDEBAR_WORLD_DEPTH;
-
-                      const menuMaterial = biolumi.makeMenuMaterial();
-
-                      const geometry = new THREE.PlaneBufferGeometry(width, height);
-                      const materials = [solidMaterial, menuMaterial];
-
-                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                      mesh.position.x = -0.25;
-                      // mesh.position.z = -0.5;
-                      mesh.rotation.y = Math.PI / 8;
-                      mesh.receiveShadow = true;
-                      mesh.menuMaterial = menuMaterial;
-
-                      const shadowMesh = (() => {
-                        const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                        const material = transparentMaterial;
-                        const mesh = new THREE.Mesh(geometry, material);
-                        mesh.castShadow = true;
-                        return mesh;
-                      })();
-                      mesh.add(shadowMesh);
-
-                      return mesh;
-                    })();
-                    result.add(elementsMesh);
-                    result.elementsMesh = elementsMesh;
-
-                    const npmMesh = (() => {
-                      const width = SIDEBAR_WORLD_WIDTH;
-                      const height = SIDEBAR_WORLD_HEIGHT;
-                      const depth = SIDEBAR_WORLD_DEPTH;
-
-                      const menuMaterial = biolumi.makeMenuMaterial();
-
-                      const geometry = new THREE.PlaneBufferGeometry(width, height);
-                      const materials = [solidMaterial, menuMaterial];
-
-                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                      mesh.position.x = 0.25;
-                      // mesh.position.z = -0.5;
-                      mesh.rotation.y = -Math.PI / 8;
-                      mesh.receiveShadow = true;
-                      mesh.menuMaterial = menuMaterial;
-
-                      const shadowMesh = (() => {
-                        const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                        const material = transparentMaterial;
-                        const mesh = new THREE.Mesh(geometry, material);
-                        mesh.castShadow = true;
-                        return mesh;
-                      })();
-                      mesh.add(shadowMesh);
-
-                      return mesh;
-                    })();
-                    result.add(npmMesh);
-                    result.npmMesh = npmMesh; */
-
                     const elementsMesh = (() => {
                       const size = 0.3;
 
@@ -1164,6 +1060,38 @@ class Rend {
                     })();
                     result.add(npmMesh);
                     result.npmMesh = npmMesh;
+
+                    const attributesMesh = (() => {
+                      const width = ATTRIBUTES_WORLD_WIDTH;
+                      const height = ATTRIBUTES_WORLD_HEIGHT;
+                      const depth = ATTRIBUTES_WORLD_DEPTH;
+
+                      const menuMaterial = biolumi.makeMenuMaterial();
+
+                      const geometry = new THREE.PlaneBufferGeometry(width, height);
+                      const materials = [solidMaterial, menuMaterial];
+
+                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      mesh.visible = false;
+                      mesh.position.x = -0.25;
+                      // mesh.position.z = -0.5;
+                      // mesh.rotation.y = Math.PI / 8;
+                      mesh.receiveShadow = true;
+                      mesh.menuMaterial = menuMaterial;
+
+                      const shadowMesh = (() => {
+                        const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                        const material = transparentMaterial;
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.castShadow = true;
+                        return mesh;
+                      })();
+                      mesh.add(shadowMesh);
+
+                      return mesh;
+                    })();
+                    result.add(attributesMesh);
+                    result.attributesMesh = attributesMesh;
 
                     return result;
                   })();
@@ -1581,10 +1509,9 @@ class Rend {
 
                 const _updatePages = menuUtils.debounce(next => {
                   const menuPages = menuUi.getPages();
-                  const elementsPages = elementsUi.getPages();
-                  const npmPages = npmUi.getPages();
+                  const attributesPages = attributesUi.getPages();
                   const navbarPages = navbarUi.getPages();
-                  const pages = menuPages.concat(elementsPages).concat(npmPages).concat(navbarPages);
+                  const pages = menuPages.concat(attributesPages).concat(navbarPages);
 
                   if (pages.length > 0) {
                     let pending = pages.length;
@@ -3445,29 +3372,21 @@ class Rend {
                           worldTime,
                         });
                       }
-                      /* if (tab === 'world') {
+                      if (tab === 'world') {
                         const {
                           worldMesh: {
-                            elementsMesh: {
-                              menuMaterial: elementsMenuMaterial,
-                            },
-                            npmMesh: {
-                              menuMaterial: npmMenuMaterial,
+                            attributesMesh: {
+                              menuMaterial: attributesMenuMaterial,
                             },
                           },
                         } = menuMesh;
 
                         biolumi.updateMenuMaterial({
-                          ui: elementsUi,
-                          menuMaterial: elementsMenuMaterial,
+                          ui: attributesUi,
+                          menuMaterial: attributesMenuMaterial,
                           worldTime,
                         });
-                        biolumi.updateMenuMaterial({
-                          ui: npmUi,
-                          menuMaterial: npmMenuMaterial,
-                          worldTime,
-                        });
-                      } */
+                      }
 
                       const {
                         navbarMesh: {
