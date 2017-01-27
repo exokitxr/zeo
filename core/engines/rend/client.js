@@ -1148,19 +1148,12 @@ class Rend {
                 scene.add(menuBoxMeshes.left);
                 scene.add(menuBoxMeshes.right);
 
-                /* const elementsBoxMeshes = {
+                const attributesBoxMeshes = {
                   left: _makeBoxMesh(),
                   right: _makeBoxMesh(),
                 };
-                scene.add(elementsBoxMeshes.left);
-                scene.add(elementsBoxMeshes.right);
-
-                const npmBoxMeshes = {
-                  left: _makeBoxMesh(),
-                  right: _makeBoxMesh(),
-                };
-                scene.add(npmBoxMeshes.left);
-                scene.add(npmBoxMeshes.right); */
+                scene.add(attributesBoxMeshes.left);
+                scene.add(attributesBoxMeshes.right);
 
                 const navbarBoxMeshes = {
                   left: _makeBoxMesh(),
@@ -1184,19 +1177,12 @@ class Rend {
                 scene.add(menuDotMeshes.left);
                 scene.add(menuDotMeshes.right);
 
-                /* const elementsDotMeshes = {
+                const attributesDotMeshes = {
                   left: _makeMenuDotMesh(),
                   right: _makeMenuDotMesh(),
                 };
-                scene.add(elementsDotMeshes.left);
-                scene.add(elementsDotMeshes.right);
-
-                const npmDotMeshes = {
-                  left: _makeMenuDotMesh(),
-                  right: _makeMenuDotMesh(),
-                };
-                scene.add(npmDotMeshes.left);
-                scene.add(npmDotMeshes.right); */
+                scene.add(attributesDotMeshes.left);
+                scene.add(attributesDotMeshes.right);
 
                 const _makeUniverseDotMesh = () => {
                   const geometry = new THREE.BufferGeometry();
@@ -2888,12 +2874,10 @@ class Rend {
                     keyboardMesh.visible = false; */
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
-                      /* elementsBoxMeshes[side].visible = false;
-                      npmBoxMeshes[side].visible = false; */
+                      attributesDotMeshes[side].visible = false;
 
                       menuDotMeshes[side].visible = false;
-                      /* elementsDotMeshes[side].visible = false;
-                      npmDotMeshes[side].visible = false; */
+                      attributesDotMeshes[side].visible = false;
                     });
                   } else {
                     menuState.open = true;
@@ -3194,8 +3178,10 @@ class Rend {
                   SIDES.forEach(side => {
                     scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
-                    /* scene.remove(elementsDotMeshes[side]);
-                    scene.remove(npmDotMeshes[side]); */
+
+                    scene.remove(attributesDotMeshes[side]);
+                    scene.remove(attributesBoxMeshes[side]);
+
                     scene.remove(universeDotMeshes[side]);
                     scene.remove(keyboardBoxMeshes[side]);
                   });
@@ -3282,6 +3268,11 @@ class Rend {
                 const npmHoverStates = {
                   left: _makeWorldHoverState(),
                   right: _makeWorldHoverState(),
+                };
+
+                const attributesHoverStates = {
+                  left: _makeMenuHoverState(),
+                  right: _makeMenuHoverState(),
                 };
 
                 const _makeNavbarHoverState = () => ({
@@ -3413,10 +3404,11 @@ class Rend {
                         const status = webvr.getStatus();
                         const {gamepads} = status;
 
-                        const {planeMesh, worldMesh: {elementsMesh, npmMesh}, navbarMesh} = menuMesh;
+                        const {planeMesh, worldMesh: {elementsMesh, npmMesh, attributesMesh}, navbarMesh} = menuMesh;
                         const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
                         const elementsMatrixObject = _decomposeObjectMatrixWorld(elementsMesh);
                         const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
+                        const attributesMatrixObject = _decomposeObjectMatrixWorld(attributesMesh);
                         const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
 
                         SIDES.forEach(side => {
@@ -3436,13 +3428,12 @@ class Rend {
                             const menuDotMesh = menuDotMeshes[side];
                             const menuBoxMesh = menuBoxMeshes[side];
 
-                            const elementsHoverState = elementsHoverStates[side];
-                            /* const elementsDotMesh = elementsDotMeshes[side];
-                            const elementsBoxMesh = elementsBoxMeshes[side]; */
+                            const attributesHoverState = attributesHoverStates[side];
+                            const attributesDotMesh = attributesDotMeshes[side];
+                            const attributesBoxMesh = attributesBoxMeshes[side];
 
+                            const elementsHoverState = elementsHoverStates[side];
                             const npmHoverState = npmHoverStates[side];
-                            /* const npmDotMesh = npmDotMeshes[side];
-                            const npmBoxMesh = npmBoxMeshes[side]; */
 
                             const navbarHoverState = navbarHoverStates[side];
                             const navbarBoxMesh = navbarBoxMeshes[side];
@@ -3614,7 +3605,7 @@ class Rend {
 
                               const {tab} = navbarState;
                               if (tab === 'readme') {
-                                _updateMenuSpecAnchors({ // XXX flatten this
+                                _updateMenuSpecAnchors({
                                   matrixObject: menuMatrixObject,
                                   ui: menuUi,
                                   hoverState: menuHoverState,
@@ -3627,33 +3618,20 @@ class Rend {
                                   worldDepth: WORLD_DEPTH,
                                 });
                               }
-                              /* if (tab === 'world') {
-                                _updateMenuSpecAnchors({
-                                  matrixObject: elementsMatrixObject,
-                                  ui: elementsUi,
-                                  hoverState: elementsHoverState,
-                                  dotMesh: elementsDotMesh,
-                                  boxMesh: elementsBoxMesh,
-                                  width: SIDEBAR_WIDTH,
-                                  height: SIDEBAR_HEIGHT,
-                                  worldWidth: SIDEBAR_WORLD_WIDTH,
-                                  worldHeight: SIDEBAR_WORLD_HEIGHT,
-                                  worldDepth: SIDEBAR_WORLD_DEPTH,
-                                });
-                                _updateMenuSpecAnchors({
-                                  matrixObject: npmMatrixObject,
-                                  ui: npmUi,
-                                  hoverState: npmHoverState,
-                                  dotMesh: npmDotMesh,
-                                  boxMesh: npmBoxMesh,
-                                  width: SIDEBAR_WIDTH,
-                                  height: SIDEBAR_HEIGHT,
-                                  worldWidth: SIDEBAR_WORLD_WIDTH,
-                                  worldHeight: SIDEBAR_WORLD_HEIGHT,
-                                  worldDepth: SIDEBAR_WORLD_DEPTH,
-                                });
-                              } */
                               if (tab === 'world') {
+                                _updateMenuSpecAnchors({
+                                  matrixObject: attributesMatrixObject,
+                                  ui: attributesUi,
+                                  hoverState: attributesHoverState,
+                                  dotMesh: attributesDotMesh,
+                                  boxMesh: attributesBoxMesh,
+                                  width: ATTRIBUTES_WIDTH,
+                                  height: ATTRIBUTES_HEIGHT,
+                                  worldWidth: ATTRIBUTES_WORLD_WIDTH,
+                                  worldHeight: ATTRIBUTES_WORLD_HEIGHT,
+                                  worldDepth: ATTRIBUTES_WORLD_DEPTH,
+                                });
+
                                 const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsMatrixObject;
                                 const elementsBoxTarget = geometryUtils.makeBoxTarget(
                                   elementsPosition,
