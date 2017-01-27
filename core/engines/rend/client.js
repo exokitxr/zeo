@@ -972,7 +972,7 @@ class Rend {
                   return [
                     {
                       type: 'html',
-                      src: menuRenderer.getWorldNavbarSrc({tab}),
+                      src: menuRenderer.getNavbarSrc({tab}),
                       x: 0,
                       y: 0,
                       w: NAVBAR_WIDTH,

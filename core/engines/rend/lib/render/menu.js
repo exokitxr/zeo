@@ -772,25 +772,25 @@ const getWorldSidebarSrc = ({elements}) => `\
   </div>
 `;
 
-const getWorldNavbarSrc = ({tab}) => `\
+const getNavbarSrc = ({tab}) => `\
   <div style="display: flex; width: 1000px; height: 50px;">
-    <a style="display: flex; position: relative; width: 200px; justify-content: center; align-items: center; font-size: 30px; text-decoration: none;" onclick="navbar:readme">
+    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none;" onclick="navbar:readme">
       ${tab === 'readme' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
       <span>Readme</span>
     </a>
-    <a style="display: flex; position: relative; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:multiverse">
+    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:multiverse">
       ${tab === 'multiverse' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
       <span>Multiverse</span>
     </a>
-    <a style="display: flex; position: relative; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:world">
+    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:world">
       ${tab === 'world' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
       <span>World</span>
     </a>
-    <a style="display: flex; position: relative; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:inventory">
+    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:inventory">
       ${tab === 'inventory' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
       <span>Inventory</span>
     </a>
-    <a style="display: flex; position: relative; width: 200px; border-top: 5px solid transparent; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:options">
+    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:options">
       ${tab === 'options' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
       <span>Options</span>
     </a>
@@ -831,7 +831,7 @@ return {
   getGetButtonSrc,
   getFilesButtonsSrc,
   getWorldSidebarSrc,
-  getWorldNavbarSrc,
+  getNavbarSrc,
 };
 
 };
