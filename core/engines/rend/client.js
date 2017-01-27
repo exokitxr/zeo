@@ -272,6 +272,9 @@ class Rend {
             worlds,
           };
         })();
+        const navbarState = {
+          tab: 'readme',
+        };
 
         const worlds = new Map();
         let currentWorld = null;
@@ -964,11 +967,11 @@ class Rend {
                   },
                 });
 
-                navbarUi.pushPage(() => {
+                navbarUi.pushPage(({navbar: {tab}}) => {
                   return [
                     {
                       type: 'html',
-                      src: menuRenderer.getWorldNavbarSrc(),
+                      src: menuRenderer.getWorldNavbarSrc({tab}),
                       x: 0,
                       y: 0,
                       w: NAVBAR_WIDTH,
@@ -978,7 +981,9 @@ class Rend {
                   ];
                 }, {
                   type: 'navbar',
-                  state: {},
+                  state: {
+                    navbar: navbarState,
+                  },
                 });
 
                 const wireframeMaterial = new THREE.MeshBasicMaterial({
@@ -1455,7 +1460,8 @@ class Rend {
                   const menuPages = menuUi.getPages();
                   const worldPages = worldUi.getPages();
                   const npmPages = npmUi.getPages();
-                  const pages = menuPages.concat(worldPages).concat(npmPages);
+                  const navbarPages = navbarUi.getPages();
+                  const pages = menuPages.concat(worldPages).concat(npmPages).concat(navbarPages);
 
                   if (pages.length > 0) {
                     let pending = pages.length;
@@ -1517,7 +1523,9 @@ class Rend {
                           elements: _cleanElementsState(elementsState),
                         }, pend);
                       } else if (type === 'navbar') {
-                        page.update({}, pend);
+                        page.update({
+                          navbar: navbarState,
+                        }, pend);
                       } else {
                         pend();
                       }
@@ -1573,6 +1581,24 @@ class Rend {
                         elementsState.positioningSide = null;
 
                         _saveElements();
+
+                        _updatePages();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _doClickNavbar = e => {
+                      const {side} = e;
+                      const navbarHoverState = navbarHoverStates[side];
+                      const {anchor} = navbarHoverState;
+                      const onclick = (anchor && anchor.onclick) || '';
+
+                      let match;
+                      if (match = onclick.match(/^navbar:(readme|multiverse|world|inventory|options)$/)) {
+                        const tab = match[1];
+                        navbarState.tab = tab;
 
                         _updatePages();
 
@@ -2422,7 +2448,7 @@ class Rend {
                       }
                     };
 
-                    _doSetPosition(e) || _doClickUniverse(e) || _doClickMenu(e);
+                    _doSetPosition(e) || _doClickNavbar(e) || _doClickUniverse(e) || _doClickMenu(e);
                   }
                 };
                 input.on('trigger', trigger);
@@ -3098,6 +3124,13 @@ class Rend {
                   left: _makeMenuHoverState(),
                   right: _makeMenuHoverState(),
                 };
+                const _makeNavbarHoverState = () => ({
+                  anchor: null,
+                });
+                const navbarHoverStates = {
+                  left: _makeNavbarHoverState(),
+                  right: _makeNavbarHoverState(),
+                };
 
                 const _makeKeyboardHoverState = () => ({
                   key: null,
@@ -3241,6 +3274,7 @@ class Rend {
                           const npmDotMesh = npmDotMeshes[side];
                           const npmBoxMesh = npmBoxMeshes[side];
 
+                          const navbarHoverState = navbarHoverStates[side];
                           const navbarBoxMesh = navbarBoxMeshes[side];
 
                           const keyboardHoverState = keyboardHoverStates[side];
@@ -3498,6 +3532,9 @@ class Rend {
                               }
                             })();
                             if (anchorBoxTarget) {
+                              const {anchor} = anchorBoxTarget;
+                              navbarHoverState.anchor = anchor;
+
                               navbarBoxMesh.position.copy(anchorBoxTarget.position);
                               navbarBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
                               navbarBoxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
@@ -3506,6 +3543,8 @@ class Rend {
                                 navbarBoxMesh.visible = true;
                               }
                             } else {
+                              navbarHoverState.anchor = null;
+
                               if (navbarBoxMesh.visible) {
                                 navbarBoxMesh.visible = false;
                               }
