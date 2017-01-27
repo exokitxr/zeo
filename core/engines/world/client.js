@@ -208,7 +208,7 @@ class World {
               scene.add(attributesBoxMeshes.left);
               scene.add(attributesBoxMeshes.right);
 
-              /* const _updatePages = menuUtils.debounce(next => { // XXX hook this in when pages update
+              const _updatePages = menuUtils.debounce(next => {
                 const {
                   attributesMesh: {
                     menuMaterial: attributesMenuMaterial,
@@ -230,7 +230,7 @@ class World {
 
                     if (type === 'world') {
                       page.update({
-                        elements: _cleanElementsState(elementsState),
+                        attributes: attributesState,
                       }, pend);
                     } else {
                       pend();
@@ -239,7 +239,7 @@ class World {
                 } else {
                   next();
                 }
-              }); */
+              });
 
               const _update = e => {
                 const tab = rend.getTab();
@@ -343,10 +343,14 @@ class World {
 
                 elementsMesh.add(tagMesh);
                 tagMeshes.push(tagMesh);
-
-                // const {item} = tagMesh; // XXX actually load the element here
-
                 _refreshTagMeshes();
+
+                const {item: element} = tagMesh;
+                attributesState.element = element;
+                _updatePages();
+
+                const {attributesMesh} = mesh;
+                attributesMesh.visible = true;
               };
               const _refreshTagMeshes = () => {
                 for (let i = 0; i < tagMeshes.length; i++) {
