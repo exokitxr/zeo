@@ -322,19 +322,11 @@ class World {
                   };
                   const _updateAnchorStyles = () => {
                     const {elementsMesh} = mesh;
-                    const elementsHovered = SIDES.some(side => {
-                      const elementsHoverState = elementsHoverStates[side];
-                      const {hovered} = elementsHoverState;
-                      return hovered;
-                    });
+                    const elementsHovered = SIDES.some(side => elementsHoverStates[side].hovered);
                     elementsMesh.material.color = new THREE.Color(elementsHovered ? 0x0000FF : 0x808080);
 
                     const {npmMesh} = mesh;
-                    const npmHovered = SIDES.some(side => {
-                      const npmHoverState = npmHoverStates[side];
-                      const {hovered} = npmHoverState;
-                      return hovered;
-                    });
+                    const npmHovered = SIDES.some(side => npmHoverStates[side].hovered);
                     npmMesh.material.color = new THREE.Color(npmHovered ? 0x0000FF : 0x808080);
                   };
 
@@ -345,7 +337,28 @@ class World {
               };
               rend.on('update', _update);
 
-              const _gripdown = e => {
+              const tagMeshes = [];
+              const _addTagMesh = tagMesh => {
+                const {elementsMesh} = mesh;
+
+                elementsMesh.add(tagMesh);
+                tagMeshes.push(tagMesh);
+
+                // const {item} = tagMesh; // XXX actually load the element here
+
+                _refreshTagMeshes();
+              };
+              const _refreshTagMeshes = () => {
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+
+                  tagMesh.position.copy(new THREE.Vector3()); // XXX refresh to the right position here
+                  tagMesh.quaternion.copy(new THREE.Quaternion());
+                  tagMesh.scale.set(1, 1, 1);
+                }
+              };
+
+              const _gripdown = e => { // XXX support tag pickup here
                 const {side} = e;
                 const hoverState = hoverStates[side];
                 const {index} = hoverState;
@@ -373,26 +386,14 @@ class World {
                   const {object: handsGrabberObject} = handsGrabber;
 
                   if (tags.isTag(handsGrabberObject)) {
-                    const hoverState = hoverStates[side];
-                    const {index} = hoverState;
+                    const elementsHovered = elementsHoverStates[side].hovered;
 
-                    if (index !== null) {
-                      const {itemBoxMeshes} = mesh;
-                      const itemBoxMesh = itemBoxMeshes[index];
-                      const oldTagMesh = itemBoxMesh.getItemMesh();
+                    if (elementsHovered) {
+                      const newTagMesh = handsGrabberObject;
 
-                      if (!oldTagMesh) {
-                        const newTagMesh = handsGrabberObject;
+                      handsGrabber.release()
 
-                        handsGrabber.release()
-
-                        itemBoxMesh.setItemMesh(newTagMesh);
-                        newTagMesh.position.copy(new THREE.Vector3());
-                        newTagMesh.quaternion.copy(new THREE.Quaternion());
-                        newTagMesh.scale.set(1, 1, 1);
-
-                        // const {item} = newTagMesh; // XXX item is the element
-                      }
+                      _addTagMesh(newTagMesh)
 
                       e.stopImmediatePropagation(); // so tags engine doesn't pick it up
                     }
