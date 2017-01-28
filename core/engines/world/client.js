@@ -469,6 +469,47 @@ class World {
               })();
               rend.addMenuMesh('worldMesh', mesh);
 
+              const _makePositioningMesh = ({opacity = 1} = {}) => {
+                const geometry = (() => {
+                  const result = new THREE.BufferGeometry();
+                  const positions = Float32Array.from([
+                    0, 0, 0,
+                    0.1, 0, 0,
+                    0, 0, 0,
+                    0, 0.1, 0,
+                    0, 0, 0,
+                    0, 0, 0.1,
+                  ]);
+                  result.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                  const colors = Float32Array.from([
+                    1, 0, 0,
+                    1, 0, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 0, 1,
+                    0, 0, 1,
+                  ]);
+                  result.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                  return result;
+                })();
+                const material = new THREE.LineBasicMaterial({
+                  // color: 0xFFFFFF,
+                  // color: 0x333333,
+                  vertexColors: THREE.VertexColors,
+                  opacity: opacity,
+                });
+
+                const mesh = new THREE.LineSegments(geometry, material);
+                mesh.visible = false;
+                return mesh;
+              };
+              const positioningMesh = _makePositioningMesh();
+              scene.add(positioningMesh);
+              const oldPositioningMesh = _makePositioningMesh({
+                opacity: 0.5,
+              });
+              scene.add(oldPositioningMesh);
+
               const readmeDotMeshes = {
                 left: biolumi.makeMenuDotMesh(),
                 right: biolumi.makeMenuDotMesh(),
@@ -722,10 +763,49 @@ class World {
                     const npmHovered = SIDES.some(side => npmContainerHoverStates[side].hovered);
                     npmContainerMesh.material.color = new THREE.Color(npmHovered ? 0x0000FF : 0x808080);
                   };
+                  const _updateControllers = () => {
+                    const tab = rend.getTab();
+
+                    if (tab === 'world') {
+                      const {item, positioningName, positioningSide} = detailsState;
+
+                      if (item && positioningName && positioningSide) {
+                        const {gamepads} = webvr.getStatus();
+                        const gamepad = gamepads[positioningSide];
+
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          positioningMesh.position.copy(controllerPosition);
+                          positioningMesh.quaternion.copy(controllerRotation);
+                          positioningMesh.scale.copy(controllerScale);
+
+                          const {attributes} = item;
+                          const attribute = attributes[positioningName];
+                          const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
+                          attribute.value = newValue;
+                        }
+
+                        if (!positioningMesh.visible) {
+                          positioningMesh.visible = true;
+                        }
+                        if (!oldPositioningMesh.visible) {
+                          oldPositioningMesh.visible = true;
+                        }
+                      } else {
+                        if (positioningMesh.visible) {
+                          positioningMesh.visible = false;
+                        }
+                        if (oldPositioningMesh.visible) {
+                          oldPositioningMesh.visible = false;
+                        }
+                      }
+                    }
+                  };
 
                   _updateTextures();
                   _updateAnchors();
                   _updateAnchorStyles();
+                  _updateControllers();
                 }
               };
               rend.on('update', _update);
@@ -808,6 +888,32 @@ class World {
                 if (tab === 'world') {
                   const {side} = e;
 
+                  const _doSetPosition = () => {
+                    const {positioningSide} = detailsState;
+
+                    if (positioningSide && side === positioningSide) {
+                      const {item, positioningName} = detailsState;
+                      const {attributes} = item;
+                      const attribute = attributes[positioningName];
+
+                      const newValue = (() => {
+                        const {position, quaternion, scale} = positioningMesh;
+                        return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
+                      })();
+                      attribute.value = newValue;
+
+                      detailsState.positioningName = null;
+                      detailsState.positioningSide = null;
+
+                      // _saveElements();
+
+                      _updatePages();
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  };
                   const _doClickNpm = () => {
                     const npmHoverState = npmHoverStates[side];
                     const {intersectionPoint} = npmHoverState;
@@ -857,14 +963,14 @@ class World {
                         const {value: attributeValue, type: attributeType} = attribute;
 
                         if (action === 'position') {
-                          console.log('not supported'); // XXX
-                          /* const oldValue = JSON.parse(element.getAttribute(attributeName));
-                          oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
-                          oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
-                          oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
+                          oldPositioningMesh.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
+                          oldPositioningMesh.quaternion.set(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
+                          oldPositioningMesh.scale.set(attributeValue[7], attributeValue[8], attributeValue[9]);
 
                           detailsState.positioningName = attributeName;
-                          detailsState.positioningSide = side; */
+                          detailsState.positioningSide = side;
+
+                          focusState.type = '';
                         } else if (action === 'focus') {
                           const {value} = attributesHoverState;
 
@@ -962,8 +1068,7 @@ class World {
                     }
                   };
 
-                  _doClickNpm();
-                  _doClickAttribute();
+                  _doSetPosition() || _doClickNpm() || _doClickAttribute();
                 }
               };
               input.on('trigger', _trigger, {
@@ -1147,6 +1252,9 @@ class World {
                   scene.remove(npmDotMeshes[side]);
                   scene.remove(npmBoxMeshes[side]);
                 });
+
+                scene.remove(positioningMesh);
+                scene.remove(oldPositioningMesh);
 
                 rend.removeListener('update', _update);
                 rend.removeListener('tabchange', _tabchange);

@@ -1247,7 +1247,7 @@ class Rend {
                 })();
                 scene.add(universeMesh);
 
-                const _makePositioningMesh = ({opacity = 1} = {}) => {
+                /* const _makePositioningMesh = ({opacity = 1} = {}) => {
                   const geometry = (() => {
                     const result = new THREE.BufferGeometry();
                     const positions = Float32Array.from([
@@ -1286,7 +1286,7 @@ class Rend {
                 const oldPositioningMesh = _makePositioningMesh({
                   opacity: 0.5,
                 });
-                scene.add(oldPositioningMesh);
+                scene.add(oldPositioningMesh); */
 
                 stats.render = () => {
                   const {frame: oldFrame} = statsState;
@@ -2949,8 +2949,8 @@ class Rend {
                     scene.remove(keyboardBoxMeshes[side]);
                   });
 
-                  scene.remove(positioningMesh);
-                  scene.remove(oldPositioningMesh);
+                  /* scene.remove(positioningMesh);
+                  scene.remove(oldPositioningMesh); */
 
                   input.removeListener('trigger', trigger);
                   input.removeListener('triggerdown', triggerdown);
@@ -3315,7 +3315,7 @@ class Rend {
                       const status = webvr.getStatus();
                       const {gamepads} = status;
 
-                      const _updateElements = () => {
+                      /* const _updateElements = () => {
                         const {tab} = navbarState;
 
                         if (tab === 'readme') {
@@ -3354,7 +3354,7 @@ class Rend {
                             }
                           }
                         }
-                      };
+                      }; */
                       const _updateUniverse = () => {
                         const {tab} = navbarState;
 
@@ -3444,7 +3444,7 @@ class Rend {
                         }
                       };
 
-                      _updateElements();
+                      // _updateElements();
                       _updateUniverse();
                     };
 
