@@ -82,20 +82,27 @@ class World {
             height: HEIGHT,
           }),
           biolumi.requestUi({
+            width: WIDTH,
+            height: HEIGHT,
+          }),
+          biolumi.requestUi({
             width: INPUT_WIDTH,
             height: INPUT_HEIGHT,
           }),
         ])
           .then(([
+            readmeUi,
             attributesUi,
             npmUi,
           ]) => ({
+            readmeUi,
             attributesUi,
             npmUi,
           }));
 
         return _requestUis()
           .then(({
+            readmeUi,
             attributesUi,
             npmUi,
           }) => {
@@ -166,6 +173,44 @@ class World {
                   })
                 );
               });
+              const _requestModSpec = mod => new Promise((accept, reject) => {
+                if (npmState.cancelModRequest) {
+                  npmState.cancelModRequest();
+                  npmState.cancelModRequest = null;
+                }
+
+                let live = true;
+                npmState.cancelModRequest = () => {
+                  live = false;
+                };
+
+                fetch('/archae/rend/mods/spec', {
+                  method: 'POST',
+                  headers: (() => {
+                    const headers = new Headers();
+                    headers.set('Content-Type', 'application/json');
+                    return headers;
+                  })(),
+                  body: JSON.stringify({
+                    mod,
+                  }),
+                }).then(res => res.json()
+                  .then(modSpecs => {
+                    if (live) {
+                      accept(modSpecs);
+
+                      npmState.cancelModRequest = null;
+                    }
+                  })
+                  .catch(err => {
+                    if (live) {
+                      reject(err);
+
+                      npmState.cancelModRequest = null;
+                    }
+                  })
+                );
+              });
 
               const npmInputState = {
                 inputText: '',
@@ -176,9 +221,13 @@ class World {
               };
               const npmState = {
                 cancelLocalRequest: null,
+                cancelRemoteRequest: null,
+                cancelModRequest: null,
               };
-              const attributesState = {
-                element: null,
+              const detailsState = {
+                type: null,
+                item: null,
+                loading: true,
               };
 
               const _makeContainerHoverState = () => ({
@@ -202,11 +251,29 @@ class World {
                 right: biolumi.makeMenuHoverState(),
               };
 
-              attributesUi.pushPage(({attributes: {element}}) => {
+              readmeUi.pushPage(({details: {item, loading}}) => {
                 return [
                   {
                     type: 'html',
-                    src: worldRenderer.getAttributesPageSrc({element}),
+                    src: worldRenderer.getReadmePageSrc({item, loading}),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                    scroll: true,
+                  },
+                ];
+              }, {
+                type: 'readme',
+                state: {
+                  details: detailsState,
+                },
+              });
+              attributesUi.pushPage(({details: {item}}) => {
+                return [
+                  {
+                    type: 'html',
+                    src: worldRenderer.getAttributesPageSrc({item}),
                     x: 0,
                     y: 0,
                     w: WIDTH,
@@ -217,7 +284,7 @@ class World {
               }, {
                 type: 'attributes',
                 state: {
-                  attributes: attributesState,
+                  details: detailsState,
                 },
               });
 
@@ -323,7 +390,7 @@ class World {
                 result.add(npmMesh);
                 result.npmMesh = npmMesh;
 
-                const attributesMesh = (() => {
+                const _makeMenuMesh = () => {
                   const width = WORLD_WIDTH;
                   const height = WORLD_HEIGHT;
                   const depth = WORLD_DEPTH;
@@ -349,13 +416,32 @@ class World {
                   mesh.add(shadowMesh);
 
                   return mesh;
-                })();
+                };
+
+                const readmeMesh = _makeMenuMesh();
+                result.add(readmeMesh);
+                result.readmeMesh = readmeMesh;
+
+                const attributesMesh = _makeMenuMesh();
                 result.add(attributesMesh);
                 result.attributesMesh = attributesMesh;
 
                 return result;
               })();
               rend.addMenuMesh('worldMesh', mesh);
+
+              const readmeDotMeshes = {
+                left: biolumi.makeMenuDotMesh(),
+                right: biolumi.makeMenuDotMesh(),
+              };
+              scene.add(readmeDotMeshes.left);
+              scene.add(readmeDotMeshes.right);
+              const readmeBoxMeshes = {
+                left: biolumi.makeMenuBoxMesh(),
+                right: biolumi.makeMenuBoxMesh(),
+              };
+              scene.add(readmeBoxMeshes.left);
+              scene.add(readmeBoxMeshes.right);
 
               const attributesDotMeshes = {
                 left: biolumi.makeMenuDotMesh(),
@@ -384,13 +470,17 @@ class World {
               scene.add(npmBoxMeshes.right);
 
               const _updatePages = menuUtils.debounce(next => {
-                const pages = attributesUi.getPages();
+                const readmePages = readmeUi.getPages();
+                const attributesPages = attributesUi.getPages();
+                const npmPages = npmUi.getPages();
+                const pages = readmePages.concat(attributesPages).concat(npmPages);
 
                 const done = () => {
-                  const {element} = attributesState;
+                  const {type} = detailsState;
 
-                  const {attributesMesh} = mesh;
-                  attributesMesh.visible = Boolean(element);
+                  const {readmeMesh, attributesMesh} = mesh;
+                  readmeMesh.visible = type === 'npm';
+                  attributesMesh.visible = type === 'elements';
 
                   next();
                 };
@@ -407,9 +497,13 @@ class World {
                     const page = pages[i];
                     const {type} = page;
 
-                    if (type === 'attributes') {
+                    if (type === 'readme') {
                       page.update({
-                        attributes: attributesState,
+                        details: detailsState,
+                      }, pend);
+                    } else if (type === 'attributes') {
+                      page.update({
+                        details: detailsState,
                       }, pend);
                     } else if (type === 'npm') {
                       page.update({
@@ -610,8 +704,9 @@ class World {
                 tagMeshes.push(tagMesh);
                 _alignTagMeshes(tagMeshes);
 
-                const {item: element} = tagMesh;
-                attributesState.element = element; // XXX make this based on trigger selection
+                const {item} = tagMesh;
+                detailsState.type = 'elements';
+                detailsState.item = item;
                 _updatePages();
               };
               const _removeTagMesh = (tagMeshes, tagMesh) => {
@@ -621,7 +716,8 @@ class World {
                   tagMeshes.splice(index, 1);
                   _alignTagMeshes(tagMeshes);
 
-                  attributesState.element = null; // XXX make this based on trigger selection
+                  detailsState.type = null;
+                  detailsState.item = null;
                   _updatePages();
                 }
               };

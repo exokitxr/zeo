@@ -8,11 +8,19 @@ const getInputSrc = ({inputText, inputPlaceholder, inputValue, focus, onclick}) 
   </div>
 `;
 
-const getAttributesPageSrc = ({element, positioningName, inputText, inputValue, focusAttribute}) => {
-  if (element) {
+const getReadmePageSrc = ({item, loading}) => {
+  if (loading) {
+    return `<h1 style="font-size: 50px;">Loading...</h1>`;
+  } else {
+    return item.readme || ('<h1>No readme for `' + item.displayName + '@' + item.version + '`</h1>');
+  }
+};
+
+const getAttributesPageSrc = ({item, positioningName, inputText, inputValue, focusAttribute}) => {
+  if (item) {
     let result = '';
 
-    const {attributes} = element;
+    const {attributes} = item;
     for (const name in attributes) {
       const attribute = attributes[name];
       const {type, value, min, max, step, options} = attribute;
@@ -20,18 +28,18 @@ const getAttributesPageSrc = ({element, positioningName, inputText, inputValue, 
       const focus = false;
 
       result += `\
-<div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
-  <div style="width: ${200 - 30}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
-  ${getElementAttributeInput(name, type, value, min, max, step, options, positioningName, inputText, inputValue, focus)}
-</div>
-`;
+        <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
+          <div style="width: ${200 - 30}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
+          ${getElementAttributeInput(name, type, value, min, max, step, options, positioningName, inputText, inputValue, focus)}
+        </div>
+      `;
     }
 
     return result;
   } else {
     return `\
-<div>No tag selected</div>
-`;
+      <div>No tag selected</div>
+    `;
   }
 };
 
@@ -168,5 +176,6 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
 
 module.exports = {
   getInputSrc,
+  getReadmePageSrc,
   getAttributesPageSrc,
 };
