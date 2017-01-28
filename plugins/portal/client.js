@@ -83,9 +83,6 @@ class Portal {
         };
 
         class PortalElement extends HTMLElement {
-          static get tag() {
-            return 'portal';
-          }
           static get attributes() {
             return {
               position1: {
@@ -479,13 +476,13 @@ class Portal {
             }
           }
         }
-        zeo.registerElement(PortalElement);
+        zeo.registerElement(this, PortalElement);
 
         zeo.on('update', _update);
         zeo.on('updateEye', _updateEye);
 
         this._cleanup = () => {
-          zeo.unregisterElement(PortalElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
           zeo.removeListener('updateEye', _updateEye);

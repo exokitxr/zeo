@@ -30,9 +30,6 @@ class Fog {
         };
 
         class FogElement extends HTMLElement {
-          static get tag() {
-            return 'fog';
-          }
           static get attributes() {
             return {};
           }
@@ -69,12 +66,12 @@ class Fog {
             this._cleanup();
           }
         }
-        zeo.registerElement(FogElement);
+        zeo.registerElement(this, FogElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(FogElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

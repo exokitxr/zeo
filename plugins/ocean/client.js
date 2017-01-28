@@ -63,9 +63,6 @@ class Ocean {
         };
 
         class OceanElement extends HTMLElement {
-          static get tag() {
-            return 'ocean';
-          }
           static get attributes() {
             return {
               position: {
@@ -157,12 +154,12 @@ class Ocean {
             }
           }
         }
-        zeo.registerElement(OceanElement);
+        zeo.registerElement(this, OceanElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(OceanElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

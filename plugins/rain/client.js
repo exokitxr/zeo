@@ -161,9 +161,6 @@ class Rain {
         };
 
         class RainElement extends HTMLElement {
-          static get tag() {
-            return 'rain';
-          }
           static get attributes() {
             return {
               position: {
@@ -344,12 +341,12 @@ class Rain {
             uniforms.range.value = range;
           }
         }
-        zeo.registerElement(RainElement);
+        zeo.registerElement(this, RainElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(RainElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

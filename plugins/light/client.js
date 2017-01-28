@@ -22,9 +22,6 @@ class Light {
         const {THREE, scene} = zeo;
 
         class LightElement extends HTMLElement {
-          static get tag() {
-            return 'light';
-          }
           static get attributes() {
             return {
               position: {
@@ -112,10 +109,10 @@ class Light {
             }
           }
         }
-        zeo.registerElement(LightElement);
+        zeo.registerElement(this, LightElement);
 
         this._cleanup = () => {
-          zeo.unregisterElement(LightElement);
+          zeo.unregisterElement(this);
         };
 
         return {};

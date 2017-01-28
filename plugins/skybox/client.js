@@ -64,9 +64,6 @@ class Skybox {
         };
 
         class SkyboxElement extends HTMLElement {
-          static get tag() {
-            return 'skybox';
-          }
           static get attributes() {
             return {
               position: {
@@ -264,12 +261,12 @@ class Skybox {
             return sunSphere;
           }
         }
-        zeo.registerElement(SkyboxElement);
+        zeo.registerElement(this, SkyboxElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(SkyboxElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

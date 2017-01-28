@@ -32,9 +32,6 @@ class Link {
         };
 
         class LinkElement extends HTMLElement {
-          static get tag() {
-            return 'link';
-          }
           static get attributes() {
             return {
               position: {
@@ -110,12 +107,12 @@ class Link {
             }
           }
         }
-        zeo.registerElement(LinkElement);
+        zeo.registerElement(this, LinkElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(LinkElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

@@ -62,9 +62,6 @@ class Shell {
         };
 
         class ShellElement extends HTMLElement {
-          static get tag() {
-            return 'shell';
-          }
           static get attributes() {
             return {
               position: {
@@ -501,12 +498,12 @@ class Shell {
             };
           }
         }
-        zeo.registerElement(ShellElement);
+        zeo.registerElement(this, ShellElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(ShellElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

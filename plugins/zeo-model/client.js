@@ -66,9 +66,6 @@ class Model {
         }));
 
         class ModelElement extends HTMLElement {
-          static get tag() {
-            return 'zeo-model';
-          }
           static get attributes() {
             return {
               position: {
@@ -162,10 +159,10 @@ class Model {
             }
           }
         }
-        zeo.registerElement(ModelElement);
+        zeo.registerElement(this, ModelElement);
 
         this._cleanup = () => {
-          zeo.unregisterElement(ModelElement);
+          zeo.unregisterElement(this);
         };
 
         return {};

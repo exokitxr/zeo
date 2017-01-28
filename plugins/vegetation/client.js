@@ -26,9 +26,6 @@ export default class Vegetation {
           const {alea} = randomUtils;
 
           class TreeElement extends HTMLElement {
-            static get tag() {
-              return 'vegetation.tree';
-            }
             static get attributes() {
               return {
                 position: {
@@ -585,9 +582,6 @@ export default class Vegetation {
             }
           }
           class GrassElement extends HTMLElement {
-            static get tag() {
-              return 'vegetation.grass';
-            }
             static get attributes() {
               return {
                 position: {
@@ -1451,12 +1445,11 @@ export default class Vegetation {
               this._cleanup();
             }
           }
-          zeo.registerElement(TreeElement);
-          zeo.registerElement(GrassElement);
+          zeo.registerElement(this, TreeElement); // XXX break this up
+          zeo.registerElement(this, GrassElement);
 
           this._cleanup = () => {
-            zeo.unregisterElement(TreeElement);
-            zeo.unregisterElement(GrassElement);
+            zeo.unregisterElement(this);
           };
 
           return {};
