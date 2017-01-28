@@ -1,3 +1,13 @@
+const getInputSrc = ({inputText, inputPlaceholder, inputValue, focus, onclick}) => `\
+  <div style='position: relative; height: 100px; width 1000px; font-size: 72px; line-height: 1.4;'>
+    <a style='display: block; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: #EEE; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
+      ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+      <div>${inputText}</div>
+      ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}
+    </a>
+  </div>
+`;
+
 const getAttributesPageSrc = ({element, positioningName, inputText, inputValue, focusAttribute}) => {
   if (element) {
     let result = '';
@@ -157,5 +167,6 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
 };
 
 module.exports = {
+  getInputSrc,
   getAttributesPageSrc,
 };
