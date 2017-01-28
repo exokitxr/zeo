@@ -211,18 +211,22 @@ class World {
               scene.add(attributesBoxMeshes.right);
 
               const _updatePages = menuUtils.debounce(next => {
-                const {
-                  attributesMesh: {
-                    menuMaterial: attributesMenuMaterial,
-                  },
-                } = mesh;
                 const pages = attributesUi.getPages();
+
+                const done = () => {
+                  const {element} = attributesState;
+
+                  const {attributesMesh} = mesh;
+                  attributesMesh.visible = Boolean(element);
+
+                  next();
+                };
 
                 if (pages.length > 0) {
                   let pending = pages.length;
                   const pend = () => {
                     if (--pending === 0) {
-                      next();
+                      done();
                     }
                   };
 
@@ -239,7 +243,7 @@ class World {
                     }
                   }
                 } else {
-                  next();
+                  done();
                 }
               });
 
@@ -350,11 +354,19 @@ class World {
                 _refreshTagMeshes();
 
                 const {item: element} = tagMesh;
-                attributesState.element = element;
+                attributesState.element = element; // XXX make this based on trigger selection
                 _updatePages();
+              };
+              const _removeTagMesh = tagMesh => {
+                const index = tagMeshes.indexOf(tagMesh);
 
-                const {attributesMesh} = mesh;
-                attributesMesh.visible = true;
+                if (index !== -1) {
+                  tagMeshes.splice(index, 1);
+                  _refreshTagMeshes();
+
+                  attributesState.element = null; // XXX make this based on trigger selection
+                  _updatePages();
+                }
               };
               const _refreshTagMeshes = () => {
                 const aspectRatio = 400 / 150;
@@ -377,7 +389,7 @@ class World {
                 }
               };
 
-              const _gripdown = e => {
+              const _gripdown1 = e => {
                 const {side} = e;
                 const hoverState = hoverStates[side];
                 const {index} = hoverState;
@@ -394,8 +406,24 @@ class World {
                   }
                 }
               };
-              input.on('gripdown', _gripdown, {
+              input.on('gripdown', _gripdown1, {
                 priority: 1,
+              });
+              const _gripdown2 = e => {
+                const {side} = e;
+
+                const handsGrabber = hands.peek(side);
+                if (handsGrabber) {
+                  const {object: handsGrabberObject} = handsGrabber;
+
+                  if (tags.isTag(handsGrabberObject)) {
+                    const tagMesh = handsGrabberObject;
+                    _removeTagMesh(tagMesh);
+                  }
+                }
+              };
+              input.on('gripdown', _gripdown2, {
+                priority: -1,
               });
               const _gripup = e => {
                 const {side} = e;
@@ -430,7 +458,8 @@ class World {
                 });
 
                 rend.removeListener('update', _update);
-                input.removeListener('gripdown', _gripdown);
+                input.removeListener('gripdown', _gripdown1);
+                input.removeListener('gripdown', _gripdown2);
                 input.removeListener('gripup', _gripup);
               };
 
