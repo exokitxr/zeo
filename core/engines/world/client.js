@@ -217,7 +217,6 @@ class World {
                 inputPlaceholder: 'Search npm',
                 inputIndex: 0,
                 inputValue: 0,
-                focus: true,
               };
               const npmState = {
                 cancelLocalRequest: null,
@@ -228,6 +227,9 @@ class World {
                 type: null,
                 item: null,
                 loading: true,
+              };
+              const focusState = {
+                type: null,
               };
 
               const _makeContainerHoverState = () => ({
@@ -243,6 +245,10 @@ class World {
               };
 
               const npmHoverStates = {
+                left: biolumi.makeMenuHoverState(),
+                right: biolumi.makeMenuHoverState(),
+              };
+              const readmeHoverStates = {
                 left: biolumi.makeMenuHoverState(),
                 right: biolumi.makeMenuHoverState(),
               };
@@ -288,7 +294,9 @@ class World {
                 },
               });
 
-              npmUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue, focus}}) => {
+              npmUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
+                const focus = type === 'npm';
+
                 return [
                   {
                     type: 'html',
@@ -303,6 +311,7 @@ class World {
                 type: 'npm',
                 state: {
                   npm: npmInputState,
+                  focus: focusState,
                 },
               });
 
@@ -508,6 +517,7 @@ class World {
                     } else if (type === 'npm') {
                       page.update({
                         npm: npmInputState,
+                        focus: focusState,
                       }, pend);
                     } else {
                       pend();
@@ -566,6 +576,7 @@ class World {
                           inputMesh: npmInputMesh,
                           containerMesh: npmContainerMesh,
                         },
+                        readmeMesh,
                         attributesMesh,
                       } = mesh;
 
@@ -588,6 +599,7 @@ class World {
                         new THREE.Vector3(npmContainerMesh.width, npmContainerMesh.height, npmContainerMesh.depth)
                       );
 
+                      const readmeMatrixObject = _decomposeObjectMatrixWorld(readmeMesh);
                       const attributesMatrixObject = _decomposeObjectMatrixWorld(attributesMesh);
 
                       const {gamepads} = webvr.getStatus();
@@ -598,31 +610,21 @@ class World {
                         if (gamepad) {
                           const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                          const attributesHoverState = attributesHoverStates[side];
-                          const attributesDotMesh = attributesDotMeshes[side];
-                          const attributesBoxMesh = attributesBoxMeshes[side];
-
                           const npmHoverState = npmHoverStates[side];
                           const npmDotMesh = npmDotMeshes[side];
                           const npmBoxMesh = npmBoxMeshes[side];
 
+                          const readmeHoverState = readmeHoverStates[side];
+                          const readmeDotMesh = readmeDotMeshes[side];
+                          const readmeBoxMesh = readmeBoxMeshes[side];
+
+                          const attributesHoverState = attributesHoverStates[side];
+                          const attributesDotMesh = attributesDotMeshes[side];
+                          const attributesBoxMesh = attributesBoxMeshes[side];
+
                           const elementsContainerHoverState = elementsContainerHoverStates[side];
                           const npmContainerHoverState = npmContainerHoverStates[side];
 
-                          biolumi.updateAnchors({
-                            matrixObject: attributesMatrixObject,
-                            ui: attributesUi,
-                            hoverState: attributesHoverState,
-                            dotMesh: attributesDotMesh,
-                            boxMesh: attributesBoxMesh,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                            controllerPosition,
-                            controllerRotation,
-                          });
                           biolumi.updateAnchors({
                             matrixObject: npmMatrixObject,
                             ui: npmUi,
@@ -634,6 +636,34 @@ class World {
                             worldWidth: INPUT_WORLD_WIDTH,
                             worldHeight: INPUT_WORLD_HEIGHT,
                             worldDepth: INPUT_WORLD_DEPTH,
+                            controllerPosition,
+                            controllerRotation,
+                          });
+                          biolumi.updateAnchors({
+                            matrixObject: readmeMatrixObject,
+                            ui: readmeUi,
+                            hoverState: readmeHoverState,
+                            dotMesh: readmeDotMesh,
+                            boxMesh: readmeBoxMesh,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                            controllerPosition,
+                            controllerRotation,
+                          });
+                          biolumi.updateAnchors({
+                            matrixObject: attributesMatrixObject,
+                            ui: attributesUi,
+                            hoverState: attributesHoverState,
+                            dotMesh: attributesDotMesh,
+                            boxMesh: attributesBoxMesh,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
                             controllerPosition,
                             controllerRotation,
                           });
@@ -746,36 +776,81 @@ class World {
                 }
               };
 
-              const _triggerdown = e => {
-                const {side} = e;
-                const tagMesh = tags.getHoverTag(side);
+              const _trigger = e => {
+                const tab = rend.getTab();
 
-                if (tagMesh) {
-                  const {item} = tagMesh;
+                if (tab === 'world') {
+                  const {side} = e;
 
-                  if (elementsTagMeshes.includes(tagMesh)) {
-                    detailsState.type = 'elements';
-                    detailsState.item = item;
-                  } else {
-                    detailsState.type = 'npm';
-                    detailsState.item = item;
-                    detailsState.loading = true;
+                  const _doClickNpmInput = () => {
+                    const npmHoverState = npmHoverStates[side];
+                    const {intersectionPoint} = npmHoverState;
 
-                    _requestModSpec(item.name)
-                      .then(tagSpec => {
-                        detailsState.item = tagSpec;
-                        detailsState.loading = false;
+                    if (intersectionPoint) {
+                      const {anchor} = npmHoverState;
+                      const onclick = (anchor && anchor.onclick) || '';
+
+                      if (onclick === 'npm:focus') {
+                        const {value} = npmHoverState;
+                        const valuePx = value * (WIDTH - (500 + 40));
+
+                        const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+
+                        npmInputState.inputIndex = index;
+                        npmInputState.inputValue = px;
+                        focusState.type = 'npm';
 
                         _updatePages();
-                      })
-                      .catch(err => {
-                        console.warn(err);
-                      });
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  };
+
+                  _doClickNpmInput();
+                }
+              };
+              input.on('trigger', _trigger, {
+                priority: 1,
+              });
+              const _triggerdown = e => {
+                const tab = rend.getTab();
+
+                if (tab === 'world') {
+                  const {side} = e;
+                  const tagMesh = tags.getHoverTag(side);
+
+                  if (tagMesh) {
+                    const {item} = tagMesh;
+
+                    if (elementsTagMeshes.includes(tagMesh)) {
+                      detailsState.type = 'elements';
+                      detailsState.item = item;
+                    } else {
+                      detailsState.type = 'npm';
+                      detailsState.item = item;
+                      detailsState.loading = true;
+
+                      _requestModSpec(item.name)
+                        .then(tagSpec => {
+                          detailsState.item = tagSpec;
+                          detailsState.loading = false;
+
+                          _updatePages();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    }
+
+                    _updatePages();
+
+                    e.stopImmediatePropagation();
                   }
-
-                  _updatePages();
-
-                  e.stopImmediatePropagation();
                 }
               };
               input.on('triggerdown', _triggerdown, {
@@ -854,6 +929,7 @@ class World {
 
                 rend.removeListener('update', _update);
                 rend.removeListener('tabchange', _tabchange);
+                input.removeListener('trigger', _trigger);
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('gripdown', _gripdown);
                 input.removeListener('gripup', _gripup);

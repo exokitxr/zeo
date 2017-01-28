@@ -2813,206 +2813,210 @@ class Rend {
                   }
                 };
                 const keydown = e => {
-                  const {open} = menuState;
+                  const {tab} = navbarState;
 
-                  if (open) {
-                    const {type} = focusState;
+                  if (tab === 'readme') {
+                    const {open} = menuState;
 
-                    let match;
-                    if (type === 'worlds:create') {
-                      const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
+                    if (open) {
+                      const {type} = focusState;
 
-                      if (applySpec) {
-                        const {commit} = applySpec;
-                        if (commit) {
-                          const {worlds, inputText} = worldsState;
-                          const name = inputText;
+                      let match;
+                      if (type === 'worlds:create') {
+                        const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
 
-                          if (!worlds.some(world => world.name === name)) {
-                            worldsState.worlds.push({
-                              name,
-                              description: '',
-                            });
-                          }
-                        }
+                        if (applySpec) {
+                          const {commit} = applySpec;
+                          if (commit) {
+                            const {worlds, inputText} = worldsState;
+                            const name = inputText;
 
-                        _updatePages();
-
-                        e.stopImmediatePropagation();
-                      }
-                    } else if (match = type.match(/^worlds:rename:(.+)$/)) {
-                      const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
-
-                      if (applySpec) {
-                        const {commit} = applySpec;
-                        if (commit) {
-                          const {worlds, inputText} = worldsState;
-                          const oldName = match[1];
-                          const newName = inputText;
-
-                          if (!worlds.some(world => world.name === newName && world.name !== oldName)) {
-                            const world = worlds.find(world => world.name === oldName);
-                            world.name = newName;
-
-                            worldsState.selectedName = newName;
-                          }
-                        }
-
-                        _updatePages();
-
-                        e.stopImmediatePropagation();
-                      }
-                    } else if (type === 'mods') {
-                      if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
-                        _getRemoteMods(modsState.inputText)
-                          .then(remoteMods => {
-                            modsState.remoteMods = remoteMods,
-
-                            _updatePages();
-                          })
-                          .catch(err => {
-                            console.warn(err);
-                          });
-
-                        _updatePages();
-
-                        e.stopImmediatePropagation();
-                      }
-                    } else if (match = type.match(/^element:attribute:(.+)$/)) {
-                      const applySpec = _applyStateKeyEvent(elementsState, subcontentFontSpec, e);
-
-                      if (applySpec) {
-                        const {commit} = applySpec;
-
-                        if (commit) {
-                          const attributeName = match[1];
-                          const {selectedKeyPath, inputText} = elementsState;
-
-                          const element = menuUtils.getElementKeyPath({
-                            elements: elementsState.elements,
-                            availableElements: elementsState.availableElements,
-                            clipboardElements: elementsState.clipboardElements,
-                          }, selectedKeyPath);
-                          const instance = menuUtils.getElementKeyPath({
-                            elements: elementsState.elementInstances,
-                          }, selectedKeyPath);
-                          const {attributeConfigs} = element;
-                          const attributeConfig = attributeConfigs[attributeName];
-                          const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attributeConfig;
-                          const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
-                          if (newValue !== null) {
-                            const newAttributeValue = JSON.stringify(newValue);
-                            element.setAttribute(attributeName, newAttributeValue);
-                            instance.setAttribute(attributeName, newAttributeValue);
-
-                            _saveElements();
-                          }
-                        }
-
-                        _updatePages();
-
-                        e.stopImmediatePropagation();
-                      }
-                    } else if (match = type.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
-                      const target = match[1];
-                      const targetState = (() => {
-                        switch (target) {
-                          case 'file': return filesState;
-                          case 'elementAttributeFile': return elementAttributeFilesState;
-                          default: return null;
-                        }
-                      })();
-
-                      const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
-
-                      if (applySpec) {
-                        const {commit} = applySpec;
-
-                        if (commit) {
-                          targetState.uploading = true;
-
-                          const {files, inputText} = targetState;
-                          const name = inputText;
-                          if (!files.some(file => file.name === name)) {
-                            const {cwd} = targetState;
-                            fs.createDirectory(menuUtils.pathJoin(cwd, name))
-                              .then(() => fs.getDirectory(cwd)
-                                .then(files => {
-                                  targetState.files = menuUtils.cleanFiles(files);
-                                  targetState.uploading = false;
-
-                                  _updatePages();
-                                })
-                              )
-                              .catch(err => {
-                                console.warn(err);
-
-                                targetState.uploading = false;
-
-                                _updatePages();
+                            if (!worlds.some(world => world.name === name)) {
+                              worldsState.worlds.push({
+                                name,
+                                description: '',
                               });
+                            }
                           }
+
+                          _updatePages();
+
+                          e.stopImmediatePropagation();
                         }
+                      } else if (match = type.match(/^worlds:rename:(.+)$/)) {
+                        const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
 
-                        _updatePages();
+                        if (applySpec) {
+                          const {commit} = applySpec;
+                          if (commit) {
+                            const {worlds, inputText} = worldsState;
+                            const oldName = match[1];
+                            const newName = inputText;
 
-                        e.stopImmediatePropagation();
-                      }
-                    } else if (match = type.match(/^(file|elementAttributeFile)s:rename:(.+)$/)) {
-                      const target = match[1];
-                      const name = match[2];
-                      const targetState = (() => {
-                        switch (target) {
-                          case 'file': return filesState;
-                          case 'elementAttributeFile': return elementAttributeFilesState;
-                          default: return null;
+                            if (!worlds.some(world => world.name === newName && world.name !== oldName)) {
+                              const world = worlds.find(world => world.name === oldName);
+                              world.name = newName;
+
+                              worldsState.selectedName = newName;
+                            }
+                          }
+
+                          _updatePages();
+
+                          e.stopImmediatePropagation();
                         }
-                      })();
+                      } else if (type === 'mods') {
+                        if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
+                          _getRemoteMods(modsState.inputText)
+                            .then(remoteMods => {
+                              modsState.remoteMods = remoteMods,
 
-                      const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
+                              _updatePages();
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
 
-                      if (applySpec) {
-                        const {commit} = applySpec;
-                        if (commit) {
-                          const {files, inputText} = targetState;
-                          const oldName = name;
-                          const newName = inputText;
+                          _updatePages();
 
-                          if (!files.some(file => file.name === newName && file.name !== oldName)) {
+                          e.stopImmediatePropagation();
+                        }
+                      } else if (match = type.match(/^element:attribute:(.+)$/)) {
+                        const applySpec = _applyStateKeyEvent(elementsState, subcontentFontSpec, e);
+
+                        if (applySpec) {
+                          const {commit} = applySpec;
+
+                          if (commit) {
+                            const attributeName = match[1];
+                            const {selectedKeyPath, inputText} = elementsState;
+
+                            const element = menuUtils.getElementKeyPath({
+                              elements: elementsState.elements,
+                              availableElements: elementsState.availableElements,
+                              clipboardElements: elementsState.clipboardElements,
+                            }, selectedKeyPath);
+                            const instance = menuUtils.getElementKeyPath({
+                              elements: elementsState.elementInstances,
+                            }, selectedKeyPath);
+                            const {attributeConfigs} = element;
+                            const attributeConfig = attributeConfigs[attributeName];
+                            const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attributeConfig;
+                            const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
+                            if (newValue !== null) {
+                              const newAttributeValue = JSON.stringify(newValue);
+                              element.setAttribute(attributeName, newAttributeValue);
+                              instance.setAttribute(attributeName, newAttributeValue);
+
+                              _saveElements();
+                            }
+                          }
+
+                          _updatePages();
+
+                          e.stopImmediatePropagation();
+                        }
+                      } else if (match = type.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
+                        const target = match[1];
+                        const targetState = (() => {
+                          switch (target) {
+                            case 'file': return filesState;
+                            case 'elementAttributeFile': return elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
+
+                        const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
+
+                        if (applySpec) {
+                          const {commit} = applySpec;
+
+                          if (commit) {
                             targetState.uploading = true;
 
-                            const {cwd} = targetState;
-                            const src = menuUtils.pathJoin(cwd, oldName);
-                            const dst = menuUtils.pathJoin(cwd, newName);
-                            fs.move(src, dst)
-                              .then(() => fs.getDirectory(cwd)
-                                .then(files => {
-                                  targetState.files = menuUtils.cleanFiles(files);
-                                  targetState.selectedName = newName;
+                            const {files, inputText} = targetState;
+                            const name = inputText;
+                            if (!files.some(file => file.name === name)) {
+                              const {cwd} = targetState;
+                              fs.createDirectory(menuUtils.pathJoin(cwd, name))
+                                .then(() => fs.getDirectory(cwd)
+                                  .then(files => {
+                                    targetState.files = menuUtils.cleanFiles(files);
+                                    targetState.uploading = false;
+
+                                    _updatePages();
+                                  })
+                                )
+                                .catch(err => {
+                                  console.warn(err);
+
                                   targetState.uploading = false;
 
                                   _updatePages();
-                                })
-                              )
-                              .catch(err => {
-                                console.warn(err);
-
-                                targetState.uploading = true;
-
-                                _updatePages();
-                              });
+                                });
+                            }
                           }
+
+                          _updatePages();
+
+                          e.stopImmediatePropagation();
                         }
+                      } else if (match = type.match(/^(file|elementAttributeFile)s:rename:(.+)$/)) {
+                        const target = match[1];
+                        const name = match[2];
+                        const targetState = (() => {
+                          switch (target) {
+                            case 'file': return filesState;
+                            case 'elementAttributeFile': return elementAttributeFilesState;
+                            default: return null;
+                          }
+                        })();
 
-                        _updatePages();
+                        const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
 
-                        e.stopImmediatePropagation();
-                      }
-                    } else if (type === 'config') {
-                      if (_applyStateKeyEvent(configState, mainFontSpec, e)) {
-                        _updatePages();
+                        if (applySpec) {
+                          const {commit} = applySpec;
+                          if (commit) {
+                            const {files, inputText} = targetState;
+                            const oldName = name;
+                            const newName = inputText;
 
-                        e.stopImmediatePropagation();
+                            if (!files.some(file => file.name === newName && file.name !== oldName)) {
+                              targetState.uploading = true;
+
+                              const {cwd} = targetState;
+                              const src = menuUtils.pathJoin(cwd, oldName);
+                              const dst = menuUtils.pathJoin(cwd, newName);
+                              fs.move(src, dst)
+                                .then(() => fs.getDirectory(cwd)
+                                  .then(files => {
+                                    targetState.files = menuUtils.cleanFiles(files);
+                                    targetState.selectedName = newName;
+                                    targetState.uploading = false;
+
+                                    _updatePages();
+                                  })
+                                )
+                                .catch(err => {
+                                  console.warn(err);
+
+                                  targetState.uploading = true;
+
+                                  _updatePages();
+                                });
+                            }
+                          }
+
+                          _updatePages();
+
+                          e.stopImmediatePropagation();
+                        }
+                      } else if (type === 'config') {
+                        if (_applyStateKeyEvent(configState, mainFontSpec, e)) {
+                          _updatePages();
+
+                          e.stopImmediatePropagation();
+                        }
                       }
                     }
                   }
