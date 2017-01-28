@@ -723,10 +723,6 @@ class World {
                 if (index !== -1) {
                   tagMeshes.splice(index, 1);
                   _alignTagMeshes(tagMeshes);
-
-                  detailsState.type = null;
-                  detailsState.item = null;
-                  _updatePages();
                 }
               };
               const _alignTagMeshes = tagMeshes => {
