@@ -1,6 +1,6 @@
 {
-  "name": "vegetation",
-  "description": "Procedurally generated vegetation.",
+  "name": "grass",
+  "description": "Procedurally generated grass.",
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",
