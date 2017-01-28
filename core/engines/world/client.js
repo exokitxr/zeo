@@ -646,7 +646,7 @@ class World {
                 }
               };
 
-              const _gripdown1 = e => {
+              const _gripdown = e => {
                 const {side} = e;
                 const hoverState = hoverStates[side];
                 const {index} = hoverState;
@@ -661,26 +661,16 @@ class World {
 
                     e.stopImmediatePropagation(); // so tags engine doesn't pick it up
                   }
-                }
-              };
-              input.on('gripdown', _gripdown1, {
-                priority: 1,
-              });
-              const _gripdown2 = e => {
-                const {side} = e;
+                } else {
+                  const tagMesh = tags.getHoverTag(side);
 
-                const handsGrabber = hands.peek(side);
-                if (handsGrabber) {
-                  const {object: handsGrabberObject} = handsGrabber;
-
-                  if (tags.isTag(handsGrabberObject)) {
-                    const tagMesh = handsGrabberObject;
+                  if (tagMesh) {
                     _removeTagMesh(elementsTagMeshes, tagMesh);
                   }
                 }
               };
-              input.on('gripdown', _gripdown2, {
-                priority: -1,
+              input.on('gripdown', _gripdown, {
+                priority: 1,
               });
               const _gripup = e => {
                 const {side} = e;
@@ -724,8 +714,7 @@ class World {
 
                 rend.removeListener('update', _update);
                 rend.removeListener('tabchange', _tabchange);
-                input.removeListener('gripdown', _gripdown1);
-                input.removeListener('gripdown', _gripdown2);
+                input.removeListener('gripdown', _gripdown);
                 input.removeListener('gripup', _gripup);
               };
 
