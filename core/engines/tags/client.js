@@ -257,8 +257,8 @@ class Tags {
               },
               {
                 type: 'image',
-                img: creatureUtils.makeAnimatedCreature('zeo.sh'),
-                x: 0,
+                img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
+                x: 10,
                 y: 0,
                 w: 100,
                 h: 100,
