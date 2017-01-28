@@ -560,6 +560,61 @@ class Biolumi {
           });
           const _getSolidMaterial = () => solidMaterial;
 
+          const _measureText = (() => {
+            const measureContexts = {};
+
+            const _makeMeasureContext = fontSpec => {
+              const {fonts, fontSize, lineHeight, fontWeight, fontStyle} = fontSpec;
+
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight} ${fonts}`;
+
+              return ctx;
+            };
+            const _getFontSpecKey = fontSpec => {
+              const {fonts, fontSize, lineHeight, fontWeight, fontStyle} = fontSpec;
+              return [fonts, fontSize, lineHeight, fontWeight, fontStyle].join(':');
+            };
+            const _getMeasureContext = fontSpec => {
+              const key = _getFontSpecKey(fontSpec);
+              let entry = measureContexts[key];
+              if (!entry) {
+                entry = _makeMeasureContext(fontSpec);
+                measureContexts[key] = entry;
+              }
+              return entry;
+            };
+
+            return (text, fontSpec) => _getMeasureContext(fontSpec).measureText(text).width;
+          })();
+          const _getTextPropertiesFromCoord = (text, fontSpec, coordPx) => {
+            const slices = (() => {
+              const result = [];
+              for (let i = 0; i <= text.length; i++) {
+                const slice = text.slice(0, i);
+                result.push(slice);
+              }
+              return result;
+            })();
+            const widths = slices.map(slice => _measureText(slice, fontSpec));
+            const distances = widths.map(width => Math.abs(coordPx - width));
+            const sortedDistances = distances
+              .map((distance, index) => ([distance, index]))
+              .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
+
+            const index = sortedDistances[0][1];
+            const px = widths[index];
+
+            return {index, px};
+          };
+          const _getTextPropertiesFromIndex = (text, fontSpec, index) => {
+            const slice = text.slice(0, index);
+            const px = _measureText(slice, fontSpec);
+
+            return {index, px};
+          };
+
           const _makeMenuHoverState = () => ({
             intersectionPoint: null,
             scrollLayer: null,
@@ -935,6 +990,8 @@ class Biolumi {
             getMaxNumTextures: _getMaxNumTextures,
             getTransparentMaterial: _getTransparentMaterial,
             getSolidMaterial: _getSolidMaterial,
+            getTextPropertiesFromCoord: _getTextPropertiesFromCoord,
+            getTextPropertiesFromIndex: _getTextPropertiesFromIndex,
             makeMenuHoverState: _makeMenuHoverState,
             makeMenuMaterial: _makeMenuMaterial,
             makeMenuDotMesh: _makeMenuDotMesh,

@@ -785,60 +785,6 @@ class Rend {
                   window.removeEventListener('unload', unload);
                 });
 
-                const measureText = (() => {
-                  const measureContexts = {};
-
-                  const _makeMeasureContext = fontSpec => {
-                    const {fonts, fontSize, lineHeight, fontWeight, fontStyle} = fontSpec;
-
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight} ${fonts}`;
-
-                    return ctx;
-                  };
-                  const _getFontSpecKey = fontSpec => {
-                    const {fonts, fontSize, lineHeight, fontWeight, fontStyle} = fontSpec;
-                    return [fonts, fontSize, lineHeight, fontWeight, fontStyle].join(':');
-                  };
-                  const _getMeasureContext = fontSpec => {
-                    const key = _getFontSpecKey(fontSpec);
-                    let entry = measureContexts[key];
-                    if (!entry) {
-                      entry = _makeMeasureContext(fontSpec);
-                      measureContexts[key] = entry;
-                    }
-                    return entry;
-                  };
-
-                  return (text, fontSpec) => _getMeasureContext(fontSpec).measureText(text).width;
-                })();
-                const getTextPropertiesFromCoord = (text, fontSpec, coordPx) => {
-                  const slices = (() => {
-                    const result = [];
-                    for (let i = 0; i <= text.length; i++) {
-                      const slice = text.slice(0, i);
-                      result.push(slice);
-                    }
-                    return result;
-                  })();
-                  const widths = slices.map(slice => measureText(slice, fontSpec));
-                  const distances = widths.map(width => Math.abs(coordPx - width));
-                  const sortedDistances = distances
-                    .map((distance, index) => ([distance, index]))
-                    .sort(([aDistance], [bDistance]) => (aDistance - bDistance));
-
-                  const index = sortedDistances[0][1];
-                  const px = widths[index];
-
-                  return {index, px};
-                };
-                const getTextPropertiesFromIndex = (text, fontSpec, index) => {
-                  const slice = text.slice(0, index);
-                  const px = measureText(slice, fontSpec);
-                  return {index, px};
-                };
-
                 menuUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
                   const img = (() => {
                     if (statsCheckboxValue) {
@@ -2198,16 +2144,16 @@ class Rend {
                               const textProperties = (() => {
                                 if (attributeType === 'text') {
                                   const valuePx = value * 400;
-                                  return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                                  return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
                                 } else if (attributeType === 'number') {
                                   const valuePx = value * 100;
-                                  return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                                  return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
                                 } else if (attributeType === 'color') {
                                   const valuePx = value * (400 - (40 + 4));
-                                  return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                                  return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
                                 } else if (attributeType === 'file') {
                                   const valuePx = value * 260;
-                                  return getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
+                                  return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
                                 } else {
                                   return null;
                                 }
@@ -2301,7 +2247,7 @@ class Rend {
                             const {value} = menuHoverState;
                             const valuePx = value * (WIDTH - (500 + 40));
 
-                            const {index, px} = getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
+                            const {index, px} = biolumi.getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
 
                             modsState.inputIndex = index;
                             modsState.inputValue = px;
@@ -2312,7 +2258,7 @@ class Rend {
                             const {value} = menuHoverState;
                             const valuePx = value * (WIDTH - (500 + 40));
 
-                            const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+                            const {index, px} = biolumi.getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
 
                             configState.inputIndex = index;
                             configState.inputValue = px;
@@ -2766,7 +2712,7 @@ class Rend {
                   if (_isPrintableKeycode(e.keyCode)) {
                     state.inputText = inputText.slice(0, inputIndex) + keycode(e.keyCode) + inputText.slice(inputIndex);
                     state.inputIndex++;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
                     change = true;
                   } else if (e.keyCode === 13) { // enter
@@ -2777,28 +2723,28 @@ class Rend {
                     if (inputIndex > 0) {
                       state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
                       state.inputIndex--;
-                      state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+                      state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
                       change = true;
                     }
                   } else if (e.keyCode === 37) { // left
                     state.inputIndex = Math.max(state.inputIndex - 1, 0);
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
                     change = true;
                   } else if (e.keyCode === 39) { // right
                     state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
                     change = true;
                   } else if (e.keyCode === 38) { // up
                     state.inputIndex = 0;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
                     change = true;
                   } else if (e.keyCode === 40) { // down
                     state.inputIndex = inputText.length;
-                    state.inputValue = getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
 
                     change = true;
                   }

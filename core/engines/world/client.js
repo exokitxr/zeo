@@ -56,6 +56,14 @@ class World {
         const solidMaterial = biolumi.getSolidMaterial();
         const currentWorld = rend.getCurrentWorld();
 
+        const mainFontSpec = {
+          fonts: biolumi.getFonts(),
+          fontSize: 72,
+          lineHeight: 1.4,
+          fontWeight: biolumi.getFontWeight(),
+          fontStyle: biolumi.getFontStyle(),
+        };
+
         const oneVector = new THREE.Vector3(1, 1, 1);
         const zeroQuaternion = new THREE.Quaternion();
 
@@ -794,7 +802,7 @@ class World {
                         const {value} = npmHoverState;
                         const valuePx = value * (WIDTH - (500 + 40));
 
-                        const {index, px} = getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+                        const {index, px} = biolumi.getTextPropertiesFromCoord(npmInputState.inputText, mainFontSpec, valuePx);
 
                         npmInputState.inputIndex = index;
                         npmInputState.inputValue = px;
