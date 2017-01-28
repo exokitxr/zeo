@@ -575,10 +575,27 @@ class World {
                   npmInputState.focus = false;
 
                   _requestLocalModSpecs()
-                    .then(modSpecs => {
-                      npmState.tags = modSpecs;
+                    .then(tagSpecs => Promise.all(tagSpecs.map(tagSpec => tags.requestTag(tagSpec))))
+                    .then(tagMeshes => {
+                      for (let i = 0; i < npmTagMeshes.length; i++) {
+                        const npmTagMesh = npmTagMeshes[i];
+                        _removeTagMesh(npmTagMeshes, npmTagMesh);
+                        npmTagMesh.parent.remove(npmTagMesh);
+                        npmTagMesh.destroy();
+                      }
 
-console.log('new tags', modSpecs); // XXX
+                      for (let i = 0; i < tagMeshes.length; i++) {
+                        const tagMesh = tagMeshes[i];
+                        const {
+                          npmMesh: {
+                            containerMesh: npmContainerMesh,
+                          },
+                        } = mesh;
+                        npmContainerMesh.add(tagMesh);
+                        _addTagMesh(npmTagMeshes, tagMesh);
+                      }
+
+                      npmState.tagMeshes = tagMeshes;
                     })
                     .catch(err => {
                       console.warn(err);
@@ -587,30 +604,28 @@ console.log('new tags', modSpecs); // XXX
               };
               rend.on('tabchange', _tabchange);
 
-              const tagMeshes = [];
-              const _addTagMesh = tagMesh => {
-                const {elementsMesh} = mesh;
-
-                elementsMesh.add(tagMesh);
+              const elementsTagMeshes = [];
+              const npmTagMeshes = [];
+              const _addTagMesh = (tagMeshes, tagMesh) => {
                 tagMeshes.push(tagMesh);
-                _refreshTagMeshes();
+                _alignTagMeshes(tagMeshes);
 
                 const {item: element} = tagMesh;
                 attributesState.element = element; // XXX make this based on trigger selection
                 _updatePages();
               };
-              const _removeTagMesh = tagMesh => {
+              const _removeTagMesh = (tagMeshes, tagMesh) => {
                 const index = tagMeshes.indexOf(tagMesh);
 
                 if (index !== -1) {
                   tagMeshes.splice(index, 1);
-                  _refreshTagMeshes();
+                  _alignTagMeshes(tagMeshes);
 
                   attributesState.element = null; // XXX make this based on trigger selection
                   _updatePages();
                 }
               };
-              const _refreshTagMeshes = () => {
+              const _alignTagMeshes = tagMeshes => {
                 const aspectRatio = 400 / 150;
                 const width = 0.1;
                 const height = width / aspectRatio;
@@ -623,7 +638,7 @@ console.log('new tags', modSpecs); // XXX
                   const y = Math.floor(i / 3);
                   tagMesh.position.set(
                     -(width + padding) + x * (width + padding),
-                    ((0.4 / 2) - (height / 2) - padding) + (y * (height + padding)),
+                    ((0.4 / 2) - (height / 2) - padding) - (y * (height + padding)),
                     0
                   );
                   tagMesh.quaternion.copy(zeroQuaternion);
@@ -660,7 +675,7 @@ console.log('new tags', modSpecs); // XXX
 
                   if (tags.isTag(handsGrabberObject)) {
                     const tagMesh = handsGrabberObject;
-                    _removeTagMesh(tagMesh);
+                    _removeTagMesh(elementsTagMeshes, tagMesh);
                   }
                 }
               };
@@ -680,7 +695,13 @@ console.log('new tags', modSpecs); // XXX
                     if (elementsHovered) {
                       const newTagMesh = handsGrabberObject;
                       handsGrabber.release();
-                      _addTagMesh(newTagMesh);
+                      const {
+                        elementsMesh: {
+                          containerMesh: elementsContainerMesh,
+                        },
+                      } = mesh;
+                      elementsContainerMesh.add(newTagMesh);
+                      _addTagMesh(elementsTagMeshes, newTagMesh);
 
                       e.stopImmediatePropagation(); // so tags engine doesn't pick it up
                     }
