@@ -217,6 +217,7 @@ class World {
                     const aspectRatio = 1000 / 100;
                     const width = 0.4;
                     const height = width / aspectRatio;
+                    const depth = width / 2 / 2;
 
                     const menuMaterial = biolumi.makeMenuMaterial();
 
@@ -225,6 +226,7 @@ class World {
 
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.position.y = 0.25;
+                    mesh.position.z = depth;
                     mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
 
