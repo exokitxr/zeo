@@ -268,7 +268,23 @@ class World {
                       const {elementsMesh, npmMesh, attributesMesh} = mesh;
 
                       const elementsMatrixObject = _decomposeObjectMatrixWorld(elementsMesh);
+                      const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsMatrixObject;
+                      const elementsBoxTarget = geometryUtils.makeBoxTarget(
+                        elementsPosition,
+                        elementsRotation,
+                        elementsScale,
+                        new THREE.Vector3(elementsMesh.width, elementsMesh.height, elementsMesh.depth)
+                      );
+
                       const npmMatrixObject = _decomposeObjectMatrixWorld(npmMesh);
+                      const {position: npmPosition, rotation: npmRotation, scale: npmScale} = npmMatrixObject;
+                      const npmBoxTarget = geometryUtils.makeBoxTarget(
+                        npmPosition,
+                        npmRotation,
+                        npmScale,
+                        new THREE.Vector3(npmMesh.width, npmMesh.height, npmMesh.depth)
+                      );
+
                       const attributesMatrixObject = _decomposeObjectMatrixWorld(attributesMesh);
 
                       const {gamepads} = webvr.getStatus();
@@ -301,22 +317,8 @@ class World {
                             controllerRotation,
                           });
 
-                          const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsMatrixObject;
-                          const elementsBoxTarget = geometryUtils.makeBoxTarget(
-                            elementsPosition,
-                            elementsRotation,
-                            elementsScale,
-                            new THREE.Vector3(elementsMesh.width, elementsMesh.height, elementsMesh.depth)
-                          );
+                          
                           elementsHoverState.hovered = elementsBoxTarget.containsPoint(controllerPosition);
-
-                          const {position: npmPosition, rotation: npmRotation, scale: npmScale} = npmMatrixObject;
-                          const npmBoxTarget = geometryUtils.makeBoxTarget(
-                            npmPosition,
-                            npmRotation,
-                            npmScale,
-                            new THREE.Vector3(npmMesh.width, npmMesh.height, npmMesh.depth)
-                          );
                           npmHoverState.hovered = npmBoxTarget.containsPoint(controllerPosition);
                         }
                       });
