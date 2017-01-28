@@ -79,7 +79,7 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
         max = 10;
       }
 
-      const factor = focusValue !== null ? ((focusValue - min) / max) : min;
+      const factor = focusValue !== null ? ((focusValue - min) / (max - min)) : min;
       const string = focusValue !== null ? String(focusValue) : inputText;
 
       return `\
