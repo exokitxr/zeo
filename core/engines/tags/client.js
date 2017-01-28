@@ -49,6 +49,15 @@ class Tags {
           const solidMaterial = biolumi.getSolidMaterial();
           const world = rend.getCurrentWorld();
 
+          const _decomposeObjectMatrixWorld = object => {
+            const {matrixWorld} = object;
+            const position = new THREE.Vector3();
+            const rotation = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            matrixWorld.decompose(position, rotation, scale);
+            return {position, rotation, scale};
+          };
+
           return Promise.all([
             biolumi.requestUi({
               width: WIDTH,
@@ -243,16 +252,19 @@ class Tags {
                   SIDES.forEach(side => {
                     const boxMesh = boxMeshes[side];
 
-                    for (let i = 0; i < tagMeshes.length; i++) {
-                      const tagMesh = tagMeshes[i];
-                      boxMesh.visible = false;
-                    }
-
                     const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
                     if (bestGrabbableTagMesh) {
-                      boxMesh.position.copy(bestGrabbableTagMesh.position);
-                      boxMesh.quaternion.copy(bestGrabbableTagMesh.quaternion);
-                      boxMesh.visible = true;
+                      const {position: tagMehPosition, rotation: tagMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
+                      boxMesh.position.copy(tagMehPosition);
+                      boxMesh.quaternion.copy(tagMeshRotation);
+
+                      if (!boxMesh.visible) {
+                        boxMesh.visible = true;
+                      }
+                    } else {
+                      if (boxMesh.visible) {
+                        boxMesh.visible = false;
+                      }
                     }
                   });
                 };

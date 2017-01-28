@@ -377,7 +377,7 @@ class World {
                 }
               };
 
-              const _gripdown = e => { // XXX support tag pickup here
+              const _gripdown = e => {
                 const {side} = e;
                 const hoverState = hoverStates[side];
                 const {index} = hoverState;
