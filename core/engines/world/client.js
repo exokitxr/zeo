@@ -17,6 +17,13 @@ import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
+const ATTRIBUTE_DEFAULTS = {
+  MIN: 0,
+  MAX: 100,
+  STEP: 0,
+  OPTIONS: [],
+};
+
 class World {
   constructor(archae) {
     this._archae = archae;
@@ -59,6 +66,13 @@ class World {
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
           fontSize: 72,
+          lineHeight: 1.4,
+          fontWeight: biolumi.getFontWeight(),
+          fontStyle: biolumi.getFontStyle(),
+        };
+        const subcontentFontSpec = {
+          fonts: biolumi.getFonts(),
+          fontSize: 28,
           lineHeight: 1.4,
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
@@ -235,6 +249,8 @@ class World {
                 type: null,
                 item: null,
                 loading: true,
+                positioningName: null,
+                positioningSide: null,
               };
               const focusState = {
                 type: '',
@@ -283,11 +299,16 @@ class World {
                   details: detailsState,
                 },
               });
-              attributesUi.pushPage(({details: {item}}) => {
+              attributesUi.pushPage(({details: {item, inputText, inputValue}, focus: {type}}) => {
+                const focusAttribute = (() => {
+                  const match = type.match(/^attribute:(.+)$/);
+                  return match && match[1];
+                })();
+
                 return [
                   {
                     type: 'html',
-                    src: worldRenderer.getAttributesPageSrc({item}),
+                    src: worldRenderer.getAttributesPageSrc({item, inputText, inputValue, focusAttribute}),
                     x: 0,
                     y: 0,
                     w: WIDTH,
@@ -299,6 +320,7 @@ class World {
                 type: 'attributes',
                 state: {
                   details: detailsState,
+                  focus: focusState,
                 },
               });
 
@@ -521,6 +543,7 @@ class World {
                     } else if (type === 'attributes') {
                       page.update({
                         details: detailsState,
+                        focus: focusState,
                       }, pend);
                     } else if (type === 'npm') {
                       page.update({
@@ -790,7 +813,7 @@ class World {
                 if (tab === 'world') {
                   const {side} = e;
 
-                  const _doClickNpmInput = () => {
+                  const _doClickNpm = () => {
                     const npmHoverState = npmHoverStates[side];
                     const {intersectionPoint} = npmHoverState;
 
@@ -798,6 +821,7 @@ class World {
                       const {anchor} = npmHoverState;
                       const onclick = (anchor && anchor.onclick) || '';
 
+                      let match;
                       if (onclick === 'npm:focus') {
                         const {value} = npmHoverState;
                         const valuePx = value * (WIDTH - (500 + 40));
@@ -818,8 +842,132 @@ class World {
                       return false;
                     }
                   };
+                  const _doClickAttribute = () => {
+                    const attributesHoverState = attributesHoverStates[side];
+                    const {intersectionPoint} = attributesHoverState;
 
-                  _doClickNpmInput();
+                    if (intersectionPoint) {
+                      const {anchor} = attributesHoverState;
+                      const onclick = (anchor && anchor.onclick) || '';
+
+                      let match;
+
+                      if (match = onclick.match(/^attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
+                        const attributeName = match[1];
+                        const action = match[2];
+                        const value = match[3];
+
+                        const {item} = detailsState;
+                        const {attributes} = item;
+                        const attribute = attributes[attributeName];
+                        const {value: attributeValue, type: attributeType} = attribute;
+
+                        if (action === 'position') {
+                          console.log('not supported'); // XXX
+                          /* const oldValue = JSON.parse(element.getAttribute(attributeName));
+                          oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
+                          oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
+                          oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
+
+                          detailsState.positioningName = attributeName;
+                          detailsState.positioningSide = side; */
+                        } else if (action === 'focus') {
+                          const {value} = attributesHoverState;
+
+                          const textProperties = (() => {
+                            if (attributeType === 'text') {
+                              const valuePx = value * 400;
+                              return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
+                            } else if (attributeType === 'number') {
+                              const valuePx = value * 100;
+                              return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
+                            } else if (attributeType === 'color') {
+                              const valuePx = value * (400 - (40 + 4));
+                              return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
+                            } else if (attributeType === 'file') {
+                              const valuePx = value * 260;
+                              return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
+                            } else {
+                              return null;
+                            }
+                          })();
+                          if (textProperties) {
+                            detailsState.inputText = menuUtils.castValueValueToString(attributeValue, attributeType);
+                            const {index, px} = textProperties;
+                            detailsState.inputIndex = index;
+                            detailsState.inputValue = px;
+                          }
+
+                          focusState.type = 'attribute:' + attributeName;
+                        } else if (action === 'set') {
+                          attribute.value = value;
+
+                          focusState.type = '';
+
+                          // _saveElements();
+                        } else if (action === 'tweak') {
+                          const {value} = attributesHoverState;
+                          const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attribute;
+
+                          const newValue = (() => {
+                            let n = min + (value * (max - min));
+                            if (step > 0) {
+                              n = Math.floor(n / step) * step;
+                            }
+                            return n;
+                          })();
+                          attribute.value = newValue;
+
+                          // _saveElements();
+                        } else if (action === 'toggle') {
+                          const newValue = !attributeValue;
+                          attribute.value = newValue;
+
+                          // _saveElements();
+                        } else if (action === 'choose') {
+                          /* menuUi.cancelTransition();
+
+                          elementsState.choosingName = attributeName;
+
+                          _ensureFilesLoaded(elementAttributeFilesState);
+
+                          menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                            {
+                              type: 'html',
+                              src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
+                            },
+                            {
+                              type: 'image',
+                              img: creatureUtils.makeAnimatedCreature('files'),
+                              x: 150,
+                              y: 0,
+                              w: 150,
+                              h: 150,
+                              frameTime: 300,
+                              pixelated: true,
+                            }
+                          ]), {
+                            type: 'elementAttributeFiles',
+                            state: {
+                              elementAttributeFiles: elementAttributeFilesState,
+                              focus: focusState,
+                            },
+                          }); */
+                        }
+
+                        _updatePages();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  };
+
+                  _doClickNpm();
+                  _doClickAttribute();
                 }
               };
               input.on('trigger', _trigger, {
