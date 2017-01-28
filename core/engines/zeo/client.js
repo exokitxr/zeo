@@ -391,11 +391,11 @@ class Zeo {
                         return hands.release(side);
                       }
 
-                      registerElement(elementApi) {
-                        rend.registerElement(elementApi);
+                      registerElement(pluginInstance, elementApi) {
+                        rend.registerElement(pluginInstance, elementApi);
                       }
-                      unregisterElement(elementApi) {
-                        rend.unregisterElement(elementApi);
+                      unregisterElement(pluginInstance) {
+                        rend.unregisterElement(pluginInstance);
                       }
                     }
 

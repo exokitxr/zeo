@@ -417,24 +417,20 @@ class Rend {
             menu.updatePages();
           });
         const _releaseMods = mods => Promise.all(mods.map(mod => _releaseMod(mod)));
-        const _addModApiElement = elementApi => {
-          const {tag} = elementApi;
-
+        const _addModApiElement = (tag, elementApi) => {
           modElementApis[tag] = elementApi;
 
-          const element = menuUtils.elementApiToElement(elementApi);
-          elementsState.availableElements.push(element);
+          /* const element = menuUtils.elementApiToElement(elementApi);
+          elementsState.availableElements.push(element); */
         };
-        const _removeModApiElement = elementApi => {
-          const {tag} = elementApi;
-
+        const _removeModApiElement = tag => {
           delete modElementApis[tag];
 
-          elementsState.availableElements = elementsState.availableElements.filter(element => {
+          /* elementsState.availableElements = elementsState.availableElements.filter(element => {
             const {tagName} = element;
             const elementTag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
             return elementTag !== tag;
-          });
+          }); */
         };
 
         // api functions
@@ -3526,12 +3522,16 @@ class Rend {
                 stats.end();
               }
 
-              registerElement(elementApi) {
-                _addModApiElement(elementApi);
+              registerElement(pluginInstance, elementApi) {
+                const tag = archae.getName(pluginInstance);
+
+                _addModApiElement(tag, elementApi);
               }
 
-              unregisterElement(elementApi) {
-                _removeModApiElement(elementApi);
+              unregisterElement(pluginInstance) {
+                const tag = archae.getName(pluginInstance);
+
+                _removeModApiElement(tag);
               }
             }
             api = new RendApi();
