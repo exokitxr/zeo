@@ -338,7 +338,7 @@ class Rend {
             })
           );
         });
-        const _getLocalModSpecs = q => new Promise((accept, reject) => {
+        const _getLocalModSpecs = () => new Promise((accept, reject) => {
           if (modsState.cancelLocalRequest) {
             modsState.cancelLocalRequest();
             modsState.cancelLocalRequest = null;
@@ -1512,6 +1512,8 @@ class Rend {
                         navbarState.tab = newTab;
 
                         _updatePages();
+
+                        api.emit('tabchange', newTab);
 
                         return true;
                       } else {

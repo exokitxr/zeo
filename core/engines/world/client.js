@@ -100,12 +100,82 @@ class World {
             npmUi,
           }) => {
             if (live) {
-              const npmState = {
+              const _requestLocalModSpecs = () => new Promise((accept, reject) => {
+                if (npmState.cancelLocalRequest) {
+                  npmState.cancelLocalRequest();
+                  npmState.cancelLocalRequest = null;
+                }
+
+                let live = true;
+                npmState.cancelLocalRequest = () => {
+                  live = false;
+                };
+
+                fetch('/archae/rend/mods/local').then(res => res.json()
+                  .then(modSpecs => {
+                    if (live) {
+                      accept(modSpecs);
+
+                      npmState.cancelLocalRequest = null;
+                    }
+                  })
+                  .catch(err => {
+                    if (live) {
+                      reject(err);
+
+                      npmState.cancelLocalRequest = null;
+                    }
+                  })
+                );
+              });
+              const _requestRemoteModSpecs = q => new Promise((accept, reject) => {
+                if (npmState.cancelRemoteRequest) {
+                  npmState.cancelRemoteRequest();
+                  npmState.cancelRemoteRequest = null;
+                }
+
+                let live = true;
+                npmState.cancelRemoteRequest = () => {
+                  live = false;
+                };
+
+                fetch('/archae/rend/mods/search', {
+                  method: 'POST',
+                  headers: (() => {
+                    const headers = new Headers();
+                    headers.set('Content-Type', 'application/json');
+                    return headers;
+                  })(),
+                  body: JSON.stringify({
+                    q,
+                  }),
+                }).then(res => res.json()
+                  .then(modSpecs => {
+                    if (live) {
+                      accept(modSpecs);
+
+                      npmState.cancelRemoteRequest = null;
+                    }
+                  })
+                  .catch(err => {
+                    if (live) {
+                      reject(err);
+
+                      npmState.cancelRemoteRequest = null;
+                    }
+                  })
+                );
+              });
+
+              const npmInputState = {
                 inputText: '',
                 inputPlaceholder: 'Search npm',
                 inputIndex: 0,
                 inputValue: 0,
                 focus: true,
+              };
+              const npmState = {
+                cancelLocalRequest: null,
               };
               const attributesState = {
                 element: null,
@@ -165,7 +235,7 @@ class World {
               }, {
                 type: 'npm',
                 state: {
-                  npm: npmState,
+                  npm: npmInputState,
                 },
               });
 
@@ -343,7 +413,7 @@ class World {
                       }, pend);
                     } else if (type === 'npm') {
                       page.update({
-                        npm: npmState,
+                        npm: npmInputState,
                       }, pend);
                     } else {
                       pend();
@@ -497,6 +567,26 @@ class World {
               };
               rend.on('update', _update);
 
+              const _tabchange = tab => {
+                if (tab === 'world') {
+                  npmInputState.inputText = '';
+                  npmInputState.inputIndex = 0;
+                  npmInputState.inputValue = 0;
+                  npmInputState.focus = false;
+
+                  _requestLocalModSpecs()
+                    .then(modSpecs => {
+                      npmState.tags = modSpecs;
+
+console.log('new tags', modSpecs); // XXX
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+                }
+              };
+              rend.on('tabchange', _tabchange);
+
               const tagMeshes = [];
               const _addTagMesh = tagMesh => {
                 const {elementsMesh} = mesh;
@@ -612,6 +702,7 @@ class World {
                 });
 
                 rend.removeListener('update', _update);
+                rend.removeListener('tabchange', _tabchange);
                 input.removeListener('gripdown', _gripdown1);
                 input.removeListener('gripdown', _gripdown2);
                 input.removeListener('gripup', _gripup);
