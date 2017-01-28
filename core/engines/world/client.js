@@ -237,7 +237,7 @@ class World {
                 loading: true,
               };
               const focusState = {
-                type: null,
+                type: '',
               };
 
               const _makeContainerHoverState = () => ({
@@ -925,6 +925,41 @@ class World {
                 priority: 1,
               });
 
+              const _keydown = e => {
+                const tab = rend.getTab();
+
+                if (tab === 'world') {
+                  const {type} = focusState;
+
+                  if (type === 'npm') {
+                    const applySpec = biolumi.applyStateKeyEvent(npmInputState, mainFontSpec, e);
+
+                    if (applySpec) {
+                      const {commit} = applySpec;
+
+                      if (commit) {
+                        const {inputText} = npmInputState;
+
+                        focusState.type = '';
+
+                        console.log('commit', {inputText}); // XXX actually search here
+                      }
+
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
+                  }
+                }
+              };
+              input.on('keydown', _keydown, {
+                priority: 1,
+              });
+              const _keyboarddown = _keydown;
+              input.on('keyboarddown', _keyboarddown, {
+                priority: 1,
+              });
+
               this._cleanup = () => {
                 rend.removeMenuMesh(mesh);
 
@@ -941,6 +976,8 @@ class World {
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('gripdown', _gripdown);
                 input.removeListener('gripup', _gripup);
+                input.removeListener('keydown', _keydown);
+                input.removeListener('keyboarddown', _keyboarddown);
               };
 
               return {};

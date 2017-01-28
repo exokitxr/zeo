@@ -1,4 +1,5 @@
 import FontFaceObserver from 'fontfaceobserver';
+import keycode from 'keycode';
 
 import menuShaders from './lib/shaders/menu';
 
@@ -615,6 +616,68 @@ class Biolumi {
             return {index, px};
           };
 
+          const _getKeyCode = s => keycode(s);
+          const _isPrintableKeycode = keyCode =>
+            (keyCode > 47 && keyCode < 58) || // number keys
+            (keyCode == 32) || // spacebar & return key(s) (if you want to allow carriage returns)
+            (keyCode > 64 && keyCode < 91) || // letter keys
+            (keyCode > 95 && keyCode < 112) || // numpad keys
+            (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
+            (keyCode > 218 && keyCode < 223); // [\]' (in order)\
+          const _applyStateKeyEvent = (state, fontSpec, e) => {
+            const {inputText, inputIndex} = state;
+
+            let change = false;
+            let commit = false;
+
+            if (_isPrintableKeycode(e.keyCode)) {
+              state.inputText = inputText.slice(0, inputIndex) + _getKeyCode(e.keyCode) + inputText.slice(inputIndex);
+              state.inputIndex++;
+              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+              change = true;
+            } else if (e.keyCode === 13) { // enter
+              commit = true;
+            } else if (e.keyCode === 8) { // backspace
+              if (inputIndex > 0) {
+                state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
+                state.inputIndex--;
+                state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+                change = true;
+              }
+            } else if (e.keyCode === 37) { // left
+              state.inputIndex = Math.max(state.inputIndex - 1, 0);
+              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+              change = true;
+            } else if (e.keyCode === 39) { // right
+              state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
+              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+              change = true;
+            } else if (e.keyCode === 38) { // up
+              state.inputIndex = 0;
+              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+              change = true;
+            } else if (e.keyCode === 40) { // down
+              state.inputIndex = inputText.length;
+              state.inputValue = _getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
+
+              change = true;
+            }
+
+            if (change || commit) {
+              return {
+                change,
+                commit,
+              };
+            } else {
+              return null;
+            }
+          };
+
           const _makeMenuHoverState = () => ({
             intersectionPoint: null,
             scrollLayer: null,
@@ -988,16 +1051,22 @@ class Biolumi {
             getFontStyle: _getFontStyle,
             getTransparentImg: _getTransparentImg,
             getMaxNumTextures: _getMaxNumTextures,
+
             getTransparentMaterial: _getTransparentMaterial,
             getSolidMaterial: _getSolidMaterial,
+
             getTextPropertiesFromCoord: _getTextPropertiesFromCoord,
             getTextPropertiesFromIndex: _getTextPropertiesFromIndex,
+            getKeyCode: _getKeyCode,
+            applyStateKeyEvent: _applyStateKeyEvent,
+
             makeMenuHoverState: _makeMenuHoverState,
             makeMenuMaterial: _makeMenuMaterial,
             makeMenuDotMesh: _makeMenuDotMesh,
             makeMenuBoxMesh: _makeMenuBoxMesh,
             makeMeshPointGetter: _makeMeshPointGetter,
             makeMeshCoordinateGetter: _makeMeshCoordinateGetter,
+
             updateAnchors: _updateAnchors,
             updateMenuMaterial: _updateMenuMaterial,
           };

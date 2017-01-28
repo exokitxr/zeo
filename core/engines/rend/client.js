@@ -1,5 +1,4 @@
 import Stats from 'stats.js';
-import keycode from 'keycode';
 import indev from 'indev'; // XXX source these from utils
 import Kruskal from 'kruskal';
 
@@ -2696,68 +2695,6 @@ class Rend {
                 };
                 input.on('menudown', menudown);
 
-                const _isPrintableKeycode = keyCode =>
-                  (keyCode > 47 && keyCode < 58) || // number keys
-                  (keyCode == 32) || // spacebar & return key(s) (if you want to allow carriage returns)
-                  (keyCode > 64 && keyCode < 91) || // letter keys
-                  (keyCode > 95 && keyCode < 112) || // numpad keys
-                  (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
-                  (keyCode > 218 && keyCode < 223); // [\]' (in order)\
-                const _applyStateKeyEvent = (state, fontSpec, e) => {
-                  const {inputText, inputIndex} = state;
-
-                  let change = false;
-                  let commit = false;
-
-                  if (_isPrintableKeycode(e.keyCode)) {
-                    state.inputText = inputText.slice(0, inputIndex) + keycode(e.keyCode) + inputText.slice(inputIndex);
-                    state.inputIndex++;
-                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                    change = true;
-                  } else if (e.keyCode === 13) { // enter
-                    focusState.type = '';
-
-                    commit = true;
-                  } else if (e.keyCode === 8) { // backspace
-                    if (inputIndex > 0) {
-                      state.inputText = inputText.slice(0, inputIndex - 1) + inputText.slice(inputIndex);
-                      state.inputIndex--;
-                      state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                      change = true;
-                    }
-                  } else if (e.keyCode === 37) { // left
-                    state.inputIndex = Math.max(state.inputIndex - 1, 0);
-                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                    change = true;
-                  } else if (e.keyCode === 39) { // right
-                    state.inputIndex = Math.min(state.inputIndex + 1, inputText.length);
-                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                    change = true;
-                  } else if (e.keyCode === 38) { // up
-                    state.inputIndex = 0;
-                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                    change = true;
-                  } else if (e.keyCode === 40) { // down
-                    state.inputIndex = inputText.length;
-                    state.inputValue = biolumi.getTextPropertiesFromIndex(state.inputText, fontSpec, state.inputIndex).px;
-
-                    change = true;
-                  }
-
-                  if (change || commit) {
-                    return {
-                      change,
-                      commit,
-                    };
-                  } else {
-                    return null;
-                  }
-                };
                 const keydown = e => {
                   const {tab} = navbarState;
 
@@ -2769,10 +2706,11 @@ class Rend {
 
                       let match;
                       if (type === 'worlds:create') {
-                        const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
+                        const applySpec = biolumi.applyStateKeyEvent(worldsState, itemsFontSpec, e);
 
                         if (applySpec) {
                           const {commit} = applySpec;
+
                           if (commit) {
                             const {worlds, inputText} = worldsState;
                             const name = inputText;
@@ -2783,6 +2721,7 @@ class Rend {
                                 description: '',
                               });
                             }
+                            focusState.type = '';
                           }
 
                           _updatePages();
@@ -2790,10 +2729,11 @@ class Rend {
                           e.stopImmediatePropagation();
                         }
                       } else if (match = type.match(/^worlds:rename:(.+)$/)) {
-                        const applySpec = _applyStateKeyEvent(worldsState, itemsFontSpec, e);
+                        const applySpec = biolumi.applyStateKeyEvent(worldsState, itemsFontSpec, e);
 
                         if (applySpec) {
                           const {commit} = applySpec;
+
                           if (commit) {
                             const {worlds, inputText} = worldsState;
                             const oldName = match[1];
@@ -2805,6 +2745,7 @@ class Rend {
 
                               worldsState.selectedName = newName;
                             }
+                            focusState.type = '';
                           }
 
                           _updatePages();
@@ -2812,7 +2753,9 @@ class Rend {
                           e.stopImmediatePropagation();
                         }
                       } else if (type === 'mods') {
-                        if (_applyStateKeyEvent(modsState, mainFontSpec, e)) {
+                        const applySpec = biolumi.applyStateKeyEvent(modsState, mainFontSpec, e);
+
+                        if (applySpec) {
                           _getRemoteMods(modsState.inputText)
                             .then(remoteMods => {
                               modsState.remoteMods = remoteMods,
@@ -2823,12 +2766,17 @@ class Rend {
                               console.warn(err);
                             });
 
+                          const {commit} = applySpec;
+                          if (commit) {
+                            focusState.type = '';
+                          }
+
                           _updatePages();
 
                           e.stopImmediatePropagation();
                         }
                       } else if (match = type.match(/^element:attribute:(.+)$/)) {
-                        const applySpec = _applyStateKeyEvent(elementsState, subcontentFontSpec, e);
+                        const applySpec = biolumi.applyStateKeyEvent(elementsState, subcontentFontSpec, e);
 
                         if (applySpec) {
                           const {commit} = applySpec;
@@ -2856,6 +2804,8 @@ class Rend {
 
                               _saveElements();
                             }
+
+                            focusState.type = '';
                           }
 
                           _updatePages();
@@ -2872,7 +2822,7 @@ class Rend {
                           }
                         })();
 
-                        const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
+                        const applySpec = biolumi.applyStateKeyEvent(targetState, itemsFontSpec, e);
 
                         if (applySpec) {
                           const {commit} = applySpec;
@@ -2901,6 +2851,8 @@ class Rend {
                                   _updatePages();
                                 });
                             }
+
+                            focusState.type = '';
                           }
 
                           _updatePages();
@@ -2918,7 +2870,7 @@ class Rend {
                           }
                         })();
 
-                        const applySpec = _applyStateKeyEvent(targetState, itemsFontSpec, e);
+                        const applySpec = biolumi.applyStateKeyEvent(targetState, itemsFontSpec, e);
 
                         if (applySpec) {
                           const {commit} = applySpec;
@@ -2951,6 +2903,8 @@ class Rend {
                                   _updatePages();
                                 });
                             }
+
+                            focusState.type = '';
                           }
 
                           _updatePages();
@@ -2958,7 +2912,14 @@ class Rend {
                           e.stopImmediatePropagation();
                         }
                       } else if (type === 'config') {
-                        if (_applyStateKeyEvent(configState, mainFontSpec, e)) {
+                        const applySpec = biolumi.applyStateKeyEvent(configState, mainFontSpec, e);
+
+                        if (applySpec) {
+                          const {commit} = applySpec;
+                          if (commit) {
+                            focusState.type = '';
+                          }
+
                           _updatePages();
 
                           e.stopImmediatePropagation();
@@ -3272,7 +3233,7 @@ class Rend {
 
                             if (oldKey && newKey !== oldKey) {
                               const key = oldKey;
-                              const keyCode = keycode(key);
+                              const keyCode = biolumi.getKeyCode(key);
 
                               input.triggerEvent('keyboardup', {
                                 key,
@@ -3282,7 +3243,7 @@ class Rend {
                             }
                             if (newKey && newKey !== oldKey) {
                               const key = newKey;
-                              const keyCode = keycode(key);
+                              const keyCode = biolumi.getKeyCode(key);
 
                               input.triggerEvent('keyboarddown', {
                                 key,
