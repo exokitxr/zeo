@@ -144,6 +144,8 @@ class Tags {
                     boxMesh.visible = true;
                   }
                 } else {
+                  hoverState.tagMesh = null;
+
                   if (boxMesh.visible) {
                     boxMesh.visible = false;
                   }
