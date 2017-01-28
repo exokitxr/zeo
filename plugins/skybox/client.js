@@ -118,7 +118,7 @@ class Skybox {
               object.sunSphere = sunSphere;
 
               const sunLight = (() => {
-                const light = new THREE.DirectionalLight(0xffffff, 2);
+                const light = new THREE.DirectionalLight(0xFFFFFF, 2);
                 light.position.copy(sunSphere.position);
                 return light;
               })();
@@ -126,20 +126,27 @@ class Skybox {
               object.sunLight = sunLight;
 
               const starsMesh = (() => {
-                const numStars = 1000;
+                const numStars = 500;
 
                 const geometry = (() => {
                   const result = new THREE.BufferGeometry();
                   const vertices = new Float32Array(numStars * 3);
-                  for (let i = 0; i < numStars; i++) {
-                    const radius = 100000 + (Math.random() * (200000 - 100000));
-                    const theta = Math.random() * (Math.PI * 2);
-                    const phi = Math.random() * (Math.PI * 2);
 
-                    vertices[(i * 3) + 0] = radius * Math.cos(theta) * Math.sin(phi);
-                    vertices[(i * 3) + 1] = radius * Math.sin(theta) * Math.sin(phi);
-                    vertices[(i * 3) + 2] = radius * Math.cos(phi);
+                  const upVector = new THREE.Vector3(0, 1, 0);
+
+                  for (let i = 0; i < numStars; i++) {
+                    const radius = 10000 + (Math.random() * (20000 - 10000));
+                    const magnitudeVector = new THREE.Vector3(0, radius, 0);
+                    const directionVector = new THREE.Vector3(-0.5 + Math.random(), -0.5 + Math.random(), -0.5 + Math.random()).normalize();
+                    const quaternion = new THREE.Quaternion().setFromUnitVectors(upVector, directionVector);
+
+                    const position = magnitudeVector.clone().applyQuaternion(quaternion);
+
+                    vertices[(i * 3) + 0] = position.x;
+                    vertices[(i * 3) + 1] = position.y;
+                    vertices[(i * 3) + 2] = position.z;
                   }
+
                   result.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
                   return result;
                 })();
