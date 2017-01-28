@@ -12,7 +12,11 @@ const getReadmePageSrc = ({item, loading}) => {
   if (loading) {
     return `<h1 style="font-size: 50px;">Loading...</h1>`;
   } else {
-    return item.readme || ('<h1>No readme for `' + item.displayName + '@' + item.version + '`</h1>');
+    if (item) {
+      return item.readme || ('<h1>No readme for ' + item.displayName + '@' + item.version + '</h1>');
+    } else {
+      return '<div>No tag</div>';
+    }
   }
 };
 
@@ -35,11 +39,15 @@ const getAttributesPageSrc = ({item, positioningName, inputText, inputValue, foc
       `;
     }
 
-    return result;
+    if (result) {
+      return result;
+    } else {
+      return `\
+        <div>No attributes</div>
+      `;
+    }
   } else {
-    return `\
-      <div>No tag selected</div>
-    `;
+    return '<div>No tag</div>';
   }
 };
 

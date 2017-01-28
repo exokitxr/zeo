@@ -196,6 +196,7 @@ class Tags {
           })
             .then(ui => {
               const item = {
+                name: itemSpec.name,
                 displayName: itemSpec.displayName,
                 description: itemSpec.description,
                 version: itemSpec.version,

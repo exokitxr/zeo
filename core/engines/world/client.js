@@ -524,6 +524,9 @@ class World {
                 if (tab === 'world') {
                   const _updateTextures = () => {
                     const {
+                      readmeMesh: {
+                        menuMaterial: readmeMenuMaterial,
+                      },
                       attributesMesh: {
                         menuMaterial: attributesMenuMaterial,
                       },
@@ -535,6 +538,11 @@ class World {
                     } = mesh;
                     const worldTime = currentWorld.getWorldTime();
 
+                    biolumi.updateMenuMaterial({
+                      ui: readmeUi,
+                      menuMaterial: readmeMenuMaterial,
+                      worldTime,
+                    });
                     biolumi.updateMenuMaterial({
                       ui: attributesUi,
                       menuMaterial: attributesMenuMaterial,
@@ -742,6 +750,41 @@ class World {
                 }
               };
 
+              const _triggerdown = e => {
+                const {side} = e;
+                const tagMesh = tags.getHoverTag(side);
+
+                if (tagMesh) {
+                  const {item} = tagMesh;
+
+                  if (elementsTagMeshes.includes(tagMesh)) {
+                    detailsState.type = 'elements';
+                    detailsState.item = item;
+                  } else {
+                    detailsState.type = 'npm';
+                    detailsState.item = item;
+                    detailsState.loading = true;
+
+                    _requestModSpec(item.name)
+                      .then(tagSpec => {
+                        detailsState.item = tagSpec;
+                        detailsState.loading = false;
+
+                        _updatePages();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+                  }
+
+                  _updatePages();
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('triggerdown', _triggerdown, {
+                priority: 1,
+              });
               const _gripdown = e => {
                 const {side} = e;
                 const hoverState = hoverStates[side];
@@ -764,6 +807,11 @@ class World {
                     _removeTagMesh(elementsTagMeshes, tagMesh);
                   }
                 }
+
+                detailsState.type = null;
+                detailsState.item = null;
+
+                _updatePages();
               };
               input.on('gripdown', _gripdown, {
                 priority: 1,
@@ -810,6 +858,7 @@ class World {
 
                 rend.removeListener('update', _update);
                 rend.removeListener('tabchange', _tabchange);
+                input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('gripdown', _gripdown);
                 input.removeListener('gripup', _gripup);
               };
