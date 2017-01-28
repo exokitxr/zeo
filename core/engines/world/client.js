@@ -743,6 +743,8 @@ class World {
                       for (let i = 0; i < npmTagMeshes.length; i++) {
                         const npmTagMesh = npmTagMeshes[i];
                         _removeTagMesh(npmTagMeshes, npmTagMesh);
+                        _alignTagMeshes(elementsTagMeshes);
+
                         npmTagMesh.parent.remove(npmTagMesh);
                         npmTagMesh.destroy();
                       }
@@ -757,6 +759,7 @@ class World {
                         npmContainerMesh.add(tagMesh);
                         _addTagMesh(npmTagMeshes, tagMesh);
                       }
+                      _alignTagMeshes(npmTagMeshes);
 
                       npmState.tagMeshes = tagMeshes;
                     })
@@ -771,19 +774,11 @@ class World {
               const npmTagMeshes = [];
               const _addTagMesh = (tagMeshes, tagMesh) => {
                 tagMeshes.push(tagMesh);
-                _alignTagMeshes(tagMeshes);
-
-                const {item} = tagMesh;
-                detailsState.type = 'elements';
-                detailsState.item = item;
-                _updatePages();
               };
               const _removeTagMesh = (tagMeshes, tagMesh) => {
                 const index = tagMeshes.indexOf(tagMesh);
-
                 if (index !== -1) {
                   tagMeshes.splice(index, 1);
-                  _alignTagMeshes(tagMeshes);
                 }
               };
               const _alignTagMeshes = tagMeshes => {
@@ -1032,6 +1027,7 @@ class World {
 
                   if (tagMesh) {
                     _removeTagMesh(elementsTagMeshes, tagMesh);
+                    _alignTagMeshes(elementsTagMeshes);
                   }
                 }
 
@@ -1063,6 +1059,12 @@ class World {
                       } = mesh;
                       elementsContainerMesh.add(newTagMesh);
                       _addTagMesh(elementsTagMeshes, newTagMesh);
+                      _alignTagMeshes(elementsTagMeshes);
+
+                      const {item} = newTagMesh;
+                      detailsState.type = 'elements';
+                      detailsState.item = item;
+                      _updatePages();
 
                       e.stopImmediatePropagation(); // so tags engine doesn't pick it up
                     }
