@@ -49,6 +49,9 @@ class World {
         const solidMaterial = biolumi.getSolidMaterial();
         const currentWorld = rend.getCurrentWorld();
 
+        const oneVector = new THREE.Vector3(1, 1, 1);
+        const zeroQuaternion = new THREE.Quaternion();
+
         const _decomposeObjectMatrixWorld = object => {
           const {matrixWorld} = object;
           const position = new THREE.Vector3();
@@ -116,10 +119,13 @@ class World {
                 const result = new THREE.Object3D();
                 result.visible = false;
 
-                const elementsMesh = (() => {
-                  const size = 0.3;
+                const _makeElementsBoxMesh = () => {
+                  const size = 0.4;
+                  const width = size;
+                  const height = size;
+                  const depth = size / 2;
 
-                  const geometry = new THREE.BoxBufferGeometry(size, size, size);
+                  const geometry = new THREE.BoxBufferGeometry(width, height, depth);
                   const material = new THREE.MeshBasicMaterial({
                     color: 0x808080,
                     wireframe: true,
@@ -130,29 +136,27 @@ class World {
                   mesh.position.y = -0.25;
                   // mesh.position.z = -0.5;
                   mesh.rotation.y = Math.PI / 8;
-                  mesh.size = size;
+                  mesh.width = width;
+                  mesh.height = height;
+                  mesh.depth = depth;
 
+                  return mesh;
+                };
+                const elementsMesh = (() => {
+                  const mesh = _makeElementsBoxMesh();
+                  mesh.position.x = -0.5;
+                  mesh.position.y = -0.25;
+                  mesh.rotation.y = Math.PI / 8;
                   return mesh;
                 })();
                 result.add(elementsMesh);
                 result.elementsMesh = elementsMesh;
 
                 const npmMesh = (() => {
-                  const size = 0.3;
-
-                  const geometry = new THREE.BoxBufferGeometry(size, size, size);
-                  const material = new THREE.MeshBasicMaterial({
-                    color: 0x808080,
-                    wireframe: true,
-                  });
-
-                  const mesh = new THREE.Mesh(geometry, material);
+                  const mesh = _makeElementsBoxMesh();
                   mesh.position.x = 0.5;
                   mesh.position.y = -0.25;
-                  // mesh.position.z = -0.5;
-                  mesh.rotation.y = Math.PI / 8;
-                  mesh.size = size;
-
+                  mesh.rotation.y = -Math.PI / 8;
                   return mesh;
                 })();
                 result.add(npmMesh);
@@ -302,7 +306,7 @@ class World {
                             elementsPosition,
                             elementsRotation,
                             elementsScale,
-                            new THREE.Vector3(elementsMesh.size, elementsMesh.size, elementsMesh.size)
+                            new THREE.Vector3(elementsMesh.width, elementsMesh.height, elementsMesh.depth)
                           );
                           elementsHoverState.hovered = elementsBoxTarget.containsPoint(controllerPosition);
 
@@ -311,7 +315,7 @@ class World {
                             npmPosition,
                             npmRotation,
                             npmScale,
-                            new THREE.Vector3(npmMesh.size, npmMesh.size, npmMesh.size)
+                            new THREE.Vector3(npmMesh.width, npmMesh.height, npmMesh.depth)
                           );
                           npmHoverState.hovered = npmBoxTarget.containsPoint(controllerPosition);
                         }
@@ -351,12 +355,23 @@ class World {
                 attributesMesh.visible = true;
               };
               const _refreshTagMeshes = () => {
+                const aspectRatio = 400 / 150;
+                const width = 0.1;
+                const height = width / aspectRatio;
+                const padding = width / 4;
+
                 for (let i = 0; i < tagMeshes.length; i++) {
                   const tagMesh = tagMeshes[i];
 
-                  tagMesh.position.copy(new THREE.Vector3()); // XXX refresh to the right position here
-                  tagMesh.quaternion.copy(new THREE.Quaternion());
-                  tagMesh.scale.set(1, 1, 1);
+                  const x = i % 3;
+                  const y = Math.floor(i / 3);
+                  tagMesh.position.set(
+                    -(width + padding) + x * (width + padding),
+                    ((0.4 / 2) - (height / 2) - padding) + (y * (height + padding)),
+                    0
+                  );
+                  tagMesh.quaternion.copy(zeroQuaternion);
+                  tagMesh.scale.copy(oneVector);
                 }
               };
 
@@ -392,10 +407,8 @@ class World {
 
                     if (elementsHovered) {
                       const newTagMesh = handsGrabberObject;
-
-                      handsGrabber.release()
-
-                      _addTagMesh(newTagMesh)
+                      handsGrabber.release();
+                      _addTagMesh(newTagMesh);
 
                       e.stopImmediatePropagation(); // so tags engine doesn't pick it up
                     }

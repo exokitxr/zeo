@@ -97,11 +97,11 @@ class Tags {
                 immediate: true,
               });
 
-              const tagMesh = (() => {
+              const _makeTagMesh = () => {
                 const object = new THREE.Object3D();
                 object.position.y = 1.2;
-                object.rotation.order = camera.rotation.order;
-                object.rotation.y = Math.PI / 2
+                /* object.rotation.order = camera.rotation.order;
+                object.rotation.y = Math.PI / 2 */
                 object[tagFlagSymbol] = true;
 
                 const planeMesh = (() => {
@@ -180,10 +180,24 @@ class Tags {
                 object.item = item;
 
                 return object;
-              })();
-              scene.add(tagMesh);
+              };
+              const tagMeshes = (() => {
+                const numTags = 3;
 
-              const boxMesh = (() => {
+                const result = Array(numTags);
+                for (let i = 0; i < numTags; i++) {
+                  const tagMesh = _makeTagMesh();
+                  tagMesh.position.x = -(0.1 * 1.5) + (i * (0.1 * 1.5));
+
+                  result[i] = tagMesh;
+                }
+                return result;
+              })();
+              tagMeshes.forEach(tagMesh => {
+                scene.add(tagMesh);
+              });
+
+              const _makeBoxMesh = () => {
                 const width = WORLD_WIDTH;
                 const height = WORLD_HEIGHT;
                 const depth = WORLD_DEPTH;
@@ -197,14 +211,20 @@ class Tags {
                 mesh.rotation.y = Math.PI / 2;
                 mesh.visible = false;
                 return mesh;
-              })();
-              scene.add(boxMesh);
+              };
+              const boxMeshes = {
+                left: _makeBoxMesh(),
+                right: _makeBoxMesh(),
+              };
+              scene.add(boxMeshes.left);
+              scene.add(boxMeshes.right);
 
               const _gripdown = e => {
                 const {side} = e;
 
-                if (hands.canGrab(side, tagMesh, {radius: DEFAULT_GRAB_RADIUS})) {
-                  _grabTag(side, tagMesh);
+                const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                if (bestGrabbableTagMesh) {
+                  _grabTag(side, bestGrabbableTagMesh);
                 }
               };
               input.on('gripdown', _gripdown);
@@ -220,30 +240,34 @@ class Tags {
               input.on('gripup', _gripup);
               const _update = () => {
                 const _updateControllers = () => {
-                  const grabbable = SIDES.some(side => hands.canGrab(side, tagMesh, {radius: DEFAULT_GRAB_RADIUS}));
+                  SIDES.forEach(side => {
+                    const boxMesh = boxMeshes[side];
 
-                  if (grabbable) {
-                    boxMesh.position.copy(tagMesh.position);
-                    boxMesh.quaternion.copy(tagMesh.quaternion);
-
-                    if (!boxMesh.visible) {
-                      boxMesh.visible = true;
-                    }
-                  } else {
-                    if (boxMesh.visible) {
+                    for (let i = 0; i < tagMeshes.length; i++) {
+                      const tagMesh = tagMeshes[i];
                       boxMesh.visible = false;
                     }
-                  }
+
+                    const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                    if (bestGrabbableTagMesh) {
+                      boxMesh.position.copy(bestGrabbableTagMesh.position);
+                      boxMesh.quaternion.copy(bestGrabbableTagMesh.quaternion);
+                      boxMesh.visible = true;
+                    }
+                  });
                 };
                 const _updateTextures = () => {
-                  const {planeMesh: {menuMaterial}} = tagMesh;
-                  const worldTime = world.getWorldTime();
+                  for (let i = 0; i < tagMeshes.length; i++) {
+                    const tagMesh = tagMeshes[i];
+                    const {planeMesh: {menuMaterial}} = tagMesh;
+                    const worldTime = world.getWorldTime();
 
-                  biolumi.updateMenuMaterial({
-                    ui,
-                    menuMaterial,
-                    worldTime,
-                  });
+                    biolumi.updateMenuMaterial({
+                      ui,
+                      menuMaterial,
+                      worldTime,
+                    });
+                  }
                 };
 
                 _updateControllers();
@@ -252,8 +276,13 @@ class Tags {
               rend.on('update', _update);
 
               this._cleanup = () => {
-                tagMesh.parent.remove(tagMesh);
-                scene.remove(boxMesh);
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+                  tagMesh.parent.remove(tagMesh);
+                }
+                SIDES.forEach(side => {
+                  scene.remove(boxMeshes[side]);
+                });
 
                 input.removeListener('gripdown', _gripdown);
                 input.removeListener('gripup', _gripup);

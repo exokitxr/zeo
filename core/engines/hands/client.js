@@ -111,6 +111,41 @@ class Hands {
               return false;
             }
           };
+          const _getBestGrabbable = (side, objects, options) => {
+            options = options || {};
+            const {radius = DEFAULT_GRAB_RADIUS} = options;
+
+            const grabState = grabStates[side];
+            const {grabber} = grabState;
+
+            if (!grabber) {
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {position: controllerPosition} = gamepad;
+
+                const objectDistanceSpecs = objects.map(object => {
+                  const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
+                  const distance = controllerPosition.distanceTo(objectPosition);
+                  return {
+                    object,
+                    distance,
+                  };
+                }).filter(({distance}) => distance <= radius);
+
+                if (objectDistanceSpecs.length > 0) {
+                  return objectDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].object;
+                } else {
+                  return null;
+                }
+              } else {
+                return null;
+              }
+            } else {
+              return null;
+            }
+          };
           const _grab = (side, object) => {
             const grabState = grabStates[side];
             const {grabber} = grabState;
@@ -164,6 +199,7 @@ class Hands {
 
           return {
             canGrab: _canGrab,
+            getBestGrabbable: _getBestGrabbable,
             grab: _grab,
             peek: _peek,
           };
