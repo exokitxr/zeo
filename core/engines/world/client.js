@@ -846,7 +846,6 @@ class World {
                       const onclick = (anchor && anchor.onclick) || '';
 
                       let match;
-
                       if (match = onclick.match(/^attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
                         const attributeName = match[1];
                         const action = match[2];
@@ -912,6 +911,8 @@ class World {
                             return n;
                           })();
                           attribute.value = newValue;
+
+                          focusState.type = '';
 
                           // _saveElements();
                         } else if (action === 'toggle') {
@@ -1081,6 +1082,7 @@ class World {
                 if (tab === 'world') {
                   const {type} = focusState;
 
+                  let match;
                   if (type === 'npm') {
                     const applySpec = biolumi.applyStateKeyEvent(npmInputState, mainFontSpec, e);
 
@@ -1093,6 +1095,32 @@ class World {
                         focusState.type = '';
 
                         console.log('commit', {inputText}); // XXX actually search here
+                      }
+
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
+                  } else if (match = type.match(/^attribute:(.+)$/)) {
+                    const applySpec = biolumi.applyStateKeyEvent(detailsState, subcontentFontSpec, e);
+
+                    if (applySpec) {
+                      const {commit} = applySpec;
+
+                      if (commit) {
+                        const attributeName = match[1];
+                        const {item, inputText} = detailsState;
+                        const {attributes} = item;
+                        const attribute = attributes[attributeName];
+                        const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attribute;
+                        const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
+                        if (newValue !== null) {
+                          attribute.value = newValue;
+
+                          // _saveElements();
+                        }
+
+                        focusState.type = '';
                       }
 
                       _updatePages();
