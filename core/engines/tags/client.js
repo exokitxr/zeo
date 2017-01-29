@@ -159,16 +159,18 @@ class Tags {
                 const tagMesh = tagMeshes[i];
                 const {
                   ui,
-                  planeMesh: {
-                    menuMaterial,
-                  },
+                  planeMesh,
                 } = tagMesh;
 
-                biolumi.updateMenuMaterial({
-                  ui,
-                  menuMaterial,
-                  worldTime,
-                });
+                if (ui && planeMesh) {
+                  const {menuMaterial} = planeMesh;
+
+                  biolumi.updateMenuMaterial({
+                    ui,
+                    menuMaterial,
+                    worldTime,
+                  });
+                }
               }
             };
 
@@ -192,58 +194,75 @@ class Tags {
           };
 
           const tagMeshes = [];
-          const _requestTag = itemSpec => biolumi.requestUi({
+          const _makeTag = itemSpec => {
+            const object = new THREE.Object3D();
+            object.position.y = 1.2;
+            object[tagFlagSymbol] = true;
+
+            const item = {
+              name: itemSpec.name,
+              displayName: itemSpec.displayName,
+              description: itemSpec.description,
+              version: itemSpec.version,
+              attributes: {
+                matrix: {
+                  type: 'matrix',
+                  value: [
+                    1, 1.5, 0,
+                    0, -0.7071067811865475, 0, 0.7071067811865475,
+                    1, 1, 1,
+                  ],
+                },
+                text: {
+                  type: 'text',
+                  value: 'lollercopter',
+                },
+                number: {
+                  type: 'number',
+                  value: 2,
+                  min: 1,
+                  max: 10,
+                },
+                select: {
+                  type: 'select',
+                  value: 'rain',
+                  options: [
+                    'rain',
+                    'snow',
+                    'firefly',
+                  ],
+                },
+                color: {
+                  type: 'color',
+                  value: '#F44336',
+                },
+                checkbox: {
+                  type: 'checkbox',
+                  value: false,
+                },
+                file: {
+                  type: 'file',
+                  value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
+                },
+              },
+            };
+            object.item = item;
+
+            object.ui = null;
+            object.planeMesh = null;
+
+            _requestDecorateTag(object);
+
+            tagMeshes.push(object);
+
+            return object;
+          };
+          const _requestDecorateTag = object => biolumi.requestUi({
             width: WIDTH,
             height: HEIGHT,
           })
             .then(ui => {
-              const item = {
-                name: itemSpec.name,
-                displayName: itemSpec.displayName,
-                description: itemSpec.description,
-                version: itemSpec.version,
-                attributes: {
-                  matrix: {
-                    type: 'matrix',
-                    value: [
-                      1, 1.5, 0,
-                      0, -0.7071067811865475, 0, 0.7071067811865475,
-                      1, 1, 1,
-                    ],
-                  },
-                  text: {
-                    type: 'text',
-                    value: 'lollercopter',
-                  },
-                  number: {
-                    type: 'number',
-                    value: 2,
-                    min: 1,
-                    max: 10,
-                  },
-                  select: {
-                    type: 'select',
-                    value: 'rain',
-                    options: [
-                      'rain',
-                      'snow',
-                      'firefly',
-                    ],
-                  },
-                  color: {
-                    type: 'color',
-                    value: '#F44336',
-                  },
-                  checkbox: {
-                    type: 'checkbox',
-                    value: false,
-                  },
-                  file: {
-                    type: 'file',
-                    value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
-                  },
-                },
-              };
+              const {item} = object;
 
               ui.pushPage([
                 {
@@ -264,19 +283,7 @@ class Tags {
                 type: 'main',
                 immediate: true,
               });
-
-              const object = new THREE.Object3D();
-              object.position.y = 1.2;
-              object.item = item;
               object.ui = ui;
-              object.destroy = () => {
-                const index = tagMeshes.indexOf(object);
-
-                if (index !== -1) {
-                  tagMeshes.splice(index, 1);
-                }
-              };
-              object[tagFlagSymbol] = true;
 
               const planeMesh = (() => {
                 const width = WORLD_WIDTH;
@@ -307,11 +314,21 @@ class Tags {
               object.add(planeMesh);
               object.planeMesh = planeMesh;
 
-              tagMeshes.push(object);
-
               return object;
             });
           const _getHoverTag = side => hoverStates[side].tagMesh;
+          const _cloneTag = tagMesh => {
+            const {item} = tagMesh;
+
+            return _makeTag(item);
+          };
+          const _destroyTag = tagMesh => {
+            const index = tagMeshes.indexOf(tagMesh);
+
+            if (index !== -1) {
+              tagMeshes.splice(index, 1);
+            }
+          };
           const _isTag = object => object[tagFlagSymbol] === true;
           const _grabTag = (side, tagMesh) => {
             scene.add(tagMesh);
@@ -330,8 +347,10 @@ class Tags {
           };
 
           return {
-            requestTag: _requestTag,
+            makeTag: _makeTag,
             getHoverTag: _getHoverTag,
+            cloneTag: _cloneTag,
+            destroyTag: _destroyTag,
             isTag: _isTag,
             grabTag: _grabTag,
           };
@@ -343,5 +362,7 @@ class Tags {
     this._cleanup();
   }
 }
+
+const _clone = o => JSON.parse(JSON.stringify(o));
 
 module.exports = Tags;

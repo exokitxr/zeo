@@ -90,14 +90,6 @@ class World {
           return {position, rotation, scale};
         };
 
-        const _makeHoverState = () => ({
-          index: null,
-        });
-        const hoverStates = {
-          left: _makeHoverState(),
-          right: _makeHoverState(),
-        };
-
         const _requestUis = () => Promise.all([
           biolumi.requestUi({
             width: WIDTH,
@@ -818,7 +810,7 @@ class World {
                   npmInputState.focus = false;
 
                   _requestLocalModSpecs()
-                    .then(tagSpecs => Promise.all(tagSpecs.map(tagSpec => tags.requestTag(tagSpec))))
+                    .then(tagSpecs => tagSpecs.map(tagSpec => tags.makeTag(tagSpec)))
                     .then(tagMeshes => {
                       for (let i = 0; i < npmTagMeshes.length; i++) {
                         const npmTagMesh = npmTagMeshes[i];
@@ -826,7 +818,7 @@ class World {
                         _alignTagMeshes(elementsTagMeshes);
 
                         npmTagMesh.parent.remove(npmTagMesh);
-                        npmTagMesh.destroy();
+                        tags.destroyTag(npmTagMesh);
                       }
 
                       for (let i = 0; i < tagMeshes.length; i++) {
@@ -1115,25 +1107,15 @@ class World {
               });
               const _gripdown = e => {
                 const {side} = e;
-                const hoverState = hoverStates[side];
-                const {index} = hoverState;
+                const tagMesh = tags.getHoverTag(side);
 
-                if (index !== null) {
-                  const {itemBoxMeshes} = mesh;
-                  const itemBoxMesh = itemBoxMeshes[index];
-                  const tagMesh = itemBoxMesh.getItemMesh();
-
-                  if (tagMesh) {
-                    tags.grabTag(side, tagMesh);
-
-                    e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-                  }
-                } else {
-                  const tagMesh = tags.getHoverTag(side);
-
-                  if (tagMesh) {
+                if (tagMesh) {
+                  if (elementsTagMeshes.includes(tagMesh)) {
                     _removeTagMesh(elementsTagMeshes, tagMesh);
                     _alignTagMeshes(elementsTagMeshes);
+                  } else if (npmTagMeshes.includes(tagMesh)) {
+                    const tagMeshClone = tags.cloneTag(tagMesh);
+                    tags.grabTag(side, tagMeshClone);
                   }
                 }
 
@@ -1277,5 +1259,7 @@ class World {
     this._cleanup();
   }
 }
+
+const _clone = o => JSON.parse(JSON.stringify(o));
 
 module.exports = World;
