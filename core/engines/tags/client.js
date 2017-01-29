@@ -193,62 +193,35 @@ class Tags {
             rend.removeListener('update', _update);
           };
 
+          const itemInstanceSymbol = Symbol();
+          class Item {
+            constructor(name, displayName, description, version) {
+              this.name = name;
+              this.displayName = displayName;
+              this.description = description;
+              this.version = version;
+
+              this.attributes = null;
+              this[itemInstanceSymbol] = null;
+              this.instancing = false;
+            }
+
+            get instance() {
+              return this[itemInstanceSymbol];
+            }
+
+            set instance(instance) {
+              this[itemInstanceSymbol] = instance;
+            }
+          }
+
           const tagMeshes = [];
           const _makeTag = itemSpec => {
             const object = new THREE.Object3D();
             object.position.y = 1.2;
             object[tagFlagSymbol] = true;
 
-            const item = {
-              name: itemSpec.name,
-              displayName: itemSpec.displayName,
-              description: itemSpec.description,
-              version: itemSpec.version,
-              attributes: null,
-              /* attributes: {
-                matrix: {
-                  type: 'matrix',
-                  value: [
-                    1, 1.5, 0,
-                    0, -0.7071067811865475, 0, 0.7071067811865475,
-                    1, 1, 1,
-                  ],
-                },
-                text: {
-                  type: 'text',
-                  value: 'lollercopter',
-                },
-                number: {
-                  type: 'number',
-                  value: 2,
-                  min: 1,
-                  max: 10,
-                },
-                select: {
-                  type: 'select',
-                  value: 'rain',
-                  options: [
-                    'rain',
-                    'snow',
-                    'firefly',
-                  ],
-                },
-                color: {
-                  type: 'color',
-                  value: '#F44336',
-                },
-                checkbox: {
-                  type: 'checkbox',
-                  value: false,
-                },
-                file: {
-                  type: 'file',
-                  value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
-                },
-              }, */
-              instance: null,
-              instancing: false,
-            };
+            const item = new Item(itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version);
             object.item = item;
 
             object.ui = null;
