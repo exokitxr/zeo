@@ -245,6 +245,8 @@ class Tags {
                   value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
                 },
               },
+              instance: null,
+              instancing: false,
             };
             object.item = item;
 

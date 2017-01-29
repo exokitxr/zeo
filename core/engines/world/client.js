@@ -874,6 +874,25 @@ class World {
                 }
               };
 
+              const _reifyTag = tagMesh => {
+                const {item} = tagMesh;
+                const {instance, instancing} = item;
+
+                if (!instance && !instancing) {
+                  const {name} = item;
+
+                  rend.requestModElementApi(name)
+                    .then(elementApi => {
+                      console.log('would have instanced', {name, elementApi}); // XXX
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+
+                  item.instancing = true;
+                }
+              };
+
               const _trigger = e => {
                 const tab = rend.getTab();
 
@@ -1138,6 +1157,7 @@ class World {
                     const elementsHovered = elementsContainerHoverStates[side].hovered;
 
                     if (elementsHovered) {
+                      // place tag into container
                       const newTagMesh = handsGrabberObject;
                       handsGrabber.release();
                       const {
@@ -1149,10 +1169,14 @@ class World {
                       _addTagMesh(elementsTagMeshes, newTagMesh);
                       _alignTagMeshes(elementsTagMeshes);
 
+                      // update details menu
                       const {item} = newTagMesh;
                       detailsState.type = 'elements';
                       detailsState.item = item;
                       _updatePages();
+
+                      // reify tag
+                      _reifyTag(newTagMesh);
 
                       e.stopImmediatePropagation(); // so tags engine doesn't pick it up
                     }

@@ -3496,6 +3496,15 @@ class Rend {
                 menuMesh[name] = null;
               }
 
+              requestModElementApi(name) {
+                return archae.requestPlugin(name)
+                  .then(pluginInstance => {
+                    const tag = archae.getName(pluginInstance);
+
+                    return modElementApis[tag] || null;
+                  });
+              }
+
               getConfig() {
                 return _getConfig();
               }
