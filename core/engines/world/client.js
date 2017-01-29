@@ -883,7 +883,19 @@ class World {
 
                   rend.requestModElementApi(name)
                     .then(elementApi => {
-                      console.log('would have instanced', {name, elementApi}); // XXX
+                      const tag = archae.getName(elementApi);
+                      const {attributes} = elementApi;
+                      const baseClass = elementApi;
+
+                      const element = menuUtils.makeZeoElement({
+                        tag,
+                        attributes,
+                        baseClass,
+                      });
+                      item.instance = element;
+                      item.attributes = _clone(attributes);
+
+                      _updatePages();
                     })
                     .catch(err => {
                       console.warn(err);

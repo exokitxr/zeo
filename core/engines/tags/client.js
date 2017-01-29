@@ -204,7 +204,8 @@ class Tags {
               displayName: itemSpec.displayName,
               description: itemSpec.description,
               version: itemSpec.version,
-              attributes: {
+              attributes: null,
+              /* attributes: {
                 matrix: {
                   type: 'matrix',
                   value: [
@@ -244,7 +245,7 @@ class Tags {
                   type: 'file',
                   value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
                 },
-              },
+              }, */
               instance: null,
               instancing: false,
             };
