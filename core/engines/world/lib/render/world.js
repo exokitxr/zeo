@@ -22,7 +22,7 @@ const getReadmePageSrc = ({item, loading}) => {
   }
 };
 
-const getAttributesPageSrc = ({item, positioningName, inputText, inputValue, focusAttribute}) => {
+const getAttributesPageSrc = ({item, inputText, inputValue, positioningName, focusAttribute}) => {
   if (item) {
     let result = '';
 

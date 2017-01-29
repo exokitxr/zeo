@@ -213,6 +213,17 @@ class Tags {
             set instance(instance) {
               this[itemInstanceSymbol] = instance;
             }
+
+            setAttribute(name, value) {
+              const {attributes} = this;
+              const attribute = attributes[name];
+              attribute.value = value;
+
+              const instance = this.instance;
+              if (instance) {
+                instance.setAttribute(name, JSON.stringify(value));
+              }
+            }
           }
 
           const tagMeshes = [];

@@ -291,7 +291,7 @@ class World {
                   details: detailsState,
                 },
               });
-              attributesUi.pushPage(({details: {item, inputText, inputValue}, focus: {type}}) => {
+              attributesUi.pushPage(({details: {item, inputText, inputValue, positioningName}, focus: {type}}) => {
                 const focusAttribute = (() => {
                   const match = type.match(/^attribute:(.+)$/);
                   return match && match[1];
@@ -300,7 +300,7 @@ class World {
                 return [
                   {
                     type: 'html',
-                    src: worldRenderer.getAttributesPageSrc({item, inputText, inputValue, focusAttribute}),
+                    src: worldRenderer.getAttributesPageSrc({item, inputText, inputValue, positioningName, focusAttribute}),
                     x: 0,
                     y: 0,
                     w: WIDTH,
@@ -774,7 +774,7 @@ class World {
                           const {attributes} = item;
                           const attribute = attributes[positioningName];
                           const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                          attribute.value = newValue;
+                          item.setAttribute(positioningName, newValue);
                         }
 
                         if (!positioningMesh.visible) {
@@ -928,14 +928,12 @@ class World {
 
                     if (positioningSide && side === positioningSide) {
                       const {item, positioningName} = detailsState;
-                      const {attributes} = item;
-                      const attribute = attributes[positioningName];
 
                       const newValue = (() => {
                         const {position, quaternion, scale} = positioningMesh;
                         return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
                       })();
-                      attribute.value = newValue;
+                      item.setAttribute(positioningName, newValue);
 
                       detailsState.positioningName = null;
                       detailsState.positioningSide = null;
@@ -1035,7 +1033,7 @@ class World {
 
                           focusState.type = 'attribute:' + attributeName;
                         } else if (action === 'set') {
-                          attribute.value = value;
+                          item.setAttribute(attributeName, value);
 
                           focusState.type = '';
 
@@ -1051,14 +1049,14 @@ class World {
                             }
                             return n;
                           })();
-                          attribute.value = newValue;
+                          item.setAttribute(attributeName, newValue);
 
                           focusState.type = '';
 
                           // _saveElements();
                         } else if (action === 'toggle') {
                           const newValue = !attributeValue;
-                          attribute.value = newValue;
+                          item.setAttribute(attributeName, newValue);
 
                           // _saveElements();
                         } else if (action === 'choose') {
@@ -1254,7 +1252,7 @@ class World {
                         const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attribute;
                         const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
                         if (newValue !== null) {
-                          attribute.value = newValue;
+                          item.setAttribute(attributeName, newValue);
 
                           // _saveElements();
                         }
