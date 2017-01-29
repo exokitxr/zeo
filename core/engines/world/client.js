@@ -275,7 +275,10 @@ class World {
                   rend.requestModElementApi(name)
                     .then(elementApi => {
                       const tag = archae.getName(elementApi);
-                      const {attributes} = elementApi;
+                      if (!HTMLElement.isPrototypeOf(elementApi)) {
+                        elementApi = HTMLElement;
+                      }
+                      const {attributes = {}} = elementApi;
                       const baseClass = elementApi;
 
                       const element = menuUtils.makeZeoElement({
@@ -301,7 +304,9 @@ class World {
                 const {instance} = item;
 
                 if (instance) { // XXX handle the race condition of unreify while instancing
-                  instance.destructor();
+                  if (typeof instance.destructor === 'function') {
+                    instance.destructor();
+                  }
                   item.instance = null;
 
                   _updatePages();
