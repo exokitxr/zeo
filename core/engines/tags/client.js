@@ -1,3 +1,5 @@
+import MultiMutex from 'multimutex';
+
 import {
   WIDTH,
   HEIGHT,
@@ -17,6 +19,9 @@ const DEFAULT_TAG_MATRIX = [
 ];
 
 const tagFlagSymbol = Symbol();
+const itemInstanceSymbol = Symbol();
+const itemMutexSymbol = Symbol();
+const ITEM_LOCK_KEY = 'key';
 
 class Tags {
   constructor(archae) {
@@ -198,7 +203,6 @@ class Tags {
             rend.removeListener('update', _update);
           };
 
-          const itemInstanceSymbol = Symbol();
           class Item {
             constructor(name, displayName, description, version, matrix) {
               this.name = name;
@@ -210,6 +214,8 @@ class Tags {
               this.attributes = null;
               this[itemInstanceSymbol] = null;
               this.instancing = false;
+
+              this[itemMutexSymbol] = new MultiMutex();
             }
 
             get instance() {
@@ -229,6 +235,10 @@ class Tags {
               if (instance) {
                 instance.setAttribute(name, JSON.stringify(value));
               }
+            }
+
+            lock() {
+              return this[itemMutexSymbol].lock(ITEM_LOCK_KEY);
             }
           }
 

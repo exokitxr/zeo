@@ -272,28 +272,35 @@ class World {
                 if (!instance && !instancing) {
                   const {name} = item;
 
-                  rend.requestModElementApi(name)
-                    .then(elementApi => {
-                      const tag = archae.getName(elementApi);
-                      if (!HTMLElement.isPrototypeOf(elementApi)) {
-                        elementApi = HTMLElement;
-                      }
-                      const {attributes = {}} = elementApi;
-                      const baseClass = elementApi;
+                  item.lock()
+                    .then(unlock => {
+                      rend.requestModElementApi(name)
+                        .then(elementApi => {
+                          const tag = archae.getName(elementApi);
+                          if (!HTMLElement.isPrototypeOf(elementApi)) {
+                            elementApi = HTMLElement;
+                          }
+                          const {attributes = {}} = elementApi;
+                          const baseClass = elementApi;
 
-                      const element = menuUtils.makeZeoElement({
-                        tag,
-                        attributes,
-                        baseClass,
-                      });
-                      item.instance = element;
-                      item.instancing = false;
-                      item.attributes = _clone(attributes);
+                          const element = menuUtils.makeZeoElement({
+                            tag,
+                            attributes,
+                            baseClass,
+                          });
+                          item.instance = element;
+                          item.instancing = false;
+                          item.attributes = _clone(attributes);
 
-                      _updatePages();
-                    })
-                    .catch(err => {
-                      console.warn(err);
+                          _updatePages();
+
+                          unlock();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+
+                          unlock();
+                        })
                     });
 
                   item.instancing = true;
@@ -301,16 +308,22 @@ class World {
               };
               const _unreifyTag = tagMesh => {
                 const {item} = tagMesh;
-                const {instance} = item;
 
-                if (instance) { // XXX handle the race condition of unreify while instancing
-                  if (typeof instance.destructor === 'function') {
-                    instance.destructor();
-                  }
-                  item.instance = null;
+                item.lock()
+                  .then(unlock => {
+                    const {instance} = item;
 
-                  _updatePages();
-                }
+                    if (instance) {
+                      if (typeof instance.destructor === 'function') {
+                        instance.destructor();
+                      }
+                      item.instance = null;
+
+                      _updatePages();
+                    }
+
+                    unlock();
+                  });
               };
               const _addElement = (tagMesh) => {
                 // place tag into container
