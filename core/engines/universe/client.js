@@ -255,7 +255,7 @@ class Universe {
                 for (let i = 0; i < numPositions; i++) {
                   const baseIndex = i * 3;
                   const x = (positions[baseIndex + 0] + (size / 2)) / size * resolution;
-                  const y = (-positions[baseIndex + 2] + (size / 2)) / size * resolution;
+                  const y = (positions[baseIndex + 2] + (size / 2)) / size * resolution;
 
                   const height = noise.in2D(x, y) * heightScale;
                   positions[baseIndex + 1] = height;
