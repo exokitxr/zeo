@@ -17,14 +17,14 @@ export default class WebRtc {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/somnifer',
-      '/core/engines/rend',
+      '/core/engines/config',
       '/core/engines/multiplayer',
       '/core/plugins/js-utils',
     ])
       .then(([
         three,
         somnifer,
-        rend,
+        config,
         multiplayer,
         jsUtils,
       ]) => {
@@ -243,8 +243,7 @@ export default class WebRtc {
           };
 
           const _init = () => {
-            const config = rend.getConfig();
-            const {voiceChat} = config;
+            const {voiceChat} = config.getConfig();
 
             if (voiceChat) {
               _enable();
@@ -252,8 +251,8 @@ export default class WebRtc {
           };
           _init();
 
-          const _config = config => {
-            const {voiceChat} = config;
+          const _config = c => {
+            const {voiceChat} = c;
 
             if (voiceChat && !live) {
               _enable();
@@ -261,12 +260,12 @@ export default class WebRtc {
               _disable();
             };
           };
-          rend.on('config', _config);
+          config.on('config', _config);
 
           this._cleanup = () => {
             cleanup();
 
-            rend.removeListener('config', _config);
+            config.removeListener('config', _config);
           };
 
           return {};

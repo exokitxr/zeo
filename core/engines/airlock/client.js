@@ -21,11 +21,11 @@ class Airlock {
 
     return archae.requestPlugins([
       '/core/engines/three',
-      '/core/engines/rend',
+      '/core/engines/config',
       '/core/plugins/geometry-utils',
     ]).then(([
       three,
-      rend,
+      config,
       geometryUtils,
     ]) => {
       if (live) {
@@ -237,8 +237,8 @@ class Airlock {
         };
 
         const _init = () => {
-          const config = rend.getConfig();
-          const {airlock} = config;
+          const c = config.getConfig();
+          const {airlock} = c;
 
           if (airlock) {
             _enable();
@@ -255,13 +255,13 @@ class Airlock {
             _disable();
           };
         };
-        rend.on('config', _config);
+        config.on('config', _config);
 
         this._cleanup = () => {
           scene.remove(mesh);
           scene.remove(ambientLight);
 
-          rend.removeListener('config', _config);
+          config.removeListener('config', _config);
         };
 
         return {};

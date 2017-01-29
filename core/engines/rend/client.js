@@ -1,5 +1,3 @@
-import Stats from 'stats.js';
-
 import {
   WIDTH,
   HEIGHT,
@@ -15,7 +13,6 @@ import {
 
   DEFAULT_USER_HEIGHT,
   TRANSITION_TIME,
-  STATS_REFRESH_RATE,
 } from './lib/constants/menu';
 import {
   KEYBOARD_WIDTH,
@@ -28,8 +25,6 @@ import keyboardImg from './lib/images/keyboard';
 import menuRender from './lib/render/menu';
 
 const keyboardImgSrc = 'data:image/svg+xml,' + keyboardImg;
-
-const STATS_REFRESH_RATE = 1000;
 
 const SIDES = ['left', 'right'];
 
@@ -47,7 +42,6 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata} = archae;
 
     let live = true;
     const cleanups = [];
@@ -158,18 +152,6 @@ class Rend {
           loading: false,
           cancelRequest: null,
         };
-        const configState = {
-          inputText: 'Hello, world! This is some text!',
-          inputIndex: 0,
-          inputValue: 0,
-          sliderValue: 0.5,
-          airlockCheckboxValue: true,
-          voiceChatCheckboxValue: false,
-          statsCheckboxValue: false,
-        };
-        const statsState = {
-          frame: 0,
-        };
         const elementsState = {
           elements: [],
           availableElements: [],
@@ -218,9 +200,6 @@ class Rend {
         const worlds = new Map();
         let currentWorld = null;
         const modElementApis = {};
-
-        const stats = new Stats();
-        stats.render = () => {}; // overridden below
 
         // element helper functions
         const _cleanElementsState = elementsState => {
@@ -383,21 +362,15 @@ class Rend {
           }).then(res => res.json());
 
           Promise.all([
-            _requestGetConfig(worldName),
             _requestInstalledModSpecs(worldName),
             _requestGetElements(worldName),
             bullet.requestWorld(worldName),
           ])
             .then(([
-              configSpec,
               installedModSpecs,
               elementsStatus,
               physics,
             ]) => {
-              configState.airlockCheckboxValue = configSpec.airlock;
-              configState.voiceChatCheckboxValue = configSpec.voiceChat;
-              configState.statsCheckboxValue = configSpec.stats;
-
               menu.updatePages();
 
               const startTime = Date.now();
@@ -564,15 +537,6 @@ class Rend {
             clipboardElements,
           }),
         }).then(res => res.blob().then(() => {}));
-        const _requestGetConfig = world => fetch('/archae/rend/worlds/' + world + '/config.json')
-          .then(res => res.json());
-        const _requestSetConfig = ({world, config}) => fetch('/archae/rend/worlds/' + world + '/config.json', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(config),
-        }).then(res => res.blob().then(() => {}));
         const _saveElements = menuUtils.debounce(next => {
           const {name: worldName} = currentWorld;
 
@@ -583,29 +547,6 @@ class Rend {
           })
             .then(() => {
               console.log('saved elements for', JSON.stringify(worldName));
-
-              next();
-            })
-            .catch(err => {
-              console.warn(err);
-
-              next();
-            });
-        });
-        const _getConfig = () => ({
-          airlock: configState.airlockCheckboxValue,
-          voiceChat: configState.voiceChatCheckboxValue,
-          stats: configState.statsCheckboxValue,
-        });
-        const _saveConfig = menuUtils.debounce(next => {
-          const {name: worldName} = currentWorld;
-
-          _requestSetConfig({
-            world: worldName,
-            config: _getConfig(),
-          })
-            .then(() => {
-              console.log('saved config for', JSON.stringify(worldName));
 
               next();
             })
@@ -715,38 +656,6 @@ class Rend {
                   window.removeEventListener('unload', unload);
                 });
 
-                menuUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
-                  const img = (() => {
-                    if (statsCheckboxValue) {
-                      const statsImg = stats.dom.childNodes[0];
-                      statsImg.needsUpdate = true;
-                      return statsImg;
-                    } else {
-                      return transparentImg;
-                    }
-                  })();
-
-                  return [
-                    {
-                      type: 'image',
-                      img,
-                      x: 0,
-                      y: HEIGHT - (500 * (48 / 80)),
-                      w: 500,
-                      h: 500 * (48 / 80),
-                    },
-                  ];
-                }, {
-                  type: 'stats',
-                  state: {
-                    config: {
-                      statsCheckboxValue: configState.statsCheckboxValue,
-                    },
-                    stats: statsState,
-                  },
-                  immediate: true,
-                });
-
                 menuUi.pushPage([
                   {
                     type: 'html',
@@ -832,6 +741,9 @@ class Rend {
                   object.universeMesh = null;
 
                   object.worldMesh = null;
+
+                  object.configMesh = null;
+                  object.statsMesh = null;
 
                   const navbarMesh = (() => {
                     const width = NAVBAR_WORLD_WIDTH;
@@ -990,18 +902,7 @@ class Rend {
                 scene.add(keyboardBoxMeshes.left);
                 scene.add(keyboardBoxMeshes.right);
 
-                stats.render = () => {
-                  const {frame: oldFrame} = statsState;
-                  const newFrame = Math.floor(Date.now() / STATS_REFRESH_RATE);
-                  if (newFrame !== oldFrame) {
-                    statsState.frame = newFrame;
-
-                    _updatePages();
-                  }
-                };
-
                 const _updatePages = menuUtils.debounce(next => {
-
                   const menuPages = menuUi.getPages();
                   const navbarPages = navbarUi.getPages();
                   const pages = menuPages.concat(navbarPages);
@@ -1019,14 +920,7 @@ class Rend {
                       const {type} = page;
 
                       let match;
-                      if (type === 'stats') {
-                        page.update({
-                          config: {
-                            statsCheckboxValue: configState.statsCheckboxValue,
-                          },
-                          stats: statsState,
-                        }, pend);
-                      } else if (type === 'worlds') {
+                      if (type === 'worlds') {
                         page.update({
                           worlds: worldsState,
                           focus: focusState,
@@ -1054,11 +948,6 @@ class Rend {
                       } else if (type === 'elementAttributeFiles') {
                         page.update({
                           elementAttributeFiles: elementAttributeFilesState,
-                          focus: focusState,
-                        }, pend);
-                      } else if (type === 'config') {
-                        page.update({
-                          config: configState,
                           focus: focusState,
                         }, pend);
                       } else if (type === 'navbar') {
@@ -1144,7 +1033,7 @@ class Rend {
                             case 'multiverse': return menuMesh.universeMesh;
                             case 'world': return menuMesh.worldMesh;
                             case 'inventory': return menuMesh.inventoryMesh;
-                            case 'options': return menuMesh.planeMesh;
+                            case 'options': return menuMesh.configMesh;
                             default: return null;
                           }
                         };
@@ -1412,40 +1301,6 @@ class Rend {
                               .catch(err => {
                                 console.warn(err);
                               });
-                          } else if (onclick === 'config') {
-                            menuUi.cancelTransition();
-
-                            menuUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
-                              {
-                                type: 'html',
-                                src: menuRenderer.getConfigPageSrc(),
-                              },
-                              {
-                                type: 'html',
-                                src: menuRenderer.getConfigPageContentSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}),
-                                x: 500,
-                                y: 150 + 2,
-                                w: WIDTH - 500,
-                                h: HEIGHT - (150 + 2),
-                                scroll: true,
-                              },
-                              {
-                                type: 'image',
-                                img: creatureUtils.makeAnimatedCreature('preferences'),
-                                x: 150,
-                                y: 0,
-                                w: 150,
-                                h: 150,
-                                frameTime: 300,
-                                pixelated: true,
-                              }
-                            ]), {
-                              type: 'config',
-                              state: {
-                                config: configState,
-                                focus: focusState,
-                              }
-                            });
                           } else if (onclick === 'elements') {
                             menuUi.cancelTransition();
 
@@ -1927,58 +1782,6 @@ class Rend {
                             modsState.inputIndex = index;
                             modsState.inputValue = px;
                             focusState.type = 'mods';
-
-                            _updatePages();
-                          } else if (onclick === 'config:input') {
-                            const {value} = menuHoverState;
-                            const valuePx = value * (WIDTH - (500 + 40));
-
-                            const {index, px} = biolumi.getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
-
-                            configState.inputIndex = index;
-                            configState.inputValue = px;
-                            focusState.type = 'config';
-
-                            _updatePages();
-                          } else if (onclick === 'config:resolution') {
-                            const {value} = menuHoverState;
-
-                            configState.sliderValue = value;
-
-                            _updatePages();
-                          } else if (onclick === 'config:airlock') {
-                            const {airlockCheckboxValue} = configState;
-
-                            configState.airlockCheckboxValue = !airlockCheckboxValue;
-
-                            _saveConfig();
-                            api.updateConfig();
-
-                            _updatePages();
-                          } else if (onclick === 'config:voiceChat') {
-                            const {voiceChatCheckboxValue} = configState;
-
-                            configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
-
-                            _saveConfig();
-                            api.updateConfig();
-
-                            _updatePages();
-                          } else if (onclick === 'config:stats') {
-                            const {statsCheckboxValue} = configState;
-
-                            if (!statsCheckboxValue) {
-                              const width = 0.0005;
-                              const height = width * (48 / 80);
-                              const depth = -0.001;
-
-                              configState.statsCheckboxValue = true;
-                            } else {
-                              configState.statsCheckboxValue = false;
-                            }
-
-                            _saveConfig();
-                            api.updateConfig();
 
                             _updatePages();
                           } else {
@@ -2542,19 +2345,6 @@ class Rend {
 
                           e.stopImmediatePropagation();
                         }
-                      } else if (type === 'config') {
-                        const applySpec = biolumi.applyStateKeyEvent(configState, mainFontSpec, e);
-
-                        if (applySpec) {
-                          const {commit} = applySpec;
-                          if (commit) {
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
                       }
                     }
                   }
@@ -2926,6 +2716,8 @@ class Rend {
             class RendApi extends EventEmitter {
               constructor() {
                 super();
+
+                this.setMaxListeners(100);
               }
 
               getCurrentWorld() {
@@ -2957,18 +2749,8 @@ class Rend {
                   });
               }
 
-              getConfig() {
-                return _getConfig();
-              }
-
-              updateConfig() {
-                this.emit('config', _getConfig());
-              }
-
               update() {
                 this.emit('update');
-
-                stats.render();
               }
 
               updateEye(camera) {
@@ -2976,11 +2758,11 @@ class Rend {
               }
 
               updateStart() {
-                stats.begin();
+                this.emit('updateStart');
               }
 
               updateEnd() {
-                stats.end();
+                this.emit('updateEnd');
               }
 
               registerElement(pluginInstance, elementApi) {

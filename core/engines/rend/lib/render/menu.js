@@ -57,6 +57,7 @@ const getCheckboxSrc = (label, checkboxValue, onclick) => `\
   </div>
 </div>
 `;
+
 const getWorldsPageSrc = ({worlds, selectedName, inputText, inputValue, focusType}) => {
   const renamingName = (() => {
     const match = focusType.match(/^worlds:rename:(.+)$/);

@@ -1,0 +1,12 @@
+{
+  "name": "config",
+  "description": "Provides configuration management for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "body-parser": "^1.16.0",
+    "mkdirp": "^0.5.1",
+    "stats.js": "^0.17.0"
+  }
+}

@@ -15,5 +15,3 @@ export const NAVBAR_WORLD_DEPTH = 0.01;
 export const DEFAULT_USER_HEIGHT = 1.6;
 
 export const TRANSITION_TIME = 1000;
-
-export const STATS_REFRESH_RATE = 1000;

@@ -1,0 +1,567 @@
+import Stats from 'stats.js';
+
+import {
+  WIDTH,
+  HEIGHT,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+
+  STATS_WIDTH,
+  STATS_HEIGHT,
+  STATS_WORLD_WIDTH,
+  STATS_WORLD_HEIGHT,
+  STATS_WORLD_DEPTH,
+
+  STATS_REFRESH_RATE,
+} from './lib/constants/config';
+import configUtils from './lib/utils/config';
+import configRenderer from './lib/render/config';
+
+const STATS_REFRESH_RATE = 1000;
+
+const SIDES = ['left', 'right'];
+
+class Config {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
+  mount() {
+    const {_archae: archae} = this;
+
+    let live = true;
+    this._cleanup = () => {
+      live = false;
+    };
+
+    return archae.requestPlugins([
+      '/core/engines/input',
+      '/core/engines/three',
+      '/core/engines/webvr',
+      '/core/engines/biolumi',
+      '/core/engines/rend',
+      '/core/plugins/js-utils',
+    ]).then(([
+      input,
+      three,
+      webvr,
+      biolumi,
+      rend,
+      jsUtils,
+    ]) => {
+      if (live) {
+        const {THREE, scene} = three;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
+
+        const currentWorld = rend.getCurrentWorld();
+
+        const _decomposeObjectMatrixWorld = object => {
+          const position = new THREE.Vector3();
+          const rotation = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          object.matrixWorld.decompose(position, rotation, scale);
+          return {position, rotation, scale};
+        };
+
+        const transparentImg = biolumi.getTransparentImg();
+        const transparentMaterial = biolumi.getTransparentMaterial();
+        const solidMaterial = biolumi.getSolidMaterial();
+
+        const mainFontSpec = {
+          fonts: biolumi.getFonts(),
+          fontSize: 72,
+          lineHeight: 1.4,
+          fontWeight: biolumi.getFontWeight(),
+          fontStyle: biolumi.getFontStyle(),
+        };
+
+        let api = null;
+
+        const configState = {
+          inputText: 'Hello, world! This is some text!',
+          inputIndex: 0,
+          inputValue: 0,
+          sliderValue: 0.5,
+          airlockCheckboxValue: true,
+          voiceChatCheckboxValue: false,
+          statsCheckboxValue: false,
+        };
+        const statsState = {
+          frame: 0,
+        };
+        const focusState = {
+          type: '',
+        };
+
+        const configHoverStates = {
+          left: biolumi.makeMenuHoverState(),
+          right: biolumi.makeMenuHoverState(),
+        };
+
+        const _requestUis = () =>
+          Promise.all([
+            biolumi.requestUi({
+              width: WIDTH,
+              height: HEIGHT,
+            }),
+            biolumi.requestUi({
+              width: STATS_WIDTH,
+              height: STATS_HEIGHT,
+            }),
+          ]).then(([
+            configUi,
+            statsUi,
+          ]) => ({
+            configUi,
+            statsUi,
+          }));
+        const _requestGetConfig = world => fetch('/archae/config/config.json')
+          .then(res => res.json());
+        const _requestSetConfig = config => fetch('/archae/config/config.json', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(config),
+        })
+          .then(res => res.blob())
+          .then(() => {})
+        const _getConfig = () => ({
+          airlock: configState.airlockCheckboxValue,
+          voiceChat: configState.voiceChatCheckboxValue,
+          stats: configState.statsCheckboxValue,
+        });
+        const _saveConfig = configUtils.debounce(next => {
+          _requestSetConfig(_getConfig())
+            .then(() => {
+              next();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              next();
+            });
+        });
+
+        const stats = new Stats();
+        stats.render = () => {}; // overridden below
+
+        return Promise.all([
+          _requestUis(),
+          _requestGetConfig(),
+        ])
+          .then(([
+            {
+              configUi,
+              statsUi,
+            },
+            configSpec,
+          ]) => {
+            if (live) {
+              configState.airlockCheckboxValue = configSpec.airlock;
+              configState.voiceChatCheckboxValue = configSpec.voiceChat;
+              configState.statsCheckboxValue = configSpec.stats;
+
+              configUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
+                {
+                  type: 'html',
+                  src: configRenderer.getConfigPageSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                }
+              ]), {
+                type: 'config',
+                state: {
+                  config: configState,
+                  focus: focusState,
+                }
+              });
+
+              statsUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
+                const img = (() => {
+                  if (statsCheckboxValue) {
+                    const statsImg = stats.dom.childNodes[0];
+                    statsImg.needsUpdate = true;
+                    return statsImg;
+                  } else {
+                    return transparentImg;
+                  }
+                })();
+
+                return [
+                  {
+                    type: 'image',
+                    img,
+                    x: 0,
+                    y: 0,
+                    w: 500,
+                    h: 500 * (48 / 80),
+                  },
+                ];
+              }, {
+                type: 'stats',
+                state: {
+                  config: {
+                    statsCheckboxValue: configState.statsCheckboxValue,
+                  },
+                  stats: statsState,
+                },
+                immediate: true,
+              });
+
+              const configMesh = (() => {
+                const object = new THREE.Object3D();
+                object.position.y = -0.25;
+                object.visible = false;
+
+                const planeMesh = (() => {
+                  const width = WORLD_WIDTH;
+                  const height = WORLD_HEIGHT;
+                  const depth = WORLD_DEPTH;
+
+                  const menuMaterial = biolumi.makeMenuMaterial();
+
+                  const geometry = new THREE.PlaneBufferGeometry(width, height);
+                  const materials = [solidMaterial, menuMaterial];
+
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  // mesh.position.y = 1.5;
+                  mesh.position.z = -1;
+                  mesh.receiveShadow = true;
+                  mesh.menuMaterial = menuMaterial;
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const material = transparentMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  mesh.add(shadowMesh);
+
+                  return mesh;
+                })();
+                object.add(planeMesh);
+                object.planeMesh = planeMesh;
+
+                return object;
+              })();
+              rend.addMenuMesh('configMesh', configMesh);
+
+              const statsMesh = (() => {
+                const object = new THREE.Object3D();
+                object.position.y = -0.5;
+
+                const planeMesh = (() => {
+                  const width = STATS_WORLD_WIDTH;
+                  const height = STATS_WORLD_HEIGHT;
+                  const depth = STATS_WORLD_DEPTH;
+
+                  const menuMaterial = biolumi.makeMenuMaterial();
+
+                  const geometry = new THREE.PlaneBufferGeometry(width, height);
+                  const materials = [solidMaterial, menuMaterial];
+
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  // mesh.position.y = 1.5;
+                  mesh.position.z = -0.5;
+                  mesh.receiveShadow = true;
+                  mesh.menuMaterial = menuMaterial;
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const material = transparentMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  mesh.add(shadowMesh);
+
+                  return mesh;
+                })();
+                object.add(planeMesh);
+                object.planeMesh = planeMesh;
+
+                return object;
+              })();
+              rend.addMenuMesh('statsMesh', statsMesh);
+
+              const configBoxMeshes = {
+                left: biolumi.makeMenuBoxMesh(),
+                right: biolumi.makeMenuBoxMesh(),
+              };
+              scene.add(configBoxMeshes.left);
+              scene.add(configBoxMeshes.right);
+
+              const configDotMeshes = {
+                left: biolumi.makeMenuDotMesh(),
+                right: biolumi.makeMenuDotMesh(),
+              };
+              scene.add(configDotMeshes.left);
+              scene.add(configDotMeshes.right);
+
+              stats.render = () => {
+                const {frame: oldFrame} = statsState;
+                const newFrame = Math.floor(Date.now() / STATS_REFRESH_RATE);
+                if (newFrame !== oldFrame) {
+                  statsState.frame = newFrame;
+
+                  _updatePages();
+                }
+              };
+
+              const _updatePages = configUtils.debounce(next => {
+                const configPages = configUi.getPages();
+                const statsPages = statsUi.getPages();
+                const pages = configPages.concat(statsPages);
+
+                if (pages.length > 0) {
+                  let pending = pages.length;
+                  const pend = () => {
+                    if (--pending === 0) {
+                      next();
+                    }
+                  };
+
+                  for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    const {type} = page;
+
+                    let match;
+                    if (type === 'stats') {
+                      page.update({
+                        config: {
+                          statsCheckboxValue: configState.statsCheckboxValue,
+                        },
+                        stats: statsState,
+                      }, pend);
+                    } else if (type === 'config') {
+                      page.update({
+                        config: configState,
+                        focus: focusState,
+                      }, pend);
+                    } else {
+                      pend();
+                    }
+                  }
+                }
+              });
+
+              const trigger = e => {
+                const tab = rend.getTab();
+
+                if (tab === 'options') {
+                  const {side} = e;
+                  const configHoverState = configHoverStates[side];
+                  const {intersectionPoint} = configHoverState;
+
+                  if (intersectionPoint) {
+                    const {anchor} = configHoverState;
+                    const onclick = (anchor && anchor.onclick) || '';
+
+                    focusState.type = '';
+
+                    if (onclick === 'config:input') {
+                      const {value} = configHoverState;
+                      const valuePx = value * (WIDTH - (500 + 40));
+
+                      const {index, px} = biolumi.getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
+
+                      configState.inputIndex = index;
+                      configState.inputValue = px;
+                      focusState.type = 'config';
+
+                      _updatePages();
+                    } else if (onclick === 'config:resolution') {
+                      const {value} = configHoverState;
+
+                      configState.sliderValue = value;
+
+                      _updatePages();
+                    } else if (onclick === 'config:airlock') {
+                      const {airlockCheckboxValue} = configState;
+
+                      configState.airlockCheckboxValue = !airlockCheckboxValue;
+
+                      _saveConfig();
+                      api.updateConfig();
+
+                      _updatePages();
+                    } else if (onclick === 'config:voiceChat') {
+                      const {voiceChatCheckboxValue} = configState;
+
+                      configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
+
+                      _saveConfig();
+                      api.updateConfig();
+
+                      _updatePages();
+                    } else if (onclick === 'config:stats') {
+                      const {statsCheckboxValue} = configState;
+
+                      if (!statsCheckboxValue) {
+                        const width = 0.0005;
+                        const height = width * (48 / 80);
+                        const depth = -0.001;
+
+                        configState.statsCheckboxValue = true;
+                      } else {
+                        configState.statsCheckboxValue = false;
+                      }
+
+                      _saveConfig();
+                      api.updateConfig();
+
+                      _updatePages();
+                    } else {
+                      _updatePages();
+                    }
+                  }
+                }
+              };
+              input.on('trigger', trigger);
+
+              const keydown = e => {
+                const tab = rend.getTab();
+
+                if (tab === 'config') {
+                  const {type} = focusState;
+
+                  if (type === 'config') {
+                    const applySpec = biolumi.applyStateKeyEvent(configState, mainFontSpec, e);
+
+                    if (applySpec) {
+                      const {commit} = applySpec;
+                      if (commit) {
+                        focusState.type = '';
+                      }
+
+                      _updatePages();
+
+                      e.stopImmediatePropagation();
+                    }
+                  }
+                }
+              };
+              input.on('keydown', keydown, {
+                priority: 1,
+              });
+              const keyboarddown = keydown;
+              input.on('keyboarddown', keyboarddown, {
+                priority: 1,
+              });
+
+              const _update = () => {
+                const tab = rend.getTab();
+
+                if (tab === 'options') {
+                  const _updateTextures = () => {
+                    const worldTime = currentWorld.getWorldTime();
+
+                    const {
+                      planeMesh: {
+                        menuMaterial: planeMenuMaterial,
+                      },
+                    } = configMesh;
+
+                    biolumi.updateMenuMaterial({
+                      ui: configUi,
+                      menuMaterial: planeMenuMaterial,
+                      worldTime,
+                    });
+                  };
+                  const _updateAnchors = () => {
+                    const {gamepads} = webvr.getStatus();
+
+                    const {planeMesh} = configMesh;
+                    const configMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                        const configHoverState = configHoverStates[side];
+                        const configDotMesh = configDotMeshes[side];
+                        const configBoxMesh = configBoxMeshes[side];
+
+                        biolumi.updateAnchors({
+                          matrixObject: configMatrixObject,
+                          ui: configUi,
+                          hoverState: configHoverState,
+                          dotMesh: configDotMesh,
+                          boxMesh: configBoxMesh,
+                          width: WIDTH,
+                          height: HEIGHT,
+                          worldWidth: WORLD_WIDTH,
+                          worldHeight: WORLD_HEIGHT,
+                          worldDepth: WORLD_DEPTH,
+                          controllerPosition,
+                          controllerRotation,
+                        });
+                      }
+                    });
+                  };
+
+                  _updateTextures();
+                  _updateAnchors();
+
+                  stats.render();
+                }
+              };
+              rend.on('update', _update);
+              const _updateStart = () => {
+                stats.begin();
+              };
+              rend.on('updateStart', _updateStart);
+              const _updateEnd = () => {
+                stats.end();
+              };
+              rend.on('updateEnd', _updateEnd);
+
+              this._cleanup = () => {
+                rend.removeMenuMesh('configMesh');
+                rend.removeMenuMesh('statsMesh');
+
+                SIDES.forEach(side => {
+                  scene.remove(configBoxMeshes[side]);
+                  scene.remove(configDotMeshes[side]);
+                });
+
+                input.removeListener('trigger', trigger);
+                input.removeListener('keydown', keydown);
+                input.removeListener('keyboarddown', keyboarddown);
+                rend.removeListener('update', _update);
+                rend.removeListener('updateStart', _updateStart);
+                rend.removeListener('updateEnd', _updateEnd);
+              };
+
+              class ConfigApi extends EventEmitter {
+                getConfig() {
+                  return _getConfig();
+                }
+
+                updateConfig() {
+                  this.emit('config', _getConfig());
+                }
+              }
+
+              api = new ConfigApi();
+              return api;
+            }
+          });
+      }
+    });
+  }
+
+  unmount() {
+    this._cleanup();
+  }
+}
+
+module.exports = Config;

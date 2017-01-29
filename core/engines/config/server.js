@@ -5,12 +5,13 @@ const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 
-const DEFAULT_TAGS = {
-  elements: [],
-  free: [],
+const DEFAULT_CONFIG = {
+  airlock: true,
+  voiceChat: false,
+  stats: false,
 };
 
-class World {
+class Config {
   constructor(archae) {
     this._archae = archae;
   }
@@ -25,7 +26,6 @@ class World {
     };
 
     const worldPath = path.join(dirname, dataDirectory, 'world');
-    const worldTagsJsonPath = path.join(worldPath, 'tags.json');
     const worldConfigJsonPath = path.join(worldPath, 'config.json');
 
     const _requestFile = (p, defaultValue) => new Promise((accept, reject) => {
@@ -41,7 +41,7 @@ class World {
         }
       });
     });
-    const _requestTagsJson = () => _requestFile(worldTagsJsonPath, DEFAULT_TAGS);
+    const _requestConfigJson = () => _requestFile(worldConfigJsonPath, DEFAULT_CONFIG);
     const _ensureWorldPath = () => new Promise((accept, reject) => {
       const worldPath = path.join(dirname, dataDirectory, 'world');
 
@@ -55,11 +55,11 @@ class World {
     });
 
     return Promise.all([
-      _requestTagsJson(),
+      _requestConfigJson(),
       _ensureWorldPath(),
     ])
       .then(([
-        tagsJson,
+        configJson,
         ensureWorldPathResult,
       ]) => {
         if (live) {
@@ -73,11 +73,11 @@ class World {
             });
           });
 
-          function serveTagsGet(req, res, next) {
-            res.json(tagsJson);
+          function serveConfigGet(req, res, next) {
+            res.json(configJson);
           }
-          app.get('/archae/world/tags.json', serveTagsGet);
-          function serveTagsSet(req, res, next) {
+          app.get('/archae/config/config.json', serveConfigGet);
+          function serveConfigSet(req, res, next) {
             bodyParserJson(req, res, () => {
               const {body: data} = req;
 
@@ -86,17 +86,10 @@ class World {
                 res.send();
               };
 
-              if (
-                typeof data === 'object' && data !== null &&
-                data.elements && Array.isArray(data.elements) &&
-                data.free && Array.isArray(data.free)
-              ) {
-                tagsJson = {
-                  elements: data.elements,
-                  free: data.free,
-                };
+              if (typeof data === 'object' && data !== null) {
+                configJson = data;
 
-                _saveFile(worldTagsJsonPath, tagsJson)
+                _saveFile(worldConfigJsonPath, configJson)
                   .then(() => {
                     res.send();
                   })
@@ -109,13 +102,13 @@ class World {
               }
             });
           }
-          app.put('/archae/world/tags.json', serveTagsSet);
+          app.put('/archae/config/config.json', serveConfigSet);
 
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
               if (
-                route.handle.name === 'serveTagsGet' ||
-                route.handle.name === 'serveTagsSet'
+                route.handle.name === 'serveConfigGet' ||
+                route.handle.name === 'serveConfigSet'
               ) {
                 routes.splice(i, 1);
               }
@@ -125,8 +118,6 @@ class World {
             }
             app._router.stack.forEach(removeMiddlewares);
           };
-
-
         }
       });
   }
@@ -136,4 +127,4 @@ class World {
   }
 }
 
-module.exports = World;
+module.exports = Config;
