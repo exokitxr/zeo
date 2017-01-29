@@ -1244,6 +1244,8 @@ class World {
 
                       _addElement(newTagMesh);
 
+                      _saveTags();
+
                       e.stopImmediatePropagation(); // so tags engine doesn't pick it up
                     } else {
                       handsGrabber.on('release', () => { // so the item matrix is saved first

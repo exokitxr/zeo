@@ -384,7 +384,7 @@ class Tags {
                 tagMesh.position.copy(position);
                 tagMesh.quaternion.copy(rotation);
               });
-              grabber.on('release', () => {q
+              grabber.on('release', () => {
                 const {position, quaternion, item} = tagMesh;
                 const newMatrix = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
                 item.matrix = newMatrix;
