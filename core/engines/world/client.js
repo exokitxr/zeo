@@ -1340,7 +1340,7 @@ class World {
               _initializeElements();
 
               this._cleanup = () => {
-                rend.removeMenuMesh(mesh);
+                rend.removeMenuMesh('worldMesh');
 
                 SIDES.forEach(side => {
                   scene.remove(attributesDotMeshes[side]);
