@@ -50,9 +50,6 @@ class Sprite {
             });
 
         class SpriteElement extends HTMLElement {
-          static get tag() {
-            return 'sprite';
-          }
           static get attributes() {
             return {
               position: {
@@ -152,10 +149,10 @@ class Sprite {
             }
           }
         }
-        zeo.registerElement(SpriteElement);
+        zeo.registerElement(this, SpriteElement);
 
         this._cleanup = () => {
-          zeo.unregisterElement(SpriteElement);
+          zeo.unregisterElement(this);
         };
 
         return {};

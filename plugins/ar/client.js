@@ -28,9 +28,6 @@ class Ar {
         const transparentImg = biolumi.getTransparentImg();
 
         class ArElement extends HTMLElement {
-          static get tag() {
-            return 'ar';
-          }
           static get attributes() {
             return {
               position: {
@@ -172,7 +169,7 @@ class Ar {
             }
           }
         }
-        zeo.registerElement(ArElement);
+        zeo.registerElement(this, ArElement);
 
         const updates = [];
         const _update = () => {
@@ -184,7 +181,7 @@ class Ar {
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(ArElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

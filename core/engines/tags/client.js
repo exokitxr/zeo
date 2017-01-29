@@ -1,3 +1,5 @@
+import MultiMutex from 'multimutex';
+
 import {
   WIDTH,
   HEIGHT,
@@ -7,11 +9,19 @@ import {
 } from './lib/constants/tags';
 import tagsRender from './lib/render/tags';
 
-const DEFAULT_GRAB_RADIUS = 0.1;
-
 const SIDES = ['left', 'right'];
 
+const DEFAULT_GRAB_RADIUS = 0.1;
+const DEFAULT_TAG_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
+
 const tagFlagSymbol = Symbol();
+const itemInstanceSymbol = Symbol();
+const itemMutexSymbol = Symbol();
+const ITEM_LOCK_KEY = 'key';
 
 class Tags {
   constructor(archae) {
@@ -112,7 +122,7 @@ class Tags {
 
             const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
             if (bestGrabbableTagMesh) {
-              _grabTag(side, bestGrabbableTagMesh);
+              tagsInstance.grabTag(side, bestGrabbableTagMesh);
             }
           };
           input.on('gripdown', _gripdown);
@@ -159,16 +169,18 @@ class Tags {
                 const tagMesh = tagMeshes[i];
                 const {
                   ui,
-                  planeMesh: {
-                    menuMaterial,
-                  },
+                  planeMesh,
                 } = tagMesh;
 
-                biolumi.updateMenuMaterial({
-                  ui,
-                  menuMaterial,
-                  worldTime,
-                });
+                if (ui && planeMesh) {
+                  const {menuMaterial} = planeMesh;
+
+                  biolumi.updateMenuMaterial({
+                    ui,
+                    menuMaterial,
+                    worldTime,
+                  });
+                }
               }
             };
 
@@ -191,150 +203,212 @@ class Tags {
             rend.removeListener('update', _update);
           };
 
+          class Item {
+            constructor(name, displayName, description, version, matrix) {
+              this.name = name;
+              this.displayName = displayName;
+              this.description = description;
+              this.version = version;
+              this.matrix = matrix;
+
+              this.attributes = null;
+              this[itemInstanceSymbol] = null;
+              this.instancing = false;
+
+              this[itemMutexSymbol] = new MultiMutex();
+            }
+
+            get instance() {
+              return this[itemInstanceSymbol];
+            }
+
+            set instance(instance) {
+              this[itemInstanceSymbol] = instance;
+            }
+
+            setAttribute(name, value) {
+              const {attributes} = this;
+              const attribute = attributes[name];
+              attribute.value = value;
+
+              const instance = this.instance;
+              if (instance) {
+                instance.setAttribute(name, JSON.stringify(value));
+              }
+            }
+
+            lock() {
+              return this[itemMutexSymbol].lock(ITEM_LOCK_KEY);
+            }
+          }
+
           const tagMeshes = [];
-          const _requestTag = itemSpec => biolumi.requestUi({
-            width: WIDTH,
-            height: HEIGHT,
-          })
-            .then(ui => {
-              const item = {
-                name: itemSpec.name,
-                displayName: itemSpec.displayName,
-                description: itemSpec.description,
-                version: itemSpec.version,
-                attributes: {
-                  matrix: {
-                    type: 'matrix',
-                    value: [
-                      1, 1.5, 0,
-                      0, -0.7071067811865475, 0, 0.7071067811865475,
-                      1, 1, 1,
-                    ],
-                  },
-                  text: {
-                    type: 'text',
-                    value: 'lollercopter',
-                  },
-                  number: {
-                    type: 'number',
-                    value: 2,
-                    min: 1,
-                    max: 10,
-                  },
-                  select: {
-                    type: 'select',
-                    value: 'rain',
-                    options: [
-                      'rain',
-                      'snow',
-                      'firefly',
-                    ],
-                  },
-                  color: {
-                    type: 'color',
-                    value: '#F44336',
-                  },
-                  checkbox: {
-                    type: 'checkbox',
-                    value: false,
-                  },
-                  file: {
-                    type: 'file',
-                    value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
-                  },
-                },
-              };
-
-              ui.pushPage([
-                {
-                  type: 'html',
-                  src: tagsRenderer.getTagSrc(item),
-                },
-                {
-                  type: 'image',
-                  img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
-                  x: 10,
-                  y: 0,
-                  w: 100,
-                  h: 100,
-                  frameTime: 300,
-                  pixelated: true,
-                }
-              ], {
-                type: 'main',
-                immediate: true,
-              });
-
+          const tagClassMeshes = {
+            elements: [],
+            npm: [],
+          };
+          class TagsApi {
+            makeTag(itemSpec) {
               const object = new THREE.Object3D();
-              object.position.y = 1.2;
-              object.item = item;
-              object.ui = ui;
-              object.destroy = () => {
-                const index = tagMeshes.indexOf(object);
-
-                if (index !== -1) {
-                  tagMeshes.splice(index, 1);
-                }
-              };
               object[tagFlagSymbol] = true;
 
-              const planeMesh = (() => {
-                const width = WORLD_WIDTH;
-                const height = WORLD_HEIGHT;
-                const depth = WORLD_DEPTH;
+              const item = new Item(itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.matrix);
+              object.item = item;
 
-                const menuMaterial = biolumi.makeMenuMaterial();
+              object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
+              object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
+              object.scale.set(item.matrix[7], item.matrix[8], item.matrix[9]);
 
-                const geometry = new THREE.PlaneBufferGeometry(width, height);
-                const materials = [solidMaterial, menuMaterial];
+              object.ui = null;
+              object.planeMesh = null;
 
-                const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                // mesh.position.y = 1.5;
-                mesh.receiveShadow = true;
-                mesh.menuMaterial = menuMaterial;
-
-                const shadowMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                  const material = transparentMaterial;
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.castShadow = true;
-                  return mesh;
-                })();
-                mesh.add(shadowMesh);
-
-                return mesh;
-              })();
-              object.add(planeMesh);
-              object.planeMesh = planeMesh;
+              this._requestDecorateTag(object);
 
               tagMeshes.push(object);
 
               return object;
-            });
-          const _getHoverTag = side => hoverStates[side].tagMesh;
-          const _isTag = object => object[tagFlagSymbol] === true;
-          const _grabTag = (side, tagMesh) => {
-            scene.add(tagMesh);
+            }
 
-            const grabber = hands.grab(side, tagMesh);
-            grabber.on('update', ({position, rotation}) => {
-              tagMesh.position.copy(position);
-              tagMesh.quaternion.copy(rotation);
-            });
-            grabber.on('release', ({linearVelocity, angularVelocity}) => {
-              grabState.grabber = null;
-            });
+            _requestDecorateTag(object) {
+              return biolumi.requestUi({
+                width: WIDTH,
+                height: HEIGHT,
+              })
+                .then(ui => {
+                  const {item} = object;
 
-            const grabState = grabStates[side];
-            grabState.grabber = grabber;
+                  ui.pushPage([
+                    {
+                      type: 'html',
+                      src: tagsRenderer.getTagSrc(item),
+                    },
+                    {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
+                      x: 10,
+                      y: 0,
+                      w: 100,
+                      h: 100,
+                      frameTime: 300,
+                      pixelated: true,
+                    }
+                  ], {
+                    type: 'main',
+                    immediate: true,
+                  });
+                  object.ui = ui;
+
+                  const planeMesh = (() => {
+                    const width = WORLD_WIDTH;
+                    const height = WORLD_HEIGHT;
+                    const depth = WORLD_DEPTH;
+
+                    const menuMaterial = biolumi.makeMenuMaterial();
+
+                    const geometry = new THREE.PlaneBufferGeometry(width, height);
+                    const materials = [solidMaterial, menuMaterial];
+
+                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    // mesh.position.y = 1.5;
+                    mesh.receiveShadow = true;
+                    mesh.menuMaterial = menuMaterial;
+
+                    const shadowMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                      const material = transparentMaterial;
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.castShadow = true;
+                      return mesh;
+                    })();
+                    mesh.add(shadowMesh);
+
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
+                });
+            }
+
+            cloneTag(tagMesh) {
+              const {item} = tagMesh;
+
+              return this.makeTag(item);
+            }
+
+            destroyTag(tagMesh) {
+              const index = tagMeshes.indexOf(tagMesh);
+
+              if (index !== -1) {
+                tagMeshes.splice(index, 1);
+              }
+            }
+
+            getFreeTags() {
+              const index = new Map();
+              const {elements: elementTags, npm: npmTags} = tagClassMeshes;
+              for (let i = 0; i < elementTags.length; i++) {
+                const elementTag = elementTags[i];
+                index.set(elementTag, true);
+              }
+              for (let i = 0; i < npmTags.length; i++) {
+                const npmTag = npmTags[i];
+                index.set(npmTag, true);
+              }
+
+              return tagMeshes.filter(tagMesh => !index.has(tagMesh));
+            }
+
+            getHoverTag(side) {
+              return hoverStates[side].tagMesh;
+            }
+
+            mountTag(tagClass, tagMesh) {
+              tagClassMeshes[tagClass].push(tagMesh);
+            }
+
+            unmountTag(tagClass, tagMesh) {
+              const entries = tagClassMeshes[tagClass];
+              const index = entries.indexOf(tagMesh);
+
+              if (index !== -1) {
+                entries.splice(index, 1);
+              }
+            }
+
+            getTagsClass(tagClass) {
+              return tagClassMeshes[tagClass];
+            }
+
+            isTag(object) {
+              return object[tagFlagSymbol] === true;
+            }
+
+            grabTag(side, tagMesh) {
+              scene.add(tagMesh);
+
+              const {item} = tagMesh;
+              item.matrix = DEFAULT_TAG_MATRIX;
+
+              const grabber = hands.grab(side, tagMesh);
+              grabber.on('update', ({position, rotation}) => {
+                tagMesh.position.copy(position);
+                tagMesh.quaternion.copy(rotation);
+              });
+              grabber.on('release', () => {
+                const {position, quaternion, item} = tagMesh;
+                const newMatrix = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
+                item.matrix = newMatrix;
+
+                grabState.grabber = null;
+              });
+
+              const grabState = grabStates[side];
+              grabState.grabber = grabber;
+            }
           };
 
-          return {
-            requestTag: _requestTag,
-            getHoverTag: _getHoverTag,
-            isTag: _isTag,
-            grabTag: _grabTag,
-          };
+          const tagsInstance = new TagsApi();
+          return tagsInstance;
         }
       });
   }
@@ -343,5 +417,7 @@ class Tags {
     this._cleanup();
   }
 }
+
+const _clone = o => JSON.parse(JSON.stringify(o));
 
 module.exports = Tags;

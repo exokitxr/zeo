@@ -72,6 +72,7 @@ class Zeo {
             '/core/engines/teleport',
             '/core/engines/hands',
             '/core/engines/tags',
+            '/core/engines/universe',
             '/core/engines/world',
             '/core/engines/inventory',
             '/core/engines/multiplayer',
@@ -94,6 +95,7 @@ class Zeo {
             teleport,
             hands,
             tags,
+            universe,
             world,
             inventory,
             multiplayer,
@@ -391,11 +393,11 @@ class Zeo {
                         return hands.release(side);
                       }
 
-                      registerElement(elementApi) {
-                        rend.registerElement(elementApi);
+                      registerElement(pluginInstance, elementApi) {
+                        rend.registerElement(pluginInstance, elementApi);
                       }
-                      unregisterElement(elementApi) {
-                        rend.unregisterElement(elementApi);
+                      unregisterElement(pluginInstance) {
+                        rend.unregisterElement(pluginInstance);
                       }
                     }
 

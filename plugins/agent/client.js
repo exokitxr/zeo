@@ -104,9 +104,6 @@ class Agent {
         };
 
         class AgentElement extends HTMLElement {
-          static get tag() {
-            return 'agent';
-          }
           static get attributes() {
             return {
               position: {
@@ -378,7 +375,7 @@ class Agent {
             }
           }
         }
-        zeo.registerElement(AgentElement);
+        zeo.registerElement(this, AgentElement);
 
         const updates = [];
         const _update = () => {
@@ -392,7 +389,7 @@ class Agent {
         this._cleanup = () => {
           zeo.removeListener('update', _update);
 
-          zeo.unregisterElement(AgentElement);
+          zeo.unregisterElement(this);
         };
 
         return {};

@@ -8,6 +8,12 @@ const showdown = require('showdown');
 const showdownConverter = new showdown.Converter();
 const MultiMutex = require('multimutex');
 
+const DEFAULT_TAG_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
+
 class Rend {
   constructor(archae) {
     this._archae = archae;
@@ -378,6 +384,7 @@ class Rend {
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
+              matrix: DEFAULT_TAG_MATRIX,
             }));
           const _getUninstalledModSpecs = mods => Promise.all(mods.map(mod =>
             _getUninstalledPluginPackageJson(mod)
@@ -390,6 +397,7 @@ class Rend {
                 hasServer: Boolean(packageJson.server),
                 hasWorker: Boolean(packageJson.worker),
                 local: path.isAbsolute(mod),
+                matrix: DEFAULT_TAG_MATRIX,
               }))
           ));
 

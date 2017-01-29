@@ -227,7 +227,7 @@ class Inventory {
         });
 
         this._cleanup = () => {
-          rend.removeMenuMesh(mesh);
+          rend.removeMenuMesh('inventoryMesh');
 
           rend.removeListener('update', _update);
           input.removeListener('gripdown', _gripdown);

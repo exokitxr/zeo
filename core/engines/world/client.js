@@ -90,14 +90,8 @@ class World {
           return {position, rotation, scale};
         };
 
-        const _makeHoverState = () => ({
-          index: null,
-        });
-        const hoverStates = {
-          left: _makeHoverState(),
-          right: _makeHoverState(),
-        };
-
+        const _requestTags = () => fetch('/archae/world/tags.json')
+          .then(res => res.json());
         const _requestUis = () => Promise.all([
           biolumi.requestUi({
             width: WIDTH,
@@ -122,12 +116,18 @@ class World {
             npmUi,
           }));
 
-        return _requestUis()
-          .then(({
-            readmeUi,
-            attributesUi,
-            npmUi,
-          }) => {
+        return Promise.all([
+          _requestTags(),
+          _requestUis(),
+        ])
+          .then(([
+            tagsJson,
+            {
+              readmeUi,
+              attributesUi,
+              npmUi,
+            },
+          ]) => {
             if (live) {
               const _requestLocalModSpecs = () => new Promise((accept, reject) => {
                 if (npmState.cancelLocalRequest) {
@@ -169,7 +169,7 @@ class World {
                 };
 
                 fetch('/archae/rend/mods/search', {
-                  method: 'POST',
+                  method: 'PUT',
                   headers: (() => {
                     const headers = new Headers();
                     headers.set('Content-Type', 'application/json');
@@ -233,6 +233,146 @@ class World {
                   })
                 );
               });
+
+              let lastTagsJsonString = JSON.stringify(tagsJson);
+              const _saveTags = menuUtils.debounce(next => {
+                tagsJson = {
+                  elements: tags.getTagsClass('elements').map(({item}) => item),
+                  free: tags.getFreeTags().map(({item}) => item),
+                };
+                const tagsJsonString = JSON.stringify(tagsJson);
+
+                if (tagsJsonString !== lastTagsJsonString) {
+                  lastTagsJsonString = tagsJsonString;
+
+                  return fetch('/archae/world/tags.json', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: tagsJsonString,
+                  })
+                    .then(res => res.blob())
+                    .then(() => {
+                      next();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      next();
+                    })
+                } else {
+                  return Promise.resolve();
+                }
+              });
+              const _reifyTag = tagMesh => {
+                const {item} = tagMesh;
+                const {instance, instancing} = item;
+
+                if (!instance && !instancing) {
+                  const {name} = item;
+
+                  item.lock()
+                    .then(unlock => {
+                      rend.requestModElementApi(name)
+                        .then(elementApi => {
+                          const tag = archae.getName(elementApi);
+                          if (!HTMLElement.isPrototypeOf(elementApi)) {
+                            elementApi = HTMLElement;
+                          }
+                          const {attributes = {}} = elementApi;
+                          const baseClass = elementApi;
+
+                          const element = menuUtils.makeZeoElement({
+                            tag,
+                            attributes,
+                            baseClass,
+                          });
+                          item.instance = element;
+                          item.instancing = false;
+                          item.attributes = _clone(attributes);
+
+                          _updatePages();
+
+                          unlock();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+
+                          unlock();
+                        })
+                    });
+
+                  item.instancing = true;
+                }
+              };
+              const _unreifyTag = tagMesh => {
+                const {item} = tagMesh;
+
+                item.lock()
+                  .then(unlock => {
+                    const {instance} = item;
+
+                    if (instance) {
+                      if (typeof instance.destructor === 'function') {
+                        instance.destructor();
+                      }
+                      item.instance = null;
+
+                      _updatePages();
+                    }
+
+                    unlock();
+                  });
+              };
+              const _addElement = (tagMesh) => {
+                // place tag into container
+                const {
+                  elementsMesh: {
+                    containerMesh: elementsContainerMesh,
+                  },
+                } = mesh;
+                elementsContainerMesh.add(tagMesh);
+                tags.mountTag('elements', tagMesh);
+                _alignTagMeshes(tags.getTagsClass('elements'));
+
+                // update details menu
+                const {item} = tagMesh;
+                detailsState.type = 'elements';
+                detailsState.item = item;
+                _updatePages();
+
+                // reify tag
+                _reifyTag(tagMesh);
+              };
+              const _removeElement = (tagMesh) => {
+                // remove tag from container
+                tags.unmountTag('elements', tagMesh);
+                _alignTagMeshes(tags.getTagsClass('elements'));
+
+                // unreify tag
+                _unreifyTag(tagMesh);
+              };
+              const _alignTagMeshes = tagMeshes => {
+                const aspectRatio = 400 / 150;
+                const width = 0.1;
+                const height = width / aspectRatio;
+                const padding = width / 4;
+
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+
+                  const x = i % 3;
+                  const y = Math.floor(i / 3);
+                  tagMesh.position.set(
+                    -(width + padding) + x * (width + padding),
+                    ((0.4 / 2) - (height / 2) - padding) - (y * (height + padding)),
+                    0
+                  );
+                  tagMesh.quaternion.copy(zeroQuaternion);
+                  tagMesh.scale.copy(oneVector);
+                }
+              };
 
               const npmInputState = {
                 inputText: '',
@@ -299,7 +439,7 @@ class World {
                   details: detailsState,
                 },
               });
-              attributesUi.pushPage(({details: {item, inputText, inputValue}, focus: {type}}) => {
+              attributesUi.pushPage(({details: {item, inputText, inputValue, positioningName}, focus: {type}}) => {
                 const focusAttribute = (() => {
                   const match = type.match(/^attribute:(.+)$/);
                   return match && match[1];
@@ -308,7 +448,7 @@ class World {
                 return [
                   {
                     type: 'html',
-                    src: worldRenderer.getAttributesPageSrc({item, inputText, inputValue, focusAttribute}),
+                    src: worldRenderer.getAttributesPageSrc({item, inputText, inputValue, positioningName, focusAttribute}),
                     x: 0,
                     y: 0,
                     w: WIDTH,
@@ -782,7 +922,7 @@ class World {
                           const {attributes} = item;
                           const attribute = attributes[positioningName];
                           const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                          attribute.value = newValue;
+                          item.setAttribute(positioningName, newValue);
                         }
 
                         if (!positioningMesh.visible) {
@@ -818,15 +958,15 @@ class World {
                   npmInputState.focus = false;
 
                   _requestLocalModSpecs()
-                    .then(tagSpecs => Promise.all(tagSpecs.map(tagSpec => tags.requestTag(tagSpec))))
+                    .then(tagSpecs => tagSpecs.map(tagSpec => tags.makeTag(tagSpec)))
                     .then(tagMeshes => {
+                      const npmTagMeshes = tags.getTagsClass('npm');
                       for (let i = 0; i < npmTagMeshes.length; i++) {
                         const npmTagMesh = npmTagMeshes[i];
-                        _removeTagMesh(npmTagMeshes, npmTagMesh);
-                        _alignTagMeshes(elementsTagMeshes);
+                        tags.unmountTag('npm', npmTagMesh);
 
                         npmTagMesh.parent.remove(npmTagMesh);
-                        npmTagMesh.destroy();
+                        tags.destroyTag(npmTagMesh);
                       }
 
                       for (let i = 0; i < tagMeshes.length; i++) {
@@ -837,11 +977,9 @@ class World {
                           },
                         } = mesh;
                         npmContainerMesh.add(tagMesh);
-                        _addTagMesh(npmTagMeshes, tagMesh);
+                        tags.mountTag('npm', tagMesh);
                       }
                       _alignTagMeshes(npmTagMeshes);
-
-                      npmState.tagMeshes = tagMeshes;
                     })
                     .catch(err => {
                       console.warn(err);
@@ -849,38 +987,6 @@ class World {
                 }
               };
               rend.on('tabchange', _tabchange);
-
-              const elementsTagMeshes = [];
-              const npmTagMeshes = [];
-              const _addTagMesh = (tagMeshes, tagMesh) => {
-                tagMeshes.push(tagMesh);
-              };
-              const _removeTagMesh = (tagMeshes, tagMesh) => {
-                const index = tagMeshes.indexOf(tagMesh);
-                if (index !== -1) {
-                  tagMeshes.splice(index, 1);
-                }
-              };
-              const _alignTagMeshes = tagMeshes => {
-                const aspectRatio = 400 / 150;
-                const width = 0.1;
-                const height = width / aspectRatio;
-                const padding = width / 4;
-
-                for (let i = 0; i < tagMeshes.length; i++) {
-                  const tagMesh = tagMeshes[i];
-
-                  const x = i % 3;
-                  const y = Math.floor(i / 3);
-                  tagMesh.position.set(
-                    -(width + padding) + x * (width + padding),
-                    ((0.4 / 2) - (height / 2) - padding) - (y * (height + padding)),
-                    0
-                  );
-                  tagMesh.quaternion.copy(zeroQuaternion);
-                  tagMesh.scale.copy(oneVector);
-                }
-              };
 
               const _trigger = e => {
                 const tab = rend.getTab();
@@ -893,21 +999,19 @@ class World {
 
                     if (positioningSide && side === positioningSide) {
                       const {item, positioningName} = detailsState;
-                      const {attributes} = item;
-                      const attribute = attributes[positioningName];
 
                       const newValue = (() => {
                         const {position, quaternion, scale} = positioningMesh;
                         return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
                       })();
-                      attribute.value = newValue;
+                      item.setAttribute(positioningName, newValue);
 
                       detailsState.positioningName = null;
                       detailsState.positioningSide = null;
 
-                      // _saveElements();
-
                       _updatePages();
+
+                      _saveTags();
 
                       return true;
                     } else {
@@ -1000,11 +1104,11 @@ class World {
 
                           focusState.type = 'attribute:' + attributeName;
                         } else if (action === 'set') {
-                          attribute.value = value;
+                          item.setAttribute(attributeName, value);
 
                           focusState.type = '';
 
-                          // _saveElements();
+                          _saveTags();
                         } else if (action === 'tweak') {
                           const {value} = attributesHoverState;
                           const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attribute;
@@ -1016,16 +1120,16 @@ class World {
                             }
                             return n;
                           })();
-                          attribute.value = newValue;
+                          item.setAttribute(attributeName, newValue);
 
                           focusState.type = '';
 
-                          // _saveElements();
+                          _saveTags();
                         } else if (action === 'toggle') {
                           const newValue = !attributeValue;
-                          attribute.value = newValue;
+                          item.setAttribute(attributeName, newValue);
 
-                          // _saveElements();
+                          _saveTags();
                         } else if (action === 'choose') {
                           /* menuUi.cancelTransition();
 
@@ -1084,6 +1188,7 @@ class World {
                   if (tagMesh) {
                     const {item} = tagMesh;
 
+                    const elementsTagMeshes = tags.getTagsClass('elements');
                     if (elementsTagMeshes.includes(tagMesh)) {
                       detailsState.type = 'elements';
                       detailsState.item = item;
@@ -1115,25 +1220,21 @@ class World {
               });
               const _gripdown = e => {
                 const {side} = e;
-                const hoverState = hoverStates[side];
-                const {index} = hoverState;
+                const tagMesh = tags.getHoverTag(side);
 
-                if (index !== null) {
-                  const {itemBoxMeshes} = mesh;
-                  const itemBoxMesh = itemBoxMeshes[index];
-                  const tagMesh = itemBoxMesh.getItemMesh();
+                if (tagMesh) {
+                  const elementsTagMeshes = tags.getTagsClass('elements');
+                  const npmTagMeshes = tags.getTagsClass('npm');
 
-                  if (tagMesh) {
-                    tags.grabTag(side, tagMesh);
+                  if (elementsTagMeshes.includes(tagMesh)) {
+                    _removeElement(tagMesh);
 
-                    e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-                  }
-                } else {
-                  const tagMesh = tags.getHoverTag(side);
+                    _saveTags();
+                  } else if (npmTagMeshes.includes(tagMesh)) {
+                    const tagMeshClone = tags.cloneTag(tagMesh);
+                    tags.grabTag(side, tagMeshClone);
 
-                  if (tagMesh) {
-                    _removeTagMesh(elementsTagMeshes, tagMesh);
-                    _alignTagMeshes(elementsTagMeshes);
+                    _saveTags();
                   }
                 }
 
@@ -1158,21 +1259,16 @@ class World {
                     if (elementsHovered) {
                       const newTagMesh = handsGrabberObject;
                       handsGrabber.release();
-                      const {
-                        elementsMesh: {
-                          containerMesh: elementsContainerMesh,
-                        },
-                      } = mesh;
-                      elementsContainerMesh.add(newTagMesh);
-                      _addTagMesh(elementsTagMeshes, newTagMesh);
-                      _alignTagMeshes(elementsTagMeshes);
 
-                      const {item} = newTagMesh;
-                      detailsState.type = 'elements';
-                      detailsState.item = item;
-                      _updatePages();
+                      _addElement(newTagMesh);
+
+                      _saveTags();
 
                       e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+                    } else {
+                      handsGrabber.on('release', () => { // so the item matrix is saved first
+                        _saveTags();
+                      });
                     }
                   }
                 }
@@ -1220,9 +1316,9 @@ class World {
                         const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attribute;
                         const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
                         if (newValue !== null) {
-                          attribute.value = newValue;
+                          item.setAttribute(attributeName, newValue);
 
-                          // _saveElements();
+                          _saveTags();
                         }
 
                         focusState.type = '';
@@ -1243,8 +1339,26 @@ class World {
                 priority: 1,
               });
 
+              const _initializeElements = () => {
+                const {elements, free} = tagsJson;
+
+                for (let i = 0; i < elements.length; i++) {
+                  const itemSpec = elements[i];
+                  const tagMesh = tags.makeTag(itemSpec);
+                  _addElement(tagMesh);
+                }
+                _alignTagMeshes(tags.getTagsClass('elements'));
+
+                for (let i = 0; i < free.length; i++) {
+                  const itemSpec = free[i];
+                  const tagMesh = tags.makeTag(itemSpec);
+                  scene.add(tagMesh);
+                }
+              };
+              _initializeElements();
+
               this._cleanup = () => {
-                rend.removeMenuMesh(mesh);
+                rend.removeMenuMesh('worldMesh');
 
                 SIDES.forEach(side => {
                   scene.remove(attributesDotMeshes[side]);
@@ -1277,5 +1391,7 @@ class World {
     this._cleanup();
   }
 }
+
+const _clone = o => JSON.parse(JSON.stringify(o));
 
 module.exports = World;

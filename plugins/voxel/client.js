@@ -343,9 +343,6 @@ export default class Voxel {
         })();
 
         class VoxelElement extends HTMLElement {
-          static get tag() {
-            return 'voxel';
-          }
           static get attributes() {
             return {
               position: {
@@ -480,10 +477,10 @@ export default class Voxel {
             this._cleanup();
           }
         }
-        zeo.registerElement(VoxelElement);
+        zeo.registerElement(this, VoxelElement);
 
         this._cleanup = () => {
-          zeo.unregisterElement(VoxelElement);
+          zeo.unregisterElement(this);
         };
 
         return {};

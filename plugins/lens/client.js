@@ -77,9 +77,6 @@ class Lens {
         });
 
         class LensElement extends HTMLElement {
-          static get tag() {
-            return 'lens';
-          }
           static get attributes() {
             return {
               position: {
@@ -303,12 +300,12 @@ class Lens {
             }
           }
         }
-        zeo.registerElement(LensElement);
+        zeo.registerElement(this, LensElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(LensElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

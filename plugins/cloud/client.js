@@ -56,9 +56,6 @@ class Cloud {
         };
 
         class CloudElement extends HTMLElement {
-          static get tag() {
-            return 'cloud';
-          }
           static get attributes() {
             return {
               position: {
@@ -248,12 +245,12 @@ class Cloud {
             }
           }
         }
-        zeo.registerElement(CloudElement);
+        zeo.registerElement(this, CloudElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(CloudElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

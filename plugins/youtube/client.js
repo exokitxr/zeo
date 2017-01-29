@@ -57,9 +57,6 @@ class Youtube {
         };
 
         class YoutubeElement extends HTMLElement {
-          static get tag() {
-            return 'youtube';
-          }
           static get attributes() {
             return {
               position: {
@@ -446,12 +443,12 @@ class Youtube {
             }
           }
         }
-        zeo.registerElement(YoutubeElement);
+        zeo.registerElement(this, YoutubeElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(YoutubeElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

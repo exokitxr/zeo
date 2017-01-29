@@ -28,9 +28,6 @@ class Camera {
         };
 
         class CameraElement extends HTMLElement {
-          static get tag() {
-            return 'camera';
-          }
           static get attributes() {
             return {
               position: {
@@ -175,12 +172,12 @@ class Camera {
             }
           }
         }
-        zeo.registerElement(CameraElement);
+        zeo.registerElement(this, CameraElement);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(CameraElement);
+          zeo.unregisterElement(this);
 
           zeo.removeListener('update', _update);
         };

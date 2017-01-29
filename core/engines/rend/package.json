@@ -6,8 +6,6 @@
   "server": "server.js",
   "dependencies": {
     "body-parser": "^1.15.2",
-    "indev": "^3.0.9",
-    "kruskal": "0.0.4",
     "mkdirp": "^0.5.1",
     "multimutex": "0.0.1",
     "pretty-bytes": "^4.0.2",
