@@ -893,6 +893,7 @@ class World {
                         baseClass,
                       });
                       item.instance = element;
+                      item.instancing = false;
                       item.attributes = _clone(attributes);
 
                       _updatePages();
@@ -902,6 +903,17 @@ class World {
                     });
 
                   item.instancing = true;
+                }
+              };
+              const _unreifyTag = tagMesh => {
+                const {item} = tagMesh;
+                const {instance} = item;
+
+                if (instance) {
+                  instance.destructor();
+                  item.instance = null;
+
+                  _updatePages();
                 }
               };
 
@@ -1142,8 +1154,12 @@ class World {
 
                 if (tagMesh) {
                   if (elementsTagMeshes.includes(tagMesh)) {
+                    // remove tag from container
                     _removeTagMesh(elementsTagMeshes, tagMesh);
                     _alignTagMeshes(elementsTagMeshes);
+
+                    // unreify tag
+                    _unreifyTag(tagMesh);
                   } else if (npmTagMeshes.includes(tagMesh)) {
                     const tagMeshClone = tags.cloneTag(tagMesh);
                     tags.grabTag(side, tagMeshClone);
