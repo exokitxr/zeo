@@ -316,6 +316,24 @@ class Tags {
               tagMeshes.splice(index, 1);
             }
           };
+
+          const tagClassMeshes = {
+            elements: [],
+            npm: [],
+          };
+          const _mountTag = (tagClass, tagMesh) => {
+            tagClassMeshes[tagClass].push(tagMesh);
+          };
+          const _unmountTag = (tagClass, tagMesh) => {
+            const entries = tagClassMeshes[tagClass];
+            const index = entries.indexOf(tagMesh);
+
+            if (index !== -1) {
+              entries.splice(index, 1);
+            }
+          };
+          const _getTags = tagClass => tagClassMeshes[tagClass];
+
           const _isTag = object => object[tagFlagSymbol] === true;
           const _grabTag = (side, tagMesh) => {
             scene.add(tagMesh);
@@ -336,8 +354,14 @@ class Tags {
           return {
             makeTag: _makeTag,
             getHoverTag: _getHoverTag,
+
             cloneTag: _cloneTag,
             destroyTag: _destroyTag,
+
+            mountTag: _mountTag,
+            unmountTag: _unmountTag,
+            getTags: _getTags,
+
             isTag: _isTag,
             grabTag: _grabTag,
           };

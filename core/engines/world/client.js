@@ -812,10 +812,10 @@ class World {
                   _requestLocalModSpecs()
                     .then(tagSpecs => tagSpecs.map(tagSpec => tags.makeTag(tagSpec)))
                     .then(tagMeshes => {
+                      const npmTagMeshes = tags.getTags('npm');
                       for (let i = 0; i < npmTagMeshes.length; i++) {
                         const npmTagMesh = npmTagMeshes[i];
-                        _removeTagMesh(npmTagMeshes, npmTagMesh);
-                        _alignTagMeshes(elementsTagMeshes);
+                        tags.unmountTag('npm', npmTagMesh);
 
                         npmTagMesh.parent.remove(npmTagMesh);
                         tags.destroyTag(npmTagMesh);
@@ -829,11 +829,9 @@ class World {
                           },
                         } = mesh;
                         npmContainerMesh.add(tagMesh);
-                        _addTagMesh(npmTagMeshes, tagMesh);
+                        tags.mountTag('npm', tagMesh);
                       }
                       _alignTagMeshes(npmTagMeshes);
-
-                      npmState.tagMeshes = tagMeshes;
                     })
                     .catch(err => {
                       console.warn(err);
@@ -842,11 +840,6 @@ class World {
               };
               rend.on('tabchange', _tabchange);
 
-              const elementsTagMeshes = [];
-              const npmTagMeshes = [];
-              const _addTagMesh = (tagMeshes, tagMesh) => {
-                tagMeshes.push(tagMesh);
-              };
               const _removeTagMesh = (tagMeshes, tagMesh) => {
                 const index = tagMeshes.indexOf(tagMesh);
                 if (index !== -1) {
@@ -1117,6 +1110,7 @@ class World {
                   if (tagMesh) {
                     const {item} = tagMesh;
 
+                    const elementsTagMeshes = tags.getTags('elements');
                     if (elementsTagMeshes.includes(tagMesh)) {
                       detailsState.type = 'elements';
                       detailsState.item = item;
@@ -1151,10 +1145,13 @@ class World {
                 const tagMesh = tags.getHoverTag(side);
 
                 if (tagMesh) {
+                  const elementsTagMeshes = tags.getTags('elements');
+                  const npmTagMeshes = tags.getTags('npm');
+
                   if (elementsTagMeshes.includes(tagMesh)) {
                     // remove tag from container
-                    _removeTagMesh(elementsTagMeshes, tagMesh);
-                    _alignTagMeshes(elementsTagMeshes);
+                    tags.unmountTag('elements', tagMesh);
+                    _alignTagMeshes(tags.getTags('elements'));
 
                     // unreify tag
                     _unreifyTag(tagMesh);
@@ -1192,8 +1189,8 @@ class World {
                         },
                       } = mesh;
                       elementsContainerMesh.add(newTagMesh);
-                      _addTagMesh(elementsTagMeshes, newTagMesh);
-                      _alignTagMeshes(elementsTagMeshes);
+                      tags.mountTag('elements', newTagMesh);
+                      _alignTagMeshes(tags.getTags('elements'));
 
                       // update details menu
                       const {item} = newTagMesh;
