@@ -7,9 +7,14 @@ import {
 } from './lib/constants/tags';
 import tagsRender from './lib/render/tags';
 
-const DEFAULT_GRAB_RADIUS = 0.1;
-
 const SIDES = ['left', 'right'];
+
+const DEFAULT_GRAB_RADIUS = 0.1;
+const DEFAULT_TAG_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 const tagFlagSymbol = Symbol();
 
@@ -112,7 +117,7 @@ class Tags {
 
             const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
             if (bestGrabbableTagMesh) {
-              _grabTag(side, bestGrabbableTagMesh);
+              tagsInstance.grabTag(side, bestGrabbableTagMesh);
             }
           };
           input.on('gripdown', _gripdown);
@@ -195,11 +200,12 @@ class Tags {
 
           const itemInstanceSymbol = Symbol();
           class Item {
-            constructor(name, displayName, description, version) {
+            constructor(name, displayName, description, version, matrix) {
               this.name = name;
               this.displayName = displayName;
               this.description = description;
               this.version = version;
+              this.matrix = matrix;
 
               this.attributes = null;
               this[itemInstanceSymbol] = null;
@@ -227,144 +233,172 @@ class Tags {
           }
 
           const tagMeshes = [];
-          const _makeTag = itemSpec => {
-            const object = new THREE.Object3D();
-            object.position.y = 1.2;
-            object[tagFlagSymbol] = true;
-
-            const item = new Item(itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version);
-            object.item = item;
-
-            object.ui = null;
-            object.planeMesh = null;
-
-            _requestDecorateTag(object);
-
-            tagMeshes.push(object);
-
-            return object;
-          };
-          const _requestDecorateTag = object => biolumi.requestUi({
-            width: WIDTH,
-            height: HEIGHT,
-          })
-            .then(ui => {
-              const {item} = object;
-
-              ui.pushPage([
-                {
-                  type: 'html',
-                  src: tagsRenderer.getTagSrc(item),
-                },
-                {
-                  type: 'image',
-                  img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
-                  x: 10,
-                  y: 0,
-                  w: 100,
-                  h: 100,
-                  frameTime: 300,
-                  pixelated: true,
-                }
-              ], {
-                type: 'main',
-                immediate: true,
-              });
-              object.ui = ui;
-
-              const planeMesh = (() => {
-                const width = WORLD_WIDTH;
-                const height = WORLD_HEIGHT;
-                const depth = WORLD_DEPTH;
-
-                const menuMaterial = biolumi.makeMenuMaterial();
-
-                const geometry = new THREE.PlaneBufferGeometry(width, height);
-                const materials = [solidMaterial, menuMaterial];
-
-                const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                // mesh.position.y = 1.5;
-                mesh.receiveShadow = true;
-                mesh.menuMaterial = menuMaterial;
-
-                const shadowMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                  const material = transparentMaterial;
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.castShadow = true;
-                  return mesh;
-                })();
-                mesh.add(shadowMesh);
-
-                return mesh;
-              })();
-              object.add(planeMesh);
-              object.planeMesh = planeMesh;
-
-              return object;
-            });
-          const _getHoverTag = side => hoverStates[side].tagMesh;
-          const _cloneTag = tagMesh => {
-            const {item} = tagMesh;
-
-            return _makeTag(item);
-          };
-          const _destroyTag = tagMesh => {
-            const index = tagMeshes.indexOf(tagMesh);
-
-            if (index !== -1) {
-              tagMeshes.splice(index, 1);
-            }
-          };
-
           const tagClassMeshes = {
             elements: [],
             npm: [],
           };
-          const _mountTag = (tagClass, tagMesh) => {
-            tagClassMeshes[tagClass].push(tagMesh);
-          };
-          const _unmountTag = (tagClass, tagMesh) => {
-            const entries = tagClassMeshes[tagClass];
-            const index = entries.indexOf(tagMesh);
+          class TagsApi {
+            makeTag(itemSpec) {
+              const object = new THREE.Object3D();
+              object[tagFlagSymbol] = true;
 
-            if (index !== -1) {
-              entries.splice(index, 1);
+              const item = new Item(itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.matrix);
+              object.item = item;
+
+              object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
+              object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
+              object.scale.set(item.matrix[7], item.matrix[8], item.matrix[9]);
+
+              object.ui = null;
+              object.planeMesh = null;
+
+              this._requestDecorateTag(object);
+
+              tagMeshes.push(object);
+
+              return object;
+            }
+
+            _requestDecorateTag(object) {
+              return biolumi.requestUi({
+                width: WIDTH,
+                height: HEIGHT,
+              })
+                .then(ui => {
+                  const {item} = object;
+
+                  ui.pushPage([
+                    {
+                      type: 'html',
+                      src: tagsRenderer.getTagSrc(item),
+                    },
+                    {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
+                      x: 10,
+                      y: 0,
+                      w: 100,
+                      h: 100,
+                      frameTime: 300,
+                      pixelated: true,
+                    }
+                  ], {
+                    type: 'main',
+                    immediate: true,
+                  });
+                  object.ui = ui;
+
+                  const planeMesh = (() => {
+                    const width = WORLD_WIDTH;
+                    const height = WORLD_HEIGHT;
+                    const depth = WORLD_DEPTH;
+
+                    const menuMaterial = biolumi.makeMenuMaterial();
+
+                    const geometry = new THREE.PlaneBufferGeometry(width, height);
+                    const materials = [solidMaterial, menuMaterial];
+
+                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    // mesh.position.y = 1.5;
+                    mesh.receiveShadow = true;
+                    mesh.menuMaterial = menuMaterial;
+
+                    const shadowMesh = (() => {
+                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                      const material = transparentMaterial;
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.castShadow = true;
+                      return mesh;
+                    })();
+                    mesh.add(shadowMesh);
+
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
+                });
+            }
+
+            cloneTag(tagMesh) {
+              const {item} = tagMesh;
+
+              return this.makeTag(item);
+            }
+
+            destroyTag(tagMesh) {
+              const index = tagMeshes.indexOf(tagMesh);
+
+              if (index !== -1) {
+                tagMeshes.splice(index, 1);
+              }
+            }
+
+            getFreeTags() {
+              const index = new Map();
+              const {elements: elementTags, npm: npmTags} = tagClassMeshes;
+              for (let i = 0; i < elementTags.length; i++) {
+                const elementTag = elementTags[i];
+                index.set(elementTag, true);
+              }
+              for (let i = 0; i < npmTags.length; i++) {
+                const npmTag = npmTags[i];
+                index.set(npmTag, true);
+              }
+
+              return tagMeshes.filter(tagMesh => !index.has(tagMesh));
+            }
+
+            getHoverTag(side) {
+              return hoverStates[side].tagMesh;
+            }
+
+            mountTag(tagClass, tagMesh) {
+              tagClassMeshes[tagClass].push(tagMesh);
+            }
+
+            unmountTag(tagClass, tagMesh) {
+              const entries = tagClassMeshes[tagClass];
+              const index = entries.indexOf(tagMesh);
+
+              if (index !== -1) {
+                entries.splice(index, 1);
+              }
+            }
+
+            getTagsClass(tagClass) {
+              return tagClassMeshes[tagClass];
+            }
+
+            isTag(object) {
+              return object[tagFlagSymbol] === true;
+            }
+
+            grabTag(side, tagMesh) {
+              scene.add(tagMesh);
+
+              const {item} = tagMesh;
+              item.matrix = DEFAULT_TAG_MATRIX;
+
+              const grabber = hands.grab(side, tagMesh);
+              grabber.on('update', ({position, rotation}) => {
+                tagMesh.position.copy(position);
+                tagMesh.quaternion.copy(rotation);
+              });
+              grabber.on('release', () => {q
+                const {position, quaternion, item} = tagMesh;
+                const newMatrix = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
+                item.matrix = newMatrix;
+
+                grabState.grabber = null;
+              });
+
+              const grabState = grabStates[side];
+              grabState.grabber = grabber;
             }
           };
-          const _getTags = tagClass => tagClassMeshes[tagClass];
 
-          const _isTag = object => object[tagFlagSymbol] === true;
-          const _grabTag = (side, tagMesh) => {
-            scene.add(tagMesh);
-
-            const grabber = hands.grab(side, tagMesh);
-            grabber.on('update', ({position, rotation}) => {
-              tagMesh.position.copy(position);
-              tagMesh.quaternion.copy(rotation);
-            });
-            grabber.on('release', ({linearVelocity, angularVelocity}) => {
-              grabState.grabber = null;
-            });
-
-            const grabState = grabStates[side];
-            grabState.grabber = grabber;
-          };
-
-          return {
-            makeTag: _makeTag,
-            getHoverTag: _getHoverTag,
-
-            cloneTag: _cloneTag,
-            destroyTag: _destroyTag,
-
-            mountTag: _mountTag,
-            unmountTag: _unmountTag,
-            getTags: _getTags,
-
-            isTag: _isTag,
-            grabTag: _grabTag,
-          };
+          const tagsInstance = new TagsApi();
+          return tagsInstance;
         }
       });
   }
