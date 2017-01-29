@@ -254,7 +254,9 @@ class Config {
 
               const statsMesh = (() => {
                 const object = new THREE.Object3D();
-                object.position.y = -0.5;
+                object.position.x = -0.5 + (STATS_WORLD_WIDTH / 2);
+                object.position.y = -0.25;
+                object.visible = configState.statsCheckboxValue;
 
                 const planeMesh = (() => {
                   const width = STATS_WORLD_WIDTH;
@@ -409,8 +411,10 @@ class Config {
                         const depth = -0.001;
 
                         configState.statsCheckboxValue = true;
+                        statsMesh.visible = true;
                       } else {
                         configState.statsCheckboxValue = false;
+                        statsMesh.visible = false;
                       }
 
                       _saveConfig();
@@ -456,25 +460,39 @@ class Config {
               });
 
               const _update = () => {
-                const tab = rend.getTab();
+                const _updateTextures = () => {
+                  const tab = rend.getTab();
+                  const worldTime = currentWorld.getWorldTime();
 
-                if (tab === 'options') {
-                  const _updateTextures = () => {
-                    const worldTime = currentWorld.getWorldTime();
-
+                  if (tab === 'options') {
                     const {
                       planeMesh: {
-                        menuMaterial: planeMenuMaterial,
+                        menuMaterial: configMenuMaterial,
                       },
                     } = configMesh;
 
                     biolumi.updateMenuMaterial({
                       ui: configUi,
-                      menuMaterial: planeMenuMaterial,
+                      menuMaterial: configMenuMaterial,
                       worldTime,
                     });
-                  };
-                  const _updateAnchors = () => {
+                  }
+
+                  const {
+                    planeMesh: {
+                      menuMaterial: statsMenuMaterial,
+                    },
+                  } = statsMesh;
+                  biolumi.updateMenuMaterial({
+                    ui: statsUi,
+                    menuMaterial: statsMenuMaterial,
+                    worldTime,
+                  });
+                };
+                const _updateAnchors = () => {
+                  const tab = rend.getTab();
+
+                  if (tab === 'options') {
                     const {gamepads} = webvr.getStatus();
 
                     const {planeMesh} = configMesh;
@@ -506,13 +524,13 @@ class Config {
                         });
                       }
                     });
-                  };
+                  }
+                };
 
-                  _updateTextures();
-                  _updateAnchors();
+                _updateTextures();
+                _updateAnchors();
 
-                  stats.render();
-                }
+                stats.render();
               };
               rend.on('update', _update);
               const _updateStart = () => {
