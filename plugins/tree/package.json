@@ -1,0 +1,10 @@
+{
+  "name": "tree",
+  "description": "Procedurally generated trees.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {
+    "alea": "0.0.9"
+  }
+}
