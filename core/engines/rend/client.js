@@ -63,7 +63,6 @@ class Rend {
       '/core/engines/biolumi',
       '/core/engines/anima',
       '/core/engines/fs',
-      '/core/engines/bullet',
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
       '/core/plugins/random-utils',
@@ -77,7 +76,6 @@ class Rend {
       biolumi,
       anima,
       fs,
-      bullet,
       jsUtils,
       geometryUtils,
       randomUtils,
@@ -99,6 +97,14 @@ class Rend {
           creatureUtils,
         });
 
+        const _decomposeObjectMatrixWorld = object => {
+          const position = new THREE.Vector3();
+          const rotation = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          object.matrixWorld.decompose(position, rotation, scale);
+          return {position, rotation, scale};
+        };
+
         const localUpdates = [];
 
         // main state
@@ -112,60 +118,6 @@ class Rend {
         };
         const focusState = {
           type: '',
-        };
-        const worldsState = {
-          worlds: [
-            {
-              name: 'Proteus',
-              description: 'The default zeo.sh world',
-            },
-            {
-              name: 'Midgar',
-              description: 'Alternate zeo.sh world',
-            },
-            {
-              name: 'Mako Reactor',
-              description: 'Taken from Final Fantasy VII. Straight copy.',
-            },
-          ],
-          selectedName: 'Proteus',
-          inputText: '',
-          inputIndex: 0,
-          inputValue: 0,
-        };
-        const modsState = {
-          mods: [],
-          localMods: [],
-          remoteMods: [],
-          tab: 'installed',
-          inputText: '',
-          inputIndex: 0,
-          inputValue: 0,
-          loadingLocal: false,
-          loadingRemote: false,
-          cancelLocalRequest: null,
-          cancelRemoteRequest: null,
-        };
-        const modState = {
-          modName: '',
-          mod: null,
-          loading: false,
-          cancelRequest: null,
-        };
-        const elementsState = {
-          elements: [],
-          availableElements: [],
-          clipboardElements: [],
-          elementInstances: [],
-          selectedKeyPath: [],
-          draggingKeyPath: [],
-          positioningName: null,
-          positioningSide: null,
-          choosingName: null,
-          inputText: '',
-          inputIndex: 0,
-          inputValue: 0,
-          loading: false,
         };
         const filesState = {
           cwd: fs.getCwd(),
@@ -197,178 +149,14 @@ class Rend {
           tab: 'readme',
         };
 
-        const worlds = new Map();
         let currentWorld = null;
-        const modElementApis = {};
-
-        // element helper functions
-        const _cleanElementsState = elementsState => {
-          const result = {};
-          for (const k in elementsState) {
-            if (k === 'elements' || k === 'availableElements' || k === 'clipboardElements') {
-              result[k] = menuUtils.elementsToState(elementsState[k]);
-            } else if (k !== 'elementInstances') {
-              result[k] = elementsState[k];
-            }
-          }
-          return result;
-        };
-        const _getModSpec = mod => new Promise((accept, reject) => {
-          if (modState.cancelRequest) {
-            modState.cancelRequest();
-            modState.cancelRequest = null;
-          }
-
-          let live = true;
-          modState.cancelRequest = () => {
-            live = false;
-          };
-
-          fetch('/archae/rend/mods/spec', {
-            method: 'POST',
-            headers: (() => {
-              const headers = new Headers();
-              headers.set('Content-Type', 'application/json');
-              return headers;
-            })(),
-            body: JSON.stringify({
-              mod,
-            }),
-          }).then(res => res.json()
-            .then(modSpecs => {
-              if (live) {
-                accept(modSpecs);
-
-                modState.cancelRequest = null;
-              }
-            })
-            .catch(err => {
-              if (live) {
-                reject(err);
-
-                modState.cancelRequest = null;
-              }
-            })
-          );
-        });
-        const _getLocalModSpecs = () => new Promise((accept, reject) => {
-          if (modsState.cancelLocalRequest) {
-            modsState.cancelLocalRequest();
-            modsState.cancelLocalRequest = null;
-          }
-
-          let live = true;
-          modsState.cancelLocalRequest = () => {
-            live = false;
-          };
-
-          fetch('/archae/rend/mods/local').then(res => res.json()
-            .then(modSpecs => {
-              if (live) {
-                accept(modSpecs);
-
-                modsState.cancelLocalRequest = null;
-              }
-            })
-            .catch(err => {
-              if (live) {
-                reject(err);
-
-                modsState.cancelLocalRequest = null;
-              }
-            })
-          );
-        });
-        const _getRemoteModSpecs = q => new Promise((accept, reject) => {
-          if (modsState.cancelRemoteRequest) {
-            modsState.cancelRemoteRequest();
-            modsState.cancelRemoteRequest = null;
-          }
-
-          let live = true;
-          modsState.cancelRemoteRequest = () => {
-            live = false;
-          };
-
-          fetch('/archae/rend/mods/search', {
-            method: 'POST',
-            headers: (() => {
-              const headers = new Headers();
-              headers.set('Content-Type', 'application/json');
-              return headers;
-            })(),
-            body: JSON.stringify({
-              q,
-            }),
-          }).then(res => res.json()
-            .then(modSpecs => {
-              if (live) {
-                accept(modSpecs);
-
-                modsState.cancelRemoteRequest = null;
-              }
-            })
-            .catch(err => {
-              if (live) {
-                reject(err);
-
-                modsState.cancelRemoteRequest = null;
-              }
-            })
-          );
-        });
-
-        // mod helper functions
-        const _requestMod = mod => archae.requestPlugin(mod)
-          .then(modApi => {
-            menu.updatePages();
-
-            return modApi;
-          });
-        const _requestMods = mods => Promise.all(mods.map(mod => _requestMod(mod)));
-        const _releaseMod = mod => archae.releasePlugin(mod)
-          .then(() => {
-            menu.updatePages();
-          });
-        const _releaseMods = mods => Promise.all(mods.map(mod => _releaseMod(mod)));
-        const _addModApiElement = (tag, elementApi) => {
-          modElementApis[tag] = elementApi;
-
-          /* const element = menuUtils.elementApiToElement(elementApi);
-          elementsState.availableElements.push(element); */
-        };
-        const _removeModApiElement = tag => {
-          delete modElementApis[tag];
-
-          /* elementsState.availableElements = elementsState.availableElements.filter(element => {
-            const {tagName} = element;
-            const elementTag = tagName.match(/^z-(.+)$/i)[1].toLowerCase();
-            return elementTag !== tag;
-          }); */
-        };
 
         // api functions
-        const _requestChangeWorld = worldName => new Promise((accept, reject) => {
-          const _requestInstalledModSpecs = worldName => fetch('/archae/rend/mods/installed', {
-            method: 'POST',
-            headers: (() => {
-              const headers = new Headers();
-              headers.set('Content-Type', 'application/json');
-              return headers;
-            })(),
-            body: JSON.stringify({
-              world: worldName,
-            }),
-          }).then(res => res.json());
-
+        /* const _requestChangeWorld = worldName => new Promise((accept, reject) => {
           Promise.all([
-            _requestInstalledModSpecs(worldName),
-            _requestGetElements(worldName),
-            bullet.requestWorld(worldName),
+            bullet.requestWorld('proteus'), // XXX move this to bullet engine itself
           ])
             .then(([
-              installedModSpecs,
-              elementsStatus,
               physics,
             ]) => {
               menu.updatePages();
@@ -382,179 +170,44 @@ class Rend {
               });
 
               // load world
-              const _loadWorld = () => {
-                const _loadMods = () => {
-                  elementsState.loading = true;
-
-                  return _requestMods(installedModSpecs.map(({name}) => name))
-                    .then(() => {
-                      console.log('world mods loaded');
-
-                      elementsState.loading = false;
-
-                      menu.updatePages();
-                    });
-                };
-                const _loadElements = () => new Promise((accept, reject) => {
-                  const elements = menuUtils.jsonToElements(modElementApis, elementsStatus.elements);
-                  const clipboardElements = menuUtils.jsonToElements(modElementApis, elementsStatus.clipboardElements);
-                  const elementInstances = menuUtils.constructElements(modElementApis, elements);
-
-                  elementsState.elements = elements;
-                  elementsState.clipboardElements = clipboardElements;
-                  elementsState.elementInstances = elementInstances;
-
-                  accept();
-                });
-
-                return _loadMods()
-                  .then(() => _loadElements());
-              };
-              Promise.resolve()
-                .then(() => _loadWorld())
-                .catch(err => {
-                  console.warn(err);
-                });
 
               class World {
-                constructor({name, physics}) {
-                  this.name = name;
+                constructor({physics}) {
                   this.physics = physics;
                 }
 
                 getWorldTime() {
                   return worldTime;
                 }
-
-                requestAddMod(mod) {
-                  return fetch('/archae/rend/mods/add', {
-                    method: 'POST',
-                    headers: (() => {
-                      const headers = new Headers();
-                      headers.set('Content-Type', 'application/json');
-                      return headers;
-                    })(),
-                    body: JSON.stringify({
-                      world: worldName,
-                      mod: mod,
-                    }),
-                  }).then(res => res.json()
-                    .then(mod => {
-                      ['localMods', 'remoteMods'].forEach(k => {
-                        const modsCollection = modsState[k];
-                        const index = modsCollection.findIndex(m => m.name === mod.name);
-                        if (index !== -1) {
-                          modsCollection.splice(index, 1);
-                        }
-                      });
-
-                      modsState.mods.push(mod);
-
-                      menu.updatePages();
-                    })
-                    .then(() => _requestMod(mod))
-                  );
-                }
-
-                requestAddMods(mods) {
-                  return Promise.all(mods.map(mod => this.requestAddMod(mod)));
-                }
-
-                requestRemoveMod(mod) {
-                  return fetch('/archae/rend/mods/remove', {
-                    method: 'POST',
-                    headers: (() => {
-                      const headers = new Headers();
-                      headers.set('Content-Type', 'application/json');
-                      return headers;
-                    })(),
-                    body: JSON.stringify({
-                      world: worldName,
-                      mod: mod,
-                    }),
-                  }).then(res => res.json()
-                    .then(mod => {
-                      const index = modsState.mods.findIndex(m => m.name === mod.name);
-                      if (index !== -1) {
-                        modsState.mods.splice(index, 1);
-                      }
-
-                      const {local} = mod;
-                      if (local) {
-                        modsState.localMods.push(mod);
-                      } else {
-                        modsState.remoteMods.push(mod);
-                      }
-
-                      menu.updatePages();
-                    })
-                    .then(() => _releaseMod(mod))
-                  );
-                }
-
-                requestRemoveMods(mods) {
-                  return Promise.all(mods.map(mod => this.requestRemoveMod(mod)));
-                }
-
-                requestWorker(module, options) {
-                  return archae.requestWorker(module, options);
-                }
               }
 
               const world = new World({
-                name: worldName,
                 physics,
               });
 
               currentWorld = world;
 
-              modsState.mods = installedModSpecs;
-
               accept();
             });
-        });
-        const _requestDeleteWorld = worldName => new Promise((accept, reject) => {
-          accept();
-          /* bullet.releaseWorld(worldName)
-            .then(() => {
-              if (currentWorld && currentWorld.name === worldName) {
-                currentWorld = null;
-              }
-
-              accept();
-            })
-            .catch(reject); */
-        });
+        }); */
         const _requestMainReadme = () => fetch('/archae/rend/readme').then(res => res.text());
-        const _requestGetElements = world => fetch('/archae/rend/worlds/' + world + '/elements.json').then(res => res.json());
-        const _requestSetElements = ({world, elements, clipboardElements}) => fetch('/archae/rend/worlds/' + world + '/elements.json', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            elements,
-            clipboardElements,
-          }),
-        }).then(res => res.blob().then(() => {}));
-        const _saveElements = menuUtils.debounce(next => {
-          const {name: worldName} = currentWorld;
+        const _requestUiTimer = () => new Promise((accept, reject) => {
+          const startTime = Date.now();
+          let uiTime = 0;
 
-          _requestSetElements({
-            world: worldName,
-            elements: menuUtils.elementsToJson(elementsState.elements),
-            clipboardElements: menuUtils.elementsToJson(elementsState.clipboardElements),
-          })
-            .then(() => {
-              console.log('saved elements for', JSON.stringify(worldName));
+          localUpdates.push(() => {
+            const now = Date.now();
+            uiTime = now - startTime;
+          });
 
-              next();
-            })
-            .catch(err => {
-              console.warn(err);
+          class UiTimer {
+            getUiTime() {
+              return uiTime;
+            }
+          }
 
-              next();
-            });
+          const uiTimer = new UiTimer();
+          accept(uiTimer);
         });
 
         const _initializeMenu = () => {
@@ -582,9 +235,9 @@ class Rend {
             };
 
             const _requestUis = () => Promise.all([
-               biolumi.requestUi({
-                 width: WIDTH,
-                 height: HEIGHT,
+              biolumi.requestUi({
+                width: WIDTH,
+                height: HEIGHT,
               }),
               biolumi.requestUi({
                 width: NAVBAR_WIDTH,
@@ -599,14 +252,16 @@ class Rend {
             }));
 
             return Promise.all([
-              _requestUis(),
               _requestMainReadme(),
+              _requestUiTimer(),
+              _requestUis(),
             ]).then(([
+              mainReadme,
+              uiTimer,
               {
                 menuUi,
                 navbarUi,
               },
-              mainReadme,
             ]) => {
               if (live) {
                 const uploadStart = () => {
@@ -659,14 +314,10 @@ class Rend {
                 menuUi.pushPage([
                   {
                     type: 'html',
-                    src: menuRenderer.getMainPageSrc(),
-                  },
-                  {
-                    type: 'html',
                     src: mainReadme,
-                    x: 500,
+                    x: 0,
                     y: 150 + 2,
-                    w: WIDTH - 500,
+                    w: WIDTH,
                     h: HEIGHT - (150 + 2),
                     scroll: true,
                   },
@@ -920,27 +571,7 @@ class Rend {
                       const {type} = page;
 
                       let match;
-                      if (type === 'worlds') {
-                        page.update({
-                          worlds: worldsState,
-                          focus: focusState,
-                        }, pend);
-                      } else if (type === 'mods') {
-                        page.update({
-                          mods: modsState,
-                          focus: focusState,
-                        }, pend);
-                      } else if (type === 'mod') {
-                        page.update({
-                          mod: modState,
-                          mods: modsState,
-                        }, pend);
-                      } else if (type === 'elements') {
-                        page.update({
-                          elements: _cleanElementsState(elementsState),
-                          focus: focusState,
-                        }, pend);
-                      } else if (type === 'files') {
+                      if (type === 'files') {
                         page.update({
                           files: filesState,
                           focus: focusState,
@@ -967,13 +598,6 @@ class Rend {
 
                   if (open) {
                     const oldStates = {
-                      worldsState: {
-                        selectedName: worldsState.selectedName,
-                      },
-                      elementsState: {
-                        selectedKeyPath: elementsState.selectedKeyPath,
-                        draggingKeyPath: elementsState.draggingKeyPath,
-                      },
                       filesState: {
                         selectedName: filesState.selectedName,
                       },
@@ -982,41 +606,6 @@ class Rend {
                       },
                     };
 
-                    const _doSetPosition = e => {
-                      const {side} = e;
-                      const {positioningSide} = elementsState;
-
-                      if (positioningSide && side === positioningSide) {
-                        const {positioningName} = elementsState;
-                        const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
-
-                        const element = menuUtils.getElementKeyPath({
-                          elements: elementsState.elements,
-                          availableElements: elementsState.availableElements,
-                          clipboardElements: elementsState.clipboardElements,
-                        }, oldElementsSelectedKeyPath);
-                        const instance = menuUtils.getElementKeyPath({
-                          elements: elementsState.elementInstances,
-                        }, oldElementsSelectedKeyPath);
-
-                        const {position, quaternion, scale} = positioningMesh;
-                        const newValue = position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
-                        const newAttributeValue = JSON.stringify(newValue);
-                        element.setAttribute(positioningName, newAttributeValue);
-                        instance.setAttribute(positioningName, newAttributeValue);
-
-                        elementsState.positioningName = null;
-                        elementsState.positioningSide = null;
-
-                        _saveElements();
-
-                        _updatePages();
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    };
                     const _doClickNavbar = e => {
                       const {side} = e;
                       const navbarHoverState = navbarHoverStates[side];
@@ -1069,7 +658,6 @@ class Rend {
                           const onclick = (anchor && anchor.onclick) || '';
 
                           focusState.type = '';
-                          worldsState.selectedName = '';
                           filesState.selectedName = '';
                           elementAttributeFilesState.selectedName = '';
 
@@ -1100,282 +688,6 @@ class Rend {
                             if (menuUi.getPages().length > 1) {
                               menuUi.popPage();
                             }
-                          } else if (onclick === 'worlds') {
-                            menuUi.cancelTransition();
-
-                            menuUi.pushPage(({worlds: {worlds, selectedName, inputText, inputValue}, focus: {type: focusType}}) => ([
-                              {
-                                type: 'html',
-                                src: menuRenderer.getWorldsPageSrc({worlds, selectedName, inputText, inputValue, focusType}),
-                              },
-                              {
-                                type: 'image',
-                                img: creatureUtils.makeAnimatedCreature('worlds'),
-                                x: 150,
-                                y: 0,
-                                w: 150,
-                                h: 150,
-                                frameTime: 300,
-                                pixelated: true,
-                              }
-                            ]), {
-                              type: 'worlds',
-                              state: {
-                                worlds: worldsState,
-                                focus: focusState,
-                              },
-                            });
-                          } else if (match = onclick.match(/^world:(.+)$/)) {
-                            const name = match[1];
-
-                            worldsState.selectedName = name;
-
-                            _updatePages();
-                          } else if (onclick === 'worlds:rename') {
-                            const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
-                            if (oldWorldsSelectedName) {
-                              worldsState.inputText = '';
-                              worldsState.inputIndex = 0;
-                              worldsState.inputValue = 0;
-
-                              focusState.type = 'worlds:rename:' + oldWorldsSelectedName;
-
-                              _updatePages();
-                            }
-                          } else if (onclick === 'worlds:remove') {
-                            const {worldsState: {selectedName: oldWorldsSelectedName}} = oldStates;
-                            if (oldWorldsSelectedName) {
-                              const {worlds} = worldsState;
-                              worldsState.worlds = worlds.filter(world => world.name !== oldWorldsSelectedName);
-
-                              _updatePages();
-                            }
-                          } else if (onclick === 'worlds:create') {
-                            worldsState.inputText = '';
-                            worldsState.inputIndex = 0;
-                            worldsState.inputValue = 0;
-
-                            focusState.type = 'worlds:create';
-
-                            _updatePages();
-                          } else if (onclick === 'mods') {
-                            menuUi.cancelTransition();
-
-                            menuUi.pushPage(({mods: {mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote}, focus: {type: focusType}}) => ([
-                              {
-                                type: 'html',
-                                src: menuRenderer.getModsPageSrc({mods, localMods, remoteMods, tab, inputText, inputValue, loadingLocal, loadingRemote, focus: focusType === 'mods'}),
-                              },
-                              {
-                                type: 'image',
-                                img: creatureUtils.makeAnimatedCreature('mods'),
-                                x: 150,
-                                y: 0,
-                                w: 150,
-                                h: 150,
-                                frameTime: 300,
-                                pixelated: true,
-                              }
-                            ]), {
-                              type: 'mods',
-                              state: {
-                                mods: modsState,
-                                focus: focusState,
-                              },
-                            });
-                          } else if (match = onclick.match(/^mods:(installed|local|remote)$/)) {
-                            const tab = match[1];
-
-                            if (tab === 'local') {
-                              modsState.loadingLocal = true;
-
-                              _getLocalModSpecs()
-                                .then(localMods => {
-                                  modsState.localMods = localMods;
-                                  modsState.loadingLocal = false;
-
-                                  _updatePages();
-                                })
-                                .catch(err => {
-                                  console.warn(err);
-                                });
-                            } else if (tab === 'remote') {
-                              modsState.inputText = '';
-                              modsState.inputIndex = 0;
-                              modsState.inputValue = 0;
-                              modsState.loadingRemote = true;
-
-                              _getRemoteModSpecs(modsState.inputText)
-                                .then(remoteMods => {
-                                  modsState.remoteMods = remoteMods;
-                                  modsState.loadingRemote = false;
-
-                                  _updatePages();
-                                })
-                                .catch(err => {
-                                  console.warn(err);
-                                });
-                            }
-
-                            modsState.tab = tab;
-
-                            _updatePages();
-                          } else if (match = onclick.match(/^mod:(.+)$/)) {
-                            const name = match[1];
-
-                            menuUi.cancelTransition();
-
-                            modState.modName = name;
-                            modState.mod = null;
-                            modState.loading = true;
-
-                            _getModSpec(name)
-                              .then(modSpec => {
-                                modState.mod = modSpec;
-                                modState.loading = false;
-
-                                _updatePages();
-                              })
-                              .catch(err => {
-                                console.warn(err);
-
-                                modState.loading = false;
-
-                                _updatePages();
-                              });
-
-                            menuUi.pushPage(({mod: {modName, mod, loading}, mods: {mods}}) => {
-                              const displayName = modName.match(/([^\/]*)$/)[1];
-                              const installed = mods.some(m => m.name === modName);
-                              const conflicting = mods.some(m => m.displayName === displayName);
-
-                              return [
-                                {
-                                  type: 'html',
-                                  src: menuRenderer.getModPageSrc({modName, mod, installed, conflicting}),
-                                },
-                                {
-                                  type: 'html',
-                                  src: menuRenderer.getModPageReadmeSrc({modName, mod, loading}),
-                                  x: 500,
-                                  y: 150 + 2,
-                                  w: WIDTH - 500,
-                                  h: HEIGHT - (150 + 2),
-                                  scroll: true,
-                                },
-                                {
-                                  type: 'image',
-                                  img: creatureUtils.makeAnimatedCreature('mod:' + displayName),
-                                  x: 150,
-                                  y: 0,
-                                  w: 150,
-                                  h: 150,
-                                  frameTime: 300,
-                                  pixelated: true,
-                                }
-                              ];
-                            }, {
-                              type: 'mod',
-                              state: {
-                                mod: modState,
-                                mods: modsState,
-                              },
-                            });
-                          } else if (match = onclick.match(/^getmod:(.+)$/)) {
-                            const name = match[1];
-
-                            currentWorld.requestAddMod(name)
-                              .then(() => {
-                                _updatePages();
-                              })
-                              .catch(err => {
-                                console.warn(err);
-                              });
-                          } else if (match = onclick.match(/^removemod:(.+)$/)) {
-                            const name = match[1];
-
-                            currentWorld.requestRemoveMod(name)
-                              .then(() => {
-                                _updatePages();
-                              })
-                              .catch(err => {
-                                console.warn(err);
-                              });
-                          } else if (onclick === 'elements') {
-                            menuUi.cancelTransition();
-
-                            menuUi.pushPage(({elements: {elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue}, focus: {type: focusType}}) => {
-                              const match = focusType ? focusType.match(/^element:attribute:(.+)$/) : null;
-                              const focusAttribute = match && match[1];
-
-                              return [
-                                {
-                                  type: 'html',
-                                  src: menuRenderer.getElementsPageSrc({selectedKeyPath}),
-                                },
-                                {
-                                  type: 'html',
-                                  src: menuRenderer.getElementsPageContentSrc({elements, selectedKeyPath, draggingKeyPath}),
-                                  x: 500,
-                                  y: 150 + 2,
-                                  w: WIDTH - (500 + 600),
-                                  h: HEIGHT - (150 + 2),
-                                  scroll: true,
-                                },
-                                {
-                                  type: 'html',
-                                  src: menuRenderer.getElementsPageSubcontentSrc({elements, availableElements, clipboardElements, selectedKeyPath, draggingKeyPath, positioningName, inputText, inputValue, focusAttribute}),
-                                  x: 500 + (WIDTH - (500 + 600)),
-                                  y: 150 + 2,
-                                  w: 600,
-                                  h: HEIGHT - (150 + 2),
-                                  scroll: true,
-                                },
-                                {
-                                  type: 'image',
-                                  img: creatureUtils.makeAnimatedCreature('preferences'),
-                                  x: 150,
-                                  y: 0,
-                                  w: 150,
-                                  h: 150,
-                                  frameTime: 300,
-                                  pixelated: true,
-                                }
-                              ];
-                            }, {
-                              type: 'elements',
-                              state: {
-                                elements: _cleanElementsState(elementsState),
-                                focus: focusState,
-                              },
-                            });
-                          } else if (onclick === 'files') {
-                            menuUi.cancelTransition();
-
-                            _ensureFilesLoaded(filesState);
-
-                            menuUi.pushPage(({files: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
-                              {
-                                type: 'html',
-                                src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'file'}),
-                              },
-                              {
-                                type: 'image',
-                                img: creatureUtils.makeAnimatedCreature('files'),
-                                x: 150,
-                                y: 0,
-                                w: 150,
-                                h: 150,
-                                frameTime: 300,
-                                pixelated: true,
-                              }
-                            ]), {
-                              type: 'files',
-                              state: {
-                                files: filesState,
-                                focus: focusState,
-                              },
-                            });
                           } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
                             menuUi.cancelTransition();
 
@@ -1617,178 +929,11 @@ class Rend {
 
                               _updatePages();
                             }
-                          } else if (onclick === 'elements:remove') {
-                            const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
-                            if (oldElementsSelectedKeyPath.length > 0) {
-                              const elementsSpec = {
-                                elements: elementsState.elements,
-                                availableElements: elementsState.availableElements,
-                                clipboardElements: elementsState.clipboardElements,
-                              };
-                              menuUtils.removeElementKeyPath(elementsSpec, oldElementsSelectedKeyPath);
-                              const elementInstancesSpec = {
-                                elements: elementsState.elementInstances,
-                              };
-                              if (oldElementsSelectedKeyPath[0] === 'elements') {
-                                const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldElementsSelectedKeyPath);
-                                menuUtils.destructElement(instance);
-                              }
 
-                              elementsState.selectedKeyPath = [];
-                              elementsState.draggingKeyPath = [];
-
-                              _saveElements();
-
-                              _updatePages();
-                            }
-                          } else if (match = onclick.match(/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
-                            const attributeName = match[1];
-                            const action = match[2];
-                            const value = match[3];
-
-                            const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath}} = oldStates;
-
-                            const element = menuUtils.getElementKeyPath({
-                              elements: elementsState.elements,
-                              availableElements: elementsState.availableElements,
-                              clipboardElements: elementsState.clipboardElements,
-                            }, oldElementsSelectedKeyPath);
-                            const instance = menuUtils.getElementKeyPath({
-                              elements: elementsState.elementInstances,
-                            }, oldElementsSelectedKeyPath);
-                            const {attributeConfigs} = element;
-                            const attributeConfig = attributeConfigs[attributeName];
-
-                            if (action === 'position') {
-                              const oldValue = JSON.parse(element.getAttribute(attributeName));
-                              oldPositioningMesh.position.set(oldValue[0], oldValue[1], oldValue[2]);
-                              oldPositioningMesh.quaternion.set(oldValue[3], oldValue[4], oldValue[5], oldValue[6]);
-                              oldPositioningMesh.scale.set(oldValue[7], oldValue[8], oldValue[9]);
-
-                              elementsState.positioningName = attributeName;
-                              elementsState.positioningSide = side;
-                            } else if (action === 'focus') {
-                              const {value} = menuHoverState;
-
-                              const {type: attributeType} = attributeConfig;
-                              const textProperties = (() => {
-                                if (attributeType === 'text') {
-                                  const valuePx = value * 400;
-                                  return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                                } else if (attributeType === 'number') {
-                                  const valuePx = value * 100;
-                                  return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                                } else if (attributeType === 'color') {
-                                  const valuePx = value * (400 - (40 + 4));
-                                  return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                                } else if (attributeType === 'file') {
-                                  const valuePx = value * 260;
-                                  return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType), subcontentFontSpec, valuePx);
-                                } else {
-                                  return null;
-                                }
-                              })();
-                              if (textProperties) {
-                                elementsState.inputText = menuUtils.castValueValueToString(JSON.parse(element.getAttribute(attributeName)), attributeType);
-                                const {index, px} = textProperties;
-                                elementsState.inputIndex = index;
-                                elementsState.inputValue = px;
-                              }
-
-                              focusState.type = 'element:attribute:' + attributeName;
-                            } else if (action === 'set') {
-                              const newAttributeValue = JSON.stringify(value);
-                              element.setAttribute(attributeName, newAttributeValue);
-                              instance.setAttribute(attributeName, newAttributeValue);
-
-                              _saveElements();
-                            } else if (action === 'tweak') {
-                              const {value} = menuHoverState;
-                              const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attributeConfig;
-
-                              const newValue = (() => {
-                                let n = min + (value * (max - min));
-                                if (step > 0) {
-                                  n = Math.floor(n / step) * step;
-                                }
-                                return n;
-                              })();
-                              const newAttributeValue = JSON.stringify(newValue);
-                              element.setAttribute(attributeName, newAttributeValue);
-                              instance.setAttribute(attributeName, newAttributeValue);
-
-                              _saveElements();
-                            } else if (action === 'toggle') {
-                              const newValue = !JSON.parse(element.getAttribute(attributeName));
-                              const newAttributeValue = JSON.stringify(newValue);
-                              element.setAttribute(attributeName, newAttributeValue);
-                              instance.setAttribute(attributeName, newAttributeValue);
-
-                              _saveElements();
-                            } else if (action === 'choose') {
-                              menuUi.cancelTransition();
-
-                              elementsState.choosingName = attributeName;
-
-                              _ensureFilesLoaded(elementAttributeFilesState);
-
-                              menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
-                                {
-                                  type: 'html',
-                                  src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
-                                },
-                                {
-                                  type: 'image',
-                                  img: creatureUtils.makeAnimatedCreature('files'),
-                                  x: 150,
-                                  y: 0,
-                                  w: 150,
-                                  h: 150,
-                                  frameTime: 300,
-                                  pixelated: true,
-                                }
-                              ]), {
-                                type: 'elementAttributeFiles',
-                                state: {
-                                  elementAttributeFiles: elementAttributeFilesState,
-                                  focus: focusState,
-                                },
-                              });
-                            }
-
-                            elementsState.selectedKeyPath = oldElementsSelectedKeyPath;
-
-                            _updatePages();
-                          } else if (onclick === 'elements:clearclipboard') {
-                            const {elementsState: {selectedKeyPath: oldElementsSelectedKeyPath, draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
-
-                            elementsState.clipboardElements = [];
-                            if (oldElementsSelectedKeyPath.length > 0 && oldElementsSelectedKeyPath[0] === 'clipboardElements') {
-                              elementsState.selectedKeyPath = [];
-                            }
-                            if (oldElementsDraggingKeyPath.length > 0 && oldElementsDraggingKeyPath[0] === 'clipboardElements') {
-                              elementsState.draggingKeyPath = [];
-                            }
-
-                            _saveElements();
-
-                            _updatePages();
-                          } else if (onclick === 'mods:input') {
-                            const {value} = menuHoverState;
-                            const valuePx = value * (WIDTH - (500 + 40));
-
-                            const {index, px} = biolumi.getTextPropertiesFromCoord(modsState.inputText, mainFontSpec, valuePx);
-
-                            modsState.inputIndex = index;
-                            modsState.inputValue = px;
-                            focusState.type = 'mods';
-
-                            _updatePages();
+                            return false;
                           } else {
-                            _updatePages();
+                            return false;
                           }
-
-                          return true;
                         } else {
                           return false;
                         }
@@ -1797,7 +942,7 @@ class Rend {
                       }
                     };
 
-                    _doSetPosition(e) || _doClickNavbar(e) || _doClickMenu(e);
+                    _doClickNavbar(e) || _doClickMenu(e);
                   }
                 };
                 input.on('trigger', trigger);
@@ -1808,58 +953,6 @@ class Rend {
                     const {side} = e;
                     const menuHoverState = menuHoverStates[side];
 
-                    const _doClick = () => {
-                      const {tab} = navbarState;
-
-                      if (tab === 'readme') {
-                        const {intersectionPoint} = menuHoverState;
-
-                        if (intersectionPoint) {
-                          const {anchor} = menuHoverState;
-                          const onmousedown = (anchor && anchor.onmousedown) || '';
-
-                          if (/^element:attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/.test(onmousedown)) {
-                            return true;
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      } else {
-                        return false;
-                      }
-                    };
-                    const _doDragElement = () => {
-                      const {tab} = navbarState;
-
-                      if (tab === 'readme') {
-                        const {intersectionPoint} = menuHoverState;
-
-                        if (intersectionPoint) {
-                          const {anchor} = menuHoverState;
-                          const onmousedown = (anchor && anchor.onmousedown) || '';
-
-                          let match;
-                          if (match = onmousedown.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                            const keyPath = menuUtils.parseKeyPath(match[1]);
-
-                            elementsState.selectedKeyPath = keyPath;
-                            elementsState.draggingKeyPath = keyPath;
-
-                            _updatePages();
-
-                            return true;
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      } else {
-                        return false;
-                      }
-                    };
                     const _doScroll = () => {
                       const {tab} = navbarState;
 
@@ -1893,7 +986,7 @@ class Rend {
                       }
                     };
 
-                    _doClick() || _doDragElement() || _doScroll();
+                    _doScroll();
                   }
                 };
                 input.on('triggerdown', triggerdown);
@@ -1931,118 +1024,6 @@ class Rend {
                 const triggerup = e => {
                   const {side} = e;
 
-                  const _doDrag = () => {
-                    const {tab} = navbarState;
-
-                    if (tab === 'readme') {
-                      const menuHoverState = menuHoverStates[side];
-                      const {mousedownStartCoord} = menuHoverState;
-
-                      if (mousedownStartCoord) {
-                        const {anchor} = menuHoverState;
-                        const onmouseup = (anchor && anchor.onmouseup) || '';
-
-                        const oldStates = {
-                          elementsState: {
-                            draggingKeyPath: elementsState.draggingKeyPath,
-                          },
-                        };
-                        const {elementsState: {draggingKeyPath: oldElementsDraggingKeyPath}} = oldStates;
-
-                        if (oldElementsDraggingKeyPath.length > 0) {
-                          elementsState.selectedKeyPath = [];
-                          elementsState.draggingKeyPath = [];
-
-                          const _getKeyPathDragFn = (oldKeyPath, newKeyPath) => {
-                            const oldCollection = oldKeyPath[0];
-                            const newCollection = newKeyPath[0];
-
-                            return (elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath) => {
-                              if (oldCollection === 'elements') {
-                                if (newCollection === 'elements') {
-                                  menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                  menuUtils.moveElementKeyPath(elementInstancesSpec, oldKeyPath, newKeyPath);
-                                } else if (newCollection === 'clipboardElements') {
-                                  menuUtils.moveElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                  const instance = menuUtils.removeElementKeyPath(elementInstancesSpec, oldKeyPath);
-                                  menuUtils.destructElement(instance);
-                                }
-                              } else if (oldCollection === 'availableElements') {
-                                if (newCollection !== 'availableElements') {
-                                  const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                  if (newCollection === 'elements') {
-                                    const instance = menuUtils.constructElement(modElementApis, element);
-                                    menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
-                                  }
-                                }
-                              } else if (oldCollection === 'clipboardElements') {
-                                if (newCollection !== 'availableElements') {
-                                  const element = menuUtils.copyElementKeyPath(elementsSpec, oldKeyPath, newKeyPath);
-                                  if (newCollection === 'elements') {
-                                    const instance = menuUtils.constructElement(modElementApis, element);
-                                    menuUtils.insertElementAtKeyPath(elementInstancesSpec, newKeyPath, instance);
-                                  }
-                                }
-                              }
-                            };
-                          };
-
-                          let match;
-                          if (match = onmouseup.match(/^element:select:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                            const parentKeyPath = menuUtils.parseKeyPath(match[1]);
-
-                            const elementsSpec = {
-                              elements: elementsState.elements,
-                              availableElements: elementsState.availableElements,
-                              clipboardElements: elementsState.clipboardElements,
-                            };
-                            const childKeyPath = parentKeyPath.concat(menuUtils.getElementKeyPath(elementsSpec, parentKeyPath).children.length);
-
-                            if (!menuUtils.isSubKeyPath(childKeyPath, oldElementsDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(childKeyPath, oldElementsDraggingKeyPath)) {
-                              const oldKeyPath = oldElementsDraggingKeyPath;
-                              const newKeyPath = childKeyPath;
-                              const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
-                              const elementInstancesSpec = {
-                                elements: elementsState.elementInstances,
-                              };
-                              dragFn(elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath);
-
-                              _saveElements();
-                            } else {
-                              elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
-                            }
-                          } else if (match = onmouseup.match(/^element:move:((?:elements|availableElements|clipboardElements):(?:[0-9]+:)*[0-9]+)$/)) {
-                            const keyPath = menuUtils.parseKeyPath(match[1]);
-
-                            if (!menuUtils.isSubKeyPath(keyPath, oldElementsDraggingKeyPath) && !menuUtils.isAdjacentKeyPath(keyPath, oldElementsDraggingKeyPath)) {
-                              const elementsSpec = {
-                                elements: elementsState.elements,
-                                availableElements: elementsState.availableElements,
-                                clipboardElements: elementsState.clipboardElements,
-                              };
-                              const elementInstancesSpec = {
-                                elements: elementsState.elementInstances,
-                              };
-                              const oldKeyPath = oldElementsDraggingKeyPath;
-                              const newKeyPath = keyPath;
-                              const dragFn = _getKeyPathDragFn(oldKeyPath, newKeyPath);
-                              dragFn(elementsSpec, elementInstancesSpec, oldKeyPath, newKeyPath);
-
-                              _saveElements();
-                            } else {
-                              elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
-                            }
-                          } else {
-                            elementsState.selectedKeyPath = oldElementsDraggingKeyPath;
-                          }
-
-                          _updatePages();
-                        }
-                      }
-                    }
-
-                    return false;
-                  };
                   const _doScroll = () => {
                     const {tab} = navbarState;
 
@@ -2068,38 +1049,9 @@ class Rend {
                     }
                   };
 
-                  _doDrag() || _doScroll();
+                  _doScroll();
                 };
                 input.on('triggerup', triggerup);
-                const grip = e => {
-                  const {open} = menuState;
-
-                  if (open) {
-                    const {side} = e;
-                    const {positioningSide} = elementsState;
-
-                    if (positioningSide && side === positioningSide) {
-                      const {selectedKeyPath, positioningName} = elementsState;
-                      const element = menuUtils.getElementKeyPath({
-                        elements: elementsState.elements,
-                        availableElements: elementsState.availableElements,
-                        clipboardElements: elementsState.clipboardElements,
-                      }, selectedKeyPath);
-                      const instance = menuUtils.getElementKeyPath({
-                        elements: elementsState.elementInstances,
-                      }, selectedKeyPath);
-
-                      const oldValue = element.getAttribute(positioningName);
-                      instance.setAttribute(positioningName, oldValue);
-
-                      elementsState.positioningName = null;
-                      elementsState.positioningSide = null;
-
-                      _updatePages();
-                    }
-                  }
-                };
-                input.on('grip', grip);
                 const menudown = () => {
                   const {open, animation} = menuState;
 
@@ -2107,8 +1059,6 @@ class Rend {
                     menuState.open = false; // XXX need to cancel other menu states as well
                     menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-                    /* menuMesh.visible = false;
-                    keyboardMesh.visible = false; */
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
                       menuDotMeshes[side].visible = false;
@@ -2139,114 +1089,7 @@ class Rend {
                       const {type} = focusState;
 
                       let match;
-                      if (type === 'worlds:create') {
-                        const applySpec = biolumi.applyStateKeyEvent(worldsState, itemsFontSpec, e);
-
-                        if (applySpec) {
-                          const {commit} = applySpec;
-
-                          if (commit) {
-                            const {worlds, inputText} = worldsState;
-                            const name = inputText;
-
-                            if (!worlds.some(world => world.name === name)) {
-                              worldsState.worlds.push({
-                                name,
-                                description: '',
-                              });
-                            }
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
-                      } else if (match = type.match(/^worlds:rename:(.+)$/)) {
-                        const applySpec = biolumi.applyStateKeyEvent(worldsState, itemsFontSpec, e);
-
-                        if (applySpec) {
-                          const {commit} = applySpec;
-
-                          if (commit) {
-                            const {worlds, inputText} = worldsState;
-                            const oldName = match[1];
-                            const newName = inputText;
-
-                            if (!worlds.some(world => world.name === newName && world.name !== oldName)) {
-                              const world = worlds.find(world => world.name === oldName);
-                              world.name = newName;
-
-                              worldsState.selectedName = newName;
-                            }
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
-                      } else if (type === 'mods') {
-                        const applySpec = biolumi.applyStateKeyEvent(modsState, mainFontSpec, e);
-
-                        if (applySpec) {
-                          _getRemoteMods(modsState.inputText)
-                            .then(remoteMods => {
-                              modsState.remoteMods = remoteMods,
-
-                              _updatePages();
-                            })
-                            .catch(err => {
-                              console.warn(err);
-                            });
-
-                          const {commit} = applySpec;
-                          if (commit) {
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
-                      } else if (match = type.match(/^element:attribute:(.+)$/)) {
-                        const applySpec = biolumi.applyStateKeyEvent(elementsState, subcontentFontSpec, e);
-
-                        if (applySpec) {
-                          const {commit} = applySpec;
-
-                          if (commit) {
-                            const attributeName = match[1];
-                            const {selectedKeyPath, inputText} = elementsState;
-
-                            const element = menuUtils.getElementKeyPath({
-                              elements: elementsState.elements,
-                              availableElements: elementsState.availableElements,
-                              clipboardElements: elementsState.clipboardElements,
-                            }, selectedKeyPath);
-                            const instance = menuUtils.getElementKeyPath({
-                              elements: elementsState.elementInstances,
-                            }, selectedKeyPath);
-                            const {attributeConfigs} = element;
-                            const attributeConfig = attributeConfigs[attributeName];
-                            const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attributeConfig;
-                            const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
-                            if (newValue !== null) {
-                              const newAttributeValue = JSON.stringify(newValue);
-                              element.setAttribute(attributeName, newAttributeValue);
-                              instance.setAttribute(attributeName, newAttributeValue);
-
-                              _saveElements();
-                            }
-
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
-                      } else if (match = type.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
+                      if (match = type.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
                         const target = match[1];
                         const targetState = (() => {
                           switch (target) {
@@ -2368,25 +1211,13 @@ class Rend {
                     scene.remove(keyboardBoxMeshes[side]);
                   });
 
-                  /* scene.remove(positioningMesh);
-                  scene.remove(oldPositioningMesh); */
-
                   input.removeListener('trigger', trigger);
                   input.removeListener('triggerdown', triggerdown);
                   input.removeListener('triggerup', triggerup);
-                  input.removeListener('grip', grip);
                   input.removeListener('menudown', menudown);
                   input.removeListener('keydown', keydown);
                   input.removeListener('keyboarddown', keyboarddown);
                 });
-
-                const _decomposeObjectMatrixWorld = object => {
-                  const position = new THREE.Vector3();
-                  const rotation = new THREE.Quaternion();
-                  const scale = new THREE.Vector3();
-                  object.matrixWorld.decompose(position, rotation, scale);
-                  return {position, rotation, scale};
-                };
 
                 const menuHoverStates = {
                   left: biolumi.makeMenuHoverState(),
@@ -2455,7 +1286,7 @@ class Rend {
                   if (open) {
                     const _updateTextures = () => {
                       const {tab} = navbarState;
-                      const worldTime = currentWorld.getWorldTime();
+                      const uiTime = uiTimer.getUiTime();
 
                       if (tab === 'readme') {
                         const {
@@ -2467,7 +1298,7 @@ class Rend {
                         biolumi.updateMenuMaterial({
                           ui: menuUi,
                           menuMaterial: planeMenuMaterial,
-                          worldTime,
+                          uiTime,
                         });
                       }
 
@@ -2479,7 +1310,7 @@ class Rend {
                       biolumi.updateMenuMaterial({
                         ui: navbarUi,
                         menuMaterial: navbarMenuMaterial,
-                        worldTime,
+                        uiTime,
                       });
 
                       SIDES.forEach(side => {
@@ -2699,19 +1530,8 @@ class Rend {
             });
           }
         };
-        const _initializeWorld = () => {
-          const worldName = 'proteus';
-          return _requestDeleteWorld(worldName)
-            .then(() => {
-              if (live) {
-                return _requestChangeWorld(worldName);
-              }
-            });
-        };
-        const _initialize = () => _initializeMenu()
-          .then(() => _initializeWorld());
 
-        return _initialize()
+        return _initializeMenu()
           .then(() => {
             class RendApi extends EventEmitter {
               constructor() {
@@ -2720,13 +1540,12 @@ class Rend {
                 this.setMaxListeners(100);
               }
 
-              getCurrentWorld() {
-                return currentWorld;
+              isOpen() { // XXX hook this in
+                return menuState.open;
               }
 
               getTab() {
-                const {tab} = navbarState;
-                return tab;
+                return navbarState.tab;
               }
 
               addMenuMesh(name, object) {
@@ -2740,16 +1559,7 @@ class Rend {
                 menuMesh[name] = null;
               }
 
-              requestModElementApi(name) {
-                return archae.requestPlugin(name)
-                  .then(pluginInstance => {
-                    const tag = archae.getName(pluginInstance);
-
-                    return modElementApis[tag] || null;
-                  });
-              }
-
-              update() {
+              update() { // XXX move this
                 this.emit('update');
               }
 

@@ -59,9 +59,12 @@ class World {
       if (live) {
         const {THREE, scene} = three;
 
+        // constants
+        const oneVector = new THREE.Vector3(1, 1, 1);
+        const zeroQuaternion = new THREE.Quaternion();
+
         const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
-        const currentWorld = rend.getCurrentWorld();
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
@@ -78,9 +81,7 @@ class World {
           fontStyle: biolumi.getFontStyle(),
         };
 
-        const oneVector = new THREE.Vector3(1, 1, 1);
-        const zeroQuaternion = new THREE.Quaternion();
-
+        // helper functions
         const _decomposeObjectMatrixWorld = object => {
           const {matrixWorld} = object;
           const position = new THREE.Vector3();
@@ -92,6 +93,27 @@ class World {
 
         const _requestTags = () => fetch('/archae/world/tags.json')
           .then(res => res.json());
+        const _requestWorldTimer = () => fetch('/archae/world/start-time.json')
+          .then(res => res.json()
+            .then(({startTime}) => {
+              const now = Date.now();
+              let worldTime = now - startTime;
+
+              rend.on('update', () => {
+                const now = Date.now();
+                worldTime = now - startTime;
+              });
+
+              class WorldTimer {
+                getWorldTime() {
+                  return worldTime;
+                }
+              }
+
+              const worldTimer = new WorldTimer();
+              accept(worldTimer);
+            })
+          );
         const _requestUis = () => Promise.all([
           biolumi.requestUi({
             width: WIDTH,
@@ -118,10 +140,12 @@ class World {
 
         return Promise.all([
           _requestTags(),
+          _requestWorldTimer(),
           _requestUis(),
         ])
           .then(([
             tagsJson,
+            worldTimer,
             {
               readmeUi,
               attributesUi,
@@ -758,7 +782,7 @@ class World {
                         },
                       },
                     } = mesh;
-                    const worldTime = currentWorld.getWorldTime();
+                    const worldTime = worldTimer.getWorldTime();
 
                     biolumi.updateMenuMaterial({
                       ui: readmeUi,
@@ -1218,6 +1242,32 @@ class World {
               input.on('triggerdown', _triggerdown, {
                 priority: 1,
               });
+              const _grip = e => {
+                const {open} = menuState;
+
+                if (open) {
+                  const {side} = e;
+                  const {positioningSide} = detailsState;
+
+                  if (positioningSide && side === positioningSide) {
+                    const {item} = detailsState;
+                    const {attributes} = item;
+                    const attribute = attributes[attributeName];
+                    const {value: oldValue} = attribute;
+                    const {positioningName} = detailsState;
+
+                    item.setAttribute(positioningName, oldValue);
+
+                    detailsState.positioningName = null;
+                    detailsState.positioningSide = null;
+
+                    _updatePages();
+                  }
+                }
+              };
+              input.on('grip', _grip, {
+                priority: 1,
+              });
               const _gripdown = e => {
                 const {side} = e;
                 const tagMesh = tags.getHoverTag(side);
@@ -1374,13 +1424,34 @@ class World {
                 rend.removeListener('tabchange', _tabchange);
                 input.removeListener('trigger', _trigger);
                 input.removeListener('triggerdown', _triggerdown);
+                input.removeListener('grip', _grip);
                 input.removeListener('gripdown', _gripdown);
                 input.removeListener('gripup', _gripup);
                 input.removeListener('keydown', _keydown);
                 input.removeListener('keyboarddown', _keyboarddown);
               };
 
-              return {};
+              const modElementApis = {};
+              class WorldApi {
+                getWorldTime() {
+                  return worldTimer.getWorldTime();
+                }
+
+                registerElement(pluginInstance, elementApi) {
+                  const tag = archae.getName(pluginInstance);
+
+                  modElementApis[tag] = elementApi;
+                }
+
+                unregisterElement(pluginInstance) {
+                  const tag = archae.getName(pluginInstance);
+
+                  delete modElementApis[tag];
+                }
+              }
+
+              const worldApi = new WorldApi();
+              return worldApi;
             }
           });
       }
