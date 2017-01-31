@@ -5,7 +5,6 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
       .then(zeo => {
         // grab the API veriables we need
         const {THREE, scene} = zeo;
-        const world = zeo.getCurrentWorld();
 
         // declare some contants
         const COLORS = {
@@ -33,12 +32,12 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
             // declare some state
             const position = new THREE.Vector3(0, 0, 0);
             const velocity = new THREE.Vector3(0, 0, 0);
-            let lastTime = world.getWorldTime();
+            let lastTime = zeo.getWorldTime();
 
             // `_update` will be called on every frame
             const _update = () => {
               // update time
-              const currentTime = world.getWorldTime();
+              const currentTime = zeo.getWorldTime();
               const timePassed = Math.max(currentTime - lastTime, 1);
               lastTime = currentTime;
 

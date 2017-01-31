@@ -49,8 +49,7 @@ class Mc {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
-        const world = zeo.getCurrentWorld();
-        const {physics} = world;
+        const physicsWorld = zeo.getPhysicsWorld();
         const controllers = cyborg.getControllers();
         const {alea} = randomUtils;
 
@@ -329,15 +328,15 @@ class Mc {
                 scene.add(itemMesh);
               });
 
-              const floorPhysicsBody = new physics.Plane({
+              const floorPhysicsBody = new physicsWorld.Plane({
                 position: [0, 0.01, 0],
                 dimensions: [0, 1, 0],
                 mass: 0,
               });
-              physics.add(floorPhysicsBody);
+              physicsWorld.add(floorPhysicsBody);
 
               const blockPhysicsBodies = blockMeshes.map(blockMesh => {
-                const physicsBody = new physics.Box({
+                const physicsBody = new physicsWorld.Box({
                   dimensions: [1, 1, 1],
                   position: blockMesh.position.toArray(),
                   rotation: blockMesh.quaternion.toArray(),
@@ -351,11 +350,11 @@ class Mc {
                 return physicsBody;
               });
               blockPhysicsBodies.forEach(physicsBody => {
-                physics.add(physicsBody);
+                physicsWorld.add(physicsBody);
               });
 
               const itemPhysicsBodies = itemMeshes.map(itemMesh => {
-                const physicsBody = new physics.Box({
+                const physicsBody = new physicsWorld.Box({
                   dimensions: [ITEM_SIZE * ITEM_PIXEL_SIZE, ITEM_SIZE * ITEM_PIXEL_SIZE, ITEM_PIXEL_SIZE],
                   position: itemMesh.position.toArray(),
                   rotation: itemMesh.quaternion.toArray(),
@@ -369,7 +368,7 @@ class Mc {
                 return physicsBody;
               });
               itemPhysicsBodies.forEach(physicsBody => {
-                physics.add(physicsBody);
+                physicsWorld.add(physicsBody);
               });
 
               const _getClosestItemMeshIndex = position => itemMeshes.map((itemMesh, index) => {
@@ -445,14 +444,14 @@ class Mc {
                   scene.remove(blockMesh);
                 });
                 blockPhysicsBodies.forEach(physicsBody => {
-                  physics.remove(physicsBody);
+                  physicsWorld.remove(physicsBody);
                 });
 
                 itemMeshes.forEach(itmeMesh => {
                   scene.remove(itemMesh);
                 });
                 itemPhysicsBodies.forEach(physicsBody => {
-                  physics.remove(physicsBody);
+                  physicsWorld.remove(physicsBody);
                 });
 
                 zeo.removeListener('gripdown', gripdown);

@@ -110,8 +110,7 @@ class World {
                 }
               }
 
-              const worldTimer = new WorldTimer();
-              accept(worldTimer);
+              return new WorldTimer();
             })
           );
         const _requestUis = () => Promise.all([
@@ -1243,26 +1242,22 @@ class World {
                 priority: 1,
               });
               const _grip = e => {
-                const {open} = menuState;
+                const {side} = e;
+                const {positioningSide} = detailsState;
 
-                if (open) {
-                  const {side} = e;
-                  const {positioningSide} = detailsState;
+                if (positioningSide && side === positioningSide) {
+                  const {item} = detailsState;
+                  const {attributes} = item;
+                  const attribute = attributes[attributeName];
+                  const {value: oldValue} = attribute;
+                  const {positioningName} = detailsState;
 
-                  if (positioningSide && side === positioningSide) {
-                    const {item} = detailsState;
-                    const {attributes} = item;
-                    const attribute = attributes[attributeName];
-                    const {value: oldValue} = attribute;
-                    const {positioningName} = detailsState;
+                  item.setAttribute(positioningName, oldValue);
 
-                    item.setAttribute(positioningName, oldValue);
+                  detailsState.positioningName = null;
+                  detailsState.positioningSide = null;
 
-                    detailsState.positioningName = null;
-                    detailsState.positioningSide = null;
-
-                    _updatePages();
-                  }
+                  _updatePages();
                 }
               };
               input.on('grip', _grip, {

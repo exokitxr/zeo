@@ -55,8 +55,6 @@ class Config {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const currentWorld = rend.getCurrentWorld();
-
         const _decomposeObjectMatrixWorld = object => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
@@ -462,7 +460,7 @@ class Config {
               const _update = () => {
                 const _updateTextures = () => {
                   const tab = rend.getTab();
-                  const worldTime = currentWorld.getWorldTime();
+                  const uiTime = rend.getUiTime();
 
                   if (tab === 'options') {
                     const {
@@ -474,7 +472,7 @@ class Config {
                     biolumi.updateMenuMaterial({
                       ui: configUi,
                       menuMaterial: configMenuMaterial,
-                      worldTime,
+                      uiTime,
                     });
                   }
 
@@ -486,7 +484,7 @@ class Config {
                   biolumi.updateMenuMaterial({
                     ui: statsUi,
                     menuMaterial: statsMenuMaterial,
-                    worldTime,
+                    uiTime,
                   });
                 };
                 const _updateAnchors = () => {

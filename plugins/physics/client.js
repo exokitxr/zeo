@@ -20,8 +20,7 @@ class Physics {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = zeo;
-        const world = zeo.getCurrentWorld();
-        const {physics} = world;
+        const physicsWorld = zeo.getPhysicsWorld();
 
         const _requestModelData = () => fetch(MODEL_SRC)
           .then(res => res.json()
@@ -125,14 +124,14 @@ class Physics {
             model.scale.copy(modelScale);
             scene.add(model);
 
-            const modelPhysicsBody = new physics.TriangleMesh({
+            const modelPhysicsBody = new physicsWorld.TriangleMesh({
               position: modelPosition.toArray(),
               rotation: modelRotation.toArray(),
               scale: modelScale.toArray(),
               points: _getModelPoints(modelJson),
               mass: 0,
             });
-            physics.add(modelPhysicsBody);
+            physicsWorld.add(modelPhysicsBody);
 
             const boxMeshSize = 0.1;
             const boxPositionOffset = modelPosition;
@@ -167,20 +166,20 @@ class Physics {
               scene.add(boxMesh);
             });
 
-            const floorPhysicsBody = new physics.Plane({
+            const floorPhysicsBody = new physicsWorld.Plane({
               position: [0, 0, 0],
               dimensions: [0, 1, 0],
               mass: 0,
             });
-            physics.add(floorPhysicsBody);
+            physicsWorld.add(floorPhysicsBody);
 
             const boxPhysicsBodies = boxMeshes.map(boxMesh => {
-              const physicsBody = physics.makeBody(boxMesh);
+              const physicsBody = physicsWorld.makeBody(boxMesh);
               physicsBody.setObject(boxMesh);
               return physicsBody;
             });
             boxPhysicsBodies.forEach(physicsBody => {
-              physics.add(physicsBody);
+              physicsWorld.add(physicsBody);
             });
 
             const _getClosestBoxMeshIndex = position => boxMeshes.map((boxMesh, index) => {
@@ -240,9 +239,9 @@ class Physics {
               boxMeshes.forEach(boxMesh => {
                 scene.remove(boxMesh);
               });
-              physics.remove(floorPhysicsBody);
+              physicsWorld.remove(floorPhysicsBody);
               boxPhysicsBodies.forEach(physicsBody => {
-                physics.remove(physicsBody);
+                physicsWorld.remove(physicsBody);
               });
 
               zeo.removeListener('gripdown', gripdown);

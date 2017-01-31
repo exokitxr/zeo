@@ -263,12 +263,12 @@ class Biolumi {
                 this.pixelated = false;
               }
 
-              getValid({worldTime}) {
+              getValid({uiTime}) {
                 const {numFrames} = this;
 
                 if (numFrames > 1) {
                   const {parent, frameIndex, frameTime} = this;
-                  const currentFrameIndex = Math.floor(worldTime / frameTime) % numFrames;
+                  const currentFrameIndex = Math.floor(uiTime / frameTime) % numFrames;
                   return currentFrameIndex === frameIndex;
                 } else {
                   return true; // XXX optimize this
@@ -991,14 +991,14 @@ class Biolumi {
               }
             }
           };
-          const _updateMenuMaterial = ({ui, menuMaterial, worldTime}) => {
+          const _updateMenuMaterial = ({ui, menuMaterial, uiTime}) => {
             const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = menuMaterial;
 
             const layers = ui.getLayers();
             for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
               const layer = i < layers.length ? layers[i] : null;
 
-              if (layer && layer.getValid({worldTime})) {
+              if (layer && layer.getValid({uiTime})) {
                 validTextures.value[i] = 1;
 
                 const texture = textures.value[i];

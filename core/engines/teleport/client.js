@@ -29,7 +29,6 @@ class Teleport {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
-        const world = rend.getCurrentWorld();
 
         const teleportMeshMaterial = new THREE.MeshBasicMaterial({
           color: 0x808080,

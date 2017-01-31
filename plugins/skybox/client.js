@@ -15,16 +15,13 @@ class Skybox {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/rend',
       '/core/plugins/geometry-utils',
     ]).then(([
       zeo,
-      rend,
       geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
-        const world = rend.getCurrentWorld();
 
         const THREESky = SkyShader(THREE);
 
@@ -176,7 +173,7 @@ class Skybox {
             const update = () => {
               const {sky, sunSphere, sunLight, starsMesh, moonSphere} = mesh;
 
-              let worldTime = world.getWorldTime();
+              let worldTime = zeo.getWorldTime();
 
               const speed = 1;
               // const speed = 50;

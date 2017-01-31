@@ -24,9 +24,8 @@ class Build {
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
-        const world = zeo.getCurrentWorld();
 
-        return world.requestWorker(this, {
+        return archae.requestWorker(this, {
           count: 2,
         })
           .then(worker => {

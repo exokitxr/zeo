@@ -43,19 +43,16 @@ class Portal {
     return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/webvr',
-      '/core/engines/rend',
       '/core/engines/cyborg',
       '/core/plugins/geometry-utils',
     ]).then(([
       zeo,
       webvr,
-      rend,
       cyborg,
       geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
-        const world = rend.getCurrentWorld();
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {

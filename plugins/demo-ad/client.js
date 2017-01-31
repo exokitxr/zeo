@@ -123,7 +123,6 @@ module.exports = archae => ({
       ]) => {
         if (live) {
           const {THREE, scene, camera, sound, anima} = zeo;
-          const world = zeo.getCurrentWorld();
           const {alea} = randomUtils;
 
           const starGeometries = starImgs.map(starImg => spriteUtils.makeImageGeometry(starImg, PIXEL_SIZE));
@@ -397,7 +396,7 @@ module.exports = archae => ({
           };
           zeo.on('trigger', _trigger);
 
-          let lastTime = world.getWorldTime();
+          let lastTime = zeo.getWorldTime();
           const _update = () => {
             const _updateMesh = () => {
               const {open} = adState;
@@ -489,7 +488,7 @@ module.exports = archae => ({
               const {mesh} = this;
               const {starMeshes, yourThingHereMesh} = mesh;
 
-              const currentTime = world.getWorldTime();
+              const currentTime = zeo.getWorldTime();
 
               const lastFrame = Math.floor(lastTime / FRAME_INTERVAL);
               const currentFrame = Math.floor(currentTime / FRAME_INTERVAL);

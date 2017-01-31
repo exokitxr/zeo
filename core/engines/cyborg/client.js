@@ -26,6 +26,7 @@ class Cyborg {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/rend',
+      '/core/engines/bullet',
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
     ])
@@ -33,13 +34,13 @@ class Cyborg {
         three,
         webvr,
         rend,
+        bullet,
         jsUtils,
         geometryUtils,
       ]) => {
         if (live) {
-          const {THREE, scene, camera, renderer} = three;
-          const world = rend.getCurrentWorld();
-          const {physics} = world;
+          const {THREE, scene, camera} = three;
+          const physicsWorld = bullet.getPhysicsWorld();
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
@@ -303,7 +304,7 @@ class Cyborg {
               scene.add(mesh);
               this.mesh = mesh;
 
-              const physicsBody = new physics.Compound({
+              const physicsBody = new physicsWorld.Compound({
                 children: [
                   {
                     type: 'box',
@@ -319,7 +320,7 @@ class Cyborg {
               physicsBody.setAngularVelocity([0, 0, 0]);
               physicsBody.disableDeactivation();
               physicsBody.setObject(mesh);
-              physics.add(physicsBody);
+              physicsWorld.add(physicsBody);
               this.physicsBody = physicsBody;
             }
 
@@ -345,7 +346,7 @@ class Cyborg {
             destroy() {
               const {mesh, physicsBody} = this;
               scene.remove(mesh);
-              physics.remove(physicsBody);
+              physicsWorld.remove(physicsBody);
             }
           }
 

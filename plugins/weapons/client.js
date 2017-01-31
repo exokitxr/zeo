@@ -16,14 +16,12 @@ class Weapons {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/rend',
       '/core/engines/cyborg',
       '/core/plugins/geometry-utils',
       '/core/plugins/text-utils',
       '/core/plugins/creature-utils',
     ]).then(([
       zeo,
-      rend,
       cyborg,
       geometryUtils,
       textUtils,
@@ -31,9 +29,8 @@ class Weapons {
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = zeo;
-        const world = rend.getCurrentWorld();
 
-        const {physics} = world;
+        const physicsWorld = zeo.getPhysicsWorld();
         const player = cyborg.getPlayer();
         const controllers = cyborg.getControllers();
 
@@ -190,7 +187,7 @@ class Weapons {
           controllers.forEach(controller => {
             newWeaponMesh.physicsBody.setIgnoreCollisionCheck(controller.physicsBody, true);
           });
-          physics.add(newWeaponMesh.physicsBody);
+          physicsWorld.add(newWeaponMesh.physicsBody);
 
           weaponMeshes[side] = newWeaponMesh;
         };
@@ -404,7 +401,7 @@ class Weapons {
           result.add(lowerRightMesh);
           result.lowerRightMesh = lowerRightMesh;
 
-          const physicsBody = new physics.Compound({
+          const physicsBody = new physicsWorld.Compound({
             children: [
               {
                 type: 'box',
@@ -416,7 +413,7 @@ class Weapons {
           });
           // physicsBody.deactivate();
           physicsBody.setObject(result);
-          // physics.add(physicsBody);
+          // physicsWorld.add(physicsBody);
           result.physicsBody = physicsBody;
 
           return result;
@@ -470,7 +467,7 @@ class Weapons {
             mesh1.add(tipMesh);
             mesh.tipMesh = tipMesh;
 
-            const physicsBody = new physics.Compound({
+            const physicsBody = new physicsWorld.Compound({
               children: [
                 {
                   type: 'box',
@@ -482,7 +479,7 @@ class Weapons {
             });
             // physicsBody.deactivate();
             physicsBody.setObject(mesh);
-            // physics.add(physicsBody);
+            // physicsWorld.add(physicsBody);
             mesh.physicsBody = physicsBody;
 
             return mesh;
@@ -548,7 +545,7 @@ class Weapons {
             mesh.add(tipMesh);
             mesh.tipMesh = tipMesh;
 
-            const physicsBody = new physics.Compound({
+            const physicsBody = new physicsWorld.Compound({
               children: (() => {
                 const barrelEuler = new THREE.Euler(
                   -(Math.PI / 2) - (Math.PI * 0.3),
@@ -587,7 +584,7 @@ class Weapons {
             });
             // physicsBody.deactivate();
             physicsBody.setObject(mesh);
-            // physics.add(physicsBody);
+            // physicsWorld.add(physicsBody);
             mesh.physicsBody = physicsBody;
 
             return mesh;
@@ -635,7 +632,7 @@ class Weapons {
           const clipMesh = new THREE.Mesh(geometry, ITEM_WIREFRAME_MATERIAL);
           mesh.add(clipMesh);
 
-          const physicsBody = new physics.Compound({
+          const physicsBody = new physicsWorld.Compound({
             children: (() => {
               const clipEuler = new THREE.Euler(
                 -(Math.PI / 2),
@@ -660,7 +657,7 @@ class Weapons {
           });
           // physicsBody.deactivate();
           physicsBody.setObject(mesh);
-          // physics.add(physicsBody);
+          // physicsWorld.add(physicsBody);
           mesh.physicsBody = physicsBody;
 
           return mesh;
@@ -704,7 +701,7 @@ class Weapons {
             const mesh3 = new THREE.Mesh(geometry3, ITEM_WIREFRAME_MATERIAL);
             mesh.add(mesh3);
 
-            const physicsBody = new physics.Compound({
+            const physicsBody = new physicsWorld.Compound({
               children: [
                 {
                   type: 'box',
@@ -716,7 +713,7 @@ class Weapons {
             });
             // physicsBody.deactivate();
             physicsBody.setObject(mesh);
-            // physics.add(physicsBody);
+            // physicsWorld.add(physicsBody);
             mesh.physicsBody = physicsBody;
 
             return mesh;
@@ -728,7 +725,7 @@ class Weapons {
             const hudWeaponMeshes = [weaponMeshes.left, weaponMeshes.right].filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
 
             if (hudWeaponMeshes.length > 0) {
-              const worldTime = world.getWorldTime();
+              const worldTime = zeo.getWorldTime();
 
               const _updateHudMeshIcon = () => {
                 const frameIndex = Math.floor(worldTime / 200) % 2;

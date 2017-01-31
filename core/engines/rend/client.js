@@ -65,7 +65,6 @@ class Rend {
       '/core/engines/fs',
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
-      '/core/plugins/random-utils',
       '/core/plugins/creature-utils',
       '/core/plugins/sprite-utils',
     ]).then(([
@@ -78,7 +77,6 @@ class Rend {
       fs,
       jsUtils,
       geometryUtils,
-      randomUtils,
       creatureUtils,
       spriteUtils,
     ]) => {
@@ -86,7 +84,6 @@ class Rend {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {alea} = randomUtils;
 
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
@@ -109,6 +106,7 @@ class Rend {
 
         // main state
         let api = null;
+        let uiTimer = null;
         let menu = null;
         let menuMesh = null;
 
@@ -149,47 +147,7 @@ class Rend {
           tab: 'readme',
         };
 
-        let currentWorld = null;
-
         // api functions
-        /* const _requestChangeWorld = worldName => new Promise((accept, reject) => {
-          Promise.all([
-            bullet.requestWorld('proteus'), // XXX move this to bullet engine itself
-          ])
-            .then(([
-              physics,
-            ]) => {
-              menu.updatePages();
-
-              const startTime = Date.now();
-              let worldTime = 0;
-
-              localUpdates.push(() => {
-                const now = Date.now();
-                worldTime = now - startTime;
-              });
-
-              // load world
-
-              class World {
-                constructor({physics}) {
-                  this.physics = physics;
-                }
-
-                getWorldTime() {
-                  return worldTime;
-                }
-              }
-
-              const world = new World({
-                physics,
-              });
-
-              currentWorld = world;
-
-              accept();
-            });
-        }); */
         const _requestMainReadme = () => fetch('/archae/rend/readme').then(res => res.text());
         const _requestUiTimer = () => new Promise((accept, reject) => {
           const startTime = Date.now();
@@ -206,8 +164,7 @@ class Rend {
             }
           }
 
-          const uiTimer = new UiTimer();
-          accept(uiTimer);
+          accept(new UiTimer());
         });
 
         const _initializeMenu = () => {
@@ -257,13 +214,15 @@ class Rend {
               _requestUis(),
             ]).then(([
               mainReadme,
-              uiTimer,
+              localUiTimer,
               {
                 menuUi,
                 navbarUi,
               },
             ]) => {
               if (live) {
+                uiTimer = localUiTimer;
+
                 const uploadStart = () => {
                   const pages = menuUi.getPages();
                   if (pages.length > 0 && pages[pages.length - 1].type === 'files') { // XXX handle multiple uploads and elementAttributeFiles page
@@ -1546,6 +1505,10 @@ class Rend {
 
               getTab() {
                 return navbarState.tab;
+              }
+
+              getUiTime() {
+                return uiTimer.getUiTime();
               }
 
               addMenuMesh(name, object) {

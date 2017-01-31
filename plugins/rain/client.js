@@ -19,14 +19,11 @@ class Rain {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/rend',
     ]).then(([
       zeo,
-      rend,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
-        const world = rend.getCurrentWorld();
 
         const rainShader = {
           uniforms: THREE.UniformsUtils.merge( [
@@ -257,7 +254,7 @@ class Rain {
             this.mesh = mesh;
 
             const update = () => {
-              const worldTime = world.getWorldTime();
+              const worldTime = zeo.getWorldTime();
 
               const frame = Math.floor(worldTime / PARTICLE_FRAME_TIME) % PARTICLE_FRAMES;
               material.uniforms.frame.value = frame;

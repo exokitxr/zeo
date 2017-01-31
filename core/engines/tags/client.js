@@ -57,7 +57,6 @@ class Tags {
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
-          const world = rend.getCurrentWorld();
 
            const tagsRenderer = tagsRender.makeRenderer({
             creatureUtils,
@@ -163,7 +162,7 @@ class Tags {
               });
             };
             const _updateTextures = () => {
-              const worldTime = world.getWorldTime();
+              const uiTime = rend.getUiTime();
 
               for (let i = 0; i < tagMeshes.length; i++) {
                 const tagMesh = tagMeshes[i];
@@ -178,7 +177,7 @@ class Tags {
                   biolumi.updateMenuMaterial({
                     ui,
                     menuMaterial,
-                    worldTime,
+                    uiTime,
                   });
                 }
               }
