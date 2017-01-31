@@ -145,6 +145,7 @@ class Config {
 
         const stats = new Stats();
         stats.render = () => {}; // overridden below
+        const statsDom = stats.dom.childNodes[0];
 
         return Promise.all([
           _requestUis(),
@@ -182,7 +183,7 @@ class Config {
               statsUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
                 const img = (() => {
                   if (statsCheckboxValue) {
-                    const statsImg = stats.dom.childNodes[0];
+                    const statsImg = statsDom;
                     statsImg.needsUpdate = true;
                     return statsImg;
                   } else {
@@ -307,6 +308,7 @@ class Config {
               stats.render = () => {
                 const {frame: oldFrame} = statsState;
                 const newFrame = Math.floor(Date.now() / STATS_REFRESH_RATE);
+
                 if (newFrame !== oldFrame) {
                   statsState.frame = newFrame;
 
@@ -348,6 +350,8 @@ class Config {
                       pend();
                     }
                   }
+                } else {
+                  next();
                 }
               });
 
