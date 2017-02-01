@@ -192,53 +192,72 @@ class Zeo {
               return _startRenderLoop()
                 .then(() => {
                   if (live) {
-                    const helper = document.createElement('div');
-                    helper.style.cssText = `\
-                      display: flex;
-                      position: absolute;
-                      top: 0;
-                      bottom: 0;
-                      left: 0;
-                      right: 0;
-                      align-items: center;
-                      background-color: rgba(0, 0, 0, 0.5);
-                      font-family: 'Open Sans';
-                    `;
-                    helper.innerHTML = `\
-                      <div style="display: flex; width: 100%; margin: auto 0; justify-content: center; color: #FFF;">
-                        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                          <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
-                          <h1 style="width: 400px; margin: 0; margin-bottom: 20px; font-size: 30px; font-weight: 300;"><span id=username>Username</span> / <span id=worldname>Unknown world</span></h1>
-                          <div style="display: flex; width: 400px; margin-bottom: 20px;">
-                            <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: 'Open Sans'; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="headset-button">Headset</button>
-                            <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: 'Open Sans'; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="keyboard-button">Mouse + Keyboard</button>
+                    const _initHelper = () => {
+                      const helper = document.createElement('div');
+                      helper.style.cssText = `\
+                        display: flex;
+                        position: absolute;
+                        top: 0;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        align-items: center;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        font-family: 'Open Sans';
+                      `;
+                      helper.innerHTML = `\
+                        <div style="display: flex; width: 100%; margin: auto 0; justify-content: center; color: #FFF;">
+                          <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
+                            <h1 style="width: 400px; margin: 0; margin-bottom: 20px; font-size: 30px; font-weight: 300;"><span id=username>Username</span> / <span id=worldname>Unknown world</span></h1>
+                            <div style="display: flex; width: 400px; margin-bottom: 20px;">
+                              <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: 'Open Sans'; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="headset-button">Headset</button>
+                              <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: 'Open Sans'; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="keyboard-button">Mouse + Keyboard</button>
+                            </div>
+                            <p style="width: 400px; margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.5); font-weight: 300;" id="error-message">WebVR is not supported by your browser so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
                           </div>
-                          <p style="width: 400px; margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.5); font-weight: 300;" id="error-message">WebVR is not supported by your browser so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
                         </div>
-                      </div>
-                    `;
-                    document.body.appendChild(helper);
+                      `;
+                      document.body.appendChild(helper);
 
-                    const _styleButton = button => {
-                      button.addEventListener('mouseover', e => {
-                        button.style.backgroundColor = '#FFF';
-                        button.style.borderColor = 'transparent';
-                        button.style.color = '#000';
-                      });
-                      button.addEventListener('mouseout', e => {
-                        button.style.backgroundColor = 'transparent';
-                        button.style.borderColor = 'currentColor';
-                        button.style.color = '#FFF';
-                      });
-                    };
+                      const _styleButton = button => {
+                        button.addEventListener('mouseover', e => {
+                          button.style.backgroundColor = '#FFF';
+                          button.style.borderColor = 'transparent';
+                          button.style.color = '#000';
+                        });
+                        button.addEventListener('mouseout', e => {
+                          button.style.backgroundColor = 'transparent';
+                          button.style.borderColor = 'currentColor';
+                          button.style.color = '#FFF';
+                        });
+                      };
 
-                    const headsetButton = $('#headset-button')[0];
-                    if (supportsWebVR) {
-                      _styleButton(headsetButton);
-                      headsetButton.addEventListener('click', e => {
+                      const headsetButton = $('#headset-button')[0];
+                      if (supportsWebVR) {
+                        _styleButton(headsetButton);
+                        headsetButton.addEventListener('click', e => {
+                          if (!webvr.display) {
+                            _enterVR({
+                              stereoscopic: true,
+                              onExit: () => {
+                                helper.style.display = 'flex';
+                              },
+                            });
+
+                            helper.style.display = 'none';
+                          }
+                        });
+                      } else {
+                        headsetButton.style.display = 'none';
+                      }
+
+                      const keyboardButton = $('#keyboard-button')[0];
+                      _styleButton(keyboardButton);
+                      keyboardButton.addEventListener('click', e => {
                         if (!webvr.display) {
                           _enterVR({
-                            stereoscopic: true,
+                            stereoscopic: false,
                             onExit: () => {
                               helper.style.display = 'flex';
                             },
@@ -247,40 +266,24 @@ class Zeo {
                           helper.style.display = 'none';
                         }
                       });
-                    } else {
-                      headsetButton.style.display = 'none';
-                    }
 
-                    const keyboardButton = $('#keyboard-button')[0];
-                    _styleButton(keyboardButton);
-                    keyboardButton.addEventListener('click', e => {
-                      if (!webvr.display) {
-                        _enterVR({
-                          stereoscopic: false,
-                          onExit: () => {
-                            helper.style.display = 'flex';
-                          },
-                        });
-
-                        helper.style.display = 'none';
+                      const errorMessage = $('#error-message')[0];
+                      if (supportsWebVR) {
+                        errorMessage.style.display = 'none';
                       }
-                    });
 
-                    const errorMessage = $('#error-message')[0];
-                    if (supportsWebVR) {
-                      errorMessage.style.display = 'none';
-                    }
-
-                    const userState = hub.getUserState();
-                    const {username, world} = userState;
-                    if (username) {
-                      const usernameEl = $('#username')[0];
-                      usernameEl.innerText = username;
-                    }
-                    if (world) {
-                      const worldnameEl = $('#worldname')[0];
-                      worldnameEl.innerText = world;
-                    }
+                      const userState = hub.getUserState();
+                      const {username, world} = userState;
+                      if (username) {
+                        const usernameEl = $('#username')[0];
+                        usernameEl.innerText = username;
+                      }
+                      if (world) {
+                        const worldnameEl = $('#worldname')[0];
+                        worldnameEl.innerText = world;
+                      }
+                    };
+                    _initHelper();
 
                     class Listener {
                       constructor(handler, priority) {

@@ -297,9 +297,12 @@ class World {
 
                   item.lock()
                     .then(unlock => {
-                      rend.requestModElementApi(name)
-                        .then(elementApi => {
-                          const tag = archae.getName(elementApi);
+                      archae.requestPlugin(name)
+                        .then(pluginInstance => {
+                          const name = archae.getName(pluginInstance);
+
+                          const tag = name;
+                          let elementApi = modElementApis[tag];
                           if (!HTMLElement.isPrototypeOf(elementApi)) {
                             elementApi = HTMLElement;
                           }
