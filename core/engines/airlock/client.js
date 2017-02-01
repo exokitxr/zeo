@@ -1,5 +1,5 @@
-const GRID_SIZE = 32;
-const GRID_RESOLUTION = 2;
+const GRID_SIZE = 128;
+const GRID_RESOLUTION = 4;
 const TARGET_RADII = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 
 const LINE_COLOR = 0xCCCCCC;
@@ -74,22 +74,33 @@ class Airlock {
             const depth = GRID_SIZE;
             const resolution = GRID_RESOLUTION;
 
-            const positions = new Float32Array(width * depth * resolution * resolution * 3);
-            for (let i = 0; i < width; i++) {
-              const baseI = i * depth * resolution * resolution * 3;
-              for (let j = 0; j < depth; j++) {
-                const baseJ = baseI + (j * resolution * resolution * 3);
-                for (let k = 0; k < resolution; k++) {
-                  const baseK = baseJ + (k * resolution * 3);
-                  for (let l = 0; l < resolution; l++) {
-                    const baseL = baseK + (l * 3);
-                    positions[baseL + 0] = -(width / 2) + i + (k / resolution);
-                    positions[baseL + 1] = 0;
-                    positions[baseL + 2] = -(depth / 2) + j + (l / resolution);
-                  }
+            const positions = new Float32Array(
+              (4 * 4 * resolution * resolution * 3) +
+              (16 * 16 * (resolution / 2) * (resolution / 2) * 3) +
+              (64 * 64 * (resolution / 4) * (resolution / 4) * 3) +
+              (width * depth * (resolution / 8) * (resolution / 8) * 3)
+            );
+            let baseIndex = 0;
+            [
+              [4, 4, resolution],
+              [16, 16, resolution / 2],
+              [64, 64, resolution / 4],
+              [width, depth, resolution / 8],
+            ].forEach(([width, depth, resolution]) => {
+              for (let i = 0; i < (width * resolution); i++) {
+                for (let j = 0; j < (depth * resolution); j++) {
+                  const x = -(width / 2) + (i / resolution);
+                  const y = 0.04;
+                  const z = -(depth / 2) + (j / resolution);
+
+                  positions[baseIndex + 0] = x;
+                  positions[baseIndex + 1] = y;
+                  positions[baseIndex + 2] = z;
+
+                  baseIndex += 3;
                 }
               }
-            }
+            });
 
             const geometry = new THREE.BufferGeometry();
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -99,9 +110,26 @@ class Airlock {
               size: 0.02,
             });
 
-            return new THREE.Points(geometry, material);
+            const mesh = new THREE.Points(geometry, material);
+            return mesh;
           })();
           object.add(gridMesh);
+
+          const floorMesh = (() => {
+            const geometry = new THREE.PlaneBufferGeometry(GRID_SIZE, GRID_SIZE);
+            geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+            geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.03, 0));
+
+            const material = new THREE.MeshPhongMaterial({
+              color: 0xFFFFFF,
+              shininess: 10,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.receiveShadow = true;
+            return mesh;
+          })();
+          object.add(floorMesh);
 
           const targetMesh = (() => {
             const geometry = (() => {
@@ -127,13 +155,11 @@ class Airlock {
             const material = new THREE.MeshBasicMaterial({
               color: LINE_COLOR,
               wireframe: true,
+              depthWrite: false,
               // opacity: 0.5,
               // transparent: true,
               // depthTest: flase,
             });
-            // material.polygonOffset = true;
-            // material.polygonOffsetFactor = -1;
-            // material.polygonOffsetUnits = 1;
 
             const mesh = new THREE.LineSegments(geometry, material);
             return mesh;
