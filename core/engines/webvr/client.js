@@ -611,13 +611,16 @@ class WebVR {
               const {position: userPosition, rotation: userQuaternion, scale: userScale} = _getPropertiesFromMatrix(userStageMatrix);
               const userRotationY = new THREE.Euler().setFromQuaternion(userQuaternion, camera.rotation.order).y;
 
-              const {position: displayPosition, rotation: displayQuaternion, scale: displayScale} = _getPropertiesFromMatrix(display.matrix);
+              const frameData = new VRFrameData();
+              display.getFrameData(frameData);
+              const displayPosition = new THREE.Vector3().fromArray(frameData.pose.position);
+              const displayQuaternion = new THREE.Quaternion().fromArray(frameData.pose.orientation);
               const displayRotationY = new THREE.Euler().setFromQuaternion(displayQuaternion, camera.rotation.order).y;
 
               const newUserStageMatrix = new THREE.Matrix4().compose(
                 userPosition.clone().add(displayPosition.clone().applyQuaternion(userQuaternion)),
                 new THREE.Quaternion().setFromEuler(new THREE.Euler(0, userRotationY + displayRotationY, 0, camera.rotation.order)),
-                userScale.clone().multiply(displayScale)
+                userScale
               );
 
               hub.setUserStateMatrix(newUserStageMatrix.toArray());
