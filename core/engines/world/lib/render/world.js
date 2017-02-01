@@ -1,4 +1,7 @@
 const menuUtils = require('../utils/menu');
+const {
+  WORLD_HEIGHT,
+} = require('../constants/world');
 
 const getInputSrc = ({inputText, inputPlaceholder, inputValue, focus, onclick}) => `\
   <div style='position: relative; height: 100px; width 1000px; font-size: 72px; line-height: 1.4;'>
@@ -24,7 +27,7 @@ const getReadmePageSrc = ({item, loading}) => {
 
 const getAttributesPageSrc = ({item, inputText, inputValue, positioningName, focusAttribute}) => {
   if (item) {
-    let result = '';
+    let acc = '';
 
     const {attributes} = item;
     if (attributes) {
@@ -33,7 +36,7 @@ const getAttributesPageSrc = ({item, inputText, inputValue, positioningName, foc
         const {type, value, min, max, step, options} = attribute;
         const focus = name === focusAttribute;
 
-        result += `\
+        acc += `\
           <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
             <div style="width: ${200 - 30}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
             ${getElementAttributeInput(name, type, value, min, max, step, options, positioningName, inputText, inputValue, focus)}
@@ -42,8 +45,8 @@ const getAttributesPageSrc = ({item, inputText, inputValue, positioningName, foc
       }
     }
 
-    if (result) {
-      return result;
+    if (acc) {
+      return '<div style="min-height: ${WORLD_HEIGHT};">' + acc + '</div>';
     } else {
       return `\
         <div>No attributes</div>
