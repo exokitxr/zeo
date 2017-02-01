@@ -1448,6 +1448,10 @@ class Rend {
                 return uiTimer.getUiTime();
               }
 
+              getMenuMesh() {
+                return menuMesh;
+              }
+
               addMenuMesh(name, object) {
                 menuMesh.add(object);
                 menuMesh[name] = object;

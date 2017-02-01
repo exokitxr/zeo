@@ -62,12 +62,12 @@ class Tags {
             creatureUtils,
           });
 
-          const _decomposeObjectMatrixWorld = object => {
-            const {matrixWorld} = object;
+          const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+          const _decomposeMatrix = matrix => {
             const position = new THREE.Vector3();
             const rotation = new THREE.Quaternion();
             const scale = new THREE.Vector3();
-            matrixWorld.decompose(position, rotation, scale);
+            matrix.decompose(position, rotation, scale);
             return {position, rotation, scale};
           };
 
@@ -375,25 +375,32 @@ class Tags {
             }
 
             grabTag(side, tagMesh) {
-              scene.add(tagMesh);
+              const menuMesh = rend.getMenuMesh();
+              menuMesh.add(tagMesh);
 
               const {item} = tagMesh;
               item.matrix = DEFAULT_TAG_MATRIX;
 
               const grabber = hands.grab(side, tagMesh);
               grabber.on('update', ({position, rotation}) => {
-                const newRotation = rotation.clone().multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
-                const newPosition = position.clone().add(
-                  new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
-                );
+                const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
+                const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
+
+                const newRotation = menuMeshQuaternionInverse.clone()
+                  .multiply(rotation)
+                  .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
+                const newPosition = position.clone().applyMatrix4(menuMeshMatrixInverse)
+                  .add(
+                    new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
+                  );
 
                 tagMesh.position.copy(newPosition);
                 tagMesh.quaternion.copy(newRotation);
               });
               grabber.on('release', () => {
                 const {position, quaternion, item} = tagMesh;
-                const newMatrix = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
-                item.matrix = newMatrix;
+                const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
+                item.matrix = newMatrixArray;
 
                 grabState.grabber = null;
               });

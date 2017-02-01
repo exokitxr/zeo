@@ -1388,10 +1388,11 @@ class World {
                 }
                 _alignTagMeshes(tags.getTagsClass('elements'));
 
+                const menuMesh = rend.getMenuMesh();
                 for (let i = 0; i < free.length; i++) {
                   const itemSpec = free[i];
                   const tagMesh = tags.makeTag(itemSpec);
-                  scene.add(tagMesh);
+                  menuMesh.add(tagMesh);
                 }
               };
               _initializeElements();
