@@ -331,17 +331,8 @@ class Rend {
                     const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                     // mesh.position.y = 1.5;
                     mesh.position.z = -1;
-                    mesh.receiveShadow = true;
+                    // mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
-
-                    const shadowMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                      const material = transparentMaterial;
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.castShadow = true;
-                      return mesh;
-                    })();
-                    mesh.add(shadowMesh);
 
                     return mesh;
                   })();
@@ -366,24 +357,27 @@ class Rend {
                     const materials = [solidMaterial, menuMaterial];
 
                     const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                    mesh.position.y = -0.25;
-                    mesh.position.z = -0.25;
-                    mesh.receiveShadow = true;
+                    mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
+                    mesh.position.z = -1;
+                    // mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
-
-                    const shadowMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                      const material = transparentMaterial;
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.castShadow = true;
-                      return mesh;
-                    })();
-                    mesh.add(shadowMesh);
 
                     return mesh;
                   })();
                   object.add(navbarMesh);
                   object.navbarMesh = navbarMesh;
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
+                    const material = transparentMaterial.clone();
+                    material.depthWrite = false;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  object.add(shadowMesh);
 
                   object.inventoryMesh = null;
 

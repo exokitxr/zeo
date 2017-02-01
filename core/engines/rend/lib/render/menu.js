@@ -749,7 +749,7 @@ const getFilesButtonsSrc = (selectedName, clipboardPath, prefix) => `\
 `;
 
 const getNavbarSrc = ({tab}) => `\
-  <div style="display: flex; width: 1000px; height: 50px;">
+  <div style="display: flex; width: 1024px; height: 50px;">
     <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none;" onclick="navbar:readme">
       ${tab === 'readme' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
       <span>Readme</span>
