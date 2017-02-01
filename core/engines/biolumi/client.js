@@ -181,18 +181,18 @@ class Biolumi {
                         document.body.removeChild(divEl);
 
                         const img = new Image();
-                        img.src = 'data:image/svg+xml;charset=utf-8,' + '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + scrollHeight + '\'>' +
+                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + scrollHeight + '\'>' +
                           '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
                             innerSrc +
                           '</foreignObject>' +
-                        '</svg>';
+                        '</svg>');
                         img.onload = () => {
                           layer.img = img;
 
                           pend();
                         };
                         img.onerror = err => {
-                          console.warn('biolumi image load error', {innerSrc}, err);
+                          console.warn('biolumi image load error', {src: img.src}, err);
                         };
 
                         const layer = new Layer(this);

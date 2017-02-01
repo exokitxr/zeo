@@ -24,7 +24,7 @@ import menuUtils from './lib/utils/menu';
 import keyboardImg from './lib/images/keyboard';
 import menuRender from './lib/render/menu';
 
-const keyboardImgSrc = 'data:image/svg+xml,' + keyboardImg;
+const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImg);
 
 const SIDES = ['left', 'right'];
 
