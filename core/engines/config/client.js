@@ -261,7 +261,7 @@ class Config {
 
                   const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   // mesh.position.y = 1.5;
-                  mesh.position.z = -0.5 + 0.001;
+                  mesh.position.z = -0.5 + 0.01;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
 
