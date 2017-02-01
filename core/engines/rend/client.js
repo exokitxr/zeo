@@ -316,9 +316,9 @@ class Rend {
                     const menuMaterial = biolumi.makeMenuMaterial();
 
                     const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const material = menuMaterial;
+                    const materials = [solidMaterial, menuMaterial];
 
-                    const mesh = new THREE.Mesh(geometry, menuMaterial);
+                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                     // mesh.position.y = 1.5;
                     mesh.position.z = -1;
                     mesh.receiveShadow = true;
