@@ -62,6 +62,7 @@ class Rain {
             THREE.ShaderChunk[ "color_pars_vertex" ],
             THREE.ShaderChunk[ "shadowmap_pars_vertex" ],
             THREE.ShaderChunk[ "logdepthbuf_pars_vertex" ],
+            THREE.ShaderChunk[ "fog_pars_vertex" ],
 
             "void main() {",
 
@@ -85,6 +86,7 @@ class Rain {
               THREE.ShaderChunk[ "logdepthbuf_vertex" ],
               THREE.ShaderChunk[ "worldpos_vertex" ],
               THREE.ShaderChunk[ "shadowmap_vertex" ],
+              THREE.ShaderChunk[ "fog_vertex" ],
 
             "}"
 
