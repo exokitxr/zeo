@@ -108,7 +108,7 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
         return `\
 <a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
   <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${focusValue}</div>
-  <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
+  <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">${unescape(encodeURIComponent('▼'))}</div>
 </a>
 `;
       } else {
