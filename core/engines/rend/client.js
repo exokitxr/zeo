@@ -385,6 +385,13 @@ class Rend {
                 })();
                 scene.add(menuMesh);
 
+                const menuDotMeshes = {
+                  left: biolumi.makeMenuDotMesh(),
+                  right: biolumi.makeMenuDotMesh(),
+                };
+                scene.add(menuDotMeshes.left);
+                scene.add(menuDotMeshes.right);
+
                 const menuBoxMeshes = {
                   left: biolumi.makeMenuBoxMesh(),
                   right: biolumi.makeMenuBoxMesh(),
@@ -392,19 +399,19 @@ class Rend {
                 scene.add(menuBoxMeshes.left);
                 scene.add(menuBoxMeshes.right);
 
+                const navbarDotMeshes = {
+                  left: biolumi.makeMenuDotMesh(),
+                  right: biolumi.makeMenuDotMesh(),
+                };
+                scene.add(navbarDotMeshes.left);
+                scene.add(navbarDotMeshes.right);
+
                 const navbarBoxMeshes = {
                   left: biolumi.makeMenuBoxMesh(),
                   right: biolumi.makeMenuBoxMesh(),
                 };
                 scene.add(navbarBoxMeshes.left);
                 scene.add(navbarBoxMeshes.right);
-
-                const menuDotMeshes = {
-                  left: biolumi.makeMenuDotMesh(),
-                  right: biolumi.makeMenuDotMesh(),
-                };
-                scene.add(menuDotMeshes.left);
-                scene.add(menuDotMeshes.right);
 
                 const keyboardMesh = (() => {
                   const keySpecs = (() => {
@@ -1015,6 +1022,9 @@ class Rend {
                     SIDES.forEach(side => {
                       menuBoxMeshes[side].visible = false;
                       menuDotMeshes[side].visible = false;
+
+                      navbarBoxMeshes[side].visible = false;
+                      navbarDotMeshes[side].visible = false;
                     });
                   } else {
                     menuState.open = true;
@@ -1158,8 +1168,11 @@ class Rend {
                   scene.remove(keyboardMesh);
 
                   SIDES.forEach(side => {
-                    scene.remove(menuBoxMeshes[side]);
                     scene.remove(menuDotMeshes[side]);
+                    scene.remove(menuBoxMeshes[side]);
+
+                    scene.remove(navbarDotMeshes[side]);
+                    scene.remove(navbarBoxMeshes[side]);
 
                     scene.remove(keyboardBoxMeshes[side]);
                   });
@@ -1176,13 +1189,9 @@ class Rend {
                   left: biolumi.makeMenuHoverState(),
                   right: biolumi.makeMenuHoverState(),
                 };
-
-                const _makeNavbarHoverState = () => ({
-                  anchor: null,
-                });
                 const navbarHoverStates = {
-                  left: _makeNavbarHoverState(),
-                  right: _makeNavbarHoverState(),
+                  left: biolumi.makeMenuHoverState(),
+                  right: biolumi.makeMenuHoverState(),
                 };
 
                 const _makeKeyboardHoverState = () => ({
@@ -1294,6 +1303,7 @@ class Rend {
                           const menuBoxMesh = menuBoxMeshes[side];
 
                           const navbarHoverState = navbarHoverStates[side];
+                          const navbarDotMesh = navbarDotMeshes[side];
                           const navbarBoxMesh = navbarBoxMeshes[side];
 
                           const keyboardHoverState = keyboardHoverStates[side];
@@ -1318,77 +1328,21 @@ class Rend {
                                 controllerRotation,
                               });
                             }
-                          };
-                          const _updateNavbarAnchors = () => {
-                            const {position: navbarPosition, rotation: navbarRotation, scale: navbarScale} = navbarMatrixObject;
 
-                            const anchorBoxTargets = (() => {
-                              const result = [];
-                              const layers = navbarUi.getLayers();
-                              for (let i = 0; i < layers.length; i++) {
-                                const layer = layers[i];
-                                const anchors = layer.getAnchors();
-
-                                for (let j = 0; j < anchors.length; j++) {
-                                  const anchor = anchors[j];
-                                  const {rect} = anchor;
-
-                                  const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                    navbarPosition,
-                                    navbarRotation,
-                                    navbarScale,
-                                    new THREE.Vector3(
-                                      -(NAVBAR_WORLD_WIDTH / 2) + (rect.left / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
-                                      (NAVBAR_WORLD_HEIGHT / 2) + (-rect.top / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
-                                      -NAVBAR_WORLD_DEPTH
-                                    ),
-                                    new THREE.Vector3(
-                                      -(NAVBAR_WORLD_WIDTH / 2) + (rect.right / NAVBAR_WIDTH) * NAVBAR_WORLD_WIDTH,
-                                      (NAVBAR_WORLD_HEIGHT / 2) + (-rect.bottom / NAVBAR_HEIGHT) * NAVBAR_WORLD_HEIGHT,
-                                      NAVBAR_WORLD_DEPTH
-                                    )
-                                  );
-                                  anchorBoxTarget.anchor = anchor;
-
-                                  result.push(anchorBoxTarget);
-                                }
-                              }
-                              return result;
-                            })();
-                            const anchorBoxTarget = (() => {
-                              const nearAnchorBoxTargets = anchorBoxTargets
-                                .map(anchorBoxTarget => ({
-                                  anchorBoxTarget,
-                                  distance: anchorBoxTarget.position.distanceTo(controllerPosition),
-                                }))
-                                .filter(({distance}) => distance < 0.1)
-                                .sort((a, b) => a.distance - b.distance)
-                                .map(({anchorBoxTarget}) => anchorBoxTarget);
-
-                              if (nearAnchorBoxTargets.length > 0) {
-                                return nearAnchorBoxTargets[0];
-                              } else {
-                                return null;
-                              }
-                            })();
-                            if (anchorBoxTarget) {
-                              const {anchor} = anchorBoxTarget;
-                              navbarHoverState.anchor = anchor;
-
-                              navbarBoxMesh.position.copy(anchorBoxTarget.position);
-                              navbarBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                              navbarBoxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
-
-                              if (!navbarBoxMesh.visible) {
-                                navbarBoxMesh.visible = true;
-                              }
-                            } else {
-                              navbarHoverState.anchor = null;
-
-                              if (navbarBoxMesh.visible) {
-                                navbarBoxMesh.visible = false;
-                              }
-                            }
+                            biolumi.updateAnchors({
+                              matrixObject: navbarMatrixObject,
+                              ui: navbarUi,
+                              hoverState: navbarHoverState,
+                              dotMesh: navbarDotMesh,
+                              boxMesh: navbarBoxMesh,
+                              width: NAVBAR_WIDTH,
+                              height: NAVBAR_HEIGHT,
+                              worldWidth: NAVBAR_WORLD_WIDTH,
+                              worldHeight: NAVBAR_WORLD_HEIGHT,
+                              worldDepth: NAVBAR_WORLD_DEPTH,
+                              controllerPosition,
+                              controllerRotation,
+                            });
                           };
                           const _updateKeyboardAnchors = () => {
                             const {planeMesh} = keyboardMesh;
@@ -1465,7 +1419,6 @@ class Rend {
                           };
 
                           _updateMenuAnchors();
-                          _updateNavbarAnchors();
                           _updateKeyboardAnchors();
                         }
                       });
