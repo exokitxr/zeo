@@ -1020,7 +1020,7 @@ class Rend {
                     menuState.open = true;
                     menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-                    const newPosition = camera.position;
+                    const newPosition = camera.position.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion));
                     const newRotation = camera.quaternion;
 
                     menuMesh.position.copy(newPosition);
