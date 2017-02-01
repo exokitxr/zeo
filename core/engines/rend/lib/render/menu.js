@@ -748,30 +748,45 @@ const getFilesButtonsSrc = (selectedName, clipboardPath, prefix) => `\
 </div>
 `;
 
-const getNavbarSrc = ({tab}) => `\
-  <div style="display: flex; width: 1024px; height: 50px;">
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none;" onclick="navbar:readme">
-      ${tab === 'readme' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>Readme</span>
-    </a>
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:multiverse">
-      ${tab === 'multiverse' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>Multiverse</span>
-    </a>
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:world">
-      ${tab === 'world' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>World</span>
-    </a>
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:inventory">
-      ${tab === 'inventory' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>Inventory</span>
-    </a>
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:options">
-      ${tab === 'options' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>Options</span>
-    </a>
-  </div>
-`;
+const getNavbarSrc = ({tab}) => {
+  const focusedContent = label => `\
+    <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #000 transparent transparent;"></div>
+    <div style="position: absolute; top: 0; left: 1px; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #FFF transparent transparent;"></div>
+    <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #000;"></div>
+    <div style="position: absolute; top: 0; right: 1px; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #FFF;"></div>
+    <div style="display: flex; position: relative; width: 150px; background-color: #FFF; border-top: 1px solid #000; justify-content: center; align-items: center;">${label}</div>
+    <div style="position: absolute; top: 0; left: 25px; right: 25px; border-top: 1px solid #000;"></div>
+  `;
+  const unfocusedContent = label => `\
+    <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #000 transparent transparent;"></div>
+    <div style="position: absolute; top: 0; left: 1px; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #CCC transparent transparent;"></div>
+    <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #000;"></div>
+    <div style="position: absolute; top: 0; right: 1px; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #CCC;"></div>
+    <div style="display: flex; position: relative; width: 150px; background-color: #CCC; justify-content: center; align-items: center;">${label}</div>
+    <div style="position: absolute; top: 0; left: 25px; right: 25px; border-top: 1px solid #000;"></div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; border-bottom: 1px solid #000;"></div>
+  `;
+
+  return `\
+    <div style="display: flex; width: 1024px; height: 50px; background-color: rgba(255, 255, 255, 0.5);">
+      <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; ${tab === 'readme' ? 'z-index: 1;' : ''}" onclick="navbar:readme">
+        ${tab === 'readme' ? focusedContent('Readme') : unfocusedContent('Readme')}
+      </a>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'multiverse' ? 'z-index: 1;' : ''}" onclick="navbar:multiverse">
+        ${tab === 'multiverse' ? focusedContent('Multiverse') : unfocusedContent('Multiverse')}
+      </a>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'world' ? 'z-index: 1;' : ''}" onclick="navbar:world">
+        ${tab === 'world' ? focusedContent('World') : unfocusedContent('World')}
+      </a>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'inventory' ? 'z-index: 1;' : ''}" onclick="navbar:inventory">
+        ${tab === 'inventory' ? focusedContent('Inventory') : unfocusedContent('Inventory')}
+      </a>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'options' ? 'z-index: 1;' : ''}" onclick="navbar:options">
+        ${tab === 'options' ? focusedContent('Options') : unfocusedContent('Options')}
+      </a>
+    </div>
+  `;
+};
 
 return {
   getMainPageSrc,

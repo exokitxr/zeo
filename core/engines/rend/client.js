@@ -354,9 +354,9 @@ class Rend {
                     const menuMaterial = biolumi.makeMenuMaterial();
 
                     const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, menuMaterial];
+                    const material = menuMaterial;
 
-                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    const mesh = new THREE.Mesh(geometry, material);
                     mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
                     mesh.position.z = -1;
                     mesh.receiveShadow = true;
