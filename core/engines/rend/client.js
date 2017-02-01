@@ -331,7 +331,7 @@ class Rend {
                     const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                     // mesh.position.y = 1.5;
                     mesh.position.z = -1;
-                    // mesh.receiveShadow = true;
+                    mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
 
                     return mesh;
@@ -359,7 +359,7 @@ class Rend {
                     const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                     mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
                     mesh.position.z = -1;
-                    // mesh.receiveShadow = true;
+                    mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
 
                     return mesh;

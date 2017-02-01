@@ -214,7 +214,7 @@ class Config {
 
               const configMesh = (() => {
                 const object = new THREE.Object3D();
-                object.position.y = -0.25;
+                // object.position.y = -0.25;
                 object.visible = false;
 
                 const planeMesh = (() => {
@@ -232,15 +232,6 @@ class Config {
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
-
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                    const material = transparentMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
-                    return mesh;
-                  })();
-                  mesh.add(shadowMesh);
 
                   return mesh;
                 })();
@@ -272,15 +263,6 @@ class Config {
                   mesh.position.z = -0.5;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
-
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                    const material = transparentMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
-                    return mesh;
-                  })();
-                  mesh.add(shadowMesh);
 
                   return mesh;
                 })();
