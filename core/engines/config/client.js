@@ -244,8 +244,9 @@ class Config {
 
               const statsMesh = (() => {
                 const object = new THREE.Object3D();
-                object.position.x = -0.5 + (STATS_WORLD_WIDTH / 2);
-                object.position.y = -0.25;
+                object.position.x = -(2 / 2) + (STATS_WORLD_WIDTH / 2);
+                object.position.y = -((2 / 1.5) / 2) + (STATS_WORLD_HEIGHT / 2);
+                object.position.z = -0.5;
                 object.visible = configState.statsCheckboxValue;
 
                 const planeMesh = (() => {
@@ -260,7 +261,7 @@ class Config {
 
                   const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   // mesh.position.y = 1.5;
-                  mesh.position.z = -0.5;
+                  mesh.position.z = -0.5 + 0.001;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
 
