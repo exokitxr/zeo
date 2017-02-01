@@ -88,6 +88,7 @@ class Rend {
         const transparentImg = biolumi.getTransparentImg();
         const maxNumTextures = biolumi.getMaxNumTextures();
         const transparentMaterial = biolumi.getTransparentMaterial();
+        const solidMaterial = biolumi.getSolidMaterial();
 
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,

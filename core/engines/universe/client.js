@@ -52,6 +52,8 @@ class Universe {
         const {THREE, scene, camera} = three;
         const {alea} = randomUtils;
 
+        const solidMaterial = biolumi.getSolidMaterial();
+
         const _decomposeObjectMatrixWorld = object => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
@@ -177,9 +179,9 @@ class Universe {
                   const menuMaterial = biolumi.makeMenuMaterial();
 
                   const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const material = menuMaterial;
+                  const materials = [solidMaterial, menuMaterial];
 
-                  const mesh = new THREE.Mesh(geometry, material);
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;

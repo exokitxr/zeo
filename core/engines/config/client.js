@@ -65,6 +65,7 @@ class Config {
 
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
+        const solidMaterial = biolumi.getSolidMaterial();
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
@@ -224,9 +225,9 @@ class Config {
                   const menuMaterial = biolumi.makeMenuMaterial();
 
                   const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const material = menuMaterial;
+                  const materials = [solidMaterial, menuMaterial];
 
-                  const mesh = new THREE.Mesh(geometry, material);
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   // mesh.position.y = 1.5;
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;
@@ -256,9 +257,9 @@ class Config {
                   const menuMaterial = biolumi.makeMenuMaterial();
 
                   const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const material = menuMaterial;
+                  const materials = [solidMaterial, menuMaterial];
 
-                  const mesh = new THREE.Mesh(geometry, material);
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   // mesh.position.y = 1.5;
                   mesh.position.z = -0.5 + 0.001;
                   mesh.receiveShadow = true;

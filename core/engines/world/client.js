@@ -64,6 +64,7 @@ class World {
         const zeroQuaternion = new THREE.Quaternion();
 
         const transparentMaterial = biolumi.getTransparentMaterial();
+        const solidMaterial = biolumi.getSolidMaterial();
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
@@ -602,9 +603,9 @@ class World {
                   const menuMaterial = biolumi.makeMenuMaterial();
 
                   const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const material = menuMaterial;
+                  const materials = [solidMaterial, menuMaterial];
 
-                  const mesh = new THREE.Mesh(geometry, material);
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   mesh.visible = false;
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;
