@@ -607,18 +607,9 @@ class World {
 
                   const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   mesh.visible = false;
-                  mesh.position.y = -0.25;
+                  mesh.position.z = -1;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
-
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                    const material = transparentMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
-                    return mesh;
-                  })();
-                  mesh.add(shadowMesh);
 
                   return mesh;
                 };

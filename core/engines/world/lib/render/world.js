@@ -1,6 +1,6 @@
 const menuUtils = require('../utils/menu');
 const {
-  WORLD_HEIGHT,
+  HEIGHT,
 } = require('../constants/world');
 
 const getInputSrc = ({inputText, inputPlaceholder, inputValue, focus, onclick}) => `\
@@ -46,7 +46,7 @@ const getAttributesPageSrc = ({item, inputText, inputValue, positioningName, foc
     }
 
     if (acc) {
-      return '<div style="min-height: ${WORLD_HEIGHT};">' + acc + '</div>';
+      return `<div style="min-height: ${HEIGHT}px;">` + acc + `</div>`;
     } else {
       return `\
         <div>No attributes</div>
