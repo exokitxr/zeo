@@ -275,21 +275,11 @@ class Rend {
                     type: 'html',
                     src: mainReadme,
                     x: 0,
-                    y: 150 + 2,
+                    y: 0,
                     w: WIDTH,
-                    h: HEIGHT - (150 + 2),
+                    h: HEIGHT,
                     scroll: true,
                   },
-                  {
-                    type: 'image',
-                    img: creatureUtils.makeAnimatedCreature('zeo.sh'),
-                    x: 0,
-                    y: 0,
-                    w: 150,
-                    h: 150,
-                    frameTime: 300,
-                    pixelated: true,
-                  }
                 ], {
                   type: 'main',
                   immediate: true,
