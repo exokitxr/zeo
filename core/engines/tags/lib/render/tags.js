@@ -1,7 +1,7 @@
 const makeRenderer = ({creatureUtils}) => {
 
-const getTagSrc = ({displayName, description, version}) => `\
-  <div style="display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none;">
+const getTagSrc = ({displayName, description, version, instancing}) => `\
+  <div style="display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; ${instancing ? 'filter: brightness(75%);' : ''}">
     <div style="width: 100px; height: 100px; margin: 0 10px;"></div>
     <div style="width: 270px; margin-right: 10px;">
       <div style="height: 100px;">

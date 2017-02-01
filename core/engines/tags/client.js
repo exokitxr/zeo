@@ -8,6 +8,7 @@ import {
   WORLD_DEPTH,
 } from './lib/constants/tags';
 import tagsRender from './lib/render/tags';
+import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
@@ -116,6 +117,57 @@ class Tags {
           };
           scene.add(boxMeshes.left);
           scene.add(boxMeshes.right);
+
+          const _updatePages = menuUtils.debounce(next => {
+            const pageSpecs = (() => {
+              const result = [];
+
+              for (let i = 0; i < tagMeshes.length; i++) {
+                const tagMesh = tagMeshes[i];
+                const {ui, item} = tagMesh;
+
+                if (ui) {
+                  const pages = ui.getPages();
+
+                  for (let j = 0; j < pages.length; j++) {
+                    const page = pages[j];
+                    const pageSpec = {
+                      page,
+                      item,
+                    };
+                    result.push(pageSpec);
+                  }
+                }
+              }
+
+              return result;
+            })();
+
+            if (pageSpecs.length > 0) {
+              let pending = pageSpecs.length;
+              const pend = () => {
+                if (--pending === 0) {
+                  next();
+                }
+              };
+
+              for (let i = 0; i < pageSpecs.length; i++) {
+                const pageSpec = pageSpecs[i];
+                const {page} = pageSpec;
+                const {type} = page;
+
+                if (type === 'tag') {
+                  const {item} = pageSpec;
+
+                  page.update({
+                    item,
+                  }, pend);
+                }
+              }
+            } else {
+              next();
+            }
+          });
 
           const _gripdown = e => {
             const {side} = e;
@@ -277,7 +329,7 @@ class Tags {
                 .then(ui => {
                   const {item} = object;
 
-                  ui.pushPage([
+                  ui.pushPage(({item}) => ([
                     {
                       type: 'html',
                       src: tagsRenderer.getTagSrc(item),
@@ -292,8 +344,11 @@ class Tags {
                       frameTime: 300,
                       pixelated: true,
                     }
-                  ], {
-                    type: 'main',
+                  ]), {
+                    type: 'tag',
+                    state: {
+                      item,
+                    },
                     immediate: true,
                   });
                   object.ui = ui;
@@ -407,6 +462,10 @@ class Tags {
 
               const grabState = grabStates[side];
               grabState.grabber = grabber;
+            }
+
+            updatePages() {
+              _updatePages();
             }
           };
 

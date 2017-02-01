@@ -319,6 +319,7 @@ class World {
                           item.attributes = _clone(attributes);
 
                           _updatePages();
+                          tags.updatePages();
 
                           unlock();
                         })
@@ -326,10 +327,13 @@ class World {
                           console.warn(err);
 
                           unlock();
-                        })
+                        });
                     });
 
                   item.instancing = true;
+
+                  _updatePages();
+                  tags.updatePages();
                 }
               };
               const _unreifyTag = tagMesh => {
