@@ -64,14 +64,6 @@ class Lens {
         const THREEHorizontalBlurShader = HorizontalBlurShader(THREE);
         const THREEVerticalBlurShader = VerticalBlurShader(THREE);
 
-        const updateEyes = [];
-        const _updateEye = camera => {
-          for (let i = 0; i < updateEyes.length; i++) {
-            const updateEye = updateEyes[i];
-            updateEye(camera);
-          }
-        };
-
         const lineMaterial = new THREE.LineBasicMaterial({
           color: 0x000000,
         });
@@ -302,12 +294,19 @@ class Lens {
         }
         zeo.registerElement(this, LensElement);
 
-        zeo.on('update', _update);
+        const updateEyes = [];
+        const _updateEye = camera => {
+          for (let i = 0; i < updateEyes.length; i++) {
+            const updateEye = updateEyes[i];
+            updateEye(camera);
+          }
+        };
+        zeo.on('updateEye', _updateEye);
 
         this._cleanup = () => {
           zeo.unregisterElement(this);
 
-          zeo.removeListener('update', _update);
+          zeo.removeListener('updateEye', _updateEye);
         };
 
         return {};
