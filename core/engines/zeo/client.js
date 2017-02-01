@@ -378,20 +378,16 @@ class Zeo {
                         this.emit('updateEye', camera);
                       }
 
-                      /* getCurrentWorld() { // XXX route all calls away from this
-                        return rend.getCurrentWorld();
-                      } */
-
-                      getUiTime() { // XXX route calls to this
+                      getUiTime() {
                         return world.getWorldTime();
                       }
 
-                      getWorldTime() { // XXX route calls to this
+                      getWorldTime() {
                         return world.getWorldTime();
                       }
 
-                      getPhysics() {
-                        // XXX implement this
+                      getPhysicsWorld() {
+                        return bullet.getPhysicsWorld();
                       }
 
                       getStatus() {
