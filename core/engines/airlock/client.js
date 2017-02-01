@@ -1,8 +1,9 @@
 const GRID_SIZE = 32;
-const GRID_RESOLUTION = 4;
+const GRID_RESOLUTION = 2;
 const TARGET_RADII = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 
-const LINE_COLOR = 0x808080;
+const LINE_COLOR = 0xCCCCCC;
+const DOT_COLOR = 0xAAAAAA;
 
 const SHADOW_MAP_SIZE = 2048;
 
@@ -94,29 +95,13 @@ class Airlock {
             geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
 
             const material = new THREE.PointsMaterial({
-              color: LINE_COLOR,
+              color: DOT_COLOR,
               size: 0.02,
             });
 
             return new THREE.Points(geometry, material);
           })();
           object.add(gridMesh);
-
-          const floorMesh = (() => {
-            const geometry = new THREE.PlaneBufferGeometry(GRID_SIZE, GRID_SIZE);
-            geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-            geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.001, 0));
-
-            const material = new THREE.MeshPhongMaterial({
-              color: 0x111111,
-              shininess: 1,
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.receiveShadow = true;
-            return mesh;
-          })();
-          object.add(floorMesh);
 
           const targetMesh = (() => {
             const geometry = (() => {
@@ -155,19 +140,19 @@ class Airlock {
           })();
           object.add(targetMesh);
 
-          const skyboxMesh = (() => {
+          /* const skyboxMesh = (() => {
             const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000);
             const material = new THREE.MeshBasicMaterial({
-              color: 0x111111,
+              color: 0xFFFFFF,
               side: THREE.BackSide,
             });
 
             return new THREE.Mesh(geometry, material);
           })();
-          object.add(skyboxMesh);
+          object.add(skyboxMesh); */
 
           const starsMesh = (() => {
-            const numStars = 500;
+            const numStars = 128;
 
             const geometry = (() => {
               const result = new THREE.BufferGeometry();
@@ -191,7 +176,7 @@ class Airlock {
               return result;
             })();
             const material = new THREE.PointsMaterial({
-              color: 0xFFFFFF,
+              color: 0xCCCCCC,
               size: 50,
               fog: false,
               // opacity: 1,

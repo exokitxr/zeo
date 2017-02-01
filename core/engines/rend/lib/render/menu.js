@@ -759,16 +759,17 @@ const getNavbarSrc = ({tab}) => {
   `;
   const unfocusedContent = label => `\
     <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #000 transparent transparent;"></div>
-    <div style="position: absolute; top: 0; left: 1px; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #CCC transparent transparent;"></div>
+    <div style="position: absolute; top: 0; left: 1px; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #EEE transparent transparent;"></div>
     <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #000;"></div>
-    <div style="position: absolute; top: 0; right: 1px; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #CCC;"></div>
-    <div style="display: flex; position: relative; width: 150px; background-color: #CCC; justify-content: center; align-items: center;">${label}</div>
+    <div style="position: absolute; top: 0; right: 1px; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #EEE;"></div>
+    <div style="display: flex; position: relative; width: 150px; background-color: #EEE; justify-content: center; align-items: center;">${label}</div>
     <div style="position: absolute; top: 0; left: 25px; right: 25px; border-top: 1px solid #000;"></div>
     <div style="position: absolute; bottom: 0; left: 0; right: 0; border-bottom: 1px solid #000;"></div>
   `;
 
   return `\
     <div style="display: flex; width: 1024px; height: 50px; background-color: rgba(255, 255, 255, 0.5);">
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; border-bottom: 1px solid #000;"></div>
       <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; ${tab === 'readme' ? 'z-index: 1;' : ''}" onclick="navbar:readme">
         ${tab === 'readme' ? focusedContent('Readme') : unfocusedContent('Readme')}
       </a>

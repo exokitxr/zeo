@@ -553,7 +553,7 @@ class Biolumi {
           const _getTransparentMaterial = () => transparentMaterial;
           const solidMaterial = new THREE.MeshBasicMaterial({
             color: 0xFFFFFF,
-            opacity: 0.9,
+            opacity: 1,
             side: THREE.DoubleSide,
             transparent: true,
             // alphaTest: 0.5,
@@ -754,6 +754,7 @@ class Biolumi {
               side: THREE.DoubleSide,
               transparent: true,
             });
+            shaderUniforms.backgroundColor.value = Float32Array.from([1, 1, 1, 0.9]);
             // shaderMaterial.polygonOffset = true;
             // shaderMaterial.polygonOffsetFactor = 1;
             return shaderMaterial;

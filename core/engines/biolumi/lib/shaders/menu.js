@@ -24,6 +24,10 @@ const getShader = ({maxNumTextures}) => ({
       type: 'fv1',
       value: null,
     },
+    backgroundColor: {
+      type: '4f',
+      value: null,
+    },
   },
   vertexShader: [
     "varying vec2 vUv;",
@@ -39,6 +43,7 @@ const getShader = ({maxNumTextures}) => ({
     "uniform vec2 textureLimits[" + maxNumTextures + "];",
     "uniform float textureOffsets[" + maxNumTextures + "];",
     "uniform float textureDimensions[" + maxNumTextures + "];",
+    "uniform vec4 backgroundColor;",
     "varying vec2 vUv;",
     "void main() {",
     "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
@@ -64,7 +69,8 @@ const getShader = ({maxNumTextures}) => ({
     "      }",
     "    }",
     "  }",
-    "  gl_FragColor = vec4(diffuse / float(numValid), alpha / float(numValid));",
+    "  if (numValid == 0) { gl_FragColor = backgroundColor; }",
+    "  else { gl_FragColor = vec4(diffuse / float(numValid), alpha / float(numValid)); }",
     "}"
   ].join("\n"),
 });
