@@ -316,6 +316,7 @@ class Tags {
                       const material = transparentMaterial;
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.castShadow = true;
+                      mesh.depthWrite = false;
                       return mesh;
                     })();
                     mesh.add(shadowMesh);
