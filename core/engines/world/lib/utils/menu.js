@@ -52,6 +52,27 @@ const makeZeoElement = ({tag, attributes, baseClass}) => {
   return zeoElement;
 };
 
+class FakeFile {
+  constructor(url) {
+    this.url = url;
+  }
+
+  fetch({type} = {}) {
+    const {url} = this;
+
+    return fetch(url)
+      .then(res => {
+        switch (type) {
+          case 'text': return res.text();
+          case 'json': return res.json();
+          case 'arrayBuffer': return res.arrayBuffer();
+          case 'blob': return res.blob();
+          default: return res.blob();
+        }
+      });
+  }
+}
+
 const castValueStringToValue = (s, type, min, max, step, options) => {
   switch (type) {
     case 'matrix': {

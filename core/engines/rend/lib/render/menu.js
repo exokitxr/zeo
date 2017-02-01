@@ -768,7 +768,7 @@ const getNavbarSrc = ({tab}) => {
   `;
 
   return `\
-    <div style="display: flex; width: 1024px; height: 50px; background-color: rgba(255, 255, 255, 0.5);">
+    <div style="display: flex; width: 1024px; height: 50px; background-color: #000;">
       <div style="position: absolute; left: 0; right: 0; bottom: 0; border-bottom: 1px solid #000;"></div>
       <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; ${tab === 'readme' ? 'z-index: 1;' : ''}" onclick="navbar:readme">
         ${tab === 'readme' ? focusedContent('Readme') : unfocusedContent('Readme')}
