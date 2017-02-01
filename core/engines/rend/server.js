@@ -404,7 +404,7 @@ class Rend {
           function serveReadme(req, res, next) {
             fs.readFile(path.join(dirname, 'README.md'), 'utf8', (err, s) => {
               if (!err) {
-                const result = `<div style="position: absolute; left: 0; right: 0; background-color: #FFF; border: 1px solid #000; border-top: 0; color: #000;">
+                const result = `<div style="position: absolute; left: 0; right: 0; background-color: #FFF; color: #000;">
                   <div style="padding: 0 30px;">
                     ${_renderMarkdown(s)}
                   </div>
