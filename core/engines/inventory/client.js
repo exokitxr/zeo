@@ -45,8 +45,6 @@ class Inventory {
       if (live) {
         const {THREE, scene, camera} = three;
 
-        const solidMaterial = biolumi.getSolidMaterial();
-
         const _requestUis = () => Promise.all([
           biolumi.requestUi({
             width: WIDTH,
@@ -93,9 +91,9 @@ class Inventory {
                   const menuMaterial = biolumi.makeMenuMaterial();
 
                   const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
+                  const material = menuMaterial;
 
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = new THREE.Mesh(geometry, material);
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;

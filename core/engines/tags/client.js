@@ -56,7 +56,6 @@ class Tags {
           const {THREE, scene, camera} = three;
 
           const transparentMaterial = biolumi.getTransparentMaterial();
-          const solidMaterial = biolumi.getSolidMaterial();
 
            const tagsRenderer = tagsRender.makeRenderer({
             creatureUtils,
@@ -305,9 +304,9 @@ class Tags {
                     const menuMaterial = biolumi.makeMenuMaterial();
 
                     const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, menuMaterial];
+                    const material = menuMaterial;
 
-                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    const mesh = new THREE.Mesh(geometry, material);
                     // mesh.position.y = 1.5;
                     mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
