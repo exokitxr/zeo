@@ -105,6 +105,7 @@ class Tags {
             mesh.position.y = 1.2;
             mesh.rotation.order = camera.rotation.order;
             mesh.rotation.y = Math.PI / 2;
+            mesh.depthWrite = false;
             mesh.visible = false;
             return mesh;
           };
@@ -311,16 +312,6 @@ class Tags {
                     mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
 
-                    const shadowMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                      const material = transparentMaterial;
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.castShadow = true;
-                      mesh.depthWrite = false;
-                      return mesh;
-                    })();
-                    mesh.add(shadowMesh);
-
                     return mesh;
                   })();
                   object.add(planeMesh);
@@ -390,8 +381,13 @@ class Tags {
 
               const grabber = hands.grab(side, tagMesh);
               grabber.on('update', ({position, rotation}) => {
-                tagMesh.position.copy(position);
-                tagMesh.quaternion.copy(rotation);
+                const newRotation = rotation.clone().multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
+                const newPosition = position.clone().add(
+                  new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
+                );
+
+                tagMesh.position.copy(newPosition);
+                tagMesh.quaternion.copy(newRotation);
               });
               grabber.on('release', () => {
                 const {position, quaternion, item} = tagMesh;

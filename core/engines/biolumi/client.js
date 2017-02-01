@@ -745,7 +745,7 @@ class Biolumi {
               side: THREE.DoubleSide,
               transparent: true,
             });
-            shaderUniforms.backgroundColor.value = Float32Array.from([1, 1, 1, 0.9]);
+            shaderUniforms.backgroundColor.value = Float32Array.from([1, 1, 1, 1]);
             // shaderMaterial.polygonOffset = true;
             // shaderMaterial.polygonOffsetFactor = 1;
             return shaderMaterial;
