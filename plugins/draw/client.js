@@ -6,7 +6,7 @@ const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 
 const PAPER_DRAW_DISTANCE = 0.2;
 const POINT_FRAME_RATE = 20;
-const BRUSH_SIZE = 5;
+const BRUSH_SIZE = 9;
 
 const SIDES = ['left', 'right'];
 
@@ -246,18 +246,26 @@ class Draw {
                             color.r * 255,
                             color.g * 255,
                             color.b * 255,
-                            255,
                           ]);
                           const centerX = Math.floor(xFactor * WIDTH);
                           const centerY = Math.floor(yFactor * HEIGHT);
-                          for (let xOffset = -Math.floor((BRUSH_SIZE - 1) / 2); xOffset < Math.floor((BRUSH_SIZE - 1) / 2); xOffset++) {
+                          const maxDistance = Math.floor((BRUSH_SIZE - 1) / 2);
+                          for (let xOffset = -maxDistance; xOffset < maxDistance; xOffset++) {
                             const x = centerX + xOffset;
 
-                            for (let yOffset = -Math.floor((BRUSH_SIZE - 1) / 2); yOffset < Math.floor((BRUSH_SIZE - 1) / 2); yOffset++) {
-                              const y = centerY + yOffset;
-                              const baseIndex = ((y * WIDTH) + x) * 4;
+                            if (x >= 0 && x < WIDTH) {
+                              for (let yOffset = -maxDistance; yOffset < maxDistance; yOffset++) {
+                                const y = centerY + yOffset;
 
-                              imageDataArray.set(pixelValue, baseIndex);
+                                if (y >= 0 && y < HEIGHT) {
+                                  const baseIndex = ((y * WIDTH) + x) * 4;
+
+                                  imageDataArray.set(pixelValue, baseIndex);
+
+                                  const alphaFactor = Math.max(maxDistance - Math.sqrt((xOffset * xOffset) + (yOffset * yOffset)), 0);
+                                  imageDataArray[baseIndex + 3] = Math.max(imageDataArray[baseIndex + 3], alphaFactor * 255);
+                                }
+                              }
                             }
                           }
                           texture.needsUpdate = true;
