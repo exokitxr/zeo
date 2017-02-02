@@ -1,0 +1,8 @@
+{
+  "name": "paint",
+  "description": "Paint 3d vector scenes.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}
