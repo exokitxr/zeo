@@ -141,6 +141,65 @@ const geometryUtils = archae => ({
           }
         }
 
+        class PlaneTarget {
+          constructor(position, quaternion, width, height) {
+            this.position = position;
+            this.quaternion = quaternion;
+            this.width = width;
+            this.height = height;
+
+            const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+              new THREE.Vector3(0, 0, -1).applyQuaternion(quaternion),
+              position
+            );
+            this.plane = plane;
+            const lines = {
+              left: new THREE.Line3(
+                position.clone().add(new THREE.Vector3(-width / 2, -height / 2, 0).applyQuaternion(quaternion)),
+                position.clone().add(new THREE.Vector3(-width / 2, height / 2, 0).applyQuaternion(quaternion))
+              ),
+              right: new THREE.Line3(
+                position.clone().add(new THREE.Vector3(width / 2, -height / 2, 0).applyQuaternion(quaternion)),
+                position.clone().add(new THREE.Vector3(width / 2, height / 2, 0).applyQuaternion(quaternion))
+              ),
+              top: new THREE.Line3(
+                position.clone().add(new THREE.Vector3(-width / 2, height / 2, 0).applyQuaternion(quaternion)),
+                position.clone().add(new THREE.Vector3(width / 2, height / 2, 0).applyQuaternion(quaternion))
+              ),
+              bottom: new THREE.Line3(
+                position.clone().add(new THREE.Vector3(-width / 2, -height / 2, 0).applyQuaternion(quaternion)),
+                position.clone().add(new THREE.Vector3(width / 2, -height / 2, 0).applyQuaternion(quaternion))
+              ),
+            };
+            this.lines = lines;
+          }
+
+          projectPoint(point) {
+            const {width, height, plane, lines: {left, right, top, bottom}} = this;
+            const planePoint = plane.projectPoint(point);
+
+            const leftPoint = left.closestPointToPoint(planePoint, false);
+            const rightPoint = right.closestPointToPoint(planePoint, false);
+            const topPoint = top.closestPointToPoint(planePoint, false);
+            const bottomPoint = bottom.closestPointToPoint(planePoint, false);
+
+            if (
+              planePoint.distanceTo(leftPoint) <= width &&
+              planePoint.distanceTo(rightPoint) <= width &&
+              planePoint.distanceTo(topPoint) <= height &&
+              planePoint.distanceTo(bottomPoint) <= height
+            ) {
+              return {
+                x: top.start.distanceTo(topPoint) / width,
+                y: left.end.distanceTo(leftPoint) / height,
+                z: point.distanceTo(planePoint),
+              };
+            } else {
+              return null;
+            }
+          }
+        }
+
         /* const VOXEL_VERTICES = (() => {
           const cubeGeometry = new THREE.CubeGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
           for (let i = 0; i < cubeGeometry.vertices.length; i++) {
@@ -741,6 +800,7 @@ const geometryUtils = archae => ({
           const newSize = new THREE.Vector3(Math.abs(start.x - end.x), Math.abs(start.y - end.y), Math.abs(start.z - end.z));
           return makeBoxTarget(newPosition, rotation, scale, newSize);
         };
+        const makePlaneTarget = (position, quaternion, width, height) => new PlaneTarget(position, quaternion, width, height);
 
         return {
           // makeVoxelGeometry,
@@ -750,6 +810,7 @@ const geometryUtils = archae => ({
           // sliceBufferGeometry,
           makeBoxTarget,
           makeBoxTargetOffset,
+          makePlaneTarget,
         };
       }
     });
