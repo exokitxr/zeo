@@ -95,6 +95,8 @@ class World {
 
         const _requestTags = () => fetch('/archae/world/tags.json')
           .then(res => res.json());
+        const _requestFiles = () => fetch('/archae/world/files.json')
+          .then(res => res.json());
         const _requestWorldTimer = () => fetch('/archae/world/start-time.json')
           .then(res => res.json()
             .then(({startTime}) => {
@@ -141,11 +143,13 @@ class World {
 
         return Promise.all([
           _requestTags(),
+          _requestFiles(),
           _requestWorldTimer(),
           _requestUis(),
         ])
           .then(([
             tagsJson,
+            filesJson,
             worldTimer,
             {
               readmeUi,
@@ -276,6 +280,36 @@ class World {
                       'Content-Type': 'application/json',
                     },
                     body: tagsJsonString,
+                  })
+                    .then(res => res.blob())
+                    .then(() => {
+                      next();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      next();
+                    })
+                } else {
+                  return Promise.resolve();
+                }
+              });
+              let lastFilesJsonString = JSON.stringify(filesJson);
+              const _saveFiles = menuUtils.debounce(next => {
+                filesJson = {
+                  files: fs.getFiles().map(({file}) => file),
+                };
+                const filesJsonString = JSON.stringify(filesJson);
+
+                if (filesJsonString !== lastFilesJsonString) {
+                  lastFilesJsonString = filesJsonString;
+
+                  return fetch('/archae/world/files.json', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: filesJsonString,
                   })
                     .then(res => res.blob())
                     .then(() => {
@@ -1385,22 +1419,27 @@ class World {
               });
 
               const uploadStart = ({name}) => {
-                const {hmd} = webvr.getStatus();
-                const {position, rotation} = hmd;
-                const menuMesh = rend.getMenuMesh();
-                const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
+                const directory = '/';
+                const matrix = (() => {
+                  const {hmd} = webvr.getStatus();
+                  const {position, rotation} = hmd;
+                  const menuMesh = rend.getMenuMesh();
+                  const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
 
-                const newMatrix = new THREE.Matrix4().compose(
-                  position.clone()
-                    .add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)),
-                  rotation,
-                  new THREE.Vector3(1, 1, 1)
-                ).multiply(menuMeshMatrixInverse);
-                const {position: newPosition, rotation: newRotation, scale: newScale} = _decomposeMatrix(newMatrix);
-                const matrix = newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
+                  const newMatrix = new THREE.Matrix4().compose(
+                    position.clone()
+                      .add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)),
+                    rotation,
+                    new THREE.Vector3(1, 1, 1)
+                  ).multiply(menuMeshMatrixInverse);
+                  const {position: newPosition, rotation: newRotation, scale: newScale} = _decomposeMatrix(newMatrix);
+
+                  return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
+                })();
 
                 const fileMesh = fs.makeFile({
                   name,
+                  directory,
                   matrix,
                 });
                 fileMesh.instancing = true;
@@ -1418,28 +1457,44 @@ class World {
                   file.instancing = false;
 
                   fs.updatePages();
+
+                  _saveFiles();
                 }
               };
               fs.on('uploadEnd', uploadEnd);
 
-              const _initializeElements = () => {
-                const {elements, free} = tagsJson;
+              const _initialize = () => {
+                const _initializeFiles = () => {
+                  const {files} = filesJson;
 
-                for (let i = 0; i < elements.length; i++) {
-                  const itemSpec = elements[i];
-                  const tagMesh = tags.makeTag(itemSpec);
-                  _addElement(tagMesh);
-                }
-                _alignTagMeshes(tags.getTagsClass('elements'));
+                  const menuMesh = rend.getMenuMesh();
+                  for (let i = 0; i < files.length; i++) {
+                    const fileSpec = files[i];
+                    const fileMesh = fs.makeFile(fileSpec);
+                    menuMesh.add(fileMesh);
+                  }
+                };
+                _initializeFiles();
+                const _initializeElements = () => {
+                  const {elements, free} = tagsJson;
 
-                const menuMesh = rend.getMenuMesh();
-                for (let i = 0; i < free.length; i++) {
-                  const itemSpec = free[i];
-                  const tagMesh = tags.makeTag(itemSpec);
-                  menuMesh.add(tagMesh);
-                }
+                  for (let i = 0; i < elements.length; i++) {
+                    const itemSpec = elements[i];
+                    const tagMesh = tags.makeTag(itemSpec);
+                    _addElement(tagMesh);
+                  }
+                  _alignTagMeshes(tags.getTagsClass('elements'));
+
+                  const menuMesh = rend.getMenuMesh();
+                  for (let i = 0; i < free.length; i++) {
+                    const itemSpec = free[i];
+                    const tagMesh = tags.makeTag(itemSpec);
+                    menuMesh.add(tagMesh);
+                  }
+                };
+                _initializeElements();
               };
-              _initializeElements();
+              _initialize();
 
               this._cleanup = () => {
                 rend.removeMenuMesh('worldMesh');

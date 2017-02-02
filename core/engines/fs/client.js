@@ -237,8 +237,9 @@ class Fs {
         };
 
         class FsFile {
-          constructor(name, matrix) {
+          constructor(name, directory, matrix) {
             this.name = name;
+            this.directory = directory;
             this.matrix = matrix;
 
             this.instancing = false;
@@ -251,7 +252,7 @@ class Fs {
             const object = new THREE.Object3D();
             object[fileFlagSymbol] = true;
 
-            const file = new FsFile(fileSpec.name, fileSpec.matrix);
+            const file = new FsFile(fileSpec.name, fileSpec.directory, fileSpec.matrix);
             object.file = file;
 
             object.position.set(file.matrix[0], file.matrix[1], file.matrix[2]);
@@ -320,6 +321,10 @@ class Fs {
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
               });
+          }
+
+          getFiles() {
+            return fileMeshes;
           }
 
           getFile(name) {
