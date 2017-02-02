@@ -11,6 +11,10 @@ import fsRenderer from './lib/render/fs';
 
 const fileFlagSymbol = Symbol();
 
+const SIDES = ['left', 'right'];
+
+const DEFAULT_GRAB_RADIUS = 0.1;
+
 class Fs {
   constructor(archae) {
     this._archae = archae;
@@ -28,22 +32,70 @@ class Fs {
       '/core/engines/three',
       '/core/engines/biolumi',
       '/core/engines/rend',
+      '/core/engines/hands',
       '/core/plugins/js-utils',
       '/core/plugins/creature-utils',
     ]).then(([
       three,
       biolumi,
       rend,
+      hands,
       jsUtils,
       creatureUtils,
     ]) => {
       if (live) {
-        const {THREE, renderer} = three;
+        const {THREE, scene, camera, renderer} = three;
         const {domElement} = renderer;
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
+        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        const _decomposeMatrix = matrix => {
+          const position = new THREE.Vector3();
+          const rotation = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          matrix.decompose(position, rotation, scale);
+          return {position, rotation, scale};
+        };
+
         const solidMaterial = biolumi.getSolidMaterial();
+        const wireframeMaterial = new THREE.MeshBasicMaterial({
+          color: 0x0000FF,
+          wireframe: true,
+          opacity: 0.5,
+          transparent: true,
+        });
+
+        const _makeHoverState = () => ({
+          fileMesh: null,
+        });
+        const hoverStates = {
+          left: _makeHoverState(),
+          right: _makeHoverState(),
+        };
+
+        const _makeBoxMesh = () => {
+          const width = WORLD_WIDTH;
+          const height = WORLD_HEIGHT;
+          const depth = WORLD_DEPTH;
+
+          const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+          const material = wireframeMaterial;
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.y = 1.2;
+          mesh.rotation.order = camera.rotation.order;
+          mesh.rotation.y = Math.PI / 2;
+          mesh.depthWrite = false;
+          mesh.visible = false;
+          return mesh;
+        };
+        const boxMeshes = {
+          left: _makeBoxMesh(),
+          right: _makeBoxMesh(),
+        };
+        scene.add(boxMeshes.left);
+        scene.add(boxMeshes.right);
 
         const dragover = e => {
           e.preventDefault();
@@ -123,7 +175,29 @@ class Fs {
 
         const _update = () => {
           const _updateControllers = () => {
-            // XXX
+            SIDES.forEach(side => {
+              const hoverState = hoverStates[side];
+              const boxMesh = boxMeshes[side];
+
+              const bestGrabbableFsMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
+              if (bestGrabbableFsMesh) {
+                hoverState.fileMesh = bestGrabbableFsMesh;
+
+                const {position: fileMehPosition, rotation: fileMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableFsMesh);
+                boxMesh.position.copy(fileMehPosition);
+                boxMesh.quaternion.copy(fileMeshRotation);
+
+                if (!boxMesh.visible) {
+                  boxMesh.visible = true;
+                }
+              } else {
+                hoverState.fileMesh = null;
+
+                if (boxMesh.visible) {
+                  boxMesh.visible = false;
+                }
+              }
+            });
           };
           const _updateTextures = () => {
             const uiTime = rend.getUiTime();
@@ -153,6 +227,9 @@ class Fs {
         rend.on('update', _update);
 
         this._cleanup = () => {
+          scene.add(boxMeshes.left);
+          scene.add(boxMeshes.right);
+
           domElement.removeEventListener('dragover', dragover);
           domElement.removeEventListener('drop', drop);
 
