@@ -7,7 +7,7 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/tags';
-import tagsRender from './lib/render/tags';
+import tagsRenderer from './lib/render/tags';
 import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
@@ -58,10 +58,6 @@ class Tags {
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
-
-           const tagsRenderer = tagsRender.makeRenderer({
-            creatureUtils,
-          });
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {

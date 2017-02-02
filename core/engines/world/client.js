@@ -41,6 +41,7 @@ class World {
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
+      '/core/engines/fs',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
@@ -50,6 +51,7 @@ class World {
       three,
       input,
       webvr,
+      fs,
       biolumi,
       rend,
       hands,
@@ -82,12 +84,12 @@ class World {
         };
 
         // helper functions
-        const _decomposeObjectMatrixWorld = object => {
-          const {matrixWorld} = object;
+        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
-          matrixWorld.decompose(position, rotation, scale);
+          matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
         };
 
@@ -1382,6 +1384,44 @@ class World {
                 priority: 1,
               });
 
+              const uploadStart = ({name}) => {
+                const {hmd} = webvr.getStatus();
+                const {position, rotation} = hmd;
+                const menuMesh = rend.getMenuMesh();
+                const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
+
+                const newMatrix = new THREE.Matrix4().compose(
+                  position.clone()
+                    .add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)),
+                  rotation,
+                  new THREE.Vector3(1, 1, 1)
+                ).multiply(menuMeshMatrixInverse);
+                const {position: newPosition, rotation: newRotation, scale: newScale} = _decomposeMatrix(newMatrix);
+                const matrix = newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
+
+                const fileMesh = fs.makeFile({
+                  name,
+                  matrix,
+                });
+                fileMesh.instancing = true;
+
+                menuMesh.add(fileMesh);
+
+                fs.updatePages();
+              };
+              fs.on('uploadStart', uploadStart);
+              const uploadEnd = ({name}) => {
+                const fileMesh = fs.getFile(name);
+
+                if (fileMesh) {
+                  const {file} = fileMesh;
+                  file.instancing = false;
+
+                  fs.updatePages();
+                }
+              };
+              fs.on('uploadEnd', uploadEnd);
+
               const _initializeElements = () => {
                 const {elements, free} = tagsJson;
 
@@ -1416,6 +1456,7 @@ class World {
 
                 rend.removeListener('update', _update);
                 rend.removeListener('tabchange', _tabchange);
+
                 input.removeListener('trigger', _trigger);
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('grip', _grip);
@@ -1423,6 +1464,9 @@ class World {
                 input.removeListener('gripup', _gripup);
                 input.removeListener('keydown', _keydown);
                 input.removeListener('keyboarddown', _keyboarddown);
+
+                fs.removeListener('uploadStart', uploadStart);
+                fs.removeListener('uploadEnd', uploadEnd);
               };
 
               const modElementApis = {};

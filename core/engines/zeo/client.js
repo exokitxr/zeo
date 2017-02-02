@@ -194,6 +194,7 @@ class Zeo {
                   if (live) {
                     const _initHelper = () => {
                       const helper = document.createElement('div');
+                      helper.id = 'helper';
                       helper.style.cssText = `\
                         display: flex;
                         position: absolute;
@@ -218,6 +219,8 @@ class Zeo {
                           </div>
                         </div>
                       `;
+                      helper.addEventListener('dragover', fs.dragover);
+                      helper.addEventListener('drop', fs.drop);
                       document.body.appendChild(helper);
 
                       const _styleButton = button => {

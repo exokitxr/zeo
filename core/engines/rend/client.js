@@ -62,7 +62,6 @@ class Rend {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/anima',
-      '/core/engines/fs',
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
       '/core/plugins/creature-utils',
@@ -74,7 +73,6 @@ class Rend {
       webvr,
       biolumi,
       anima,
-      fs,
       jsUtils,
       geometryUtils,
       creatureUtils,
@@ -117,21 +115,7 @@ class Rend {
         const focusState = {
           type: '',
         };
-        const filesState = {
-          cwd: fs.getCwd(),
-          files: [],
-          inputText: '',
-          inputIndex: 0,
-          inputValue: 0,
-          selectedName: '',
-          clipboardType: null,
-          clipboardPath: '',
-          loaded: false,
-          loading: false,
-          uploading: fs.getUploading(),
-        };
         const elementAttributeFilesState = {
-          cwd: fs.getCwd(),
           files: [],
           inputText: '',
           inputIndex: 0,
@@ -141,7 +125,6 @@ class Rend {
           clipboardPath: '',
           loaded: false,
           loading: false,
-          uploading: fs.getUploading(),
         };
         const navbarState = {
           tab: 'readme',
@@ -222,39 +205,6 @@ class Rend {
             ]) => {
               if (live) {
                 uiTimer = localUiTimer;
-
-                const uploadStart = () => {
-                  const pages = menuUi.getPages();
-                  if (pages.length > 0 && pages[pages.length - 1].type === 'files') { // XXX handle multiple uploads and elementAttributeFiles page
-                    filesState.uploading = true;
-                  }
-
-                  _updatePages();
-                }
-                fs.addEventListener('uploadStart', uploadStart);
-                const uploadEnd = () => {
-                  filesState.uploading = false;
-                  filesState.loading = true;
-
-                  const {cwd} = filesState;
-                  fs.getDirectory(cwd)
-                    .then(files => {
-                      filesState.files = menuUtils.cleanFiles(files);
-                      filesState.loading = false;
-
-                      _updatePages();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
-
-                  _updatePages();
-                }
-                fs.addEventListener('uploadEnd', uploadEnd);
-                cleanups.push(() => {
-                  fs.removeEventListener('uploadStart', uploadStart);
-                  fs.removeEventListener('uploadEnd', uploadEnd);
-                });
 
                 const {matrix: matrixArray} = hub.getUserState();
                 if (matrixArray) {
@@ -521,12 +471,7 @@ class Rend {
                       const {type} = page;
 
                       let match;
-                      if (type === 'files') {
-                        page.update({
-                          files: filesState,
-                          focus: focusState,
-                        }, pend);
-                      } else if (type === 'elementAttributeFiles') {
+                      if (type === 'elementAttributeFiles') {
                         page.update({
                           elementAttributeFiles: elementAttributeFilesState,
                           focus: focusState,
@@ -548,9 +493,6 @@ class Rend {
 
                   if (open) {
                     const oldStates = {
-                      filesState: {
-                        selectedName: filesState.selectedName,
-                      },
                       elementAttributeFilesState: {
                         selectedName: elementAttributeFilesState.selectedName,
                       },
@@ -608,7 +550,6 @@ class Rend {
                           const onclick = (anchor && anchor.onclick) || '';
 
                           focusState.type = '';
-                          filesState.selectedName = '';
                           elementAttributeFilesState.selectedName = '';
 
                           const _ensureFilesLoaded = targetState => {
@@ -645,7 +586,6 @@ class Rend {
                             const name = match[2];
                             const targetState = (() => {
                               switch (target) {
-                                case 'file': return filesState;
                                 case 'elementAttributeFile': return elementAttributeFilesState;
                                 default: return null;
                               }
@@ -731,14 +671,12 @@ class Rend {
 
                             const targetState = (() => {
                               switch (target) {
-                                case 'file': return filesState;
                                 case 'elementAttributeFile': return elementAttributeFilesState;
                                 default: return null;
                               }
                             })();
                             const oldTargetState = (() => {
                               switch (target) {
-                                case 'file': return oldStates.filesState;
                                 case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
                                 default: return null;
                               }
@@ -759,7 +697,6 @@ class Rend {
                             const target = match[1];
                             const targetState = (() => {
                               switch (target) {
-                                case 'file': return filesState;
                                 case 'elementAttributeFile': return elementAttributeFilesState;
                                 default: return null;
                               }
@@ -809,14 +746,12 @@ class Rend {
                             const target = match[1];
                             const targetState = (() => {
                               switch (target) {
-                                case 'file': return filesState;
                                 case 'elementAttributeFile': return elementAttributeFilesState;
                                 default: return null;
                               }
                             })();
                             const oldTargetState = (() => {
                               switch (target) {
-                                case 'file': return oldStates.filesState;
                                 case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
                                 default: return null;
                               }
@@ -836,14 +771,12 @@ class Rend {
                             const target = match[1];
                             const targetState = (() => {
                               switch (target) {
-                                case 'file': return filesState;
                                 case 'elementAttributeFile': return elementAttributeFilesState;
                                 default: return null;
                               }
                             })();
                             const oldTargetState = (() => {
                               switch (target) {
-                                case 'file': return oldStates.filesState;
                                 case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
                                 default: return null;
                               }
@@ -1046,7 +979,6 @@ class Rend {
                         const target = match[1];
                         const targetState = (() => {
                           switch (target) {
-                            case 'file': return filesState;
                             case 'elementAttributeFile': return elementAttributeFilesState;
                             default: return null;
                           }
@@ -1094,7 +1026,6 @@ class Rend {
                         const name = match[2];
                         const targetState = (() => {
                           switch (target) {
-                            case 'file': return filesState;
                             case 'elementAttributeFile': return elementAttributeFilesState;
                             default: return null;
                           }
