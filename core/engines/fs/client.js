@@ -14,6 +14,11 @@ const fileFlagSymbol = Symbol();
 const SIDES = ['left', 'right'];
 
 const DEFAULT_GRAB_RADIUS = 0.1;
+const DEFAULT_FILE_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 class Fs {
   constructor(archae) {
@@ -30,6 +35,7 @@ class Fs {
 
     return archae.requestPlugins([
       '/core/engines/three',
+      '/core/engines/input',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
@@ -37,6 +43,7 @@ class Fs {
       '/core/plugins/creature-utils',
     ]).then(([
       three,
+      input,
       biolumi,
       rend,
       hands,
@@ -74,6 +81,14 @@ class Fs {
           right: _makeHoverState(),
         };
 
+        const _makeGrabState = () => ({
+          grabber: null,
+        });
+        const grabStates = {
+          left: _makeGrabState(),
+          right: _makeGrabState(),
+        };
+
         const _makeBoxMesh = () => {
           const width = WORLD_WIDTH;
           const height = WORLD_HEIGHT;
@@ -109,11 +124,11 @@ class Fs {
             const file = files[0];
             const {name} = file;
 
-            fsApiInstance.emit('uploadStart', file);
+            fsInstance.emit('uploadStart', file);
 
-            fsApiInstance.writeFile('/' + name, file)
+            fsInstance.writeFile('/' + name, file)
               .then(() => {
-                fsApiInstance.emit('uploadEnd', file);
+                fsInstance.emit('uploadEnd', file);
               })
               .catch(err => {
                 console.warn(err);
@@ -172,6 +187,26 @@ class Fs {
             next();
           }
         });
+
+        const _gripdown = e => {
+          const {side} = e;
+
+          const bestGrabbableFileMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
+          if (bestGrabbableFileMesh) {
+            fsInstance.grabFile(side, bestGrabbableFileMesh);
+          }
+        };
+        input.on('gripdown', _gripdown);
+        const _gripup = e => {
+          const {side} = e;
+          const grabState = grabStates[side];
+          const {grabber} = grabState;
+
+          if (grabber) {
+            grabber.release();
+          }
+        };
+        input.on('gripup', _gripup);
 
         const _update = () => {
           const _updateControllers = () => {
@@ -232,6 +267,9 @@ class Fs {
 
           domElement.removeEventListener('dragover', dragover);
           domElement.removeEventListener('drop', drop);
+
+          input.removeListener('gripdown', _gripdown);
+          input.removeListener('gripup', _gripup);
 
           rend.removeListener('update', _update);
         };
@@ -354,7 +392,7 @@ class Fs {
             );
           }
 
-          createDirectory(p) {
+          /* createDirectory(p) {
             return fetch('/archae/fs' + p, {
               method: 'POST',
             }).then(res => res.blob()
@@ -392,6 +430,49 @@ class Fs {
             );
           }
 
+          getHoverFile(side) {
+            return hoverStates[side].fileMesh;
+          } */
+
+          isFile(object) {
+            return object[fileFlagSymbol] === true;
+          }
+
+          grabFile(side, fileMesh) {
+            const menuMesh = rend.getMenuMesh();
+            menuMesh.add(fileMesh);
+
+            const {file} = fileMesh;
+            file.matrix = DEFAULT_FILE_MATRIX;
+
+            const grabber = hands.grab(side, fileMesh);
+            grabber.on('update', ({position, rotation}) => {
+              const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
+              const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
+
+              const newRotation = menuMeshQuaternionInverse.clone()
+                .multiply(rotation)
+                .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
+              const newPosition = position.clone().applyMatrix4(menuMeshMatrixInverse)
+                .add(
+                  new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
+                );
+
+              fileMesh.position.copy(newPosition);
+              fileMesh.quaternion.copy(newRotation);
+            });
+            grabber.on('release', () => {
+              const {position, quaternion, file} = fileMesh;
+              const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
+              file.matrix = newMatrixArray;
+
+              grabState.grabber = null;
+            });
+
+            const grabState = grabStates[side];
+            grabState.grabber = grabber;
+          }
+
           dragover(e) {
             dragover(e);
           }
@@ -405,8 +486,8 @@ class Fs {
           }
         }
 
-        const fsApiInstance = new FsApi();
-        return fsApiInstance;
+        const fsInstance = new FsApi();
+        return fsInstance;
       }
     });
   }

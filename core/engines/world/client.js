@@ -1299,23 +1299,28 @@ class World {
               });
               const _gripdown = e => {
                 const {side} = e;
-                const tagMesh = tags.getHoverTag(side);
 
-                if (tagMesh) {
-                  const elementsTagMeshes = tags.getTagsClass('elements');
-                  const npmTagMeshes = tags.getTagsClass('npm');
+                const _grabTag = () => {
+                  const tagMesh = tags.getHoverTag(side);
 
-                  if (elementsTagMeshes.includes(tagMesh)) {
-                    _removeElement(tagMesh);
+                  if (tagMesh) {
+                    const elementsTagMeshes = tags.getTagsClass('elements');
+                    const npmTagMeshes = tags.getTagsClass('npm');
 
-                    _saveTags();
-                  } else if (npmTagMeshes.includes(tagMesh)) {
-                    const tagMeshClone = tags.cloneTag(tagMesh);
-                    tags.grabTag(side, tagMeshClone);
+                    if (elementsTagMeshes.includes(tagMesh)) {
+                      _removeElement(tagMesh);
 
-                    _saveTags();
+                      _saveTags();
+                    } else if (npmTagMeshes.includes(tagMesh)) {
+                      const tagMeshClone = tags.cloneTag(tagMesh);
+                      tags.grabTag(side, tagMeshClone);
+
+                      _saveTags();
+                    }
                   }
-                }
+                };
+
+                _grabTag();
 
                 detailsState.type = null;
                 detailsState.item = null;
@@ -1332,24 +1337,44 @@ class World {
                 if (handsGrabber) {
                   const {object: handsGrabberObject} = handsGrabber;
 
-                  if (tags.isTag(handsGrabberObject)) {
-                    const elementsHovered = elementsContainerHoverStates[side].hovered;
+                  const _releaseTag = () => {
+                    if (tags.isTag(handsGrabberObject)) {
+                      const elementsHovered = elementsContainerHoverStates[side].hovered;
 
-                    if (elementsHovered) {
-                      const newTagMesh = handsGrabberObject;
-                      handsGrabber.release();
+                      if (elementsHovered) {
+                        const newTagMesh = handsGrabberObject;
+                        handsGrabber.release();
 
-                      _addElement(newTagMesh);
+                        _addElement(newTagMesh);
 
-                      _saveTags();
-
-                      e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-                    } else {
-                      handsGrabber.on('release', () => { // so the item matrix is saved first
                         _saveTags();
-                      });
+
+                        e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+                      } else {
+                        handsGrabber.on('release', () => { // so the item matrix is saved first
+                          _saveTags();
+                        });
+                      }
+
+                      return true;
+                    } else {
+                      return false;
                     }
-                  }
+                  };
+
+                  const _releaseFile = () => {
+                    if (fs.isFile(handsGrabberObject)) {
+                      handsGrabber.on('release', () => { // so the item matrix is saved first
+                        _saveFiles();
+                      });
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  };
+
+                  _releaseTag() || _releaseFile();
                 }
               };
               input.on('gripup', _gripup, {
