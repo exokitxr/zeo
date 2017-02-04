@@ -1,3 +1,6 @@
+const path = require('path');
+const fs = require('fs');
+
 const archae = require('archae');
 
 const args = process.argv.slice(2);
@@ -72,8 +75,49 @@ const a = archae(config);
 
 const _install = () => {
   if (flags.install) {
-    return a.requestPlugin('/core/engines/zeo')
-      .then(() => {});
+    const _flatten = a => {
+      const result = [];
+      for (let i = 0; i < a.length; i++) {
+        const e = a[i];
+        result.push.apply(result, e);
+      }
+      return result;
+    };
+    const _readdir = p => new Promise((accept, reject) => {
+      fs.readdir(p, (err, files) => {
+        if (!err) {
+          const decoratedFiles = files.map(file => path.join(p, file));
+          accept(decoratedFiles);
+        } else {
+          reject(err);
+        }
+      });
+    });
+    const _filterDirectories = files => {
+      const acc = [];
+
+      return Promise.all(files.map(file => new Promise((accept, reject) => {
+        fs.lstat(file, (err, stats) => {
+          if (!err) {
+            if (stats.isDirectory()) {
+              acc.push(file);
+            }
+
+            accept();
+          } else {
+            reject(err);
+          }
+        });
+      }))).then(() => acc);
+    };
+
+    return Promise.all([
+      path.join(config.dirname, '/core/engines'),
+      path.join(config.dirname, '/core/plugins'),
+    ].map(_readdir))
+      .then(files => _filterDirectories(_flatten(files))
+        .then(directories => a.requestPlugins(directories.map(directory => directory.slice(config.dirname.length))))
+      );
   } else {
     return Promise.resolve();
   }
@@ -145,6 +189,8 @@ _install()
           console.warn(err);
         }
       });
+    } else if (flags.install) { // XXX instead, provide an install mode in archae
+      process.exit(0);
     }
   }))
   .catch(err => {
