@@ -1,0 +1,8 @@
+{
+  "name": "draw",
+  "description": "Paint 2d pixel pictures.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}

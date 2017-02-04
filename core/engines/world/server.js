@@ -9,6 +9,9 @@ const DEFAULT_TAGS = {
   elements: [],
   free: [],
 };
+const DEFAULT_FILES = {
+  files: [],
+};
 
 class World {
   constructor(archae) {
@@ -26,6 +29,7 @@ class World {
 
     const worldPath = path.join(dirname, dataDirectory, 'world');
     const worldTagsJsonPath = path.join(worldPath, 'tags.json');
+    const worldFilesJsonPath = path.join(worldPath, 'files.json');
     const worldConfigJsonPath = path.join(worldPath, 'config.json');
 
     const _requestFile = (p, defaultValue) => new Promise((accept, reject) => {
@@ -42,6 +46,7 @@ class World {
       });
     });
     const _requestTagsJson = () => _requestFile(worldTagsJsonPath, DEFAULT_TAGS);
+    const _requestFilesJson = () => _requestFile(worldFilesJsonPath, DEFAULT_FILES);
     const _ensureWorldPath = () => new Promise((accept, reject) => {
       const worldPath = path.join(dirname, dataDirectory, 'world');
 
@@ -56,10 +61,12 @@ class World {
 
     return Promise.all([
       _requestTagsJson(),
+      _requestFilesJson(),
       _ensureWorldPath(),
     ])
       .then(([
         tagsJson,
+        filesJson,
         ensureWorldPathResult,
       ]) => {
         if (live) {
@@ -110,12 +117,58 @@ class World {
             });
           }
           app.put('/archae/world/tags.json', serveTagsSet);
+          function serveFilesGet(req, res, next) {
+            res.json(filesJson);
+          }
+          app.get('/archae/world/files.json', serveFilesGet);
+          function serveFilesSet(req, res, next) {
+            bodyParserJson(req, res, () => {
+              const {body: data} = req;
+
+              const _respondInvalid = () => {
+                res.status(400);
+                res.send();
+              };
+
+              if (
+                typeof data === 'object' && data !== null &&
+                data.files && Array.isArray(data.files)
+              ) {
+                filesJson = {
+                  files: data.files,
+                };
+
+                _saveFile(worldFilesJsonPath, filesJson)
+                  .then(() => {
+                    res.send();
+                  })
+                  .catch(err => {
+                    res.status(500);
+                    res.send(err.stack);
+                  });
+              } else {
+                _respondInvalid();
+              }
+            });
+          }
+          app.put('/archae/world/files.json', serveFilesSet);
+
+          const startTime = Date.now();
+          function serveStartTime(req, res, next) {
+            res.json({
+              startTime,
+            });
+          }
+          app.get('/archae/world/start-time.json', serveStartTime);
 
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
               if (
                 route.handle.name === 'serveTagsGet' ||
-                route.handle.name === 'serveTagsSet'
+                route.handle.name === 'serveTagsSet' ||
+                route.handle.name === 'serveFilesGet' ||
+                route.handle.name === 'serveFilesSet' ||
+                route.handle.name === 'serveStartTime'
               ) {
                 routes.splice(i, 1);
               }

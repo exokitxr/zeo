@@ -351,7 +351,7 @@ const getElementAttributeInput = (name, type, value, min, max, step, options, po
         return `\
 <a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="element:attribute:${name}:focus" onmousedown="element:attribute:${name}:focus">
   <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${focusValue}</div>
-  <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">▼</div>
+  <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">${unescape(encodeURIComponent('▼'))}</div>
 </a>
 `;
       } else {
@@ -748,30 +748,39 @@ const getFilesButtonsSrc = (selectedName, clipboardPath, prefix) => `\
 </div>
 `;
 
-const getNavbarSrc = ({tab}) => `\
-  <div style="display: flex; width: 1000px; height: 50px;">
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none;" onclick="navbar:readme">
-      ${tab === 'readme' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>Readme</span>
-    </a>
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:multiverse">
-      ${tab === 'multiverse' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>Multiverse</span>
-    </a>
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:world">
-      ${tab === 'world' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>World</span>
-    </a>
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:inventory">
-      ${tab === 'inventory' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>Inventory</span>
-    </a>
-    <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: center; font-size: 30px; text-decoration: none; box-sizing: border-box;" onclick="navbar:options">
-      ${tab === 'options' ? `<div style="position: absolute; width: 100%; top: 0; height: 3px; background-color: #F00;"></div>` : ''}
-      <span>Options</span>
-    </a>
-  </div>
-`;
+const getNavbarSrc = ({tab}) => {
+  const focusedContent = label => `\
+    <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #FFF transparent transparent;"></div>
+    <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #FFF;"></div>
+    <div style="display: flex; position: relative; width: 150px; background-color: #FFF; justify-content: center; align-items: center;">${label}</div>
+  `;
+  const unfocusedContent = label => `\
+    <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #EEE transparent transparent;"></div>
+    <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #EEE;"></div>
+    <div style="display: flex; position: relative; width: 150px; background-color: #EEE; justify-content: center; align-items: center;">${label}</div>
+  `;
+
+  return `\
+    <div style="display: flex; width: 1024px; height: 50px; background-color: #CCC;">
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; border-bottom: 1px solid #000;"></div>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; ${tab === 'readme' ? 'z-index: 1;' : ''}" onclick="navbar:readme">
+        ${tab === 'readme' ? focusedContent('Readme') : unfocusedContent('Readme')}
+      </a>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'multiverse' ? 'z-index: 1;' : ''}" onclick="navbar:multiverse">
+        ${tab === 'multiverse' ? focusedContent('Multiverse') : unfocusedContent('Multiverse')}
+      </a>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'world' ? 'z-index: 1;' : ''}" onclick="navbar:world">
+        ${tab === 'world' ? focusedContent('World') : unfocusedContent('World')}
+      </a>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'inventory' ? 'z-index: 1;' : ''}" onclick="navbar:inventory">
+        ${tab === 'inventory' ? focusedContent('Inventory') : unfocusedContent('Inventory')}
+      </a>
+      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'options' ? 'z-index: 1;' : ''}" onclick="navbar:options">
+        ${tab === 'options' ? focusedContent('Options') : unfocusedContent('Options')}
+      </a>
+    </div>
+  `;
+};
 
 return {
   getMainPageSrc,

@@ -29,8 +29,6 @@ class Multiplayer {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
-        // const world = rend.getCurrentWorld();
-        // const {player} = world;
         const {events} = jsUtils;
         const {EventEmitter} = events;
 

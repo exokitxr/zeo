@@ -55,8 +55,6 @@ class Config {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const currentWorld = rend.getCurrentWorld();
-
         const _decomposeObjectMatrixWorld = object => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
@@ -147,6 +145,7 @@ class Config {
 
         const stats = new Stats();
         stats.render = () => {}; // overridden below
+        const statsDom = stats.dom.childNodes[0];
 
         return Promise.all([
           _requestUis(),
@@ -184,7 +183,7 @@ class Config {
               statsUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
                 const img = (() => {
                   if (statsCheckboxValue) {
-                    const statsImg = stats.dom.childNodes[0];
+                    const statsImg = statsDom;
                     statsImg.needsUpdate = true;
                     return statsImg;
                   } else {
@@ -215,7 +214,7 @@ class Config {
 
               const configMesh = (() => {
                 const object = new THREE.Object3D();
-                object.position.y = -0.25;
+                // object.position.y = -0.25;
                 object.visible = false;
 
                 const planeMesh = (() => {
@@ -234,15 +233,6 @@ class Config {
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
 
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                    const material = transparentMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
-                    return mesh;
-                  })();
-                  mesh.add(shadowMesh);
-
                   return mesh;
                 })();
                 object.add(planeMesh);
@@ -254,8 +244,9 @@ class Config {
 
               const statsMesh = (() => {
                 const object = new THREE.Object3D();
-                object.position.x = -0.5 + (STATS_WORLD_WIDTH / 2);
-                object.position.y = -0.25;
+                object.position.x = -(2 / 2) + (STATS_WORLD_WIDTH / 2);
+                object.position.y = -((2 / 1.5) / 2) + (STATS_WORLD_HEIGHT / 2);
+                object.position.z = -0.5;
                 object.visible = configState.statsCheckboxValue;
 
                 const planeMesh = (() => {
@@ -270,18 +261,9 @@ class Config {
 
                   const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   // mesh.position.y = 1.5;
-                  mesh.position.z = -0.5;
+                  mesh.position.z = -0.5 + 0.01;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
-
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                    const material = transparentMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
-                    return mesh;
-                  })();
-                  mesh.add(shadowMesh);
 
                   return mesh;
                 })();
@@ -309,6 +291,7 @@ class Config {
               stats.render = () => {
                 const {frame: oldFrame} = statsState;
                 const newFrame = Math.floor(Date.now() / STATS_REFRESH_RATE);
+
                 if (newFrame !== oldFrame) {
                   statsState.frame = newFrame;
 
@@ -350,6 +333,8 @@ class Config {
                       pend();
                     }
                   }
+                } else {
+                  next();
                 }
               });
 
@@ -462,7 +447,7 @@ class Config {
               const _update = () => {
                 const _updateTextures = () => {
                   const tab = rend.getTab();
-                  const worldTime = currentWorld.getWorldTime();
+                  const uiTime = rend.getUiTime();
 
                   if (tab === 'options') {
                     const {
@@ -474,7 +459,7 @@ class Config {
                     biolumi.updateMenuMaterial({
                       ui: configUi,
                       menuMaterial: configMenuMaterial,
-                      worldTime,
+                      uiTime,
                     });
                   }
 
@@ -486,7 +471,7 @@ class Config {
                   biolumi.updateMenuMaterial({
                     ui: statsUi,
                     menuMaterial: statsMenuMaterial,
-                    worldTime,
+                    uiTime,
                   });
                 };
                 const _updateAnchors = () => {

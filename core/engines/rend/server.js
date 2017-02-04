@@ -404,7 +404,10 @@ class Rend {
           function serveReadme(req, res, next) {
             fs.readFile(path.join(dirname, 'README.md'), 'utf8', (err, s) => {
               if (!err) {
-                res.send(_renderMarkdown(s));
+                const result = `<div style="padding: 0 30px;">
+                  ${_renderMarkdown(s)}
+                </div>`;
+                res.send(result);
               } else if (err.code === 'ENOENT') {
                 res.send('');
               } else {

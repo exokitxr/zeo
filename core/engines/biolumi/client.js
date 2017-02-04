@@ -181,18 +181,18 @@ class Biolumi {
                         document.body.removeChild(divEl);
 
                         const img = new Image();
-                        img.src = 'data:image/svg+xml;charset=utf-8,' + '<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + scrollHeight + '\'>' +
+                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + scrollHeight + '\'>' +
                           '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
                             innerSrc +
                           '</foreignObject>' +
-                        '</svg>';
+                        '</svg>');
                         img.onload = () => {
                           layer.img = img;
 
                           pend();
                         };
                         img.onerror = err => {
-                          console.warn('biolumi image load error', {innerSrc}, err);
+                          console.warn('biolumi image load error', {src: img.src}, err);
                         };
 
                         const layer = new Layer(this);
@@ -263,12 +263,12 @@ class Biolumi {
                 this.pixelated = false;
               }
 
-              getValid({worldTime}) {
+              getValid({uiTime}) {
                 const {numFrames} = this;
 
                 if (numFrames > 1) {
                   const {parent, frameIndex, frameTime} = this;
-                  const currentFrameIndex = Math.floor(worldTime / frameTime) % numFrames;
+                  const currentFrameIndex = Math.floor(uiTime / frameTime) % numFrames;
                   return currentFrameIndex === frameIndex;
                 } else {
                   return true; // XXX optimize this
@@ -553,7 +553,7 @@ class Biolumi {
           const _getTransparentMaterial = () => transparentMaterial;
           const solidMaterial = new THREE.MeshBasicMaterial({
             color: 0xFFFFFF,
-            opacity: 0.9,
+            opacity: 1,
             side: THREE.DoubleSide,
             transparent: true,
             // alphaTest: 0.5,
@@ -754,6 +754,7 @@ class Biolumi {
               side: THREE.DoubleSide,
               transparent: true,
             });
+            shaderUniforms.backgroundColor.value = Float32Array.from([1, 1, 1, 1]);
             // shaderMaterial.polygonOffset = true;
             // shaderMaterial.polygonOffsetFactor = 1;
             return shaderMaterial;
@@ -991,14 +992,14 @@ class Biolumi {
               }
             }
           };
-          const _updateMenuMaterial = ({ui, menuMaterial, worldTime}) => {
+          const _updateMenuMaterial = ({ui, menuMaterial, uiTime}) => {
             const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = menuMaterial;
 
             const layers = ui.getLayers();
             for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
               const layer = i < layers.length ? layers[i] : null;
 
-              if (layer && layer.getValid({worldTime})) {
+              if (layer && layer.getValid({uiTime})) {
                 validTextures.value[i] = 1;
 
                 const texture = textures.value[i];

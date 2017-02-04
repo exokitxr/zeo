@@ -19,14 +19,11 @@ class Rain {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/rend',
     ]).then(([
       zeo,
-      rend,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
-        const world = rend.getCurrentWorld();
 
         const rainShader = {
           uniforms: THREE.UniformsUtils.merge( [
@@ -65,6 +62,7 @@ class Rain {
             THREE.ShaderChunk[ "color_pars_vertex" ],
             THREE.ShaderChunk[ "shadowmap_pars_vertex" ],
             THREE.ShaderChunk[ "logdepthbuf_pars_vertex" ],
+            THREE.ShaderChunk[ "fog_pars_vertex" ],
 
             "void main() {",
 
@@ -88,6 +86,7 @@ class Rain {
               THREE.ShaderChunk[ "logdepthbuf_vertex" ],
               THREE.ShaderChunk[ "worldpos_vertex" ],
               THREE.ShaderChunk[ "shadowmap_vertex" ],
+              THREE.ShaderChunk[ "fog_vertex" ],
 
             "}"
 
@@ -257,7 +256,7 @@ class Rain {
             this.mesh = mesh;
 
             const update = () => {
-              const worldTime = world.getWorldTime();
+              const worldTime = zeo.getWorldTime();
 
               const frame = Math.floor(worldTime / PARTICLE_FRAME_TIME) % PARTICLE_FRAMES;
               material.uniforms.frame.value = frame;

@@ -24,21 +24,17 @@ class Cloud {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/rend',
       '/core/engines/cyborg',
       '/core/plugins/random-utils',
     ]).then(([
       zeo,
-      rend,
       cyborg,
       randomUtils,
     ]) => {
       if (live) {
-        const {THREE, scene, camera, renderer} = zeo;
+        const {THREE, scene} = zeo;
         const THREEConvexGeometry = ConvexGeometry(THREE);
         const {alea} = randomUtils;
-
-        const world = rend.getCurrentWorld();
 
         const cloudsMaterial = new THREE.MeshBasicMaterial({
           color: 0xFFFFFF,
@@ -87,7 +83,7 @@ class Cloud {
             scene.add(cloudsMesh);
             this.cloudsMesh = cloudsMesh;
 
-            const _getWorldTime = () => world.getWorldTime();
+            const _getWorldTime = () => zeo.getWorldTime();
             const _getPosition = () => {
               const player = cyborg.getPlayer();
               const status = player.getStatus();

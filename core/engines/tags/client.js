@@ -7,7 +7,8 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/tags';
-import tagsRender from './lib/render/tags';
+import tagsRenderer from './lib/render/tags';
+import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
@@ -57,18 +58,13 @@ class Tags {
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
-          const world = rend.getCurrentWorld();
 
-           const tagsRenderer = tagsRender.makeRenderer({
-            creatureUtils,
-          });
-
-          const _decomposeObjectMatrixWorld = object => {
-            const {matrixWorld} = object;
+          const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+          const _decomposeMatrix = matrix => {
             const position = new THREE.Vector3();
             const rotation = new THREE.Quaternion();
             const scale = new THREE.Vector3();
-            matrixWorld.decompose(position, rotation, scale);
+            matrix.decompose(position, rotation, scale);
             return {position, rotation, scale};
           };
 
@@ -107,6 +103,7 @@ class Tags {
             mesh.position.y = 1.2;
             mesh.rotation.order = camera.rotation.order;
             mesh.rotation.y = Math.PI / 2;
+            mesh.depthWrite = false;
             mesh.visible = false;
             return mesh;
           };
@@ -116,6 +113,57 @@ class Tags {
           };
           scene.add(boxMeshes.left);
           scene.add(boxMeshes.right);
+
+          const _updatePages = menuUtils.debounce(next => {
+            const pageSpecs = (() => {
+              const result = [];
+
+              for (let i = 0; i < tagMeshes.length; i++) {
+                const tagMesh = tagMeshes[i];
+                const {ui, item} = tagMesh;
+
+                if (ui) {
+                  const pages = ui.getPages();
+
+                  for (let j = 0; j < pages.length; j++) {
+                    const page = pages[j];
+                    const pageSpec = {
+                      page,
+                      item,
+                    };
+                    result.push(pageSpec);
+                  }
+                }
+              }
+
+              return result;
+            })();
+
+            if (pageSpecs.length > 0) {
+              let pending = pageSpecs.length;
+              const pend = () => {
+                if (--pending === 0) {
+                  next();
+                }
+              };
+
+              for (let i = 0; i < pageSpecs.length; i++) {
+                const pageSpec = pageSpecs[i];
+                const {page} = pageSpec;
+                const {type} = page;
+
+                if (type === 'tag') {
+                  const {item} = pageSpec;
+
+                  page.update({
+                    item,
+                  }, pend);
+                }
+              }
+            } else {
+              next();
+            }
+          });
 
           const _gripdown = e => {
             const {side} = e;
@@ -163,7 +211,7 @@ class Tags {
               });
             };
             const _updateTextures = () => {
-              const worldTime = world.getWorldTime();
+              const uiTime = rend.getUiTime();
 
               for (let i = 0; i < tagMeshes.length; i++) {
                 const tagMesh = tagMeshes[i];
@@ -178,7 +226,7 @@ class Tags {
                   biolumi.updateMenuMaterial({
                     ui,
                     menuMaterial,
-                    worldTime,
+                    uiTime,
                   });
                 }
               }
@@ -277,7 +325,7 @@ class Tags {
                 .then(ui => {
                   const {item} = object;
 
-                  ui.pushPage([
+                  ui.pushPage(({item}) => ([
                     {
                       type: 'html',
                       src: tagsRenderer.getTagSrc(item),
@@ -292,8 +340,11 @@ class Tags {
                       frameTime: 300,
                       pixelated: true,
                     }
-                  ], {
-                    type: 'main',
+                  ]), {
+                    type: 'tag',
+                    state: {
+                      item,
+                    },
                     immediate: true,
                   });
                   object.ui = ui;
@@ -312,15 +363,6 @@ class Tags {
                     // mesh.position.y = 1.5;
                     mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
-
-                    const shadowMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                      const material = transparentMaterial;
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.castShadow = true;
-                      return mesh;
-                    })();
-                    mesh.add(shadowMesh);
 
                     return mesh;
                   })();
@@ -384,26 +426,42 @@ class Tags {
             }
 
             grabTag(side, tagMesh) {
-              scene.add(tagMesh);
+              const menuMesh = rend.getMenuMesh();
+              menuMesh.add(tagMesh);
 
               const {item} = tagMesh;
               item.matrix = DEFAULT_TAG_MATRIX;
 
               const grabber = hands.grab(side, tagMesh);
               grabber.on('update', ({position, rotation}) => {
-                tagMesh.position.copy(position);
-                tagMesh.quaternion.copy(rotation);
+                const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
+                const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
+
+                const newRotation = menuMeshQuaternionInverse.clone()
+                  .multiply(rotation)
+                  .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
+                const newPosition = position.clone().applyMatrix4(menuMeshMatrixInverse)
+                  .add(
+                    new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
+                  );
+
+                tagMesh.position.copy(newPosition);
+                tagMesh.quaternion.copy(newRotation);
               });
               grabber.on('release', () => {
                 const {position, quaternion, item} = tagMesh;
-                const newMatrix = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
-                item.matrix = newMatrix;
+                const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
+                item.matrix = newMatrixArray;
 
                 grabState.grabber = null;
               });
 
               const grabState = grabStates[side];
               grabState.grabber = grabber;
+            }
+
+            updatePages() {
+              _updatePages();
             }
           };
 

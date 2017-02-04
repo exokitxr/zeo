@@ -7,7 +7,7 @@ class Multiplayer {
 
   mount() {
     const {_archae: archae} = this;
-    const {express, app, wss} = archae.getCore();
+    const {express, ws, app, wss} = archae.getCore();
 
     const connections = [];
     const statuses = new Map();
@@ -70,7 +70,7 @@ class Multiplayer {
             const es = JSON.stringify(e);
             for (let i = 0; i < connections.length; i++) {
               const connection = connections[i];
-              if (connection !== c) {
+              if (connection.readyState === ws.OPEN && connection !== c) {
                 connection.send(es);
               }
             }
@@ -87,7 +87,7 @@ class Multiplayer {
           const es = JSON.stringify(e);
           for (let i = 0; i < connections.length; i++) {
             const connection = connections[i];
-            if (connection !== c) {
+            if (connection.readyState === ws.OPEN && connection !== c) {
               connection.send(es);
             }
           }

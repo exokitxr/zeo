@@ -1,3 +1,25 @@
+import menuUtils from './lib/utils/menu';
+
+import {
+  WIDTH,
+  HEIGHT,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+} from './lib/constants/fs';
+import fsRenderer from './lib/render/fs';
+
+const fileFlagSymbol = Symbol();
+
+const SIDES = ['left', 'right'];
+
+const DEFAULT_GRAB_RADIUS = 0.1;
+const DEFAULT_FILE_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
+
 class Fs {
   constructor(archae) {
     this._archae = archae;
@@ -13,74 +35,82 @@ class Fs {
 
     return archae.requestPlugins([
       '/core/engines/three',
+      '/core/engines/input',
+      '/core/engines/biolumi',
+      '/core/engines/rend',
+      '/core/engines/hands',
+      '/core/plugins/js-utils',
+      '/core/plugins/creature-utils',
     ]).then(([
       three,
+      input,
+      biolumi,
+      rend,
+      hands,
+      jsUtils,
+      creatureUtils,
     ]) => {
       if (live) {
-        const {renderer} = three;
+        const {THREE, scene, camera, renderer} = three;
         const {domElement} = renderer;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
 
-        let cwd = '/';
-        const _getCwd = () => cwd;
-        const _setCwd = c => {
-          cwd = c;
+        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        const _decomposeMatrix = matrix => {
+          const position = new THREE.Vector3();
+          const rotation = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          matrix.decompose(position, rotation, scale);
+          return {position, rotation, scale};
         };
 
-        let numUploading = 0;
-        const _getUploading = () => numUploading > 0;
+        const solidMaterial = biolumi.getSolidMaterial();
+        const wireframeMaterial = new THREE.MeshBasicMaterial({
+          color: 0x0000FF,
+          wireframe: true,
+          opacity: 0.5,
+          transparent: true,
+        });
 
-        const _getFile = p => fetch('/archae/fs' + p).then(res => res.blob());
-        const _getDirectory = p => fetch('/archae/fs' + p, {
-          headers: {
-            'Accept': 'application/json',
-          }
-        }).then(res => res.json());
-        const _setFile = (p, blob) => fetch('/archae/fs' + p, {
-          method: 'PUT',
-          body: blob,
-        }).then(res => res.blob().then(() => Promise.resolve()));
-        const _createDirectory = p => fetch('/archae/fs' + p, {
-          method: 'POST',
-        }).then(res => res.blob().then(() => Promise.resolve()));
-        const _copy = (src, dst) => fetch('/archae/fs' + src, {
-          method: 'COPY',
-          headers: {
-            'To': dst,
-          }
-        }).then(res => res.blob().then(() => Promise.resolve()));
-        const _move = (src, dst) => fetch('/archae/fs' + src, {
-          method: 'MOVE',
-          headers: {
-            'To': dst,
-          }
-        }).then(res => res.blob().then(() => Promise.resolve()));
-        const _remove = p => fetch('/archae/fs' + p, {
-          method: 'DELETE',
-        }).then(res => res.blob().then(() => Promise.resolve()));
+        const _makeHoverState = () => ({
+          fileMesh: null,
+        });
+        const hoverStates = {
+          left: _makeHoverState(),
+          right: _makeHoverState(),
+        };
 
-        const listeners = {
-          uploadStart: [],
-          uploadEnd: [],
-        }
-        const _addEventListener = (event, listener) => {
-          const eventListeners = listeners[event];
-          eventListeners.push(listener);
+        const _makeGrabState = () => ({
+          grabber: null,
+        });
+        const grabStates = {
+          left: _makeGrabState(),
+          right: _makeGrabState(),
         };
-        const _removeEventListener = (event, listener) => {
-          const eventListeners = listeners[event];
-          const index = eventListeners.indexOf(listener);
-          if (index !== -1) {
-            eventListeners.splice(index, 1);
-          }
-        };
-        const _triggerEvent = event => {
-          const eventListeners = listeners[event];
 
-          for (let i = 0; i < eventListeners.length; i++) {
-            const listener = eventListeners[i];
-            listener();
-          }
+        const _makeBoxMesh = () => {
+          const width = WORLD_WIDTH;
+          const height = WORLD_HEIGHT;
+          const depth = WORLD_DEPTH;
+
+          const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+          const material = wireframeMaterial;
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.y = 1.2;
+          mesh.rotation.order = camera.rotation.order;
+          mesh.rotation.y = Math.PI / 2;
+          mesh.depthWrite = false;
+          mesh.visible = false;
+          return mesh;
         };
+        const boxMeshes = {
+          left: _makeBoxMesh(),
+          right: _makeBoxMesh(),
+        };
+        scene.add(boxMeshes.left);
+        scene.add(boxMeshes.right);
 
         const dragover = e => {
           e.preventDefault();
@@ -94,50 +124,370 @@ class Fs {
             const file = files[0];
             const {name} = file;
 
-            numUploading++;
-            if (numUploading === 1) {
-              _triggerEvent('uploadStart');
-            }
+            fsInstance.emit('uploadStart', file);
 
-            _setFile(cwd + (!/\/$/.test(cwd) ? '/' : '') + name, file)
+            fsInstance.writeFile('/' + name, file)
               .then(() => {
-                console.log('file uploaded', name);
-
-                numUploading--;
-                if (numUploading === 0) {
-                  _triggerEvent('uploadEnd');
-                }
+                fsInstance.emit('uploadEnd', file);
               })
               .catch(err => {
                 console.warn(err);
-
-                numUploading--;
-                if (numUploading === 0) {
-                  _triggerEvent('uploadEnd');
-                }
               });
           }
         };
         domElement.addEventListener('drop', drop);
+
+        const _updatePages = menuUtils.debounce(next => {
+          const pageSpecs = (() => {
+            const result = [];
+
+            for (let i = 0; i < fileMeshes.length; i++) {
+              const fileMesh = fileMeshes[i];
+              const {ui, file} = fileMesh;
+
+              if (ui) {
+                const pages = ui.getPages();
+
+                for (let j = 0; j < pages.length; j++) {
+                  const page = pages[j];
+                  const pageSpec = {
+                    page,
+                    file,
+                  };
+                  result.push(pageSpec);
+                }
+              }
+            }
+
+            return result;
+          })();
+
+          if (pageSpecs.length > 0) {
+            let pending = pageSpecs.length;
+            const pend = () => {
+              if (--pending === 0) {
+                next();
+              }
+            };
+
+            for (let i = 0; i < pageSpecs.length; i++) {
+              const pageSpec = pageSpecs[i];
+              const {page} = pageSpec;
+              const {type} = page;
+
+              if (type === 'file') {
+                const {file} = pageSpec;
+
+                page.update({
+                  file,
+                }, pend);
+              }
+            }
+          } else {
+            next();
+          }
+        });
+
+        const _gripdown = e => {
+          const {side} = e;
+
+          const bestGrabbableFileMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
+          if (bestGrabbableFileMesh) {
+            fsInstance.grabFile(side, bestGrabbableFileMesh);
+          }
+        };
+        input.on('gripdown', _gripdown);
+        const _gripup = e => {
+          const {side} = e;
+          const grabState = grabStates[side];
+          const {grabber} = grabState;
+
+          if (grabber) {
+            grabber.release();
+          }
+        };
+        input.on('gripup', _gripup);
+
+        const _update = () => {
+          const _updateControllers = () => {
+            SIDES.forEach(side => {
+              const hoverState = hoverStates[side];
+              const boxMesh = boxMeshes[side];
+
+              const bestGrabbableFsMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
+              if (bestGrabbableFsMesh) {
+                hoverState.fileMesh = bestGrabbableFsMesh;
+
+                const {position: fileMehPosition, rotation: fileMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableFsMesh);
+                boxMesh.position.copy(fileMehPosition);
+                boxMesh.quaternion.copy(fileMeshRotation);
+
+                if (!boxMesh.visible) {
+                  boxMesh.visible = true;
+                }
+              } else {
+                hoverState.fileMesh = null;
+
+                if (boxMesh.visible) {
+                  boxMesh.visible = false;
+                }
+              }
+            });
+          };
+          const _updateTextures = () => {
+            const uiTime = rend.getUiTime();
+
+            for (let i = 0; i < fileMeshes.length; i++) {
+              const fileMesh = fileMeshes[i];
+              const {
+                ui,
+                planeMesh,
+              } = fileMesh;
+
+              if (ui && planeMesh) {
+                const {menuMaterial} = planeMesh;
+
+                biolumi.updateMenuMaterial({
+                  ui,
+                  menuMaterial,
+                  uiTime,
+                });
+              }
+            }
+          };
+
+          _updateControllers();
+          _updateTextures();
+        };
+        rend.on('update', _update);
+
         this._cleanup = () => {
+          scene.add(boxMeshes.left);
+          scene.add(boxMeshes.right);
+
           domElement.removeEventListener('dragover', dragover);
           domElement.removeEventListener('drop', drop);
+
+          input.removeListener('gripdown', _gripdown);
+          input.removeListener('gripup', _gripup);
+
+          rend.removeListener('update', _update);
         };
 
-        return {
-          getCwd: _getCwd,
-          setCwd: _setCwd,
-          getUploading: _getUploading,
-          getFile: _getFile,
-          getDirectory: _getDirectory,
-          setFile: _setFile,
-          createDirectory: _createDirectory,
-          copy: _copy,
-          move: _move,
-          remove: _remove,
-          addEventListener: _addEventListener,
-          removeEventListener: _removeEventListener,
-        };
+        class FsFile {
+          constructor(name, directory, matrix) {
+            this.name = name;
+            this.directory = directory;
+            this.matrix = matrix;
+
+            this.instancing = false;
+          }
+        }
+
+        const fileMeshes = [];
+        class FsApi extends EventEmitter {
+          makeFile(fileSpec) {
+            const object = new THREE.Object3D();
+            object[fileFlagSymbol] = true;
+
+            const file = new FsFile(fileSpec.name, fileSpec.directory, fileSpec.matrix);
+            object.file = file;
+
+            object.position.set(file.matrix[0], file.matrix[1], file.matrix[2]);
+            object.quaternion.set(file.matrix[3], file.matrix[4], file.matrix[5], file.matrix[6]);
+            object.scale.set(file.matrix[7], file.matrix[8], file.matrix[9]);
+
+            object.ui = null;
+            object.planeMesh = null;
+
+            this._requestDecorateFile(object);
+
+            fileMeshes.push(object);
+
+            return object;
+          }
+
+          _requestDecorateFile(object) {
+            return biolumi.requestUi({
+              width: WIDTH,
+              height: HEIGHT,
+            })
+              .then(ui => {
+                const {file} = object;
+
+                ui.pushPage(({file}) => ([
+                  {
+                    type: 'html',
+                    src: fsRenderer.getFileSrc(file),
+                  },
+                  {
+                    type: 'image',
+                    img: creatureUtils.makeAnimatedCreature('file:' + file.name),
+                    x: 10,
+                    y: 0,
+                    w: 100,
+                    h: 100,
+                    frameTime: 300,
+                    pixelated: true,
+                  }
+                ]), {
+                  type: 'file',
+                  state: {
+                    file,
+                  },
+                  immediate: true,
+                });
+                object.ui = ui;
+
+                const planeMesh = (() => {
+                  const width = WORLD_WIDTH;
+                  const height = WORLD_HEIGHT;
+                  const depth = WORLD_DEPTH;
+
+                  const menuMaterial = biolumi.makeMenuMaterial();
+
+                  const geometry = new THREE.PlaneBufferGeometry(width, height);
+                  const materials = [solidMaterial, menuMaterial];
+
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  // mesh.position.y = 1.5;
+                  mesh.receiveShadow = true;
+                  mesh.menuMaterial = menuMaterial;
+
+                  return mesh;
+                })();
+                object.add(planeMesh);
+                object.planeMesh = planeMesh;
+              });
+          }
+
+          getFiles() {
+            return fileMeshes;
+          }
+
+          getFile(name) {
+            return fileMeshes.find(({file: {name: fileName}}) => fileName === name) || null;
+          }
+
+          readFile(p) {
+            return fetch('/archae/fs' + p)
+              .then(res => res.blob()
+            );
+          }
+
+          /* getDirectory(p) {
+            return fetch('/archae/fs' + p, {
+              headers: {
+                'Accept': 'application/json',
+              }
+            }).then(res => res.json());
+          } */
+
+          writeFile(p, blob) {
+            return fetch('/archae/fs' + p, {
+              method: 'PUT',
+              body: blob,
+            }).then(res => res.blob()
+              .then(() => {})
+            );
+          }
+
+          /* createDirectory(p) {
+            return fetch('/archae/fs' + p, {
+              method: 'POST',
+            }).then(res => res.blob()
+              .then(() => {})
+            );
+          }
+
+          copy(src, dst) {
+            return fetch('/archae/fs' + src, {
+              method: 'COPY',
+              headers: {
+                'To': dst,
+              }
+            }).then(res => res.blob()
+              .then(() => {})
+            );
+          }
+
+          move(src, dst) {
+            return fetch('/archae/fs' + src, {
+              method: 'MOVE',
+              headers: {
+                'To': dst,
+              }
+            }).then(res => res.blob()
+              .then(() => {})
+            );
+          }
+
+          remove(p) {
+            return fetch('/archae/fs' + p, {
+              method: 'DELETE',
+            }).then(res => res.blob()
+              .then(() => {})
+            );
+          }
+
+          getHoverFile(side) {
+            return hoverStates[side].fileMesh;
+          } */
+
+          isFile(object) {
+            return object[fileFlagSymbol] === true;
+          }
+
+          grabFile(side, fileMesh) {
+            const menuMesh = rend.getMenuMesh();
+            menuMesh.add(fileMesh);
+
+            const {file} = fileMesh;
+            file.matrix = DEFAULT_FILE_MATRIX;
+
+            const grabber = hands.grab(side, fileMesh);
+            grabber.on('update', ({position, rotation}) => {
+              const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
+              const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
+
+              const newRotation = menuMeshQuaternionInverse.clone()
+                .multiply(rotation)
+                .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
+              const newPosition = position.clone().applyMatrix4(menuMeshMatrixInverse)
+                .add(
+                  new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
+                );
+
+              fileMesh.position.copy(newPosition);
+              fileMesh.quaternion.copy(newRotation);
+            });
+            grabber.on('release', () => {
+              const {position, quaternion, file} = fileMesh;
+              const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
+              file.matrix = newMatrixArray;
+
+              grabState.grabber = null;
+            });
+
+            const grabState = grabStates[side];
+            grabState.grabber = grabber;
+          }
+
+          dragover(e) {
+            dragover(e);
+          }
+
+          drop(e) {
+            drop(e);
+          }
+
+          updatePages() {
+            _updatePages();
+          }
+        }
+
+        const fsInstance = new FsApi();
+        return fsInstance;
       }
     });
   }

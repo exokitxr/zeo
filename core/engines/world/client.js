@@ -41,6 +41,7 @@ class World {
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
+      '/core/engines/fs',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
@@ -50,6 +51,7 @@ class World {
       three,
       input,
       webvr,
+      fs,
       biolumi,
       rend,
       hands,
@@ -59,9 +61,12 @@ class World {
       if (live) {
         const {THREE, scene} = three;
 
+        // constants
+        const oneVector = new THREE.Vector3(1, 1, 1);
+        const zeroQuaternion = new THREE.Quaternion();
+
         const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
-        const currentWorld = rend.getCurrentWorld();
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
@@ -78,20 +83,40 @@ class World {
           fontStyle: biolumi.getFontStyle(),
         };
 
-        const oneVector = new THREE.Vector3(1, 1, 1);
-        const zeroQuaternion = new THREE.Quaternion();
-
-        const _decomposeObjectMatrixWorld = object => {
-          const {matrixWorld} = object;
+        // helper functions
+        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
-          matrixWorld.decompose(position, rotation, scale);
+          matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
         };
 
         const _requestTags = () => fetch('/archae/world/tags.json')
           .then(res => res.json());
+        const _requestFiles = () => fetch('/archae/world/files.json')
+          .then(res => res.json());
+        const _requestWorldTimer = () => fetch('/archae/world/start-time.json')
+          .then(res => res.json()
+            .then(({startTime}) => {
+              const now = Date.now();
+              let worldTime = now - startTime;
+
+              rend.on('update', () => {
+                const now = Date.now();
+                worldTime = now - startTime;
+              });
+
+              class WorldTimer {
+                getWorldTime() {
+                  return worldTime;
+                }
+              }
+
+              return new WorldTimer();
+            })
+          );
         const _requestUis = () => Promise.all([
           biolumi.requestUi({
             width: WIDTH,
@@ -118,10 +143,14 @@ class World {
 
         return Promise.all([
           _requestTags(),
+          _requestFiles(),
+          _requestWorldTimer(),
           _requestUis(),
         ])
           .then(([
             tagsJson,
+            filesJson,
+            worldTimer,
             {
               readmeUi,
               attributesUi,
@@ -265,6 +294,36 @@ class World {
                   return Promise.resolve();
                 }
               });
+              let lastFilesJsonString = JSON.stringify(filesJson);
+              const _saveFiles = menuUtils.debounce(next => {
+                filesJson = {
+                  files: fs.getFiles().map(({file}) => file),
+                };
+                const filesJsonString = JSON.stringify(filesJson);
+
+                if (filesJsonString !== lastFilesJsonString) {
+                  lastFilesJsonString = filesJsonString;
+
+                  return fetch('/archae/world/files.json', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: filesJsonString,
+                  })
+                    .then(res => res.blob())
+                    .then(() => {
+                      next();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      next();
+                    })
+                } else {
+                  return Promise.resolve();
+                }
+              });
               const _reifyTag = tagMesh => {
                 const {item} = tagMesh;
                 const {instance, instancing} = item;
@@ -274,9 +333,12 @@ class World {
 
                   item.lock()
                     .then(unlock => {
-                      rend.requestModElementApi(name)
-                        .then(elementApi => {
-                          const tag = archae.getName(elementApi);
+                      archae.requestPlugin(name)
+                        .then(pluginInstance => {
+                          const name = archae.getName(pluginInstance);
+
+                          const tag = name;
+                          let elementApi = modElementApis[tag];
                           if (!HTMLElement.isPrototypeOf(elementApi)) {
                             elementApi = HTMLElement;
                           }
@@ -293,6 +355,7 @@ class World {
                           item.attributes = _clone(attributes);
 
                           _updatePages();
+                          tags.updatePages();
 
                           unlock();
                         })
@@ -300,10 +363,13 @@ class World {
                           console.warn(err);
 
                           unlock();
-                        })
+                        });
                     });
 
                   item.instancing = true;
+
+                  _updatePages();
+                  tags.updatePages();
                 }
               };
               const _unreifyTag = tagMesh => {
@@ -581,18 +647,9 @@ class World {
 
                   const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
                   mesh.visible = false;
-                  mesh.position.y = -0.25;
+                  mesh.position.z = -1;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
-
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                    const material = transparentMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
-                    return mesh;
-                  })();
-                  mesh.add(shadowMesh);
 
                   return mesh;
                 };
@@ -758,7 +815,7 @@ class World {
                         },
                       },
                     } = mesh;
-                    const worldTime = currentWorld.getWorldTime();
+                    const worldTime = worldTimer.getWorldTime();
 
                     biolumi.updateMenuMaterial({
                       ui: readmeUi,
@@ -1218,25 +1275,52 @@ class World {
               input.on('triggerdown', _triggerdown, {
                 priority: 1,
               });
+              const _grip = e => {
+                const {side} = e;
+                const {positioningSide} = detailsState;
+
+                if (positioningSide && side === positioningSide) {
+                  const {item} = detailsState;
+                  const {attributes} = item;
+                  const attribute = attributes[attributeName];
+                  const {value: oldValue} = attribute;
+                  const {positioningName} = detailsState;
+
+                  item.setAttribute(positioningName, oldValue);
+
+                  detailsState.positioningName = null;
+                  detailsState.positioningSide = null;
+
+                  _updatePages();
+                }
+              };
+              input.on('grip', _grip, {
+                priority: 1,
+              });
               const _gripdown = e => {
                 const {side} = e;
-                const tagMesh = tags.getHoverTag(side);
 
-                if (tagMesh) {
-                  const elementsTagMeshes = tags.getTagsClass('elements');
-                  const npmTagMeshes = tags.getTagsClass('npm');
+                const _grabTag = () => {
+                  const tagMesh = tags.getHoverTag(side);
 
-                  if (elementsTagMeshes.includes(tagMesh)) {
-                    _removeElement(tagMesh);
+                  if (tagMesh) {
+                    const elementsTagMeshes = tags.getTagsClass('elements');
+                    const npmTagMeshes = tags.getTagsClass('npm');
 
-                    _saveTags();
-                  } else if (npmTagMeshes.includes(tagMesh)) {
-                    const tagMeshClone = tags.cloneTag(tagMesh);
-                    tags.grabTag(side, tagMeshClone);
+                    if (elementsTagMeshes.includes(tagMesh)) {
+                      _removeElement(tagMesh);
 
-                    _saveTags();
+                      _saveTags();
+                    } else if (npmTagMeshes.includes(tagMesh)) {
+                      const tagMeshClone = tags.cloneTag(tagMesh);
+                      tags.grabTag(side, tagMeshClone);
+
+                      _saveTags();
+                    }
                   }
-                }
+                };
+
+                _grabTag();
 
                 detailsState.type = null;
                 detailsState.item = null;
@@ -1253,24 +1337,44 @@ class World {
                 if (handsGrabber) {
                   const {object: handsGrabberObject} = handsGrabber;
 
-                  if (tags.isTag(handsGrabberObject)) {
-                    const elementsHovered = elementsContainerHoverStates[side].hovered;
+                  const _releaseTag = () => {
+                    if (tags.isTag(handsGrabberObject)) {
+                      const elementsHovered = elementsContainerHoverStates[side].hovered;
 
-                    if (elementsHovered) {
-                      const newTagMesh = handsGrabberObject;
-                      handsGrabber.release();
+                      if (elementsHovered) {
+                        const newTagMesh = handsGrabberObject;
+                        handsGrabber.release();
 
-                      _addElement(newTagMesh);
+                        _addElement(newTagMesh);
 
-                      _saveTags();
-
-                      e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-                    } else {
-                      handsGrabber.on('release', () => { // so the item matrix is saved first
                         _saveTags();
-                      });
+
+                        e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+                      } else {
+                        handsGrabber.on('release', () => { // so the item matrix is saved first
+                          _saveTags();
+                        });
+                      }
+
+                      return true;
+                    } else {
+                      return false;
                     }
-                  }
+                  };
+
+                  const _releaseFile = () => {
+                    if (fs.isFile(handsGrabberObject)) {
+                      handsGrabber.on('release', () => { // so the item matrix is saved first
+                        _saveFiles();
+                      });
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  };
+
+                  _releaseTag() || _releaseFile();
                 }
               };
               input.on('gripup', _gripup, {
@@ -1339,23 +1443,83 @@ class World {
                 priority: 1,
               });
 
-              const _initializeElements = () => {
-                const {elements, free} = tagsJson;
+              const uploadStart = ({name}) => {
+                const directory = '/';
+                const matrix = (() => {
+                  const {hmd} = webvr.getStatus();
+                  const {position, rotation} = hmd;
+                  const menuMesh = rend.getMenuMesh();
+                  const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
 
-                for (let i = 0; i < elements.length; i++) {
-                  const itemSpec = elements[i];
-                  const tagMesh = tags.makeTag(itemSpec);
-                  _addElement(tagMesh);
-                }
-                _alignTagMeshes(tags.getTagsClass('elements'));
+                  const newMatrix = new THREE.Matrix4().compose(
+                    position.clone()
+                      .add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)),
+                    rotation,
+                    new THREE.Vector3(1, 1, 1)
+                  ).multiply(menuMeshMatrixInverse);
+                  const {position: newPosition, rotation: newRotation, scale: newScale} = _decomposeMatrix(newMatrix);
 
-                for (let i = 0; i < free.length; i++) {
-                  const itemSpec = free[i];
-                  const tagMesh = tags.makeTag(itemSpec);
-                  scene.add(tagMesh);
+                  return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
+                })();
+
+                const fileMesh = fs.makeFile({
+                  name,
+                  directory,
+                  matrix,
+                });
+                fileMesh.instancing = true;
+
+                menuMesh.add(fileMesh);
+
+                fs.updatePages();
+              };
+              fs.on('uploadStart', uploadStart);
+              const uploadEnd = ({name}) => {
+                const fileMesh = fs.getFile(name);
+
+                if (fileMesh) {
+                  const {file} = fileMesh;
+                  file.instancing = false;
+
+                  fs.updatePages();
+
+                  _saveFiles();
                 }
               };
-              _initializeElements();
+              fs.on('uploadEnd', uploadEnd);
+
+              const _initialize = () => {
+                const _initializeFiles = () => {
+                  const {files} = filesJson;
+
+                  const menuMesh = rend.getMenuMesh();
+                  for (let i = 0; i < files.length; i++) {
+                    const fileSpec = files[i];
+                    const fileMesh = fs.makeFile(fileSpec);
+                    menuMesh.add(fileMesh);
+                  }
+                };
+                _initializeFiles();
+                const _initializeElements = () => {
+                  const {elements, free} = tagsJson;
+
+                  for (let i = 0; i < elements.length; i++) {
+                    const itemSpec = elements[i];
+                    const tagMesh = tags.makeTag(itemSpec);
+                    _addElement(tagMesh);
+                  }
+                  _alignTagMeshes(tags.getTagsClass('elements'));
+
+                  const menuMesh = rend.getMenuMesh();
+                  for (let i = 0; i < free.length; i++) {
+                    const itemSpec = free[i];
+                    const tagMesh = tags.makeTag(itemSpec);
+                    menuMesh.add(tagMesh);
+                  }
+                };
+                _initializeElements();
+              };
+              _initialize();
 
               this._cleanup = () => {
                 rend.removeMenuMesh('worldMesh');
@@ -1372,15 +1536,40 @@ class World {
 
                 rend.removeListener('update', _update);
                 rend.removeListener('tabchange', _tabchange);
+
                 input.removeListener('trigger', _trigger);
                 input.removeListener('triggerdown', _triggerdown);
+                input.removeListener('grip', _grip);
                 input.removeListener('gripdown', _gripdown);
                 input.removeListener('gripup', _gripup);
                 input.removeListener('keydown', _keydown);
                 input.removeListener('keyboarddown', _keyboarddown);
+
+                fs.removeListener('uploadStart', uploadStart);
+                fs.removeListener('uploadEnd', uploadEnd);
               };
 
-              return {};
+              const modElementApis = {};
+              class WorldApi {
+                getWorldTime() {
+                  return worldTimer.getWorldTime();
+                }
+
+                registerElement(pluginInstance, elementApi) {
+                  const tag = archae.getName(pluginInstance);
+
+                  modElementApis[tag] = elementApi;
+                }
+
+                unregisterElement(pluginInstance) {
+                  const tag = archae.getName(pluginInstance);
+
+                  delete modElementApis[tag];
+                }
+              }
+
+              const worldApi = new WorldApi();
+              return worldApi;
             }
           });
       }

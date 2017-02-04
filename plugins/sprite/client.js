@@ -40,14 +40,11 @@ class Sprite {
                 URL.revokeObjectURL(url);
               };
               img.onerror = err => {
-                console.warn(err);
+                reject(err);
 
                 URL.revokeObjectURL(url);
               };
-            }))
-            .catch(err => {
-              console.warn(err);
-            });
+            }));
 
         class SpriteElement extends HTMLElement {
           static get attributes() {

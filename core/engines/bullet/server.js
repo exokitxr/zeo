@@ -37,6 +37,8 @@ class Context {
   }
 
   create(type, id, opts) {
+console.log('create', {type, id});
+
     if (!this.objects.has(id)) {
       const object = (() => {
         switch (type) {
@@ -97,6 +99,8 @@ class Context {
 
   add(parentId, childId) {
     const {objects} = this;
+
+console.log('add', {parentId, childId});
 
     const parent = objects.get(parentId);
     const child = objects.get(childId);

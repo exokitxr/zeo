@@ -5,8 +5,6 @@ const TICK_TIME = 1000 / FRAME_RATE;
 // const DEBUG = false;
 const DEBUG = true;
 
-const engineKey = null;
-
 class BulletClient {
   constructor(archae) {
     this._archae = archae;
@@ -213,6 +211,7 @@ class BulletClient {
 
             _request('create', [type, id, _except(opts, ['id'])], _warnError);
 
+            const {engine} = opts;
             engine.add(this);
           }
 
@@ -532,10 +531,6 @@ class BulletClient {
           }
         }
 
-        const engine = new Engine({
-          id: null,
-        });
-
         const _makeBody = mesh => {
           const {geometry} = mesh;
           const {type} = geometry;
@@ -607,9 +602,13 @@ class BulletClient {
           });
         };
 
-        const _requestWorld = worldId => new Promise((accept, reject) => {
+        const _requestEngine = () => Promise.resolve(new Engine({
+          id: null, // must match the backend
+        }));
+        const _requestWorld = engine => new Promise((accept, reject) => {
           const world = new World({
-            id: worldId,
+            id: 'world',
+            engine,
           });
           world.Plane = Plane;
           world.Box = Box;
@@ -624,21 +623,8 @@ class BulletClient {
 
           accept(world);
         });
-        const _releaseWorld = worldId => new Promise((accept, reject) => {
-          _request('remove', [null, worldId], err => {
-            if (!err) {
-              _request('destroy', [worldId], err => {
-                if (!err) {
-                  accept();
-                } else {
-                  reject(err);
-                }
-              });
-            } else {
-              reject(err);
-            }
-          });
-        });
+        const _initializeWorld = () => _requestEngine()
+          .then(engine => _requestWorld(engine));
 
         let connection = null;
         let queue = [];
@@ -707,15 +693,22 @@ class BulletClient {
         };
 
         this._cleanup = () => {
-          connection.close();
-
-          engine.destroy();
+          if (connection) {
+            connection.close();
+          }
         };
 
-        return {
-          requestWorld: _requestWorld,
-          releaseWorld: _releaseWorld,
-        };
+        return _initializeWorld()
+          .then(world => {
+            class BulletApi {
+              getPhysicsWorld() {
+                return world;
+              }
+            }
+
+            const bulletApiInstance = new BulletApi();
+            return bulletApiInstance;
+          });
       }
     });
   }

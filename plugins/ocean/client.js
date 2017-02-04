@@ -45,14 +45,11 @@ class Ocean {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
-      '/core/engines/rend',
     ]).then(([
       zeo,
-      rend,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
-        const world = rend.getCurrentWorld();
 
         const updates = [];
         const _update = () => {
@@ -124,7 +121,7 @@ class Ocean {
 
             const {material: meshMaterial} = mesh;
             const update = () => {
-              const worldTime = world.getWorldTime();
+              const worldTime = zeo.getWorldTime();
               meshMaterial.uniforms.worldTime.value = worldTime;
             };
             updates.push(update);
