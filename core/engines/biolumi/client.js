@@ -1094,7 +1094,7 @@ const styleTagSrc = `\
 }
 `;
 const styleTag = `<style>${styleTagSrc}</style>`;
-const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: scroll; user-select: none;`;
+const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
