@@ -3,11 +3,13 @@
 <head>
   <!-- Origin Trial Token, feature = WebVR, origin = https://zeo.sh, expires = 2017-03-08 -->
   <meta http-equiv="origin-trial" data-feature="WebVR" data-expires="2017-03-08" content="AtlzT8QnlXrJRZzvpANDcskyJkk/xEKFQOO5xgpPIJ4j0/LylvdFMr3W5zgnejKQ9r1rYz0+H/in+kjUQKnV+A0AAABYeyJvcmlnaW4iOiJodHRwczovL3plby5zaDo0NDMiLCJmZWF0dXJlIjoiV2ViVlIiLCJleHBpcnkiOjE0ODg5ODYzMjUsImlzU3ViZG9tYWluIjp0cnVlfQ==">
+   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
   <style>
     body {
       margin: 0;
       width: 100vw;
       height: 100vh;
+      background-color: #000;
       overflow: hidden;
     }
   </style>
@@ -59,16 +61,18 @@
       animation: load2 1s infinite ease;
     }
     .loader-overlay {
-      display: flex;
+      display: none;
       position: absolute;
       top: 0;
       bottom: 0;
       left: 0;
       right: 0;
-      background-color: #000;
       justify-content: center;
       align-items: center;
       z-index: 1;
+    }
+    .loader-overlay.preloaded {
+      display: flex;
     }
     .loader-wrap {
       display: flex;
@@ -121,6 +125,17 @@
       <p id=loader-plugin>Initializing...</p>
     </div>
   </div>
+  <script src="/js/lib/fontfaceobserver/fontfaceobserver.min.js"></script>
+  <script>
+    const $ = s => document.querySelectorAll(s);
+
+    new FontFaceObserver('Open Sans', {
+      weight: 300,
+    }).load()
+      .then(() => {
+        $('#loader-overlay')[0].classList.add('preloaded');
+      });
+  </script>
   <script src='/archae/archae.js'></script>
   <script src='/js/index.js'></script>
 </body>

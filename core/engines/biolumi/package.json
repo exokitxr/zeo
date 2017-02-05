@@ -4,7 +4,6 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "fontfaceobserver": "^2.0.7",
     "keycode": "^2.1.8"
   }
 }

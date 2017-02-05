@@ -1,4 +1,3 @@
-import FontFaceObserver from 'fontfaceobserver';
 import keycode from 'keycode';
 
 import menuShaders from './lib/shaders/menu';
@@ -32,11 +31,6 @@ class Biolumi {
       document.head.removeChild(style);
     });
 
-    const _requestFont = () => {
-      return new FontFaceObserver('Open Sans', {
-        weight: 300,
-      }).load();
-    };
     const _requestTransparentImg = () => new Promise((accept, reject) => {
       const img = new Image();
       img.src = transparentImgUrl;
@@ -54,7 +48,6 @@ class Biolumi {
         '/core/engines/anima',
         '/core/plugins/geometry-utils',
       ]),
-      _requestFont(),
       _requestTransparentImg(),
     ])
       .then(([
@@ -63,7 +56,6 @@ class Biolumi {
           anima,
           geometryUtils,
         ],
-        font,
         transparentImg,
       ]) => {
         if (live) {
