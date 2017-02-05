@@ -1451,7 +1451,7 @@ class World {
                 priority: 1,
               });
 
-              const uploadStart = ({name}) => {
+              const uploadStart = ({id, name}) => {
                 const directory = '/';
                 const matrix = (() => {
                   const {hmd} = webvr.getStatus();
@@ -1471,19 +1471,21 @@ class World {
                 })();
 
                 const fileMesh = fs.makeFile({
+                  id,
                   name,
                   directory,
                   matrix,
                 });
                 fileMesh.instancing = true;
 
+                const menuMesh = rend.getMenuMesh();
                 menuMesh.add(fileMesh);
 
                 fs.updatePages();
               };
               fs.on('uploadStart', uploadStart);
-              const uploadEnd = ({name}) => {
-                const fileMesh = fs.getFile(name);
+              const uploadEnd = ({id}) => {
+                const fileMesh = fs.getFile(id);
 
                 if (fileMesh) {
                   const {file} = fileMesh;

@@ -123,11 +123,13 @@ class Fs {
           const {dataTransfer: {files}} = e;
           if (files.length > 0) {
             const file = files[0];
+            const id = _makeId();
+            file.id = id;
             const {name} = file;
 
             fsInstance.emit('uploadStart', file);
 
-            fsInstance.writeFile('/' + name, file)
+            fsInstance.writeFile(id, file)
               .then(() => {
                 fsInstance.emit('uploadEnd', file);
               })
@@ -278,7 +280,8 @@ class Fs {
         };
 
         class FsFile {
-          constructor(name, directory, matrix) {
+          constructor(id, name, directory, matrix) {
+            this.id = id;
             this.name = name;
             this.directory = directory;
             this.matrix = matrix;
@@ -293,7 +296,7 @@ class Fs {
             const object = new THREE.Object3D();
             object[fileFlagSymbol] = true;
 
-            const file = new FsFile(fileSpec.name, fileSpec.directory, fileSpec.matrix);
+            const file = new FsFile(fileSpec.id, fileSpec.name, fileSpec.directory, fileSpec.matrix);
             object.file = file;
 
             object.position.set(file.matrix[0], file.matrix[1], file.matrix[2]);
@@ -370,12 +373,12 @@ class Fs {
             return fileMeshes;
           }
 
-          getFile(name) {
-            return fileMeshes.find(({file: {name: fileName}}) => fileName === name) || null;
+          getFile(id) {
+            return fileMeshes.find(({file: {id: fileId}}) => fileId === id) || null;
           }
 
-          readFile(p) {
-            return fetch('/archae/fs' + p)
+          readFile(id) {
+            return fetch('/archae/fs/' + id)
               .then(res => res.blob()
             );
           }
@@ -388,8 +391,8 @@ class Fs {
             }).then(res => res.json());
           } */
 
-          writeFile(p, blob) {
-            return fetch('/archae/fs' + p, {
+          writeFile(id, blob) {
+            return fetch('/archae/fs/' + id, {
               method: 'PUT',
               body: blob,
             }).then(res => res.blob()
@@ -501,5 +504,17 @@ class Fs {
     this._cleanup();
   }
 }
+
+const _pad = (n, width) => {
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+};
+const _makeId = () => {
+  const array = new Uint8Array(128 / 8);
+  crypto.getRandomValues(array);
+  return array.reduce((acc, i) => {
+    return acc + _pad(i.toString(16), 2);
+  }, '');
+};
 
 module.exports = Fs;

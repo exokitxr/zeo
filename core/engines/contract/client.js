@@ -117,7 +117,7 @@ class Contract {
               const result = [];
 
               for (let i = 0; i < contractMeshes.length; i++) {
-                const contractMeshes = contractMeshes[i];
+                const contractMesh = contractMeshes[i];
                 const {ui, contract} = contractMeshes;
 
                 if (ui) {

@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 
 const mkdirp = require('mkdirp');
-const ncp = require('ncp');
+// const ncp = require('ncp');
 const mv = require('mv');
 const rimraf = require('rimraf');
 
@@ -41,7 +41,7 @@ class Fs {
     return _ensureFsDirectory()
       .then(() => {
         if (live) {
-          function serveFsList(req, res, next) {
+          /* function serveFsList(req, res, next) {
             const p = req.params[0];
 
             if (req.get('Accept') === 'application/json') {
@@ -109,27 +109,57 @@ class Fs {
               next();
             }
           }
-          app.get(/^\/archae\/fs(\/.*)$/, serveFsList);
+          app.get(/^\/archae\/fs(\/.*)$/, serveFsList); */
+
+          const _sliceUrl = url => {
+            const match = url.match(/^([a-f0-9]{32})$/);
+
+            if (match) {
+              return match[1].match(/.{2}/g).join('/');
+            } else {
+              return null;
+            }
+          };
           const fsStatic = express.static(fsPath);
           function serveFsStatic(req, res, next) {
-            fsStatic(req, res, next);
-          }
-          app.use('/archae/fs', serveFsStatic);
-          function serveFsUpload(req, res, next) {
-            const p = req.params[0];
+            const slicedUrl = _sliceUrl(req.params[0]);
 
-            const ws = fs.createWriteStream(path.join(fsPath, p));
-            req.pipe(ws);
-            ws.on('finish', () => {
-              res.send();
-            });
-            ws.on('error', err => {
-              res.status(500);
-              res.send(err.stack);
-            });
+            if (slicedUrl) {
+              req.url = '/' + slicedUrl;
+
+              fsStatic(req, res, next);
+            } else {
+              next();
+            }
           }
-          app.put(/^\/archae\/fs(\/.*)$/, serveFsUpload);
-          function serveFsCreate(req, res, next) {
+          app.get(/^\/archae\/fs\/(.+)$/, serveFsStatic);
+          function serveFsUpload(req, res, next) {
+            const slicedUrl = _sliceUrl(req.params[0]);
+
+            if (slicedUrl) {
+              mkdirp(path.join(fsPath, path.dirname(slicedUrl)), err => {
+                if (!err) {
+                  const ws = fs.createWriteStream(path.join(fsPath, slicedUrl));
+
+                  req.pipe(ws);
+                  ws.on('finish', () => {
+                    res.send();
+                  });
+                  ws.on('error', err => {
+                    res.status(500);
+                    res.send(err.stack);
+                  });
+                } else {
+                  res.status(500);
+                  res.send(err.stack);
+                }
+              });
+            } else {
+              next();
+            }
+          }
+          app.put(/^\/archae\/fs\/(.+)$/, serveFsUpload);
+          /* function serveFsCreate(req, res, next) {
             const p = req.params[0];
 
             mkdirp(path.join(fsPath, p), err => {
@@ -182,18 +212,18 @@ class Fs {
               }
             });
           }
-          app.delete(/^\/archae\/fs(\/.*)$/, serveFsDelete);
+          app.delete(/^\/archae\/fs(\/.*)$/, serveFsDelete); */
 
           cleanups.push(() => {
             function removeMiddlewares(route, i, routes) {
               if (
-                route.handle.name === 'serveFsList' ||
+                // route.handle.name === 'serveFsList' ||
                 route.handle.name === 'serveFsStatic' ||
-                route.handle.name === 'serveFsUpload' ||
+                route.handle.name === 'serveFsUpload'/* ||
                 route.handle.name === 'serveFsCreate' ||
                 route.handle.name === 'serveFsCopy' ||
                 route.handle.name === 'serveFsMove' ||
-                route.handle.name === 'serveFsDelete'
+                route.handle.name === 'serveFsDelete' */
               ) {
                 routes.splice(i, 1);
               }
