@@ -6,7 +6,7 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/contract';
-import contractRenderer from './lib/render/contract';
+import contractRender from './lib/render/contract';
 import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
@@ -54,6 +54,8 @@ class Contract {
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
+
+          const contractRenderer = contractRender.makeRenderer({creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -248,7 +250,8 @@ class Contract {
           };
 
           class Contract {
-            constructor(name, author, matrix) {
+            constructor(id, name, author, matrix) {
+              this.id = id;
               this.name = name;
               this.author = author;
               this.matrix = matrix;
@@ -261,7 +264,7 @@ class Contract {
               const object = new THREE.Object3D();
               object[contractFlagSymbol] = true;
 
-              const contract = new Contract(contractSpec.name, contractSpec.author, contractSpec.matrix);
+              const contract = new Contract(contractSpec.id, contractSpec.name, contractSpec.author, contractSpec.matrix);
               object.contract = contract;
 
               object.position.set(contract.matrix[0], contract.matrix[1], contract.matrix[2]);
@@ -291,7 +294,7 @@ class Contract {
                       type: 'html',
                       src: contractRenderer.getContractSrc(contract),
                     },
-                    {
+                    /* {
                       type: 'image',
                       img: creatureUtils.makeAnimatedCreature('contract:' + contract.name),
                       x: 10,
@@ -300,7 +303,7 @@ class Contract {
                       h: 100,
                       frameTime: 300,
                       pixelated: true,
-                    }
+                    } */
                   ]), {
                     type: 'contract',
                     state: {
@@ -329,6 +332,38 @@ class Contract {
                   })();
                   object.add(planeMesh);
                   object.planeMesh = planeMesh;
+
+                  const lineMesh = (() => {
+                    const geometry = new THREE.BufferGeometry();
+                    const positions = Float32Array.from([
+                      -WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
+                      -WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 0,
+                      WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 0,
+                      WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
+                      -WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
+                    ]);
+                    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                    const material = new THREE.LineBasicMaterial({
+                      color: 0x808080,
+                    });
+
+                    const mesh = new THREE.Line(geometry, material);
+                    mesh.frustumCulled = false;
+                    return mesh;
+                  })();
+                  object.add(lineMesh);
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
+                    const material = transparentMaterial.clone();
+                    material.depthWrite = false;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  object.add(shadowMesh);
                 });
             };
 
