@@ -1,4 +1,4 @@
 node_modules/
 build/
-bullet3/bullet-build
+bullet3/build
 binding.gyp
