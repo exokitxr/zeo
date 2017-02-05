@@ -428,7 +428,8 @@ class World {
               };
               const _alignTagMeshes = tagMeshes => {
                 const aspectRatio = 400 / 150;
-                const width = 0.1;
+                const size = (0.2 * 3) + ((0.2 / 4) * 2);
+                const width = 0.2;
                 const height = width / aspectRatio;
                 const padding = width / 4;
 
@@ -439,7 +440,7 @@ class World {
                   const y = Math.floor(i / 3);
                   tagMesh.position.set(
                     -(width + padding) + x * (width + padding),
-                    ((0.4 / 2) - (height / 2) - padding) - (y * (height + padding)),
+                    ((size / 2) - (height / 2) - padding) - (y * (height + padding)),
                     0
                   );
                   tagMesh.quaternion.copy(zeroQuaternion);
@@ -563,7 +564,7 @@ class World {
                 result.visible = false;
 
                 const _makeContainerMesh = () => {
-                  const size = 0.4;
+                  const size = (0.2 * 3) + ((0.2 / 4) * 2);
                   const width = size;
                   const height = size;
                   const depth = size / 2;
@@ -604,7 +605,7 @@ class World {
 
                   const inputMesh = (() => {
                     const aspectRatio = 1000 / 100;
-                    const width = 0.4;
+                    const width = (0.2 * 3) + ((0.2 / 4) * 2);
                     const height = width / aspectRatio;
                     const depth = width / 2 / 2;
 
@@ -614,7 +615,7 @@ class World {
                     const material = menuMaterial;
 
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.y = 0.25;
+                    mesh.position.y = (width / 2) + (height / 2) + (height / 4);
                     mesh.position.z = depth;
                     mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
