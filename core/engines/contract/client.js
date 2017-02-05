@@ -156,6 +156,8 @@ class Contract {
                   page.update({
                     contract,
                   }, pend);
+                } else {
+                  pend();
                 }
               }
             } else {
@@ -312,6 +314,8 @@ class Contract {
                     immediate: true,
                   });
                   object.ui = ui;
+
+                  _updatePages();
 
                   const planeMesh = (() => {
                     const width = WORLD_WIDTH;

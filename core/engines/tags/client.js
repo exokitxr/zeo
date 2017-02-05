@@ -159,6 +159,8 @@ class Tags {
                   page.update({
                     item,
                   }, pend);
+                } else {
+                  pend();
                 }
               }
             } else {
@@ -349,6 +351,8 @@ class Tags {
                     immediate: true,
                   });
                   object.ui = ui;
+
+                  _updatePages();
 
                   const planeMesh = (() => {
                     const width = WORLD_WIDTH;

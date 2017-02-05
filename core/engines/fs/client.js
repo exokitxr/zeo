@@ -182,6 +182,8 @@ class Fs {
                 page.update({
                   file,
                 }, pend);
+              } else {
+                pend();
               }
             }
           } else {
@@ -339,6 +341,8 @@ class Fs {
                   immediate: true,
                 });
                 object.ui = ui;
+
+                _updatePages();
 
                 const planeMesh = (() => {
                   const width = WORLD_WIDTH;
