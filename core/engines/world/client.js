@@ -23,6 +23,11 @@ const ATTRIBUTE_DEFAULTS = {
   STEP: 0,
   OPTIONS: [],
 };
+const DEFAULT_CONTRACT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 class World {
   constructor(archae) {
@@ -46,6 +51,7 @@ class World {
       '/core/engines/rend',
       '/core/engines/hands',
       '/core/engines/tags',
+      '/core/engines/contract',
       '/core/plugins/geometry-utils',
     ]).then(([
       three,
@@ -56,6 +62,7 @@ class World {
       rend,
       hands,
       tags,
+      contract,
       geometryUtils,
     ]) => {
       if (live) {
@@ -1499,7 +1506,6 @@ class World {
                     menuMesh.add(fileMesh);
                   }
                 };
-                _initializeFiles();
                 const _initializeElements = () => {
                   const {elements, free} = tagsJson;
 
@@ -1517,7 +1523,19 @@ class World {
                     menuMesh.add(tagMesh);
                   }
                 };
+                const _initializeContracts = () => {
+                  const contractMesh = contract.makeContract({
+                    name: 'Please',
+                    author: 'avaer',
+                    matrix: DEFAULT_CONTRACT_MATRIX,
+                  });
+
+                  const menuMesh = rend.getMenuMesh();
+                  menuMesh.add(contractMesh);
+                };
+                _initializeFiles();
                 _initializeElements();
+                _initializeContracts();
               };
               _initialize();
 

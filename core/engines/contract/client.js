@@ -1,5 +1,3 @@
-import MultiMutex from 'multimutex';
-
 import {
   WIDTH,
   HEIGHT,
@@ -7,25 +5,22 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-} from './lib/constants/tags';
-import tagsRenderer from './lib/render/tags';
+} from './lib/constants/contract';
+import contractRenderer from './lib/render/contract';
 import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
 const DEFAULT_GRAB_RADIUS = 0.1;
-const DEFAULT_TAG_MATRIX = [
+const DEFAULT_CONTRACT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
 ];
 
-const tagFlagSymbol = Symbol();
-const itemInstanceSymbol = Symbol();
-const itemMutexSymbol = Symbol();
-const ITEM_LOCK_KEY = 'key';
+const contractFlagSymbol = Symbol();
 
-class Tags {
+class Contract {
   constructor(archae) {
     this._archae = archae;
   }
@@ -77,7 +72,7 @@ class Tags {
           });
 
           const _makeHoverState = () => ({
-            tagMesh: null,
+            contractMesh: null,
           });
           const hoverStates = {
             left: _makeHoverState(),
@@ -119,9 +114,9 @@ class Tags {
             const pageSpecs = (() => {
               const result = [];
 
-              for (let i = 0; i < tagMeshes.length; i++) {
-                const tagMesh = tagMeshes[i];
-                const {ui, item} = tagMesh;
+              for (let i = 0; i < contractMeshes.length; i++) {
+                const contractMeshes = contractMeshes[i];
+                const {ui, contract} = contractMeshes;
 
                 if (ui) {
                   const pages = ui.getPages();
@@ -130,7 +125,7 @@ class Tags {
                     const page = pages[j];
                     const pageSpec = {
                       page,
-                      item,
+                      contract,
                     };
                     result.push(pageSpec);
                   }
@@ -153,11 +148,11 @@ class Tags {
                 const {page} = pageSpec;
                 const {type} = page;
 
-                if (type === 'tag') {
-                  const {item} = pageSpec;
+                if (type === 'contract') {
+                  const {contract} = pageSpec;
 
                   page.update({
-                    item,
+                    contract,
                   }, pend);
                 }
               }
@@ -169,9 +164,9 @@ class Tags {
           const _gripdown = e => {
             const {side} = e;
 
-            const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
-            if (bestGrabbableTagMesh) {
-              tagsInstance.grabTag(side, bestGrabbableTagMesh);
+            const bestGrabbableContractMesh = hands.getBestGrabbable(side, contractMeshes, {radius: DEFAULT_GRAB_RADIUS});
+            if (bestGrabbableContractMesh) {
+              contractInstance.grabContract(side, bestGrabbableContractMesh);
             }
           };
           input.on('gripdown', _gripdown);
@@ -191,19 +186,19 @@ class Tags {
                 const hoverState = hoverStates[side];
                 const boxMesh = boxMeshes[side];
 
-                const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                if (bestGrabbableTagMesh) {
-                  hoverState.tagMesh = bestGrabbableTagMesh;
+                const bestGrabbableContractMesh = hands.getBestGrabbable(side, contractMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                if (bestGrabbableContractMesh) {
+                  hoverState.contractMesh = bestGrabbableContractMesh;
 
-                  const {position: tagMeshPosition, rotation: tagMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
-                  boxMesh.position.copy(tagMeshPosition);
-                  boxMesh.quaternion.copy(tagMeshRotation);
+                  const {position: contractMeshPosition, rotation: contractMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableContractMesh);
+                  boxMesh.position.copy(contractMeshPosition);
+                  boxMesh.quaternion.copy(contractMeshRotation);
 
                   if (!boxMesh.visible) {
                     boxMesh.visible = true;
                   }
                 } else {
-                  hoverState.tagMesh = null;
+                  hoverState.contractMesh = null;
 
                   if (boxMesh.visible) {
                     boxMesh.visible = false;
@@ -214,12 +209,12 @@ class Tags {
             const _updateTextures = () => {
               const uiTime = rend.getUiTime();
 
-              for (let i = 0; i < tagMeshes.length; i++) {
-                const tagMesh = tagMeshes[i];
+              for (let i = 0; i < contractMeshes.length; i++) {
+                const contractMesh = contractMeshes[i];
                 const {
                   ui,
                   planeMesh,
-                } = tagMesh;
+                } = contractMesh;
 
                 if (ui && planeMesh) {
                   const {menuMaterial} = planeMesh;
@@ -239,9 +234,9 @@ class Tags {
           rend.on('update', _update);
 
           this._cleanup = () => {
-            for (let i = 0; i < tagMeshes.length; i++) {
-              const tagMesh = tagMeshes[i];
-              tagMesh.parent.remove(tagMesh);
+            for (let i = 0; i < contractMeshes.length; i++) {
+              const contractMesh = contractMeshes[i];
+              contractMesh.parent.remove(contractMesh);
             }
             SIDES.forEach(side => {
               scene.remove(boxMeshes[side]);
@@ -252,88 +247,53 @@ class Tags {
             rend.removeListener('update', _update);
           };
 
-          class Item {
-            constructor(name, displayName, description, version, matrix) {
+          class Contract {
+            constructor(name, author, matrix) {
               this.name = name;
-              this.displayName = displayName;
-              this.description = description;
-              this.version = version;
+              this.author = author;
               this.matrix = matrix;
-
-              this.attributes = null;
-              this[itemInstanceSymbol] = null;
-              this.instancing = false;
-
-              this[itemMutexSymbol] = new MultiMutex();
-            }
-
-            get instance() {
-              return this[itemInstanceSymbol];
-            }
-
-            set instance(instance) {
-              this[itemInstanceSymbol] = instance;
-            }
-
-            setAttribute(name, value) {
-              const {attributes} = this;
-              const attribute = attributes[name];
-              attribute.value = value;
-
-              const instance = this.instance;
-              if (instance) {
-                instance.setAttribute(name, JSON.stringify(value));
-              }
-            }
-
-            lock() {
-              return this[itemMutexSymbol].lock(ITEM_LOCK_KEY);
             }
           }
 
-          const tagMeshes = [];
-          const tagClassMeshes = {
-            elements: [],
-            npm: [],
-          };
-          class TagsApi {
-            makeTag(itemSpec) {
+          const contractMeshes = [];
+          class ContractApi {
+            makeContract(contractSpec) {
               const object = new THREE.Object3D();
-              object[tagFlagSymbol] = true;
+              object[contractFlagSymbol] = true;
 
-              const item = new Item(itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.matrix);
-              object.item = item;
+              const contract = new Contract(contractSpec.name, contractSpec.author, contractSpec.matrix);
+              object.contract = contract;
 
-              object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
-              object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
-              object.scale.set(item.matrix[7], item.matrix[8], item.matrix[9]);
+              object.position.set(contract.matrix[0], contract.matrix[1], contract.matrix[2]);
+              object.quaternion.set(contract.matrix[3], contract.matrix[4], contract.matrix[5], contract.matrix[6]);
+              object.scale.set(contract.matrix[7], contract.matrix[8], contract.matrix[9]);
 
               object.ui = null;
               object.planeMesh = null;
 
-              this._requestDecorateTag(object);
+              this._requestDecorateContract(object);
 
-              tagMeshes.push(object);
+              contractMeshes.push(object);
 
               return object;
             }
 
-            _requestDecorateTag(object) {
+            _requestDecorateContract(object) {
               return biolumi.requestUi({
                 width: WIDTH,
                 height: HEIGHT,
               })
                 .then(ui => {
-                  const {item} = object;
+                  const {contract} = object;
 
-                  ui.pushPage(({item}) => ([
+                  ui.pushPage(({contract}) => ([
                     {
                       type: 'html',
-                      src: tagsRenderer.getTagSrc(item),
+                      src: contractRenderer.getContractSrc(contract),
                     },
                     {
                       type: 'image',
-                      img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
+                      img: creatureUtils.makeAnimatedCreature('contract:' + contract.name),
                       x: 10,
                       y: 0,
                       w: 100,
@@ -342,9 +302,9 @@ class Tags {
                       pixelated: true,
                     }
                   ]), {
-                    type: 'tag',
+                    type: 'contract',
                     state: {
-                      item,
+                      contract,
                     },
                     immediate: true,
                   });
@@ -370,70 +330,32 @@ class Tags {
                   object.add(planeMesh);
                   object.planeMesh = planeMesh;
                 });
-            }
+            };
 
-            cloneTag(tagMesh) {
-              const {item} = tagMesh;
-
-              return this.makeTag(item);
-            }
-
-            destroyTag(tagMesh) {
-              const index = tagMeshes.indexOf(tagMesh);
+            destroyContract(contractMesh) {
+              const index = contractMeshes.indexOf(contractMesh);
 
               if (index !== -1) {
-                tagMeshes.splice(index, 1);
+                contractMeshes.splice(index, 1);
               }
             }
 
-            getFreeTags() {
-              const index = new Map();
-              const {elements: elementTags, npm: npmTags} = tagClassMeshes;
-              for (let i = 0; i < elementTags.length; i++) {
-                const elementTag = elementTags[i];
-                index.set(elementTag, true);
-              }
-              for (let i = 0; i < npmTags.length; i++) {
-                const npmTag = npmTags[i];
-                index.set(npmTag, true);
-              }
-
-              return tagMeshes.filter(tagMesh => !index.has(tagMesh));
+            getHoverContract(side) {
+              return hoverStates[side].contractMesh;
             }
 
-            getHoverTag(side) {
-              return hoverStates[side].tagMesh;
+            isContract(object) {
+              return object[contractFlagSymbol] === true;
             }
 
-            mountTag(tagClass, tagMesh) {
-              tagClassMeshes[tagClass].push(tagMesh);
-            }
-
-            unmountTag(tagClass, tagMesh) {
-              const entries = tagClassMeshes[tagClass];
-              const index = entries.indexOf(tagMesh);
-
-              if (index !== -1) {
-                entries.splice(index, 1);
-              }
-            }
-
-            getTagsClass(tagClass) {
-              return tagClassMeshes[tagClass];
-            }
-
-            isTag(object) {
-              return object[tagFlagSymbol] === true;
-            }
-
-            grabTag(side, tagMesh) {
+            grabContract(side, contractMesh) {
               const menuMesh = rend.getMenuMesh();
-              menuMesh.add(tagMesh);
+              menuMesh.add(contractMesh);
 
-              const {item} = tagMesh;
-              item.matrix = DEFAULT_TAG_MATRIX;
+              const {contract} = contractMesh;
+              contract.matrix = DEFAULT_CONTRACT_MATRIX;
 
-              const grabber = hands.grab(side, tagMesh);
+              const grabber = hands.grab(side, contractMesh);
               grabber.on('update', ({position, rotation}) => {
                 const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
                 const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
@@ -446,13 +368,13 @@ class Tags {
                     new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
                   );
 
-                tagMesh.position.copy(newPosition);
-                tagMesh.quaternion.copy(newRotation);
+                contractMesh.position.copy(newPosition);
+                contractMesh.quaternion.copy(newRotation);
               });
               grabber.on('release', () => {
-                const {position, quaternion, item} = tagMesh;
+                const {position, quaternion, contract} = contractMesh;
                 const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
-                item.matrix = newMatrixArray;
+                contract.matrix = newMatrixArray;
 
                 grabState.grabber = null;
               });
@@ -466,8 +388,8 @@ class Tags {
             }
           };
 
-          const tagsInstance = new TagsApi();
-          return tagsInstance;
+          const contractInstance = new ContractApi();
+          return contractInstance;
         }
       });
   }
@@ -479,4 +401,4 @@ class Tags {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 
-module.exports = Tags;
+module.exports = Contract;
