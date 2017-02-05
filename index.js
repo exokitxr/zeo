@@ -116,7 +116,7 @@ const _install = () => {
       path.join(config.dirname, '/core/plugins'),
     ].map(_readdir))
       .then(files => _filterDirectories(_flatten(files))
-        .then(directories => a.requestPlugins(directories.map(directory => directory.slice(config.dirname.length))))
+        .then(directories => a.installPlugins(directories.map(directory => directory.slice(config.dirname.length))))
       );
   } else {
     return Promise.resolve();
@@ -189,8 +189,6 @@ _install()
           console.warn(err);
         }
       });
-    } else if (flags.install) { // XXX instead, provide an install mode in archae
-      process.exit(0);
     }
   }))
   .catch(err => {
