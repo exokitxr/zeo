@@ -33,8 +33,6 @@ class Draw {
       if (live) {
         const {THREE, scene} = zeo;
 
-        const planeUvs = geometryUtils.unindexBufferGeometry(new THREE.PlaneBufferGeometry(1, 1, 1, 1)).getAttribute('uv').array;
-
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
           const position = new THREE.Vector3();
@@ -43,17 +41,6 @@ class Draw {
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
         };
-
-        const _requestImage = src => new Promise((accept, reject) => {
-          const img = new Image();
-          img.src = src;
-          img.onload = () => {
-            accept(img);
-          };
-          img.onerror = err => {
-            reject(err);
-          };
-        });
 
         class DrawElement extends HTMLElement {
           static get attributes() {
@@ -159,8 +146,8 @@ class Draw {
               const {gamepads} = zeo.getStatus();
               const gamepad = gamepads[side];
               const {position: controllerPosition} = gamepad;
-              const {position: paperPositon, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
-              const planeTarget = geometryUtils.makePlaneTarget(paperPositon, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
+              const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+              const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
               const planePoint = planeTarget.projectPoint(controllerPosition);
 
               if (planePoint) {
@@ -179,8 +166,8 @@ class Draw {
               const {gamepads} = zeo.getStatus();
               const gamepad = gamepads[side];
               const {position: controllerPosition} = gamepad;
-              const {position: paperPositon, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
-              const planeTarget = geometryUtils.makePlaneTarget(paperPositon, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
+              const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+              const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
               const planePoint = planeTarget.projectPoint(controllerPosition);
 
               if (planePoint) {
@@ -212,8 +199,8 @@ class Draw {
 
               const _getFrame = t => Math.floor(t / POINT_FRAME_RATE);
 
-              const {position: paperPositon, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
-              const planeTarget = geometryUtils.makePlaneTarget(paperPositon, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
+              const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+              const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
 
               let drawable = false;
               SIDES.forEach(side => {
