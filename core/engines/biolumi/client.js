@@ -680,7 +680,7 @@ class Biolumi {
             mousedownStartScrollTop: null,
           });
           const menuShader = menuShaders.getShader({maxNumTextures: MAX_NUM_TEXTURES});
-          const _makeMenuMaterial = () => {
+          const _makeMenuMaterial = ({color = [1, 1, 1, 1]} = {}) => {
             const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
             shaderUniforms.textures.value = (() => {
               const result = Array(MAX_NUM_TEXTURES);
@@ -746,7 +746,7 @@ class Biolumi {
               side: THREE.DoubleSide,
               transparent: true,
             });
-            shaderUniforms.backgroundColor.value = Float32Array.from([1, 1, 1, 1]);
+            shaderUniforms.backgroundColor.value = Float32Array.from(color);
             // shaderMaterial.polygonOffset = true;
             // shaderMaterial.polygonOffsetFactor = 1;
             return shaderMaterial;
