@@ -322,12 +322,14 @@ class Contract {
                     const height = WORLD_HEIGHT;
                     const depth = WORLD_DEPTH;
 
-                    const menuMaterial = biolumi.makeMenuMaterial();
+                    const menuMaterial = biolumi.makeMenuMaterial({
+                      color: [1, 1, 1, 0.5],
+                    });
 
                     const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, menuMaterial];
+                    const material = menuMaterial;
 
-                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    const mesh = new THREE.Mesh(geometry, material);
                     // mesh.position.y = 1.5;
                     mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
@@ -337,7 +339,7 @@ class Contract {
                   object.add(planeMesh);
                   object.planeMesh = planeMesh;
 
-                  const lineMesh = (() => {
+                  /* const lineMesh = (() => {
                     const geometry = new THREE.BufferGeometry();
                     const positions = Float32Array.from([
                       -WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
@@ -356,7 +358,7 @@ class Contract {
                     mesh.frustumCulled = false;
                     return mesh;
                   })();
-                  object.add(lineMesh);
+                  object.add(lineMesh); */
 
                   const shadowMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
