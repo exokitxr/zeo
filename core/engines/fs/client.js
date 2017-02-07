@@ -125,7 +125,6 @@ class Fs {
             const file = files[0];
             const id = _makeId();
             file.id = id;
-            const {name} = file;
 
             fsInstance.emit('uploadStart', file);
 
@@ -280,9 +279,10 @@ class Fs {
         };
 
         class FsFile {
-          constructor(id, name, directory, matrix) {
+          constructor(id, name, type, directory, matrix) {
             this.id = id;
             this.name = name;
+            this.type = type;
             this.directory = directory;
             this.matrix = matrix;
 
@@ -296,7 +296,7 @@ class Fs {
             const object = new THREE.Object3D();
             object[fileFlagSymbol] = true;
 
-            const file = new FsFile(fileSpec.id, fileSpec.name, fileSpec.directory, fileSpec.matrix);
+            const file = new FsFile(fileSpec.id, fileSpec.name, fileSpec.type, fileSpec.directory, fileSpec.matrix);
             object.file = file;
 
             object.position.set(file.matrix[0], file.matrix[1], file.matrix[2]);

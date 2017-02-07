@@ -1473,6 +1473,7 @@ class World {
                 const fileMesh = fs.makeFile({
                   id,
                   name,
+                  type,
                   directory,
                   matrix,
                 });
