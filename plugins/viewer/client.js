@@ -13,8 +13,13 @@ import {
   SLOT_WORLD_DEPTH,
 } from './lib/constants/viewer';
 import viewerRenderer from './lib/render/viewer';
+import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
+
+const SLOT_GRAB_DISTANCE = 0.2;
+
+const dataKeySymbol = Symbol();
 
 class Viewer {
   constructor(archae) {
@@ -32,20 +37,28 @@ class Viewer {
     return archae.requestPlugins([
       '/core/engines/zeo',
       '/core/engines/biolumi',
+      '/core/engines/fs',
       '/core/plugins/geometry-utils',
     ]).then(([
       zeo,
       biolumi,
+      fs,
       geometryUtils,
     ]) => {
       if (live) {
-        const {THREE, scene} = zeo;
+        const {THREE, scene, camera} = zeo;
 
         // const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
 
         const lineMaterial = new THREE.LineBasicMaterial({
           color: 0x808080,
+        });
+        const wireframeMaterial = new THREE.MeshBasicMaterial({
+          color: 0x0000FF,
+          wireframe: true,
+          opacity: 0.5,
+          transparent: true,
         });
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -98,13 +111,72 @@ class Viewer {
                 slotPlaceholderUi,
               }) => {
                 if (live) {
-                  const mediaState = {};
+                  class Data {
+                    constructor(data) {
+                      this[dataKeySymbol] = data;
 
-                  mediaUi.pushPage(({media}) => {
+                      this._id = _makeId();
+                    }
+
+                    get() {
+                      return this[dataKeySymbol];
+                    }
+                  }
+                  const _requestFileData = file => {
+                    const {type} = file;
+
+                    if (/^image\/(?:png|jpeg|gif|file)$/.test(type)) {
+                      const {id} = file;
+
+                      return fetch('/archae/fs/' + id)
+                        .then(res => res.arrayBuffer()
+                          .then(arrayBuffer => ({
+                            mode: 'image',
+                            type,
+                            data: new Data(arrayBuffer),
+                          }))
+                        );
+                    } else {
+                      return new Promise((accept, reject) => {
+                        const err = new Error('unsupported file type');
+                        reject(err);
+                      });
+                    }
+                  };
+
+                  const mediaState = {
+                    type: null,
+                    data: null,
+                    loading: false,
+                    cancelRequest: null,
+                  };
+
+                  const _makeBoxMesh = () => {
+                    const width = SLOT_WORLD_WIDTH;
+                    const height = SLOT_WORLD_HEIGHT;
+                    const depth = SLOT_WORLD_DEPTH;
+
+                    const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+                    const material = wireframeMaterial;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.rotation.order = camera.rotation.order;
+                    mesh.depthWrite = false;
+                    mesh.visible = false;
+                    return mesh;
+                  };
+                  const boxMeshes = {
+                    left: _makeBoxMesh(),
+                    right: _makeBoxMesh(),
+                  };
+                  scene.add(boxMeshes.left);
+                  scene.add(boxMeshes.right);
+
+                  mediaUi.pushPage(({media: {mode, type, data, loading}}) => {
                     return [
                       {
                         type: 'html',
-                        src: viewerRenderer.getMediaSrc(media),
+                        src: viewerRenderer.getMediaSrc({mode, type, data, loading}),
                         x: 0,
                         y: 0,
                         w: WIDTH,
@@ -133,10 +205,10 @@ class Viewer {
                     immediate: true,
                   });
 
-                  /* const _updatePages = menuUtils.debounce(next => {
-                    const menuPages = menuUi.getPages();
-                    const navbarPages = navbarUi.getPages();
-                    const pages = menuPages.concat(navbarPages);
+                  const _updatePages = menuUtils.debounce(next => {
+                    const mediaPages = mediaUi.getPages();
+                    const slotPlaceholderPages = slotPlaceholderUi.getPages();
+                    const pages = mediaPages.concat(slotPlaceholderPages);
 
                     if (pages.length > 0) {
                       let pending = pages.length;
@@ -151,15 +223,12 @@ class Viewer {
                         const {type} = page;
 
                         let match;
-                        if (type === 'elementAttributeFiles') {
+                        if (type === 'media') {
                           page.update({
-                            elementAttributeFiles: elementAttributeFilesState,
-                            focus: focusState,
+                            media: mediaState,
                           }, pend);
-                        } else if (type === 'navbar') {
-                          page.update({
-                            navbar: navbarState,
-                          }, pend);
+                        } else if (type === 'slotPlaceholder') {
+                          page.update({}, pend);
                         } else {
                           pend();
                         }
@@ -167,7 +236,7 @@ class Viewer {
                     } else {
                       next();
                     }
-                  }); */
+                  });
 
                   const mesh = (() => {
                     const object = new THREE.Object3D();
@@ -280,12 +349,78 @@ class Viewer {
                   scene.add(mesh);
 
                   const _makeHoverState = () => ({
-                    hovering: false,
+                    hovered: false,
                   });
-                  const hoverState = {
+                  const hoverStates = {
                     left: _makeHoverState(),
                     right: _makeHoverState(),
                   };
+
+                  const _gripup = e => {
+                    const {side} = e;
+
+                    const handsGrabber = zeo.peek(side);
+                    if (handsGrabber) {
+                      const {object: handsGrabberObject} = handsGrabber;
+
+                      if (fs.isFile(handsGrabberObject)) {
+                        const slotHovered = hoverStates[side].hovered;
+
+                        if (slotHovered) {
+                          handsGrabber.release();
+
+                          const fileMesh = handsGrabberObject;
+                          const {slotMesh} = mesh;
+                          slotMesh.add(fileMesh);
+                          fileMesh.position.copy(new THREE.Vector3());
+                          fileMesh.quaternion.copy(new THREE.Quaternion());
+                          fileMesh.scale.copy(new THREE.Vector3(1, 1, 1));
+
+                         const {placeholderMesh} = slotMesh;
+                          placeholderMesh.visible = false;
+
+                          if (mediaState.cancelRequest) {
+                            mediaState.cancelRequest();
+                            mediaState.cancelRequest = null;
+                          }
+
+                          const {file} = fileMesh;
+                          let live = true;
+                          _requestFileData(file)
+                            .then(({mode, type, data}) => {
+                              mediaState.mode = mode;
+                              mediaState.type = type;
+                              mediaState.data = data.get();
+                              mediaState.loading = false;
+
+                              _updatePages();
+
+                              live = false;
+                            })
+                            .catch(err => {
+                              console.warn(err);
+
+                              mediaState.loading = false;
+
+                              _updatePages();
+
+                              live = false;
+                            });
+                          mediaState.cancelRequest = () => {
+                            live = false;
+                          };
+                          mediaState.loading = true;
+
+                          _updatePages();
+
+                          e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+                        }
+                      }
+                    }
+                  };
+                  zeo.on('gripup', _gripup, {
+                    priority: 1,
+                  });
 
                   const _update = () => {
                     const _updateTextures = () => {
@@ -321,8 +456,21 @@ class Viewer {
 
                         if (gamepad) {
                           const {position: controllerPosition} = gamepad;
+                          const {slotMesh} = mesh;
+                          const {position: slotMeshPosition, rotation: slotMeshRotation} = _decomposeObjectMatrixWorld(slotMesh);
 
-                          // XXX
+                          const hoverState = hoverStates[side];
+                          const boxMesh = boxMeshes[side];
+                          if (controllerPosition.distanceTo(slotMeshPosition) <= SLOT_GRAB_DISTANCE) {
+                            hoverState.hovered = true;
+
+                            boxMesh.position.copy(slotMeshPosition);
+                            boxMesh.quaternion.copy(slotMeshRotation);
+                            boxMesh.visible = true;
+                          } else {
+                            hoverState.hovered = false;
+                            boxMesh.visible = false;
+                          }
                         }
                       });
                     };
@@ -335,6 +483,10 @@ class Viewer {
                   this._cleanup = () => {
                     scene.remove(mesh);
 
+                    scene.remove(boxMeshes.left);
+                    scene.remove(boxMeshes.right);
+
+                    zeo.removeListener('gripup', _gripup);
                     zeo.removeListener('update', _update);
                   };
                 }
@@ -360,5 +512,7 @@ class Viewer {
     this._cleanup();
   }
 }
+
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Viewer;

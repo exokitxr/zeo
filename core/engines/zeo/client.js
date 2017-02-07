@@ -408,6 +408,9 @@ class Zeo {
                       release(side) {
                         return hands.release(side);
                       }
+                      peek(side) {
+                        return hands.peek(side);
+                      }
 
                       registerElement(pluginInstance, elementApi) {
                         world.registerElement(pluginInstance, elementApi);
