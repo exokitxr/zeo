@@ -1530,7 +1530,7 @@ class World {
                 const _initializeContracts = () => {
                   const contractMesh = contract.makeContract({
                     id: _makeId(),
-                    name: 'Please',
+                    name: 'Play me some music from Portal.',
                     author: 'avaer',
                     matrix: DEFAULT_CONTRACT_MATRIX,
                   });
