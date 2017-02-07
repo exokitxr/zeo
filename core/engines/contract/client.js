@@ -322,9 +322,7 @@ class Contract {
                     const height = WORLD_HEIGHT;
                     const depth = WORLD_DEPTH;
 
-                    const menuMaterial = biolumi.makeMenuMaterial({
-                      color: [1, 1, 1, 0.5],
-                    });
+                    const menuMaterial = biolumi.makeMenuMaterial();
 
                     const geometry = new THREE.PlaneBufferGeometry(width, height);
                     const material = menuMaterial;
