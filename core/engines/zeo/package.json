@@ -1,6 +1,6 @@
 {
   "name": "zeo",
-  "description": "The zeo.sh core.",
+  "description": "The zeo core.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {}

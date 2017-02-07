@@ -57,14 +57,14 @@ if (!hasFlag) {
 
 const config = {
   dirname: __dirname,
-  hostname: flags.host || 'zeo.sh',
+  hostname: flags.host || 'zeovr.io',
   port: flags.port || 8000,
   publicDirectory: 'public',
   dataDirectory: 'data',
   staticSite: flags.site,
   metadata: {
     hub: {
-      url: flags.hubUrl || 'zeo.sh',
+      url: flags.hubUrl || 'zeovr.io',
       numContainers: 10,
       startPort: 9000,
       enabled: Boolean(flags.hub || flags.hubUrl),

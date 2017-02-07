@@ -8,7 +8,7 @@ const {
 } = require('../constants/menu');
 
 const getMainPageSrc = () => `\
-${getHeaderSrc('zeo.sh', '', '', false)}
+${getHeaderSrc('zeo', '', '', false)}
 <div style="height: ${HEIGHT - (150 + 2)}px;">
   <div style="display: flex;">
     ${getMainSidebarSrc()}
