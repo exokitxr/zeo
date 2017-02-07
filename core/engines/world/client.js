@@ -1451,7 +1451,7 @@ class World {
                 priority: 1,
               });
 
-              const uploadStart = ({id, name}) => {
+              const uploadStart = ({id, name, type}) => {
                 const directory = '/';
                 const matrix = (() => {
                   const {hmd} = webvr.getStatus();
