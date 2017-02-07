@@ -32,7 +32,7 @@ class Skybox {
         // MAP_SUN_MATERIAL.depthTest = false;
         const MAP_STARS_MATERIAL = new THREE.PointsMaterial({
           color: 0xFFFFFF,
-          size: 500,
+          size: 50,
           fog: false,
           // opacity: 1,
           transparent: true,
@@ -177,7 +177,7 @@ class Skybox {
 
               const speed = 1;
               // const speed = 50;
-              worldTime += 60000;
+              // worldTime += 60000;
               sky.azimuth = (0.05 + ((worldTime / 1000) * speed) / (60 * 10)) % 1;
               const theta = Math.PI * (sky.inclination - 0.5);
               const phi = 2 * Math.PI * (sky.azimuth - 0.5);
