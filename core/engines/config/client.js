@@ -85,6 +85,7 @@ class Config {
           airlockCheckboxValue: true,
           voiceChatCheckboxValue: false,
           statsCheckboxValue: false,
+          physicsDebugCheckboxValue: false,
         };
         const statsState = {
           frame: 0,
@@ -130,6 +131,7 @@ class Config {
           airlock: configState.airlockCheckboxValue,
           voiceChat: configState.voiceChatCheckboxValue,
           stats: configState.statsCheckboxValue,
+          physicsDebug: configState.physicsDebugCheckboxValue,
         });
         const _saveConfig = configUtils.debounce(next => {
           _requestSetConfig(_getConfig())
@@ -162,11 +164,12 @@ class Config {
               configState.airlockCheckboxValue = configSpec.airlock;
               configState.voiceChatCheckboxValue = configSpec.voiceChat;
               configState.statsCheckboxValue = configSpec.stats;
+              configState.physicsDebugCheckboxValue = configSpec.physicsDebug;
 
-              configUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}, focus: {type: focusType}}) => ([
+              configUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue, physicsDebugCheckboxValue}, focus: {type: focusType}}) => ([
                 {
                   type: 'html',
-                  src: configRenderer.getConfigPageSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}),
+                  src: configRenderer.getConfigPageSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue, physicsDebugCheckboxValue}),
                   x: 0,
                   y: 0,
                   w: WIDTH,
@@ -391,15 +394,24 @@ class Config {
                       const {statsCheckboxValue} = configState;
 
                       if (!statsCheckboxValue) {
-                        const width = 0.0005;
-                        const height = width * (48 / 80);
-                        const depth = -0.001;
-
                         configState.statsCheckboxValue = true;
                         statsMesh.visible = true;
                       } else {
                         configState.statsCheckboxValue = false;
                         statsMesh.visible = false;
+                      }
+
+                      _saveConfig();
+                      api.updateConfig();
+
+                      _updatePages();
+                    } else if (onclick === 'config:physicsDebug') {
+                      const {physicsDebugCheckboxValue} = configState;
+
+                      if (!physicsDebugCheckboxValue) {
+                        configState.physicsDebugCheckboxValue = true;
+                      } else {
+                        configState.physicsDebugCheckboxValue = false;
                       }
 
                       _saveConfig();

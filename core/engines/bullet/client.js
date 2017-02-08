@@ -2,8 +2,6 @@ const idUtils = require('./lib/idUtils');
 
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
-const DEBUG = false;
-// const DEBUG = true;
 
 class BulletClient {
   constructor(archae) {
@@ -13,23 +11,33 @@ class BulletClient {
   mount() {
     const {_archae: archae} = this;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     return archae.requestPlugins([
       '/core/engines/three',
+      '/core/engines/config',
     ]).then(([
       three,
+      config,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
 
-        const debugMaterial = DEBUG ? new THREE.MeshBasicMaterial({
+        const debugMaterial = new THREE.MeshBasicMaterial({
           color: 0xFF0000,
           wireframe: true,
-        }) : null;
+        });
 
         const _makePlaneDebugMesh = (dimensions, position, rotation, scale) => {
           const geometry = new THREE.PlaneBufferGeometry(1024, 1024);
@@ -151,22 +159,21 @@ class BulletClient {
           }
 
           addDebug() {
-            if (DEBUG) {
-              if (this.makeDebugMesh) {
-                const debugMesh = this.makeDebugMesh();
-                scene.add(debugMesh);
-                this.debugMesh = debugMesh;
-              }
+            if (this.makeDebugMesh) {
+              const debugMesh = this.makeDebugMesh();
+              scene.add(debugMesh);
+
+              this.debugMesh = debugMesh;
             }
           }
 
           removeDebug() {
-            if (DEBUG) {
-              if (this.makeDebugMesh) {
-                const debugMesh = this.makeDebugMesh();
-                scene.remove(debugMesh);
-                this.debugMesh = null;
-              }
+            const {debugMesh} = this;
+
+            if (debugMesh) {
+              scene.remove(debugMesh);
+
+              this.debugMesh = null;
             }
           }
         }
@@ -221,7 +228,10 @@ class BulletClient {
             const {id: objectId} = object;
             this.bodies.set(objectId, object);
 
-            object.addDebug();
+            const {physicsDebug} = config.getConfig();
+            if (physicsDebug) {
+              object.addDebug();
+            }
 
             if (!this.running) {
               this.start();
@@ -234,7 +244,10 @@ class BulletClient {
             const {id: objectId} = object;
             this.bodies.delete(objectId);
 
-            object.removeDebug();
+            const {physicsDebug} = config.getConfig();
+            if (physicsDebug) {
+              object.removeDebug();
+            }
 
             if (this.bodies.size === 0) {
               this.stop();
@@ -343,8 +356,10 @@ class BulletClient {
             this.linearVelocity.fromArray(linearVelocity);
             this.angularVelocity.fromArray(angularVelocity);
 
-            if (DEBUG) {
+            const {physicsDebug} = config.getConfig();
+            if (physicsDebug) {
               const {debugMesh} = this;
+
               if (debugMesh) {
                 debugMesh.position.fromArray(position);
                 debugMesh.quaternion.fromArray(rotation);
@@ -692,14 +707,50 @@ class BulletClient {
           requestHandlers.set(id, requestHandler);
         };
 
-        this._cleanup = () => {
+        cleanups.push(() => {
           if (connection) {
             connection.close();
           }
-        };
+        });
 
         return _initializeWorld()
           .then(world => {
+            let live = false;
+            const _enablePhysicsDebugMesh = () => {
+              world.bodies.forEach(body => {
+                body.addDebug();
+              });
+
+              live = true;
+            };
+            const _disablePhysicsDebugMesh = () => {
+              world.bodies.forEach(body => {
+                body.removeDebug();
+              });
+
+              live = false;
+            };
+
+            const _config = config => {
+              const {physicsDebug} = config;
+
+              if (physicsDebug && !live) {
+                _enablePhysicsDebugMesh();
+              } else if (!physicsDebug && live) {
+                _disablePhysicsDebugMesh();
+              };
+            };
+            config.on('config', _config);
+
+            const {physicsDebug} = config.getConfig();
+            if (physicsDebug) {
+              _enablePhysicsDebugMesh();
+            }
+
+            cleanups.push(() => {
+              config.removeListner('config', _config);
+            });
+
             class BulletApi {
               getPhysicsWorld() {
                 return world;

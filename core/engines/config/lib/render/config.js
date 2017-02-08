@@ -2,13 +2,14 @@ const {
   WIDTH,
 } = require('../constants/config');
 
-const getConfigPageSrc = ({inputText, inputValue, focus, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue}) => `\
+const getConfigPageSrc = ({inputText, inputValue, focus, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue, physicsDebugCheckboxValue}) => `\
   <div style="width: ${WIDTH}px; margin: 40px 0; padding-right: 40px;">
     ${getInputSrc(inputText, '', inputValue, focus, 'config:input')}
     ${getSliderSrc(sliderValue)}
     ${getCheckboxSrc('Airlock', airlockCheckboxValue, 'config:airlock')}
     ${getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat')}
     ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
+    ${getCheckboxSrc('Physics debug', physicsDebugCheckboxValue, 'config:physicsDebug')}
   </div>
 `;
 
