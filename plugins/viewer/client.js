@@ -144,6 +144,10 @@ class Viewer {
                     }
                   };
 
+                  const mediaGrabState = {
+                    fileMesh: null, // not in mediaState to prevent JSON.stringify recursion
+                  };
+
                   const mediaState = {
                     type: null,
                     data: null,
@@ -356,6 +360,45 @@ class Viewer {
                     right: _makeHoverState(),
                   };
 
+                  const _gripdown = e => {
+                    const {side} = e;
+                    const {fileMesh} = mediaGrabState;
+
+                    if (fileMesh) {
+                      const slotHovered = hoverStates[side].hovered;
+
+                      if (slotHovered) {
+                        const handsGrabber = zeo.peek(side);
+
+                        if (!handsGrabber) {
+                          fs.grabFile(side, fileMesh);
+
+                          mediaGrabState.fileMesh = null;
+
+                          mediaState.type = null;
+                          mediaState.data = null;
+                          mediaState.loading = false;
+
+                          if (mediaState.cancelRequest) {
+                            mediaState.cancelRequest();
+                            mediaState.cancelRequest = null;
+                          }
+
+                          const {slotMesh} = mesh;
+                          const {placeholderMesh} = slotMesh;
+                          placeholderMesh.visible = false;
+
+                          _updatePages();
+
+                          e.stopImmediatePropagation();
+                        }
+                      }
+                    }
+                  };
+                  zeo.on('gripdown', _gripdown, {
+                    priority: 1,
+                  });
+
                   const _gripup = e => {
                     const {side} = e;
 
@@ -376,7 +419,7 @@ class Viewer {
                           fileMesh.quaternion.copy(new THREE.Quaternion());
                           fileMesh.scale.copy(new THREE.Vector3(1, 1, 1));
 
-                         const {placeholderMesh} = slotMesh;
+                          const {placeholderMesh} = slotMesh;
                           placeholderMesh.visible = false;
 
                           if (mediaState.cancelRequest) {
@@ -388,6 +431,8 @@ class Viewer {
                           let live = true;
                           _requestFileData(file)
                             .then(({mode, type, data}) => {
+                              mediaGrabState.fileMesh = fileMesh;
+
                               mediaState.mode = mode;
                               mediaState.type = type;
                               mediaState.data = data.get();
@@ -486,6 +531,7 @@ class Viewer {
                     scene.remove(boxMeshes.left);
                     scene.remove(boxMeshes.right);
 
+                    zeo.removeListener('gripdown', _gripdown);
                     zeo.removeListener('gripup', _gripup);
                     zeo.removeListener('update', _update);
                   };
