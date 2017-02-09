@@ -2,7 +2,6 @@
 <html>
 <head>
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Lato:300,400,600" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Droid+Sans+Mono:400" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/font/octicons.min.css" rel="stylesheet">
   <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -17,9 +16,6 @@
       font-weight: 300;
       color: #FFF;
       overflow-x: hidden;
-    }
-    .lato {
-      font-family: 'Lato';
     }
     a {
       color: inherit;
@@ -37,7 +33,9 @@
       display: flex;
       position: relative;
       height: 80px;
+      margin-bottom: 30px;
       padding: 0 30px;
+      background-color: #000;
       align-items: center;
       z-index: 3;
     }
@@ -146,7 +144,7 @@
       align-items: center;
     }
     .header-logo-anchor:hover {
-      color: #66BB6A;
+      color: #8BC34A;
     }
     .header-github-anchor {
       display: flex;
@@ -196,11 +194,11 @@
     .logged-in .container {
       height: 300px;
     }
-    section.container {
+    .container {
       display: flex;
       width: 100%;
-      margin-top: -80px;
-      padding-top: 80px;
+      height: 550px;
+      background-color: #000;
       justify-content: flex-start;
       align-items: center;
       flex-direction: column;
@@ -208,13 +206,17 @@
     }
     .container-wrapper {
       display: flex;
-      width: 640px;
+      width: 480px;
       color: #FFF;
       align-items: center;
       flex-direction: column;
     }
-    .container-wrapper > h1 {
-      margin-bottom: 20px;
+    .container-wrapper > p {
+      width: 100%;
+      margin: 30px 0;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.6;
     }
     .container-footer {
       width: 200%;
@@ -224,127 +226,6 @@
       position: absolute;
       background-color: #000;
       transform: rotateZ(-10deg);
-    }
-    section.demographics {
-      display: flex;
-      position: relative;
-      // background-color: #333;
-      border-bottom: 1px solid #333;
-      justify-content: center;
-      align-items: center;
-      box-sizing: border-box;
-    }
-    section.demographics > navbar {
-      display: flex;
-      width: 640px;
-      height: 50px;
-      align-items: center;
-      font-size: 13px;
-      font-weight: 400;a
-    }
-    section.demographics > navbar > nav {
-      display: flex;
-      position: relative;
-      height: 100%;
-      margin-right: 20px;
-      padding: 0 10px;
-      border-bottom: 5px solid transparent;
-      align-items: center;
-      box-sizing: border-box;
-      cursor: pointer;
-    }
-    section.demographics > navbar > nav.selected::after {
-      position: absolute;
-      bottom: -19px;
-      left: 50%;
-      margin-left: -15px;
-      border-style: solid;
-      border-width: 15px 15px 0 15px;
-      content: '';
-    }
-    section.demographics > navbar > nav.red.selected {
-      color: #E91E63;
-      border-bottom-color: #E91E63;
-      cursor: default;
-    }
-    section.demographics > navbar > nav.red.selected::after {
-      border-color: #E91E63 transparent transparent transparent;
-    }
-    section.demographics > navbar > nav.green:hover {
-      color: #66BB6A;
-    }
-    section.demographics > navbar > nav.purple:hover {
-      color: #7E57C2;
-    }
-    section.demographics > navbar > nav.sign-up {
-      height: auto;
-      padding: 7px 15px;
-      margin: 10px 0;
-      margin-left: auto;
-      background-color: #8BC34A;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-      border-radius: 5px;
-      color: #FFF;
-      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
-    }
-    section.demographics > navbar > nav > i {
-      margin-right: 5px;
-    }
-    section.details {
-      display: flex;
-      width: 100%;
-      margin-top: -80px;
-      padding-top: 80px;
-      justify-content: flex-start;
-      align-items: center;
-      flex-direction: column;
-      box-sizing: border-box;
-    }
-    .details-wrapper {
-      display: flex;
-      width: 640px;
-      margin-top: 20px;
-      background-color: #333;
-      border-radius: 5px;
-    }
-    .details-text {
-      display: flex;
-      width: 370px;
-      padding: 20px 0;
-      margin-right: 30px;
-      align-items: center;
-      flex-direction: column;
-    }
-    .details-text > i {
-      display: flex;
-      font-size: 50px;
-      text-align: center;
-    }
-    .details-text > i.red {
-      color: #E91E63;
-    }
-    .details-text > p {
-      padding: 20px;
-      color: #FFF;
-      font-size: 13px;
-      font-weight: 400;
-      line-height: 1.4;
-    }
-    .videos-wrapper {
-      width: 270px;
-    }
-    .main-video {
-      width: 100%;
-    }
-    .videos-list {
-      display: flex;
-    }
-    .video {
-      width: 80px;
-      margin: 15px 0;
-    }
-    .video + .video {
-      margin-left: 15px;
     }
     section.list {
       display: flex;
@@ -512,7 +393,7 @@
       line-height: 1.4;
     }
     h1 {
-      font-size: 46px;
+      font-size: 36px;
     }
     h2 {
       font-size: 18px;
@@ -598,6 +479,41 @@
     .button + .button {
       margin-left: 20px;
     }
+    .aside {
+      position: absolute;
+      margin-top: 70px;
+    }
+    .aside:hover {
+      opacity: 1;
+    }
+    .aside.right {
+      right: 0;
+      width: 350px;
+      padding: 0 20px;
+      background-color: #333;
+      border-top: 3px solid #8BC34A;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .aside-heading {
+      display: flex;
+      margin: 0 -20px;
+      padding: 0 20px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      background-color: #222;
+      border-bottom: 1px solid #000;
+    }
+    .aside-heading > .left {
+      font-size: 13px;
+      font-weight: 600;
+      flex-grow: 1;
+    }
+    .aside-heading > .right {
+      display: flex;
+      font-size: 13px;
+      align-items: center;
+    }
     ul {
       margin: 0 -20px;
       padding: 0 20px;
@@ -634,9 +550,8 @@
       background-color: #666;
       cursor: pointer;
     }
-    .hero-video {
+    .video {
       display: flex;
-      margin-top: 1000px;
       margin-bottom: -300px;
       justify-content: center;
       align-items: center;
@@ -745,7 +660,7 @@
 </head>
 <body>
   <header id=header>
-    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
+    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo</a>
     <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
     <div class=header-login-bar>
       <h2>Welcome back, <span id=header-login-username>username</span></h2>
@@ -772,50 +687,64 @@
     </div>
   </div>
   <div class=signing-up-overlay id=signing-up-overlay></div>
-  <section class=container>
-    <div class=container-wrapper>
-      <h1>Do fake things with real people in WebVR</h1>
-    </div>
-  </section>
-  <section class=demographics>
-    <navbar>
-      <nav class="red selected">
-        <i class="octicon octicon-eye"></i>
-        <div class=title>Explorers</div>
-      </nav>
-      <nav class=green>
-        <i class="octicon octicon-beaker"></i>
-        <div class=title>Developers</div>
-      </nav>
-      <nav class=purple>
-        <i class="octicon octicon-heart"></i>
-        <div class=title>FAQ</div>
-      </nav>
-      <nav class=sign-up>
-        <div class=title>Sign up</div>
-      </nav>
-    </navbar>
-  </section>
-  <section class=details>
-    <div class=details-wrapper>
-      <div class=details-text>
-        <i class="octicon octicon-eye red"></i>
-        <p>
-          <b>ZEO VR</b> is NPM-powered multiplayer VR that runs in your browser. Everything is a Javascript plugin. It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>.<br><br>
-          Share <b>Experience Requests</b> with other explorers to earn <b class=lato>&#437;</b><b>ollars</b>.
-        </p>
-      </div>
-      <div class=videos-wrapper>
-        <img src="https://placehold.it/270x202" class=main-video />
-        <div class=videos-list>
-          <img src="https://placehold.it/80x60" class=video />
-          <img src="https://placehold.it/80x60" class=video />
-          <img src="https://placehold.it/80x60" class=video />
+  <aside class="aside right">
+    <h3 class=aside-heading>
+      <span class=left>Featured modules for this week</span>
+      <span class=right>
+        <a href="#" class=link>Learn more</a>
+      </span>
+    </h3>
+    <ul>
+      <li>
+        <img src="https://placehold.it/50x50" width=50 height=50>
+        <div class=wrap>
+          <div class=title>bouncy-ball</div>
+          <div class=description>A simple bouncy ball plugin.</div>
+          <div class=author>by <b>Avaer</b></div>
         </div>
+      </li>
+      <li>
+        <img src="https://placehold.it/50x50" width=50 height=50>
+        <div class=wrap>
+          <div class=title>mc</div>
+          <div class=description>Minecraft-like demo in VR.</div>
+          <div class=author>by <b>Avaer</b></div>
+        </div>
+      </li>
+      <li>
+        <img src="https://placehold.it/50x50" width=50 height=50>
+        <div class=wrap>
+          <div class=title>zeo-model</div>
+          <div class=description>Load 3D models from various formats and place them in the world scene.</div>
+          <div class=author>by <b>Avaer</b></div>
+        </div>
+      </li>
+    </ul>
+  </aside>
+  <div class=container>
+    <div class=container-wrapper>
+      <h1>WebVR universes powered by NPM</h1>
+      <p>
+        Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more.<br/><br/>
+        From your browser.<br/><br/>
+        It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>.<span class=canvas-login-arrow-tail> Or, pay me for hosting!</span>
+      </p>
+      <canvas id=canvas-login-arrow class=canvas-login-arrow width=1200 height=1200></canvas>
+      <form id=login-form class=login-form>
+        <h2>Log in</h2>
+        <input type=email placeholder="your@email.com" autofocus id=email>
+        <input type=password placeholder="password" id=password>
+        <div class=buttons>
+          <input type=submit value='Connect' class=button>
+          <a href class="button sub">Learn more</a>
+        </div>
+      </form>
+      <div id=login-loader style="display: none;">
+        <div class=loader>Loading...</div>
       </div>
     </div>
-  </section>
-  <div class=hero-video>
+  </div>
+  <div class=video>
     <div class=video-shadow></div>
     <video autoplay loop>
       <source src="https://cdn.rawgit.com/modulesio/zeo-data/fa848ef03608c5079237565c8389afafaf5e93ba/video/demo.webm" type="video/webm">
@@ -913,6 +842,11 @@ const body = $('body')[0];
 const header = $('#header')[0];
 const headerLoginUsername = $('#header-login-username')[0];
 const planNagger = $('#plan-nagger')[0];
+const loginForm = $('#login-form')[0];
+const emailInput = $('#email')[0];
+const passwordInput = $('#password')[0];
+const loginLoader = $('#login-loader')[0];
+const canvasLoginArrow = $('#canvas-login-arrow')[0];
 const connectButton = $('#connect-button')[0];
 const logOutButton = $('#log-out-button')[0];
 const signUpEmail = $('#sign-up-email')[0];
@@ -925,6 +859,37 @@ const gotoSignUpButton = $('#goto-sign-up-button')[0];
 const signingUpOverlay = $('#signing-up-overlay')[0];
 
 let user = null;
+
+const _drawCanvasLoginArrow = canvas => {
+  const ctx = canvas.getContext('2d');
+
+  ctx.strokeStyle = '#FFF';
+  ctx.lineWidth = 1;
+
+  const startX = 640;
+  const endX = 930;
+  const startY = 500;
+
+  const tick = 55;
+  const tock = Math.sqrt((tick * tick) + (tick * tick));
+  const tack = 50;
+
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, startY);
+  ctx.lineTo(endX + tick, startY + tick);
+  ctx.lineTo(endX + tick, startY + tick + tock);
+  ctx.lineTo(endX + tick - tack, startY + tick + tock + tack);
+
+  ctx.moveTo(endX + tick - tack, startY + tick + tock + tack);
+  ctx.lineTo(endX + tick - tack, startY + tick + tock + tack - tack);
+
+  ctx.moveTo(endX + tick - tack, startY + tick + tock + tack);
+  ctx.lineTo(endX + tick - tack + tack, startY + tick + tock + tack);
+
+  ctx.stroke();
+};
+_drawCanvasLoginArrow(canvasLoginArrow);
 
 const _login = j => fetch('/hub/login', {
   method: 'POST',
@@ -956,7 +921,102 @@ const _jsonParse = s => {
   }
 };
 
+const _tryLogin = () => {
+  const tokenString = localStorage.getItem('token');
+  if (tokenString) {
+    const token = _jsonParse(tokenString);
+
+    if (token) {
+      loginForm.style.display = 'none';
+      loginLoader.style.display = null;
+
+      _login({
+        token,
+      })
+        .then(j => {
+          if (j) {
+            const {username, world, plan} = j;
+
+            user = {
+              username,
+              world,
+              plan,
+            };
+
+            headerLoginUsername.innerText = username;
+            connectButton.innerText = 'Connect - ' + world;
+            connectButton.href = _getConnectUrl(world, token);
+            loginLoader.style.display = 'none';
+
+            if (plan !== null) {
+              planNagger.style.display = 'none';
+            }
+
+            body.classList.add('logged-in');
+          } else {
+            loginForm.style.display = null;
+            loginLoader.style.display = 'none';
+          }
+        })
+        .catch(err => {
+          console.warn(err);
+
+          loginForm.style.display = null;
+          loginLoader.style.display = 'none';
+        });
+    }
+  }
+};
+_tryLogin();
+
 const _getConnectUrl = (worldName, token) => window.location.protocol + '//' + worldName + '.' + window.location.host + '?token=' + token;
+
+loginForm.addEventListener('submit', e => {
+  if (emailInput.value && emailInput.checkValidity() && passwordInput.value && passwordInput.checkValidity()) {
+    loginForm.style.display = 'none';
+    loginLoader.style.display = null;
+
+    const {value: username} = emailInput;
+    const {value: password} = passwordInput;
+
+    emailInput.value = '';
+    passwordInput.value = '';
+
+    _login({
+      username,
+      password,
+    })
+      .then(j => {
+        const {username, world, plan, token} = j;
+
+        const s = JSON.stringify(token);
+        localStorage.setItem('token', s);
+
+        user = {
+          username,
+          world,
+          plan,
+        };
+
+        headerLoginUsername.innerText = username;
+        connectButton.innerText = 'Connect - ' + world;
+        connectButton.href = _getConnectUrl(world, token);
+        loginLoader.style.display = 'none';
+
+        if (plan !== null) {
+          planNagger.style.display = 'none';
+        }
+
+        body.classList.add('logged-in');
+      })
+      .catch(err => {
+        loginForm.style.display = null;
+        loginLoader.style.display = 'none';
+      });
+  }
+
+  e.preventDefault();
+});
 
 logOutButton.addEventListener('click', e => {
   localStorage.removeItem('token');
@@ -984,9 +1044,89 @@ gotoSignUpButton.addEventListener('click', e => {
   window.scrollTo(0, 0);
 });
 
+signUpButton.addEventListener('click', e => {
+  publishableKeyPromise
+    .then(() => {
+      const {value: email} = signUpEmail;
+      const {value: name} = signUpName;
+      const {value: number} = signUpCcn;
+      const {value: cvc} = signUpCvc;
+      const expiry = (() => {
+        const {value} = signUpExpiry;
+        const match = value.match(/^([0-9]+)\-([0-9]+)$/);
+        if (match) {
+          return {
+            month: parseInt(match[2], 10),
+            year: parseInt(match[1], 10),
+          };
+        } else {
+          return {
+            month: 0,
+            year: 0,
+          };
+        }
+      })();
+
+      console.log('submitting', {
+        email,
+        name,
+        number,
+        cvc,
+        exp_month: expiry.month,
+        exp_year: expiry.year,
+      });
+
+      Stripe.card.createToken({
+        name,
+        number,
+        cvc,
+        exp_month: expiry.month,
+        exp_year: expiry.year,
+      }, (status, response) => {
+        if (!response.error) {
+          const {id: stripeToken} = response;
+
+          fetch('/hub/signUp', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: email,
+              stripeToken,
+            }),
+          })
+            .then(res => res.json()
+              .then(j => {
+                console.log(j);
+              })
+            )
+            .catch(err => {
+              console.warn(err);
+            });
+        } else {
+          console.warn(response.error);
+        }
+      });
+    })
+    .catch(err => {
+      console.warn(err);
+    });
+});
+
 signingUpOverlay.addEventListener('click', e => {
   body.classList.remove('signing-up');
 });
+
+const publishableKeyPromise = fetch('/stripe/publishableKey.json')
+  .then(res => res.json()
+    .then(publishableKey => {
+      Stripe.setPublishableKey(publishableKey);
+    })
+  )
+  .catch(err => {
+    console.warn(err);
+  });
   </script>
 </body>
 </html>
