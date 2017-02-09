@@ -3,6 +3,7 @@ export const ASPECT_RATIO = 0.75;
 export const HEIGHT = Math.round(WIDTH / ASPECT_RATIO);
 export const WORLD_WIDTH = 0.4;
 export const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
+export const WORLD_DEPTH = 0.2;
 
 export const SLOT_WIDTH = 400;
 export const SLOT_HEIGHT = 150;

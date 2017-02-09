@@ -831,12 +831,19 @@ class Biolumi {
             controllerRotation,
           }) => {
             const {position, rotation, scale} = matrixObject;
-            const controllerRay = new THREE.Vector3(0, 0, -1)
-              .applyQuaternion(controllerRotation);
-            const controllerLine = new THREE.Line3(
-              controllerPosition.clone(),
-              controllerPosition.clone().add(controllerRay.clone().multiplyScalar(15))
-            );
+            const controllerLine = (() => {
+              if (controllerRotation) {
+                return new THREE.Line3(
+                  controllerPosition.clone(),
+                  controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation).multiplyScalar(15))
+                );
+              } else {
+                return new THREE.Line3(
+                  controllerPosition.clone().add(new THREE.Vector3(0, 0, 1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2)),
+                  controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2))
+                );
+              }
+            })();
 
             const menuBoxTarget = geometryUtils.makeBoxTarget(
               position,
@@ -938,10 +945,6 @@ class Biolumi {
                 }
               })();
               if (anchorBoxTarget) {
-                boxMesh.position.copy(anchorBoxTarget.position);
-                boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                boxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
-
                 const {anchor} = anchorBoxTarget;
                 hoverState.anchor = anchor;
                 hoverState.value = (() => {
@@ -954,21 +957,30 @@ class Biolumi {
                   return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
                 })();
 
-                if (!boxMesh.visible) {
-                  boxMesh.visible = true;
+                if (boxMesh) {
+                  boxMesh.position.copy(anchorBoxTarget.position);
+                  boxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                  boxMesh.scale.set(Math.max(anchorBoxTarget.size.x, 0.001), Math.max(anchorBoxTarget.size.y, 0.001), Math.max(anchorBoxTarget.size.z, 0.001));
+                  if (!boxMesh.visible) {
+                    boxMesh.visible = true;
+                  }
                 }
               } else {
                 hoverState.anchor = null;
                 hoverState.value = 0;
 
-                if (boxMesh.visible) {
-                  boxMesh.visible = false;
+                if (boxMesh) {
+                  if (boxMesh.visible) {
+                    boxMesh.visible = false;
+                  }
                 }
               }
 
-              dotMesh.position.copy(menuIntersectionPoint);
-              if (!dotMesh.visible) {
-                dotMesh.visible = true;
+              if (dotMesh) {
+                dotMesh.position.copy(menuIntersectionPoint);
+                if (!dotMesh.visible) {
+                  dotMesh.visible = true;
+                }
               }
             } else {
               hoverState.intersectionPoint = null;
@@ -976,11 +988,15 @@ class Biolumi {
               hoverState.anchor = null;
               hoverState.value = 0;
 
-              if (boxMesh.visible) {
-                boxMesh.visible = false;
+              if (boxMesh) {
+                if (boxMesh.visible) {
+                  boxMesh.visible = false;
+                }
               }
-              if (dotMesh.visible) {
-                dotMesh.visible = false;
+              if (dotMesh) {
+                if (dotMesh.visible) {
+                  dotMesh.visible = false;
+                }
               }
             }
           };

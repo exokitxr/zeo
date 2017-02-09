@@ -4,6 +4,7 @@ import {
   ASPECT_RATIO,
   WORLD_WIDTH,
   WORLD_HEIGHT,
+  WORLD_DEPTH,
 
   SLOT_WIDTH,
   SLOT_HEIGHT,
@@ -136,9 +137,26 @@ class Viewer {
                             data: new Data(arrayBuffer),
                           }))
                         );
+                    } else if (/^audio\/(?:wav|mpeg|ogg|vorbis|webm|x-flac)$/.test(type)) {
+                      const {id} = file;
+
+                      return new Promise((accept, reject) => {
+                        const audio = document.createElement('audio');
+                        audio.src = '/archae/fs/' + id;
+                        audio.oncanplaythrough = () => {
+                          accept({
+                            mode: 'audio',
+                            type,
+                            data: new Data(audio),
+                          });
+                        };
+                        audio.onerror = err => {
+                          reject(err);
+                        };
+                      });
                     } else {
                       return new Promise((accept, reject) => {
-                        const err = new Error('unsupported file type');
+                        const err = new Error('unsupported file type: ' + JSON.stringify(type));
                         reject(err);
                       });
                     }
@@ -154,6 +172,18 @@ class Viewer {
                     loading: false,
                     cancelRequest: null,
                   };
+
+                  const mediaHoverStates = {
+                    left: biolumi.makeMenuHoverState(),
+                    right: biolumi.makeMenuHoverState(),
+                  };
+
+                  const mediaBoxMeshes = {
+                    left: biolumi.makeMenuBoxMesh(),
+                    right: biolumi.makeMenuBoxMesh(),
+                  };
+                  scene.add(mediaBoxMeshes.left);
+                  scene.add(mediaBoxMeshes.right);
 
                   const _makeBoxMesh = () => {
                     const width = SLOT_WORLD_WIDTH;
@@ -176,11 +206,11 @@ class Viewer {
                   scene.add(boxMeshes.left);
                   scene.add(boxMeshes.right);
 
-                  mediaUi.pushPage(({media: {mode, type, data, loading}}) => {
+                  mediaUi.pushPage(({media: {mode, type, data, loading, paused}}) => {
                     return [
                       {
                         type: 'html',
-                        src: viewerRenderer.getMediaSrc({mode, type, data, loading}),
+                        src: viewerRenderer.getMediaSrc({mode, type, data, loading, paused}),
                         x: 0,
                         y: 0,
                         w: WIDTH,
@@ -247,7 +277,7 @@ class Viewer {
                     object.position.y = 1.2;
                     object.position.z = 1;
 
-                    const planeMesh = (() => {
+                    const mediaMesh = (() => {
                       const width = WORLD_WIDTH;
                       const height = WORLD_HEIGHT;
 
@@ -263,8 +293,72 @@ class Viewer {
 
                       return mesh;
                     })();
-                    object.add(planeMesh);
-                    object.planeMesh = planeMesh;
+                    object.add(mediaMesh);
+                    object.mediaMesh = mediaMesh;
+
+                    /* const controlsMesh = (() => {
+                      const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_WIDTH / 4, 1, 1);
+
+                      const controlsMaterial = (() => {
+                        const texture = (() => {
+                          const canvas = document.createElement('canvas');
+                          canvas.width = videoResolutionWidth;
+                          canvas.height = videoResolutionHeight / 4;
+
+                          const ctx = canvas.getContext('2d');
+                          canvas.update = progress => {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                            ctx.fillStyle = '#000000';
+                            ctx.beginPath();
+                            ctx.moveTo(10, 10);
+                            ctx.lineTo(10, 26);
+                            ctx.lineTo(26, (10 + 26) / 2);
+                            ctx.closePath();
+                            ctx.fill();
+
+                            ctx.fillStyle = '#CCCCCC';
+                            ctx.fillRect(trackbarStart, 17, trackbarWidth, 36 - (17) - (17));
+
+                            ctx.fillStyle = '#FF0000';
+                            ctx.fillRect(trackbarStart + (progress * trackbarWidth) - 1, 10, 2, 36 - (10) - (10));
+
+                            texture.needsUpdate = true;
+                          };
+
+                          const texture = new THREE.Texture(
+                            canvas,
+                            THREE.UVMapping,
+                            THREE.ClampToEdgeWrapping,
+                            THREE.ClampToEdgeWrapping,
+                            THREE.LinearFilter,
+                            THREE.LinearFilter,
+                            THREE.RGBAFormat,
+                            THREE.UnsignedByteType,
+                            16
+                          );
+                          texture.needsUpdate = true;
+                          return texture;
+                        })();
+
+                        const material = new THREE.MeshBasicMaterial({
+                          // color: 0xCCCCCC,
+                          // shininess: 0,
+                          map: texture,
+                          // shading: THREE.FlatShading,
+                          // wireframe: true,
+                          transparent: true,
+                          alphaTest: 0.5,
+                          // depthWrite: false,
+                        });
+                        return material;
+                      })();
+
+                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, [solidMaterial, controlsMaterial]);
+                      return mesh;
+                    })();
+                    object.add(controlsMesh);
+                    object.controlsMesh = controlsMesh; */
 
                     const slotMesh = (() => {
                       const object = new THREE.Object3D();
@@ -437,6 +531,7 @@ class Viewer {
                               mediaState.type = type;
                               mediaState.data = data.get();
                               mediaState.loading = false;
+                              mediaState.paused = true;
 
                               _updatePages();
 
@@ -472,8 +567,8 @@ class Viewer {
                       const uiTime = zeo.getUiTime();
 
                       const {
-                        planeMesh: {
-                          menuMaterial: planeMenuMaterial,
+                        mediaMesh: {
+                          menuMaterial: mediaMenuMaterial,
                         },
                         slotMesh: {
                           placeholderMesh: {
@@ -484,7 +579,7 @@ class Viewer {
 
                       biolumi.updateMenuMaterial({
                         ui: mediaUi,
-                        menuMaterial: planeMenuMaterial,
+                        menuMaterial: mediaMenuMaterial,
                         uiTime,
                       });
                       biolumi.updateMenuMaterial({
@@ -496,26 +591,52 @@ class Viewer {
                     const _updateControllers = () => {
                       const {gamepads} = zeo.getStatus();
 
+                      const {mediaMesh} = mesh;
+                      const mediaMatrixObject = _decomposeObjectMatrixWorld(mediaMesh);
+
                       SIDES.forEach(side => {
                         const gamepad = gamepads[side];
 
                         if (gamepad) {
-                          const {position: controllerPosition} = gamepad;
-                          const {slotMesh} = mesh;
-                          const {position: slotMeshPosition, rotation: slotMeshRotation} = _decomposeObjectMatrixWorld(slotMesh);
+                          const _updateMedia = () => {
+                            const {position: controllerPosition} = gamepad;
+                            const mediaHoverState = mediaHoverStates[side];
+                            const mediaBoxMesh = mediaBoxMeshes[side];
 
-                          const hoverState = hoverStates[side];
-                          const boxMesh = boxMeshes[side];
-                          if (controllerPosition.distanceTo(slotMeshPosition) <= SLOT_GRAB_DISTANCE) {
-                            hoverState.hovered = true;
+                            biolumi.updateAnchors({
+                              matrixObject: mediaMatrixObject,
+                              ui: mediaUi,
+                              hoverState: mediaHoverState,
+                              boxMesh: mediaBoxMesh,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                              controllerPosition,
+                            });
+                          };
+                          const _updateSlot = () => {
+                            const {position: controllerPosition} = gamepad;
+                            const {slotMesh} = mesh;
+                            const {position: slotMeshPosition, rotation: slotMeshRotation} = _decomposeObjectMatrixWorld(slotMesh);
 
-                            boxMesh.position.copy(slotMeshPosition);
-                            boxMesh.quaternion.copy(slotMeshRotation);
-                            boxMesh.visible = true;
-                          } else {
-                            hoverState.hovered = false;
-                            boxMesh.visible = false;
-                          }
+                            const hoverState = hoverStates[side];
+                            const boxMesh = boxMeshes[side];
+                            if (controllerPosition.distanceTo(slotMeshPosition) <= SLOT_GRAB_DISTANCE) {
+                              hoverState.hovered = true;
+
+                              boxMesh.position.copy(slotMeshPosition);
+                              boxMesh.quaternion.copy(slotMeshRotation);
+                              boxMesh.visible = true;
+                            } else {
+                              hoverState.hovered = false;
+                              boxMesh.visible = false;
+                            }
+                          };
+
+                          _updateMedia();
+                          _updateSlot();
                         }
                       });
                     };
@@ -527,6 +648,9 @@ class Viewer {
 
                   this._cleanup = () => {
                     scene.remove(mesh);
+
+                    scene.remove(mediaBoxMeshes.left);
+                    scene.remove(mediaBoxMeshes.right);
 
                     scene.remove(boxMeshes.left);
                     scene.remove(boxMeshes.right);
