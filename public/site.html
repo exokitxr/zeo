@@ -18,9 +18,6 @@
       color: #FFF;
       overflow-x: hidden;
     }
-    .lato {
-      font-family: 'Lato';
-    }
     a {
       color: inherit;
       text-decoration: none;
@@ -35,11 +32,26 @@
     }
     header {
       display: flex;
-      position: relative;
+      position: sticky;
+      top: 0;
       height: 80px;
       padding: 0 30px;
+      background-color: #000;
+      border-bottom: 1px solid #333;
       align-items: center;
-      z-index: 3;
+      z-index: 1;
+    }
+    .header-left, .header-right {
+      display: flex;
+      width: 130px;
+      align-items: center;
+    }
+    .header-left {
+      margin-right: auto;
+    }
+    .header-right {
+      margin-left: auto;
+      justify-content: flex-end;
     }
     .logged-in header {
       background-color: #333;
@@ -148,6 +160,53 @@
     .header-logo-anchor:hover {
       color: #66BB6A;
     }
+    .header-log-in-input, .header-log-in-button {
+      padding: 7px;
+      border-radius: 3px;
+    }
+    .header-log-in-input {
+      border: 1px solid #CCC;
+      background: none;
+      border-right: 0;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      font-family: 'Open Sans';
+      font-weigh: 300;
+      color: #FFF;
+      outline: none;
+    }
+    .header-log-in-input::-webkit-input-placeholder {
+      color: #444;
+    }
+    .header-log-in-button {
+      border: 1px solid #CCC;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      color: #FFF;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .header-log-in-button:hover {
+      background-color: #03A9F4;
+      border-color: transparent;
+      color: #FFF;
+    }
+    .header-log-in-button, .header-sign-up-button {
+      margin-right: 15px;
+    }
+    .header-sign-up-button {
+      height: auto;
+      padding: 7px 15px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      margin-left: auto;
+      background-color: #8BC34A;
+      border-bottom: 0;
+      border-radius: 5px;
+      color: #FFF;
+      font-size: 13px;
+      white-space: nowrap;
+    }
     .header-github-anchor {
       display: flex;
       width: 50px;
@@ -157,7 +216,7 @@
       align-items: center;
     }
     .header-github-anchor:hover {
-      color: #2196F3;
+      color: #03A9F4;
     }
     .header-github-anchor > i {
       display: block;
@@ -214,7 +273,7 @@
       flex-direction: column;
     }
     .container-wrapper > h1 {
-      margin-bottom: 20px;
+      margin: 30px 0;
     }
     .container-footer {
       width: 200%;
@@ -225,87 +284,85 @@
       background-color: #000;
       transform: rotateZ(-10deg);
     }
-    section.demographics {
+    /* section.demographics {
       display: flex;
-      position: relative;
-      // background-color: #333;
-      border-bottom: 1px solid #333;
+      position: sticky;
+      top: 0;
+      background-color: #000;
       justify-content: center;
       align-items: center;
+      z-index: 10;
       box-sizing: border-box;
-    }
-    section.demographics > navbar {
+    } */
+    .demographics > navbar {
       display: flex;
       width: 640px;
-      height: 50px;
+      height: 80px;
       align-items: center;
       font-size: 13px;
       font-weight: 400;a
     }
-    section.demographics > navbar > nav {
+    .demographics > navbar > nav {
       display: flex;
       position: relative;
       height: 100%;
-      margin-right: 20px;
-      padding: 0 10px;
+      padding: 0 20px;
+      padding-top: 15px;
       border-bottom: 5px solid transparent;
       align-items: center;
       box-sizing: border-box;
       cursor: pointer;
     }
-    section.demographics > navbar > nav.selected::after {
+    .demographics > navbar > nav.selected::after {
       position: absolute;
-      bottom: -19px;
+      bottom: -16px;
       left: 50%;
-      margin-left: -15px;
+      margin-left: -11px;
       border-style: solid;
-      border-width: 15px 15px 0 15px;
+      border-width: 12px 12px 0 12px;
       content: '';
     }
-    section.demographics > navbar > nav.red.selected {
+    .demographics > navbar > nav.red.selected {
       color: #E91E63;
       border-bottom-color: #E91E63;
-      cursor: default;
     }
-    section.demographics > navbar > nav.red.selected::after {
+    .demographics > navbar > nav.red.selected::after {
       border-color: #E91E63 transparent transparent transparent;
     }
-    section.demographics > navbar > nav.green:hover {
+    /* .demographics > navbar > nav.green:hover {
       color: #66BB6A;
+    } */
+    .demographics > navbar > nav.green.selected {
+      color: #66BB6A;
+      border-bottom-color: #66BB6A;
     }
-    section.demographics > navbar > nav.purple:hover {
+    .demographics > navbar > nav.green.selected::after {
+      border-color: #66BB6A transparent transparent transparent;
+    }
+    /* .demographics > navbar > nav.purple:hover {
       color: #7E57C2;
+    } */
+    .demographics > navbar > nav.purple.selected {
+      color: #7E57C2;
+      border-bottom-color: #7E57C2;
     }
-    section.demographics > navbar > nav.sign-up {
-      height: auto;
-      padding: 7px 15px;
-      margin: 10px 0;
-      margin-left: auto;
-      background-color: #8BC34A;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-      border-radius: 5px;
-      color: #FFF;
-      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    .demographics > navbar > nav.purple.selected::after {
+      border-color: #7E57C2 transparent transparent transparent;
     }
-    section.demographics > navbar > nav > i {
-      margin-right: 5px;
+    .demographics > navbar > nav > i {
+      margin-right: 10px;
     }
     section.details {
       display: flex;
       width: 100%;
-      margin-top: -80px;
-      padding-top: 80px;
       justify-content: flex-start;
       align-items: center;
       flex-direction: column;
       box-sizing: border-box;
     }
-    .details-wrapper {
+    .details-card {
       display: flex;
-      width: 640px;
-      margin-top: 20px;
-      background-color: #333;
-      border-radius: 5px;
+      width: 640px; 
     }
     .details-text {
       display: flex;
@@ -323,12 +380,17 @@
     .details-text > i.red {
       color: #E91E63;
     }
+    .details-text > i.green {
+      color: #66BB6A;
+    }
+    .details-text > i.purple {
+      color: #7E57C2;
+    }
     .details-text > p {
       padding: 20px;
       color: #FFF;
-      font-size: 13px;
-      font-weight: 400;
-      line-height: 1.4;
+      font-size: 14px;
+      line-height: 1.6;
     }
     .videos-wrapper {
       width: 270px;
@@ -358,10 +420,16 @@
     }
     .grid-item-wrap {
       display: flex;
+      position: relative;;
       justify-content: center;
+      background-image: linear-gradient(to left, #000000 , #434343);
+      border-bottom: 1px solid #333;
+    }
+    .grid-item-wrap:nth-child(1) {
+      border-top: 1px solid #333;
     }
     .grid-item-wrap:nth-child(even) {
-      background-color: #333;
+       background-image: linear-gradient(to right, #000000 , #434343);
     }
     .grid-item {
       display: flex;
@@ -370,6 +438,10 @@
       flex-direction: column;
       align-items: center;
       box-sizing: border-box;
+    }
+    .grid-item > .screenshot {
+      width: 640px;
+      height: 200px;
     }
     .grid-item > .icon {
       display: flex;
@@ -544,7 +616,7 @@
     .login-form > h2 {
       margin-bottom: 10px;
     }
-    input[type=text], input[type=email], input[type=password], input[type=month] {
+    /* input[type=text], input[type=email], input[type=password], input[type=month] {
       margin-bottom: 20px;
       padding: 10px;
       background-color: #AAA;
@@ -562,7 +634,7 @@
     input[type=text]:focus, input[type=email]:focus, input[type=password]:focus, input[type=month]:focus {
       background-color: #FFF;
       box-shadow: none;
-    }
+    } */
     .buttons {
       display: flex;
     }
@@ -745,8 +817,33 @@
 </head>
 <body>
   <header id=header>
-    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
-    <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
+    <div class=header-left>
+      <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
+    </div>
+    <div class=demographics>
+      <navbar>
+        <nav class="red selected" id=demographics-button-1>
+          <i class="octicon octicon-eye"></i>
+          <div class=title>Explorers</div>
+        </nav>
+        <nav class=green id=demographics-button-2>
+          <i class="octicon octicon-beaker"></i>
+          <div class=title>Developers</div>
+        </nav>
+        <nav class=purple id=demographics-button-3>
+          <i class="octicon octicon-heart"></i>
+          <div class=title>FAQ</div>
+        </nav>
+      </navbar>
+    </div>
+    <div class=header-right>
+      <input type=text class=header-log-in-input placeholder="your@email.com">
+      <a class=header-log-in-button>Log in</a>
+      <a class=header-sign-up-button id=sign-up-button>
+        <div class=title>Sign up</div>
+      </a>
+      <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
+    </div>
     <div class=header-login-bar>
       <h2>Welcome back, <span id=header-login-username>username</span></h2>
       <div class=plan-nagger id=plan-nagger>Demo account - <b>Get Gold</b></div>
@@ -777,40 +874,123 @@
       <h1>Do fake things with real people in WebVR</h1>
     </div>
   </section>
-  <section class=demographics>
-    <navbar>
-      <nav class="red selected">
-        <i class="octicon octicon-eye"></i>
-        <div class=title>Explorers</div>
-      </nav>
-      <nav class=green>
-        <i class="octicon octicon-beaker"></i>
-        <div class=title>Developers</div>
-      </nav>
-      <nav class=purple>
-        <i class="octicon octicon-heart"></i>
-        <div class=title>FAQ</div>
-      </nav>
-      <nav class=sign-up>
-        <div class=title>Sign up</div>
-      </nav>
-    </navbar>
-  </section>
   <section class=details>
-    <div class=details-wrapper>
-      <div class=details-text>
-        <i class="octicon octicon-eye red"></i>
-        <p>
-          <b>ZEO VR</b> is NPM-powered multiplayer VR that runs in your browser. Everything is a Javascript plugin. It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>.<br><br>
-          Share <b>Experience Requests</b> with other explorers to earn <b class=lato>&#437;</b><b>ollars</b>.
-        </p>
+    <div class=details-wrapper id=demographics-details-1>
+      <div class=details-card>
+        <div class=grid>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-1">
+              <img src="http://placehold.it/1280x300" class=screenshot>
+              <h4>In-browser VR worlds.</h4>
+              <p>
+                You know Javascript. Now meet Javascript face-to-face.<br/>
+                Publish to NPM and experience your creations in your headset.<br/>
+                The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
+              </p>
+            </div>
+          </div>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-2">
+              <i class="icon octicon octicon-circuit-board"></i>
+              <h4>Persistent multiverse tech.</h4>
+              <p>
+                World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
+                We did the hard work so you don't have to.<br/>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
+              </p>
+            </div>
+          </div>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-3">
+              <i class="icon octicon octicon-mark-github"></i>
+              <h4>Open source. Or hosted.</h4>
+              <p>
+                Run your own server or join us on the public Zeo Multiverse.<br/>
+                Test it out with just your browser.<br/>
+                And if you want us to host your world, we have a plan for that.<br/>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class=videos-wrapper>
-        <img src="https://placehold.it/270x202" class=main-video />
-        <div class=videos-list>
-          <img src="https://placehold.it/80x60" class=video />
-          <img src="https://placehold.it/80x60" class=video />
-          <img src="https://placehold.it/80x60" class=video />
+      <!-- <div class=details-card>
+        <div class=details-text>
+          <i class="octicon octicon-eye red"></i>
+          <h1>NPM-powered multiplayer VR that runs in your browser</h1>
+          <p>
+            Everything is a Javascript plugin. It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>.<br><br>
+            Share <b>Experience Requests</b> with other explorers to earn <b>Karma</b>.
+          </p>
+        </div>
+        <div class=videos-wrapper>
+          <img src="https://placehold.it/270x202" class=main-video />
+          <div class=videos-list>
+            <img src="https://placehold.it/80x60" class=video />
+            <img src="https://placehold.it/80x60" class=video />
+            <img src="https://placehold.it/80x60" class=video />
+          </div>
+        </div>
+      </div> -->
+    </div>
+    <div class=details-wrapper style="display: none;" id=demographics-details-2>
+      <div class=details-card>
+        <div class=grid>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-1">
+              <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
+              <h4>Powered by npm.</h4>
+              <p>
+                You know Javascript. Now meet Javascript face-to-face.<br/>
+                Publish to NPM and experience your creations in your headset.<br/>
+                The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
+              </p>
+            </div>
+          </div>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-2">
+              <i class="icon octicon octicon-circuit-board"></i>
+              <h4>Persistent multiverse tech.</h4>
+              <p>
+                World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
+                We did the hard work so you don't have to.<br/>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
+              </p>
+            </div>
+          </div>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-3">
+              <i class="icon octicon octicon-mark-github"></i>
+              <h4>Open source. Or hosted.</h4>
+              <p>
+                Run your own server or join us on the public Zeo Multiverse.<br/>
+                Test it out with just your browser.<br/>
+                And if you want us to host your world, we have a plan for that.<br/>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class=details-wrapper style="display: none;" id=demographics-details-3>
+      <div class=details-card>
+        <div class=details-text>
+          <i class="octicon octicon-heart purple"></i>
+          <p>
+            <b>ZEO VR</b> is NPM-powered multiplayer VR that runs in your browser. Everything is a Javascript plugin. It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>.<br><br>
+            Share <b>Experience Requests</b> with other explorers to earn <b>Karma</b>.
+          </p>
+        </div>
+        <div class=videos-wrapper>
+          <img src="https://placehold.it/270x202" class=main-video />
+          <div class=videos-list>
+            <img src="https://placehold.it/80x60" class=video />
+            <img src="https://placehold.it/80x60" class=video />
+            <img src="https://placehold.it/80x60" class=video />
+          </div>
         </div>
       </div>
     </div>
@@ -908,6 +1088,34 @@
   <script src="https://js.stripe.com/v2/"></script>
   <script>
 const $ = s => document.querySelectorAll(s);
+
+const demographicsButtons = [
+  $('#demographics-button-1')[0],
+  $('#demographics-button-2')[0],
+  $('#demographics-button-3')[0],
+];
+window.demographicsButtons = demographicsButtons;
+const demographicsDetails = [
+  $('#demographics-details-1')[0],
+  $('#demographics-details-2')[0],
+  $('#demographics-details-3')[0],
+];
+window.demographicsDetails = demographicsDetails;
+demographicsButtons.forEach((demographicsButton, index) => {
+  demographicsButton.addEventListener('click', () => {
+    demographicsButtons.forEach((demographicsButton, index2) => {
+      if (index2 === index) {
+        demographicsButton.classList.add('selected');
+      } else {
+        demographicsButton.classList.remove('selected');
+      }
+    });
+
+    demographicsDetails.forEach((demographicsDetail, index2) => {
+      demographicsDetail.style.display = index2 === index ? null : 'none';
+    });
+  });
+});
 
 const body = $('body')[0];
 const header = $('#header')[0];
