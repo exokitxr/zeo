@@ -274,6 +274,7 @@
     }
     .container-wrapper > h1 {
       margin: 30px 0;
+      text-align: center;
     }
     .container-footer {
       width: 200%;
@@ -360,9 +361,12 @@
       flex-direction: column;
       box-sizing: border-box;
     }
+    .details-wrapper {
+      width: 100%;
+    }
     .details-card {
       display: flex;
-      width: 640px; 
+      width: 100%;
     }
     .details-text {
       display: flex;
@@ -420,20 +424,21 @@
     }
     .grid-item-wrap {
       display: flex;
-      position: relative;;
+      position: relative;
+      width: 100%;
       justify-content: center;
-      background-image: linear-gradient(to left, #000000 , #434343);
-      border-bottom: 1px solid #333;
+      background-image: linear-gradient(to left, #000000 , #222);
+      // border-bottom: 1px solid #333;
     }
     .grid-item-wrap:nth-child(1) {
       border-top: 1px solid #333;
     }
     .grid-item-wrap:nth-child(even) {
-       background-image: linear-gradient(to right, #000000 , #434343);
+       background-image: linear-gradient(to right, #000000 , #222);
     }
     .grid-item {
       display: flex;
-      width: 400px;
+      width: 640px;
       padding: 30px 0;
       flex-direction: column;
       align-items: center;
@@ -441,7 +446,7 @@
     }
     .grid-item > .screenshot {
       width: 640px;
-      height: 200px;
+      height: 150px;
     }
     .grid-item > .icon {
       display: flex;
@@ -584,7 +589,7 @@
       line-height: 1.4;
     }
     h1 {
-      font-size: 46px;
+      font-size: 26px;
     }
     h2 {
       font-size: 18px;
@@ -837,19 +842,19 @@
       </navbar>
     </div>
     <div class=header-right>
-      <input type=text class=header-log-in-input placeholder="your@email.com">
+      <input type=text class=header-log-in-input placeholder="your@email.com" />
       <a class=header-log-in-button>Log in</a>
       <a class=header-sign-up-button id=sign-up-button>
         <div class=title>Sign up</div>
       </a>
       <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
     </div>
-    <div class=header-login-bar>
+    <!-- <div class=header-login-bar>
       <h2>Welcome back, <span id=header-login-username>username</span></h2>
       <div class=plan-nagger id=plan-nagger>Demo account - <b>Get Gold</b></div>
       <a href="#" id=connect-button class=header-button>Connect</a>
       <input type=button value="Log out" id=log-out-button class="header-button sub">
-    </div>
+    </div> -->
   </header>
   <div class=header-details>
     <div class=details-wrap>
@@ -871,7 +876,7 @@
   <div class=signing-up-overlay id=signing-up-overlay></div>
   <section class=container>
     <div class=container-wrapper>
-      <h1>Do fake things with real people in WebVR</h1>
+      <h1>Do fake things with real people in<br/>Javascript-powered WebVR worlds</h1>
     </div>
   </section>
   <section class=details>
@@ -883,7 +888,7 @@
               <img src="http://placehold.it/1280x300" class=screenshot>
               <h4>In-browser VR worlds.</h4>
               <p>
-                You know Javascript. Now meet Javascript face-to-face.<br/>
+                Build a world for yourself by dragging and dropping plugins.<br/>
                 Publish to NPM and experience your creations in your headset.<br/>
                 The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
                 <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
@@ -1197,4 +1202,4 @@ signingUpOverlay.addEventListener('click', e => {
 });
   </script>
 </body>
-</html>
+</html/>
