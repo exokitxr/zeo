@@ -44,7 +44,7 @@
       height: 80px;
       padding: 0 30px;
       background-color: #000;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid #222;
       align-items: center;
       z-index: 1;
     }
@@ -419,7 +419,7 @@
       width: 640px;
       margin: 20px auto;
       padding: 20px;
-      border: 1px solid #808080;
+      border: 1px solid #222;
       border-radius: 5px;
       box-sizing: border-box;
     }
@@ -445,11 +445,17 @@
       flex-grow: 1;
       align-items: flex-start;
     }
+    .sign-up-form .buttons {
+      width: 100%;
+      margin-bottom: 20px;
+    }
     .sign-up-form .buttons > .button {
       position: relative;
+      width: 50%;
       color: #808080;
       background-color: #000;
       border-radius: 100px;
+      box-sizing: border-box;
     }
     .sign-up-form .buttons > .button:first-child {
       border-top-right-radius: 0;
@@ -482,8 +488,53 @@
       font-size: 12px;
       font-style: italic;
     }
-    .sign-up-form .sign-up-form-submit-button {
+    .account-details {
+      width: 100%;
+      padding: 0 20px;
+      background-color: #222;
+      font-size: 12px;
+      font-weight: 400;
+      box-sizing: border-box;
     }
+    .price {
+      margin: 0 -20px;
+      margin-bottom: 10px;
+      padding: 0 20px;
+      background-color: #333;
+      font-size: 24px;
+      line-height: 2;
+      text-align: center;
+    }
+    .price > .sub {
+      margin-left: 5px;
+      font-size: 12px;
+    }
+    .account-details ul {
+      list-style-type: none;
+      margin: 10px 0;
+      padding: 0;
+    }
+    .account-details ul > li {
+      display: inline-block;
+      margin-bottom: 1px;
+      padding: 0 10px;
+      background-color: #333;
+      color: #CCC;
+      border-radius: 100px;
+      line-height: 1.8;
+      font-weight: 600;
+    }
+    .account-details .icon {
+      position: relative;
+      top: 2px;
+      margin-right: 3px;
+    }
+    /* .account-details ul > li:nth-child(odd) {
+      background-color: #333;
+    }
+    .account-details ul > li:nth-child(even) {
+      background-color: #000;
+    } */
     .faq {
       width: 640px;
       margin: 0 auto;
@@ -885,6 +936,7 @@
       display: flex;
       height: 100px;
       padding: 0 30px;
+      border-top: 1px solid #222;
       font-size: 13px;
       justify-content: center;
       align-items: center;
@@ -1034,7 +1086,7 @@
                 Conjure planets, paint a picture, or DJ your favorite track; there's a plugin for that.<br/>
                 Do it together: multiplayer comes in the box. And it all runs in your browser, headset or not.<br/>
               </p>
-              <a href="https://github.com/modulesio/zeo" class=grid-button>More about Zeo tech</a>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>More about Zeo VR tech</a>
             </div>
           </div>
           <div class=grid-item-wrap>
@@ -1159,8 +1211,20 @@
               </div>
             </div>
             <div class=faq-card-item>
+              <div class=q>What are the features of Zeo VR?</div>
+              <div class=a>XXX</div>
+            </div>
+            <div class=faq-card-item>
               <div class=q>Which NPM modules work with Zeo?</div>
               <div class=a>Any public NPM module with the <code>zeo-mod</code> keyword in its <code>package.json</code> <code>keywords</code> array will show up in Zeo VR. You can browse all such modules with <a href="https://npms.io/search?q=keywords%3Azeo-mod" class=link>npms</a>.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What's the tech behind Zeo VR?</div>
+              <div class=a>XXX</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Who made Zeo VR?</div>
+              <div class=a>XXX</div>
             </div>
           </div>
           <h1 class=faq-header>Open Source</h1>
@@ -1286,11 +1350,21 @@
             <div class="button blue selected" id=demo-account-button>Demo account</div>
             <div class="button red" id=admin-account-button>Admin account</div>
           </div>
+          <div class=account-details>
+            <div class=price>$20<span class=sub>/mo</span></div>
+            <div>An admin account lets you:</div>
+            <ul>
+              <li><i class="icon octicon octicon-credit-card"></i> Display a custom avatar</li>
+              <li><i class="icon octicon octicon-device-camera"></i> Save your <a href="#" class=link>Adventure</a> history</li>
+              <li><i class="icon octicon octicon-heart"></i> Save your <a href="#" class=link>Karma</a> balance</li>
+              <li><i class="icon octicon octicon-ruby"></i> Keep your inventory</li>
+            </ul>
+          </div>
         </div>
       </form>
     </div>
   </section>
-  <div class=hero-video>
+  <!-- <div class=hero-video>
     <div class=video-shadow></div>
     <video autoplay loop>
       <source src="https://cdn.rawgit.com/modulesio/zeo-data/fa848ef03608c5079237565c8389afafaf5e93ba/video/demo.webm" type="video/webm">
@@ -1375,7 +1449,7 @@
       </div>
       <div class=pricing-details></div>
     </div>
-  </section>
+  </section> -->
   <footer>
     <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></aside>
     <aside class=footer-right>&copy; 2017 <a href="mailto:a@modules.io">Avaer Kazmer</a></aside>
@@ -1434,8 +1508,6 @@ const signUpCcn = $('#sign-up-ccn')[0];
 const signUpCvc = $('#sign-up-cvc')[0];
 const signUpExpiry = $('#sign-up-expiry')[0];
 const signUpButton = $('#sign-up-button')[0];
-const gotoSignUpButton = $('#goto-sign-up-button')[0];
-const signingUpOverlay = $('#signing-up-overlay')[0];
 
 let user = null;
 
@@ -1471,19 +1543,6 @@ const _jsonParse = s => {
 
 const _getConnectUrl = (worldName, token) => window.location.protocol + '//' + worldName + '.' + window.location.host + '?token=' + token;
 
-gotoSignUpButton.addEventListener('click', e => {
-  body.classList.add('signing-up');
-
-  if (user) {
-    signUpEmail.value = user.username;
-  }
-
-  window.scrollTo(0, 0);
-});
-
-signingUpOverlay.addEventListener('click', e => {
-  body.classList.remove('signing-up');
-});
   </script>
 </body>
 </html/>
