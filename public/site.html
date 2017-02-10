@@ -162,10 +162,10 @@
     }
     .header-log-in-input, .header-log-in-button {
       padding: 7px;
+      border: 1px solid #808080;
       border-radius: 3px;
     }
     .header-log-in-input {
-      border: 1px solid #CCC;
       background: none;
       border-right: 0;
       border-top-right-radius: 0;
@@ -175,11 +175,14 @@
       color: #FFF;
       outline: none;
     }
+    .header-log-in-input:focus {
+      border-color: #FFF;
+    }
     .header-log-in-input::-webkit-input-placeholder {
       color: #444;
     }
     .header-log-in-button {
-      border: 1px solid #CCC;
+      border: 1px solid #FFF;
       border-top-left-radius: 0;
       border-bottom-left-radius: 0;
       color: #FFF;
@@ -202,7 +205,7 @@
       margin-left: auto;
       background-color: #8BC34A;
       border-bottom: 0;
-      border-radius: 5px;
+      border-radius: 3px;
       color: #FFF;
       font-size: 13px;
       white-space: nowrap;
@@ -450,7 +453,11 @@
       width: 640px;
       height: 150px;
     }
-    .grid-item > .icon {
+    .grid-item .icons {
+      display: flex;
+      align-items: center;
+    }
+    .grid-item .icon {
       display: flex;
       width: 200px;
       height: 120px;
@@ -458,12 +465,12 @@
       justify-content: center;
       align-items: center;
     }
-    .grid-item-1 > .icon {
+    .grid-item-1 .icon {
     }
-    .grid-item-2 > .icon {
+    .grid-item-2 .icon {
       color: #2196F3;
     }
-    .grid-item-3 > .icon {
+    .grid-item-3 .icon {
       color: #4CAF50;
     }
     .grid-item > h4 {
@@ -475,12 +482,15 @@
       font-size: 14px;
       line-height: 1.6;
     }
-    .grid-item > p > .grid-button {
+    .grid-item > .grid-button {
       display: inline-block;
       margin: 20px 0;
+      margin-right: auto;
       padding: 5px 20px;
       border: 1px solid #FFF;
       border-radius: 100px;
+      font-size: 14px;
+      line-height: 2;
     }
     section.pricing {
       display: flex;
@@ -831,7 +841,7 @@
       <navbar>
         <nav class="red selected" id=demographics-button-1>
           <i class="octicon octicon-eye"></i>
-          <div class=title>Explorers</div>
+          <div class=title>Adventurers</div>
         </nav>
         <nav class=green id=demographics-button-2>
           <i class="octicon octicon-beaker"></i>
@@ -883,38 +893,48 @@
         <div class=grid>
           <div class=grid-item-wrap>
             <div class="grid-item grid-item-1">
-              <img src="http://placehold.it/1280x300" class=screenshot>
+              <img src="http://placehold.it/1280x300" class=screenshot />
               <h4>In-browser VR worlds.</h4>
               <p>
                 Build a whole new world by dragging and dropping plugins -- literally.<br/>
                 Conjure planets, paint a picture, or DJ your favorite track; there's a plugin for that.<br/>
                 Do it together: multiplayer comes in the box. And it all runs in your browser, headset or not.<br/>
-                <a href="https://github.com/modulesio/zeo" class=grid-button>More about Zeo tech</a>
               </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>More about Zeo tech</a>
             </div>
           </div>
           <div class=grid-item-wrap>
             <div class="grid-item grid-item-2">
               <i class="icon octicon octicon-telescope"></i>
-              <h4>Looking for adventure? So are we.</h4>
+              <h4>Looking for adventure? We need adventurers!</h4>
               <p>
-              Zeo Adventures are bite-sized experiences posted by your fellow VRnauts.<br>
+                Zeo Adventures are bite-sized experiences posted by your fellow VRnauts.<br>
                 Complete Adventures to earn Karma, which you can use to create your own adventures!<br>
                 Here are some adventures that you missed out on:<br>
-                <a href="https://github.com/modulesio/zeo" class=grid-button>Learn about Zeo Adventures</a>
               </p>
+              <div class=adventures>
+                <div class=adventure>
+                  <div class=adventure-header></div>
+                  <div class=adventure-body></div>
+                </div>
+              </div>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>Learn about Zeo Adventures</a>
             </div>
           </div>
           <div class=grid-item-wrap>
             <div class="grid-item grid-item-3">
-              <i class="icon octicon octicon-mark-github"></i>
-              <h4>Open source. Or hosted.</h4>
+              <div class=icons>
+                <i class="icon octicon octicon-cloud-upload"></i>
+                <i class="icon octicon octicon-device-desktop"></i>
+                <img src="/assets/icons/google-cardboard-green.svg" class="icon" />
+              </div>
+              <h4>We'll hold the fort. Virtually.</h4>
               <p>
-                Run your own server or join us on the public Zeo Multiverse.<br/>
-                Test it out with just your browser.<br/>
-                And if you want us to host your world, we have a plan for that.<br/>
-                <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
+                Join us on Zeo Online, the hosted version of Zeo.<br/>
+                Jack in with any WebVR-enabled web browser, headset or not. Do it now. It's free.<br/>
+                When you're ready to keep your stuff, upgrade to an admin account.<br/>
               </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>Sign up for Zeo Online</a>
             </div>
           </div>
         </div>
@@ -950,8 +970,8 @@
                 You know Javascript. Now meet Javascript face-to-face.<br/>
                 Publish to NPM and experience your creations in your headset.<br/>
                 The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
-                <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
               </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
             </div>
           </div>
           <div class=grid-item-wrap>
@@ -961,8 +981,8 @@
               <p>
                 World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
                 We did the hard work so you don't have to.<br/>
-                <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
               </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
             </div>
           </div>
           <div class=grid-item-wrap>
@@ -973,8 +993,8 @@
                 Run your own server or join us on the public Zeo Multiverse.<br/>
                 Test it out with just your browser.<br/>
                 And if you want us to host your world, we have a plan for that.<br/>
-                <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
               </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
             </div>
           </div>
         </div>
@@ -1018,8 +1038,8 @@
             You know Javascript. Now meet Javascript face-to-face.<br/>
             Publish to NPM and experience your creations in your headset.<br/>
             The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
-            <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
           </p>
+          <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
         </div>
       </div>
       <div class=grid-item-wrap>
@@ -1029,8 +1049,8 @@
           <p>
             World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
             We did the hard work so you don't have to.<br/>
-            <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
           </p>
+          <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
         </div>
       </div>
       <div class=grid-item-wrap>
@@ -1041,8 +1061,8 @@
             Run your own server or join us on the public Zeo Multiverse.<br/>
             Test it out with just your browser.<br/>
             And if you want us to host your world, we have a plan for that.<br/>
-            <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
           </p>
+          <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
         </div>
       </div>
     </div>
