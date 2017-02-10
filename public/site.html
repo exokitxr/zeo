@@ -171,7 +171,7 @@
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
       font-family: 'Open Sans';
-      font-weigh: 300;
+      font-weight: 300;
       color: #FFF;
       outline: none;
     }
@@ -203,12 +203,15 @@
       margin-top: 10px;
       margin-bottom: 10px;
       margin-left: auto;
-      background-color: #8BC34A;
+      background-color: #4CAF50;
       border-bottom: 0;
       border-radius: 3px;
       color: #FFF;
       font-size: 13px;
       white-space: nowrap;
+    }
+    .header-sign-up-button:hover {
+      background-color: #388E3C;
     }
     .header-github-anchor {
       display: flex;
@@ -403,6 +406,64 @@
       color: #FFF;
       font-size: 14px;
       line-height: 1.6;
+    }
+    .sign-up-form {
+      display: flex;
+      width: 640px;
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #808080;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    .sign-up-form input[type=email], .sign-up-form input[type=password] {
+      width: 230px;
+      margin-bottom: 15px;
+      padding: 7px;
+      background-color: transparent;
+      border: 1px solid #808080;
+      border-radius: 3px;
+      font-family: 'Open Sans';
+      font-weight: 300;
+      color: #FFF;
+      outline: none;
+    }
+    .sign-up-form input[type=email]:focus, .sign-up-form input[type=password]:focus {
+      border-color: #FFF;
+    }
+    .form-left, .form-right {
+      display: flex;
+      width: 50%;
+      flex-direction: column;
+      flex-grow: 1;
+      align-items: flex-start;
+    }
+    .sign-up-form .buttons > .button {
+      position: relative;
+      color: #808080;
+      background-color: #000;
+      border-radius: 100px;
+    }
+    .sign-up-form .buttons > .button:first-child {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .sign-up-form .buttons > .button:last-child {
+      margin-left: -1px;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+    .sign-up-form .buttons > .button:hover, .sign-up-form .buttons > .button.selected {
+      z-index: 1;
+    }
+    .sign-up-form .buttons > .button:hover {
+      color: #CCC;
+    }
+    .sign-up-form .buttons > .button.blue.selected {
+      color: #03A9F4;
+    }
+    .sign-up-form .buttons > .button.red.selected {
+      color: #E91E63;
     }
     .videos-wrapper {
       width: 270px;
@@ -615,7 +676,7 @@
       font-size: 20px;
       line-height: 1.6;
     }
-    form, .login-loader {
+    .login-loader {
       display: flex;
       width: 350px;
       height: 230px;
@@ -656,9 +717,8 @@
       display: flex;
     }
     .button {
-      display: flex;
-      width: 100%;
-      padding: 8px;
+      display: inline-flex;
+      padding: 7px 20px;
       background-color: transparent;
       border: 1px solid;
       border-radius: 100px;
@@ -683,9 +743,6 @@
     }
     .button.sub:active {
       color: #AD1457;
-    }
-    .button + .button {
-      margin-left: 20px;
     }
     ul {
       margin: 0 -20px;
@@ -868,7 +925,7 @@
       <input type=button value="Log out" id=log-out-button class="header-button sub">
     </div> -->
   </header>
-  <div class=header-details>
+  <!-- <div class=header-details>
     <div class=details-wrap>
       <h4>Sign up for Gold Account</h4>
       <div class=line>
@@ -884,7 +941,7 @@
       </div>
       <input type=submit value='Sign up' id=sign-up-button class=header-button>
     </div>
-  </div>
+  </div> -->
   <div class=signing-up-overlay id=signing-up-overlay></div>
   <section class=details>
     <div class=details-wrapper id=demographics-details-1>
@@ -893,7 +950,7 @@
         <div class=grid>
           <div class=grid-item-wrap>
             <div class="grid-item grid-item-1">
-              <img src="http://placehold.it/1280x300" class=screenshot />
+              <img src="https://placehold.it/1280x300" class=screenshot />
               <h4>In-browser VR worlds.</h4>
               <p>
                 Build a whole new world by dragging and dropping plugins -- literally.<br/>
@@ -930,11 +987,11 @@
               </div>
               <h4>We'll hold the fort. Virtually.</h4>
               <p>
-                Join us on Zeo Online, the hosted version of Zeo.<br/>
+                Join us on Zeo Hub, the hosted version of Zeo.<br/>
                 Jack in with any WebVR-enabled web browser, headset or not. Do it now. It's free.<br/>
                 When you're ready to keep your stuff, upgrade to an admin account.<br/>
               </p>
-              <a href="https://github.com/modulesio/zeo" class=grid-button>Sign up for Zeo Online</a>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>Sign up for Zeo Hub</a>
             </div>
           </div>
         </div>
@@ -1018,6 +1075,22 @@
           </div>
         </div>
       </div>
+    </div>
+    <div class=details-wrapper style="display: none;" id=sign-up-details>
+      <h1>Sign up for Zeo Hub</h1>
+      <form class=sign-up-form>
+        <div class=form-left>
+          <input type=email placeholder="your@email.com" />
+          <input type=password placeholder="Choose a password" />
+          <div class=button>Sign up</div>
+        </div>
+        <div class=form-right>
+          <div class=buttons>
+            <div class="button blue selected" id=demo-account-button>Demo account</div>
+            <div class="button red" id=admin-account-button>Admin account</div>
+          </div>
+        </div>
+      </form>
     </div>
   </section>
   <div class=hero-video>
@@ -1118,14 +1191,14 @@ const demographicsButtons = [
   $('#demographics-button-1')[0],
   $('#demographics-button-2')[0],
   $('#demographics-button-3')[0],
+  $('#sign-up-button')[0],
 ];
-window.demographicsButtons = demographicsButtons;
 const demographicsDetails = [
   $('#demographics-details-1')[0],
   $('#demographics-details-2')[0],
   $('#demographics-details-3')[0],
+  $('#sign-up-details')[0],
 ];
-window.demographicsDetails = demographicsDetails;
 demographicsButtons.forEach((demographicsButton, index) => {
   demographicsButton.addEventListener('click', () => {
     demographicsButtons.forEach((demographicsButton, index2) => {
@@ -1142,12 +1215,22 @@ demographicsButtons.forEach((demographicsButton, index) => {
   });
 });
 
+const demoAccountButton = $('#demo-account-button')[0];
+const adminAccountButton = $('#admin-account-button')[0];
+
+demoAccountButton.addEventListener('click', () => {
+  demoAccountButton.classList.add('selected');
+  adminAccountButton.classList.remove('selected');
+});
+adminAccountButton.addEventListener('click', () => {
+  demoAccountButton.classList.remove('selected');
+  adminAccountButton.classList.add('selected');
+});
+
 const body = $('body')[0];
 const header = $('#header')[0];
 const headerLoginUsername = $('#header-login-username')[0];
-const planNagger = $('#plan-nagger')[0];
 const connectButton = $('#connect-button')[0];
-const logOutButton = $('#log-out-button')[0];
 const signUpEmail = $('#sign-up-email')[0];
 const signUpName = $('#sign-up-name')[0];
 const signUpCcn = $('#sign-up-ccn')[0];
@@ -1190,22 +1273,6 @@ const _jsonParse = s => {
 };
 
 const _getConnectUrl = (worldName, token) => window.location.protocol + '//' + worldName + '.' + window.location.host + '?token=' + token;
-
-logOutButton.addEventListener('click', e => {
-  localStorage.removeItem('token');
-
-  loginForm.style.display = null;
-  body.classList.remove('logged-in');
-  body.classList.remove('signing-up');
-});
-
-planNagger.addEventListener('click', e => {
-  body.classList.add('signing-up');
-
-  if (user) {
-    signUpEmail.value = user.username;
-  }
-});
 
 gotoSignUpButton.addEventListener('click', e => {
   body.classList.add('signing-up');
