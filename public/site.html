@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Lato:300,400,600" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,600" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Droid+Sans+Mono:400" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/font/octicons.min.css" rel="stylesheet">
   <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -459,11 +458,23 @@
     .sign-up-form .buttons > .button:hover {
       color: #CCC;
     }
+    .sign-up-form .buttons > .button:hover:active {
+      color: #AAA;
+    }
     .sign-up-form .buttons > .button.blue.selected {
       color: #03A9F4;
     }
     .sign-up-form .buttons > .button.red.selected {
       color: #E91E63;
+    }
+    .sign-up-form .sub {
+      margin-top: 10px;
+      margin-bottom: 15px;
+      color: #808080;
+      font-size: 12px;
+      font-style: italic;
+    }
+    .sign-up-form .sign-up-form-submit-button {
     }
     .videos-wrapper {
       width: 270px;
@@ -672,9 +683,8 @@
       font-size: 40px;
     }
     h4 {
-      margin-bottom: 40px;
+      margin-bottom: 15px;
       font-size: 20px;
-      line-height: 1.6;
     }
     .login-loader {
       display: flex;
@@ -1080,11 +1090,14 @@
       <h1>Sign up for Zeo Hub</h1>
       <form class=sign-up-form>
         <div class=form-left>
+          <h4>Your info</h4>
           <input type=email placeholder="your@email.com" />
           <input type=password placeholder="Choose a password" />
-          <div class=button>Sign up</div>
+          <p class=sub>By signing up you agree to the <a href="#" class=link>Terms of Use</a>.</p>
+          <div class="sign-up-form-submit-button button">Sign up</div>
         </div>
         <div class=form-right>
+          <h4>Choose account type</h4>
           <div class=buttons>
             <div class="button blue selected" id=demo-account-button>Demo account</div>
             <div class="button red" id=admin-account-button>Admin account</div>
