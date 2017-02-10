@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,600" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,700,800" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Droid+Sans+Mono:400" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/font/octicons.min.css" rel="stylesheet">
   <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -27,7 +27,15 @@
       text-decoration: underline;
     }
     .link:hover {
-      color: rgba(255, 255, 255, 0.5);
+      color: #2196F3;
+    }
+    code {
+      display: inline-block;
+      padding: 0 5px;
+      font-family: 'Droid Sans Mono';
+      color: #CCC;
+      background-color: #000;
+      border-radius: 3px;
     }
     header {
       display: flex;
@@ -475,6 +483,59 @@
       font-style: italic;
     }
     .sign-up-form .sign-up-form-submit-button {
+    }
+    .faq {
+      width: 640px;
+      margin: 0 auto;
+      margin-top: 20px;
+    }
+    .toc {
+      position: sticky;
+      top: 101px;
+      width: 160px;
+      height: 120px;
+    }
+    .toc-item {
+      display: block;
+      padding-left: 10px;
+      border-left: 3px solid transparent;
+      font-size: 12px;
+      line-height: 2;
+      font-weight: 400;
+    }
+    .toc-item.selected {
+      border-left-color: #673AB7;
+      font-weight: 700;
+    }
+    .faq-content {
+      width: 640px;
+      margin-top: -120px;
+      padding-left: 160px;
+      box-sizing: border-box;
+    }
+    .faq-header {
+      margin-bottom: 10px;
+      font-size: 24px;
+      font-weight: 400;
+    }
+    .faq-card {
+    }
+    .faq-card-item {
+      margin: 0 -20px;
+      margin-bottom: 3px;
+      padding: 10px 20px;
+      background-color: #111;
+      border-left: 3px solid #673AB7;
+      font-size: 12px;
+      line-height: 1.6;
+      box-sizing: border-box;
+    }
+    .faq-card-item > .q {
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    .faq-card-item > .a {
+      font-weight: 400;
     }
     .videos-wrapper {
       width: 270px;
@@ -1068,20 +1129,25 @@
       </div>
     </div>
     <div class=details-wrapper style="display: none;" id=demographics-details-3>
-      <div class=details-card>
-        <div class=details-text>
-          <i class="octicon octicon-heart purple"></i>
-          <p>
-            <b>ZEO VR</b> is NPM-powered multiplayer VR that runs in your browser. Everything is a Javascript plugin. It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>.<br><br>
-            Share <b>Experience Requests</b> with other explorers to earn <b>Karma</b>.
-          </p>
+      <div class=faq>
+        <div class=toc>
+          <a class="toc-item selected">Zeo VR</a>
+          <a class=toc-item>Open Source</a>
+          <a class=toc-item>Zeo Hub</a>
+          <a class=toc-item>Terms of Service</a>
+          <a class=toc-item>Contact</a>
         </div>
-        <div class=videos-wrapper>
-          <img src="https://placehold.it/270x202" class=main-video />
-          <div class=videos-list>
-            <img src="https://placehold.it/80x60" class=video />
-            <img src="https://placehold.it/80x60" class=video />
-            <img src="https://placehold.it/80x60" class=video />
+        <div class=faq-content>
+          <h1 class=faq-header>Zeo VR</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>What is Zeo VR?</div>
+              <div class=a>Zeo VR is an open source project that lets you build WebVR worlds out of NPM plugins with your browser. The company behind it, <i>Zeo VR Inc.</i>, supports the project with <a href="#" class=link>Zeo Hub</a> subscriptions.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Which NPM modules work with Zeo?</div>
+              <div class=a>Any public NPM module with the <code>zeo-mod</code> keyword in its <code>package.json</code> <code>keywords</code> array will show up in Zeo VR. You can browse all such modules with <a href="https://npms.io/search?q=keywords%3Azeo-mod" class=link>npms</a>.</div>
+            </div>
           </div>
         </div>
       </div>
