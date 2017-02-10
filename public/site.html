@@ -446,59 +446,62 @@
       align-items: flex-start;
     }
     .sign-up-form .buttons {
+      position: relative;
       width: 100%;
-      margin-bottom: 20px;
     }
     .sign-up-form .buttons > .button {
       position: relative;
       width: 50%;
+      height: 32px;
       color: #808080;
-      background-color: #000;
-      border-radius: 100px;
+      background-color: #333;
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 400;
+      border: 0;
+      border-radius: 0;
       box-sizing: border-box;
     }
-    .sign-up-form .buttons > .button:first-child {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
+    .sign-up-form .buttons > .button.left {
+      border-top-left-radius: 10px;
     }
-    .sign-up-form .buttons > .button:last-child {
-      margin-left: -1px;
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
+    .sign-up-form .buttons > .button.right {
+      position: absolute;
+      top: -32px;
+      right: 0;
+      border-top-right-radius: 10px;
     }
     .sign-up-form .buttons > .button:hover, .sign-up-form .buttons > .button.selected {
       z-index: 1;
     }
-    .sign-up-form .buttons > .button:hover {
-      color: #CCC;
+    .sign-up-form .buttons > .button.blue:hover, .sign-up-form .buttons > .button.blue.selected {
+      background-color: #03A9F4;
     }
-    .sign-up-form .buttons > .button:hover:active {
-      color: #AAA;
+    /* .sign-up-form .buttons > .button.red.selected {
+      background-color: #E91E63;
+    } */
+    .admin-account-button {
+      cursor: pointer;
     }
-    .sign-up-form .buttons > .button.blue.selected {
-      color: #03A9F4;
-    }
-    .sign-up-form .buttons > .button.red.selected {
-      color: #E91E63;
+    .admin-account-button:hover .button, .admin-account-button:hover .price, .admin-account-button:hover .sub,
+    .admin-account-button.selected .button, .admin-account-button.selected .price, .admin-account-button.selected .sub {
+      background-color: #673AB7;
+      color: #FFF;
     }
     .sign-up-form .sub {
       margin-top: 10px;
       margin-bottom: 15px;
-      color: #808080;
+      color: rgba(255, 255, 255, 0.5);
       font-size: 12px;
       font-style: italic;
     }
     .account-details {
       width: 100%;
-      padding: 0 20px;
-      background-color: #222;
       font-size: 12px;
       font-weight: 400;
       box-sizing: border-box;
     }
     .price {
-      margin: 0 -20px;
-      margin-bottom: 10px;
       padding: 0 20px;
       background-color: #333;
       font-size: 24px;
@@ -508,6 +511,15 @@
     .price > .sub {
       margin-left: 5px;
       font-size: 12px;
+    }
+    .account-details > .account-details-content {
+      background-color: #222;
+      padding: 10px 20px;
+    }
+    .account-details > .account-details-content .buttons {
+      background-color: #222;
+      padding: 0 20px;
+      padding-top: 10px;
     }
     .account-details ul {
       list-style-type: none;
@@ -1100,7 +1112,7 @@
               </p>
               <div class=adventures>
                 <div class=adventure>
-                  <div class=adventure-header></div>
+                  <div class=adventure-header>XXX</div>
                   <div class=adventure-body></div>
                 </div>
               </div>
@@ -1176,7 +1188,7 @@
               <i class="icon octicon octicon-mark-github"></i>
               <h4>Open source. Or hosted.</h4>
               <p>
-                Run your own server or join us on the public Zeo Multiverse.<br/>
+                Run your own server or join us on the public Zeo Hub.<br/>
                 Test it out with just your browser.<br/>
                 And if you want us to host your world, we have a plan for that.<br/>
               </p>
@@ -1206,8 +1218,8 @@
               <div class=q>What do I need to run Zeo VR?</div>
               <div class=a>
                 The only hard requirement is a web browser that supports WebGL -- there is full mouse + keyboard support. WebGL is supported every modern web browser.<br/>
-                Of course, to get the full experience, you'll want a desktop headset (HTC Vive or Oculus Rift/Touch) with a browser that supports WebVR. Currently that means the <a href="https://webvr.rocks/chromium" class=link>Chrome Experimental</a> or <a href="https://webvr.rocks/firefox" class=link>Firefox Nightly</a>, but WebVR will soon make it into the regular builds of Chrome and Firefox.</br>
-                Mobile WebVR (Chrome for Android) support is in the works. It actually already works, but there's bugs, controller support, and optimizations to do.
+                Of course, to get the full experience, you'll want a desktop headset (HTC Vive or Oculus Rift/Touch) with a browser that supports WebVR. Currently that means the <a href="https://webvr.rocks/chromium" class=link>Chrome Experimental</a> or <a href="https://webvr.rocks/firefox" class=link>Firefox Nightly</a>, but the regular versions of Chrome and Firefox will soon ship with WebVR support out of the box.</br>
+                Mobile WebVR (Chrome for Android) support is in the works. It works, but there's bugs, controller support, and optimization work to do.
               </div>
             </div>
             <div class=faq-card-item>
@@ -1234,7 +1246,7 @@
               <div class=a>Yup, Zeo VR is released under the <a href="" class=link>MIT license</a>. You can find the source <a href="https://github.com/modulesio/zeo" class=link>on Github</a>.</div>
             </div>
             <div class=faq-card-item>
-              <div class=q>Are Zeo modules on NPM open source?</div>
+              <div class=q>Are Zeo NPM modules open source?</div>
               <div class=a>All of the Zeo modules we make at Zeo VR Inc. are open source (MIT licensed). While Zeo VR will install any module published to NPM with the <code>zeo-mod</code> keyword, we have no control over how those are licensed.</div>
             </div>
           </div>
@@ -1347,112 +1359,32 @@
         <div class=form-right>
           <h4>Choose account type</h4>
           <div class=buttons>
-            <div class="button blue selected" id=demo-account-button>Demo account</div>
-            <div class="button red" id=admin-account-button>Admin account</div>
+            <div class="button blue left selected" id=demo-account-button>Demo account</div>
           </div>
           <div class=account-details>
-            <div class=price>$20<span class=sub>/mo</span></div>
-            <div>An admin account lets you:</div>
-            <ul>
-              <li><i class="icon octicon octicon-credit-card"></i> Display a custom avatar</li>
-              <li><i class="icon octicon octicon-device-camera"></i> Save your <a href="#" class=link>Adventure</a> history</li>
-              <li><i class="icon octicon octicon-heart"></i> Save your <a href="#" class=link>Karma</a> balance</li>
-              <li><i class="icon octicon octicon-ruby"></i> Keep your inventory</li>
-            </ul>
+            <div class=admin-account-button id=admin-account-button>
+              <div class=buttons>
+                <div class="button right red">Admin account</div>
+              </div>
+              <div class=price>$20<span class=sub>/mo</span></div>
+            </div>
+            <div class=account-details-content>
+              <div>An admin account lets you:</div>
+              <ul>
+                <li><i class="icon octicon octicon-credit-card"></i> Display a custom avatar</li>
+                <li><i class="icon octicon octicon-device-camera"></i> Save your <a href="#" class=link>Adventure</a> history</li>
+                <li><i class="icon octicon octicon-heart"></i> Save your <a href="#" class=link>Karma</a> balance</li>
+                <li><i class="icon octicon octicon-ruby"></i> Keep your inventory</li>
+              </ul>
+            </div>
           </div>
         </div>
       </form>
     </div>
   </section>
-  <!-- <div class=hero-video>
-    <div class=video-shadow></div>
-    <video autoplay loop>
-      <source src="https://cdn.rawgit.com/modulesio/zeo-data/fa848ef03608c5079237565c8389afafaf5e93ba/video/demo.webm" type="video/webm">
-    </video>
-  </div>
-  <div class=container-footer>
-  </div>
-  <section class=list>
-    <div class=grid>
-      <div class=grid-item-wrap>
-        <div class="grid-item grid-item-1">
-          <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
-          <h4>Powered by npm.</h4>
-          <p>
-            You know Javascript. Now meet Javascript face-to-face.<br/>
-            Publish to NPM and experience your creations in your headset.<br/>
-            The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
-          </p>
-          <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
-        </div>
-      </div>
-      <div class=grid-item-wrap>
-        <div class="grid-item grid-item-2">
-          <i class="icon octicon octicon-circuit-board"></i>
-          <h4>Persistent multiverse tech.</h4>
-          <p>
-            World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
-            We did the hard work so you don't have to.<br/>
-          </p>
-          <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
-        </div>
-      </div>
-      <div class=grid-item-wrap>
-        <div class="grid-item grid-item-3">
-          <i class="icon octicon octicon-mark-github"></i>
-          <h4>Open source. Or hosted.</h4>
-          <p>
-            Run your own server or join us on the public Zeo Multiverse.<br/>
-            Test it out with just your browser.<br/>
-            And if you want us to host your world, we have a plan for that.<br/>
-          </p>
-          <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
-        </div>
-      </div>
-    </div>
-  </section>
-  <section class=pricing>
-    <div class=pricing-wrap>
-      <h3>Pricing</h3>
-      <h4>Try Zeo Multiverse free.<br/>When you're ready to keep your work, get a Gold Account.</h4>
-      <div class=pricing-grid>
-        <div class=pricing-item>
-          <div class=pricing-heading>
-            <div class=plan>Demo</div>
-          </div>
-          <div class=pricing-point><i class="fa fa-minus"></i> Public worlds only</div>
-          <div class=pricing-point><i class="fa fa-minus"></i> Autokicked after 30 minutes :(</div>
-          <div class=pricing-point><i class="fa fa-minus"></i> Lose your module inventory</div>
-          <div class=pricing-point><i class="fa fa-minus"></i> You might get kicked</div>
-          <div class=pricing-footer>
-            <div class=dollars>&nbsp;</div>
-            <div class=per-month>&nbsp;</div>
-          </div>
-          <div class=pricing-button>Try it</div>
-        </div>
-        <div class="pricing-item highlight">
-          <div class=pricing-heading>
-            <div class=plan>Gold</div>
-          </div>
-          <div class=pricing-point><i class="fa fa-lock"></i> Private world just for you</div>
-          <div class=pricing-point><i class="fa fa-hdd-o"></i> Reserved server access</div>
-          <div class=pricing-point><i class="fa fa-shopping-basket"></i> Keep your module inventory!</div>
-          <div class=pricing-point><i class="fa fa-user-times"></i> Kick any demo user :)</div>
-          <div class=pricing-point><i class="fa fa-id-card-o"></i> Custom logo for your avatar</div>
-          <div class=pricing-point><i class="fa fa-question"></i> Hidden secrets</div>
-          <div class=pricing-footer>
-            <div class=dollars>$7</div>
-            <div class=per-month>/mo</div>
-          </div>
-          <a class="pricing-button highlight" id=goto-sign-up-button>Sign up</a>
-        </div>
-      </div>
-      <div class=pricing-details></div>
-    </div>
-  </section> -->
   <footer>
-    <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></aside>
-    <aside class=footer-right>&copy; 2017 <a href="mailto:a@modules.io">Avaer Kazmer</a></aside>
+    <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:hello@zeovr.io">Contact</a></aside>
+    <aside class=footer-right>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></aside>
   </footer>
   <script src="https://js.stripe.com/v2/"></script>
   <script>
