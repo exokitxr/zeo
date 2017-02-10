@@ -514,15 +514,21 @@
       box-sizing: border-box;
     }
     .faq-header {
-      margin-bottom: 10px;
-      font-size: 24px;
+      margin: 0 -20px;
+      padding: 0 20px;
+      margin-bottom: 1px;
+      background-color: #111;
+      border-left: 3px solid #673AB7;
+      font-size: 20px;
+      line-height: 2;
       font-weight: 400;
     }
     .faq-card {
+      margin-bottom: 30px;
     }
     .faq-card-item {
       margin: 0 -20px;
-      margin-bottom: 3px;
+      margin-bottom: 1px;
       padding: 10px 20px;
       background-color: #111;
       border-left: 3px solid #673AB7;
@@ -815,7 +821,7 @@
     .button.sub:active {
       color: #AD1457;
     }
-    ul {
+    /* ul {
       margin: 0 -20px;
       padding: 0 20px;
       list-style: none;
@@ -850,7 +856,7 @@
     li:hover {
       background-color: #666;
       cursor: pointer;
-    }
+    } */
     .hero-video {
       display: flex;
       margin-top: 1000px;
@@ -1147,6 +1153,110 @@
             <div class=faq-card-item>
               <div class=q>Which NPM modules work with Zeo?</div>
               <div class=a>Any public NPM module with the <code>zeo-mod</code> keyword in its <code>package.json</code> <code>keywords</code> array will show up in Zeo VR. You can browse all such modules with <a href="https://npms.io/search?q=keywords%3Azeo-mod" class=link>npms</a>.</div>
+            </div>
+          </div>
+          <h1 class=faq-header>Open Source</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>Is Zeo VR open source?</div>
+              <div class=a>Yup, Zeo VR is released under the <a href="" class=link>MIT license</a>. You can find the source <a href="https://github.com/modulesio/zeo" class=link>on Github</a>.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Are Zeo modules on NPM open source?</div>
+              <div class=a>All of the Zeo modules we make at Zeo VR Inc. are open source (MIT licensed). While Zeo VR will install any module published to NPM with the <code>zeo-mod</code> keyword, we have no control over how those are licensed.</div>
+            </div>
+          </div>
+          <h1 class=faq-header>Zeo Hub</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>What is Zeo Hub?</div>
+              <div class=a>Zeo Hub is the hosted version of Zeo VR. It's a distributed network of Zeo VR worlds managed by Zeo VR, Inc.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>How much does Zeo Hub cost?</div>
+              <div class=a>You can try Zeo Hub for free, but your Avatar, Adventures, Inventory, and Karma will not be saved unless you upgrade to an Admin account. Admin accounts are $20 per month.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What are Zeo Adventures?</div>
+              <div class=a>Zeo Adventures are ideas for activities posted by your fellow VRnauts. By participating in Adventures you earn Karma. Zeo Adventures are time-limited to 15 minutes. At the end of an adventure each VRnaut rates the experience.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What are some examples of Zeo Adventures?</div>
+              <div class=a>
+                <ul>
+                  <li>Scavenger hunt around the city</li>
+                  <li>Build a log cabin</li>
+                  <li>3D paint charades</li>
+                  <li>DJ booth dance party</li>
+                  <li>Phychoanalyse my picture</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>What is Zeo Karma?</div>
+              <div class=a>Zeo Karma are tokens of good will earned when you particupate in adventures with other VRnauts. You can use Karma to post your own Zeo Adventures.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Can I buy or sell Zeo Karma?</div>
+              <div class=a>No, you cannot buy or sell Karma. This is prohibited in our <a href="#">Terms of UsService</a>. New accounts start with no Karma. The only way to get Karma is to participate in Zeo Adventures.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Do I need Zeo Hub to use Zeo VR?</div>
+              <div class=a>Nope, you can host Zeo VR yourself: it's open source. If you do this you'll be running completely seperate from Zeo Hub.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What version of Zeo VR does Zeo Hub run?</div>
+              <div class=a>Zeo Hub always runs the latest Zeo VR release automatically.</div>
+            </div>
+          </div>
+          <h1 class=faq-header>Terms of Service</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>Scope</div>
+              <div class=a>These terms apply to your usage of Zeo Hub, the hosted version of Zeo VR. If you host your own instance of Zeo VR, these terms to not apply to you.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Allowed Conduct</div>
+              <div class=a>Zeo Hub is a public space, so pleas conduct yourself as if you were in public. If something would get you in trouble if you did it in public, do not do it in Zeo VR.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Prohibited Conduct</div>
+              <div class=a>
+                This is a non-exhaustive list of things you are not allowed to do on Zeo Hub. These are grounds for immediate termination of your account.
+                <ul>
+                  <li>Usage by any persons under the age of 13. By using Zeo Hub you certify that you are at least 13 years of age.</li>
+                  <li>Sexual content or behavior, including pornography, sexual language, and/or sexual advances.</li>
+                  <li>Gambling or betting of any kind.</li>
+                  <li>Commercial services, such as selling things, recruiting, or posting advertisements. Using Zeo Hub as a showcase for your VR work is fine.</li>
+                  <li>Accessing Zeo Hub through any interface other than that provided by Zeo VR Inc., without our express written permission. This includes running "bots" or any sort of automated process.</li>
+                  <li>Copyright infringement. It's our responsibility to ensure you have rights to all content you upload. We abide by the <a href="https://en.wikipedia.org/wiki/Digital_Millennium_Copyright_Act">DMCA</a>.</li>
+                </ul>
+              </div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Privacy Policy</div>
+              <div class=a>We collect your email address and other account info in order to provide you with the Zeo Hub service and contact you regarding your account. We collect your IP address to fight spam and aggregate statistics. We collect and log your multiplayer VR sessions to provide, debug, and administrate Zeo Hub services, including enforcing these Terms of Service. We may occasonally email you about Zeo VR news; you can opt out of these emails by clicking the included unsubscribe link. We do not share your info with third parties, except as required by law, such as a subpoena. If we must share your information, we will endeavor to contact you beforehand or as soon as the law allows us to do so.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Refund Policy</div>
+              <div class=a>We only want happy customers <code>&lt;3</code>.<br/>We give 100% refunds for Admin account subscriptions, as long as you cancel before the end of your monthly billing period. <a href="mailto:support@zeovr.io" class=link>Email us</a> to cancel.</div>
+            </div>
+          </div>
+          <h1 class=faq-header>Contact</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>Zeo Hub Support</div>
+              <div class=a><a href="mailto:support@zeovr.io" class=link>support@zeovr.io</a></div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Zeo VR Issues</div>
+              <div class=a><a href="https://github.com/modulesio/zeo/issues" class=link>https://github.com/modulesio/zeo/issues</a></div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Just wanna say Hi</div>
+              <div class=a><a href="mailto:support@zeovr.io" class=link>hello@zeovr.io</a></div>
             </div>
           </div>
         </div>
