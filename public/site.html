@@ -464,23 +464,17 @@
       box-sizing: border-box;
     }
     .sign-up-form .buttons > .button.left {
-      border-top-left-radius: 10px;
+      border-top-left-radius: 5px;
     }
     .sign-up-form .buttons > .button.right {
       position: absolute;
       top: -32px;
       right: 0;
-      border-top-right-radius: 10px;
-    }
-    .sign-up-form .buttons > .button:hover, .sign-up-form .buttons > .button.selected {
-      z-index: 1;
+      border-top-right-radius: 5px;
     }
     .sign-up-form .buttons > .button.blue:hover, .sign-up-form .buttons > .button.blue.selected {
       background-color: #03A9F4;
     }
-    /* .sign-up-form .buttons > .button.red.selected {
-      background-color: #E91E63;
-    } */
     .admin-account-button {
       cursor: pointer;
     }
@@ -1416,6 +1410,8 @@ demographicsButtons.forEach((demographicsButton, index) => {
     demographicsDetails.forEach((demographicsDetail, index2) => {
       demographicsDetail.style.display = index2 === index ? null : 'none';
     });
+
+    window.scrollTo(0, 0);
   });
 });
 
