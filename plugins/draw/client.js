@@ -71,7 +71,18 @@ class Draw {
                 const imageData = (() => {
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
-                  return ctx.createImageData(WIDTH, HEIGHT);
+                  const imageData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
+                  const {data: imageDataData} = imageData;
+
+                  for (let i = 0; i < (WIDTH * HEIGHT); i++) {
+                    const baseIndex = i * 4;
+                    imageDataData[baseIndex + 0] = 255;
+                    imageDataData[baseIndex + 1] = 255;
+                    imageDataData[baseIndex + 2] = 255;
+                    imageDataData[baseIndex + 3] = 255;
+                  }
+
+                  return imageData;
                 })();
                 const texture = new THREE.Texture(
                   imageData,
