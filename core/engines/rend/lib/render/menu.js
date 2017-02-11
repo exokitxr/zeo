@@ -817,29 +817,29 @@ const getNavbarSrc = ({tab}) => {
   const focusedContent = label => `\
     <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #FFF transparent transparent;"></div>
     <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #FFF;"></div>
-    <div style="display: flex; position: relative; width: 150px; background-color: #FFF; justify-content: center; align-items: center;">${label}</div>
+    <div style="display: flex; position: relative; width: 120px; background-color: #FFF; justify-content: center; align-items: center;">${label}</div>
   `;
   const unfocusedContent = label => `\
     <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #EEE transparent transparent;"></div>
     <div style="position: absolute; top: 0; right: 0; border-width: 50px 0 0 25px; border-style: solid; border-color: transparent transparent transparent #EEE;"></div>
-    <div style="display: flex; position: relative; width: 150px; background-color: #EEE; justify-content: center; align-items: center;">${label}</div>
+    <div style="display: flex; position: relative; width: 120px; background-color: #EEE; justify-content: center; align-items: center;">${label}</div>
   `;
 
   return `\
     <div style="display: flex; width: 1024px; height: 50px; background-color: #CCC;">
-      <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; ${tab === 'status' ? 'z-index: 1;' : ''}" onclick="navbar:status">
+      <a style="display: flex; position: relative; width: 170px; height: 100%; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; ${tab === 'status' ? 'z-index: 1;' : ''}" onclick="navbar:status">
         ${tab === 'status' ? focusedContent('Status') : unfocusedContent('Status')}
       </a>
-      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'multiverse' ? 'z-index: 1;' : ''}" onclick="navbar:multiverse">
+      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'multiverse' ? 'z-index: 1;' : ''}" onclick="navbar:multiverse">
         ${tab === 'multiverse' ? focusedContent('Multiverse') : unfocusedContent('Multiverse')}
       </a>
-      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'world' ? 'z-index: 1;' : ''}" onclick="navbar:world">
+      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'world' ? 'z-index: 1;' : ''}" onclick="navbar:world">
         ${tab === 'world' ? focusedContent('World') : unfocusedContent('World')}
       </a>
-      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'inventory' ? 'z-index: 1;' : ''}" onclick="navbar:inventory">
+      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'inventory' ? 'z-index: 1;' : ''}" onclick="navbar:inventory">
         ${tab === 'inventory' ? focusedContent('Inventory') : unfocusedContent('Inventory')}
       </a>
-      <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'options' ? 'z-index: 1;' : ''}" onclick="navbar:options">
+      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'options' ? 'z-index: 1;' : ''}" onclick="navbar:options">
         ${tab === 'options' ? focusedContent('Options') : unfocusedContent('Options')}
       </a>
     </div>
