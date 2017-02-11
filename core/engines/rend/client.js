@@ -524,15 +524,17 @@ class Rend {
                       const onclick = (anchor && anchor.onclick) || '';
 
                       let match;
-                      if (match = onclick.match(/^navbar:(status|multiverse|world|inventory|options)$/)) {
+                      if (match = onclick.match(/^navbar:(status|world|adventures|tools|inventory|worlds|options)$/)) {
                         const newTab = match[1];
 
                         const _getTabMesh = tab => {
                           switch (tab) {
                             case 'status': return menuMesh.planeMesh;
-                            case 'multiverse': return menuMesh.universeMesh;
                             case 'world': return menuMesh.worldMesh;
+                            case 'adventures': return menuMesh.worldMesh;
+                            case 'tools': return menuMesh.worldMesh;
                             case 'inventory': return menuMesh.inventoryMesh;
+                            case 'worlds': return menuMesh.universeMesh;
                             case 'options': return menuMesh.configMesh;
                             default: return null;
                           }
