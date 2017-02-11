@@ -1,3 +1,12 @@
+const karmaIcon = require('../img/karma');
+const karmaIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaIcon);
+
+const landIconImg = require('../img/land-icon');
+const landIconImgSrc = 'data:image/svg+xml;base64,' + btoa(landIconImg);
+
+const landImg = require('../img/land');
+const landImgSrc = 'data:image/svg+xml;base64,' + btoa(landImg);
+
 const menuUtils = require('../utils/menu');
 
 const makeRenderer = ({creatureUtils}) => {
@@ -748,6 +757,31 @@ const getFilesButtonsSrc = (selectedName, clipboardPath, prefix) => `\
 </div>
 `;
 
+const getStatusSrc = ({status: {username, accountType, karma, adventureRequests, adventureResponses}}) => {
+  return `\
+    <div style="padding: 30px;">
+      <div style="display: flex; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
+        <div style="display: inline-flex; margin-right: auto; padding: 5px 20px; background-color: #EEE; border-radius: 100px; justify-content: center; align-items: center;">
+          <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="40" height="40" style="margin-right: 10px; image-rendering: pixelated;" />
+          <span>${username}</span>
+        </div>
+        <div style="display: flex; padding: 5px 0; justify-content: center; align-items: center;">
+          <img src="${karmaIconSrc}" width="40" height="40" style="margin-right: 10px;">
+          <div>${karma}</div>
+        </div>
+      </div>
+      <div style="display: flex; font-size: 30px; align-items: center;">
+        <img src="${landIconImgSrc}" width="40" height="40" style="margin-right: 10px;">
+        <div>${adventureRequests} Adventures pending</div>
+      </div>
+      <div style="display: flex; font-size: 30px; align-items: center;">
+        <img src="${landImgSrc}" width="40" height="40" style="margin-right: 10px;">
+        <div>${adventureResponses} Adventures active</div>
+      </div>
+    </div>
+  `;
+};
+
 const getNavbarSrc = ({tab}) => {
   const focusedContent = label => `\
     <div style="position: absolute; top: 0; left: 0; border-width: 50px 25px 0 0; border-style: solid; border-color: transparent #FFF transparent transparent;"></div>
@@ -814,6 +848,7 @@ return {
   getWorldsButtonsSrc,
   getGetButtonSrc,
   getFilesButtonsSrc,
+  getStatusSrc,
   getNavbarSrc,
 };
 

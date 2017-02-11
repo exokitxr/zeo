@@ -1,5 +1,5 @@
 const timeago = require('time-ago')();
-const KARMA_ICON = require('../img/karma-white.js');
+const KARMA_ICON = require('../img/karma-white');
 const KARMA_ICON_SRC = 'data:image/svg+xml;base64,' + btoa(KARMA_ICON);
 
 const makeRenderer = ({creatureUtils}) => {

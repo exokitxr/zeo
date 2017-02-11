@@ -21,10 +21,15 @@ import {
   KEYBOARD_WORLD_HEIGHT,
 } from './lib/constants/keyboard';
 import menuUtils from './lib/utils/menu';
-import keyboardImg from './lib/images/keyboard';
+import keyboardImg from './lib/img/keyboard';
+import landImg from './lib/img/land';
+import landIconImg from './lib/img/land-icon';
+const landImgSrc = 'data:image/svg+xml;base64,' + btoa(landImg);
+const landIconImgSrc = 'data:image/svg+xml;base64,' + btoa(landIconImg);
 import menuRender from './lib/render/menu';
 
 const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImg);
+
 
 const SIDES = ['left', 'right'];
 
@@ -126,12 +131,18 @@ class Rend {
           loaded: false,
           loading: false,
         };
+        const statusState = {
+          username: 'avaer',
+          accountType: 'admin',
+          karma: 1875,
+          adventureRequests: 3,
+          adventureResponses: 7,
+        };
         const navbarState = {
           tab: 'readme',
         };
 
         // api functions
-        const _requestMainReadme = () => fetch('/archae/rend/readme').then(res => res.text());
         const _requestUiTimer = () => new Promise((accept, reject) => {
           const startTime = Date.now();
           let uiTime = 0;
@@ -192,11 +203,9 @@ class Rend {
             }));
 
             return Promise.all([
-              _requestMainReadme(),
               _requestUiTimer(),
               _requestUis(),
             ]).then(([
-              mainReadme,
               localUiTimer,
               {
                 menuUi,
@@ -220,10 +229,11 @@ class Rend {
                   window.removeEventListener('unload', unload);
                 });
 
-                menuUi.pushPage([
+                menuUi.pushPage(({status}) => [
                   {
                     type: 'html',
-                    src: mainReadme,
+                    // src: mainReadme,
+                    src: menuRenderer.getStatusSrc({status}),
                     x: 0,
                     y: 0,
                     w: WIDTH,
@@ -231,23 +241,24 @@ class Rend {
                     scroll: true,
                   },
                 ], {
-                  type: 'main',
+                  type: 'home',
+                  state: {
+                    status: statusState,
+                  },
                   immediate: true,
                 });
 
-                navbarUi.pushPage(({navbar: {tab}}) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: menuRenderer.getNavbarSrc({tab}),
-                      x: 0,
-                      y: 0,
-                      w: NAVBAR_WIDTH,
-                      h: NAVBAR_HEIGHT,
-                      scroll: true,
-                    },
-                  ];
-                }, {
+                navbarUi.pushPage(({navbar: {tab}}) => ([
+                  {
+                    type: 'html',
+                    src: menuRenderer.getNavbarSrc({tab}),
+                    x: 0,
+                    y: 0,
+                    w: NAVBAR_WIDTH,
+                    h: NAVBAR_HEIGHT,
+                    scroll: true,
+                  },
+                ]), {
                   type: 'navbar',
                   state: {
                     navbar: navbarState,
@@ -471,7 +482,11 @@ class Rend {
                       const {type} = page;
 
                       let match;
-                      if (type === 'elementAttributeFiles') {
+                      if (type === 'home') {
+                        page.update({
+                          status: statusState,
+                        }, pend);
+                      } else if (type === 'elementAttributeFiles') {
                         page.update({
                           elementAttributeFiles: elementAttributeFilesState,
                           focus: focusState,
