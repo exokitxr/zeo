@@ -3,12 +3,11 @@ const mod = require('mod-loop');
 const WIDTH = 512;
 const ASPECT_RATIO = 1;
 const HEIGHT = Math.round(WIDTH / ASPECT_RATIO);
-const WORLD_WIDTH = 0.5;
+const WORLD_WIDTH = 0.3;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 
 const PAPER_DRAW_DISTANCE = 0.2;
-const BRUSH_SIZE = 40;
-const BRUSH_WIDTH = 5;
+const BRUSH_SIZE = 8;
 
 const SIDES = ['left', 'right'];
 
@@ -96,14 +95,9 @@ class Draw {
               const {data: imageDataData} = imageData;
               for (let i = 0; i < (width * height); i++) {
                 const baseIndex = i * 4;
-                const alpha = (imageDataData[baseIndex + 3] > 0) ?
-                  255 - ((imageDataData[baseIndex + 0] + imageDataData[baseIndex + 1] + imageDataData[baseIndex + 2]) / 3)
-                :
-                  0;
-                imageDataData[baseIndex + 0] = imageDataData[baseIndex + 0] * color.r;
-                imageDataData[baseIndex + 1] = imageDataData[baseIndex + 1] * color.g;
-                imageDataData[baseIndex + 2] = imageDataData[baseIndex + 3] * color.b;
-                // imageDataData[baseIndex + 3] = alpha;
+                imageDataData[baseIndex + 0] = (255 - imageDataData[baseIndex + 0]) * color.r;
+                imageDataData[baseIndex + 1] = (255 - imageDataData[baseIndex + 1]) * color.g;
+                imageDataData[baseIndex + 2] = (255 - imageDataData[baseIndex + 2]) * color.b;
               }
               ctx.putImageData(imageData, 0, 0);
 
@@ -134,7 +128,7 @@ class Draw {
 
         return _requestImage('/archae/draw/brushes/brush.png')
           .then(brushImg => {
-            brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_WIDTH);
+            brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_SIZE);
 
             if (live) {
               class DrawElement extends HTMLElement {
@@ -150,7 +144,7 @@ class Draw {
                     }, */
                     color: {
                       type: 'color',
-                      value: '#F44336'
+                      value: '#2196F3'
                     },
                   };
                 }
@@ -158,7 +152,7 @@ class Draw {
                 createdCallback() {
                   const mesh = (() => {
                     const object = new THREE.Object3D();
-                    object.position.y = 1.5;
+                    object.position.y = 1.2;
 
                     const planeMesh = (() => {
                       const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
@@ -240,7 +234,7 @@ class Draw {
                   this.mesh = mesh;
                   scene.add(mesh);
 
-                  const color = new THREE.Color(0xF44336);
+                  const color = new THREE.Color(0x000000);
                   this.color = color;
 
                   const _makeDrawState = () => ({
@@ -274,16 +268,10 @@ class Draw {
                   });
                   const _triggerup = e => {
                     const {side} = e;
+                    const drawState = drawStates[side];
+                    const {drawing} = drawState;
 
-                    const {gamepads} = zeo.getStatus();
-                    const gamepad = gamepads[side];
-                    const {position: controllerPosition} = gamepad;
-                    const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
-                    const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
-                    const planePoint = planeTarget.projectPoint(controllerPosition);
-
-                    if (planePoint) {
-                      const drawState = drawStates[side];
+                    if (drawing) {
                       drawState.drawing = false;
                       drawState.lastPoint = null;
 
@@ -329,8 +317,8 @@ class Draw {
                             if (z < PAPER_DRAW_DISTANCE) {
                               const {x: xFactor, y: yFactor} = planePoint;
                               const currentPoint = new THREE.Vector2(
-                                Math.floor(xFactor * WIDTH),
-                                Math.floor(yFactor * HEIGHT)
+                                Math.round(xFactor * WIDTH),
+                                Math.round(yFactor * HEIGHT)
                               );
                               const lastPoint = (() => {
                                 if (drawState.lastPoint) {
@@ -342,21 +330,26 @@ class Draw {
                                 }
                               })();
 
-                              if (lastPoint.distanceTo(currentPoint) >= 10) {
+                              if (lastPoint.distanceTo(currentPoint) > 0) {
                                 const {color} = this;
                                 const colorBrushImg = _getColorImg(brushImg, color);
-                                const scaledBrushImg = _getScaledImg(colorBrushImg, lastPoint.distanceTo(currentPoint) * 2, colorBrushImg.height);
+
+                                const halfBrushW = colorBrushImg.width / 2;
+                                const halfBrushH = colorBrushImg.height / 2;
+                                const distance = lastPoint.distanceTo(currentPoint);
                                 const angle = (() => {
                                   const dy = currentPoint.y - lastPoint.y;
                                   const dx = currentPoint.x - lastPoint.x;
                                   return mod(Math.atan2(dy, dx), Math.PI * 2);
                                 })();
-                                const rotatedBrushImg = _getRotatedImg(scaledBrushImg, angle);
 
-                                const avgPoint = lastPoint.clone()
-                                  .add(currentPoint)
-                                  .divideScalar(2);
-                                canvas.ctx.drawImage(rotatedBrushImg, avgPoint.x - (rotatedBrushImg.width / 2), avgPoint.y - (rotatedBrushImg.height / 2));
+
+                                for (let z = 0; z <= distance || z === 0; z++) {
+                                  const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
+                                  const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
+                                  canvas.ctx.drawImage(colorBrushImg, x, y);
+                                }
+
                                 texture.needsUpdate = true;
 
                                 drawState.lastPoint = currentPoint;
