@@ -4,7 +4,7 @@ const KARMA_ICON_SRC = 'data:image/svg+xml;base64,' + btoa(KARMA_ICON);
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getContractSrc = ({id, name, author, created}) => `\
+const getAdventureSrc = ({id, name, author, created}) => `\
   <div style="background-color: #FFF;">
     <div style="padding-left: 30px; background-color: #000; color: #FFF; font-size: 40px; line-height: 80px;">
       <div style="display: inline-flex; width: 300px; float: right; background: #4CAF50; color: #FFF; font-size: 30px; justify-content: center; align-items: center; box-sizing: border-box; box-sizing: border-box;">
@@ -26,7 +26,7 @@ const getContractSrc = ({id, name, author, created}) => `\
 `;
 
 return  {
-  getContractSrc,
+  getAdventureSrc,
 };
 
 };

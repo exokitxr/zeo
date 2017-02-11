@@ -5,8 +5,8 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-} from './lib/constants/contract';
-import contractRender from './lib/render/contract';
+} from './lib/constants/adventure';
+import adventureRender from './lib/render/adventure';
 import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
@@ -18,9 +18,9 @@ const DEFAULT_CONTRACT_MATRIX = [
   1, 1, 1,
 ];
 
-const contractFlagSymbol = Symbol();
+const adventureFlagSymbol = Symbol();
 
-class Contract {
+class Adventure {
   constructor(archae) {
     this._archae = archae;
   }
@@ -55,7 +55,7 @@ class Contract {
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
 
-          const contractRenderer = contractRender.makeRenderer({creatureUtils});
+          const adventureRenderer = adventureRender.makeRenderer({creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -74,7 +74,7 @@ class Contract {
           });
 
           const _makeHoverState = () => ({
-            contractMesh: null,
+            adventureMesh: null,
           });
           const hoverStates = {
             left: _makeHoverState(),
@@ -116,9 +116,9 @@ class Contract {
             const pageSpecs = (() => {
               const result = [];
 
-              for (let i = 0; i < contractMeshes.length; i++) {
-                const contractMesh = contractMeshes[i];
-                const {ui, contract} = contractMeshes;
+              for (let i = 0; i < adventureMeshes.length; i++) {
+                const adventureMesh = adventureMeshes[i];
+                const {ui, adventure} = adventureMeshes;
 
                 if (ui) {
                   const pages = ui.getPages();
@@ -127,7 +127,7 @@ class Contract {
                     const page = pages[j];
                     const pageSpec = {
                       page,
-                      contract,
+                      adventure,
                     };
                     result.push(pageSpec);
                   }
@@ -150,11 +150,11 @@ class Contract {
                 const {page} = pageSpec;
                 const {type} = page;
 
-                if (type === 'contract') {
-                  const {contract} = pageSpec;
+                if (type === 'adventure') {
+                  const {adventure} = pageSpec;
 
                   page.update({
-                    contract,
+                    adventure,
                   }, pend);
                 } else {
                   pend();
@@ -168,9 +168,9 @@ class Contract {
           const _gripdown = e => {
             const {side} = e;
 
-            const bestGrabbableContractMesh = hands.getBestGrabbable(side, contractMeshes, {radius: DEFAULT_GRAB_RADIUS});
-            if (bestGrabbableContractMesh) {
-              contractInstance.grabContract(side, bestGrabbableContractMesh);
+            const bestGrabbableAdventureMesh = hands.getBestGrabbable(side, adventureMeshes, {radius: DEFAULT_GRAB_RADIUS});
+            if (bestGrabbableAdventureMesh) {
+              adventureInstance.grabAdventure(side, bestGrabbableAdventureMesh);
             }
           };
           input.on('gripdown', _gripdown);
@@ -190,19 +190,19 @@ class Contract {
                 const hoverState = hoverStates[side];
                 const boxMesh = boxMeshes[side];
 
-                const bestGrabbableContractMesh = hands.getBestGrabbable(side, contractMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                if (bestGrabbableContractMesh) {
-                  hoverState.contractMesh = bestGrabbableContractMesh;
+                const bestGrabbableAdventureMesh = hands.getBestGrabbable(side, adventureMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                if (bestGrabbableAdventureMesh) {
+                  hoverState.adventureMesh = bestGrabbableAdventureMesh;
 
-                  const {position: contractMeshPosition, rotation: contractMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableContractMesh);
-                  boxMesh.position.copy(contractMeshPosition);
-                  boxMesh.quaternion.copy(contractMeshRotation);
+                  const {position: adventureMeshPosition, rotation: adventureMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableAdventureMesh);
+                  boxMesh.position.copy(adventureMeshPosition);
+                  boxMesh.quaternion.copy(adventureMeshRotation);
 
                   if (!boxMesh.visible) {
                     boxMesh.visible = true;
                   }
                 } else {
-                  hoverState.contractMesh = null;
+                  hoverState.adventureMesh = null;
 
                   if (boxMesh.visible) {
                     boxMesh.visible = false;
@@ -213,12 +213,12 @@ class Contract {
             const _updateTextures = () => {
               const uiTime = rend.getUiTime();
 
-              for (let i = 0; i < contractMeshes.length; i++) {
-                const contractMesh = contractMeshes[i];
+              for (let i = 0; i < adventureMeshes.length; i++) {
+                const adventureMesh = adventureMeshes[i];
                 const {
                   ui,
                   planeMesh,
-                } = contractMesh;
+                } = adventureMesh;
 
                 if (ui && planeMesh) {
                   const {menuMaterial} = planeMesh;
@@ -238,9 +238,9 @@ class Contract {
           rend.on('update', _update);
 
           this._cleanup = () => {
-            for (let i = 0; i < contractMeshes.length; i++) {
-              const contractMesh = contractMeshes[i];
-              contractMesh.parent.remove(contractMesh);
+            for (let i = 0; i < adventureMeshes.length; i++) {
+              const adventureMesh = adventureMeshes[i];
+              adventureMesh.parent.remove(adventureMesh);
             }
             SIDES.forEach(side => {
               scene.remove(boxMeshes[side]);
@@ -251,7 +251,7 @@ class Contract {
             rend.removeListener('update', _update);
           };
 
-          class Contract {
+          class Adventure {
             constructor(id, name, author, created, matrix) {
               this.id = id;
               this.name = name;
@@ -261,45 +261,45 @@ class Contract {
             }
           }
 
-          const contractMeshes = [];
-          class ContractApi {
-            makeContract(contractSpec) {
+          const adventureMeshes = [];
+          class AdventureApi {
+            makeAdventure(adventureSpec) {
               const object = new THREE.Object3D();
-              object[contractFlagSymbol] = true;
+              object[adventureFlagSymbol] = true;
 
-              const contract = new Contract(contractSpec.id, contractSpec.name, contractSpec.author, contractSpec.created, contractSpec.matrix);
-              object.contract = contract;
+              const adventure = new Adventure(adventureSpec.id, adventureSpec.name, adventureSpec.author, adventureSpec.created, adventureSpec.matrix);
+              object.adventure = adventure;
 
-              object.position.set(contract.matrix[0], contract.matrix[1], contract.matrix[2]);
-              object.quaternion.set(contract.matrix[3], contract.matrix[4], contract.matrix[5], contract.matrix[6]);
-              object.scale.set(contract.matrix[7], contract.matrix[8], contract.matrix[9]);
+              object.position.set(adventure.matrix[0], adventure.matrix[1], adventure.matrix[2]);
+              object.quaternion.set(adventure.matrix[3], adventure.matrix[4], adventure.matrix[5], adventure.matrix[6]);
+              object.scale.set(adventure.matrix[7], adventure.matrix[8], adventure.matrix[9]);
 
               object.ui = null;
               object.planeMesh = null;
 
-              this._requestDecorateContract(object);
+              this._requestDecorateAdventure(object);
 
-              contractMeshes.push(object);
+              adventureMeshes.push(object);
 
               return object;
             }
 
-            _requestDecorateContract(object) {
+            _requestDecorateAdventure(object) {
               return biolumi.requestUi({
                 width: WIDTH,
                 height: HEIGHT,
               })
                 .then(ui => {
-                  const {contract} = object;
+                  const {adventure} = object;
 
-                  ui.pushPage(({contract}) => ([
+                  ui.pushPage(({adventure}) => ([
                     {
                       type: 'html',
-                      src: contractRenderer.getContractSrc(contract),
+                      src: adventureRenderer.getAdventureSrc(adventure),
                     },
                     /* {
                       type: 'image',
-                      img: creatureUtils.makeAnimatedCreature('contract:' + contract.name),
+                      img: creatureUtils.makeAnimatedCreature('adventure:' + adventure.name),
                       x: 10,
                       y: 0,
                       w: 100,
@@ -308,9 +308,9 @@ class Contract {
                       pixelated: true,
                     } */
                   ]), {
-                    type: 'contract',
+                    type: 'adventurce',
                     state: {
-                      contract,
+                      adventure,
                     },
                     immediate: true,
                   });
@@ -372,30 +372,30 @@ class Contract {
                 });
             };
 
-            destroyContract(contractMesh) {
-              const index = contractMeshes.indexOf(contractMesh);
+            destroyAdventure(adventureMesh) {
+              const index = adventureMeshes.indexOf(adventureMesh);
 
               if (index !== -1) {
-                contractMeshes.splice(index, 1);
+                adventureMeshes.splice(index, 1);
               }
             }
 
-            getHoverContract(side) {
-              return hoverStates[side].contractMesh;
+            getHoverAdventure(side) {
+              return hoverStates[side].adventureMesh;
             }
 
-            isContract(object) {
-              return object[contractFlagSymbol] === true;
+            isAdventure(object) {
+              return object[adventureFlagSymbol] === true;
             }
 
-            grabContract(side, contractMesh) {
+            grabAdventure(side, adventureMesh) {
               const menuMesh = rend.getMenuMesh();
-              menuMesh.add(contractMesh);
+              menuMesh.add(adventureMesh);
 
-              const {contract} = contractMesh;
-              contract.matrix = DEFAULT_CONTRACT_MATRIX;
+              const {adventure} = adventureMesh;
+              adventure.matrix = DEFAULT_CONTRACT_MATRIX;
 
-              const grabber = hands.grab(side, contractMesh);
+              const grabber = hands.grab(side, adventureMesh);
               grabber.on('update', ({position, rotation}) => {
                 const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
                 const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
@@ -408,13 +408,13 @@ class Contract {
                     new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
                   );
 
-                contractMesh.position.copy(newPosition);
-                contractMesh.quaternion.copy(newRotation);
+                adventureMesh.position.copy(newPosition);
+                adventureMesh.quaternion.copy(newRotation);
               });
               grabber.on('release', () => {
-                const {position, quaternion, contract} = contractMesh;
+                const {position, quaternion, adventure} = adventureMesh;
                 const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
-                contract.matrix = newMatrixArray;
+                adventure.matrix = newMatrixArray;
 
                 grabState.grabber = null;
               });
@@ -428,8 +428,8 @@ class Contract {
             }
           };
 
-          const contractInstance = new ContractApi();
-          return contractInstance;
+          const adventureInstance = new AdventureApi();
+          return adventureInstance;
         }
       });
   }
@@ -441,4 +441,4 @@ class Contract {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 
-module.exports = Contract;
+module.exports = Adventure;

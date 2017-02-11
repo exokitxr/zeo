@@ -1,6 +1,6 @@
 {
-  "name": "contract",
-  "description": "User contract management for the zeo core",
+  "name": "adventure",
+  "description": "Social adventure management for the zeo core",
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",

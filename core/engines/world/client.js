@@ -51,7 +51,7 @@ class World {
       '/core/engines/rend',
       '/core/engines/hands',
       '/core/engines/tags',
-      '/core/engines/contract',
+      '/core/engines/adventure',
       '/core/plugins/geometry-utils',
     ]).then(([
       three,
@@ -62,7 +62,7 @@ class World {
       rend,
       hands,
       tags,
-      contract,
+      adventure,
       geometryUtils,
     ]) => {
       if (live) {
@@ -1527,8 +1527,8 @@ class World {
                     menuMesh.add(tagMesh);
                   }
                 };
-                const _initializeContracts = () => {
-                  const contractMesh = contract.makeContract({
+                const _initializeAdventures = () => {
+                  const adventureMesh = adventure.makeAdventure({
                     id: _makeId(),
                     name: 'Explore with me.',
                     author: 'avaer',
@@ -1537,11 +1537,11 @@ class World {
                   });
 
                   const menuMesh = rend.getMenuMesh();
-                  menuMesh.add(contractMesh);
+                  menuMesh.add(adventureMesh);
                 };
                 _initializeFiles();
                 _initializeElements();
-                _initializeContracts();
+                _initializeAdventures();
               };
               _initialize();
 
