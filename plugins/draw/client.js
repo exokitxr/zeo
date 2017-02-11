@@ -1,12 +1,14 @@
+const mod = require('mod-loop');
+
 const WIDTH = 512;
-const ASPECT_RATIO = 0.75;
+const ASPECT_RATIO = 1;
 const HEIGHT = Math.round(WIDTH / ASPECT_RATIO);
-const WORLD_WIDTH = 0.3;
+const WORLD_WIDTH = 0.5;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 
 const PAPER_DRAW_DISTANCE = 0.2;
-const POINT_FRAME_RATE = 20;
-const BRUSH_SIZE = 9;
+const BRUSH_SIZE = 40;
+const BRUSH_WIDTH = 5;
 
 const SIDES = ['left', 'right'];
 
@@ -25,13 +27,17 @@ class Draw {
 
     return archae.requestPlugins([
       '/core/engines/zeo',
+      '/core/engines/biolumi',
       '/core/plugins/geometry-utils',
     ]).then(([
       zeo,
+      biolumi,
       geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
+
+        const solidMaterial = biolumi.getSolidMaterial();
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -42,284 +48,371 @@ class Draw {
           return {position, rotation, scale};
         };
 
-        class DrawElement extends HTMLElement {
-          static get attributes() {
-            return {
-              /* position: {
-                type: 'matrix',
-                value: [
-                  0, 1, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              }, */
-              color: {
-                type: 'color',
-                value: '#F44336'
-              },
-            };
+        const _requestImage = src => new Promise((accept, reject) => {
+          const img = new Image();
+          img.src = src;
+          img.onload = () => {
+            accept(img);
+          };
+          img.onerror = err => {
+            reject(err);
+          };
+        });
+
+        const _getScaledImg = (img, width, height) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          return canvas;
+        };
+
+        let colorImg = null;
+        const _getColorImg = (img, color) => {
+          const colorHex = color.getHex();
+
+          let entry = (() => {
+            if (colorImg && colorImg.color === colorHex) {
+              return colorImg;
+            } else {
+              return null;
+            }
+          })();
+
+          if (!entry) {
+            entry = (() => {
+              const canvas = document.createElement('canvas');
+
+              const {width, height} = img;
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+
+              const imageData = ctx.getImageData(0, 0, width, height);
+              const {data: imageDataData} = imageData;
+              for (let i = 0; i < (width * height); i++) {
+                const baseIndex = i * 4;
+                const alpha = (imageDataData[baseIndex + 3] > 0) ?
+                  255 - ((imageDataData[baseIndex + 0] + imageDataData[baseIndex + 1] + imageDataData[baseIndex + 2]) / 3)
+                :
+                  0;
+                imageDataData[baseIndex + 0] = imageDataData[baseIndex + 0] * color.r;
+                imageDataData[baseIndex + 1] = imageDataData[baseIndex + 1] * color.g;
+                imageDataData[baseIndex + 2] = imageDataData[baseIndex + 3] * color.b;
+                // imageDataData[baseIndex + 3] = alpha;
+              }
+              ctx.putImageData(imageData, 0, 0);
+
+              const colorHex = color.getHex();
+              canvas.color = colorHex;
+
+              return canvas;
+            })();
+
+            colorImg = entry;
           }
 
-          createdCallback() {
-            const mesh = (() => {
-              const object = new THREE.Object3D();
-              object.position.y = 1.2;
+          return entry;
+        };
+        const _getRotatedImg = (img, angle) => {
+          const canvas = document.createElement('canvas');
+          const size = Math.max(img.width, img.height) * 2;
+          canvas.width = size;
+          canvas.height = size;
 
-              const planeMesh = (() => {
-                const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
+          const ctx = canvas.getContext('2d');
+          ctx.translate(size / 2, size / 2);
+          ctx.rotate(angle);
+          ctx.drawImage(img, -(size / 4), -(size / 4));
 
-                const imageData = (() => {
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  const imageData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
-                  const {data: imageDataData} = imageData;
+          return canvas;
+        };
 
-                  for (let i = 0; i < (WIDTH * HEIGHT); i++) {
-                    const baseIndex = i * 4;
-                    imageDataData[baseIndex + 0] = 255;
-                    imageDataData[baseIndex + 1] = 255;
-                    imageDataData[baseIndex + 2] = 255;
-                    imageDataData[baseIndex + 3] = 255;
-                  }
+        return _requestImage('/archae/draw/brushes/brush.png')
+          .then(brushImg => {
+            brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_WIDTH);
 
-                  return imageData;
-                })();
-                const texture = new THREE.Texture(
-                  imageData,
-                  THREE.UVMapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.NearestFilter,
-                  THREE.NearestFilter,
-                  THREE.RGBAFormat,
-                  THREE.UnsignedByteType,
-                  16
-                );
-                texture.needsUpdate = true;
-                // const material = new THREE.MeshPhongMaterial({
-                const material = new THREE.MeshBasicMaterial({
-                  map: texture,
-                  // shininess: 10,
-                  // shininess: 0,
-                  side: THREE.DoubleSide,
-                });
+            if (live) {
+              class DrawElement extends HTMLElement {
+                static get attributes() {
+                  return {
+                    /* position: {
+                      type: 'matrix',
+                      value: [
+                        0, 1, 0,
+                        0, 0, 0, 1,
+                        1, 1, 1,
+                      ],
+                    }, */
+                    color: {
+                      type: 'color',
+                      value: '#F44336'
+                    },
+                  };
+                }
 
-                const mesh = new THREE.Mesh(geometry, material);
-                return mesh;
-              })();
-              object.add(planeMesh);
-              object.planeMesh = planeMesh;
+                createdCallback() {
+                  const mesh = (() => {
+                    const object = new THREE.Object3D();
+                    object.position.y = 1.5;
 
-              const lineMesh = (() => {
-                const geometry = new THREE.BufferGeometry();
-                const positions = Float32Array.from([
-                  -WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
-                  -WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 0,
-                  WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 0,
-                  WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
-                  -WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
-                ]);
-                geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    const planeMesh = (() => {
+                      const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
 
-                const material = new THREE.LineBasicMaterial({
-                  color: 0x808080,
-                });
+                      const canvas = (() => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = WIDTH;
+                        canvas.height = HEIGHT;
 
-                const mesh = new THREE.Line(geometry, material);
-                mesh.frustumCulled = false;
-                return mesh;
-              })();
-              object.add(lineMesh);
-              object.lineMesh = lineMesh;
+                        const ctx = canvas.getContext('2d');
+                        canvas.ctx = ctx;
 
-              return object;
-            })();
-            this.mesh = mesh;
-            scene.add(mesh);
+                        const imageData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
+                        const {data: imageDataData} = imageData;
+                        for (let i = 0; i < (WIDTH * HEIGHT); i++) {
+                          const baseIndex = i * 4;
+                          imageDataData[baseIndex + 0] = 255;
+                          imageDataData[baseIndex + 1] = 255;
+                          imageDataData[baseIndex + 2] = 255;
+                          imageDataData[baseIndex + 3] = 0;
+                        }
 
-            const color = new THREE.Color(0xF44336);
-            this.color = color;
+                        return canvas;
+                      })();
+                      const texture = new THREE.Texture(
+                        canvas,
+                        THREE.UVMapping,
+                        THREE.ClampToEdgeWrapping,
+                        THREE.ClampToEdgeWrapping,
+                        THREE.NearestFilter,
+                        THREE.NearestFilter,
+                        THREE.RGBAFormat,
+                        THREE.UnsignedByteType,
+                        16
+                      );
+                      texture.needsUpdate = true;
+                      // const material = new THREE.MeshPhongMaterial({
+                      const canvasMaterial = new THREE.MeshBasicMaterial({
+                        map: texture,
+                        // shininess: 10,
+                        // shininess: 0,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                      });
+                      const materials = [solidMaterial, canvasMaterial];
 
-            let lastPoint = 0;
+                      // const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      const mesh = new THREE.Mesh(geometry, canvasMaterial);
+                      mesh.canvasMaterial = canvasMaterial;
+                      return mesh;
+                    })();
+                    object.add(planeMesh);
+                    object.planeMesh = planeMesh;
 
-            const _makeDrawState = () => ({
-              drawing: false,
-              lastPointTime: 0,
-            });
-            const drawStates = {
-              left: _makeDrawState(),
-              right: _makeDrawState(),
-            };
+                    const lineMesh = (() => {
+                      const geometry = new THREE.BufferGeometry();
+                      const positions = Float32Array.from([
+                        -WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
+                        -WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 0,
+                        WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 0,
+                        WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
+                        -WORLD_WIDTH / 2, -WORLD_HEIGHT / 2, 0,
+                      ]);
+                      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-            const _triggerdown = e => {
-              const {side} = e;
+                      const material = new THREE.LineBasicMaterial({
+                        color: 0x808080,
+                      });
 
-              const {gamepads} = zeo.getStatus();
-              const gamepad = gamepads[side];
-              const {position: controllerPosition} = gamepad;
-              const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
-              const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
-              const planePoint = planeTarget.projectPoint(controllerPosition);
+                      const mesh = new THREE.Line(geometry, material);
+                      mesh.frustumCulled = false;
+                      return mesh;
+                    })();
+                    object.add(lineMesh);
+                    object.lineMesh = lineMesh;
 
-              if (planePoint) {
-                const drawState = drawStates[side];
-                drawState.drawing = true;
+                    return object;
+                  })();
+                  this.mesh = mesh;
+                  scene.add(mesh);
 
-                e.stopImmediatePropagation();
-              }
-            };
-            zeo.on('triggerdown', _triggerdown, {
-              priority: 1,
-            });
-            const _triggerup = e => {
-              const {side} = e;
+                  const color = new THREE.Color(0xF44336);
+                  this.color = color;
 
-              const {gamepads} = zeo.getStatus();
-              const gamepad = gamepads[side];
-              const {position: controllerPosition} = gamepad;
-              const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
-              const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
-              const planePoint = planeTarget.projectPoint(controllerPosition);
+                  const _makeDrawState = () => ({
+                    drawing: false,
+                    lastPoint: null,
+                  });
+                  const drawStates = {
+                    left: _makeDrawState(),
+                    right: _makeDrawState(),
+                  };
 
-              if (planePoint) {
-                const drawState = drawStates[side];
-                drawState.drawing = false;
+                  const _triggerdown = e => {
+                    const {side} = e;
 
-                e.stopImmediatePropagation();
-              }
-            };
-            zeo.on('triggerup', _triggerup, {
-              priority: 1,
-            });
+                    const {gamepads} = zeo.getStatus();
+                    const gamepad = gamepads[side];
+                    const {position: controllerPosition} = gamepad;
+                    const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+                    const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
+                    const planePoint = planeTarget.projectPoint(controllerPosition);
 
-            const _update = () => {
-              const {gamepads} = zeo.getStatus();
-              const worldTime = zeo.getWorldTime();
-              const {
-                planeMesh: {
-                  material: {
-                    map: texture,
-                  },
-                },
-              } = mesh;
-              const {
-                image: {
-                  data: imageDataArray,
-                },
-              } = texture;
+                    if (planePoint) {
+                      const drawState = drawStates[side];
+                      drawState.drawing = true;
 
-              const _getFrame = t => Math.floor(t / POINT_FRAME_RATE);
+                      e.stopImmediatePropagation();
+                    }
+                  };
+                  zeo.on('triggerdown', _triggerdown, {
+                    priority: 1,
+                  });
+                  const _triggerup = e => {
+                    const {side} = e;
 
-              const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
-              const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
+                    const {gamepads} = zeo.getStatus();
+                    const gamepad = gamepads[side];
+                    const {position: controllerPosition} = gamepad;
+                    const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+                    const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
+                    const planePoint = planeTarget.projectPoint(controllerPosition);
 
-              let drawable = false;
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
+                    if (planePoint) {
+                      const drawState = drawStates[side];
+                      drawState.drawing = false;
+                      drawState.lastPoint = null;
 
-                if (gamepad) {
-                  const {position: controllerPosition} = gamepad;
-                  const planePoint = planeTarget.projectPoint(controllerPosition);
+                      e.stopImmediatePropagation();
+                    }
+                  };
+                  zeo.on('triggerup', _triggerup, {
+                    priority: 1,
+                  });
 
-                  if (planePoint) {
-                    drawable = true;
+                  const _update = () => {
+                    const {gamepads} = zeo.getStatus();
+                    const worldTime = zeo.getWorldTime();
+                    const {
+                      planeMesh: {
+                        canvasMaterial: {
+                          map: texture,
+                        },
+                      },
+                    } = mesh;
+                    const {image: canvas} = texture;
 
-                    const drawState = drawStates[side];
-                    const {drawing} = drawState;
+                    const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+                    const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
 
-                    if (drawing) {
-                      const {lastPointTime} = drawState;
-                      const lastFrame = _getFrame(lastPointTime);
-                      const currentPointTime = worldTime;
-                      const currentFrame = _getFrame(currentPointTime);
+                    let drawable = false;
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
 
-                      if (currentFrame > lastFrame) {
-                        const {z} = planePoint;
+                      if (gamepad) {
+                        const {position: controllerPosition} = gamepad;
+                        const planePoint = planeTarget.projectPoint(controllerPosition);
 
-                        if (z < PAPER_DRAW_DISTANCE) {
-                          const {x: xFactor, y: yFactor} = planePoint;
+                        if (planePoint) {
+                          drawable = true;
 
-                          const {color} = this;
-                          const pixelValue = Float32Array.from([
-                            color.r * 255,
-                            color.g * 255,
-                            color.b * 255,
-                          ]);
-                          const centerX = Math.floor(xFactor * WIDTH);
-                          const centerY = Math.floor(yFactor * HEIGHT);
-                          const maxDistance = Math.floor((BRUSH_SIZE - 1) / 2);
-                          for (let xOffset = -maxDistance; xOffset < maxDistance; xOffset++) {
-                            const x = centerX + xOffset;
+                          const drawState = drawStates[side];
+                          const {drawing} = drawState;
 
-                            if (x >= 0 && x < WIDTH) {
-                              for (let yOffset = -maxDistance; yOffset < maxDistance; yOffset++) {
-                                const y = centerY + yOffset;
+                          if (drawing) {
+                            const {z} = planePoint;
 
-                                if (y >= 0 && y < HEIGHT) {
-                                  const baseIndex = ((y * WIDTH) + x) * 4;
-
-                                  imageDataArray.set(pixelValue, baseIndex);
-
-                                  const alphaFactor = Math.max(maxDistance - Math.sqrt((xOffset * xOffset) + (yOffset * yOffset)), 0);
-                                  imageDataArray[baseIndex + 3] = Math.max(imageDataArray[baseIndex + 3], alphaFactor * 255);
+                            if (z < PAPER_DRAW_DISTANCE) {
+                              const {x: xFactor, y: yFactor} = planePoint;
+                              const currentPoint = new THREE.Vector2(
+                                Math.floor(xFactor * WIDTH),
+                                Math.floor(yFactor * HEIGHT)
+                              );
+                              const lastPoint = (() => {
+                                if (drawState.lastPoint) {
+                                  return drawState.lastPoint;
+                                } else {
+                                  const fakeLastPoint = currentPoint.clone();
+                                  fakeLastPoint.y -= 10;
+                                  return fakeLastPoint;
                                 }
+                              })();
+
+                              if (lastPoint.distanceTo(currentPoint) >= 10) {
+                                const {color} = this;
+                                const colorBrushImg = _getColorImg(brushImg, color);
+                                const scaledBrushImg = _getScaledImg(colorBrushImg, lastPoint.distanceTo(currentPoint) * 2, colorBrushImg.height);
+                                const angle = (() => {
+                                  const dy = currentPoint.y - lastPoint.y;
+                                  const dx = currentPoint.x - lastPoint.x;
+                                  return mod(Math.atan2(dy, dx), Math.PI * 2);
+                                })();
+                                const rotatedBrushImg = _getRotatedImg(scaledBrushImg, angle);
+
+                                const avgPoint = lastPoint.clone()
+                                  .add(currentPoint)
+                                  .divideScalar(2);
+                                canvas.ctx.drawImage(rotatedBrushImg, avgPoint.x - (rotatedBrushImg.width / 2), avgPoint.y - (rotatedBrushImg.height / 2));
+                                texture.needsUpdate = true;
+
+                                drawState.lastPoint = currentPoint;
                               }
                             }
                           }
-                          texture.needsUpdate = true;
-
-                          drawState.lastPointTime = lastPointTime;
                         }
                       }
+                    });
+
+                    const {lineMesh: {material}} = mesh;
+                    material.color = new THREE.Color(drawable ? 0x0000FF : 0x808080);
+                  };
+                  zeo.on('update', _update);
+
+                  this._cleanup = () => {
+                    scene.remove(mesh);
+
+                    zeo.removeListener('triggerdown', _triggerdown);
+                    zeo.removeListener('triggerup', _triggerup);
+                    zeo.removeListener('update', _update);
+                  };
+                }
+
+                destructor() {
+                  this._cleanup();
+                }
+
+                attributeValueChangedCallback(name, oldValue, newValue) {
+                  switch (name) {
+                    /* case 'position': {
+                      const {mesh} = this;
+
+                      mesh.position.set(newValue[0], newValue[1], newValue[2]);
+                      mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                      mesh.scale.set(newValue[7], newValue[8], newValue[9]);
+
+                      break;
+                    } */
+                    case 'color': {
+                      this.color = new THREE.Color(newValue);
+
+                      break;
                     }
                   }
                 }
-              });
-
-              const {lineMesh: {material}} = mesh;
-              material.color = new THREE.Color(drawable ? 0x0000FF : 0x808080);
-            };
-            zeo.on('update', _update);
-
-            this._cleanup = () => {
-              scene.remove(mesh);
-
-              zeo.removeListener('triggerdown', _triggerdown);
-              zeo.removeListener('triggerup', _triggerup);
-              zeo.removeListener('update', _update);
-            };
-          }
-
-          destructor() {
-            this._cleanup();
-          }
-
-          attributeValueChangedCallback(name, oldValue, newValue) {
-            switch (name) {
-              /* case 'position': {
-                const {mesh} = this;
-
-                mesh.position.set(newValue[0], newValue[1], newValue[2]);
-                mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
-                mesh.scale.set(newValue[7], newValue[8], newValue[9]);
-
-                break;
-              } */
-              case 'color': {
-                this.color = new THREE.Color(newValue);
-
-                break;
               }
+              zeo.registerElement(this, DrawElement);
+
+              this._cleanup = () => {
+                zeo.unregisterElement(this);
+              };
+
+              return {};
             }
-          }
-        }
-        zeo.registerElement(this, DrawElement);
-
-        this._cleanup = () => {
-          zeo.unregisterElement(this);
-        };
-
-        return {};
+          });
       }
     });
   }
