@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Droid+Sans+Mono:400" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/font/octicons.min.css" rel="stylesheet">
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <style>
+    body {
+      position: relative;
+      min-width: 1024px;
+      min-height: 720px;
+      margin: 0;
+      background-color: #000;
+      font-family: 'Open Sans';
+      font-weight: 300;
+      color: #FFF;
+      overflow-x: hidden;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+      outline: none;
+      cursor: pointer;
+    }
+    .link {
+      text-decoration: underline;
+    }
+    .link:hover {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    header {
+      display: flex;
+      position: relative;
+      height: 80px;
+      margin-bottom: 30px;
+      padding: 0 30px;
+      background-color: #000;
+      align-items: center;
+      z-index: 3;
+    }
+    .logged-in header {
+      background-color: #333;
+    }
+    .logged-in header > .header-github-anchor {
+      display: none;
+    }
+    body:not(.logged-in) header > .header-login-bar {
+      display: none;
+    }
+    .signing-up .header-details {
+      display: flex;
+      padding: 30px 0;
+      background-color: #333;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .header-details {
+      display: none;
+      position: absolute;
+      top: 80px;
+      left: 0;
+      right: 0;
+      justify-content: center;
+      z-index: 3;
+    }
+    .signing-up .signing-up-overlay {
+      display: block;
+    }
+    .signing-up-overlay {
+      display: none;
+      background-color: rgba(0, 0, 0, 0.9);
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 2;
+    }
+    .details-wrap {}
+    .details-wrap h4 {
+      margin-left: 115px;
+      margin-bottom: 20px;
+    }
+    .details-wrap input[type=text], .details-wrap input[type=email], .details-wrap input[type=month] {
+      width: 300px;
+      margin-bottom: 10px;
+      background-color: #DDD;
+    }
+    .details-wrap input[type=text]::-webkit-input-placeholder, .details-wrap input[type=email]::-webkit-input-placeholder, .details-wrap input[type=password]::-webkit-input-placeholder {
+      color: #AAA;
+    }
+    .details-wrap .header-button {
+      margin-left: 115px;
+      margin-top: 10px;
+      color: #FFF;
+    }
+    .details-wrap .header-button:hover, .details-wrap .header-button:focus {
+      background-color: #2196F3;
+      color: #FFF;
+    }
+    .details-wrap label {
+      display: flex;
+    }
+    .details-wrap .left {
+      display: flex;
+      margin-right: 10px;
+      width: 105px;
+      font-size: 13px;
+      line-height: 37px;
+      justify-content: flex-end;
+    }
+    .details-wrap input[type=text].ccn {
+      margin-right: 10px;
+      width: 240px;
+    }
+    .details-wrap input[type=text].cvc {
+      width: 50px;
+    }
+    .header-button {
+      margin-right: 10px;
+      padding: 8px 20px;
+      background-color: transparent;
+      border: 1px solid;
+      border-radius: 100px;
+      font-family: 'Open Sans';
+      font-size: 15px;
+      font-weight: 300;
+      color: #4CAF50;
+      cursor: pointer;
+    }
+    .header-button:hover, .header-button:focus {
+      background-color: #4CAF50;
+      border-color: transparent;
+      color: #333;
+      outline: none;
+    }
+    .header-icon {
+      margin-right: 10px;
+    }
+    .header-logo-anchor {
+      display: flex;
+      margin-right: auto;
+      font-size: 20px;
+      align-items: center;
+    }
+    .header-logo-anchor:hover {
+      color: #8BC34A;
+    }
+    .header-github-anchor {
+      display: flex;
+      width: 50px;
+      height: 50px;
+      color: #FFF;
+      justify-content: center;
+      align-items: center;
+    }
+    .header-github-anchor:hover {
+      color: #2196F3;
+    }
+    .header-github-anchor > i {
+      display: block;
+      font-size: 30px !important;
+    }
+    .header-login-bar {
+      display: flex;
+      align-items: center;
+    }
+    .header-login-bar > h2 {
+      margin-right: 15px;
+      color: #4CAF50;
+    }
+    .header-login-bar > .plan-nagger {
+      margin-right: 10px;
+      padding: 5px 10px;
+      background-color: #E91E63;
+      border-radius: 5px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .header-login-bar > .plan-nagger:hover {
+      background-color: #AD1457;
+    }
+    .logged-in .canvas-login-arrow, .logged-in .canvas-login-arrow-tail {
+      display: none;
+    }
+    .canvas-login-arrow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      filter: brightness(1000000%);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .logged-in .container {
+      height: 300px;
+    }
+    .container {
+      display: flex;
+      width: 100%;
+      height: 550px;
+      background-color: #000;
+      justify-content: flex-start;
+      align-items: center;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .container-wrapper {
+      display: flex;
+      width: 480px;
+      color: #FFF;
+      align-items: center;
+      flex-direction: column;
+    }
+    .container-wrapper > p {
+      width: 100%;
+      margin: 30px 0;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.6;
+    }
+    .container-footer {
+      width: 200%;
+      height: 400px;
+      margin-left: -50%;
+      margin-top: -200px;
+      position: absolute;
+      background-color: #000;
+      transform: rotateZ(-10deg);
+    }
+    section.list {
+      display: flex;
+      width: 100%;
+      padding-top: 350px;
+      background-color: #222;
+      justify-content: center;
+    }
+    .grid {
+      width: 100%;
+    }
+    .grid-item-wrap {
+      display: flex;
+      justify-content: center;
+    }
+    .grid-item-wrap:nth-child(even) {
+      background-color: #333;
+    }
+    .grid-item {
+      display: flex;
+      width: 400px;
+      padding: 30px 0;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .grid-item > .icon {
+      display: flex;
+      width: 200px;
+      height: 120px;
+      font-size: 100px;
+      justify-content: center;
+      align-items: center;
+    }
+    .grid-item-1 > .icon {
+    }
+    .grid-item-2 > .icon {
+      color: #2196F3;
+    }
+    .grid-item-3 > .icon {
+      color: #4CAF50;
+    }
+    .grid-item > h4 {
+      width: 100%;
+      margin: 15px 0;
+    }
+    .grid-item > p {
+      width: 100%;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .grid-item > p > .grid-button {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 5px 20px;
+      border: 1px solid #FFF;
+      border-radius: 100px;
+    }
+    section.pricing {
+      display: flex;
+      background-color: #03A9F4;
+      justify-content: center;
+    }
+    .pricing {
+      padding: 40px 0;
+    }
+    .pricing-wrap {
+      width: 520px;
+    }
+    .pricing-details {}
+    .pricing-details > img {
+      width: 200px;
+      height: 200px;
+      border-radius: 100px;
+    }
+    .pricing-grid {
+      display: flex;
+      margin: 20px auto;
+    }
+    .pricing-item {
+      display: flex;
+      width: 50%;
+      padding-top: 10px;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .pricing-item:not(.highlight) {
+      background-color: #01579B;
+    }
+    .pricing-item.highlight {
+      background-color: #4CAF50;
+    }
+    .pricing-heading {
+      display: flex;
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      line-height: 2;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .pricing-footer {
+      display: flex;
+      padding: 10px 20px;
+      justify-content: center;
+      align-items: flex-end;
+      flex-grow: 1;
+    }
+    .pricing-button {
+      display: flex;
+      margin: 20px;
+      padding: 10px;
+      border: 1px solid;
+      border-radius: 5px;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.8);
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    .pricing-button:hover {
+      background-color: #FFF;
+      border-color: transparent;
+      color: #01579B;
+    }
+    .pricing-button.highlight {
+      background-color: #F44336;
+      border-color: transparent;
+      font-weight: 400;
+      color: #FFF;
+    }
+    .pricing-button.highlight:hover {
+      background-color: #C62828;
+    }
+    .pricing-point {
+      display: flex;
+      padding-right: 20px;
+      padding-left: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 13px;
+      line-height: 3;
+      align-items: center;
+    }
+    .pricing-point.dim {
+      opacity: 0.5;
+    }
+    .pricing-point > i {
+      width: 50px;
+      font-size: 18px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .plan, .dollars, .per-month {
+      line-height: 1;
+    }
+    .plan {
+      font-size: 30px;
+    }
+    .dollars {
+      font-size: 30px;
+    }
+    h1, h2, h3, h4, p {
+      margin: 0;
+      font-weight: 300;
+      line-height: 1.4;
+    }
+    h1 {
+      font-size: 36px;
+    }
+    h2 {
+      font-size: 18px;
+    }
+    h3 {
+      margin-bottom: 20px;
+      font-size: 40px;
+    }
+    h4 {
+      margin-bottom: 40px;
+      font-size: 20px;
+      line-height: 1.6;
+    }
+    form, .login-loader {
+      display: flex;
+      width: 350px;
+      height: 230px;
+      flex-direction: column;
+    }
+    form {
+      margin-bottom: 20px;
+      padding: 20px;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .login-form {
+      background-color: #202020;
+    }
+    .login-form > h2 {
+      margin-bottom: 10px;
+    }
+    input[type=text], input[type=email], input[type=password], input[type=month] {
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #AAA;
+      border: 0;
+      box-shadow: inset 0 5px 0 #2196f3;
+      font-family: 'Open Sans';
+      font-size: 14px;
+      box-sizing: border-box;
+      outline: none;
+      transition: box-shadow 0.1s ease-out;
+    }
+    input[type=text]::-webkit-input-placeholder, input[type=email]::-webkit-input-placeholder, input[type=password]::-webkit-input-placeholder, input[type=month]::-webkit-input-placeholder {
+      color: #666;
+    }
+    input[type=text]:focus, input[type=email]:focus, input[type=password]:focus, input[type=month]:focus {
+      background-color: #FFF;
+      box-shadow: none;
+    }
+    .buttons {
+      display: flex;
+    }
+    .button {
+      display: flex;
+      width: 100%;
+      padding: 8px;
+      background-color: transparent;
+      border: 1px solid;
+      border-radius: 100px;
+      font-family: 'Open Sans';
+      font-size: 14px;
+      font-weight: 300;
+      color: #FFF;
+      justify-content: center;
+      align-items: center;
+      outline: none;
+      cursor: pointer;
+    }
+    .button:hover, .button:focus {
+      color: #4CAF50;
+    }
+    .button:active {
+      background-color: #1B5E20;
+    }
+    .button.sub:hover, .button.sub:focus {
+      background-color: transparent;
+      color: #E91E63;
+    }
+    .button.sub:active {
+      color: #AD1457;
+    }
+    .button + .button {
+      margin-left: 20px;
+    }
+    .aside {
+      position: absolute;
+      margin-top: 70px;
+    }
+    .aside:hover {
+      opacity: 1;
+    }
+    .aside.right {
+      right: 0;
+      width: 350px;
+      padding: 0 20px;
+      background-color: #333;
+      border-top: 3px solid #8BC34A;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .aside-heading {
+      display: flex;
+      margin: 0 -20px;
+      padding: 0 20px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      background-color: #222;
+      border-bottom: 1px solid #000;
+    }
+    .aside-heading > .left {
+      font-size: 13px;
+      font-weight: 600;
+      flex-grow: 1;
+    }
+    .aside-heading > .right {
+      display: flex;
+      font-size: 13px;
+      align-items: center;
+    }
+    ul {
+      margin: 0 -20px;
+      padding: 0 20px;
+      list-style: none;
+    }
+    li {
+      display: flex;
+      margin: 0 -20px;
+      padding: 10px 20px;
+    }
+    li:not(:last-child) {
+      border-bottom: 1px solid #000;
+    }
+    li > img {
+      width: 50px;
+      height: 50px;
+      margin-right: 10px;
+    }
+    li > .wrap {
+      width: 250px;
+    }
+    li > .wrap > .title {
+      font-size: 13px;
+      font-weight: 400;
+    }
+    li > .wrap > .description {
+      margin-bottom: 2px;
+      font-size: 11px;
+    }
+    li > .wrap > .author {
+      font-size: 11px;
+    }
+    li:hover {
+      background-color: #666;
+      cursor: pointer;
+    }
+    .video {
+      display: flex;
+      margin-bottom: -300px;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .video-shadow {
+      position: absolute;
+      width: 600px;
+      height: 444px;
+      background-color: #666;
+      transform: skew(60deg) scaleY(0.7);
+      transform-origin: 50% 100%;
+      z-index: 1;
+    }
+    video {
+      position: relative;
+      width: 600px;
+      height: 444px;
+      background-color: #FFF;
+      z-index: 1;
+    }
+    footer {
+      display: flex;
+      height: 100px;
+      padding: 0 30px;
+      font-size: 13px;
+      justify-content: center;
+      align-items: center;
+    }
+    .footer-left {
+      margin-right: auto;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <style>
+    .loader,
+    .loader:before,
+    .loader:after {
+      border-radius: 50%;
+    }
+    .loader {
+      color: #ffffff;
+      font-size: 11px;
+      text-indent: -99999em;
+      margin: 40px auto;
+      position: relative;
+      width: 10em;
+      height: 10em;
+      box-shadow: inset 0 0 0 2px;
+      -webkit-transform: scale(0.5) translateZ(0);
+      -ms-transform: scale(0.5) translateZ(0);
+      transform: scale(0.5) translateZ(0);
+    }
+    .loader:before,
+    .loader:after {
+      position: absolute;
+      content: '';
+    }
+    .loader:before {
+      width: 5.2em;
+      height: 10.2em;
+      background: #000;
+      border-radius: 10.2em 0 0 10.2em;
+      top: -0.1em;
+      left: -0.1em;
+      -webkit-transform-origin: 5.2em 5.1em;
+      transform-origin: 5.2em 5.1em;
+      -webkit-animation: load2 1s infinite ease 0.75s;
+      animation: load2 1s infinite ease 0.75s;
+    }
+    .loader:after {
+      width: 5.2em;
+      height: 10.2em;
+      background: #000;
+      border-radius: 0 10.2em 10.2em 0;
+      top: -0.1em;
+      left: 5.1em;
+      -webkit-transform-origin: 0px 5.1em;
+      transform-origin: 0px 5.1em;
+      -webkit-animation: load2 1s infinite ease;
+      animation: load2 1s infinite ease;
+    }
+    @-webkit-keyframes load2 {
+      0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+    @keyframes load2 {
+      0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header id=header>
+    <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo</a>
+    <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
+    <div class=header-login-bar>
+      <h2>Welcome back, <span id=header-login-username>username</span></h2>
+      <div class=plan-nagger id=plan-nagger>Demo account - <b>Get Gold</b></div>
+      <a href="#" id=connect-button class=header-button>Connect</a>
+      <input type=button value="Log out" id=log-out-button class="header-button sub">
+    </div>
+  </header>
+  <div class=header-details>
+    <div class=details-wrap>
+      <h4>Sign up for Gold Account</h4>
+      <div class=line>
+        <label><span class=left>Email</span><input type=email placeholder="your@email.com" id=sign-up-email autofocus></label>
+      </div>
+      <div class=line>
+        <label><span class=left>Cardholder name</span><input type=text placeholder="Awesome McCoolname" id=sign-up-name></label>
+      </div>
+      <div class=line>
+        <label><span class=left>CC #</span><input type=text pattern="[0-9]{13,16}" class=ccn placeholder="4242424242424242" id=sign-up-ccn><input type=text pattern="[0-9]{3}" class=cvc placeholder="CVC" id=sign-up-cvc></label></div>
+      <div class=line>
+        <label><span class=left>Expiry</span><input type=month id=sign-up-expiry></label>
+      </div>
+      <input type=submit value='Sign up' id=sign-up-button class=header-button>
+    </div>
+  </div>
+  <div class=signing-up-overlay id=signing-up-overlay></div>
+  <aside class="aside right">
+    <h3 class=aside-heading>
+      <span class=left>Featured modules for this week</span>
+      <span class=right>
+        <a href="#" class=link>Learn more</a>
+      </span>
+    </h3>
+    <ul>
+      <li>
+        <img src="https://placehold.it/50x50" width=50 height=50>
+        <div class=wrap>
+          <div class=title>bouncy-ball</div>
+          <div class=description>A simple bouncy ball plugin.</div>
+          <div class=author>by <b>Avaer</b></div>
+        </div>
+      </li>
+      <li>
+        <img src="https://placehold.it/50x50" width=50 height=50>
+        <div class=wrap>
+          <div class=title>mc</div>
+          <div class=description>Minecraft-like demo in VR.</div>
+          <div class=author>by <b>Avaer</b></div>
+        </div>
+      </li>
+      <li>
+        <img src="https://placehold.it/50x50" width=50 height=50>
+        <div class=wrap>
+          <div class=title>zeo-model</div>
+          <div class=description>Load 3D models from various formats and place them in the world scene.</div>
+          <div class=author>by <b>Avaer</b></div>
+        </div>
+      </li>
+    </ul>
+  </aside>
+  <div class=container>
+    <div class=container-wrapper>
+      <h1>WebVR universes powered by NPM</h1>
+      <p>
+        Install node_modules to your face. Build a persistent universe with Javascript, multiplayer, server-side physics and more.<br/><br/>
+        From your browser.<br/><br/>
+        It's <a href="https://github.com/modulesio/zeo" class=link>open source</a>.<span class=canvas-login-arrow-tail> Or, pay me for hosting!</span>
+      </p>
+      <canvas id=canvas-login-arrow class=canvas-login-arrow width=1200 height=1200></canvas>
+      <form id=login-form class=login-form>
+        <h2>Log in</h2>
+        <input type=email placeholder="your@email.com" autofocus id=email>
+        <input type=password placeholder="password" id=password>
+        <div class=buttons>
+          <input type=submit value='Connect' class=button>
+          <a href class="button sub">Learn more</a>
+        </div>
+      </form>
+      <div id=login-loader style="display: none;">
+        <div class=loader>Loading...</div>
+      </div>
+    </div>
+  </div>
+  <div class=video>
+    <div class=video-shadow></div>
+    <video autoplay loop>
+      <source src="https://cdn.rawgit.com/modulesio/zeo-data/fa848ef03608c5079237565c8389afafaf5e93ba/video/demo.webm" type="video/webm">
+    </video>
+  </div>
+  <div class=container-footer>
+  </div>
+  <section class=list>
+    <div class=grid>
+      <div class=grid-item-wrap>
+        <div class="grid-item grid-item-1">
+          <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
+          <h4>Powered by npm.</h4>
+          <p>
+            You know Javascript. Now meet Javascript face-to-face.<br/>
+            Publish to NPM and experience your creations in your headset.<br/>
+            The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
+            <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
+          </p>
+        </div>
+      </div>
+      <div class=grid-item-wrap>
+        <div class="grid-item grid-item-2">
+          <i class="icon octicon octicon-circuit-board"></i>
+          <h4>Persistent multiverse tech.</h4>
+          <p>
+            World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
+            We did the hard work so you don't have to.<br/>
+            <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
+          </p>
+        </div>
+      </div>
+      <div class=grid-item-wrap>
+        <div class="grid-item grid-item-3">
+          <i class="icon octicon octicon-mark-github"></i>
+          <h4>Open source. Or hosted.</h4>
+          <p>
+            Run your own server or join us on the public Zeo Multiverse.<br/>
+            Test it out with just your browser.<br/>
+            And if you want us to host your world, we have a plan for that.<br/>
+            <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class=pricing>
+    <div class=pricing-wrap>
+      <h3>Pricing</h3>
+      <h4>Try Zeo Multiverse free.<br/>When you're ready to keep your work, get a Gold Account.</h4>
+      <div class=pricing-grid>
+        <div class=pricing-item>
+          <div class=pricing-heading>
+            <div class=plan>Demo</div>
+          </div>
+          <div class=pricing-point><i class="fa fa-minus"></i> Public worlds only</div>
+          <div class=pricing-point><i class="fa fa-minus"></i> Autokicked after 30 minutes :(</div>
+          <div class=pricing-point><i class="fa fa-minus"></i> Lose your module inventory</div>
+          <div class=pricing-point><i class="fa fa-minus"></i> You might get kicked</div>
+          <div class=pricing-footer>
+            <div class=dollars>&nbsp;</div>
+            <div class=per-month>&nbsp;</div>
+          </div>
+          <div class=pricing-button>Try it</div>
+        </div>
+        <div class="pricing-item highlight">
+          <div class=pricing-heading>
+            <div class=plan>Gold</div>
+          </div>
+          <div class=pricing-point><i class="fa fa-lock"></i> Private world just for you</div>
+          <div class=pricing-point><i class="fa fa-hdd-o"></i> Reserved server access</div>
+          <div class=pricing-point><i class="fa fa-shopping-basket"></i> Keep your module inventory!</div>
+          <div class=pricing-point><i class="fa fa-user-times"></i> Kick any demo user :)</div>
+          <div class=pricing-point><i class="fa fa-id-card-o"></i> Custom logo for your avatar</div>
+          <div class=pricing-point><i class="fa fa-question"></i> Hidden secrets</div>
+          <div class=pricing-footer>
+            <div class=dollars>$7</div>
+            <div class=per-month>/mo</div>
+          </div>
+          <a class="pricing-button highlight" id=goto-sign-up-button>Sign up</a>
+        </div>
+      </div>
+      <div class=pricing-details></div>
+    </div>
+  </section>
+  <footer>
+    <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:a@modules.io">Contact</a></aside>
+    <aside class=footer-right>&copy; 2017 <a href="mailto:a@modules.io">Avaer Kazmer</a></aside>
+  </footer>
+  <script src="https://js.stripe.com/v2/"></script>
+  <script>
+const $ = s => document.querySelectorAll(s);
+
+const body = $('body')[0];
+const header = $('#header')[0];
+const headerLoginUsername = $('#header-login-username')[0];
+const planNagger = $('#plan-nagger')[0];
+const loginForm = $('#login-form')[0];
+const emailInput = $('#email')[0];
+const passwordInput = $('#password')[0];
+const loginLoader = $('#login-loader')[0];
+const canvasLoginArrow = $('#canvas-login-arrow')[0];
+const connectButton = $('#connect-button')[0];
+const logOutButton = $('#log-out-button')[0];
+const signUpEmail = $('#sign-up-email')[0];
+const signUpName = $('#sign-up-name')[0];
+const signUpCcn = $('#sign-up-ccn')[0];
+const signUpCvc = $('#sign-up-cvc')[0];
+const signUpExpiry = $('#sign-up-expiry')[0];
+const signUpButton = $('#sign-up-button')[0];
+const gotoSignUpButton = $('#goto-sign-up-button')[0];
+const signingUpOverlay = $('#signing-up-overlay')[0];
+
+let user = null;
+
+const _drawCanvasLoginArrow = canvas => {
+  const ctx = canvas.getContext('2d');
+
+  ctx.strokeStyle = '#FFF';
+  ctx.lineWidth = 1;
+
+  const startX = 640;
+  const endX = 930;
+  const startY = 500;
+
+  const tick = 55;
+  const tock = Math.sqrt((tick * tick) + (tick * tick));
+  const tack = 50;
+
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, startY);
+  ctx.lineTo(endX + tick, startY + tick);
+  ctx.lineTo(endX + tick, startY + tick + tock);
+  ctx.lineTo(endX + tick - tack, startY + tick + tock + tack);
+
+  ctx.moveTo(endX + tick - tack, startY + tick + tock + tack);
+  ctx.lineTo(endX + tick - tack, startY + tick + tock + tack - tack);
+
+  ctx.moveTo(endX + tick - tack, startY + tick + tock + tack);
+  ctx.lineTo(endX + tick - tack + tack, startY + tick + tock + tack);
+
+  ctx.stroke();
+};
+_drawCanvasLoginArrow(canvasLoginArrow);
+
+const _login = j => fetch('/hub/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(j),
+}).then(res => {
+  if (res.status >= 200 && res.status < 300) {
+    return res.json();
+  } else {
+    const err = new Error('failed to log in');
+    return Promise.reject(err);
+  }
+});
+
+const _jsonParse = s => {
+  let err = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (e) {
+    err = e;
+  }
+  if (!err) {
+    return result;
+  } else {
+    return null;
+  }
+};
+
+const _tryLogin = () => {
+  const tokenString = localStorage.getItem('token');
+  if (tokenString) {
+    const token = _jsonParse(tokenString);
+
+    if (token) {
+      loginForm.style.display = 'none';
+      loginLoader.style.display = null;
+
+      _login({
+        token,
+      })
+        .then(j => {
+          if (j) {
+            const {username, world, plan} = j;
+
+            user = {
+              username,
+              world,
+              plan,
+            };
+
+            headerLoginUsername.innerText = username;
+            connectButton.innerText = 'Connect - ' + world;
+            connectButton.href = _getConnectUrl(world, token);
+            loginLoader.style.display = 'none';
+
+            if (plan !== null) {
+              planNagger.style.display = 'none';
+            }
+
+            body.classList.add('logged-in');
+          } else {
+            loginForm.style.display = null;
+            loginLoader.style.display = 'none';
+          }
+        })
+        .catch(err => {
+          console.warn(err);
+
+          loginForm.style.display = null;
+          loginLoader.style.display = 'none';
+        });
+    }
+  }
+};
+_tryLogin();
+
+const _getConnectUrl = (worldName, token) => window.location.protocol + '//' + worldName + '.' + window.location.host + '?token=' + token;
+
+loginForm.addEventListener('submit', e => {
+  if (emailInput.value && emailInput.checkValidity() && passwordInput.value && passwordInput.checkValidity()) {
+    loginForm.style.display = 'none';
+    loginLoader.style.display = null;
+
+    const {value: username} = emailInput;
+    const {value: password} = passwordInput;
+
+    emailInput.value = '';
+    passwordInput.value = '';
+
+    _login({
+      username,
+      password,
+    })
+      .then(j => {
+        const {username, world, plan, token} = j;
+
+        const s = JSON.stringify(token);
+        localStorage.setItem('token', s);
+
+        user = {
+          username,
+          world,
+          plan,
+        };
+
+        headerLoginUsername.innerText = username;
+        connectButton.innerText = 'Connect - ' + world;
+        connectButton.href = _getConnectUrl(world, token);
+        loginLoader.style.display = 'none';
+
+        if (plan !== null) {
+          planNagger.style.display = 'none';
+        }
+
+        body.classList.add('logged-in');
+      })
+      .catch(err => {
+        loginForm.style.display = null;
+        loginLoader.style.display = 'none';
+      });
+  }
+
+  e.preventDefault();
+});
+
+logOutButton.addEventListener('click', e => {
+  localStorage.removeItem('token');
+
+  loginForm.style.display = null;
+  body.classList.remove('logged-in');
+  body.classList.remove('signing-up');
+});
+
+planNagger.addEventListener('click', e => {
+  body.classList.add('signing-up');
+
+  if (user) {
+    signUpEmail.value = user.username;
+  }
+});
+
+gotoSignUpButton.addEventListener('click', e => {
+  body.classList.add('signing-up');
+
+  if (user) {
+    signUpEmail.value = user.username;
+  }
+
+  window.scrollTo(0, 0);
+});
+
+signUpButton.addEventListener('click', e => {
+  publishableKeyPromise
+    .then(() => {
+      const {value: email} = signUpEmail;
+      const {value: name} = signUpName;
+      const {value: number} = signUpCcn;
+      const {value: cvc} = signUpCvc;
+      const expiry = (() => {
+        const {value} = signUpExpiry;
+        const match = value.match(/^([0-9]+)\-([0-9]+)$/);
+        if (match) {
+          return {
+            month: parseInt(match[2], 10),
+            year: parseInt(match[1], 10),
+          };
+        } else {
+          return {
+            month: 0,
+            year: 0,
+          };
+        }
+      })();
+
+      console.log('submitting', {
+        email,
+        name,
+        number,
+        cvc,
+        exp_month: expiry.month,
+        exp_year: expiry.year,
+      });
+
+      Stripe.card.createToken({
+        name,
+        number,
+        cvc,
+        exp_month: expiry.month,
+        exp_year: expiry.year,
+      }, (status, response) => {
+        if (!response.error) {
+          const {id: stripeToken} = response;
+
+          fetch('/hub/signUp', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: email,
+              stripeToken,
+            }),
+          })
+            .then(res => res.json()
+              .then(j => {
+                console.log(j);
+              })
+            )
+            .catch(err => {
+              console.warn(err);
+            });
+        } else {
+          console.warn(response.error);
+        }
+      });
+    })
+    .catch(err => {
+      console.warn(err);
+    });
+});
+
+signingUpOverlay.addEventListener('click', e => {
+  body.classList.remove('signing-up');
+});
+
+const publishableKeyPromise = fetch('/stripe/publishableKey.json')
+  .then(res => res.json()
+    .then(publishableKey => {
+      Stripe.setPublishableKey(publishableKey);
+    })
+  )
+  .catch(err => {
+    console.warn(err);
+  });
+  </script>
+</body>
+</html>
