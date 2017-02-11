@@ -199,7 +199,7 @@ ${getHeaderSrc(displayName, mod ? ('v' + mod.version) : '', mod ? getGetButtonSr
 `;
 };
 
-const getModPageReadmeSrc = ({modName, mod, loading}) => {
+const getModPageStatusSrc = ({modName, mod, loading}) => {
   const content = (() => {
     if (loading) {
       return `<h1 style="font-size: 50px;">Loading...</h1>`;
@@ -827,8 +827,8 @@ const getNavbarSrc = ({tab}) => {
 
   return `\
     <div style="display: flex; width: 1024px; height: 50px; background-color: #CCC;">
-      <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; ${tab === 'readme' ? 'z-index: 1;' : ''}" onclick="navbar:readme">
-        ${tab === 'readme' ? focusedContent('Readme') : unfocusedContent('Readme')}
+      <a style="display: flex; position: relative; width: 200px; height: 100%; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; ${tab === 'status' ? 'z-index: 1;' : ''}" onclick="navbar:status">
+        ${tab === 'status' ? focusedContent('Status') : unfocusedContent('Status')}
       </a>
       <a style="display: flex; position: relative; width: 200px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 24px; text-decoration: none; box-sizing: border-box; ${tab === 'multiverse' ? 'z-index: 1;' : ''}" onclick="navbar:multiverse">
         ${tab === 'multiverse' ? focusedContent('Multiverse') : unfocusedContent('Multiverse')}
@@ -856,7 +856,7 @@ return {
   getItemsSrc,
   getItemSrc,
   getModPageSrc,
-  getModPageReadmeSrc,
+  getModPageStatusSrc,
   getConfigPageSrc,
   getConfigPageContentSrc,
   getElementsPageSrc,

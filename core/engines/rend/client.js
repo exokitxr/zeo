@@ -144,7 +144,7 @@ class Rend {
           numFiles: 2,
         };
         const navbarState = {
-          tab: 'readme',
+          tab: 'status',
         };
 
         // api functions
@@ -237,7 +237,6 @@ class Rend {
                 menuUi.pushPage(({status}) => [
                   {
                     type: 'html',
-                    // src: mainReadme,
                     src: menuRenderer.getStatusSrc({status}),
                     x: 0,
                     y: 0,
@@ -246,7 +245,7 @@ class Rend {
                     scroll: true,
                   },
                 ], {
-                  type: 'home',
+                  type: 'status',
                   state: {
                     status: statusState,
                   },
@@ -487,7 +486,7 @@ class Rend {
                       const {type} = page;
 
                       let match;
-                      if (type === 'home') {
+                      if (type === 'status') {
                         page.update({
                           status: statusState,
                         }, pend);
@@ -525,12 +524,12 @@ class Rend {
                       const onclick = (anchor && anchor.onclick) || '';
 
                       let match;
-                      if (match = onclick.match(/^navbar:(readme|multiverse|world|inventory|options)$/)) {
+                      if (match = onclick.match(/^navbar:(status|multiverse|world|inventory|options)$/)) {
                         const newTab = match[1];
 
                         const _getTabMesh = tab => {
                           switch (tab) {
-                            case 'readme': return menuMesh.planeMesh;
+                            case 'status': return menuMesh.planeMesh;
                             case 'multiverse': return menuMesh.universeMesh;
                             case 'world': return menuMesh.worldMesh;
                             case 'inventory': return menuMesh.inventoryMesh;
@@ -560,7 +559,7 @@ class Rend {
                     const _doClickMenu = e => {
                       const {tab} = navbarState;
 
-                      if (tab === 'readme') {
+                      if (tab === 'status') {
                         const {side} = e;
                         const menuHoverState = menuHoverStates[side];
                         const {intersectionPoint} = menuHoverState;
@@ -859,7 +858,7 @@ class Rend {
                     const _doScroll = () => {
                       const {tab} = navbarState;
 
-                      if (tab === 'readme') {
+                      if (tab === 'status') {
                         const {scrollLayer} = menuHoverState;
 
                         if (scrollLayer) {
@@ -930,7 +929,7 @@ class Rend {
                   const _doScroll = () => {
                     const {tab} = navbarState;
 
-                    if (tab === 'readme') {
+                    if (tab === 'status') {
                       const menuHoverState = menuHoverStates[side ];
                       const {mousedownStartCoord} = menuHoverState;
 
@@ -988,7 +987,7 @@ class Rend {
                 const keydown = e => {
                   const {tab} = navbarState;
 
-                  if (tab === 'readme') {
+                  if (tab === 'status') {
                     const {open} = menuState;
 
                     if (open) {
@@ -1191,7 +1190,7 @@ class Rend {
                       const {tab} = navbarState;
                       const uiTime = uiTimer.getUiTime();
 
-                      if (tab === 'readme') {
+                      if (tab === 'status') {
                         const {
                           planeMesh: {
                             menuMaterial: planeMenuMaterial,
@@ -1253,7 +1252,7 @@ class Rend {
                           const _updateMenuAnchors = () => {
                             const {tab} = navbarState;
 
-                            if (tab === 'readme') {
+                            if (tab === 'status') {
                               biolumi.updateAnchors({
                                 matrixObject: menuMatrixObject,
                                 ui: menuUi,
