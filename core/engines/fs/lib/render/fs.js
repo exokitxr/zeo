@@ -1,9 +1,3 @@
-/* const dotsImg = require('../img/dots');
-const dotsImgSrc = 'data:image/svg+xml;base64,' + btoa(dotsImg);
-const barsImg = require('../img/bars');
-const barsImgSrc = 'data:image/svg+xml;base64,' + btoa(barsImg);
-const magnifyingGlassImg = require('../img/magnifying-glass');
-const magnifyingGlassImgSrc = 'data:image/svg+xml;base64,' + btoa(magnifyingGlassImg); */
 const playImg = require('../img/play');
 const playImgSrc = 'data:image/svg+xml;base64,' + btoa(playImg);
 

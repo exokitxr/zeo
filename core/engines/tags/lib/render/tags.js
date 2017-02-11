@@ -1,7 +1,3 @@
-/* const arrowRightImg = require('../img/arrow-right');
-const arrowRightImgSrc = 'data:image/svg+xml;base64,' + btoa(arrowRightImg);
-const dotsImg = require('../img/dots');
-const dotsImgSrc = 'data:image/svg+xml;base64,' + btoa(dotsImg); */
 const barsImg = require('../img/bars');
 const barsImgSrc = 'data:image/svg+xml;base64,' + btoa(barsImg);
 
