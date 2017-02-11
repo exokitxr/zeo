@@ -252,10 +252,11 @@ class Contract {
           };
 
           class Contract {
-            constructor(id, name, author, matrix) {
+            constructor(id, name, author, created, matrix) {
               this.id = id;
               this.name = name;
               this.author = author;
+              this.created = created;
               this.matrix = matrix;
             }
           }
@@ -266,7 +267,7 @@ class Contract {
               const object = new THREE.Object3D();
               object[contractFlagSymbol] = true;
 
-              const contract = new Contract(contractSpec.id, contractSpec.name, contractSpec.author, contractSpec.matrix);
+              const contract = new Contract(contractSpec.id, contractSpec.name, contractSpec.author, contractSpec.created, contractSpec.matrix);
               object.contract = contract;
 
               object.position.set(contract.matrix[0], contract.matrix[1], contract.matrix[2]);
