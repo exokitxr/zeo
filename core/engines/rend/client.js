@@ -22,10 +22,6 @@ import {
 } from './lib/constants/keyboard';
 import menuUtils from './lib/utils/menu';
 import keyboardImg from './lib/img/keyboard';
-import landImg from './lib/img/land';
-import landIconImg from './lib/img/land-icon';
-const landImgSrc = 'data:image/svg+xml;base64,' + btoa(landImg);
-const landIconImgSrc = 'data:image/svg+xml;base64,' + btoa(landIconImg);
 import menuRender from './lib/render/menu';
 
 const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImg);
@@ -137,6 +133,15 @@ class Rend {
           karma: 1875,
           adventureRequests: 3,
           adventureResponses: 7,
+          worldname: 'Aldous Huxley',
+          users: [
+            'allie',
+            'reede',
+            'fay',
+            'khromix',
+          ],
+          numTags: 8,
+          numFiles: 2,
         };
         const navbarState = {
           tab: 'readme',

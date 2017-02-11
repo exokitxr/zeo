@@ -7,6 +7,12 @@ const landIconImgSrc = 'data:image/svg+xml;base64,' + btoa(landIconImg);
 const landImg = require('../img/land');
 const landImgSrc = 'data:image/svg+xml;base64,' + btoa(landImg);
 
+const tagImg = require('../img/tag-white');
+const tagImgSrc = 'data:image/svg+xml;base64,' + btoa(tagImg);
+
+const fileImg = require('../img/file-white');
+const fileImgSrc = 'data:image/svg+xml;base64,' + btoa(fileImg);
+
 const menuUtils = require('../utils/menu');
 
 const makeRenderer = ({creatureUtils}) => {
@@ -757,10 +763,10 @@ const getFilesButtonsSrc = (selectedName, clipboardPath, prefix) => `\
 </div>
 `;
 
-const getStatusSrc = ({status: {username, accountType, karma, adventureRequests, adventureResponses}}) => {
+const getStatusSrc = ({status: {username, accountType, karma, adventureRequests, adventureResponses, worldname, users, numTags, numFiles}}) => {
   return `\
     <div style="padding: 30px;">
-      <div style="display: flex; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
+      <div style="display: flex; margin-bottom: 20px; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
         <div style="display: inline-flex; margin-right: auto; padding: 5px 20px; background-color: #EEE; border-radius: 100px; justify-content: center; align-items: center;">
           <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="40" height="40" style="margin-right: 10px; image-rendering: pixelated;" />
           <span>${username}</span>
@@ -770,12 +776,37 @@ const getStatusSrc = ({status: {username, accountType, karma, adventureRequests,
           <div>${karma}</div>
         </div>
       </div>
-      <div style="display: flex; font-size: 30px; align-items: center;">
-        <img src="${landIconImgSrc}" width="40" height="40" style="margin-right: 10px;">
+      <div style="display: flex; margin: 0 -30px; margin-bottom: 20px; padding: 30px; background-color: #000; color: #FFF;">
+        <div style="margin-right: 20px; width: 100px; height: 100px; background-color: #FFF;"></div>
+        <div style="margin-right: 30px;">
+          <div style="font-size: 24px;">${worldname}</div>
+          <div style="font-size: 24px;">${users.length} Users</div>
+        </div>
+        <div style="margin-right: auto;">
+          ${users.map(user => `\
+            <div style="display: flex; margin-bottom: 2px; padding: 2px 10px; background-color: #222; border-radius: 100px; font-size: 13px; line-height: 1; align-items: center;">
+              <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="18" height="18" style="margin-right: 10px; image-rendering: pixelated;" />
+              <div>${user}</div>
+            </div>
+          `).join('\n')}
+        </div>
+        <div>
+          <div style="display: flex; margin-bottom: 5px; font-size: 20px; align-items: center;">
+            <img src="${tagImgSrc}" width="28" height="28" style="margin-right: 10px;">
+            <div>${numTags} Tags</div>
+          </div>
+          <div style="display: flex; margin-bottom: 5px; font-size: 20px; align-items: center;">
+            <img src="${fileImgSrc}" width="28" height="28" style="margin-right: 10px;">
+            <div>${numFiles} Files</div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; margin-bottom: 5px; font-size: 20px; align-items: center;">
+        <img src="${landIconImgSrc}" width="28" height="28" style="margin-right: 10px;">
         <div>${adventureRequests} Adventures pending</div>
       </div>
-      <div style="display: flex; font-size: 30px; align-items: center;">
-        <img src="${landImgSrc}" width="40" height="40" style="margin-right: 10px;">
+      <div style="display: flex; margin-bottom: 5px; font-size: 20px; align-items: center;">
+        <img src="${landImgSrc}" width="28" height="28" style="margin-right: 10px;">
         <div>${adventureResponses} Adventures active</div>
       </div>
     </div>
