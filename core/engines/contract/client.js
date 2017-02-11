@@ -11,7 +11,7 @@ import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
-const DEFAULT_GRAB_RADIUS = 0.1;
+const DEFAULT_GRAB_RADIUS = 0.4;
 const DEFAULT_CONTRACT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
