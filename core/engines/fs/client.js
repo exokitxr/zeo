@@ -76,12 +76,17 @@ class Fs {
           transparent: true,
         });
 
-        const _makeHoverState = () => ({
+        const _makeGrabbableState = () => ({
           fileMesh: null,
         });
+        const grabbableStates = {
+          left: _makeGrabbableState(),
+          right: _makeGrabbableState(),
+        };
+
         const hoverStates = {
-          left: _makeHoverState(),
-          right: _makeHoverState(),
+          left: biolumi.makeMenuHoverState(),
+          right: biolumi.makeMenuHoverState(),
         };
 
         const _makeGrabState = () => ({
@@ -207,6 +212,26 @@ class Fs {
           }
         });
 
+        const _trigger = e => {
+          const {side} = e;
+          const hoverState = hoverStates[side];
+          const {intersectionPoint} = hoverState;
+
+          if (intersectionPoint) {
+            const {anchor} = hoverState;
+            const onclick = (anchor && anchor.onclick) || '';
+
+            let match;
+            if (match = onclick.match(/^file:open:(.+)$/)) {
+              const id = match[1];
+              const fileMesh = fileMeshes.find(fileMesh => fileMesh.file.id === id);
+              console.log('open file mesh', fileMesh);
+
+              e.stopImmediatePropagation();
+            }
+          }
+        };
+        input.on('trigger', _trigger);
         const _gripdown = e => {
           const {side} = e;
 
@@ -237,6 +262,7 @@ class Fs {
 
                 if (gamepad) {
                   const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  const hoverState = hoverStates[side];
                   const dotMesh = dotMeshes[side];
                   const boxMesh = boxMeshes[side];
 
@@ -250,6 +276,7 @@ class Fs {
                         ui: menuUi,
                       };
                     }),
+                    hoverState: hoverState,
                     dotMesh: dotMesh,
                     boxMesh: boxMesh,
                     width: WIDTH,
@@ -265,12 +292,12 @@ class Fs {
             };
             const _updateGrabbers = () => {
               SIDES.forEach(side => {
-                const hoverState = hoverStates[side];
+                const grabbableState = grabbableStates[side];
                 const grabBoxMesh = grabBoxMeshes[side];
 
                 const bestGrabbableFsMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
                 if (bestGrabbableFsMesh) {
-                  hoverState.fileMesh = bestGrabbableFsMesh;
+                  grabbableState.fileMesh = bestGrabbableFsMesh;
 
                   const {position: fileMehPosition, rotation: fileMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableFsMesh);
                   grabBoxMesh.position.copy(fileMehPosition);
@@ -280,7 +307,7 @@ class Fs {
                     grabBoxMesh.visible = true;
                   }
                 } else {
-                  hoverState.fileMesh = null;
+                  grabbableState.fileMesh = null;
 
                   if (grabBoxMesh.visible) {
                     grabBoxMesh.visible = false;
@@ -333,9 +360,9 @@ class Fs {
           domElement.removeEventListener('dragover', dragover);
           domElement.removeEventListener('drop', drop);
 
+          input.removeListener('trigger', _trigger);
           input.removeListener('gripdown', _gripdown);
           input.removeListener('gripup', _gripup);
-
           rend.removeListener('update', _update);
         };
 
@@ -499,8 +526,8 @@ class Fs {
             );
           }
 
-          getHoverFile(side) {
-            return hoverStates[side].fileMesh;
+          getGrabbableFile(side) {
+            return grabbableState[side].fileMesh;
           } */
 
           isFile(object) {

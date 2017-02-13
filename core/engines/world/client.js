@@ -1254,7 +1254,7 @@ class World {
 
                 if (tab === 'world') {
                   const {side} = e;
-                  const tagMesh = tags.getHoverTag(side);
+                  const tagMesh = tags.getGrabbableTag(side);
 
                   if (tagMesh) {
                     const {item} = tagMesh;
@@ -1315,7 +1315,7 @@ class World {
                 const {side} = e;
 
                 const _grabTag = () => {
-                  const tagMesh = tags.getHoverTag(side);
+                  const tagMesh = tags.getGrabbableTag(side);
 
                   if (tagMesh) {
                     const elementsTagMeshes = tags.getTagsClass('elements');

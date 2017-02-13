@@ -78,12 +78,17 @@ class Tags {
             transparent: true,
           });
 
-          const _makeHoverState = () => ({
+          const _makeGrabbableState = () => ({
             tagMesh: null,
           });
+          const grabbableStates = {
+            left: _makeGrabbableState(),
+            right: _makeGrabbableState(),
+          };
+
           const hoverStates = {
-            left: _makeHoverState(),
-            right: _makeHoverState(),
+            left: biolumi.makeMenuHoverState(),
+            right: biolumi.makeMenuHoverState(),
           };
 
           const _makeGrabState = () => ({
@@ -183,6 +188,26 @@ class Tags {
             }
           });
 
+          const _trigger = e => {
+            const {side} = e;
+            const hoverState = hoverStates[side];
+            const {intersectionPoint} = hoverState;
+
+            if (intersectionPoint) {
+              const {anchor} = hoverState;
+              const onclick = (anchor && anchor.onclick) || '';
+
+              let match;
+              if (match = onclick.match(/^tag:open:(.+)$/)) {
+                const id = match[1];
+                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                console.log('open tag mesh', tagMesh);
+
+                e.stopImmediatePropagation();
+              }
+            }
+          };
+          input.on('trigger', _trigger);
           const _gripdown = e => {
             const {side} = e;
 
@@ -206,12 +231,12 @@ class Tags {
             const _updateControllers = () => {
               const _updateGrabbers = () => {
                 SIDES.forEach(side => {
-                  const hoverState = hoverStates[side];
+                  const grabbableState = grabbableStates[side];
                   const grabBoxMesh = grabBoxMeshes[side];
 
                   const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
                   if (bestGrabbableTagMesh) {
-                    hoverState.tagMesh = bestGrabbableTagMesh;
+                    grabbableState.tagMesh = bestGrabbableTagMesh;
 
                     const {position: tagMeshPosition, rotation: tagMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
                     grabBoxMesh.position.copy(tagMeshPosition);
@@ -221,7 +246,7 @@ class Tags {
                       grabBoxMesh.visible = true;
                     }
                   } else {
-                    hoverState.tagMesh = null;
+                    grabbableState.tagMesh = null;
 
                     if (grabBoxMesh.visible) {
                       grabBoxMesh.visible = false;
@@ -237,6 +262,7 @@ class Tags {
 
                   if (gamepad) {
                     const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const hoverState = hoverStates[side];
                     const dotMesh = dotMeshes[side];
                     const boxMesh = boxMeshes[side];
 
@@ -250,6 +276,7 @@ class Tags {
                           ui: menuUi,
                         };
                       }),
+                      hoverState: hoverState,
                       dotMesh: dotMesh,
                       boxMesh: boxMesh,
                       width: WIDTH,
@@ -305,6 +332,7 @@ class Tags {
               scene.remove(grabBoxMeshes[side]);
             });
 
+            input.removeListener('trigger', _trigger);
             input.removeListener('gripdown', _gripdown);
             input.removeListener('gripup', _gripup);
             rend.removeListener('update', _update);
@@ -463,8 +491,8 @@ class Tags {
               return tagMeshes.filter(tagMesh => !index.has(tagMesh));
             }
 
-            getHoverTag(side) {
-              return hoverStates[side].tagMesh;
+            getGrabbableTag(side) {
+              return grabbableStates[side].tagMesh;
             }
 
             mountTag(tagClass, tagMesh) {
