@@ -37,6 +37,7 @@ class Fs {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/input',
+      '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
@@ -45,6 +46,7 @@ class Fs {
     ]).then(([
       three,
       input,
+      webvr,
       biolumi,
       rend,
       hands,
@@ -90,7 +92,20 @@ class Fs {
           right: _makeGrabState(),
         };
 
-        const _makeBoxMesh = () => {
+        const dotMeshes = {
+          left: biolumi.makeMenuDotMesh(),
+          right: biolumi.makeMenuDotMesh(),
+        };
+        scene.add(dotMeshes.left);
+        scene.add(dotMeshes.right);
+        const boxMeshes = {
+          left: biolumi.makeMenuBoxMesh(),
+          right: biolumi.makeMenuBoxMesh(),
+        };
+        scene.add(boxMeshes.left);
+        scene.add(boxMeshes.right);
+
+        const _makeGrabBoxMesh = () => {
           const width = WORLD_WIDTH;
           const height = WORLD_HEIGHT;
           const depth = WORLD_DEPTH;
@@ -106,12 +121,12 @@ class Fs {
           mesh.visible = false;
           return mesh;
         };
-        const boxMeshes = {
-          left: _makeBoxMesh(),
-          right: _makeBoxMesh(),
+        const grabBoxMeshes = {
+          left: _makeGrabBoxMesh(),
+          right: _makeGrabBoxMesh(),
         };
-        scene.add(boxMeshes.left);
-        scene.add(boxMeshes.right);
+        scene.add(grabBoxMeshes.left);
+        scene.add(grabBoxMeshes.right);
 
         const dragover = e => {
           e.preventDefault();
@@ -214,29 +229,68 @@ class Fs {
 
         const _update = () => {
           const _updateControllers = () => {
-            SIDES.forEach(side => {
-              const hoverState = hoverStates[side];
-              const boxMesh = boxMeshes[side];
+            const _updateMenuAnchors = () => {
+              const {gamepads} = webvr.getStatus();
 
-              const bestGrabbableFsMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
-              if (bestGrabbableFsMesh) {
-                hoverState.fileMesh = bestGrabbableFsMesh;
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
 
-                const {position: fileMehPosition, rotation: fileMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableFsMesh);
-                boxMesh.position.copy(fileMehPosition);
-                boxMesh.quaternion.copy(fileMeshRotation);
+                if (gamepad) {
+                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  const dotMesh = dotMeshes[side];
+                  const boxMesh = boxMeshes[side];
 
-                if (!boxMesh.visible) {
-                  boxMesh.visible = true;
+                  biolumi.updateAnchors({
+                    objects: fileMeshes.map(fileMesh => {
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(fileMesh);
+                      const {ui: menuUi} = fileMesh;
+
+                      return {
+                        matrixObject: menuMatrixObject,
+                        ui: menuUi,
+                      };
+                    }),
+                    dotMesh: dotMesh,
+                    boxMesh: boxMesh,
+                    width: WIDTH,
+                    height: HEIGHT,
+                    worldWidth: WORLD_WIDTH,
+                    worldHeight: WORLD_HEIGHT,
+                    worldDepth: WORLD_DEPTH,
+                    controllerPosition,
+                    controllerRotation,
+                  });
                 }
-              } else {
-                hoverState.fileMesh = null;
+              });
+            };
+            const _updateGrabbers = () => {
+              SIDES.forEach(side => {
+                const hoverState = hoverStates[side];
+                const grabBoxMesh = grabBoxMeshes[side];
 
-                if (boxMesh.visible) {
-                  boxMesh.visible = false;
+                const bestGrabbableFsMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                if (bestGrabbableFsMesh) {
+                  hoverState.fileMesh = bestGrabbableFsMesh;
+
+                  const {position: fileMehPosition, rotation: fileMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableFsMesh);
+                  grabBoxMesh.position.copy(fileMehPosition);
+                  grabBoxMesh.quaternion.copy(fileMeshRotation);
+
+                  if (!grabBoxMesh.visible) {
+                    grabBoxMesh.visible = true;
+                  }
+                } else {
+                  hoverState.fileMesh = null;
+
+                  if (grabBoxMesh.visible) {
+                    grabBoxMesh.visible = false;
+                  }
                 }
-              }
-            });
+               });
+            };
+
+            _updateMenuAnchors();
+            _updateGrabbers();
           };
           const _updateTextures = () => {
             const uiTime = rend.getUiTime();
@@ -266,8 +320,15 @@ class Fs {
         rend.on('update', _update);
 
         this._cleanup = () => {
-          scene.add(boxMeshes.left);
-          scene.add(boxMeshes.right);
+          for (let i = 0; i < fileMeshes.length; i++) {
+            const fileMesh = fileMeshes[i];
+            fileMesh.parent.remove(fileMesh);
+          }
+          SIDES.forEach(side => {
+            scene.remove(dotMeshes[side]);
+            scene.remove(boxMeshes[side]);
+            scene.remove(grabBoxMeshes[side]);
+          });
 
           domElement.removeEventListener('dragover', dragover);
           domElement.removeEventListener('drop', drop);
