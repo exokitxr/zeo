@@ -201,7 +201,10 @@ class Tags {
               if (match = onclick.match(/^tag:open:(.+)$/)) {
                 const id = match[1];
                 const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                console.log('open tag mesh', tagMesh);
+                const {item} = tagMesh;
+                item.open = true;
+
+                _updatePages();
 
                 e.stopImmediatePropagation();
               }
@@ -350,6 +353,8 @@ class Tags {
               this.attributes = null;
               this[itemInstanceSymbol] = null;
               this.instancing = false;
+
+              this.open = false;
 
               this[itemMutexSymbol] = new MultiMutex();
             }

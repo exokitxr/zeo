@@ -225,7 +225,10 @@ class Fs {
             if (match = onclick.match(/^file:open:(.+)$/)) {
               const id = match[1];
               const fileMesh = fileMeshes.find(fileMesh => fileMesh.file.id === id);
-              console.log('open file mesh', fileMesh);
+              const {file} = fileMesh;
+              file.open = true;
+
+              _updatePages();
 
               e.stopImmediatePropagation();
             }
@@ -375,6 +378,8 @@ class Fs {
             this.matrix = matrix;
 
             this.instancing = false;
+
+            this.open = false;
           }
         }
 
