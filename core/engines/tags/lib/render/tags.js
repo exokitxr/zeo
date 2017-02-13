@@ -28,7 +28,7 @@ const getTagSrc = ({item, inputText, inputValue, positioningName, focusAttribute
     </div>
   `;
   const bodySrc = open ? `\
-    <div style="width: 400px; height: 450px;">
+    <div style="width: 400px; height: 450px; padding: 10px 0; background-color: #F0F0F0; box-sizing: border-box;">
       ${getAttributesSrc(item, inputText, inputValue, positioningName, focusAttribute)}
     </div>
   ` : '';
@@ -52,8 +52,8 @@ const getAttributesSrc = (item, inputText, inputValue, positioningName, focusAtt
       const focus = name === focusAttribute;
 
       acc += `\
-        <div style="display: flex; margin-bottom: 4px; font-size: 28px; line-height: 1.4; align-items: center;">
-          <div style="width: ${200 - 30}px; padding-right: 30px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
+        <div style="display: flex; width: 400px; padding-left: 20px; margin-bottom: 4px; font-size: 20px; font-weight: 400; line-height: 1.4; align-items: center; box-sizing: border-box;">
+          <div style="width: 120px; padding-right: 20px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
           ${getAttributeInputSrc(name, type, value, min, max, step, options, positioningName, inputText, inputValue, focus)}
         </div>
       `;
@@ -61,7 +61,11 @@ const getAttributesSrc = (item, inputText, inputValue, positioningName, focusAtt
   }
 
   if (acc) {
-    return `<div>` + acc + `</div>`;
+    return `\
+      <div>
+        ${acc}
+      </div>
+    `;
   } else {
     return `\
       <div>No attributes</div>
@@ -72,17 +76,18 @@ const getAttributesSrc = (item, inputText, inputValue, positioningName, focusAtt
 const getAttributeInputSrc = (name, type, value, min, max, step, options, positioningName, inputText, inputValue, focus) => {
   const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
 
+  const width = 400 - (20 + 120 + 20);
   switch (type) {
     case 'matrix': {
       return `\
-<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end;">
+<div style="display: flex; width: ${width}px; height: 40px; justify-content: flex-end;">
   <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${name}:position" onmousedown="attribute:${name}:position">${!positioningName ? 'Set' : 'Setting...'}</a>
 </div>
 `;
     }
     case 'text': {
       return `\
-<a style="position: relative; width: 400px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
+<a style="position: relative; width: ${width}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
   <div>${focusValue}</div>
 </a>
@@ -100,7 +105,7 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
       const string = focusValue !== null ? String(focusValue) : inputText;
 
       return `\
-<a style="position: relative; width: ${400 - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="attribute:${name}:tweak" onmousedown="attribute:${name}:tweak">
+<a style="position: relative; width: ${width - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="attribute:${name}:tweak" onmousedown="attribute:${name}:tweak">
   <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
     <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
   </div>
@@ -118,14 +123,14 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
 
       if (!focus) {
         return `\
-<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
+<a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
   <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${focusValue}</div>
   <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">${unescape(encodeURIComponent('▼'))}</div>
 </a>
 `;
       } else {
         return `\
-<div style="position: relative; width: 400px; height: 40px; z-index: 1;">
+<div style="position: relative; width: ${width}px; height: 40px; z-index: 1;">
   <div style="display: flex; flex-direction: column; background-color: #FFF;">
     ${options.map((option, i, a) => {
       const style = (() => {
@@ -141,7 +146,7 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
         }
         return result;
       })();
-      return `<a style="display: flex; width: 400px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="attribute:${name}:set:${option}" onmousedown="attribute:${name}:set:${option}">
+      return `<a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="attribute:${name}:set:${option}" onmousedown="attribute:${name}:set:${option}">
         ${option}
       </a>`;
     }).join('\n')}
@@ -155,7 +160,7 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
       const string = focusValue !== null ? focusValue : inputText;
 
       return `\
-<div style="display: flex; width: 400px; height: 40px; align-items: center;">
+<div style="display: flex; width: ${width}px; height: 40px; align-items: center;">
   <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${color};"></div>
   <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
@@ -166,7 +171,7 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
     }
     case 'checkbox': {
       return `\
-<div style="display: flex; width: 400px; height: 40px; justify-content: flex-end; align-items: center;">
+<div style="display: flex; width: ${width}px; height: 40px; justify-content: flex-end; align-items: center;">
   ${focusValue ?
     `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="attribute:${name}:toggle" onmousedown="attribute:${name}:toggle">
       <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
@@ -185,7 +190,7 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
     }
     case 'file': {
       return `\
-<div style="display: flex; width: 400px; height: 40px;">
+<div style="display: flex; width: ${width}px; height: 40px;">
   <a style="position: relative; width: 260px; height: 40px; margin-right: 20px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${focusValue}</div>
