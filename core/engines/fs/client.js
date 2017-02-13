@@ -300,16 +300,17 @@ class Fs {
 
                   biolumi.updateAnchors({
                     objects: fileMeshes.map(fileMesh => {
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(fileMesh);
-                      const {ui: menuUi} = fileMesh;
+                      const {planeMesh} = fileMesh;
+                      const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const {ui, file: {open}} = fileMesh;
 
                       return {
-                        matrixObject: menuMatrixObject,
-                        ui: menuUi,
-                        width: WIDTH,
-                        height: HEIGHT,
-                        worldWidth: WORLD_WIDTH,
-                        worldHeight: WORLD_HEIGHT,
+                        matrixObject: matrixObject,
+                        ui: ui,
+                        width: !open ? WIDTH : OPEN_WIDTH,
+                        height: !open ? HEIGHT : OPEN_HEIGHT,
+                        worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                        worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
                         worldDepth: WORLD_DEPTH,
                       };
                     }),
