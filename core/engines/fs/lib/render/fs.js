@@ -1,7 +1,7 @@
 const playImg = require('../img/play');
 const playImgSrc = 'data:image/svg+xml;base64,' + btoa(playImg);
 
-const getFileSrc = ({name, instancing}) => `\
+const getFileSrc = ({id, name, instancing}) => `\
   <div style="display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; ${instancing ? 'filter: brightness(75%);' : ''}">
     <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #E91E63; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">File</div>
     <div style="width: 100px; height: 100px; margin: 0 10px;"></div>
@@ -11,9 +11,9 @@ const getFileSrc = ({name, instancing}) => `\
         <p style="margin: 0; font-size: 15px; line-height: 1.4;">File in /</p>
       </div>
     </div>
-    <div style="display: flex; width: 80px; justify-content: center; align-items: center;">
+    <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="file:open:${id}">
       <img src="${playImgSrc}" width="50" height="50">
-    </div>
+    </a>
   </div>
 `;
 

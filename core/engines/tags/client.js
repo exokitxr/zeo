@@ -311,7 +311,8 @@ class Tags {
           };
 
           class Item {
-            constructor(name, displayName, description, version, matrix) {
+            constructor(id, name, displayName, description, version, matrix) {
+              this.id = id;
               this.name = name;
               this.displayName = displayName;
               this.description = description;
@@ -359,7 +360,7 @@ class Tags {
               const object = new THREE.Object3D();
               object[tagFlagSymbol] = true;
 
-              const item = new Item(itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.matrix);
+              const item = new Item(itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.matrix);
               object.item = item;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
@@ -433,9 +434,10 @@ class Tags {
             }
 
             cloneTag(tagMesh) {
-              const {item} = tagMesh;
-
-              return this.makeTag(item);
+              const {item: oldItem} = tagMesh;
+              const newItem = this.makeTag(oldItem);
+              newItem.id = _makeId();
+              return newItem;
             }
 
             destroyTag(tagMesh) {
@@ -538,5 +540,6 @@ class Tags {
 }
 
 const _clone = o => JSON.parse(JSON.stringify(o));
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Tags;
