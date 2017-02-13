@@ -61,7 +61,7 @@ const getAttributesSrc = (item, inputText, inputValue, positioningName, focusAtt
   }
 
   if (acc) {
-    return `<div style="min-height: ${HEIGHT}px;">` + acc + `</div>`;
+    return `<div>` + acc + `</div>`;
   } else {
     return `\
       <div>No attributes</div>
