@@ -3,9 +3,14 @@ import menuUtils from './lib/utils/menu';
 import {
   WIDTH,
   HEIGHT,
+  OPEN_WIDTH,
+  OPEN_HEIGHT,
+
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
+  WORLD_OPEN_WIDTH,
+  WORLD_OPEN_HEIGHT,
 } from './lib/constants/fs';
 import fsRenderer from './lib/render/fs';
 
@@ -224,9 +229,34 @@ class Fs {
             if (match = onclick.match(/^file:open:(.+)$/)) {
               const id = match[1];
               const fileMesh = fileMeshes.find(fileMesh => fileMesh.file.id === id);
+
+              const {ui, planeMesh} = fileMesh;
+              ui.setDimensions(OPEN_WIDTH, OPEN_HEIGHT);
+              const scaleX = WORLD_OPEN_WIDTH / WORLD_WIDTH;
+              const scaleY = WORLD_OPEN_HEIGHT / WORLD_HEIGHT;
+              const offsetX = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
+              const offsetY = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
+              planeMesh.position.x = offsetX;
+              planeMesh.position.y = offsetY;
+              planeMesh.scale.x = scaleX;
+              planeMesh.scale.y = scaleY;
               const {file} = fileMesh;
               file.open = true;
+              _updatePages();
 
+              e.stopImmediatePropagation();
+            } else if (match = onclick.match(/^file:close:(.+)$/)) {
+              const id = match[1];
+              const fileMesh = fileMeshes.find(fileMesh => fileMesh.file.id === id);
+
+              const {ui, planeMesh} = fileMesh;
+              ui.setDimensions(WIDTH, HEIGHT);
+              planeMesh.position.x = 0;
+              planeMesh.position.y = 0;
+              planeMesh.scale.x = 1;
+              planeMesh.scale.y = 1;
+              const {file} = fileMesh;
+              file.open = false;
               _updatePages();
 
               e.stopImmediatePropagation();
@@ -417,6 +447,8 @@ class Fs {
                   {
                     type: 'html',
                     src: fsRenderer.getFileSrc(file),
+                    w: !file.open ? WIDTH : OPEN_WIDTH,
+                    h: !file.open ? HEIGHT : OPEN_HEIGHT,
                   },
                   {
                     type: 'image',

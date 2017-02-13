@@ -451,8 +451,6 @@ class Tags {
                     {
                       type: 'html',
                       src: tagsRenderer.getTagSrc(item),
-                      x: 0,
-                      y: 0,
                       w: !item.open ? WIDTH : OPEN_WIDTH,
                       h: !item.open ? HEIGHT : OPEN_HEIGHT,
                     },

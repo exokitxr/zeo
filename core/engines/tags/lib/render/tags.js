@@ -1,7 +1,7 @@
-const barsWhiteImg = require('../img/bars-white');
-const barsWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(barsWhiteImg);
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
+const barsWhiteImg = require('../img/bars-white');
+const barsWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(barsWhiteImg);
 
 const getTagSrc = ({id, displayName, description, version, instancing, open}) => {
   const headerSrc = `\
