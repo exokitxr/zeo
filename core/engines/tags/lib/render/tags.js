@@ -1,5 +1,7 @@
-const barsImg = require('../img/bars');
-const barsImgSrc = 'data:image/svg+xml;base64,' + btoa(barsImg);
+const barsWhiteImg = require('../img/bars-white');
+const barsWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(barsWhiteImg);
+const barsBlackImg = require('../img/bars-black');
+const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 
 const getTagSrc = ({id, displayName, description, version, instancing, open}) => {
   const headerSrc = `\
@@ -14,17 +16,17 @@ const getTagSrc = ({id, displayName, description, version, instancing, open}) =>
       </div>
       ${!open ?
         `<a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="tag:open:${id}">
-          <img src="${barsImgSrc}" width="50" height="50">
+          <img src="${barsBlackImgSrc}" width="50" height="50">
         </a>`
       :
-        `<a style="display: flex; width: 80px; background-color: #E8E8E8; justify-content: center; align-items: center;" onclick="tag:close:${id}">
-          <img src="${barsImgSrc}" width="50" height="50">
+        `<a style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="tag:close:${id}">
+          <img src="${barsWhiteImgSrc}" width="50" height="50">
         </a>`
       }
     </div>
   `;
   const bodySrc = open ? `\
-    <div style="width: 400px; height: 450px;">lol</div>
+    <div style="width: 400px; height: 450px; background-color: #000;"></div>
   ` : '';
   
   return `\
