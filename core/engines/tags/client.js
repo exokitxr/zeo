@@ -139,6 +139,18 @@ class Tags {
           scene.add(grabBoxMeshes.left);
           scene.add(grabBoxMeshes.right);
 
+          const detailsState = {
+            inputText: '',
+            inputPlaceholder: 'Search npm',
+            inputIndex: 0,
+            inputValue: 0,
+            positioningName: null,
+            positioningSide: null,
+          };
+          const focusState = {
+            type: '',
+          };
+
           const _updatePages = menuUtils.debounce(next => {
             const pageSpecs = (() => {
               const result = [];
@@ -182,6 +194,8 @@ class Tags {
 
                   page.update({
                     item,
+                    details: detailsState,
+                    focus: focusState,
                   }, pend);
                 } else {
                   pend();
@@ -447,27 +461,36 @@ class Tags {
                 .then(ui => {
                   const {item} = object;
 
-                  ui.pushPage(({item}) => ([
-                    {
-                      type: 'html',
-                      src: tagsRenderer.getTagSrc(item),
-                      w: !item.open ? WIDTH : OPEN_WIDTH,
-                      h: !item.open ? HEIGHT : OPEN_HEIGHT,
-                    },
-                    {
-                      type: 'image',
-                      img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
-                      x: 10,
-                      y: 0,
-                      w: 100,
-                      h: 100,
-                      frameTime: 300,
-                      pixelated: true,
-                    }
-                  ]), {
+                  ui.pushPage(({item, details: {inputText, inputValue, positioningName}, focus: {type}}) => {
+                    const focusAttribute = (() => {
+                      const match = type.match(/^attribute:(.+)$/);
+                      return match && match[1];
+                    })();
+
+                    return [
+                      {
+                        type: 'html',
+                        src: tagsRenderer.getTagSrc({item, inputText, inputValue, positioningName, focusAttribute}),
+                        w: !item.open ? WIDTH : OPEN_WIDTH,
+                        h: !item.open ? HEIGHT : OPEN_HEIGHT,
+                      },
+                      {
+                        type: 'image',
+                        img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
+                        x: 10,
+                        y: 0,
+                        w: 100,
+                        h: 100,
+                        frameTime: 300,
+                        pixelated: true,
+                      }
+                    ];
+                  }, {
                     type: 'tag',
                     state: {
                       item,
+                      details: detailsState,
+                      focus: focusState,
                     },
                     immediate: true,
                   });
@@ -499,9 +522,10 @@ class Tags {
 
             cloneTag(tagMesh) {
               const {item: oldItem} = tagMesh;
-              const newItem = this.makeTag(oldItem);
+              const newItemMesh = this.makeTag(oldItem);
+              const {item: newItem} = newItemMesh;
               newItem.id = _makeId();
-              return newItem;
+              return newItemMesh;
             }
 
             destroyTag(tagMesh) {
