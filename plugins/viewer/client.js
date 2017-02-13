@@ -604,8 +604,10 @@ class Viewer {
                             const mediaBoxMesh = mediaBoxMeshes[side];
 
                             biolumi.updateAnchors({
-                              matrixObject: mediaMatrixObject,
-                              ui: mediaUi,
+                              objects: [{
+                                matrixObject: mediaMatrixObject,
+                                ui: mediaUi,
+                              }],
                               hoverState: mediaHoverState,
                               boxMesh: mediaBoxMesh,
                               width: WIDTH,

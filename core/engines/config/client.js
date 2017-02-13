@@ -506,8 +506,10 @@ class Config {
                         const configBoxMesh = configBoxMeshes[side];
 
                         biolumi.updateAnchors({
-                          matrixObject: configMatrixObject,
-                          ui: configUi,
+                          objects: [{
+                            matrixObject: configMatrixObject,
+                            ui: configUi,
+                          }],
                           hoverState: configHoverState,
                           dotMesh: configDotMesh,
                           boxMesh: configBoxMesh,

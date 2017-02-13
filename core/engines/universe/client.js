@@ -433,7 +433,7 @@ class Universe {
                 const tab = rend.getTab();
 
                 if (tab === 'multiverse') {
-                  const _updateAnchors = () => {
+                  const _updateHoverStates = () => {
                     const status = webvr.getStatus();
                     const {gamepads} = status;
 
@@ -562,7 +562,7 @@ class Universe {
                     _updateUniverseDrag();
                   };
 
-                  _updateAnchors();
+                  _updateHoverStates();
                   _updateControllers();
                 }
               };

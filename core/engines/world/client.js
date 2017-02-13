@@ -903,8 +903,10 @@ class World {
                           const npmContainerHoverState = npmContainerHoverStates[side];
 
                           biolumi.updateAnchors({
-                            matrixObject: npmMatrixObject,
-                            ui: npmUi,
+                            objects: [{
+                              matrixObject: npmMatrixObject,
+                              ui: npmUi,
+                            }],
                             hoverState: npmHoverState,
                             dotMesh: npmDotMesh,
                             boxMesh: npmBoxMesh,
@@ -917,8 +919,10 @@ class World {
                             controllerRotation,
                           });
                           biolumi.updateAnchors({
-                            matrixObject: readmeMatrixObject,
-                            ui: readmeUi,
+                            objects: [{
+                              matrixObject: readmeMatrixObject,
+                              ui: readmeUi,
+                            }],
                             hoverState: readmeHoverState,
                             dotMesh: readmeDotMesh,
                             boxMesh: readmeBoxMesh,
@@ -931,8 +935,10 @@ class World {
                             controllerRotation,
                           });
                           biolumi.updateAnchors({
-                            matrixObject: attributesMatrixObject,
-                            ui: attributesUi,
+                            objects: [{
+                              matrixObject: attributesMatrixObject,
+                              ui: attributesUi,
+                            }],
                             hoverState: attributesHoverState,
                             dotMesh: attributesDotMesh,
                             boxMesh: attributesBoxMesh,

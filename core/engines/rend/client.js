@@ -1256,8 +1256,10 @@ class Rend {
 
                             if (tab === 'status') {
                               biolumi.updateAnchors({
-                                matrixObject: menuMatrixObject,
-                                ui: menuUi,
+                                objects: [{
+                                  matrixObject: menuMatrixObject,
+                                  ui: menuUi,
+                                }],
                                 hoverState: menuHoverState,
                                 dotMesh: menuDotMesh,
                                 boxMesh: menuBoxMesh,
@@ -1272,8 +1274,10 @@ class Rend {
                             }
 
                             biolumi.updateAnchors({
-                              matrixObject: navbarMatrixObject,
-                              ui: navbarUi,
+                              objects: [{
+                                matrixObject: navbarMatrixObject,
+                                ui: navbarUi,
+                              }],
                               hoverState: navbarHoverState,
                               dotMesh: navbarDotMesh,
                               boxMesh: navbarBoxMesh,

@@ -41,6 +41,7 @@ class Tags {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/input',
+      '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
@@ -49,6 +50,7 @@ class Tags {
       .then(([
         three,
         input,
+        webvr,
         biolumi,
         rend,
         hands,
@@ -92,7 +94,20 @@ class Tags {
             right: _makeGrabState(),
           };
 
-          const _makeBoxMesh = () => {
+          const dotMeshes = {
+            left: biolumi.makeMenuDotMesh(),
+            right: biolumi.makeMenuDotMesh(),
+          };
+          scene.add(dotMeshes.left);
+          scene.add(dotMeshes.right);
+          const boxMeshes = {
+            left: biolumi.makeMenuBoxMesh(),
+            right: biolumi.makeMenuBoxMesh(),
+          };
+          scene.add(boxMeshes.left);
+          scene.add(boxMeshes.right);
+
+          const _makeGrabBoxMesh = () => {
             const width = WORLD_WIDTH;
             const height = WORLD_HEIGHT;
             const depth = WORLD_DEPTH;
@@ -108,12 +123,12 @@ class Tags {
             mesh.visible = false;
             return mesh;
           };
-          const boxMeshes = {
-            left: _makeBoxMesh(),
-            right: _makeBoxMesh(),
+          const grabBoxMeshes = {
+            left: _makeGrabBoxMesh(),
+            right: _makeGrabBoxMesh(),
           };
-          scene.add(boxMeshes.left);
-          scene.add(boxMeshes.right);
+          scene.add(grabBoxMeshes.left);
+          scene.add(grabBoxMeshes.right);
 
           const _updatePages = menuUtils.debounce(next => {
             const pageSpecs = (() => {
@@ -189,29 +204,68 @@ class Tags {
           input.on('gripup', _gripup);
           const _update = () => {
             const _updateControllers = () => {
-              SIDES.forEach(side => {
-                const hoverState = hoverStates[side];
-                const boxMesh = boxMeshes[side];
+              const _updateGrabbers = () => {
+                SIDES.forEach(side => {
+                  const hoverState = hoverStates[side];
+                  const grabBoxMesh = grabBoxMeshes[side];
 
-                const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                if (bestGrabbableTagMesh) {
-                  hoverState.tagMesh = bestGrabbableTagMesh;
+                  const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                  if (bestGrabbableTagMesh) {
+                    hoverState.tagMesh = bestGrabbableTagMesh;
 
-                  const {position: tagMeshPosition, rotation: tagMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
-                  boxMesh.position.copy(tagMeshPosition);
-                  boxMesh.quaternion.copy(tagMeshRotation);
+                    const {position: tagMeshPosition, rotation: tagMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
+                    grabBoxMesh.position.copy(tagMeshPosition);
+                    grabBoxMesh.quaternion.copy(tagMeshRotation);
 
-                  if (!boxMesh.visible) {
-                    boxMesh.visible = true;
+                    if (!grabBoxMesh.visible) {
+                      grabBoxMesh.visible = true;
+                    }
+                  } else {
+                    hoverState.tagMesh = null;
+
+                    if (grabBoxMesh.visible) {
+                      grabBoxMesh.visible = false;
+                    }
                   }
-                } else {
-                  hoverState.tagMesh = null;
+                });
+              };
+              const _updateMenuAnchors = () => {
+                const {gamepads} = webvr.getStatus();
 
-                  if (boxMesh.visible) {
-                    boxMesh.visible = false;
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const dotMesh = dotMeshes[side];
+                    const boxMesh = boxMeshes[side];
+
+                    biolumi.updateAnchors({
+                      objects: tagMeshes.map(tagMesh => {
+                        const menuMatrixObject = _decomposeObjectMatrixWorld(tagMesh);
+                        const {ui: menuUi} = tagMesh;
+
+                        return {
+                          matrixObject: menuMatrixObject,
+                          ui: menuUi,
+                        };
+                      }),
+                      dotMesh: dotMesh,
+                      boxMesh: boxMesh,
+                      width: WIDTH,
+                      height: HEIGHT,
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                      worldDepth: WORLD_DEPTH,
+                      controllerPosition,
+                      controllerRotation,
+                    });
                   }
-                }
-              });
+                });
+              };
+
+              _updateGrabbers();
+              _updateMenuAnchors();
             };
             const _updateTextures = () => {
               const uiTime = rend.getUiTime();
@@ -246,7 +300,9 @@ class Tags {
               tagMesh.parent.remove(tagMesh);
             }
             SIDES.forEach(side => {
+              scene.remove(dotMeshes[side]);
               scene.remove(boxMeshes[side]);
+              scene.remove(grabBoxMeshes[side]);
             });
 
             input.removeListener('gripdown', _gripdown);

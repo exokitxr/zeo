@@ -817,8 +817,7 @@ class Biolumi {
             };
           };
           const _updateAnchors = ({
-            matrixObject,
-            ui,
+            objects,
             hoverState,
             dotMesh,
             boxMesh,
@@ -830,30 +829,52 @@ class Biolumi {
             controllerPosition,
             controllerRotation,
           }) => {
-            const {position, rotation, scale} = matrixObject;
-            const controllerLine = (() => {
-              if (controllerRotation) {
-                return new THREE.Line3(
-                  controllerPosition.clone(),
-                  controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation).multiplyScalar(15))
-                );
-              } else {
-                return new THREE.Line3(
-                  controllerPosition.clone().add(new THREE.Vector3(0, 0, 1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2)),
-                  controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2))
-                );
-              }
-            })();
+            const intersectionSpecs = objects.map(object => {
+              const {matrixObject} = object;
+              const {position, rotation, scale} = matrixObject;
+              const controllerLine = (() => {
+                if (controllerRotation) {
+                  return new THREE.Line3(
+                    controllerPosition.clone(),
+                    controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation).multiplyScalar(15))
+                  );
+                } else {
+                  return new THREE.Line3(
+                    controllerPosition.clone().add(new THREE.Vector3(0, 0, 1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2)),
+                    controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2))
+                  );
+                }
+              })();
 
-            const menuBoxTarget = geometryUtils.makeBoxTarget(
-              position,
-              rotation,
-              scale,
-              new THREE.Vector3(worldWidth, worldHeight, 0)
-            );
-            const menuIntersectionPoint = menuBoxTarget.intersectLine(controllerLine);
-            if (menuIntersectionPoint) {
-              hoverState.intersectionPoint = menuIntersectionPoint;
+              const menuBoxTarget = geometryUtils.makeBoxTarget(
+                position,
+                rotation,
+                scale,
+                new THREE.Vector3(worldWidth, worldHeight, 0)
+              );
+              const intersectionPoint = menuBoxTarget.intersectLine(controllerLine);
+
+              if (intersectionPoint) {
+                const distance = controllerPosition.distanceTo(intersectionPoint);
+
+                return {
+                  object,
+                  intersectionPoint,
+                  controllerLine,
+                  distance,
+                };
+              } else {
+                return null;
+              }
+            }).filter(intersectionSpec => intersectionSpec !== null);
+            const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.disance - b.distance)[0] : null;
+
+            if (intersectionSpec) {
+              const {object: {matrixObject: {position, rotation, scale}, ui}, intersectionPoint, controllerLine} = intersectionSpec;
+
+              if (hoverState) {
+                hoverState.intersectionPoint = intersectionPoint;
+              }
 
               const _getMenuMeshPoint = _makeMeshPointGetter({
                 position,
@@ -896,10 +917,8 @@ class Biolumi {
                 }
                 return null;
               })();
-              if (scrollLayerBoxTarget) {
-                hoverState.scrollLayer = scrollLayerBoxTarget.layer;
-              } else {
-                hoverState.scrollLayer = null;
+              if (hoverState) {
+                hoverState.scrollLayer = scrollLayerBoxTarget ? scrollLayerBoxTarget.layer : null;
               }
 
               const anchorBoxTargets = (() => {
@@ -945,17 +964,19 @@ class Biolumi {
                 }
               })();
               if (anchorBoxTarget) {
-                const {anchor} = anchorBoxTarget;
-                hoverState.anchor = anchor;
-                hoverState.value = (() => {
-                  const {rect} = anchor;
-                  const horizontalLine = new THREE.Line3(
-                    _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
-                    _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
-                  );
-                  const closestHorizontalPoint = horizontalLine.closestPointToPoint(menuIntersectionPoint, true);
-                  return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
-                })();
+                if (hoverState) {
+                  const {anchor} = anchorBoxTarget;
+                  hoverState.anchor = anchor;
+                  hoverState.value = (() => {
+                    const {rect} = anchor;
+                    const horizontalLine = new THREE.Line3(
+                      _getMenuMeshPoint(rect.left, (rect.top + rect.bottom) / 2, 0),
+                      _getMenuMeshPoint(rect.right, (rect.top + rect.bottom) / 2, 0)
+                    );
+                    const closestHorizontalPoint = horizontalLine.closestPointToPoint(intersectionPoint, true);
+                    return new THREE.Line3(horizontalLine.start.clone(), closestHorizontalPoint.clone()).distance() / horizontalLine.distance();
+                  })();
+                }
 
                 if (boxMesh) {
                   boxMesh.position.copy(anchorBoxTarget.position);
@@ -966,8 +987,10 @@ class Biolumi {
                   }
                 }
               } else {
-                hoverState.anchor = null;
-                hoverState.value = 0;
+                if (hoverState) {
+                  hoverState.anchor = null;
+                  hoverState.value = 0;
+                }
 
                 if (boxMesh) {
                   if (boxMesh.visible) {
@@ -977,16 +1000,19 @@ class Biolumi {
               }
 
               if (dotMesh) {
-                dotMesh.position.copy(menuIntersectionPoint);
+                dotMesh.position.copy(intersectionPoint);
+
                 if (!dotMesh.visible) {
                   dotMesh.visible = true;
                 }
               }
             } else {
-              hoverState.intersectionPoint = null;
-              hoverState.scrollLayer = null;
-              hoverState.anchor = null;
-              hoverState.value = 0;
+              if (hoverState) {
+                hoverState.intersectionPoint = null;
+                hoverState.scrollLayer = null;
+                hoverState.anchor = null;
+                hoverState.value = 0;
+              }
 
               if (boxMesh) {
                 if (boxMesh.visible) {
