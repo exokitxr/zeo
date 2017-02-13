@@ -3,10 +3,14 @@ import MultiMutex from 'multimutex';
 import {
   WIDTH,
   HEIGHT,
+  OPEN_WIDTH,
+  OPEN_HEIGHT,
 
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
+  WORLD_OPEN_WIDTH,
+  WORLD_OPEN_HEIGHT,
 } from './lib/constants/tags';
 import tagsRenderer from './lib/render/tags';
 import menuUtils from './lib/utils/menu';
@@ -201,9 +205,34 @@ class Tags {
               if (match = onclick.match(/^tag:open:(.+)$/)) {
                 const id = match[1];
                 const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                const {ui, planeMesh} = tagMesh;
+                ui.setDimensions(OPEN_WIDTH, OPEN_HEIGHT);
+                const scaleX = WORLD_OPEN_WIDTH / WORLD_WIDTH;
+                const scaleY = WORLD_OPEN_HEIGHT / WORLD_HEIGHT;
+                const offsetX = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
+                const offsetY = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
+                planeMesh.position.x = offsetX;
+                planeMesh.position.y = offsetY;
+                planeMesh.scale.x = scaleX;
+                planeMesh.scale.y = scaleY;
                 const {item} = tagMesh;
                 item.open = true;
+                _updatePages();
 
+                e.stopImmediatePropagation();
+              } else if (match = onclick.match(/^tag:close:(.+)$/)) {
+                const id = match[1];
+                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                const {ui, planeMesh} = tagMesh;
+                ui.setDimensions(WIDTH, HEIGHT);
+                planeMesh.position.x = 0;
+                planeMesh.position.y = 0;
+                planeMesh.scale.x = 1;
+                planeMesh.scale.y = 1;
+                const {item} = tagMesh;
+                item.open = false;
                 _updatePages();
 
                 e.stopImmediatePropagation();
@@ -422,6 +451,10 @@ class Tags {
                     {
                       type: 'html',
                       src: tagsRenderer.getTagSrc(item),
+                      x: 0,
+                      y: 0,
+                      w: !item.open ? WIDTH : OPEN_WIDTH,
+                      h: !item.open ? HEIGHT : OPEN_HEIGHT,
                     },
                     {
                       type: 'image',

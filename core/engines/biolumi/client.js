@@ -58,7 +58,8 @@ class Biolumi {
             const pages = [];
 
             class Page {
-              constructor(spec, type) {
+              constructor(parent, spec, type) {
+                this.parent = parent;
                 this.spec = spec;
                 this.type = type;
 
@@ -232,6 +233,7 @@ class Biolumi {
 
                 this.img = null;
                 this.anchors = [];
+                const {parent: {width, height}} = parent;
 
                 this.x = 0;
                 this.y = 0;
@@ -260,6 +262,7 @@ class Biolumi {
 
               getPosition() {
                 const {parent} = this;
+                const {parent: {width, height}} = parent;
 
                 return new Position(
                   parent.x + (this.x / width),
@@ -274,6 +277,7 @@ class Biolumi {
               getRect() {
                 const position = this.getPosition();
                 const {x: px, y: py, w: pw, h: ph} = position;
+                const {parent: {parent: {width, height}}} = this;
 
                 return new Rect(
                   clamp(py * height, 0, height),
@@ -286,6 +290,7 @@ class Biolumi {
               getAnchors() {
                 const position = this.getPosition();
                 const {x: px, y: py, w: pw, h: ph} = position;
+                const {parent: {parent: {width, height}}} = this;
 
                 return this.anchors.map(anchor => {
                   const {rect, onclick, onmousedown, onmouseup} = anchor;
@@ -444,69 +449,6 @@ class Biolumi {
                 cancel: _cancel,
               };
             };
-
-            const _getPages = () => pages;
-            const _getLayers = () => {
-              const result = [];
-              for (let i = 0; i < pages.length; i++) {
-                const page = pages[i];
-                const {layers} = page;
-                result.push.apply(result, layers);
-              }
-              return result;
-            };
-            const _pushPage = (spec, {type = null, state = null, immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
-              if (immediate) {
-                _cancelTransition();
-              }
-
-              const page = new Page(spec, type);
-              page.update(state, () => {
-                preCb();
-
-                pages.push(page);
-
-                if (!immediate && pages.length > 1) {
-                  _transition({
-                    pages: pages.slice(-2),
-                    direction: 'right',
-                  }, postCb);
-                } else {
-                  postCb();
-                }
-              });
-            };
-            const _popPage = ({immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) => {
-              preCb();
-
-              if (!immediate && pages.length > 1) {
-                _transition({
-                  pages: pages.slice(-2),
-                  direction: 'left',
-                }, () => {
-                  pages.pop();
-
-                  postCb();
-                });
-              } else {
-                _cancelTransition();
-
-                pages.pop();
-
-                postCb();
-              }
-            };
-            const _replacePage = layersSpec => {
-              _pushPage(layersSpec, {
-                immediate: true,
-              }, {
-                preCb: () => {
-                  _popPage({
-                    immediate: true,
-                  });
-                }
-              });
-            };
             const _cancelTransition = () => {
               if (transition) {
                 transition.cancel();
@@ -514,14 +456,93 @@ class Biolumi {
               }
             };
 
-            accept({
-              getPages: _getPages,
-              getLayers: _getLayers,
-              pushPage: _pushPage,
-              popPage: _popPage,
-              replacePage: _replacePage,
-              cancelTransition: _cancelTransition,
-            });
+            class Ui {
+              constructor(width, height) {
+                this.width = width;
+                this.height = height;
+              }
+
+              getPages() {
+                return pages;
+              }
+
+              getLayers() {
+                const result = [];
+                for (let i = 0; i < pages.length; i++) {
+                  const page = pages[i];
+                  const {layers} = page;
+                  result.push.apply(result, layers);
+                }
+                return result;
+              }
+
+              setDimensions(width, height) {
+                this.width = width;
+                this.height = height;
+              }
+
+              pushPage(spec, {type = null, state = null, immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) {
+                if (immediate) {
+                  this.cancelTransition();
+                }
+
+                const page = new Page(this, spec, type);
+                page.update(state, () => {
+                  preCb();
+
+                  pages.push(page);
+
+                  if (!immediate && pages.length > 1) {
+                    this.transition({
+                      pages: pages.slice(-2),
+                      direction: 'right',
+                    }, postCb);
+                  } else {
+                    postCb();
+                  }
+                });
+              }
+
+              popPage({immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) {
+                preCb();
+
+                if (!immediate && pages.length > 1) {
+                  this.transition({
+                    pages: pages.slice(-2),
+                    direction: 'left',
+                  }, () => {
+                    pages.pop();
+
+                    postCb();
+                  });
+                } else {
+                  this.cancelTransition();
+
+                  pages.pop();
+
+                  postCb();
+                }
+              }
+
+              replacePage(layersSpec) {
+                this.pushPage(layersSpec, {
+                  immediate: true,
+                }, {
+                  preCb: () => {
+                    this.popPage({
+                      immediate: true,
+                    });
+                  }
+                });
+              }
+
+              cancelTransition() {
+                _cancelTransition();
+              }
+            }
+
+            const ui = new Ui(width, height);
+            accept(ui);
           });
           const _getFonts = () => fonts;
           const _getMonospaceFonts = () => monospaceFonts;
@@ -688,7 +709,6 @@ class Biolumi {
                   THREE.UnsignedByteType,
                   16
                 );
-                // texture.needsUpdate = true;
 
                 result[i] = texture;
               }
@@ -1029,21 +1049,8 @@ class Biolumi {
                 validTextures.value[i] = 1;
 
                 const texture = textures.value[i];
-                if (texture.image !== layer.img) {
+                if (texture.image !== layer.img || layer.img.needsUpdate) {
                   texture.image = layer.img;
-                  if (!layer.pixelated) {
-                    texture.minFilter = THREE.LinearFilter;
-                    texture.magFilter = THREE.LinearFilter;
-                    texture.anisotropy = 16;
-                  } else {
-                    texture.minFilter = THREE.NearestFilter;
-                    texture.magFilter = THREE.NearestFilter;
-                    texture.anisotropy = 1;
-                  }
-                  texture.needsUpdate = true;
-
-                  layer.img.needsUpdate = false;
-                } else if (layer.img.needsUpdate) {
                   if (!layer.pixelated) {
                     texture.minFilter = THREE.LinearFilter;
                     texture.magFilter = THREE.LinearFilter;

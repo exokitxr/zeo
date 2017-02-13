@@ -3,7 +3,6 @@ import menuUtils from './lib/utils/menu';
 import {
   WIDTH,
   HEIGHT,
-
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
