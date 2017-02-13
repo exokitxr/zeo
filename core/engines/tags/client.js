@@ -314,22 +314,23 @@ class Tags {
 
                     biolumi.updateAnchors({
                       objects: tagMeshes.map(tagMesh => {
-                        const menuMatrixObject = _decomposeObjectMatrixWorld(tagMesh);
-                        const {ui: menuUi} = tagMesh;
+                        const {planeMesh} = tagMesh;
+                        const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                        const {ui, item: {open}} = tagMesh;
 
                         return {
-                          matrixObject: menuMatrixObject,
-                          ui: menuUi,
+                          matrixObject: matrixObject,
+                          ui: ui,
+                          width: !open ? WIDTH : OPEN_WIDTH,
+                          height: !open ? HEIGHT : OPEN_HEIGHT,
+                          worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                          worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                          worldDepth: WORLD_DEPTH,
                         };
                       }),
                       hoverState: hoverState,
                       dotMesh: dotMesh,
                       boxMesh: boxMesh,
-                      width: WIDTH,
-                      height: HEIGHT,
-                      worldWidth: WORLD_WIDTH,
-                      worldHeight: WORLD_HEIGHT,
-                      worldDepth: WORLD_DEPTH,
                       controllerPosition,
                       controllerRotation,
                     });

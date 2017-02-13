@@ -306,16 +306,16 @@ class Fs {
                       return {
                         matrixObject: menuMatrixObject,
                         ui: menuUi,
+                        width: WIDTH,
+                        height: HEIGHT,
+                        worldWidth: WORLD_WIDTH,
+                        worldHeight: WORLD_HEIGHT,
+                        worldDepth: WORLD_DEPTH,
                       };
                     }),
                     hoverState: hoverState,
                     dotMesh: dotMesh,
                     boxMesh: boxMesh,
-                    width: WIDTH,
-                    height: HEIGHT,
-                    worldWidth: WORLD_WIDTH,
-                    worldHeight: WORLD_HEIGHT,
-                    worldDepth: WORLD_DEPTH,
                     controllerPosition,
                     controllerRotation,
                   });

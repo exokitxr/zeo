@@ -833,16 +833,11 @@ class Biolumi {
             hoverState,
             dotMesh,
             boxMesh,
-            width,
-            height,
-            worldWidth,
-            worldHeight,
-            worldDepth,
             controllerPosition,
             controllerRotation,
           }) => {
             const intersectionSpecs = objects.map(object => {
-              const {matrixObject} = object;
+              const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
               const {position, rotation, scale} = matrixObject;
               const controllerLine = (() => {
                 if (controllerRotation) {
@@ -882,7 +877,7 @@ class Biolumi {
             const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.disance - b.distance)[0] : null;
 
             if (intersectionSpec) {
-              const {object: {matrixObject: {position, rotation, scale}, ui}, intersectionPoint, controllerLine} = intersectionSpec;
+              const {object: {matrixObject: {position, rotation, scale}, ui, width, height, worldWidth, worldHeight, worldDepth}, intersectionPoint, controllerLine} = intersectionSpec;
 
               if (hoverState) {
                 hoverState.intersectionPoint = intersectionPoint;
