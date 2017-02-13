@@ -30,10 +30,6 @@ class Fog {
         };
 
         class FogElement extends HTMLElement {
-          static get attributes() {
-            return {};
-          }
-
           createdCallback() {
             const update = () => {
               const skybox = (() => {

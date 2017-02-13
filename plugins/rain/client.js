@@ -4,6 +4,12 @@ const PARTICLE_FRAMES = 64;
 const PARTICLE_SIZE = 15;
 const PARTICLE_SCALE = 1;
 
+const ATTRIBUTE_DEFAULTS = {
+  drops: 250,
+  range: 32,
+  length: 64,
+};
+
 class Rain {
   constructor(archae) {
     this._archae = archae;
@@ -160,61 +166,8 @@ class Rain {
         };
 
         class RainElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 0, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-              type: {
-                type: 'select',
-                value: 'rain',
-                options: [
-                  'rain',
-                  'snow',
-                  'firefly',
-                ],
-              },
-              drops: {
-                type: 'number',
-                value: 250,
-                min: 1,
-                max: 1000,
-              },
-              range: {
-                type: 'number',
-                value: 32,
-                min: 1,
-                max: 128,
-              },
-              length: {
-                type: 'number',
-                value: 64,
-                min: 1,
-                max: 256,
-                step: 1,
-              },
-              color: {
-                type: 'color',
-                value: '#3e5eb8',
-              },
-              enabled: {
-                type: 'checkbox',
-                value: true,
-              },
-            };
-          }
-
           createdCallback() {
-            const {
-              drops: {value: drops},
-              range: {value: range},
-              length: {value: length},
-            } = RainElement.attributes;
+            const {drops, range, length} = ATTRIBUTE_DEFAULTS;
 
             this.drops = drops;
             this.range = range;

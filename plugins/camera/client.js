@@ -28,20 +28,6 @@ class Camera {
         };
 
         class CameraElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: (() => {
-                  const position = new THREE.Vector3(-0.5, 1.5, 0.5);
-                  const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI * (3 / 4), 0));
-                  const scale = new THREE.Vector3(1, 1, 1);
-                  return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                })(),
-              },
-            };
-          }
-
           createdCallback() {
             const renderTarget = (() => {
               const rendererSize = renderer.getSize();

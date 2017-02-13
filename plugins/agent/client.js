@@ -104,19 +104,6 @@ class Agent {
         };
 
         class AgentElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  1, 1, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-            };
-          }
-
           createdCallback() {
             this.position = null;
             this.text = null;

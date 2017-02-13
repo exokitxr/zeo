@@ -349,7 +349,7 @@ class World {
                           if (!HTMLElement.isPrototypeOf(elementApi)) {
                             elementApi = HTMLElement;
                           }
-                          const {attributes = {}} = elementApi;
+                          const {attributes} = item;
                           const baseClass = elementApi;
 
                           const element = menuUtils.makeZeoElement({

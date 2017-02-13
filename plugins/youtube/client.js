@@ -57,19 +57,6 @@ class Youtube {
         };
 
         class YoutubeElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 0, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-            };
-          }
-
           createdCallback() {
             const mesh = (() => {
               const object = new THREE.Object3D();

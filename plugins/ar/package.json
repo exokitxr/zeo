@@ -4,5 +4,15 @@
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",
+  "attributes": {
+    "position": {
+      "type": "matrix",
+      "value": [
+        1, 1.5, 0,
+        0, -0.7071067811865475, 0, 0.7071067811865475,
+        1, 1, 1
+      ]
+    }
+  },
   "dependencies": {}
 }

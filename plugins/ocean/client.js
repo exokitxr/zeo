@@ -60,19 +60,6 @@ class Ocean {
         };
 
         class OceanElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 0, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-            };
-          }
-
           createdCallback() {
             const mesh = (() => {
               const geometry = new THREE.PlaneBufferGeometry(200, 200, 200 / 2, 200 / 2);

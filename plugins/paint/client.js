@@ -44,23 +44,6 @@ class Paint {
           .then(brushImg => {
             if (live) {
               class PaintElement extends HTMLElement {
-                static get attributes() {
-                  return {
-                    /* position: {
-                      type: 'matrix',
-                      value: [
-                        0, 1, 0,
-                        0, 0, 0, 1,
-                        1, 1, 1,
-                      ],
-                    }, */
-                    color: {
-                      type: 'color',
-                      value: '#F44336'
-                    },
-                  };
-                }
-
                 createdCallback() {
                   const mesh = (() => {
                     const geometry = new THREE.BufferGeometry();
@@ -248,15 +231,6 @@ class Paint {
 
                 attributeValueChangedCallback(name, oldValue, newValue) {
                   switch (name) {
-                    /* case 'position': {
-                      const {mesh} = this;
-
-                      mesh.position.set(newValue[0], newValue[1], newValue[2]);
-                      mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
-                      mesh.scale.set(newValue[7], newValue[8], newValue[9]);
-
-                      break;
-                    } */
                     case 'color': {
                       this.color = new THREE.Color(newValue);
 

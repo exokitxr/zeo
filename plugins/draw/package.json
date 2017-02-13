@@ -5,6 +5,12 @@
   "keywords": [],
   "client": "client.js",
   "server": "server.js",
+  "atrributes": {
+    "color": {
+      "type": "color",
+      "value": "2196F3"
+    }
+  },
   "dependencies": {
     "mod-loop": "0.0.2"
   }

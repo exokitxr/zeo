@@ -255,10 +255,16 @@ class Rend {
             if (path.isAbsolute(plugin)) {
               fs.readFile(path.join(dirname, plugin, 'package.json'), 'utf8', (err, s) => {
                 if (!err) {
-                  const j = JSON.parse(s);
-                  const {name} = j;
-                  
-                  accept(name);
+                  const j = _jsonParse(s);
+
+                  if (j !== null) {
+                    const {name} = j;
+
+                    accept(name);
+                  } else {
+                    const err = new Error('Failed to parse package.json for ' + JSON.stringify(plugin));
+                    reject(err);
+                  }
                 } else {
                   reject(err);
                 }
@@ -271,9 +277,14 @@ class Rend {
             .then(name => new Promise((accept, reject) => {
               fs.readFile(path.join(pluginsInstalledPath, name, 'package.json'), 'utf8', (err, s) => {
                 if (!err) {
-                  const j = JSON.parse(s);
+                  const j = _jsonParse(s);
 
-                  accept(j);
+                  if (j !== null) {
+                    accept(j);
+                  } else {
+                    const err = new Error('Failed to parse package.json for ' + JSON.stringify(plugin));
+                    reject(err);
+                  }
                 } else {
                   reject(err);
                 }
@@ -283,9 +294,14 @@ class Rend {
             if (path.isAbsolute(plugin)) {
               fs.readFile(path.join(dirname, plugin, 'package.json'), 'utf8', (err, s) => {
                 if (!err) {
-                  const j = JSON.parse(s);
+                  const j = _jsonParse(s);
 
-                  accept(j);
+                  if (j !== null) {
+                    accept(j);
+                  } else {
+                    const err = new Error('Failed to parse package.json for ' + JSON.stringify(plugin));
+                    reject(err);
+                  }
                 } else {
                   reject(err);
                 }
@@ -366,6 +382,7 @@ class Rend {
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
+              attributes: packageJson.attributes || {},
             }));
           const _getInstalledModSpecs = mods => Promise.all(mods.map(_getInstalledModSpec));
           const _getUninstalledModSpec = mod => Promise.all([
@@ -386,6 +403,7 @@ class Rend {
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
+              attributes: packageJson.attributes || {},
               matrix: DEFAULT_TAG_MATRIX,
             }));
           const _getUninstalledModSpecs = mods => Promise.all(mods.map(mod =>
@@ -400,6 +418,7 @@ class Rend {
                 hasServer: Boolean(packageJson.server),
                 hasWorker: Boolean(packageJson.worker),
                 local: path.isAbsolute(mod),
+                attributes: packageJson.attributes || {},
                 matrix: DEFAULT_TAG_MATRIX,
               }))
           ));
@@ -749,6 +768,20 @@ class Rend {
   }
 }
 
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return null;
+  }
+};
 const _renderMarkdown = s => showdownConverter
   .makeHtml(s)
   .replace(/&mdash;/g, '-')

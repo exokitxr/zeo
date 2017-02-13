@@ -80,37 +80,6 @@ class Portal {
         };
 
         class PortalElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position1: {
-                type: 'matrix',
-                value: (() => {
-                  const position = new THREE.Vector3(0, 1, 1);
-                  const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI, 0, camera.rotation.order));
-                  const scale = new THREE.Vector3(1, 1, 1);
-                  return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                })(),
-              },
-              color1: {
-                type: 'color',
-                value: '#FDA232'
-              },
-              position2: {
-                type: 'matrix',
-                value: (() => {
-                  const position = new THREE.Vector3(1, 1.5, -1);
-                  const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -(Math.PI / 2) + (Math.PI / 4), 0, camera.rotation.order));
-                  const scale = new THREE.Vector3(1, 1, 1);
-                  return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                })(),
-              },
-              color2: {
-                type: 'color',
-                value: '#188EFA'
-              },
-            };
-          }
-
           createdCallback() {
             const mesh = (() => {
               const result = new THREE.Object3D();

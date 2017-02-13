@@ -385,15 +385,15 @@ class Tags {
           };
 
           class Item {
-            constructor(id, name, displayName, description, version, matrix) {
+            constructor(id, name, displayName, description, version, attributes, matrix) {
               this.id = id;
               this.name = name;
               this.displayName = displayName;
               this.description = description;
               this.version = version;
+              this.attributes = attributes;
               this.matrix = matrix;
 
-              this.attributes = null;
               this[itemInstanceSymbol] = null;
               this.instancing = false;
 
@@ -436,7 +436,7 @@ class Tags {
               const object = new THREE.Object3D();
               object[tagFlagSymbol] = true;
 
-              const item = new Item(itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.matrix);
+              const item = new Item(itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.attributes, itemSpec.matrix);
               object.item = item;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);

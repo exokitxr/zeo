@@ -66,23 +66,6 @@ class Model {
         }));
 
         class ModelElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 0, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-              model: {
-                type: 'file',
-                value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
-              },
-            };
-          }
-
           createdCallback() {
             this.position = null;
             this.mesh = null;

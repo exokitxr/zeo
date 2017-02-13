@@ -62,19 +62,6 @@ class Shell {
         };
 
         class ShellElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 0, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-            };
-          }
-
           createdCallback() {
             const cleanups = [];
             this._cleanup = () => {

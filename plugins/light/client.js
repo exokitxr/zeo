@@ -22,31 +22,6 @@ class Light {
         const {THREE, scene} = zeo;
 
         class LightElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  3, 3, 3,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-              lookat: {
-                type: 'matrix',
-                value: [
-                  0, 0, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-              shadow: {
-                type: 'checkbox',
-                value: false,
-              },
-            };
-          }
-
           createdCallback() {
             const mesh = (() => {
               const geometry = new THREE.OctahedronBufferGeometry(0.1, 0);

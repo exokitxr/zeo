@@ -3,6 +3,16 @@
   "version": "0.0.1",
   "description": "Render polygonal clouds in the sky based on the convex hull algorithm.",
   "client": "client.js",
+  "attributes": {
+    "position": {
+      "type": "matrix",
+      "value": [
+        0, 0, 0,
+        0, 0, 0, 1,
+        1, 1, 1
+      ]
+    }
+  },
   "dependencies": {
     "indev": "^3.0.9"
   }

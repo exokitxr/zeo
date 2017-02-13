@@ -4,6 +4,16 @@
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",
+  "attributes": {
+    "position": {
+      "type": "matrix",
+      "value": [
+        0, 0, 0,
+        0, 0, 0, 1,
+        1, 1, 1
+      ]
+    }
+  },
   "dependencies": {
     "alea": "0.0.9"
   }

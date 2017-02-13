@@ -26,19 +26,6 @@ export default class Grass {
           const {alea} = randomUtils;
 
           class GrassElement extends HTMLElement {
-            static get attributes() {
-              return {
-                position: {
-                  type: 'matrix',
-                  value: [
-                    0, 0, 0,
-                    0, 0, 0, 1,
-                    1, 1, 1,
-                  ],
-                },
-              };
-            }
-
             createdCallback() {
               const grassColors = [
                 '#337346',

@@ -32,27 +32,6 @@ class Link {
         };
 
         class LinkElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  -1, 1, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-              destination: {
-                type: 'matrix',
-                value: [
-                  0, 1, -10,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-            };
-          }
-
           createdCallback() {
             const cubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
             scene.add(cubeCamera);

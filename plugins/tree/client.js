@@ -24,19 +24,6 @@ export default class Tree {
           const {alea} = randomUtils;
 
           class TreeElement extends HTMLElement {
-            static get attributes() {
-              return {
-                position: {
-                  type: 'matrix',
-                  value: [
-                    0, 0, 0,
-                    0, 0, 0, 1,
-                    1, 1, 1,
-                  ],
-                },
-              };
-            }
-
             createdCallback() {
               const trunkColors = [
                 '#337346',

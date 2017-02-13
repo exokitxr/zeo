@@ -5,6 +5,16 @@
   "keywords": [],
   "client": "client.js",
   "server": "server.js",
+  "attributes": {
+      "position": {
+      "type": "matrix",
+      "value": [
+        1, 1, 0,
+        0, 0, 0, 1,
+        1, 1, 1
+      ]
+    }
+  },
   "dependencies": {
     "watson-developer-cloud": "^2.14.6"
   }

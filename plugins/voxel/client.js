@@ -343,19 +343,6 @@ export default class Voxel {
         })();
 
         class VoxelElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  0.5, 1, -0.5,
-                  0, 0, 0, 1,
-                  1/32, 1/32, 1/32,
-                ],
-              },
-            };
-          }
-
           createdCallback() {
             const mesh = (() => {
               const chunkSize = 32;

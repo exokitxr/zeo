@@ -69,27 +69,6 @@ class Lens {
         });
 
         class LensElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 0, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-              type: {
-                type: 'select',
-                value: 'blur',
-                options: [
-                  'blur',
-                  'pixel',
-                ],
-              },
-            };
-          }
-
           createdCallback() {
             const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
               minFilter: THREE.NearestFilter,

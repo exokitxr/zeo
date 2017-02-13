@@ -28,19 +28,6 @@ class Ar {
         const transparentImg = biolumi.getTransparentImg();
 
         class ArElement extends HTMLElement {
-          static get attributes() {
-            return {
-              position: {
-                type: 'matrix',
-                value: [
-                  1, 1.5, 0,
-                  0, -0.7071067811865475, 0, 0.7071067811865475,
-                  1, 1, 1,
-                ],
-              },
-            };
-          }
-
           createdCallback() {
             this.position = null;
 
