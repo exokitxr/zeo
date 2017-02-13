@@ -206,7 +206,7 @@ class Zeo {
                         right: 0;
                         align-items: center;
                         background-color: rgba(0, 0, 0, 0.5);
-                        font-family: 'Open Sans';
+                        font-family: ${biolumi.getFonts()};
                       `;
                       helper.innerHTML = `\
                         <div style="display: flex; width: 100%; margin: auto 0; justify-content: center; color: #FFF;">
@@ -214,8 +214,8 @@ class Zeo {
                             <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
                             <h1 style="width: 400px; margin: 0; margin-bottom: 20px; font-size: 30px; font-weight: 300;"><span id=username>Username</span> / <span id=worldname>Unknown world</span></h1>
                             <div style="display: flex; width: 400px; margin-bottom: 20px;">
-                              <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: 'Open Sans'; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="headset-button">Headset</button>
-                              <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: 'Open Sans'; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="keyboard-button">Mouse + Keyboard</button>
+                              <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: ${biolumi.getFonts()}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="headset-button">Headset</button>
+                              <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: ${biolumi.getFonts()}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="keyboard-button">Mouse + Keyboard</button>
                             </div>
                             <p style="width: 400px; margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.5); font-weight: 300;" id="error-message">WebVR is not supported by your browser so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
                           </div>

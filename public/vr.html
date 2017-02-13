@@ -3,8 +3,11 @@
 <head>
   <!-- Origin Trial Token, feature = WebVR, origin = https://zeo.sh, expires = 2017-03-08 -->
   <meta http-equiv="origin-trial" data-feature="WebVR" data-expires="2017-03-08" content="AtlzT8QnlXrJRZzvpANDcskyJkk/xEKFQOO5xgpPIJ4j0/LylvdFMr3W5zgnejKQ9r1rYz0+H/in+kjUQKnV+A0AAABYeyJvcmlnaW4iOiJodHRwczovL3plby5zaDo0NDMiLCJmZWF0dXJlIjoiV2ViVlIiLCJleHBpcnkiOjE0ODg5ODYzMjUsImlzU3ViZG9tYWluIjp0cnVlfQ==">
-   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
   <style>
+    body {
+      --fonts: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      --monospace-fonts: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
     body {
       margin: 0;
       width: 100vw;
@@ -61,7 +64,7 @@
       animation: load2 1s infinite ease;
     }
     .loader-overlay {
-      display: none;
+      display: flex;
       position: absolute;
       top: 0;
       bottom: 0;
@@ -70,9 +73,6 @@
       justify-content: center;
       align-items: center;
       z-index: 1;
-    }
-    .loader-overlay.preloaded {
-      display: flex;
     }
     .loader-wrap {
       display: flex;
@@ -83,7 +83,7 @@
     }
     .loader-wrap > h1, .loader-wrap > p {
       margin: 0;
-      font-family: 'Open Sans';
+      font-family: var(--fonts);
       font-weight: 300;
     }
     .loader-wrap > h1 {
@@ -125,17 +125,6 @@
       <p id=loader-plugin>Initializing...</p>
     </div>
   </div>
-  <script src="/js/lib/fontfaceobserver/fontfaceobserver.min.js"></script>
-  <script>
-    const $ = s => document.querySelectorAll(s);
-
-    new FontFaceObserver('Open Sans', {
-      weight: 300,
-    }).load()
-      .then(() => {
-        $('#loader-overlay')[0].classList.add('preloaded');
-      });
-  </script>
   <script src='/archae/archae.js'></script>
   <script src='/js/index.js'></script>
 </body>
