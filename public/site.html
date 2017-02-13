@@ -2,18 +2,19 @@
 <html>
 <head>
   <title>zeo vr</title>
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,700,800" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Droid+Sans+Mono:400" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/font/octicons.min.css" rel="stylesheet">
-  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="/css/octicons.css" rel="stylesheet">
   <style>
+    body {
+      --fonts: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      --monospace-fonts: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
     body {
       position: relative;
       min-width: 1024px;
       min-height: 720px;
       margin: 0;
       background-color: #000;
-      font-family: 'Open Sans';
+      font-family: var(--fonts);
       font-weight: 300;
       color: #FFF;
       overflow-x: hidden;
@@ -33,7 +34,7 @@
     code {
       display: inline-block;
       padding: 0 5px;
-      font-family: 'Droid Sans Mono';
+      font-family: var(--monospace-fonts);
       color: #CCC;
       background-color: #000;
       border-radius: 3px;
@@ -144,7 +145,7 @@
       background-color: transparent;
       border: 1px solid;
       border-radius: 100px;
-      font-family: 'Open Sans';
+      font-family: var(--fonts);
       font-size: 15px;
       font-weight: 300;
       color: #4CAF50;
@@ -178,7 +179,7 @@
       border-right: 0;
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
-      font-family: 'Open Sans';
+      font-family: var(--fonts);
       font-weight: 300;
       color: #FFF;
       outline: none;
@@ -431,7 +432,7 @@
       background-color: transparent;
       border: 1px solid #808080;
       border-radius: 3px;
-      font-family: 'Open Sans';
+      font-family: var(--fonts);
       font-weight: 300;
       color: #FFF;
       outline: none;
@@ -903,7 +904,7 @@
       background-color: #AAA;
       border: 0;
       box-shadow: inset 0 5px 0 #2196f3;
-      font-family: 'Open Sans';
+      font-family: var(--fonts);
       font-size: 14px;
       box-sizing: border-box;
       outline: none;
@@ -925,7 +926,7 @@
       background-color: transparent;
       border: 1px solid;
       border-radius: 100px;
-      font-family: 'Open Sans';
+      font-family: var(--fonts);
       font-size: 14px;
       font-weight: 300;
       color: #FFF;
