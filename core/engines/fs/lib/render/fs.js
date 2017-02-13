@@ -7,7 +7,7 @@ const getFileSrc = ({name, instancing}) => `\
     <div style="width: 100px; height: 100px; margin: 0 10px;"></div>
     <div style="width: 190px; margin-right: 10px;">
       <div style="height: 100px;">
-        <h1 style="margin: 0; margin-top: 10px; font-size: 28px; line-height: 1.4;">${name}</h1>
+        <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
         <p style="margin: 0; font-size: 15px; line-height: 1.4;">File in /</p>
       </div>
     </div>
