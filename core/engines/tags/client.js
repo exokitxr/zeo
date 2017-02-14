@@ -608,20 +608,25 @@ class Tags {
 
                             biolumi.updateAnchors({
                               objects: tagMeshes.map(tagMesh => {
-                                const {planeMesh} = tagMesh;
-                                const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                                const {ui, item: {open}} = tagMesh;
+                                const {ui, planeMesh} = tagMesh;
 
-                                return {
-                                  matrixObject: matrixObject,
-                                  ui: ui,
-                                  width: !open ? WIDTH : OPEN_WIDTH,
-                                  height: !open ? HEIGHT : OPEN_HEIGHT,
-                                  worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                                  worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                                  worldDepth: WORLD_DEPTH,
-                                };
-                              }),
+                                if (ui && planeMesh) {
+                                  const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                                  const {item: {open}} = tagMesh;
+
+                                  return {
+                                    matrixObject: matrixObject,
+                                    ui: ui,
+                                    width: !open ? WIDTH : OPEN_WIDTH,
+                                    height: !open ? HEIGHT : OPEN_HEIGHT,
+                                    worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                                    worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                                    worldDepth: WORLD_DEPTH,
+                                  };
+                                } else {
+                                  return null;
+                                }
+                              }).filter(object => object !== null),
                               hoverState: hoverState,
                               dotMesh: dotMesh,
                               boxMesh: boxMesh,
