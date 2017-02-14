@@ -294,10 +294,9 @@ class Rend {
                   object.add(planeMesh);
                   object.planeMesh = planeMesh;
 
-                  object.universeMesh = null;
-
                   object.worldMesh = null;
-
+                  object.questMesh = null;
+                  object.universeMesh = null;
                   object.configMesh = null;
                   object.statsMesh = null;
 
@@ -531,7 +530,7 @@ class Rend {
                           switch (tab) {
                             case 'status': return menuMesh.planeMesh;
                             case 'world': return menuMesh.worldMesh;
-                            case 'quests': return menuMesh.worldMesh;
+                            case 'quests': return menuMesh.questMesh;
                             case 'tools': return menuMesh.worldMesh;
                             case 'inventory': return menuMesh.inventoryMesh;
                             case 'worlds': return menuMesh.universeMesh;

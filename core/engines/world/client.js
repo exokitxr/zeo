@@ -493,6 +493,7 @@ class World {
                   npm: npmState,
                   focus: focusState,
                 },
+                immediate: true,
               });
 
               const mesh = (() => {
@@ -674,12 +675,12 @@ class World {
                         menuMaterial,
                       },
                     } = mesh;
-                    const worldTime = worldTimer.getWorldTime();
+                    const uiTime = rend.getUiTime();
 
                     biolumi.updateMenuMaterial({
                       ui: menuUi,
                       menuMaterial,
-                      worldTime,
+                      uiTime,
                     });
                   };
                   const _updateAnchors = () => {

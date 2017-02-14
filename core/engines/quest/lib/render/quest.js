@@ -1,8 +1,31 @@
 const timeago = require('time-ago')();
+const {
+  HEIGHT,
+} = require('../constants/quest');
 const karmaIcon = require('../img/karma-white');
 const karmaIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaIcon);
 
 const makeRenderer = ({creatureUtils}) => {
+
+const getIncomingQuestsSrc = () => `\
+  <div style="padding: 20px">
+    <h1 style="margin: 0; margin-bottom: 10px; font-size: 30px; font-weight: 400;">Incoming quests</h1>
+    <div style="font-size: 20px; color: #CCC; justify-content: center; align-items: center;">&lt;None&gt;</div>
+  </div>
+`;
+
+const getOutgoingQuestsSrc = () => `\
+  <div style="padding: 20px">
+    <h1 style="margin: 0; margin-bottom: 10px; font-size: 30px; font-weight: 400;">Outgoing quests</h1>
+    <div style="font-size: 20px; color: #CCC; justify-content: center; align-items: center;">&lt;None&gt;</div>
+  </div>
+`;
+
+const getAvailableQuestsSrc = () => `\
+ <div style="min-height: ${HEIGHT}px; padding: 20px; background-color: #000; font-size: 30px; line-height: 1.4;">
+    <div style="position: relative; color: #FFF;">Available quests</div>
+  </div> 
+`;
 
 const getQuestSrc = ({id, name, author, created}) => `\
   <div style="background-color: #FFF;">
@@ -26,6 +49,9 @@ const getQuestSrc = ({id, name, author, created}) => `\
 `;
 
 return  {
+  getIncomingQuestsSrc,
+  getOutgoingQuestsSrc,
+  getAvailableQuestsSrc,
   getQuestSrc,
 };
 
