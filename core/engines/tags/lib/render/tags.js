@@ -93,7 +93,7 @@ const getAttributeInputSrc = (id, name, type, value, min, max, step, options, in
     }
     case 'text': {
       return `\
-<a style="position: relative; width: ${width}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+<a style="position: relative; width: ${width}px; height: 40px; border: 2px solid #333; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
   <div>${focusValue}</div>
 </a>
@@ -168,7 +168,7 @@ const getAttributeInputSrc = (id, name, type, value, min, max, step, options, in
       return `\
 <div style="display: flex; width: ${width}px; height: 40px; align-items: center;">
   <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${color};"></div>
-  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; border: 2px solid #333; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${string}</div>
   </a>
@@ -197,11 +197,11 @@ const getAttributeInputSrc = (id, name, type, value, min, max, step, options, in
     case 'file': {
       return `\
 <div style="display: flex; width: ${width}px; height: 40px;">
-  <a style="position: relative; width: 260px; height: 40px; margin-right: 20px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+  <a style="display: flex; position: relative; width: ${width - 100}px; height: 40px; margin-right: 20px; border: 2px solid #333; align-items: center; text-decoration: none; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-    <div>${focusValue}</div>
+    <div style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${focusValue}</div>
   </a>
-  <a style="display: flex; width: 120px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:choose" onmousedown="attribute:${id}:${name}:choose">Choose</a>
+  <a style="display: flex; width: 100px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:choose" onmousedown="attribute:${id}:${name}:choose">Choose</a>
 </div>
 `;
     }

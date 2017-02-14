@@ -82,6 +82,14 @@ class Tags {
             transparent: true,
           });
 
+          const subcontentFontSpec = {
+            fonts: biolumi.getFonts(),
+            fontSize: 20,
+            lineHeight: 1.4,
+            fontWeight: biolumi.getFontWeight(),
+            fontStyle: biolumi.getFontStyle(),
+          };
+
           const _requestTags = () => fetch('/archae/world/tags.json')
             .then(res => res.json());
 
@@ -406,7 +414,7 @@ class Tags {
 
                           const textProperties = (() => {
                             if (attributeType === 'text') {
-                              const valuePx = value * 400;
+                              const valuePx = value * 400; // XXX update these
                               return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
                             } else if (attributeType === 'number') {
                               const valuePx = value * 100;
