@@ -523,7 +523,7 @@ class Rend {
                       const onclick = (anchor && anchor.onclick) || '';
 
                       let match;
-                      if (match = onclick.match(/^navbar:(status|world|quests|tools|inventory|worlds|options)$/)) {
+                      if (match = onclick.match(/^navbar:(status|world|quests|equipment|inventory|worlds|options)$/)) {
                         const newTab = match[1];
 
                         const _getTabMesh = tab => {
@@ -531,7 +531,7 @@ class Rend {
                             case 'status': return menuMesh.planeMesh;
                             case 'world': return menuMesh.worldMesh;
                             case 'quests': return menuMesh.questMesh;
-                            case 'tools': return menuMesh.worldMesh;
+                            case 'equipment': return menuMesh.worldMesh;
                             case 'inventory': return menuMesh.inventoryMesh;
                             case 'worlds': return menuMesh.universeMesh;
                             case 'options': return menuMesh.configMesh;
