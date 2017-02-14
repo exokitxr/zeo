@@ -383,12 +383,11 @@ class World {
                 } = mesh;
                 elementsContainerMesh.add(tagMesh);
                 tags.mountTag('elements', tagMesh);
-                _alignTagMeshes(tags.getTagsClass('elements'));
+                const elementsTagMeshes = tags.getTagsClass('elements');
+                _alignTagMeshes(elementsTagMeshes);
 
-                // update details menu
-                const {item} = tagMesh;
-                detailsState.type = 'elements';
-                detailsState.item = item;
+                // update elements state
+                elementsState.empty = elementsTagMeshes.length === 0;
                 _updatePages();
 
                 // reify tag
@@ -397,7 +396,12 @@ class World {
               const _removeElement = (tagMesh) => {
                 // remove tag from container
                 tags.unmountTag('elements', tagMesh);
-                _alignTagMeshes(tags.getTagsClass('elements'));
+                const elementsTagMeshes = tags.getTagsClass('elements');
+                _alignTagMeshes(elementsTagMeshes);
+
+                // update elements state
+                elementsState.empty = elementsTagMeshes.length === 0;
+                _updatePages();
 
                 // unreify tag
                 _unreifyTag(tagMesh);
@@ -424,6 +428,9 @@ class World {
                 }
               };
 
+              const elementsState = {
+                empty: true,
+              };
               const npmState = {
                 inputText: '',
                 inputPlaceholder: 'Search npm modules',
@@ -432,13 +439,6 @@ class World {
                 cancelLocalRequest: null,
                 cancelRemoteRequest: null,
                 cancelModRequest: null,
-              };
-              const detailsState = {
-                type: null,
-                item: null,
-                loading: true,
-                positioningName: null,
-                positioningSide: null,
               };
               const focusState = {
                 type: '',
@@ -461,7 +461,7 @@ class World {
                 right: biolumi.makeMenuHoverState(),
               };
 
-              menuUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
+              menuUi.pushPage(({elements: {empty}, npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
                 const focus = type === 'npm';
 
                 // XXX add empty derivation for getElementsPageSrc()
@@ -470,7 +470,7 @@ class World {
                 return [
                   {
                     type: 'html',
-                    src: worldRenderer.getElementsPageSrc(),
+                    src: worldRenderer.getElementsPageSrc({empty}),
                     x: 0,
                     y: 0,
                     w: WIDTH / 2,
@@ -490,6 +490,7 @@ class World {
               }, {
                 type: 'main',
                 state: {
+                  elements: elementsState,
                   npm: npmState,
                   focus: focusState,
                 },
@@ -653,6 +654,7 @@ class World {
 
                     if (type === 'main') {
                       page.update({
+                        elements: elementsState,
                         npm: npmState,
                         focus: focusState,
                       }, pend);
@@ -847,68 +849,6 @@ class World {
               input.on('trigger', _trigger, {
                 priority: 1,
               });
-              const _triggerdown = e => {
-                const tab = rend.getTab();
-
-                if (tab === 'world') {
-                  const {side} = e;
-                  const tagMesh = tags.getGrabbableTag(side);
-
-                  if (tagMesh) {
-                    const {item} = tagMesh;
-
-                    const elementsTagMeshes = tags.getTagsClass('elements');
-                    if (elementsTagMeshes.includes(tagMesh)) {
-                      detailsState.type = 'elements';
-                      detailsState.item = item;
-                    } else {
-                      detailsState.type = 'npm';
-                      detailsState.item = item;
-                      detailsState.loading = true;
-
-                      _requestModSpec(item.name)
-                        .then(tagSpec => {
-                          detailsState.item = tagSpec;
-                          detailsState.loading = false;
-
-                          _updatePages();
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-                    }
-
-                    _updatePages();
-
-                    e.stopImmediatePropagation();
-                  }
-                }
-              };
-              input.on('triggerdown', _triggerdown, {
-                priority: 1,
-              });
-              const _grip = e => {
-                const {side} = e;
-                const {positioningSide} = detailsState;
-
-                if (positioningSide && side === positioningSide) {
-                  const {item} = detailsState;
-                  const {attributes} = item;
-                  const attribute = attributes[attributeName];
-                  const {value: oldValue} = attribute;
-                  const {positioningName} = detailsState;
-
-                  item.setAttribute(positioningName, oldValue);
-
-                  detailsState.positioningName = null;
-                  detailsState.positioningSide = null;
-
-                  _updatePages();
-                }
-              };
-              input.on('grip', _grip, {
-                priority: 1,
-              });
               const _gripdown = e => {
                 const {side} = e;
 
@@ -933,9 +873,6 @@ class World {
                 };
 
                 _grabTag();
-
-                detailsState.type = null;
-                detailsState.item = null;
 
                 _updatePages();
               };
@@ -1138,8 +1075,6 @@ class World {
                 rend.removeListener('tabchange', _tabchange);
 
                 input.removeListener('trigger', _trigger);
-                input.removeListener('triggerdown', _triggerdown);
-                input.removeListener('grip', _grip);
                 input.removeListener('gripdown', _gripdown);
                 input.removeListener('gripup', _gripup);
                 input.removeListener('keydown', _keydown);

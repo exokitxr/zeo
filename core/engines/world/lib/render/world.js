@@ -5,10 +5,10 @@ const {
 const makeRenderer = ({monospaceFonts}) => {
 monospaceFonts = monospaceFonts.replace(/"/g, "'");
 
-const getElementsPageSrc = () => `\
+const getElementsPageSrc = ({empty}) => `\
   <div style="padding: 20px">
     <h1 style="margin: 0; margin-bottom: 10px; font-size: 30px; font-weight: 400;">World modules</h1>
-    <div style="font-size: 20px; color: #CCC; justify-content: center; align-items: center;">&lt;None&gt;</div>
+    ${empty ? `<div style="font-size: 20px; color: #CCC; justify-content: center; align-items: center;">&lt;None&gt;</div>` : ''}
   </div>
 `;
 
