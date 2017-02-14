@@ -12,7 +12,7 @@ import {
   INPUT_WORLD_HEIGHT,
   INPUT_WORLD_DEPTH,
 } from './lib/constants/world';
-import worldRenderer from './lib/render/world';
+import worldRender from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
@@ -75,16 +75,13 @@ class World {
         const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
 
+        const worldRenderer = worldRender.makeRenderer({
+          monospaceFonts: biolumi.getMonospaceFonts(),
+        });
+
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
-          fontSize: 72,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-        const subcontentFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 28,
+          fontSize: 30,
           lineHeight: 1.4,
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
@@ -129,23 +126,11 @@ class World {
             width: WIDTH,
             height: HEIGHT,
           }),
-          biolumi.requestUi({
-            width: WIDTH,
-            height: HEIGHT,
-          }),
-          biolumi.requestUi({
-            width: INPUT_WIDTH,
-            height: INPUT_HEIGHT,
-          }),
         ])
           .then(([
-            readmeUi,
-            attributesUi,
-            npmUi,
+            menuUi,
           ]) => ({
-            readmeUi,
-            attributesUi,
-            npmUi,
+            menuUi,
           }));
 
         return Promise.all([
@@ -159,9 +144,7 @@ class World {
             filesJson,
             worldTimer,
             {
-              readmeUi,
-              attributesUi,
-              npmUi,
+              menuUi,
             },
           ]) => {
             if (live) {
@@ -448,13 +431,11 @@ class World {
                 }
               };
 
-              const npmInputState = {
+              const npmState = {
                 inputText: '',
-                inputPlaceholder: 'Search npm',
+                inputPlaceholder: 'Search npm modules',
                 inputIndex: 0,
                 inputValue: 0,
-              };
-              const npmState = {
                 cancelLocalRequest: null,
                 cancelRemoteRequest: null,
                 cancelModRequest: null,
@@ -486,75 +467,34 @@ class World {
                 left: biolumi.makeMenuHoverState(),
                 right: biolumi.makeMenuHoverState(),
               };
-              const readmeHoverStates = {
-                left: biolumi.makeMenuHoverState(),
-                right: biolumi.makeMenuHoverState(),
-              };
-              const attributesHoverStates = {
-                left: biolumi.makeMenuHoverState(),
-                right: biolumi.makeMenuHoverState(),
-              };
 
-              readmeUi.pushPage(({details: {item, loading}}) => {
-                return [
-                  {
-                    type: 'html',
-                    src: worldRenderer.getReadmePageSrc({item, loading}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                ];
-              }, {
-                type: 'readme',
-                state: {
-                  details: detailsState,
-                },
-              });
-              attributesUi.pushPage(({details: {item, inputText, inputValue, positioningName}, focus: {type}}) => {
-                const focusAttribute = (() => {
-                  const match = type.match(/^attribute:(.+)$/);
-                  return match && match[1];
-                })();
-
-                return [
-                  {
-                    type: 'html',
-                    src: worldRenderer.getAttributesPageSrc({item, inputText, inputValue, positioningName, focusAttribute}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                ];
-              }, {
-                type: 'attributes',
-                state: {
-                  details: detailsState,
-                  focus: focusState,
-                },
-              });
-
-              npmUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
+              menuUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
                 const focus = type === 'npm';
 
                 return [
                   {
                     type: 'html',
-                    src: worldRenderer.getInputSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
+                    src: worldRenderer.getElementsPageSrc(),
                     x: 0,
                     y: 0,
-                    w: INPUT_WIDTH,
-                    h: INPUT_HEIGHT,
+                    w: WIDTH / 2,
+                    h: HEIGHT,
+                    scroll: true,
+                  },
+                  {
+                    type: 'html',
+                    src: worldRenderer.getNpmPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
+                    x: WIDTH / 2,
+                    y: 0,
+                    w: WIDTH / 2,
+                    h: HEIGHT,
+                    scroll: true,
                   },
                 ];
               }, {
-                type: 'npm',
+                type: 'main',
                 state: {
-                  npm: npmInputState,
+                  npm: npmState,
                   focus: focusState,
                 },
               });
@@ -562,6 +502,35 @@ class World {
               const mesh = (() => {
                 const result = new THREE.Object3D();
                 result.visible = false;
+
+                const menuMesh = (() => {
+                  const width = WORLD_WIDTH;
+                  const height = WORLD_HEIGHT;
+                  const depth = WORLD_DEPTH;
+
+                  const menuMaterial = biolumi.makeMenuMaterial();
+
+                  const geometry = new THREE.PlaneBufferGeometry(width, height);
+                  const materials = [solidMaterial, menuMaterial];
+
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  mesh.position.z = -1;
+                  mesh.receiveShadow = true;
+                  mesh.menuMaterial = menuMaterial;
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const material = transparentMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  mesh.add(shadowMesh);
+
+                  return mesh;
+                })();
+                result.add(menuMesh);
+                result.menuMesh = menuMesh;
 
                 const _makeContainerMesh = () => {
                   const size = (0.2 * 3) + ((0.2 / 4) * 2);
@@ -603,37 +572,6 @@ class World {
                   object.position.y = -0.25;
                   object.rotation.y = -Math.PI / 8;
 
-                  const inputMesh = (() => {
-                    const aspectRatio = 1000 / 100;
-                    const width = (0.2 * 3) + ((0.2 / 4) * 2);
-                    const height = width / aspectRatio;
-                    const depth = width / 2 / 2;
-
-                    const menuMaterial = biolumi.makeMenuMaterial();
-
-                    const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const material = menuMaterial;
-
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.y = (width / 2) + (height / 2) + (height / 4);
-                    mesh.position.z = depth;
-                    mesh.receiveShadow = true;
-                    mesh.menuMaterial = menuMaterial;
-
-                    const shadowMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                      const material = transparentMaterial;
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.castShadow = true;
-                      return mesh;
-                    })();
-                    mesh.add(shadowMesh);
-
-                    return mesh;
-                  })();
-                  object.add(inputMesh);
-                  object.inputMesh = inputMesh;
-
                   const containerMesh = _makeContainerMesh();
                   object.add(containerMesh);
                   object.containerMesh = containerMesh;
@@ -642,33 +580,6 @@ class World {
                 })();
                 result.add(npmMesh);
                 result.npmMesh = npmMesh;
-
-                const _makeMenuMesh = () => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
-
-                  const menuMaterial = biolumi.makeMenuMaterial();
-
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.visible = false;
-                  mesh.position.z = -1;
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
-
-                  return mesh;
-                };
-
-                const readmeMesh = _makeMenuMesh();
-                result.add(readmeMesh);
-                result.readmeMesh = readmeMesh;
-
-                const attributesMesh = _makeMenuMesh();
-                result.add(attributesMesh);
-                result.attributesMesh = attributesMesh;
 
                 return result;
               })();
@@ -715,32 +626,6 @@ class World {
               });
               scene.add(oldPositioningMesh);
 
-              const readmeDotMeshes = {
-                left: biolumi.makeMenuDotMesh(),
-                right: biolumi.makeMenuDotMesh(),
-              };
-              scene.add(readmeDotMeshes.left);
-              scene.add(readmeDotMeshes.right);
-              const readmeBoxMeshes = {
-                left: biolumi.makeMenuBoxMesh(),
-                right: biolumi.makeMenuBoxMesh(),
-              };
-              scene.add(readmeBoxMeshes.left);
-              scene.add(readmeBoxMeshes.right);
-
-              const attributesDotMeshes = {
-                left: biolumi.makeMenuDotMesh(),
-                right: biolumi.makeMenuDotMesh(),
-              };
-              scene.add(attributesDotMeshes.left);
-              scene.add(attributesDotMeshes.right);
-              const attributesBoxMeshes = {
-                left: biolumi.makeMenuBoxMesh(),
-                right: biolumi.makeMenuBoxMesh(),
-              };
-              scene.add(attributesBoxMeshes.left);
-              scene.add(attributesBoxMeshes.right);
-
               const npmDotMeshes = {
                 left: biolumi.makeMenuDotMesh(),
                 right: biolumi.makeMenuDotMesh(),
@@ -755,26 +640,13 @@ class World {
               scene.add(npmBoxMeshes.right);
 
               const _updatePages = menuUtils.debounce(next => {
-                const readmePages = readmeUi.getPages();
-                const attributesPages = attributesUi.getPages();
-                const npmPages = npmUi.getPages();
-                const pages = readmePages.concat(attributesPages).concat(npmPages);
-
-                const done = () => {
-                  const {type} = detailsState;
-
-                  const {readmeMesh, attributesMesh} = mesh;
-                  readmeMesh.visible = type === 'npm';
-                  attributesMesh.visible = type === 'elements';
-
-                  next();
-                };
+                const pages = menuUi.getPages();
 
                 if (pages.length > 0) {
                   let pending = pages.length;
                   const pend = () => {
                     if (--pending === 0) {
-                      done();
+                      next();
                     }
                   };
 
@@ -782,18 +654,9 @@ class World {
                     const page = pages[i];
                     const {type} = page;
 
-                    if (type === 'readme') {
+                    if (type === 'main') {
                       page.update({
-                        details: detailsState,
-                      }, pend);
-                    } else if (type === 'attributes') {
-                      page.update({
-                        details: detailsState,
-                        focus: focusState,
-                      }, pend);
-                    } else if (type === 'npm') {
-                      page.update({
-                        npm: npmInputState,
+                        npm: npmState,
                         focus: focusState,
                       }, pend);
                     } else {
@@ -801,7 +664,7 @@ class World {
                     }
                   }
                 } else {
-                  done();
+                  next();
                 }
               });
 
@@ -811,33 +674,15 @@ class World {
                 if (tab === 'world') {
                   const _updateTextures = () => {
                     const {
-                      readmeMesh: {
-                        menuMaterial: readmeMenuMaterial,
-                      },
-                      attributesMesh: {
-                        menuMaterial: attributesMenuMaterial,
-                      },
-                      npmMesh: {
-                        inputMesh: {
-                          menuMaterial: npmMenuMaterial,
-                        },
+                      menuMesh: {
+                        menuMaterial,
                       },
                     } = mesh;
                     const worldTime = worldTimer.getWorldTime();
 
                     biolumi.updateMenuMaterial({
-                      ui: readmeUi,
-                      menuMaterial: readmeMenuMaterial,
-                      worldTime,
-                    });
-                    biolumi.updateMenuMaterial({
-                      ui: attributesUi,
-                      menuMaterial: attributesMenuMaterial,
-                      worldTime,
-                    });
-                    biolumi.updateMenuMaterial({
-                      ui: npmUi,
-                      menuMaterial: npmMenuMaterial,
+                      ui: menuUi,
+                      menuMaterial,
                       worldTime,
                     });
                   };
@@ -846,15 +691,13 @@ class World {
 
                     if (tab === 'world') {
                       const {
+                        menuMesh,
                         elementsMesh: {
                           containerMesh: elementsContainerMesh,
                         },
                         npmMesh: {
-                          inputMesh: npmInputMesh,
                           containerMesh: npmContainerMesh,
                         },
-                        readmeMesh,
-                        attributesMesh,
                       } = mesh;
 
                       const elementsContainerMatrixObject = _decomposeObjectMatrixWorld(elementsContainerMesh);
@@ -866,7 +709,7 @@ class World {
                         new THREE.Vector3(elementsContainerMesh.width, elementsContainerMesh.height, elementsContainerMesh.depth)
                       );
 
-                      const npmMatrixObject = _decomposeObjectMatrixWorld(npmInputMesh);
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
                       const npmContainerMatrixObject = _decomposeObjectMatrixWorld(npmContainerMesh);
                       const {position: npmPosition, rotation: npmRotation, scale: npmScale} = npmContainerMatrixObject;
                       const npmBoxTarget = geometryUtils.makeBoxTarget(
@@ -875,9 +718,6 @@ class World {
                         npmScale,
                         new THREE.Vector3(npmContainerMesh.width, npmContainerMesh.height, npmContainerMesh.depth)
                       );
-
-                      const readmeMatrixObject = _decomposeObjectMatrixWorld(readmeMesh);
-                      const attributesMatrixObject = _decomposeObjectMatrixWorld(attributesMesh);
 
                       const {gamepads} = webvr.getStatus();
 
@@ -891,62 +731,22 @@ class World {
                           const npmDotMesh = npmDotMeshes[side];
                           const npmBoxMesh = npmBoxMeshes[side];
 
-                          const readmeHoverState = readmeHoverStates[side];
-                          const readmeDotMesh = readmeDotMeshes[side];
-                          const readmeBoxMesh = readmeBoxMeshes[side];
-
-                          const attributesHoverState = attributesHoverStates[side];
-                          const attributesDotMesh = attributesDotMeshes[side];
-                          const attributesBoxMesh = attributesBoxMeshes[side];
-
                           const elementsContainerHoverState = elementsContainerHoverStates[side];
                           const npmContainerHoverState = npmContainerHoverStates[side];
 
                           biolumi.updateAnchors({
                             objects: [{
-                              matrixObject: npmMatrixObject,
-                              ui: npmUi,
-                              width: INPUT_WIDTH,
-                              height: INPUT_HEIGHT,
-                              worldWidth: INPUT_WORLD_WIDTH,
-                              worldHeight: INPUT_WORLD_HEIGHT,
-                              worldDepth: INPUT_WORLD_DEPTH,
+                              matrixObject: menuMatrixObject,
+                              ui: menuUi,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
                             }],
                             hoverState: npmHoverState,
                             dotMesh: npmDotMesh,
                             boxMesh: npmBoxMesh,
-                            controllerPosition,
-                            controllerRotation,
-                          });
-                          biolumi.updateAnchors({
-                            objects: [{
-                              matrixObject: readmeMatrixObject,
-                              ui: readmeUi,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            }],
-                            hoverState: readmeHoverState,
-                            dotMesh: readmeDotMesh,
-                            boxMesh: readmeBoxMesh,
-                            controllerPosition,
-                            controllerRotation,
-                          });
-                          biolumi.updateAnchors({
-                            objects: [{
-                              matrixObject: attributesMatrixObject,
-                              ui: attributesUi,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            }],
-                            hoverState: attributesHoverState,
-                            dotMesh: attributesDotMesh,
-                            boxMesh: attributesBoxMesh,
                             controllerPosition,
                             controllerRotation,
                           });
@@ -974,59 +774,19 @@ class World {
                     const npmHovered = SIDES.some(side => npmContainerHoverStates[side].hovered);
                     npmContainerMesh.material.color = new THREE.Color(npmHovered ? 0x0000FF : 0x808080);
                   };
-                  const _updateControllers = () => {
-                    const tab = rend.getTab();
-
-                    if (tab === 'world') {
-                      const {item, positioningName, positioningSide} = detailsState;
-
-                      if (item && positioningName && positioningSide) {
-                        const {gamepads} = webvr.getStatus();
-                        const gamepad = gamepads[positioningSide];
-
-                        if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
-                          positioningMesh.position.copy(controllerPosition);
-                          positioningMesh.quaternion.copy(controllerRotation);
-                          positioningMesh.scale.copy(controllerScale);
-
-                          const {attributes} = item;
-                          const attribute = attributes[positioningName];
-                          const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                          item.setAttribute(positioningName, newValue);
-                        }
-
-                        if (!positioningMesh.visible) {
-                          positioningMesh.visible = true;
-                        }
-                        if (!oldPositioningMesh.visible) {
-                          oldPositioningMesh.visible = true;
-                        }
-                      } else {
-                        if (positioningMesh.visible) {
-                          positioningMesh.visible = false;
-                        }
-                        if (oldPositioningMesh.visible) {
-                          oldPositioningMesh.visible = false;
-                        }
-                      }
-                    }
-                  };
 
                   _updateTextures();
                   _updateAnchors();
                   _updateAnchorStyles();
-                  _updateControllers();
                 }
               };
               rend.on('update', _update);
 
               const _tabchange = tab => {
                 if (tab === 'world') {
-                  npmInputState.inputText = '';
-                  npmInputState.inputIndex = 0;
-                  npmInputState.inputValue = 0;
-                  npmInputState.focus = false;
+                  npmState.inputText = '';
+                  npmState.inputIndex = 0;
+                  npmState.inputValue = 0;
 
                   _requestLocalModSpecs()
                     .then(tagSpecs => tagSpecs.map(tagSpec => tags.makeTag(tagSpec)))
@@ -1064,186 +824,27 @@ class World {
 
                 if (tab === 'world') {
                   const {side} = e;
+                  const npmHoverState = npmHoverStates[side];
+                  const {intersectionPoint} = npmHoverState;
 
-                  const _doSetPosition = () => {
-                    const {positioningSide} = detailsState;
+                  if (intersectionPoint) {
+                    const {anchor} = npmHoverState;
+                    const onclick = (anchor && anchor.onclick) || '';
 
-                    if (positioningSide && side === positioningSide) {
-                      const {item, positioningName} = detailsState;
+                    let match;
+                    if (onclick === 'npm:focus') {
+                      const {value} = npmHoverState;
+                      const valuePx = value * (WIDTH - (500 + 40));
 
-                      const newValue = (() => {
-                        const {position, quaternion, scale} = positioningMesh;
-                        return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
-                      })();
-                      item.setAttribute(positioningName, newValue);
+                      const {index, px} = biolumi.getTextPropertiesFromCoord(npmState.inputText, mainFontSpec, valuePx);
 
-                      detailsState.positioningName = null;
-                      detailsState.positioningSide = null;
+                      npmState.inputIndex = index;
+                      npmState.inputValue = px;
+                      focusState.type = 'npm';
 
                       _updatePages();
-
-                      _saveTags();
-
-                      return true;
-                    } else {
-                      return false;
                     }
-                  };
-                  const _doClickNpm = () => {
-                    const npmHoverState = npmHoverStates[side];
-                    const {intersectionPoint} = npmHoverState;
-
-                    if (intersectionPoint) {
-                      const {anchor} = npmHoverState;
-                      const onclick = (anchor && anchor.onclick) || '';
-
-                      let match;
-                      if (onclick === 'npm:focus') {
-                        const {value} = npmHoverState;
-                        const valuePx = value * (WIDTH - (500 + 40));
-
-                        const {index, px} = biolumi.getTextPropertiesFromCoord(npmInputState.inputText, mainFontSpec, valuePx);
-
-                        npmInputState.inputIndex = index;
-                        npmInputState.inputValue = px;
-                        focusState.type = 'npm';
-
-                        _updatePages();
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  };
-                  const _doClickAttribute = () => {
-                    const attributesHoverState = attributesHoverStates[side];
-                    const {intersectionPoint} = attributesHoverState;
-
-                    if (intersectionPoint) {
-                      const {anchor} = attributesHoverState;
-                      const onclick = (anchor && anchor.onclick) || '';
-
-                      let match;
-                      if (match = onclick.match(/^attribute:(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
-                        const attributeName = match[1];
-                        const action = match[2];
-                        const value = match[3];
-
-                        const {item} = detailsState;
-                        const {attributes} = item;
-                        const attribute = attributes[attributeName];
-                        const {value: attributeValue, type: attributeType} = attribute;
-
-                        if (action === 'position') {
-                          oldPositioningMesh.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
-                          oldPositioningMesh.quaternion.set(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
-                          oldPositioningMesh.scale.set(attributeValue[7], attributeValue[8], attributeValue[9]);
-
-                          detailsState.positioningName = attributeName;
-                          detailsState.positioningSide = side;
-
-                          focusState.type = '';
-                        } else if (action === 'focus') {
-                          const {value} = attributesHoverState;
-
-                          const textProperties = (() => {
-                            if (attributeType === 'text') {
-                              const valuePx = value * 400;
-                              return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                            } else if (attributeType === 'number') {
-                              const valuePx = value * 100;
-                              return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                            } else if (attributeType === 'color') {
-                              const valuePx = value * (400 - (40 + 4));
-                              return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                            } else if (attributeType === 'file') {
-                              const valuePx = value * 260;
-                              return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                            } else {
-                              return null;
-                            }
-                          })();
-                          if (textProperties) {
-                            detailsState.inputText = menuUtils.castValueValueToString(attributeValue, attributeType);
-                            const {index, px} = textProperties;
-                            detailsState.inputIndex = index;
-                            detailsState.inputValue = px;
-                          }
-
-                          focusState.type = 'attribute:' + attributeName;
-                        } else if (action === 'set') {
-                          item.setAttribute(attributeName, value);
-
-                          focusState.type = '';
-
-                          _saveTags();
-                        } else if (action === 'tweak') {
-                          const {value} = attributesHoverState;
-                          const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attribute;
-
-                          const newValue = (() => {
-                            let n = min + (value * (max - min));
-                            if (step > 0) {
-                              n = Math.floor(n / step) * step;
-                            }
-                            return n;
-                          })();
-                          item.setAttribute(attributeName, newValue);
-
-                          focusState.type = '';
-
-                          _saveTags();
-                        } else if (action === 'toggle') {
-                          const newValue = !attributeValue;
-                          item.setAttribute(attributeName, newValue);
-
-                          _saveTags();
-                        } else if (action === 'choose') {
-                          /* menuUi.cancelTransition();
-
-                          elementsState.choosingName = attributeName;
-
-                          _ensureFilesLoaded(elementAttributeFilesState);
-
-                          menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
-                            {
-                              type: 'html',
-                              src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
-                            },
-                            {
-                              type: 'image',
-                              img: creatureUtils.makeAnimatedCreature('files'),
-                              x: 150,
-                              y: 0,
-                              w: 150,
-                              h: 150,
-                              frameTime: 300,
-                              pixelated: true,
-                            }
-                          ]), {
-                            type: 'elementAttributeFiles',
-                            state: {
-                              elementAttributeFiles: elementAttributeFilesState,
-                              focus: focusState,
-                            },
-                          }); */
-                        }
-
-                        _updatePages();
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  };
-
-                  _doSetPosition() || _doClickNpm() || _doClickAttribute();
+                  }
                 }
               };
               input.on('trigger', _trigger, {
@@ -1403,43 +1004,17 @@ class World {
 
                   let match;
                   if (type === 'npm') {
-                    const applySpec = biolumi.applyStateKeyEvent(npmInputState, mainFontSpec, e);
+                    const applySpec = biolumi.applyStateKeyEvent(npmState, mainFontSpec, e);
 
                     if (applySpec) {
                       const {commit} = applySpec;
 
                       if (commit) {
-                        const {inputText} = npmInputState;
+                        const {inputText} = npmState;
 
                         focusState.type = '';
 
                         console.log('commit', {inputText}); // XXX actually search here
-                      }
-
-                      _updatePages();
-
-                      e.stopImmediatePropagation();
-                    }
-                  } else if (match = type.match(/^attribute:(.+)$/)) {
-                    const applySpec = biolumi.applyStateKeyEvent(detailsState, subcontentFontSpec, e);
-
-                    if (applySpec) {
-                      const {commit} = applySpec;
-
-                      if (commit) {
-                        const attributeName = match[1];
-                        const {item, inputText} = detailsState;
-                        const {attributes} = item;
-                        const attribute = attributes[attributeName];
-                        const {type, min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP, options = ATTRIBUTE_DEFAULTS.OPTIONS} = attribute;
-                        const newValue = menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
-                        if (newValue !== null) {
-                          item.setAttribute(attributeName, newValue);
-
-                          _saveTags();
-                        }
-
-                        focusState.type = '';
                       }
 
                       _updatePages();
@@ -1555,8 +1130,6 @@ class World {
                 rend.removeMenuMesh('worldMesh');
 
                 SIDES.forEach(side => {
-                  scene.remove(attributesDotMeshes[side]);
-                  scene.remove(attributesBoxMeshes[side]);
                   scene.remove(npmDotMeshes[side]);
                   scene.remove(npmBoxMeshes[side]);
                 });
