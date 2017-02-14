@@ -131,8 +131,8 @@ class Rend {
           username: 'avaer',
           accountType: 'admin',
           karma: 1875,
-          adventureRequests: 3,
-          adventureResponses: 7,
+          incomingQuests: 7,
+          outgoingQuests: 3,
           worldname: 'Aldous Huxley',
           users: [
             'allie',
@@ -524,14 +524,14 @@ class Rend {
                       const onclick = (anchor && anchor.onclick) || '';
 
                       let match;
-                      if (match = onclick.match(/^navbar:(status|world|adventures|tools|inventory|worlds|options)$/)) {
+                      if (match = onclick.match(/^navbar:(status|world|quests|tools|inventory|worlds|options)$/)) {
                         const newTab = match[1];
 
                         const _getTabMesh = tab => {
                           switch (tab) {
                             case 'status': return menuMesh.planeMesh;
                             case 'world': return menuMesh.worldMesh;
-                            case 'adventures': return menuMesh.worldMesh;
+                            case 'quests': return menuMesh.worldMesh;
                             case 'tools': return menuMesh.worldMesh;
                             case 'inventory': return menuMesh.inventoryMesh;
                             case 'worlds': return menuMesh.universeMesh;

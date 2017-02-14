@@ -44,7 +44,7 @@ class World {
       '/core/engines/rend',
       '/core/engines/hands',
       '/core/engines/tags',
-      '/core/engines/adventure',
+      '/core/engines/quest',
       '/core/plugins/geometry-utils',
     ]).then(([
       three,
@@ -55,7 +55,7 @@ class World {
       rend,
       hands,
       tags,
-      adventure,
+      quest,
       geometryUtils,
     ]) => {
       if (live) {
@@ -1104,8 +1104,8 @@ class World {
                     menuMesh.add(tagMesh);
                   }
                 };
-                const _initializeAdventures = () => {
-                  const adventureMesh = adventure.makeAdventure({
+                const _initializeQuests = () => {
+                  const questMesh = quest.makeQuest({
                     id: _makeId(),
                     name: 'Explore with me.',
                     author: 'avaer',
@@ -1114,11 +1114,11 @@ class World {
                   });
 
                   const menuMesh = rend.getMenuMesh();
-                  menuMesh.add(adventureMesh);
+                  menuMesh.add(questMesh);
                 };
                 _initializeFiles();
                 _initializeElements();
-                _initializeAdventures();
+                _initializeQuests();
               };
               _initialize();
 

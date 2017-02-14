@@ -1,26 +1,25 @@
 import {
   WIDTH,
   HEIGHT,
-
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-} from './lib/constants/adventure';
-import adventureRender from './lib/render/adventure';
+} from './lib/constants/quest';
+import questRender from './lib/render/quest';
 import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
 const DEFAULT_GRAB_RADIUS = 0.2;
-const DEFAULT_CONTRACT_MATRIX = [
+const DEFAULT_QUEST_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
 ];
 
-const adventureFlagSymbol = Symbol();
+const questFlagSymbol = Symbol();
 
-class Adventure {
+class Quest {
   constructor(archae) {
     this._archae = archae;
   }
@@ -55,7 +54,7 @@ class Adventure {
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
 
-          const adventureRenderer = adventureRender.makeRenderer({creatureUtils});
+          const questRenderer = questRender.makeRenderer({creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -74,7 +73,7 @@ class Adventure {
           });
 
           const _makeHoverState = () => ({
-            adventureMesh: null,
+            questMesh: null,
           });
           const hoverStates = {
             left: _makeHoverState(),
@@ -116,9 +115,9 @@ class Adventure {
             const pageSpecs = (() => {
               const result = [];
 
-              for (let i = 0; i < adventureMeshes.length; i++) {
-                const adventureMesh = adventureMeshes[i];
-                const {ui, adventure} = adventureMeshes;
+              for (let i = 0; i < questMeshes.length; i++) {
+                const questMesh = questMeshes[i];
+                const {ui, quest} = questMeshes;
 
                 if (ui) {
                   const pages = ui.getPages();
@@ -127,7 +126,7 @@ class Adventure {
                     const page = pages[j];
                     const pageSpec = {
                       page,
-                      adventure,
+                      quest,
                     };
                     result.push(pageSpec);
                   }
@@ -150,11 +149,11 @@ class Adventure {
                 const {page} = pageSpec;
                 const {type} = page;
 
-                if (type === 'adventure') {
-                  const {adventure} = pageSpec;
+                if (type === 'quest') {
+                  const {quest} = pageSpec;
 
                   page.update({
-                    adventure,
+                    quest,
                   }, pend);
                 } else {
                   pend();
@@ -168,9 +167,9 @@ class Adventure {
           const _gripdown = e => {
             const {side} = e;
 
-            const bestGrabbableAdventureMesh = hands.getBestGrabbable(side, adventureMeshes, {radius: DEFAULT_GRAB_RADIUS});
-            if (bestGrabbableAdventureMesh) {
-              adventureInstance.grabAdventure(side, bestGrabbableAdventureMesh);
+            const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
+            if (bestGrabbableQuestMesh) {
+              questInstance.grabQuest(side, bestGrabbableQuestMesh);
             }
           };
           input.on('gripdown', _gripdown);
@@ -190,19 +189,19 @@ class Adventure {
                 const hoverState = hoverStates[side];
                 const boxMesh = boxMeshes[side];
 
-                const bestGrabbableAdventureMesh = hands.getBestGrabbable(side, adventureMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                if (bestGrabbableAdventureMesh) {
-                  hoverState.adventureMesh = bestGrabbableAdventureMesh;
+                const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                if (bestGrabbableQuestMesh) {
+                  hoverState.questMesh = bestGrabbableQuestMesh;
 
-                  const {position: adventureMeshPosition, rotation: adventureMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableAdventureMesh);
-                  boxMesh.position.copy(adventureMeshPosition);
-                  boxMesh.quaternion.copy(adventureMeshRotation);
+                  const {position: questMeshPosition, rotation: questMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableQuestMesh);
+                  boxMesh.position.copy(questMeshPosition);
+                  boxMesh.quaternion.copy(questMeshRotation);
 
                   if (!boxMesh.visible) {
                     boxMesh.visible = true;
                   }
                 } else {
-                  hoverState.adventureMesh = null;
+                  hoverState.questMesh = null;
 
                   if (boxMesh.visible) {
                     boxMesh.visible = false;
@@ -213,12 +212,12 @@ class Adventure {
             const _updateTextures = () => {
               const uiTime = rend.getUiTime();
 
-              for (let i = 0; i < adventureMeshes.length; i++) {
-                const adventureMesh = adventureMeshes[i];
+              for (let i = 0; i < questMeshes.length; i++) {
+                const questMesh = questMeshes[i];
                 const {
                   ui,
                   planeMesh,
-                } = adventureMesh;
+                } = questMesh;
 
                 if (ui && planeMesh) {
                   const {menuMaterial} = planeMesh;
@@ -238,9 +237,9 @@ class Adventure {
           rend.on('update', _update);
 
           this._cleanup = () => {
-            for (let i = 0; i < adventureMeshes.length; i++) {
-              const adventureMesh = adventureMeshes[i];
-              adventureMesh.parent.remove(adventureMesh);
+            for (let i = 0; i < questMeshes.length; i++) {
+              const questMesh = questMeshes[i];
+              questMesh.parent.remove(questMesh);
             }
             SIDES.forEach(side => {
               scene.remove(boxMeshes[side]);
@@ -251,7 +250,7 @@ class Adventure {
             rend.removeListener('update', _update);
           };
 
-          class Adventure {
+          class Quest {
             constructor(id, name, author, created, matrix) {
               this.id = id;
               this.name = name;
@@ -261,45 +260,45 @@ class Adventure {
             }
           }
 
-          const adventureMeshes = [];
-          class AdventureApi {
-            makeAdventure(adventureSpec) {
+          const questMeshes = [];
+          class QuestApi {
+            makeQuest(questSpec) {
               const object = new THREE.Object3D();
-              object[adventureFlagSymbol] = true;
+              object[questFlagSymbol] = true;
 
-              const adventure = new Adventure(adventureSpec.id, adventureSpec.name, adventureSpec.author, adventureSpec.created, adventureSpec.matrix);
-              object.adventure = adventure;
+              const quest = new Quest(questSpec.id, questSpec.name, questSpec.author, questSpec.created, questSpec.matrix);
+              object.quest = quest;
 
-              object.position.set(adventure.matrix[0], adventure.matrix[1], adventure.matrix[2]);
-              object.quaternion.set(adventure.matrix[3], adventure.matrix[4], adventure.matrix[5], adventure.matrix[6]);
-              object.scale.set(adventure.matrix[7], adventure.matrix[8], adventure.matrix[9]);
+              object.position.set(quest.matrix[0], quest.matrix[1], quest.matrix[2]);
+              object.quaternion.set(quest.matrix[3], quest.matrix[4], quest.matrix[5], quest.matrix[6]);
+              object.scale.set(quest.matrix[7], quest.matrix[8], quest.matrix[9]);
 
               object.ui = null;
               object.planeMesh = null;
 
-              this._requestDecorateAdventure(object);
+              this._requestDecorateQuest(object);
 
-              adventureMeshes.push(object);
+              questMeshes.push(object);
 
               return object;
             }
 
-            _requestDecorateAdventure(object) {
+            _requestDecorateQuest(object) {
               return biolumi.requestUi({
                 width: WIDTH,
                 height: HEIGHT,
               })
                 .then(ui => {
-                  const {adventure} = object;
+                  const {quest} = object;
 
-                  ui.pushPage(({adventure}) => ([
+                  ui.pushPage(({quest}) => ([
                     {
                       type: 'html',
-                      src: adventureRenderer.getAdventureSrc(adventure),
+                      src: questRenderer.getQuestSrc(quest),
                     },
                     /* {
                       type: 'image',
-                      img: creatureUtils.makeAnimatedCreature('adventure:' + adventure.name),
+                      img: creatureUtils.makeAnimatedCreature('quest:' + quest.name),
                       x: 10,
                       y: 0,
                       w: 100,
@@ -308,9 +307,9 @@ class Adventure {
                       pixelated: true,
                     } */
                   ]), {
-                    type: 'adventurce',
+                    type: 'quest',
                     state: {
-                      adventure,
+                      quest,
                     },
                     immediate: true,
                   });
@@ -372,30 +371,30 @@ class Adventure {
                 });
             };
 
-            destroyAdventure(adventureMesh) {
-              const index = adventureMeshes.indexOf(adventureMesh);
+            destroyQuest(questMesh) {
+              const index = questMeshes.indexOf(questMesh);
 
               if (index !== -1) {
-                adventureMeshes.splice(index, 1);
+                questMeshes.splice(index, 1);
               }
             }
 
-            getHoverAdventure(side) {
-              return hoverStates[side].adventureMesh;
+            getHoverQuest(side) {
+              return hoverStates[side].questMesh;
             }
 
-            isAdventure(object) {
-              return object[adventureFlagSymbol] === true;
+            isQuest(object) {
+              return object[questFlagSymbol] === true;
             }
 
-            grabAdventure(side, adventureMesh) {
+            grabQuest(side, questMesh) {
               const menuMesh = rend.getMenuMesh();
-              menuMesh.add(adventureMesh);
+              menuMesh.add(questMesh);
 
-              const {adventure} = adventureMesh;
-              adventure.matrix = DEFAULT_CONTRACT_MATRIX;
+              const {quest} = questMesh;
+              quest.matrix = DEFAULT_CONTRACT_MATRIX;
 
-              const grabber = hands.grab(side, adventureMesh);
+              const grabber = hands.grab(side, questMesh);
               grabber.on('update', ({position, rotation}) => {
                 const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
                 const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
@@ -408,13 +407,13 @@ class Adventure {
                     new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
                   );
 
-                adventureMesh.position.copy(newPosition);
-                adventureMesh.quaternion.copy(newRotation);
+                questMesh.position.copy(newPosition);
+                questMesh.quaternion.copy(newRotation);
               });
               grabber.on('release', () => {
-                const {position, quaternion, adventure} = adventureMesh;
+                const {position, quaternion, quest} = questMesh;
                 const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
-                adventure.matrix = newMatrixArray;
+                quest.matrix = newMatrixArray;
 
                 grabState.grabber = null;
               });
@@ -428,8 +427,8 @@ class Adventure {
             }
           };
 
-          const adventureInstance = new AdventureApi();
-          return adventureInstance;
+          const questInstance = new QuestApi();
+          return questInstance;
         }
       });
   }
@@ -441,4 +440,4 @@ class Adventure {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 
-module.exports = Adventure;
+module.exports = Quest;

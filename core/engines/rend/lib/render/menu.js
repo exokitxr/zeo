@@ -1,11 +1,11 @@
 const karmaIcon = require('../img/karma');
 const karmaIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaIcon);
 
-const landIconImg = require('../img/land-icon');
-const landIconImgSrc = 'data:image/svg+xml;base64,' + btoa(landIconImg);
-
 const landImg = require('../img/land');
 const landImgSrc = 'data:image/svg+xml;base64,' + btoa(landImg);
+
+const landIconImg = require('../img/land-icon');
+const landIconImgSrc = 'data:image/svg+xml;base64,' + btoa(landIconImg);
 
 const tagImg = require('../img/tag-white');
 const tagImgSrc = 'data:image/svg+xml;base64,' + btoa(tagImg);
@@ -22,7 +22,7 @@ const {
   HEIGHT,
 } = require('../constants/menu');
 
-const getStatusSrc = ({status: {username, accountType, karma, adventureRequests, adventureResponses, worldname, users, numTags, numFiles}}) => {
+const getStatusSrc = ({status: {username, accountType, karma, incomingQuests, outgoingQuests, worldname, users, numTags, numFiles}}) => {
   return `\
     <div style="padding: 30px;">
       <div style="display: flex; margin-bottom: 20px; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
@@ -61,12 +61,12 @@ const getStatusSrc = ({status: {username, accountType, karma, adventureRequests,
         </div>
       </div>
       <div style="display: flex; margin-bottom: 5px; font-size: 20px; align-items: center;">
-        <img src="${landIconImgSrc}" width="28" height="28" style="margin-right: 10px;">
-        <div>${adventureRequests} Adventures pending</div>
+        <img src="${landImgSrc}" width="28" height="28" style="margin-right: 10px;">
+        <div>${incomingQuests} Incoming quests</div>
       </div>
       <div style="display: flex; margin-bottom: 5px; font-size: 20px; align-items: center;">
-        <img src="${landImgSrc}" width="28" height="28" style="margin-right: 10px;">
-        <div>${adventureResponses} Adventures active</div>
+        <img src="${landIconImgSrc}" width="28" height="28" style="margin-right: 10px;">
+        <div>${outgoingQuests} Outgoing quests</div>
       </div>
     </div>
   `;
@@ -95,8 +95,8 @@ const getNavbarSrc = ({tab}) => {
       <!-- <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'files' ? 'z-index: 1;' : ''}" onclick="navbar:files">
         ${tab === 'files' ? focusedContent('Files') : unfocusedContent('Files')}
       </a> -->
-      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'adventures' ? 'z-index: 1;' : ''}" onclick="navbar:adventures">
-        ${tab === 'adventures' ? focusedContent('Adventures') : unfocusedContent('Adventures')}
+      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'quests' ? 'z-index: 1;' : ''}" onclick="navbar:quests">
+        ${tab === 'quests' ? focusedContent('Quests') : unfocusedContent('Quests')}
       </a>
       <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'tools' ? 'z-index: 1;' : ''}" onclick="navbar:tools">
         ${tab === 'tools' ? focusedContent('Tools') : unfocusedContent('Tools')}
