@@ -1,9 +1,11 @@
+const menuUtils = require('../utils/menu');
+
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 const barsWhiteImg = require('../img/bars-white');
 const barsWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(barsWhiteImg);
 
-const getTagSrc = ({item, inputText, inputValue, positioningName, focusAttribute}) => {
+const getTagSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
   const {id, displayName, description, version, instancing, open} = item;
 
   const headerSrc = `\
@@ -29,7 +31,7 @@ const getTagSrc = ({item, inputText, inputValue, positioningName, focusAttribute
   `;
   const bodySrc = open ? `\
     <div style="width: 400px; height: 450px; padding: 10px 0; background-color: #F0F0F0; box-sizing: border-box;">
-      ${getAttributesSrc(item, inputText, inputValue, positioningName, focusAttribute)}
+      ${getAttributesSrc(item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec)}
     </div>
   ` : '';
   
@@ -41,20 +43,24 @@ const getTagSrc = ({item, inputText, inputValue, positioningName, focusAttribute
   `;
 };
 
-const getAttributesSrc = (item, inputText, inputValue, positioningName, focusAttribute) => {
+const getAttributesSrc = (item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec) => {
   let acc = '';
 
   const {attributes} = item;
+
   if (attributes) {
+    const {id} = item;
+
     for (const name in attributes) {
       const attribute = attributes[name];
       const {type, value, min, max, step, options} = attribute;
-      const focus = name === focusAttribute;
+      const focus = focusAttributeSpec ? (id === focusAttributeSpec.tagId && name === focusAttributeSpec.attributeName) : false;
+      const positioning = id === positioningId && name === positioningName;
 
       acc += `\
         <div style="display: flex; width: 400px; padding-left: 20px; margin-bottom: 4px; font-size: 20px; font-weight: 400; line-height: 1.4; align-items: center; box-sizing: border-box;">
           <div style="width: 120px; padding-right: 20px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
-          ${getAttributeInputSrc(name, type, value, min, max, step, options, positioningName, inputText, inputValue, focus)}
+          ${getAttributeInputSrc(id, name, type, value, min, max, step, options, inputText, inputValue, focus, positioning)}
         </div>
       `;
     }
@@ -73,7 +79,7 @@ const getAttributesSrc = (item, inputText, inputValue, positioningName, focusAtt
   }
 };
 
-const getAttributeInputSrc = (name, type, value, min, max, step, options, positioningName, inputText, inputValue, focus) => {
+const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus, positioning) => {
   const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
 
   const width = 400 - (20 + 120 + 20);
@@ -81,13 +87,13 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
     case 'matrix': {
       return `\
 <div style="display: flex; width: ${width}px; height: 40px; justify-content: flex-end;">
-  <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${name}:position" onmousedown="attribute:${name}:position">${!positioningName ? 'Set' : 'Setting...'}</a>
+  <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">${!positioning ? 'Set' : 'Setting...'}</a>
 </div>
 `;
     }
     case 'text': {
       return `\
-<a style="position: relative; width: ${width}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
+<a style="position: relative; width: ${width}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
   <div>${focusValue}</div>
 </a>
@@ -105,12 +111,12 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
       const string = focusValue !== null ? String(focusValue) : inputText;
 
       return `\
-<a style="position: relative; width: ${width - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="attribute:${name}:tweak" onmousedown="attribute:${name}:tweak">
+<a style="position: relative; width: ${width - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="attribute:${id}:${name}:tweak" onmousedown="attribute:${id}:${name}:tweak">
   <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
     <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
   </div>
 </a>
-<a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
+<a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
   ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
   <div>${string}</div>
 </a>
@@ -123,7 +129,7 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
 
       if (!focus) {
         return `\
-<a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
+<a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
   <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${focusValue}</div>
   <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">${unescape(encodeURIComponent('▼'))}</div>
 </a>
@@ -146,7 +152,7 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
         }
         return result;
       })();
-      return `<a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="attribute:${name}:set:${option}" onmousedown="attribute:${name}:set:${option}">
+      return `<a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:set:${option}" onmousedown="attribute:${id}:${name}:set:${option}">
         ${option}
       </a>`;
     }).join('\n')}
@@ -162,7 +168,7 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
       return `\
 <div style="display: flex; width: ${width}px; height: 40px; align-items: center;">
   <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${color};"></div>
-  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
+  <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${string}</div>
   </a>
@@ -173,13 +179,13 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
       return `\
 <div style="display: flex; width: ${width}px; height: 40px; justify-content: flex-end; align-items: center;">
   ${focusValue ?
-    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="attribute:${name}:toggle" onmousedown="attribute:${name}:toggle">
+    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:toggle" onmousedown="attribute:${id}:${name}:toggle">
       <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
         <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
       </div>
     </a>`
   :
-    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="attribute:${name}:toggle" onmousedown="attribute:${name}:toggle">
+    `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:toggle" onmousedown="attribute:${id}:${name}:toggle">
       <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
         <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
       </div>
@@ -191,11 +197,11 @@ const getAttributeInputSrc = (name, type, value, min, max, step, options, positi
     case 'file': {
       return `\
 <div style="display: flex; width: ${width}px; height: 40px;">
-  <a style="position: relative; width: 260px; height: 40px; margin-right: 20px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${name}:focus" onmousedown="attribute:${name}:focus">
+  <a style="position: relative; width: 260px; height: 40px; margin-right: 20px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
     ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
     <div>${focusValue}</div>
   </a>
-  <a style="display: flex; width: 120px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="attribute:${name}:choose" onmousedown="attribute:${name}:choose">Choose</a>
+  <a style="display: flex; width: 120px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:choose" onmousedown="attribute:${id}:${name}:choose">Choose</a>
 </div>
 `;
     }
