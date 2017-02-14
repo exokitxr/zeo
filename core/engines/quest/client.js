@@ -41,6 +41,7 @@ class Quest {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/input',
+      '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
@@ -49,6 +50,7 @@ class Quest {
       .then(([
         three,
         input,
+        webvr,
         biolumi,
         rend,
         hands,
@@ -111,7 +113,20 @@ class Quest {
                   right: _makeGrabState(),
                 };
 
-                const _makeBoxMesh = () => {
+                const dotMeshes = {
+                  left: biolumi.makeMenuDotMesh(),
+                  right: biolumi.makeMenuDotMesh(),
+                };
+                scene.add(dotMeshes.left);
+                scene.add(dotMeshes.right);
+                const boxMeshes = {
+                  left: biolumi.makeMenuBoxMesh(),
+                  right: biolumi.makeMenuBoxMesh(),
+                };
+                scene.add(boxMeshes.left);
+                scene.add(boxMeshes.right);
+
+                const _makeQuestBoxMesh = () => {
                   const width = QUEST_WORLD_WIDTH;
                   const height = QUEST_WORLD_HEIGHT;
                   const depth = QUEST_WORLD_DEPTH;
@@ -127,12 +142,12 @@ class Quest {
                   mesh.visible = false;
                   return mesh;
                 };
-                const boxMeshes = {
-                  left: _makeBoxMesh(),
-                  right: _makeBoxMesh(),
+                const questBoxMeshes = {
+                  left: _makeQuestBoxMesh(),
+                  right: _makeQuestBoxMesh(),
                 };
-                scene.add(boxMeshes.left);
-                scene.add(boxMeshes.right);
+                scene.add(questBoxMeshes.left);
+                scene.add(questBoxMeshes.right);
 
                 const questState = {};
                 const focusState = {
@@ -333,29 +348,65 @@ class Quest {
                     }
                   };
                   const _updateControllers = () => {
-                    SIDES.forEach(side => {
-                      const hoverState = hoverStates[side];
-                      const boxMesh = boxMeshes[side];
+                    const _updateGrabbers = () => {
+                      SIDES.forEach(side => {
+                        const hoverState = hoverStates[side];
+                        const questBoxMesh = questBoxMeshes[side];
 
-                      const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                      if (bestGrabbableQuestMesh) {
-                        hoverState.questMesh = bestGrabbableQuestMesh;
+                        const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                        if (bestGrabbableQuestMesh) {
+                          hoverState.questMesh = bestGrabbableQuestMesh;
 
-                        const {position: questMeshPosition, rotation: questMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableQuestMesh);
-                        boxMesh.position.copy(questMeshPosition);
-                        boxMesh.quaternion.copy(questMeshRotation);
+                          const {position: questMeshPosition, rotation: questMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableQuestMesh);
+                          questBoxMesh.position.copy(questMeshPosition);
+                          questBoxMesh.quaternion.copy(questMeshRotation);
 
-                        if (!boxMesh.visible) {
-                          boxMesh.visible = true;
+                          if (!questBoxMesh.visible) {
+                            questBoxMesh.visible = true;
+                          }
+                        } else {
+                          hoverState.questMesh = null;
+
+                          if (questBoxMesh.visible) {
+                            questBoxMesh.visible = false;
+                          }
                         }
-                      } else {
-                        hoverState.questMesh = null;
+                      });
+                    };
+                    const _updateAnchors = () => {
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                      const {gamepads} = webvr.getStatus();
 
-                        if (boxMesh.visible) {
-                          boxMesh.visible = false;
+                      SIDES.forEach(side => {
+                        const gamepad = gamepads[side];
+
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                          const dotMesh = dotMeshes[side];
+                          const boxMesh = boxMeshes[side];
+
+                          biolumi.updateAnchors({
+                            objects: [{
+                              matrixObject: menuMatrixObject,
+                              ui: menuUi,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                            }],
+                            dotMesh: dotMesh,
+                            boxMesh: boxMesh,
+                            controllerPosition,
+                            controllerRotation,
+                          });
                         }
-                      }
-                    });
+                      });
+                    };
+
+                    _updateGrabbers();
+                    _updateAnchors();
                   };
 
                   _updateMenuTextures();
@@ -371,7 +422,10 @@ class Quest {
                     const questMesh = questMeshes[i];
                     questMesh.parent.remove(questMesh);
                   }
+
                   SIDES.forEach(side => {
+                    scene.remove(questBoxMesh[side]);
+                    scene.remove(dotMeshes[side]);
                     scene.remove(boxMeshes[side]);
                   });
 
