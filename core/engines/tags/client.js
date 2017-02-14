@@ -547,6 +547,42 @@ class Tags {
                         }
                       });
                     };
+                    const _updatePositioningMesh = () => {
+                      const {positioningId, positioningName, positioningSide} = detailsState;
+
+                      if (positioningId && positioningName && positioningSide) {
+                        const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === positioningId);
+                        const {item} = tagMesh;
+                        const {gamepads} = webvr.getStatus();
+                        const gamepad = gamepads[positioningSide];
+
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation, scale: controllerScale} = gamepad;
+                          positioningMesh.position.copy(controllerPosition);
+                          positioningMesh.quaternion.copy(controllerRotation);
+                          positioningMesh.scale.copy(controllerScale);
+
+                          const {attributes} = item;
+                          const attribute = attributes[positioningName];
+                          const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
+                          item.setAttribute(positioningName, newValue);
+                        }
+
+                        if (!positioningMesh.visible) {
+                          positioningMesh.visible = true;
+                        }
+                        if (!oldPositioningMesh.visible) {
+                          oldPositioningMesh.visible = true;
+                        }
+                      } else {
+                        if (positioningMesh.visible) {
+                          positioningMesh.visible = false;
+                        }
+                        if (oldPositioningMesh.visible) {
+                          oldPositioningMesh.visible = false;
+                        }
+                      }
+                    };
                     const _updateMenuAnchors = () => {
                       const {gamepads} = webvr.getStatus();
 
@@ -586,6 +622,7 @@ class Tags {
                     };
 
                     _updateGrabbers();
+                    _updatePositioningMesh();
                     _updateMenuAnchors();
                   };
                   const _updateTextures = () => {
