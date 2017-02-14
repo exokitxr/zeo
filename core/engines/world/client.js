@@ -4,13 +4,6 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-
-  INPUT_WIDTH,
-  INPUT_HEIGHT,
-  INPUT_ASPECT_RATIO,
-  INPUT_WORLD_WIDTH,
-  INPUT_WORLD_HEIGHT,
-  INPUT_WORLD_DEPTH,
 } from './lib/constants/world';
 import worldRender from './lib/render/world';
 import menuUtils from './lib/utils/menu';
@@ -471,6 +464,9 @@ class World {
               menuUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
                 const focus = type === 'npm';
 
+                // XXX add empty derivation for getElementsPageSrc()
+                // const elementsTagMeshes = tags.getTagsClass('elements');
+
                 return [
                   {
                     type: 'html',
@@ -553,9 +549,9 @@ class World {
                 };
                 const elementsMesh = (() => {
                   const object = new THREE.Object3D();
-                  object.position.x = -0.5;
-                  object.position.y = -0.25;
-                  object.rotation.y = Math.PI / 8;
+                  object.position.x = -0.5 - 0.1;
+                  object.position.y = 0.2;
+                  object.position.z = -1 + 0.05;
 
                   const containerMesh = _makeContainerMesh();
                   object.add(containerMesh);
@@ -568,9 +564,9 @@ class World {
 
                 const npmMesh = (() => {
                   const object = new THREE.Object3D();
-                  object.position.x = 0.5;
-                  object.position.y = -0.25;
-                  object.rotation.y = -Math.PI / 8;
+                  object.position.x = 0.5 - 0.1;
+                  object.position.y = 0.2;
+                  object.position.z = -1 + 0.05;
 
                   const containerMesh = _makeContainerMesh();
                   object.add(containerMesh);
