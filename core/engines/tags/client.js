@@ -592,41 +592,45 @@ class Tags {
                       }
                     };
                     const _updateMenuAnchors = () => {
-                      const {gamepads} = webvr.getStatus();
+                      const tab = rend.getTab();
 
-                      SIDES.forEach(side => {
-                        const gamepad = gamepads[side];
+                      if (tab === 'world') {
+                        const {gamepads} = webvr.getStatus();
 
-                        if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                          const hoverState = hoverStates[side];
-                          const dotMesh = dotMeshes[side];
-                          const boxMesh = boxMeshes[side];
+                        SIDES.forEach(side => {
+                          const gamepad = gamepads[side];
 
-                          biolumi.updateAnchors({
-                            objects: tagMeshes.map(tagMesh => {
-                              const {planeMesh} = tagMesh;
-                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                              const {ui, item: {open}} = tagMesh;
+                          if (gamepad) {
+                            const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                            const hoverState = hoverStates[side];
+                            const dotMesh = dotMeshes[side];
+                            const boxMesh = boxMeshes[side];
 
-                              return {
-                                matrixObject: matrixObject,
-                                ui: ui,
-                                width: !open ? WIDTH : OPEN_WIDTH,
-                                height: !open ? HEIGHT : OPEN_HEIGHT,
-                                worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                                worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                                worldDepth: WORLD_DEPTH,
-                              };
-                            }),
-                            hoverState: hoverState,
-                            dotMesh: dotMesh,
-                            boxMesh: boxMesh,
-                            controllerPosition,
-                            controllerRotation,
-                          });
-                        }
-                      });
+                            biolumi.updateAnchors({
+                              objects: tagMeshes.map(tagMesh => {
+                                const {planeMesh} = tagMesh;
+                                const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                                const {ui, item: {open}} = tagMesh;
+
+                                return {
+                                  matrixObject: matrixObject,
+                                  ui: ui,
+                                  width: !open ? WIDTH : OPEN_WIDTH,
+                                  height: !open ? HEIGHT : OPEN_HEIGHT,
+                                  worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                                  worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                                  worldDepth: WORLD_DEPTH,
+                                };
+                              }),
+                              hoverState: hoverState,
+                              dotMesh: dotMesh,
+                              boxMesh: boxMesh,
+                              controllerPosition,
+                              controllerRotation,
+                            });
+                          }
+                        });
+                      }
                     };
 
                     _updateGrabbers();
