@@ -714,10 +714,10 @@ class Tags {
 
                         ui.pushPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type}}) => {
                           const focusAttributeSpec = (() => {
-                            const match = type.match(/^attribute:(.+):(.+)$/);
+                            const match = type.match(/^attribute:(.+?):(.+?)$/);
                             return match && {
-                              tag: match[1],
-                              attribute: match[2],
+                              tagId: match[1],
+                              attributeName: match[2],
                             };
                           })();
 
