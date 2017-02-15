@@ -56,36 +56,36 @@ class Bag {
           const pocketHighlightMeshes = [];
           [
             {
-              name: 'mesh1',
-              position: [-0.2, BAG_Y_OFFSET - 0.15, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh2',
-              position: [-0.2, BAG_Y_OFFSET - 0.05, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh3',
-              position: [-0.2, BAG_Y_OFFSET + 0.05, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh4',
-              position: [-0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh5',
-              position: [0.2, BAG_Y_OFFSET - 0.15, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh6',
-              position: [0.2, BAG_Y_OFFSET - 0.05, BAG_Z_OFFSET],
+              name: 'mesh8',
+              position: [0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET], // top right
             },
             {
               name: 'mesh7',
               position: [0.2, BAG_Y_OFFSET + 0.05, BAG_Z_OFFSET],
             },
             {
-              name: 'mesh8',
-              position: [0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET],
+              name: 'mesh6',
+              position: [0.2, BAG_Y_OFFSET - 0.05, BAG_Z_OFFSET],
+            },
+            {
+              name: 'mesh5',
+              position: [0.2, BAG_Y_OFFSET - 0.15, BAG_Z_OFFSET], // bottom right
+            },
+            {
+              name: 'mesh4',
+              position: [-0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET], // top left
+            },
+            {
+              name: 'mesh3',
+              position: [-0.2, BAG_Y_OFFSET + 0.05, BAG_Z_OFFSET],
+            },
+            {
+              name: 'mesh2',
+              position: [-0.2, BAG_Y_OFFSET - 0.05, BAG_Z_OFFSET],
+            },
+            {
+              name: 'mesh1',
+              position: [-0.2, BAG_Y_OFFSET - 0.15, BAG_Z_OFFSET], // bottom left
             },
           ].forEach(({name, position: [x, y, z]}, i) => {
             const pocketMesh = new THREE.Mesh(geometry, WIREFRAME_DARK_MATERIAL);
