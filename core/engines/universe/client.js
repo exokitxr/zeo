@@ -31,27 +31,15 @@ class Universe {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
-      '/core/engines/input',
       '/core/engines/three',
-      '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/plugins/geometry-utils',
       '/core/plugins/random-utils',
-      '/core/plugins/creature-utils',
-      '/core/plugins/sprite-utils',
     ]).then(([
-      hub,
-      input,
       three,
-      webvr,
       biolumi,
       rend,
-      geometryUtils,
       randomUtils,
-      creatureUtils,
-      spriteUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
