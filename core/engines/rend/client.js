@@ -891,7 +891,7 @@ class Rend {
                 };
                 input.on('triggerdown', triggerdown);
 
-                const _setLayerScrollTop = menuHoverState => {
+                const _setLayerScroll = menuHoverState => {
                   const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = menuHoverState;
 
                   const {planeMesh} = menuMesh;
@@ -908,6 +908,7 @@ class Rend {
                   const mousedownCoordDiff = mousedownCurCoord.clone()
                     .sub(mousedownStartCoord)
                     .multiply(new THREE.Vector2(WIDTH / WORLD_WIDTH, HEIGHT / WORLD_HEIGHT));
+                  const scrollLeft = 0;
                   const scrollTop = Math.max(
                     Math.min(
                       mousedownStartScrollTop - mousedownCoordDiff.y,
@@ -919,7 +920,7 @@ class Rend {
                     0
                   );
 
-                  mousedownScrollLayer.scrollTo(scrollTop);
+                  mousedownScrollLayer.scrollTo(scrollLeft, scrollTop);
                 };
                 const triggerup = e => {
                   const {side} = e;
@@ -934,7 +935,7 @@ class Rend {
                       if (mousedownStartCoord) {
                         const {intersectionPoint} = menuHoverState;
                         if (intersectionPoint) {
-                          _setLayerScrollTop(menuHoverState);
+                          _setLayerScroll(menuHoverState);
                         }
 
                         menuHoverState.mousedownScrollLayer = null;
@@ -1218,7 +1219,7 @@ class Rend {
 
                         const {mousedownStartCoord, intersectionPoint} = menuHoverState;
                         if (mousedownStartCoord && intersectionPoint) {
-                          _setLayerScrollTop(menuHoverState);
+                          _setLayerScroll(menuHoverState);
                         }
                       });
                     };

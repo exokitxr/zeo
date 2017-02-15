@@ -140,7 +140,7 @@ class Biolumi {
                         })();
                         document.body.appendChild(divEl);
 
-                        const {scrollHeight} = divEl;
+                        const {scrollHeight, scrollWidth} = divEl;
 
                         const anchors = (() => {
                           const as = divEl.querySelectorAll('a');
@@ -165,7 +165,7 @@ class Biolumi {
                         document.body.removeChild(divEl);
 
                         const img = new Image();
-                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + scrollHeight + '\'>' +
+                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + scrollWidth + '\' height=\'' + scrollHeight + '\'>' +
                           '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
                             innerSrc +
                           '</foreignObject>' +
@@ -186,6 +186,7 @@ class Biolumi {
                         layer.w = w;
                         layer.h = h;
                         layer.scrollHeight = scrollHeight;
+                        layer.scrollWidth = scrollWidth;
                         layer.scroll = scroll;
                         layer.pixelated = pixelated;
                         layers.push(layer);
@@ -208,6 +209,7 @@ class Biolumi {
                           layer.w = w;
                           layer.h = h;
                           layer.scrollHeight = h;
+                          layer.scrollWidth = w;
                           layer.numFrames = imgs.length;
                           layer.frameIndex = j;
                           layer.frameTime = frameTime;
@@ -240,8 +242,10 @@ class Biolumi {
                 this.w = width;
                 this.h = height;
                 this.scrollHeight = height;
+                this.scrollWidth = width;
                 this.scroll = false;
                 this.scrollTop = 0;
+                this.scrollLeft = 0;
                 this.numFrames = 1;
                 this.frameIndex = 0;
                 this.frameTime = 0;
@@ -270,7 +274,9 @@ class Biolumi {
                   this.w / width,
                   this.h / height,
                   this.scrollTop / height,
-                  this.scrollHeight / height
+                  this.scrollHeight / height,
+                  this.scrollLeft / width,
+                  this.scrollWidth / width
                 );
               }
 
@@ -310,7 +316,8 @@ class Biolumi {
                 });
               }
 
-              scrollTo(scrollTop) {
+              scrollTo(scrollLeft = 0, scrollTop = 0) {
+                this.scrollLeft = scrollLeft;
                 this.scrollTop = scrollTop;
               }
             }
@@ -325,13 +332,15 @@ class Biolumi {
             }
 
             class Position {
-              constructor(x, y, w, h, st, sh) {
+              constructor(x, y, w, h, st, sh, sl, sw) {
                 this.x = x; // x position
                 this.y = y; // y position
                 this.w = w; // texture data width
                 this.h = h; // texture data height
                 this.st = st; // scroll top
                 this.sh = sh; // scroll height
+                this.sl = sl; // scroll left
+                this.sw = sw; // scroll width
               }
             }
 
@@ -944,12 +953,12 @@ class Biolumi {
                       rotation,
                       scale,
                       new THREE.Vector3(
-                        -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                        -(worldWidth / 2) + ((rect.left + layer.scrollLeft) / width) * worldWidth,
                         (worldHeight / 2) + ((-rect.top + layer.scrollTop) / height) * worldHeight,
                         -worldDepth
                       ),
                       new THREE.Vector3(
-                        -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                        -(worldWidth / 2) + ((rect.right + layer.scrollLeft) / width) * worldWidth,
                         (worldHeight / 2) + ((-rect.bottom + layer.scrollTop) / height) * worldHeight,
                         worldDepth
                       )

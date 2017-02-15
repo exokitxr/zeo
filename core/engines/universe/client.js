@@ -4,8 +4,13 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-
   NUM_CELLS,
+
+  FOREGROUND_WIDTH,
+  FOREGROUND_HEIGHT,
+  FOREGROUND_WORLD_WIDTH,
+  FOREGROUND_WORLD_HEIGHT,
+  FOREGROUND_WORLD_DEPTH,
 } from './lib/constants/universe';
 import menuUtils from './lib/utils/menu';
 import mapUtilsMaker from './lib/utils/map-utils';
@@ -61,16 +66,23 @@ class Universe {
             width: WIDTH,
             height: HEIGHT,
           }),
+          biolumi.requestUi({
+            width: FOREGROUND_WIDTH,
+            height: FOREGROUND_HEIGHT,
+          }),
         ])
           .then(([
-            menuUi,
+            backgroundUi,
+            foregroundUi,
           ]) => ({
-            menuUi,
+            backgroundUi,
+            foregroundUi,
           }));
 
         return _requestUis()
           .then(({
-            menuUi,
+            backgroundUi,
+            foregroundUi,
           }) => {
             if (live) {
               const rng = new alea('');
@@ -112,10 +124,6 @@ class Universe {
                   }),
                 ],
               };
-              const mapImageState = {
-                mapChunks: mapState.mapChunks.map(_renderMapChunk),
-              };
-
               const _makeWorldsState = () => {
                 const generator = indev({
                   random: rng,
@@ -161,10 +169,17 @@ class Universe {
               };
               const worldsState = _makeWorldsState();
 
-              menuUi.pushPage(({mapImage}) => ([
+              const backgroundImageState = {
+                mapChunks: mapState.mapChunks.map(_renderMapChunk),
+              };
+              const foregroundImageState = {
+                mapChunks: mapState.mapChunks.map(_renderMapChunk),
+              };
+
+              backgroundUi.pushPage(({backgroundImage}) => ([
                 {
                   type: 'html',
-                  src: universeRenderer.getMapImageSrc(mapImage),
+                  src: universeRenderer.getBackgroundImageSrc(backgroundImage),
                   x: 0,
                   y: 0,
                   w: WIDTH,
@@ -173,44 +188,93 @@ class Universe {
                   pixelated: true,
                 },
               ]), {
-                type: 'main',
+                type: 'background',
                 state: {
-                  mapImage: mapImageState,
+                  backgroundImage: backgroundImageState,
+                },
+                immediate: true,
+              });
+              foregroundUi.pushPage(({foregroundImage}) => ([
+                {
+                  type: 'html',
+                  src: universeRenderer.getForegroundImageSrc(foregroundImage),
+                  x: 0,
+                  y: 0,
+                  w: FOREGROUND_WIDTH,
+                  h: FOREGROUND_HEIGHT,
+                  scroll: true,
+                },
+              ]), {
+                type: 'foreground',
+                state: {
+                  foregroundImage: foregroundImageState,
                 },
                 immediate: true,
               });
 
               const menuMesh = (() => {
-                const width = WORLD_WIDTH;
-                const height = WORLD_HEIGHT;
-                const depth = WORLD_DEPTH;
+                const object = new THREE.Object3D();
+                object.position.z = -1;
+                object.visible = false;
 
-                const menuMaterial = biolumi.makeMenuMaterial();
+                const backgroundMesh = (() => {
+                  const width = WORLD_WIDTH;
+                  const height = WORLD_HEIGHT;
+                  const depth = WORLD_DEPTH;
 
-                const geometry = new THREE.PlaneBufferGeometry(width, height);
-                const materials = [solidMaterial, menuMaterial];
+                  const menuMaterial = biolumi.makeMenuMaterial();
 
-                const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                mesh.position.z = -1;
-                mesh.visible = false;
-                mesh.receiveShadow = true;
-                mesh.menuMaterial = menuMaterial;
+                  const geometry = new THREE.PlaneBufferGeometry(width, height);
+                  const materials = [solidMaterial, menuMaterial];
 
-                const shadowMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                  const material = transparentMaterial;
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.castShadow = true;
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  mesh.receiveShadow = true;
+                  mesh.menuMaterial = menuMaterial;
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const material = transparentMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  mesh.add(shadowMesh);
+
                   return mesh;
                 })();
-                mesh.add(shadowMesh);
+                object.add(backgroundMesh);
+                object.backgroundMesh = backgroundMesh;
 
-                return mesh;
+                const foregroundMesh = (() => {
+                  const width = FOREGROUND_WORLD_WIDTH;
+                  const height = FOREGROUND_WORLD_HEIGHT;
+                  const depth = FOREGROUND_WORLD_DEPTH;
+
+                  const menuMaterial = biolumi.makeMenuMaterial({
+                    color: [1, 1, 1, 0],
+                  });
+
+                  const geometry = new THREE.PlaneBufferGeometry(width, height);
+                  const material = menuMaterial;
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.z = 0.01;
+                  mesh.receiveShadow = true;
+                  mesh.menuMaterial = menuMaterial;
+
+                  return mesh;
+                })();
+                object.add(foregroundMesh);
+                object.foregroundMesh = foregroundMesh;
+
+                return object;
               })();
               rend.addMenuMesh('universeMesh', menuMesh);
 
               const _updatePages = menuUtils.debounce(next => {
-                const pages = menuUi.getPages();
+                const backgroundPages = backgroundUi.getPages();
+                const foregroundPages = foregroundUi.getPages()
+                const pages = backgroundPages.concat(foregroundPages);
 
                 if (pages.length > 0) {
                   let pending = pages.length;
@@ -224,9 +288,13 @@ class Universe {
                     const page = pages[i];
                     const {type} = page;
 
-                    if (type === 'main') {
+                    if (type === 'background') {
                       page.update({
-                        mapImage: mapImageState,
+                        backgroundImage: backgroundImageState,
+                      }, pend);
+                    } else if (type === 'foreground') {
+                      page.update({
+                        foregroundImage: foregroundImageState,
                       }, pend);
                     } else {
                       pend();
@@ -241,15 +309,25 @@ class Universe {
                 const _updateTextures = () => {
                   const tab = rend.getTab();
 
-                  if (tab === 'status') {
+                  if (tab === 'worlds') {
                     const {
-                      menuMaterial,
+                      backgroundMesh: {
+                        menuMaterial: backgroundMenuMaterial,
+                      },
+                      foregroundMesh: {
+                        menuMaterial: foregroundMenuMaterial,
+                      },
                     } = menuMesh;
                     const uiTime = rend.getUiTime();
 
                     biolumi.updateMenuMaterial({
-                      ui: menuUi,
-                      menuMaterial: menuMaterial,
+                      ui: backgroundUi,
+                      menuMaterial: backgroundMenuMaterial,
+                      uiTime,
+                    });
+                    biolumi.updateMenuMaterial({
+                      ui: foregroundUi,
+                      menuMaterial: foregroundMenuMaterial,
                       uiTime,
                     });
                   }
