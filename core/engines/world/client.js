@@ -843,29 +843,26 @@ class World {
               const _gripdown = e => {
                 const {side} = e;
 
-                const _grabTag = () => {
-                  const tagMesh = tags.getGrabbableTag(side);
+                const tagMesh = tags.getGrabbableTag(side);
+                if (tagMesh) {
+                  const elementsTagMeshes = tags.getTagsClass('elements');
+                  const npmTagMeshes = tags.getTagsClass('npm');
 
-                  if (tagMesh) {
-                    const elementsTagMeshes = tags.getTagsClass('elements');
-                    const npmTagMeshes = tags.getTagsClass('npm');
+                  if (elementsTagMeshes.includes(tagMesh)) {
+                    _removeElement(tagMesh);
 
-                    if (elementsTagMeshes.includes(tagMesh)) {
-                      _removeElement(tagMesh);
+                    _saveTags();
 
-                      _saveTags();
-                    } else if (npmTagMeshes.includes(tagMesh)) {
-                      const tagMeshClone = tags.cloneTag(tagMesh);
-                      tags.grabTag(side, tagMeshClone);
+                    _updatePages();
+                  } else if (npmTagMeshes.includes(tagMesh)) {
+                    const tagMeshClone = tags.cloneTag(tagMesh);
+                    tags.grabTag(side, tagMeshClone);
 
-                      _saveTags();
-                    }
+                    _saveTags();
+
+                    _updatePages();
                   }
-                };
-
-                _grabTag();
-
-                _updatePages();
+                }
               };
               input.on('gripdown', _gripdown, {
                 priority: 1,
