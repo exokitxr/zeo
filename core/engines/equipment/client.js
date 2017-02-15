@@ -102,6 +102,14 @@ class Equipment {
             },
           ]) => {
             if (live) {
+              const _makeContainerHoverState = () => ({
+                hovered: false,
+              });
+              const equipmentContainerHoverStates = {
+                left: _makeContainerHoverState(),
+                right: _makeContainerHoverState(),
+              };
+
               let lastEquipmentJsonString = JSON.stringify(equipmentJson);
               const _saveEquipment = menuUtils.debounce(next => {
                 equipmentJson = {
@@ -330,6 +338,40 @@ class Equipment {
                 result.add(menuMesh);
                 result.menuMesh = menuMesh;
 
+                const _makeContainerMesh = () => {
+                  const size = (0.2 * 3) + ((0.2 / 4) * 2);
+                  const width = size;
+                  const height = size;
+                  const depth = size / 2;
+
+                  const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+                  const material = new THREE.MeshBasicMaterial({
+                    color: 0x808080,
+                    wireframe: true,
+                  });
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.width = width;
+                  mesh.height = height;
+                  mesh.depth = depth;
+
+                  return mesh;
+                };
+                const equipmentMesh = (() => {
+                  const object = new THREE.Object3D();
+                  object.position.x = -0.5 - 0.1;
+                  object.position.y = 0.2;
+                  object.position.z = -1 + 0.05;
+
+                  const containerMesh = _makeContainerMesh();
+                  object.add(containerMesh);
+                  object.containerMesh = containerMesh;
+
+                  return object;
+                })();
+                result.add(equipmentMesh);
+                result.equipmentMesh = equipmentMesh;
+
                 return result;
               })();
               rend.addMenuMesh('equipmentMesh', mesh);
@@ -399,6 +441,22 @@ class Equipment {
                     const tab = rend.getTab();
 
                     if (tab === 'equipment') {
+                      const {
+                        menuMesh,
+                        equipmentMesh: {
+                          containerMesh: equipmentContainerMesh,
+                        },
+                      } = mesh;
+
+                      const equipmentContainerMatrixObject = _decomposeObjectMatrixWorld(equipmentContainerMesh);
+                      const {position: equipmentPosition, rotation: equipmentRotation, scale: equipmentScale} = equipmentContainerMatrixObject;
+                      const equipmentBoxTarget = geometryUtils.makeBoxTarget(
+                        equipmentPosition,
+                        equipmentRotation,
+                        equipmentScale,
+                        new THREE.Vector3(equipmentContainerMesh.width, equipmentContainerMesh.height, equipmentContainerMesh.depth)
+                      );
+
                       const {gamepads} = webvr.getStatus();
 
                       SIDES.forEach(side => {
@@ -430,13 +488,26 @@ class Equipment {
                             controllerPosition,
                             controllerRotation,
                           });
+
+                          const equipmentContainerHoverState = equipmentContainerHoverStates[side];
+                          equipmentContainerHoverState.hovered = equipmentBoxTarget.containsPoint(controllerPosition);
                         }
                       });
                     }
                   };
+                  const _updateAnchorStyles = () => {
+                    const {
+                      equipmentMesh: {
+                        containerMesh: equipmentContainerMesh,
+                      }
+                    } = mesh;
+                    const equipmentHovered = SIDES.some(side => equipmentContainerHoverStates[side].hovered);
+                    equipmentContainerMesh.material.color = new THREE.Color(equipmentHovered ? 0x0000FF : 0x808080);
+                  };
 
                   _updateTextures();
                   _updateAnchors();
+                  _updateAnchorStyles();
                 }
               };
               rend.on('update', _update);
@@ -453,7 +524,6 @@ class Equipment {
                     const {anchor} = hoverState;
                     const onclick = (anchor && anchor.onclick) || '';
 
-                    let match;
                     if (onclick === 'npm:focus') {
                       const {value} = hoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
@@ -478,7 +548,6 @@ class Equipment {
                 if (tab === 'equipment') {
                   const {type} = focusState;
 
-                  let match;
                   if (type === 'npm') {
                     const applySpec = biolumi.applyStateKeyEvent(npmState, mainFontSpec, e);
 
