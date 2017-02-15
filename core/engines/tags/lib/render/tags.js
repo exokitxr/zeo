@@ -9,7 +9,7 @@ const getTagSrc = ({item, inputText, inputValue, positioningId, positioningName,
   const {id, displayName, description, version, instancing, open} = item;
 
   const headerSrc = `\
-    <div style="display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; ${instancing ? 'filter: brightness(75%);' : ''}">
+    <div style="position: relative; display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
       <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #2196F3; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Mod</div>
       <div style="width: 100px; height: 100px; margin: 0 10px;"></div>
       <div style="width: 190px; margin-right: 10px;">
@@ -30,7 +30,7 @@ const getTagSrc = ({item, inputText, inputValue, positioningId, positioningName,
     </div>
   `;
   const bodySrc = open ? `\
-    <div style="width: 400px; height: 450px; padding: 10px 0; background-color: #F0F0F0; box-sizing: border-box;">
+    <div style="position: relative; width: 400px; height: 450px; padding: 10px 0; background-color: #F0F0F0; overflow: hidden; box-sizing: border-box;">
       ${getAttributesSrc(item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec)}
     </div>
   ` : '';

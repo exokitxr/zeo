@@ -5,7 +5,7 @@ const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
 
 const getFileSrc = ({id, name, instancing, open}) => {
   const headerSrc = `\
-    <div style="display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; ${instancing ? 'filter: brightness(75%);' : ''}">
+    <div style="position: relative; display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
       <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #E91E63; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">File</div>
       <div style="width: 100px; height: 100px; margin: 0 10px;"></div>
       <div style="width: 190px; margin-right: 10px;">
@@ -26,7 +26,7 @@ const getFileSrc = ({id, name, instancing, open}) => {
     </div>
   `;
   const bodySrc = open ? `\
-    <div style="width: 400px; height: 400px; background-color: #000;"></div>
+    <div style="position: relative; width: 400px; height: 400px; background-color: #000; overflow: hidden;"></div>
   ` : '';
   
   return `\
