@@ -61,33 +61,73 @@ class Universe {
           return {position, rotation, scale};
         };
 
+        class World {
+          constructor(worldName, point) {
+            this.worldName = worldName;
+            this.point = point;
+          }
+        }
+
         const _requestUis = () => Promise.all([
           biolumi.requestUi({
             width: WIDTH,
             height: HEIGHT,
           }),
-          biolumi.requestUi({
+          /* biolumi.requestUi({
             width: FOREGROUND_WIDTH,
             height: FOREGROUND_HEIGHT,
-          }),
+          }), */
         ])
           .then(([
             backgroundUi,
-            foregroundUi,
+            // foregroundUi,
           ]) => ({
             backgroundUi,
-            foregroundUi,
+            // foregroundUi,
           }));
 
         return _requestUis()
           .then(({
             backgroundUi,
-            foregroundUi,
+            // foregroundUi,
           }) => {
             if (live) {
               const rng = new alea('');
               const mapUtils = mapUtilsMaker.makeUtils({rng});
 
+              const _makeMapChunk = spec => _decorateMapChunk(mapUtils.makeMapChunk(spec));
+              const _decorateMapChunk = mapChunk => {
+                const generator = indev({
+                  random: rng,
+                });
+                const mapNoise = generator.simplex({
+                  frequency: 0.05,
+                  octaves: 4,
+                });
+                const worldNoise = generator.simplex({
+                  frequency: 0.05,
+                  octaves: 4,
+                });
+
+                const worlds = (() => {
+                  const numPoints = 10;
+                  const heightScale = 0.2;
+                  const heightOffset = (0.005 * 12) / 2;
+
+                  const result = Array(numPoints);
+                  for (let i = 0; i < numPoints; i++) {
+                    const x = rng() * NUM_CELLS;
+                    const y = rng() * NUM_CELLS;
+                    const point = new THREE.Vector2(x, y);
+                    const world = new World('world' + _pad(i, 2), point);
+                    result[i] = world;
+                  }
+                  return result;
+                })();
+                mapChunk.worlds = worlds;
+
+                return mapChunk;
+              };
               const _renderMapChunk = mapChunk => {
                 const {points} = mapChunk;
 
@@ -119,60 +159,13 @@ class Universe {
 
               const mapState = {
                 mapChunks: [
-                  mapUtils.makeMapChunk({
+                  _makeMapChunk({
                     position: new THREE.Vector2(0, 0),
                   }),
                 ],
               };
-              const _makeWorldsState = () => {
-                const generator = indev({
-                  random: rng,
-                });
-                const mapNoise = generator.simplex({
-                  frequency: 0.05,
-                  octaves: 4,
-                });
-                const worldNoise = generator.simplex({
-                  frequency: 0.05,
-                  octaves: 4,
-                });
-
-                class World {
-                  constructor(worldName, point) {
-                    this.worldName = worldName;
-                    this.point = point;
-                  }
-                }
-
-                const worlds = (() => {
-                  const numPoints = 10;
-                  const heightScale = 0.2;
-                  const heightOffset = (0.005 * 12) / 2;
-
-                  const result = Array(numPoints);
-                  for (let i = 0; i < numPoints; i++) {
-                    const x = rng();
-                    const y = rng();
-                    const point = new THREE.Vector2(
-                      rng() * NUM_CELLS,
-                      rng() * NUM_CELLS
-                    );
-                    const world = new World('world' + _pad(i, 2), point);
-                    result[i] = world;
-                  }
-                  return result;
-                })();
-
-                return {
-                  worlds,
-                };
-              };
-              const worldsState = _makeWorldsState();
 
               const backgroundImageState = {
-                mapChunks: mapState.mapChunks.map(_renderMapChunk),
-              };
-              const foregroundImageState = {
                 mapChunks: mapState.mapChunks.map(_renderMapChunk),
               };
 
@@ -191,23 +184,6 @@ class Universe {
                 type: 'background',
                 state: {
                   backgroundImage: backgroundImageState,
-                },
-                immediate: true,
-              });
-              foregroundUi.pushPage(({foregroundImage}) => ([
-                {
-                  type: 'html',
-                  src: universeRenderer.getForegroundImageSrc(foregroundImage),
-                  x: 0,
-                  y: 0,
-                  w: FOREGROUND_WIDTH,
-                  h: FOREGROUND_HEIGHT,
-                  scroll: true,
-                },
-              ]), {
-                type: 'foreground',
-                state: {
-                  foregroundImage: foregroundImageState,
                 },
                 immediate: true,
               });
@@ -246,21 +222,37 @@ class Universe {
                 object.backgroundMesh = backgroundMesh;
 
                 const foregroundMesh = (() => {
-                  const width = FOREGROUND_WORLD_WIDTH;
-                  const height = FOREGROUND_WORLD_HEIGHT;
-                  const depth = FOREGROUND_WORLD_DEPTH;
+                  const geometry = new THREE.BufferGeometry();
+                  const positions = (() => {
+                    const array = [];
 
-                  const menuMaterial = biolumi.makeMenuMaterial({
-                    color: [1, 1, 1, 0],
+                    const {mapChunks} = mapState;
+                    for (let i = 0; i < mapChunks.length; i++) {
+                      const mapChunk = mapChunks[i];
+                      const {position, worlds} = mapChunk;
+
+                      for (let j = 0; j < worlds.length; j++) {
+                        const world = worlds[j];
+                        const {point} = world;
+
+                        array.push(
+                          -(WORLD_WIDTH / 2) + ((WORLD_WIDTH - WORLD_HEIGHT) / 2) + (point.x / NUM_CELLS * WORLD_HEIGHT),
+                          (WORLD_HEIGHT / 2) - (point.y / NUM_CELLS * WORLD_HEIGHT),
+                          0.05
+                        );
+                      }
+                    }
+
+                    return Float32Array.from(array);
+                  })();
+                  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                  const material = new THREE.PointsMaterial({
+                    color: 0xFF0000,
+                    size: 0.02,
                   });
 
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const material = menuMaterial;
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.z = 0.01;
+                  const mesh = new THREE.Points(geometry, material);
                   mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
 
                   return mesh;
                 })();
@@ -314,20 +306,12 @@ class Universe {
                       backgroundMesh: {
                         menuMaterial: backgroundMenuMaterial,
                       },
-                      foregroundMesh: {
-                        menuMaterial: foregroundMenuMaterial,
-                      },
                     } = menuMesh;
                     const uiTime = rend.getUiTime();
 
                     biolumi.updateMenuMaterial({
                       ui: backgroundUi,
                       menuMaterial: backgroundMenuMaterial,
-                      uiTime,
-                    });
-                    biolumi.updateMenuMaterial({
-                      ui: foregroundUi,
-                      menuMaterial: foregroundMenuMaterial,
                       uiTime,
                     });
                   }
