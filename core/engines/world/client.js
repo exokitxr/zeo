@@ -16,7 +16,7 @@ const ATTRIBUTE_DEFAULTS = {
   STEP: 0,
   OPTIONS: [],
 };
-const DEFAULT_CONTRACT_MATRIX = [
+const DEFAULT_QUEST_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
@@ -1048,7 +1048,7 @@ class World {
                     name: 'Explore with me.',
                     author: 'avaer',
                     created: Date.now() - (2 * 60 * 1000),
-                    matrix: DEFAULT_CONTRACT_MATRIX,
+                    matrix: DEFAULT_QUEST_MATRIX,
                   });
 
                   const menuMesh = rend.getMenuMesh();

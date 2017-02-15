@@ -555,7 +555,7 @@ class Quest {
                     menuMesh.add(questMesh);
 
                     const {quest} = questMesh;
-                    quest.matrix = DEFAULT_CONTRACT_MATRIX;
+                    quest.matrix = DEFAULT_QUEST_MATRIX;
 
                     const grabber = hands.grab(side, questMesh);
                     grabber.on('update', ({position, rotation}) => {

@@ -97,7 +97,7 @@ class Biolumi {
                       const {type = 'html'} = layerSpec;
 
                       if (type === 'html') {
-                        const {src, x = 0, y = 0, w = width, h = height, scroll = false} = layerSpec;
+                        const {src, x = 0, y = 0, w = width, h = height, scroll = false, pixelated = false} = layerSpec;
 
                         const innerSrc = (() => {
                           const el = document.createElement('div');
@@ -187,7 +187,7 @@ class Biolumi {
                         layer.h = h;
                         layer.scrollHeight = scrollHeight;
                         layer.scroll = scroll;
-                        layer.pixelated = false;
+                        layer.pixelated = pixelated;
                         layers.push(layer);
                       } else if (type === 'image') {
                         let {img: imgs} = layerSpec;
