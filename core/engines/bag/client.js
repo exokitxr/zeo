@@ -92,6 +92,7 @@ class Bag {
             pocketMesh.position.x = x;
             pocketMesh.position.y = y;
             pocketMesh.position.z = z;
+            pocketMesh.rotation.x = -Math.PI / 2;
             result.add(pocketMesh);
             pocketMeshes.push(pocketMesh);
 
