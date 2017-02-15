@@ -10,12 +10,6 @@ import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
-const ATTRIBUTE_DEFAULTS = {
-  MIN: 0,
-  MAX: 100,
-  STEP: 0,
-  OPTIONS: [],
-};
 const DEFAULT_QUEST_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -463,9 +457,6 @@ class World {
 
               menuUi.pushPage(({elements: {empty}, npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
                 const focus = type === 'npm';
-
-                // XXX add empty derivation for getElementsPageSrc()
-                // const elementsTagMeshes = tags.getTagsClass('elements');
 
                 return [
                   {
