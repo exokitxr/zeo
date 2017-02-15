@@ -98,7 +98,7 @@ class Sprite {
                         const size = pixelSize * 88;
 
                         const geometry = spriteUtils.makeImageGeometry(img, pixelSize);
-                        geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (size / 2) - (size * 0.1), 0));
+                        geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (size / 2) - (size * 0.15), 0));
                         const material = pixelMaterial;
                         
                         const mesh = new THREE.Mesh(geometry, material);
