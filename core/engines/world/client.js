@@ -1044,11 +1044,11 @@ class World {
                   const {intersectionPoint} = menuHoverState;
 
                   if (intersectionPoint) {
-                    const {anchor} = npmHoverState;
+                    const {anchor} = menuHoverState;
                     const onclick = (anchor && anchor.onclick) || '';
 
                     if (onclick === 'npm:focus') {
-                      const {value} = npmHoverState;
+                      const {value} = menuHoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
 
                       const {index, px} = biolumi.getTextPropertiesFromCoord(npmState.inputText, mainFontSpec, valuePx);
