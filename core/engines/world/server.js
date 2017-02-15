@@ -8,12 +8,10 @@ const bodyParserJson = bodyParser.json();
 const DEFAULT_TAGS = {
   elements: [],
   free: [],
+  equipment: [],
 };
 const DEFAULT_FILES = {
   files: [],
-};
-const DEFAULT_EQUIPMENT = {
-  equipment: [],
 };
 
 class World {
@@ -33,7 +31,6 @@ class World {
     const worldPath = path.join(dirname, dataDirectory, 'world');
     const worldTagsJsonPath = path.join(worldPath, 'tags.json');
     const worldFilesJsonPath = path.join(worldPath, 'files.json');
-    const worldEquipmentJsonPath = path.join(worldPath, 'equipment.json');
 
     const _requestFile = (p, defaultValue) => new Promise((accept, reject) => {
       fs.readFile(p, 'utf8', (err, s) => {
@@ -50,7 +47,6 @@ class World {
     });
     const _requestTagsJson = () => _requestFile(worldTagsJsonPath, DEFAULT_TAGS);
     const _requestFilesJson = () => _requestFile(worldFilesJsonPath, DEFAULT_FILES);
-    const _requestEquipmentJson = () => _requestFile(worldEquipmentJsonPath, DEFAULT_EQUIPMENT);
     const _ensureWorldPath = () => new Promise((accept, reject) => {
       const worldPath = path.join(dirname, dataDirectory, 'world');
 
@@ -66,13 +62,11 @@ class World {
     return Promise.all([
       _requestTagsJson(),
       _requestFilesJson(),
-      _requestEquipmentJson(),
       _ensureWorldPath(),
     ])
       .then(([
         tagsJson,
         filesJson,
-        equipmentJson,
         ensureWorldPathResult,
       ]) => {
         if (live) {
@@ -102,11 +96,13 @@ class World {
               if (
                 typeof data === 'object' && data !== null &&
                 data.elements && Array.isArray(data.elements) &&
-                data.free && Array.isArray(data.free)
+                data.free && Array.isArray(data.free) &&
+                data.equipment && Array.isArray(data.equipment)
               ) {
                 tagsJson = {
                   elements: data.elements,
                   free: data.free,
+                  equipment: data.equipment,
                 };
 
                 _saveFile(worldTagsJsonPath, tagsJson)
@@ -158,41 +154,6 @@ class World {
             });
           }
           app.put('/archae/world/files.json', serveFilesSet);
-          function serveEquipmentGet(req, res, next) {
-            res.json(equipmentJson);
-          }
-          app.get('/archae/world/equipment.json', serveEquipmentGet);
-          function serveEquipmentSet(req, res, next) {
-            bodyParserJson(req, res, () => {
-              const {body: data} = req;
-
-              const _respondInvalid = () => {
-                res.status(400);
-                res.send();
-              };
-
-              if (
-                typeof data === 'object' && data !== null &&
-                data.equipment && Array.isArray(data.equipment)
-              ) {
-                tagsJson = {
-                  equipment: data.equipment,
-                };
-
-                _saveFile(worldEquipmentJsonPath, equipmentJson)
-                  .then(() => {
-                    res.send();
-                  })
-                  .catch(err => {
-                    res.status(500);
-                    res.send(err.stack);
-                  });
-              } else {
-                _respondInvalid();
-              }
-            });
-          }
-          app.put('/archae/world/equipment.json', serveEquipmentSet);
 
           const startTime = Date.now();
           function serveStartTime(req, res, next) {
@@ -209,8 +170,6 @@ class World {
                 route.handle.name === 'serveTagsSet' ||
                 route.handle.name === 'serveFilesGet' ||
                 route.handle.name === 'serveFilesSet' ||
-                route.handle.name === 'serveEquipmentGet' ||
-                route.handle.name === 'serveEquipmentSet' ||
                 route.handle.name === 'serveStartTime'
               ) {
                 routes.splice(i, 1);

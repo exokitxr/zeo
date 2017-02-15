@@ -252,6 +252,7 @@ class World {
                 tagsJson = {
                   elements: tags.getTagsClass('elements').map(({item}) => item),
                   free: tags.getFreeTags().map(({item}) => item),
+                  equipment: tags.getTagsClass('equipment').map(({item}) => item),
                 };
                 const tagsJsonString = JSON.stringify(tagsJson);
 
@@ -375,38 +376,7 @@ class World {
                     unlock();
                   });
               };
-              const _addElement = (tagMesh) => {
-                // place tag into container
-                const {
-                  elementsMesh: {
-                    containerMesh: elementsContainerMesh,
-                  },
-                } = worldMesh;
-                elementsContainerMesh.add(tagMesh);
-                tags.mountTag('elements', tagMesh);
-                const elementsTagMeshes = tags.getTagsClass('elements');
-                _alignTagMeshes(elementsTagMeshes);
 
-                // update elements state
-                elementsState.empty = elementsTagMeshes.length === 0;
-                _updatePages();
-
-                // reify tag
-                _reifyTag(tagMesh);
-              };
-              const _removeElement = (tagMesh) => {
-                // remove tag from container
-                tags.unmountTag('elements', tagMesh);
-                const elementsTagMeshes = tags.getTagsClass('elements');
-                _alignTagMeshes(elementsTagMeshes);
-
-                // update elements state
-                elementsState.empty = elementsTagMeshes.length === 0;
-                _updatePages();
-
-                // unreify tag
-                _unreifyTag(tagMesh);
-              };
               const _alignTagMeshes = tagMeshes => {
                 const aspectRatio = 400 / 150;
                 const size = (0.2 * 3) + ((0.2 / 4) * 2);
@@ -428,6 +398,72 @@ class World {
                   tagMesh.scale.copy(oneVector);
                 }
               };
+
+              class ElementManager {
+                add(tagMesh) {
+                  // place tag into container
+                  const {
+                    elementsMesh: {
+                      containerMesh: elementsContainerMesh,
+                    },
+                  } = worldMesh;
+                  elementsContainerMesh.add(tagMesh);
+                  tags.mountTag('elements', tagMesh);
+                  const elementsTagMeshes = tags.getTagsClass('elements');
+                  _alignTagMeshes(elementsTagMeshes);
+
+                  // update elements state
+                  elementsState.empty = elementsTagMeshes.length === 0;
+                  _updatePages();
+
+                  // reify tag
+                  _reifyTag(tagMesh);
+                }
+
+                remove(tagMesh) {
+                  // remove tag from container
+                  tags.unmountTag('elements', tagMesh);
+                  const elementsTagMeshes = tags.getTagsClass('elements');
+                  _alignTagMeshes(elementsTagMeshes);
+
+                  // update elements state
+                  elementsState.empty = elementsTagMeshes.length === 0;
+                  _updatePages();
+
+                  // unreify tag
+                  _unreifyTag(tagMesh);
+                }
+              }
+              const elementManager = new ElementManager();
+
+              class EquipmentManager {
+                add(tagMesh) {
+                  // place tag into container
+                  const {
+                    equipmentMesh: {
+                      containerMesh: equipmentContainerMesh,
+                    },
+                  } = equipmentMesh;
+                  equipmentContainerMesh.add(tagMesh);
+                  tags.mountTag('equipment', tagMesh);
+                  const equipmentTagMeshes = tags.getTagsClass('equipment');
+                  _alignTagMeshes(equipmentTagMeshes);
+
+                  // reify tag
+                  _reifyTag(tagMesh);
+                }
+
+                remove(tagMesh) {
+                  // remove tag from container
+                  tags.unmountTag('equipment', tagMesh);
+                  const equipmentTagMeshes = tags.getTagsClass('equipment');
+                  _alignTagMeshes(equipmentTagMeshes);
+
+                  // unreify tag
+                  _unreifyTag(tagMesh);
+                }
+              }
+              const equipmentManager = new EquipmentManager();
 
               const elementsState = {
                 empty: true,
@@ -1074,7 +1110,7 @@ class World {
                   const npmTagMeshes = tags.getTagsClass('npm');
 
                   if (elementsTagMeshes.includes(tagMesh)) {
-                    _removeElement(tagMesh);
+                    elementManager.remove(tagMesh);
 
                     _saveTags();
 
@@ -1101,13 +1137,20 @@ class World {
 
                   const _releaseTag = () => {
                     if (tags.isTag(handsGrabberObject)) {
-                      const elementsHovered = elementsContainerHoverStates[side].hovered;
-
-                      if (elementsHovered) {
+                      if (elementsContainerHoverStates[side].hovered) {
                         const newTagMesh = handsGrabberObject;
                         handsGrabber.release();
 
-                        _addElement(newTagMesh);
+                        elementManager.add(newTagMesh);
+
+                        _saveTags();
+
+                        e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+                      } else if (equipmentContainerHoverStates[side].hovered) {
+                        const newTagMesh = handsGrabberObject;
+                        handsGrabber.release();
+
+                        equipmentManager.add(newTagMesh);
 
                         _saveTags();
 
@@ -1233,7 +1276,7 @@ class World {
                   for (let i = 0; i < elements.length; i++) {
                     const itemSpec = elements[i];
                     const tagMesh = tags.makeTag(itemSpec);
-                    _addElement(tagMesh);
+                    elementManager.add(tagMesh);
                   }
                   _alignTagMeshes(tags.getTagsClass('elements'));
 
@@ -1243,6 +1286,16 @@ class World {
                     const tagMesh = tags.makeTag(itemSpec);
                     menuMesh.add(tagMesh);
                   }
+                };
+                const _initializeEquipment = () => {
+                  const {equipment} = tagsJson;
+
+                  for (let i = 0; i < equipment.length; i++) {
+                    const itemSpec = equipment[i];
+                    const tagMesh = tags.makeTag(itemSpec);
+                    equipmentManager.add(tagMesh);
+                  }
+                  _alignTagMeshes(tags.getTagsClass('equipment'));
                 };
                 const _initializeFiles = () => {
                   const {files} = filesJson;
@@ -1268,6 +1321,7 @@ class World {
                 };
 
                 _initializeElements();
+                _initializeEquipment();
                 _initializeFiles();
                 _initializeQuests();
               };

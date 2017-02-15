@@ -735,6 +735,7 @@ class Tags {
                 const tagClassMeshes = {
                   elements: [],
                   npm: [],
+                  equipment: [],
                 };
                 class TagsApi {
                   makeTag(itemSpec) {
