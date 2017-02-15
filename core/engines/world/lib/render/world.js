@@ -22,9 +22,16 @@ const getNpmPageSrc = ({inputText, inputPlaceholder, inputValue, focus, onclick}
   </div>
 `;
 
+const getEquipmentPageSrc = equipment => `\
+  <div style="padding: 20px">
+    <h1 style="margin: 0; margin-bottom: 10px; font-size: 30px; font-weight: 400;">Equipped modules</h1>
+  </div>
+`;
+
 return {
   getElementsPageSrc,
   getNpmPageSrc,
+  getEquipmentPageSrc,
 };
 
 };

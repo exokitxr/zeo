@@ -113,11 +113,17 @@ class World {
             width: WIDTH,
             height: HEIGHT,
           }),
+          biolumi.requestUi({
+            width: WIDTH,
+            height: HEIGHT,
+          }),
         ])
           .then(([
-            menuUi,
+            worldUi,
+            equipmentUi,
           ]) => ({
-            menuUi,
+            worldUi,
+            equipmentUi,
           }));
 
         return Promise.all([
@@ -131,7 +137,8 @@ class World {
             filesJson,
             worldTimer,
             {
-              menuUi,
+              worldUi,
+              equipmentUi,
             },
           ]) => {
             if (live) {
@@ -374,7 +381,7 @@ class World {
                   elementsMesh: {
                     containerMesh: elementsContainerMesh,
                   },
-                } = mesh;
+                } = worldMesh;
                 elementsContainerMesh.add(tagMesh);
                 tags.mountTag('elements', tagMesh);
                 const elementsTagMeshes = tags.getTagsClass('elements');
@@ -434,6 +441,7 @@ class World {
                 cancelRemoteRequest: null,
                 cancelModRequest: null,
               };
+              const equipmentState = {};
               const focusState = {
                 type: '',
               };
@@ -449,13 +457,17 @@ class World {
                 left: _makeContainerHoverState(),
                 right: _makeContainerHoverState(),
               };
+              const equipmentContainerHoverStates = {
+                left: _makeContainerHoverState(),
+                right: _makeContainerHoverState(),
+              };
 
-              const npmHoverStates = {
+              const menuHoverStates = {
                 left: biolumi.makeMenuHoverState(),
                 right: biolumi.makeMenuHoverState(),
               };
 
-              menuUi.pushPage(({elements: {empty}, npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
+              worldUi.pushPage(({elements: {empty}, npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
                 const focus = type === 'npm';
 
                 return [
@@ -479,7 +491,7 @@ class World {
                   },
                 ];
               }, {
-                type: 'main',
+                type: 'world',
                 state: {
                   elements: elementsState,
                   npm: npmState,
@@ -487,8 +499,59 @@ class World {
                 },
                 immediate: true,
               });
+              equipmentUi.pushPage(({equipment, npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
+                const focus = type === 'npm';
 
-              const mesh = (() => {
+                return [
+                  {
+                    type: 'html',
+                    src: worldRenderer.getEquipmentPageSrc(equipment),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH / 2,
+                    h: HEIGHT,
+                    scroll: true,
+                  },
+                  {
+                    type: 'html',
+                    src: worldRenderer.getNpmPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
+                    x: WIDTH / 2,
+                    y: 0,
+                    w: WIDTH / 2,
+                    h: HEIGHT,
+                    scroll: true,
+                  },
+                ];
+              }, {
+                type: 'equipment',
+                state: {
+                  equipment: equipmentState,
+                  npm: npmState,
+                  focus: focusState,
+                },
+                immediate: true,
+              });
+
+              const _makeContainerMesh = () => {
+                const size = (0.2 * 3) + ((0.2 / 4) * 2);
+                const width = size;
+                const height = size;
+                const depth = size / 2;
+
+                const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+                const material = new THREE.MeshBasicMaterial({
+                  color: 0x808080,
+                  wireframe: true,
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.width = width;
+                mesh.height = height;
+                mesh.depth = depth;
+
+                return mesh;
+              };
+              const worldMesh = (() => {
                 const result = new THREE.Object3D();
                 result.visible = false;
 
@@ -521,25 +584,6 @@ class World {
                 result.add(menuMesh);
                 result.menuMesh = menuMesh;
 
-                const _makeContainerMesh = () => {
-                  const size = (0.2 * 3) + ((0.2 / 4) * 2);
-                  const width = size;
-                  const height = size;
-                  const depth = size / 2;
-
-                  const geometry = new THREE.BoxBufferGeometry(width, height, depth);
-                  const material = new THREE.MeshBasicMaterial({
-                    color: 0x808080,
-                    wireframe: true,
-                  });
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.width = width;
-                  mesh.height = height;
-                  mesh.depth = depth;
-
-                  return mesh;
-                };
                 const elementsMesh = (() => {
                   const object = new THREE.Object3D();
                   object.position.x = -0.5 - 0.1;
@@ -572,7 +616,59 @@ class World {
 
                 return result;
               })();
-              rend.addMenuMesh('worldMesh', mesh);
+              rend.addMenuMesh('worldMesh', worldMesh);
+
+              const equipmentMesh = (() => {
+                const result = new THREE.Object3D();
+                result.visible = false;
+
+                const menuMesh = (() => {
+                  const width = WORLD_WIDTH;
+                  const height = WORLD_HEIGHT;
+                  const depth = WORLD_DEPTH;
+
+                  const menuMaterial = biolumi.makeMenuMaterial();
+
+                  const geometry = new THREE.PlaneBufferGeometry(width, height);
+                  const materials = [solidMaterial, menuMaterial];
+
+                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  mesh.position.z = -1;
+                  mesh.receiveShadow = true;
+                  mesh.menuMaterial = menuMaterial;
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const material = transparentMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  mesh.add(shadowMesh);
+
+                  return mesh;
+                })();
+                result.add(menuMesh);
+                result.menuMesh = menuMesh;
+
+                const equipmentMesh = (() => {
+                  const object = new THREE.Object3D();
+                  object.position.x = -0.5 - 0.1;
+                  object.position.y = 0.2;
+                  object.position.z = -1 + 0.05;
+
+                  const containerMesh = _makeContainerMesh();
+                  object.add(containerMesh);
+                  object.containerMesh = containerMesh;
+
+                  return object;
+                })();
+                result.add(equipmentMesh);
+                result.equipmentMesh = equipmentMesh;
+
+                return result;
+              })();
+              rend.addMenuMesh('equipmentMesh', equipmentMesh);
 
               const _makePositioningMesh = ({opacity = 1} = {}) => {
                 const geometry = (() => {
@@ -615,21 +711,28 @@ class World {
               });
               scene.add(oldPositioningMesh);
 
-              const npmDotMeshes = {
+              const menuDotMeshes = {
                 left: biolumi.makeMenuDotMesh(),
                 right: biolumi.makeMenuDotMesh(),
               };
-              scene.add(npmDotMeshes.left);
-              scene.add(npmDotMeshes.right);
-              const npmBoxMeshes = {
+              scene.add(menuDotMeshes.left);
+              scene.add(menuDotMeshes.right);
+              const menuBoxMeshes = {
                 left: biolumi.makeMenuBoxMesh(),
                 right: biolumi.makeMenuBoxMesh(),
               };
-              scene.add(npmBoxMeshes.left);
-              scene.add(npmBoxMeshes.right);
+              scene.add(menuBoxMeshes.left);
+              scene.add(menuBoxMeshes.right);
 
               const _updatePages = menuUtils.debounce(next => {
-                const pages = menuUi.getPages();
+                const pages = (() => {
+                  const tab = rend.getTab();
+                  switch (tab) {
+                    case 'world': return worldUi.getPages();
+                    case 'equipment': equipmentUi.getPages();
+                    default: return [];
+                  }
+                })();
 
                 if (pages.length > 0) {
                   let pending = pages.length;
@@ -643,9 +746,15 @@ class World {
                     const page = pages[i];
                     const {type} = page;
 
-                    if (type === 'main') {
+                    if (type === 'world') {
                       page.update({
                         elements: elementsState,
+                        npm: npmState,
+                        focus: focusState,
+                      }, pend);
+                    } else if (type === 'equipment') {
+                      page.update({
+                        equipment: equipmentState,
                         npm: npmState,
                         focus: focusState,
                       }, pend);
@@ -661,98 +770,200 @@ class World {
               const _update = e => {
                 const tab = rend.getTab();
 
-                if (tab === 'world') {
-                  const _updateTextures = () => {
+                const _updateTextures = () => {
+                  const _updateWorldTextures = () => {
                     const {
                       menuMesh: {
                         menuMaterial,
                       },
-                    } = mesh;
+                    } = worldMesh;
                     const uiTime = rend.getUiTime();
 
                     biolumi.updateMenuMaterial({
-                      ui: menuUi,
+                      ui: worldUi,
                       menuMaterial,
                       uiTime,
                     });
                   };
-                  const _updateAnchors = () => {
-                    const tab = rend.getTab();
+                  const _updateEquipmentTextures = () => {
+                    const {
+                      menuMesh: {
+                        menuMaterial,
+                      },
+                    } = equipmentMesh;
+                    const uiTime = rend.getUiTime();
 
-                    if (tab === 'world') {
-                      const {
-                        menuMesh,
-                        elementsMesh: {
-                          containerMesh: elementsContainerMesh,
-                        },
-                        npmMesh: {
-                          containerMesh: npmContainerMesh,
-                        },
-                      } = mesh;
-
-                      const elementsContainerMatrixObject = _decomposeObjectMatrixWorld(elementsContainerMesh);
-                      const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsContainerMatrixObject;
-                      const elementsBoxTarget = geometryUtils.makeBoxTarget(
-                        elementsPosition,
-                        elementsRotation,
-                        elementsScale,
-                        new THREE.Vector3(elementsContainerMesh.width, elementsContainerMesh.height, elementsContainerMesh.depth)
-                      );
-
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
-                      const npmContainerMatrixObject = _decomposeObjectMatrixWorld(npmContainerMesh);
-                      const {position: npmPosition, rotation: npmRotation, scale: npmScale} = npmContainerMatrixObject;
-                      const npmBoxTarget = geometryUtils.makeBoxTarget(
-                        npmPosition,
-                        npmRotation,
-                        npmScale,
-                        new THREE.Vector3(npmContainerMesh.width, npmContainerMesh.height, npmContainerMesh.depth)
-                      );
-
-                      const {gamepads} = webvr.getStatus();
-
-                      SIDES.forEach(side => {
-                        const gamepad = gamepads[side];
-
-                        if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-
-                          const npmHoverState = npmHoverStates[side];
-                          const npmDotMesh = npmDotMeshes[side];
-                          const npmBoxMesh = npmBoxMeshes[side];
-
-                          const elementsContainerHoverState = elementsContainerHoverStates[side];
-                          const npmContainerHoverState = npmContainerHoverStates[side];
-
-                          biolumi.updateAnchors({
-                            objects: [{
-                              matrixObject: menuMatrixObject,
-                              ui: menuUi,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            }],
-                            hoverState: npmHoverState,
-                            dotMesh: npmDotMesh,
-                            boxMesh: npmBoxMesh,
-                            controllerPosition,
-                            controllerRotation,
-                          });
-                          
-                          elementsContainerHoverState.hovered = elementsBoxTarget.containsPoint(controllerPosition);
-                          npmContainerHoverState.hovered = npmBoxTarget.containsPoint(controllerPosition);
-                        }
-                      });
-                    }
+                    biolumi.updateMenuMaterial({
+                      ui: equipmentUi,
+                      menuMaterial,
+                      uiTime,
+                    });
                   };
-                  const _updateAnchorStyles = () => {
+
+                  if (tab === 'world') {
+                    _updateWorldTextures();
+                  } else if (tab === 'equipment') {
+                    _updateEquipmentTextures();
+                  }
+                };
+                const _updateAnchors = () => {
+                  const _updateWorldMenuAnchors = () => {
+                    const {menuMesh} = worldMesh;
+                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                    const {gamepads} = webvr.getStatus();
+
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                        const menuHoverState = menuHoverStates[side];
+                        const menuDotMesh = menuDotMeshes[side];
+                        const menuBoxMesh = menuBoxMeshes[side];
+
+                        biolumi.updateAnchors({
+                          objects: [{
+                            matrixObject: menuMatrixObject,
+                            ui: worldUi,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                          }],
+                          hoverState: menuHoverState,
+                          dotMesh: menuDotMesh,
+                          boxMesh: menuBoxMesh,
+                          controllerPosition,
+                          controllerRotation,
+                        })
+                      }
+                    });
+                  };
+                  const _updateEquipmentMenuAnchors = () => {
+                    const {menuMesh} = equipmentMesh;
+                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                    const {gamepads} = webvr.getStatus();
+
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                        const menuHoverState = menuHoverStates[side];
+                        const menuDotMesh = menuDotMeshes[side];
+                        const menuBoxMesh = menuBoxMeshes[side];
+
+                        biolumi.updateAnchors({
+                          objects: [{
+                            matrixObject: menuMatrixObject,
+                            ui: worldUi,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                          }],
+                          hoverState: menuHoverState,
+                          dotMesh: menuDotMesh,
+                          boxMesh: menuBoxMesh,
+                          controllerPosition,
+                          controllerRotation,
+                        })
+                      }
+                    });
+                  };
+                  const _updateWorldAnchors = () => {
+                    const {
+                      elementsMesh: {
+                        containerMesh: elementsContainerMesh,
+                      },
+                      npmMesh: {
+                        containerMesh: npmContainerMesh,
+                      },
+                    } = worldMesh;
+
+                    const elementsContainerMatrixObject = _decomposeObjectMatrixWorld(elementsContainerMesh);
+                    const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsContainerMatrixObject;
+                    const elementsBoxTarget = geometryUtils.makeBoxTarget(
+                      elementsPosition,
+                      elementsRotation,
+                      elementsScale,
+                      new THREE.Vector3(elementsContainerMesh.width, elementsContainerMesh.height, elementsContainerMesh.depth)
+                    );
+
+                    const npmContainerMatrixObject = _decomposeObjectMatrixWorld(npmContainerMesh);
+                    const {position: npmPosition, rotation: npmRotation, scale: npmScale} = npmContainerMatrixObject;
+                    const npmBoxTarget = geometryUtils.makeBoxTarget(
+                      npmPosition,
+                      npmRotation,
+                      npmScale,
+                      new THREE.Vector3(npmContainerMesh.width, npmContainerMesh.height, npmContainerMesh.depth)
+                    );
+
+                    const {gamepads} = webvr.getStatus();
+
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition} = gamepad;
+
+                        const elementsContainerHoverState = elementsContainerHoverStates[side];
+                        elementsContainerHoverState.hovered = elementsBoxTarget.containsPoint(controllerPosition);
+
+                        const npmContainerHoverState = npmContainerHoverStates[side];
+                        npmContainerHoverState.hovered = npmBoxTarget.containsPoint(controllerPosition);
+                      }
+                    });
+                  };
+                  const _updateEquipmentAnchors = () => {
+                    const {
+                      equipmentMesh: {
+                        containerMesh: equipmentContainerMesh,
+                      },
+                    } = equipmentMesh;
+
+                    const equipmentContainerMatrixObject = _decomposeObjectMatrixWorld(equipmentContainerMesh);
+                    const {position: equipmentPosition, rotation: equipmentRotation, scale: equipmentScale} = equipmentContainerMatrixObject;
+                    const equipmentBoxTarget = geometryUtils.makeBoxTarget(
+                      equipmentPosition,
+                      equipmentRotation,
+                      equipmentScale,
+                      new THREE.Vector3(equipmentContainerMesh.width, equipmentContainerMesh.height, equipmentContainerMesh.depth)
+                    );
+
+                    const {gamepads} = webvr.getStatus();
+
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition} = gamepad;
+
+                        const equipmentContainerHoverState = equipmentContainerHoverStates[side];
+                        equipmentContainerHoverState.hovered = equipmentBoxTarget.containsPoint(controllerPosition);
+                      }
+                    });
+                  };
+
+                  if (tab === 'world') {
+                    _updateWorldMenuAnchors();
+                    _updateWorldAnchors();
+                  } else if (tab === 'equipment') {
+                    _updateEquipmentMenuAnchors();
+                    _updateEquipmentAnchors();
+                  }
+                };
+                const _updateAnchorStyles = () => {
+                  const _updateWorldAnchorStyles = () => {
                     const {
                       elementsMesh: {
                         containerMesh: elementsContainerMesh,
                       }
-                    } = mesh;
+                    } = worldMesh;
                     const elementsHovered = SIDES.some(side => elementsContainerHoverStates[side].hovered);
                     elementsContainerMesh.material.color = new THREE.Color(elementsHovered ? 0x0000FF : 0x808080);
 
@@ -760,20 +971,35 @@ class World {
                       npmMesh: {
                         containerMesh: npmContainerMesh,
                       }
-                    } = mesh;
+                    } = worldMesh;
                     const npmHovered = SIDES.some(side => npmContainerHoverStates[side].hovered);
                     npmContainerMesh.material.color = new THREE.Color(npmHovered ? 0x0000FF : 0x808080);
                   };
+                  const _updateEquipmentAnchorStyles = () => {
+                    const {
+                      equipmentMesh: {
+                        containerMesh: equipmentContainerMesh,
+                      },
+                    } = equipmentMesh;
+                    const equipmentHovered = SIDES.some(side => equipmentContainerHoverStates[side].hovered);
+                    equipmentContainerMesh.material.color = new THREE.Color(equipmentHovered ? 0x0000FF : 0x808080);
+                  };
 
-                  _updateTextures();
-                  _updateAnchors();
-                  _updateAnchorStyles();
-                }
+                  if (tab === 'world') {
+                    _updateWorldAnchorStyles();
+                  } else if (tab === 'equipment') {
+                    _updateEquipmentAnchorStyles();
+                  }
+                };
+
+                _updateTextures();
+                _updateAnchors();
+                _updateAnchorStyles();
               };
               rend.on('update', _update);
 
               const _tabchange = tab => {
-                if (tab === 'world') {
+                if (tab === 'world' || tab === 'equipment') {
                   npmState.inputText = '';
                   npmState.inputIndex = 0;
                   npmState.inputValue = 0;
@@ -796,7 +1022,7 @@ class World {
                           npmMesh: {
                             containerMesh: npmContainerMesh,
                           },
-                        } = mesh;
+                        } = worldMesh;
                         npmContainerMesh.add(tagMesh);
                         tags.mountTag('npm', tagMesh);
                       }
@@ -812,16 +1038,15 @@ class World {
               const _trigger = e => {
                 const tab = rend.getTab();
 
-                if (tab === 'world') {
+                if (tab === 'world' || tab === 'equipment') {
                   const {side} = e;
-                  const npmHoverState = npmHoverStates[side];
-                  const {intersectionPoint} = npmHoverState;
+                  const menuHoverState = menuHoverStates[side];
+                  const {intersectionPoint} = menuHoverState;
 
                   if (intersectionPoint) {
                     const {anchor} = npmHoverState;
                     const onclick = (anchor && anchor.onclick) || '';
 
-                    let match;
                     if (onclick === 'npm:focus') {
                       const {value} = npmHoverState;
                       const valuePx = value * (WIDTH - (500 + 40));
@@ -921,10 +1146,9 @@ class World {
               const _keydown = e => {
                 const tab = rend.getTab();
 
-                if (tab === 'world') {
+                if (tab === 'world' || tab === 'equipment') {
                   const {type} = focusState;
 
-                  let match;
                   if (type === 'npm') {
                     const applySpec = biolumi.applyStateKeyEvent(npmState, mainFontSpec, e);
 
@@ -1051,10 +1275,11 @@ class World {
 
               this._cleanup = () => {
                 rend.removeMenuMesh('worldMesh');
+                rend.removeMenuMesh('equipmentMesh');
 
                 SIDES.forEach(side => {
-                  scene.remove(npmDotMeshes[side]);
-                  scene.remove(npmBoxMeshes[side]);
+                  scene.remove(menuDotMeshes[side]);
+                  scene.remove(menuBoxMeshes[side]);
                 });
 
                 scene.remove(positioningMesh);
