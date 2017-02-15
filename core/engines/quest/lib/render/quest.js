@@ -49,22 +49,22 @@ const getQuestSrc = ({id, name, author, created}) => `\
       </div>
     </div>
     <div style="display: flex; margin-bottom: 10px; padding: 0 10px; justify-content: space-between;">
-      <div style="display: flex; padding: 7px 20px; border: 1px solid #333; border-radius: 100px; font-size: 24px; font-weight: 400; line-height: 1.4; justify-content: center; align-items: center;">Set position</div>
+      <a style="display: flex; padding: 7px 20px; border: 1px solid #333; border-radius: 100px; font-size: 24px; font-weight: 400; line-height: 1.4; text-decoration: none; justify-content: center; align-items: center;" onclick="quest:setPosition">Set position</a>
       <div style="display: flex; border: 1px solid #333; border-radius: 100px; font-size: 24px; font-weight: 400; line-height: 1.4; justify-content: center; align-items: center;">
-         <a style="padding: 7px 20px; text-decoration: none;" onclick="time:minus">-</a>
+         <a style="padding: 7px 20px; text-decoration: none;" onclick="quest:time:minus">-</a>
          <div style="display: flex; padding: 7px 20px; border-width: 0 1px 0 1px; border-style: solid; border-color: #333; justify-content: center; align-items: center;">
            0:00:00
          </div style="padding: 7px 20px;">
-         <a style="padding: 7px 20px; text-decoration: none;" onclick="time:plus">+</a>
+         <a style="padding: 7px 20px; text-decoration: none;" onclick="quest:time:plus">+</a>
       </div>
       <div style="display: flex; border: 1px solid #333; border-radius: 100px; font-size: 24px; font-weight: 400; line-height: 1.4; justify-content: center; align-items: center;">
-         <a style="padding: 7px 20px; text-decoration: none;" onclick="karma:minus">-</a>
+         <a style="padding: 7px 20px; text-decoration: none;" onclick="quest:karma:minus">-</a>
          <div style="display: flex; padding: 7px 20px; border-width: 0 1px 0 1px; border-style: solid; border-color: #333; justify-content: center; align-items: center;">
            <img src="${karmaBlackIconSrc}" width=20 height=20 style="margin-right: 10px; width: 34px; height: 34px;"> 0
           </div>
-         <a style="padding: 7px 20px; text-decoration: none;" onclick="karma:plus">+</a>
+         <a style="padding: 7px 20px; text-decoration: none;" onclick="quest:karma:plus">+</a>
       </div>
-      <div style="display: flex; padding: 7px 20px; border: 1px solid #333; border-radius: 100px; font-size: 24px; font-weight: 400; line-height: 1.4; justify-content: center; align-items: center;">Cancel</div>
+      <a style="display: flex; padding: 7px 20px; border: 1px solid #333; border-radius: 100px; font-size: 24px; font-weight: 400; line-height: 1.4; text-decoration: none; justify-content: center; align-items: center;" onclick="quest:cancel">Cancel</a>
     </div>
   </div>
 `;
