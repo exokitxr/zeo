@@ -39,6 +39,7 @@ class World {
       '/core/engines/hands',
       '/core/engines/tags',
       '/core/engines/quest',
+      '/core/engines/bag',
       '/core/plugins/geometry-utils',
     ]).then(([
       three,
@@ -50,6 +51,7 @@ class World {
       hands,
       tags,
       quest,
+      bag,
       geometryUtils,
     ]) => {
       if (live) {
@@ -1027,10 +1029,44 @@ class World {
                     _updateEquipmentAnchorStyles();
                   }
                 };
+                const _updateEquipmentPositions = () => {
+                  const equipmentTagMeshes = tags.getTagsClass('equipment');
+
+                  const bagMesh = bag.getBagMesh();
+                  bagMesh.updateMatrixWorld();
+                  const {pocketMeshes} = bagMesh;
+
+                  // left
+                  for (let i = 0; i < 4 && i < equipmentTagMeshes.length; i++) {
+                    const equipmentTagMesh = equipmentTagMeshes[i];
+                    const {item} = equipmentTagMesh;
+                    const {attributes} = item;
+
+                    if (attributes.position) {
+                      const pocketMesh = pocketMeshes[i];
+                      const {position, rotation, scale} = _decomposeObjectMatrixWorld(pocketMesh);
+                      item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                    }
+                  }
+
+                  // right
+                  for (let i = 4; i < (4 + 4) && i < equipmentTagMeshes.length; i++) {
+                    const equipmentTagMesh = equipmentTagMeshes[i];
+                    const {item} = equipmentTagMesh;
+                    const {attributes} = item;
+
+                    if (attributes.position) {
+                      const pocketMesh = pocketMeshes[i];
+                      const {position, rotation, scale} = _decomposeObjectMatrixWorld(pocketMesh);
+                      item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                    }
+                  }
+                };
 
                 _updateTextures();
                 _updateAnchors();
                 _updateAnchorStyles();
+                _updateEquipmentPositions();
               };
               rend.on('update', _update);
 

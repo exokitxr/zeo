@@ -1,6 +1,6 @@
 {
   "name": "bag",
-  "description": "Store equipment in bag pockets that follow your around.",
+  "description": "Provides equipment bag rendering for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {}
