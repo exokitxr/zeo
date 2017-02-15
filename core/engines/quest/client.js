@@ -97,14 +97,6 @@ class Quest {
               menuUi
             }) => {
               if (live) {
-                const _makeGrabState = () => ({
-                  grabber: null,
-                });
-                const grabStates = {
-                  left: _makeGrabState(),
-                  right: _makeGrabState(),
-                };
-
                 const dotMeshes = {
                   left: biolumi.makeMenuDotMesh(),
                   right: biolumi.makeMenuDotMesh(),
@@ -118,7 +110,32 @@ class Quest {
                 scene.add(boxMeshes.left);
                 scene.add(boxMeshes.right);
 
-                const _makeQuestBoxMesh = () => {
+                const questHoverStates = {
+                  left: biolumi.makeMenuHoverState(),
+                  right: biolumi.makeMenuHoverState(),
+                };
+                const questDotMeshes = {
+                  left: biolumi.makeMenuDotMesh(),
+                  right: biolumi.makeMenuDotMesh(),
+                };
+                scene.add(questDotMeshes.left);
+                scene.add(questDotMeshes.right);
+                const questBoxMeshes = {
+                  left: biolumi.makeMenuBoxMesh(),
+                  right: biolumi.makeMenuBoxMesh(),
+                };
+                scene.add(questBoxMeshes.left);
+                scene.add(questBoxMeshes.right);
+
+                const _makeGrabState = () => ({
+                  grabber: null,
+                });
+                const grabStates = {
+                  left: _makeGrabState(),
+                  right: _makeGrabState(),
+                };
+
+                const _makeGrabBoxMesh = () => {
                   const width = QUEST_WORLD_WIDTH;
                   const height = QUEST_WORLD_HEIGHT;
                   const depth = QUEST_WORLD_DEPTH;
@@ -134,12 +151,12 @@ class Quest {
                   mesh.visible = false;
                   return mesh;
                 };
-                const questBoxMeshes = {
-                  left: _makeQuestBoxMesh(),
-                  right: _makeQuestBoxMesh(),
+                const grabBoxMeshes = {
+                  left: _makeGrabBoxMesh(),
+                  right: _makeGrabBoxMesh(),
                 };
-                scene.add(questBoxMeshes.left);
-                scene.add(questBoxMeshes.right);
+                scene.add(grabBoxMeshes.left);
+                scene.add(grabBoxMeshes.right);
 
                 const questState = {};
                 const focusState = {
@@ -339,67 +356,105 @@ class Quest {
                       }
                     }
                   };
-                  const _updateControllers = () => {
-                    const _updateGrabbers = () => {
-                      SIDES.forEach(side => {
-                        const grabState = grabStates[side];
+                  const _updateGrabbers = () => {
+                    SIDES.forEach(side => {
+                      const grabState = grabStates[side];
+                      const grabBoxMesh = grabBoxMeshes[side];
+
+                      const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                      if (bestGrabbableQuestMesh) {
+                        const {position: questMeshPosition, rotation: questMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableQuestMesh);
+                        grabBoxMesh.position.copy(questMeshPosition);
+                        grabBoxMesh.quaternion.copy(questMeshRotation);
+
+                        if (!grabBoxMesh.visible) {
+                          grabBoxMesh.visible = true;
+                        }
+                      } else {
+                        if (grabBoxMesh.visible) {
+                          grabBoxMesh.visible = false;
+                        }
+                      }
+                    });
+                  };
+                  const _updateMenuAnchors = () => {
+                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                    const {gamepads} = webvr.getStatus();
+
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                        const dotMesh = dotMeshes[side];
+                        const boxMesh = boxMeshes[side];
+
+                        biolumi.updateAnchors({
+                          objects: [{
+                            matrixObject: menuMatrixObject,
+                            ui: menuUi,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                          }],
+                          dotMesh: dotMesh,
+                          boxMesh: boxMesh,
+                          controllerPosition,
+                          controllerRotation,
+                        });
+                      }
+                    });
+                  };
+                  const _updateQuestAnchors = () => {
+                    const {gamepads} = webvr.getStatus();
+
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const questHoverState = questHoverStates[side];
+                        const questDotMesh = questDotMeshes[side];
                         const questBoxMesh = questBoxMeshes[side];
 
-                        const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                        if (bestGrabbableQuestMesh) {
-                          const {position: questMeshPosition, rotation: questMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableQuestMesh);
-                          questBoxMesh.position.copy(questMeshPosition);
-                          questBoxMesh.quaternion.copy(questMeshRotation);
+                        biolumi.updateAnchors({
+                          objects: questMeshes.map(questMesh => {
+                            const {ui, planeMesh} = questMesh;
 
-                          if (!questBoxMesh.visible) {
-                            questBoxMesh.visible = true;
-                          }
-                        } else {
-                          if (questBoxMesh.visible) {
-                            questBoxMesh.visible = false;
-                          }
-                        }
-                      });
-                    };
-                    const _updateAnchors = () => {
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
-                      const {gamepads} = webvr.getStatus();
+                            if (ui && planeMesh) {
+                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
 
-                      SIDES.forEach(side => {
-                        const gamepad = gamepads[side];
-
-                        if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-
-                          const dotMesh = dotMeshes[side];
-                          const boxMesh = boxMeshes[side];
-
-                          biolumi.updateAnchors({
-                            objects: [{
-                              matrixObject: menuMatrixObject,
-                              ui: menuUi,
-                              width: WIDTH,
-                              height: HEIGHT,
-                              worldWidth: WORLD_WIDTH,
-                              worldHeight: WORLD_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            }],
-                            dotMesh: dotMesh,
-                            boxMesh: boxMesh,
-                            controllerPosition,
-                            controllerRotation,
-                          });
-                        }
-                      });
-                    };
-
-                    _updateGrabbers();
-                    _updateAnchors();
+                              return {
+                                matrixObject: matrixObject,
+                                ui: ui,
+                                width: QUEST_WIDTH,
+                                height: QUEST_HEIGHT,
+                                worldWidth: QUEST_WORLD_WIDTH,
+                                worldHeight: QUEST_WORLD_HEIGHT,
+                                worldDepth: QUEST_WORLD_DEPTH,
+                              };
+                            } else {
+                              return null;
+                            }
+                          }).filter(object => object !== null),
+                          hoverState: questHoverState,
+                          dotMesh: questDotMesh,
+                          boxMesh: questBoxMesh,
+                          controllerPosition,
+                          controllerRotation,
+                        });
+                      }
+                    });
                   };
 
                   _updateMenuTextures();
                   _updateQuestTextures();
-                  _updateControllers();
+                  _updateGrabbers();
+                  _updateMenuAnchors();
+                  _updateQuestAnchors();
                 };
                 rend.on('update', _update);
 
@@ -412,9 +467,11 @@ class Quest {
                   }
 
                   SIDES.forEach(side => {
-                    scene.remove(questBoxMesh[side]);
                     scene.remove(dotMeshes[side]);
                     scene.remove(boxMeshes[side]);
+                    scene.remove(questDotMesh[side]);
+                    scene.remove(questBoxMesh[side]);
+                    scene.remove(grabBoxMesh[side]);
                   });
 
                   input.removeListener('gripdown', _gripdown);
