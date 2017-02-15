@@ -1006,16 +1006,6 @@ class World {
               fs.on('uploadEnd', uploadEnd);
 
               const _initialize = () => {
-                const _initializeFiles = () => {
-                  const {files} = filesJson;
-
-                  const menuMesh = rend.getMenuMesh();
-                  for (let i = 0; i < files.length; i++) {
-                    const fileSpec = files[i];
-                    const fileMesh = fs.makeFile(fileSpec);
-                    menuMesh.add(fileMesh);
-                  }
-                };
                 const _initializeElements = () => {
                   const {elements, free} = tagsJson;
 
@@ -1033,6 +1023,16 @@ class World {
                     menuMesh.add(tagMesh);
                   }
                 };
+                const _initializeFiles = () => {
+                  const {files} = filesJson;
+
+                  const menuMesh = rend.getMenuMesh();
+                  for (let i = 0; i < files.length; i++) {
+                    const fileSpec = files[i];
+                    const fileMesh = fs.makeFile(fileSpec);
+                    menuMesh.add(fileMesh);
+                  }
+                };
                 const _initializeQuests = () => {
                   const questMesh = quest.makeQuest({
                     id: _makeId(),
@@ -1045,8 +1045,9 @@ class World {
                   const menuMesh = rend.getMenuMesh();
                   menuMesh.add(questMesh);
                 };
-                _initializeFiles();
+
                 _initializeElements();
+                _initializeFiles();
                 _initializeQuests();
               };
               _initialize();

@@ -26,7 +26,6 @@ import menuRender from './lib/render/menu';
 
 const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImg);
 
-
 const SIDES = ['left', 'right'];
 
 const ATTRIBUTE_DEFAULTS = {
@@ -294,6 +293,7 @@ class Rend {
 
                   object.worldMesh = null;
                   object.questMesh = null;
+                  object.equipmentMesh = null;
                   object.universeMesh = null;
                   object.configMesh = null;
                   object.statsMesh = null;
@@ -528,7 +528,7 @@ class Rend {
                             case 'status': return menuMesh.planeMesh;
                             case 'world': return menuMesh.worldMesh;
                             case 'quests': return menuMesh.questMesh;
-                            case 'equipment': return menuMesh.worldMesh;
+                            case 'equipment': return menuMesh.equipmentMesh;
                             case 'inventory': return menuMesh.inventoryMesh;
                             case 'worlds': return menuMesh.universeMesh;
                             case 'options': return menuMesh.configMesh;
