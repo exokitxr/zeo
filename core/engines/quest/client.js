@@ -97,14 +97,6 @@ class Quest {
               menuUi
             }) => {
               if (live) {
-                const _makeHoverState = () => ({
-                  questMesh: null,
-                });
-                const hoverStates = {
-                  left: _makeHoverState(),
-                  right: _makeHoverState(),
-                };
-
                 const _makeGrabState = () => ({
                   grabber: null,
                 });
@@ -350,13 +342,11 @@ class Quest {
                   const _updateControllers = () => {
                     const _updateGrabbers = () => {
                       SIDES.forEach(side => {
-                        const hoverState = hoverStates[side];
+                        const grabState = grabStates[side];
                         const questBoxMesh = questBoxMeshes[side];
 
                         const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
                         if (bestGrabbableQuestMesh) {
-                          hoverState.questMesh = bestGrabbableQuestMesh;
-
                           const {position: questMeshPosition, rotation: questMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableQuestMesh);
                           questBoxMesh.position.copy(questMeshPosition);
                           questBoxMesh.quaternion.copy(questMeshRotation);
@@ -365,8 +355,6 @@ class Quest {
                             questBoxMesh.visible = true;
                           }
                         } else {
-                          hoverState.questMesh = null;
-
                           if (questBoxMesh.visible) {
                             questBoxMesh.visible = false;
                           }
@@ -540,10 +528,6 @@ class Quest {
                     if (index !== -1) {
                       questMeshes.splice(index, 1);
                     }
-                  }
-
-                  getHoverQuest(side) {
-                    return hoverStates[side].questMesh;
                   }
 
                   isQuest(object) {
