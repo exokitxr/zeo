@@ -230,7 +230,7 @@ class Equipment {
 
                 // unreify tag
                 _unreifyTag(tagMesh);
-              }; */
+              };
               const _alignTagMeshes = tagMeshes => {
                 const aspectRatio = 400 / 150;
                 const size = (0.2 * 3) + ((0.2 / 4) * 2);
@@ -251,7 +251,7 @@ class Equipment {
                   tagMesh.quaternion.copy(zeroQuaternion);
                   tagMesh.scale.copy(oneVector);
                 }
-              };
+              }; */
 
               const equipmentState = {};
               const npmState = {
@@ -601,7 +601,7 @@ class Equipment {
               _initialize();
 
               this._cleanup = () => {
-                rend.removeMenuMesh('eqipmentMesh');
+                rend.removeMenuMesh('equipmentMesh');
 
                 SIDES.forEach(side => {
                   scene.remove(dotMeshes[side]);
