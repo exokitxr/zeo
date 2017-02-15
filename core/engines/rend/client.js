@@ -484,7 +484,6 @@ class Rend {
                       const page = pages[i];
                       const {type} = page;
 
-                      let match;
                       if (type === 'status') {
                         page.update({
                           status: statusState,
