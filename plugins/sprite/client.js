@@ -94,7 +94,11 @@ class Sprite {
                       }
 
                       const newMesh = (() => {
-                        const geometry = spriteUtils.makeImageGeometry(img, 0.01);
+                        const pixelSize = 0.01;
+                        const size = pixelSize * 88;
+
+                        const geometry = spriteUtils.makeImageGeometry(img, pixelSize);
+                        geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (size / 2) - (size * 0.1), 0));
                         const material = pixelMaterial;
                         
                         const mesh = new THREE.Mesh(geometry, material);
