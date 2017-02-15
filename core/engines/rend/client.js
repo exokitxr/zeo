@@ -66,7 +66,6 @@ class Rend {
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
       '/core/plugins/creature-utils',
-      '/core/plugins/sprite-utils',
     ]).then(([
       hub,
       input,
@@ -77,7 +76,6 @@ class Rend {
       jsUtils,
       geometryUtils,
       creatureUtils,
-      spriteUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
