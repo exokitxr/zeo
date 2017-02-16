@@ -12,6 +12,18 @@ const makeRenderer = ({creatureUtils}) => {
 
 const getThreadsPageSrc = () => {
   const leftSrc = (() => {
+    const headerSrc = (() => `\
+      <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
+        <div style="display: flex; flex-grow: 1;">
+          <a style="display: flex; margin-right: 10px; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:threads">All Threads</a>
+          <a style="display: flex; padding: 5px 15px; background-color: #000; border: 1px solid transparent; border-radius: 100px; color: #FFF; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:notifications">
+            <span style="margin-right: 10px;">Notifications</span>
+            <span style="display: flex; padding: 0 7px; background-color: #808080; border-radius: 100px; border-radius: 100px; color: #FFF; font-size: 14px; line-height: 1.4; font-weight: 400; justify-content: center; align-items: center;">3</span>
+          </a>
+        </div>
+        <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:newThread">+ New Thread</a>
+      </div>
+    `)();
     const threadsSrc = (() => {
       const _getThreadSrc = index => {
         const author = _makeId();
@@ -44,6 +56,7 @@ const getThreadsPageSrc = () => {
 
     return `\
       <div style="display: flex; padding: 20px 30px; flex-grow: 1; flex-direction: column;">
+        ${headerSrc}
         ${threadsSrc}
       </div>
     `;

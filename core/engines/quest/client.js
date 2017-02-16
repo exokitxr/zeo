@@ -97,6 +97,10 @@ class Quest {
               menuUi
             }) => {
               if (live) {
+                const menuHoverStates = {
+                  left: biolumi.makeMenuHoverState(),
+                  right: biolumi.makeMenuHoverState(),
+                };
                 const dotMeshes = {
                   left: biolumi.makeMenuDotMesh(),
                   right: biolumi.makeMenuDotMesh(),
@@ -281,6 +285,20 @@ class Quest {
                   }
                 });
 
+                const _trigger = e => {
+                  const {side} = e;
+
+                  const menuHoverState = menuHoverStates[side];
+                  const {anchor} = menuHoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
+
+                  let match;
+                  if (match = onclick.match(/^mail:thread:([0-9]+)$/)) {
+                    const threadIndex = match[1];
+                    console.log('get thread index', threadIndex);
+                  }
+                };
+                input.on('trigger', _trigger);
                 const _gripdown = e => {
                   const {side} = e;
 
@@ -372,6 +390,7 @@ class Quest {
                         if (gamepad) {
                           const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
+                          const menuHoverState = menuHoverStates[side];
                           const dotMesh = dotMeshes[side];
                           const boxMesh = boxMeshes[side];
 
@@ -385,6 +404,7 @@ class Quest {
                               worldHeight: WORLD_HEIGHT,
                               worldDepth: WORLD_DEPTH,
                             }],
+                            hoverState: menuHoverState,
                             dotMesh: dotMesh,
                             boxMesh: boxMesh,
                             controllerPosition,
@@ -460,6 +480,7 @@ class Quest {
                     scene.remove(grabBoxMesh[side]);
                   });
 
+                  input.removeListener('trigger', _trigger);
                   input.removeListener('gripdown', _gripdown);
                   input.removeListener('gripup', _gripup);
                   rend.removeListener('update', _update);
