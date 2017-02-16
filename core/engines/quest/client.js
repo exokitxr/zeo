@@ -306,8 +306,7 @@ class Quest {
 
                     _updatePages();
                   } else if (match = onclick.match(/^mail:thread:([0-9]+)$/)) {
-                    const threadIndex = match[1];
-                    console.log('get thread index', threadIndex);
+                    // const threadIndex = match[1];
 
                     mailState.page = 'thread';
 

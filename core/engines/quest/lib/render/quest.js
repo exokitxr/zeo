@@ -14,27 +14,40 @@ const getMailPageSrc = ({page}) => {
   switch (page) {
     case 'threads':
     case 'notifications':
-      return getThreadsPageSrc();
-    case 'thread': return getThreadPageSrc();
-    case 'newThread': return getNewThreadPageSrc();
-    default: return '';
+      return getThreadsPageSrc({page});
+    case 'thread':
+      return getThreadPageSrc();
+    case 'newThread':
+      return getNewThreadPageSrc();
+    default:
+      return '';
   }
 };
 
-const getThreadsPageSrc = () => {
+const getThreadsPageSrc = ({page}) => {
   const leftSrc = (() => {
-    const headerSrc = (() => `\
-      <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
-        <div style="display: flex; flex-grow: 1;">
-          <a style="display: flex; margin-right: 10px; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:threads">All Threads</a>
-          <a style="display: flex; padding: 5px 15px; background-color: #000; border: 1px solid transparent; border-radius: 100px; color: #FFF; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:notifications">
-            <span style="margin-right: 10px;">Notifications</span>
-            <span style="display: flex; padding: 0 7px; background-color: #808080; border-radius: 100px; border-radius: 100px; color: #FFF; font-size: 14px; line-height: 1.4; font-weight: 400; justify-content: center; align-items: center;">3</span>
-          </a>
+    const headerSrc = (() => {
+      const _getSelectedStyle = selected => {
+        if (selected) {
+          return 'background-color: #000; border: 1px solid transparent; color: #FFF;';
+        } else {
+          return 'border: 1px solid #333;';
+        }
+      };
+
+      return `\
+        <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
+          <div style="display: flex; flex-grow: 1;">
+            <a style="display: flex; margin-right: 10px; padding: 5px 15px; ${_getSelectedStyle(page === 'threads')}; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:threads">All Threads</a>
+            <a style="display: flex; padding: 5px 15px; ${_getSelectedStyle(page === 'notifications')}; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:notifications">
+              <span style="margin-right: 10px;">Notifications</span>
+              <span style="display: flex; padding: 0 7px; background-color: #808080; border-radius: 100px; border-radius: 100px; color: #FFF; font-size: 14px; line-height: 1.4; font-weight: 400; justify-content: center; align-items: center;">3</span>
+            </a>
+          </div>
+          <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:newThread">+ New Thread</a>
         </div>
-        <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:newThread">+ New Thread</a>
-      </div>
-    `)();
+      `;
+    })();
     const threadsSrc = (() => {
       const _getThreadSrc = index => {
         const author = _makeId();
@@ -72,28 +85,7 @@ const getThreadsPageSrc = () => {
       </div>
     `;
   })();
-  const rightSrc = (() => {
-    const searchSrc = (() => {
-      const inputText = '';
-      const inputValue = 0;
-      const inputPlaceholder = 'Search threads';
-      const focus = false;
-
-      return `\
-        <a style="position: relative; display: block; margin-bottom: 20px; background-color: #FFF; text-decoration: none;" onclick="mail:focus">
-          ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-          <div>${inputText}</div>
-          ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}
-        </a>
-      `;
-    })();
-
-    return `\
-      <div style="width: 300px; padding: 20px 30px; background-color: #000; color: #FFF; box-sizing: border-box;">
-        ${searchSrc}
-      </div>
-    `;
-  })();
+  const rightSrc = getThreadSidebarSrc();
 
   return `\
     <div style="display: flex; font-size: 30px; line-height: 1.4;">
@@ -104,14 +96,61 @@ const getThreadsPageSrc = () => {
 };
 
 const getThreadPageSrc = () => {
+  const leftSrc = (() => `\
+    <div style="display: flex; padding: 20px 30px; flex-grow: 1; flex-direction: column;">
+      <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
+        <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:threads">< Back</a>
+      </div>
+    </div>
+  `)();
+  const rightSrc = getThreadSidebarSrc();
+
   return `\
-    <div>Thread</div>
+    <div style="display: flex; font-size: 30px; line-height: 1.4;">
+      ${leftSrc}
+      ${rightSrc}
+    </div>
   `;
 };
 
 const getNewThreadPageSrc = () => {
+  const leftSrc = (() => `\
+    <div style="display: flex; padding: 20px 30px; flex-grow: 1; flex-direction: column;">
+      <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
+        <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:threads">< Back</a>
+      </div>
+    </div>
+  `)();
+  const rightSrc = getThreadSidebarSrc();
+
   return `\
-    <div>New thread</div>
+    <div style="display: flex; font-size: 30px; line-height: 1.4;">
+      ${leftSrc}
+      ${rightSrc}
+    </div>
+  `;
+};
+
+const getThreadSidebarSrc = () => {
+  const searchSrc = (() => {
+    const inputText = '';
+    const inputValue = 0;
+    const inputPlaceholder = 'Search threads';
+    const focus = false;
+
+    return `\
+      <a style="position: relative; display: block; margin-bottom: 20px; background-color: #FFF; text-decoration: none;" onclick="mail:focus">
+        ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+        <div>${inputText}</div>
+        ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}
+      </a>
+    `;
+  })();
+
+  return `\
+    <div style="width: 300px; min-height: ${HEIGHT}px; padding: 20px 30px; background-color: #000; color: #FFF; box-sizing: border-box;">
+      ${searchSrc}
+    </div>
   `;
 };
 
