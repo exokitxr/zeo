@@ -119,13 +119,19 @@ class World {
             width: WIDTH,
             height: HEIGHT,
           }),
+          biolumi.requestUi({
+            width: WIDTH,
+            height: HEIGHT,
+          }),
         ])
           .then(([
             worldUi,
             equipmentUi,
+            inventoryUi,
           ]) => ({
             worldUi,
             equipmentUi,
+            inventoryUi,
           }));
 
         return Promise.all([
@@ -141,6 +147,7 @@ class World {
             {
               worldUi,
               equipmentUi,
+              inventoryUi,
             },
           ]) => {
             if (live) {
