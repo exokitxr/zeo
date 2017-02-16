@@ -47,6 +47,7 @@ class Backpack {
 
         const _makeHoverState = () => ({
           hovered: false,
+          targetItemBoxMesh: null,
         });
         const hoverStates = {
           left: _makeHoverState(),
@@ -126,15 +127,28 @@ class Backpack {
 
                   return nearDistance < nearPlaneDistance && farDistance < farPlaneDistance;
                 };
+                const _getClosestItemMesh = position => {
+                  const {itemBoxMeshes} = mesh;
+                  const itemBoxMeshSpecs = itemBoxMeshes.map(itemBoxMesh => {
+                    const {position: itemBoxMeshPosition} = _decomposeObjectMatrixWorld(itemBoxMesh);
+                    const distance = position.distanceTo(itemBoxMeshPosition);
+                    return {
+                      itemBoxMesh,
+                      distance,
+                    };
+                  });
+                  const closestItemBoxMesh = itemBoxMeshSpecs.sort((a, b) => a.distance - b.distance)[0].itemBoxMesh;
+                  return closestItemBoxMesh;
+                };
 
                 const {position: controllerPosition} = gamepad;
                 hoverState.hovered = _isBehindCamera(controllerPosition);
+                hoverState.targetItemBoxMesh = _getClosestItemMesh(controllerPosition);
               }
             });
           };
           const _updateMeshes = () => {
             const hovered = SIDES.some(side => hoverStates[side].hovered);
-console.log('hovered', hovered);
 
             if (hovered) {
               const {hmd} = webvr.getStatus();
@@ -142,6 +156,13 @@ console.log('hovered', hovered);
 
               mesh.position.copy(position.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)));
               mesh.quaternion.copy(rotation);
+
+              const {itemBoxMeshes} = mesh;
+              for (let i = 0; i < numItems; i++) {
+                const itemBoxMesh = itemBoxMeshes[i];
+                const hovered = SIDES.some(side => hoverStates[side].targetItemBoxMesh === itemBoxMesh);
+                itemBoxMesh.material.color = new THREE.Color(hovered ? 0x0000FF : 0x808080);
+              }
 
               if (!mesh.visible) {
                 mesh.visible = true;
