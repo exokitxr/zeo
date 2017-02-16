@@ -40,6 +40,7 @@ class World {
       '/core/engines/tags',
       '/core/engines/quest',
       '/core/engines/bag',
+      '/core/engines/backpack',
       '/core/plugins/geometry-utils',
     ]).then(([
       three,
@@ -52,6 +53,7 @@ class World {
       tags,
       quest,
       bag,
+      backpack,
       geometryUtils,
     ]) => {
       if (live) {
@@ -89,6 +91,8 @@ class World {
         const _requestTags = () => fetch('/archae/world/tags.json')
           .then(res => res.json());
         const _requestFiles = () => fetch('/archae/world/files.json')
+          .then(res => res.json());
+        const _requestInventory = () => fetch('/archae/world/inventory.json')
           .then(res => res.json());
         const _requestWorldTimer = () => fetch('/archae/world/start-time.json')
           .then(res => res.json()
@@ -137,12 +141,14 @@ class World {
         return Promise.all([
           _requestTags(),
           _requestFiles(),
+          _requestInventory(),
           _requestWorldTimer(),
           _requestUis(),
         ])
           .then(([
             tagsJson,
             filesJson,
+            inventoryJson,
             worldTimer,
             {
               worldUi,
@@ -304,6 +310,56 @@ class World {
                       'Content-Type': 'application/json',
                     },
                     body: filesJsonString,
+                  })
+                    .then(res => res.blob())
+                    .then(() => {
+                      next();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      next();
+                    })
+                } else {
+                  return Promise.resolve();
+                }
+              });
+              let lastInventoryJsonString = JSON.stringify(inventoryJson);
+              const _saveInventory = menuUtils.debounce(next => {
+                inventoryJson = {
+                  items: backpack.getItems().map(item => {
+                    if (item) {
+                      const {type, mesh} = item;
+
+                      if (type === 'tag') {
+                        return {
+                          type: 'tag',
+                          item: mesh.item,
+                        };
+                      } else if (type === 'file') {
+                        return {
+                          type: 'file',
+                          item: mesh.file,
+                        };
+                      } else {
+                        return null;
+                      }
+                    } else {
+                      return null;
+                    }
+                  }),
+                };
+                const inventoryJsonString = JSON.stringify(inventoryJson);
+
+                if (inventoryJsonString !== lastInventoryJsonString) {
+                  lastInventoryJsonString = inventoryJsonString;
+
+                  return fetch('/archae/world/inventory.json', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: inventoryJsonString,
                   })
                     .then(res => res.blob())
                     .then(() => {
@@ -1250,58 +1306,123 @@ class World {
 
                   const _releaseTag = () => {
                     if (tags.isTag(handsGrabberObject)) {
-                      const _normalRelease = () => {
+                      const _releaseInventoryTag = () => {
+                        const hoveredItemIndex = backpack.getHoveredItemIndex(side);
+
+                        if (hoveredItemIndex !== -1) {
+                          const hoveredItem = backpack.getItem(hoveredItemIndex);
+
+                          if (!hoveredItem) {
+                            const newTagMesh = handsGrabberObject;
+                            handsGrabber.release();
+
+                            const item = {
+                              type: 'tag',
+                              mesh: newTagMesh,
+                            };
+                            backpack.setItem(hoveredItemIndex, item);
+
+                            _saveInventory();
+
+                            e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+
+                            return true;
+                          } else {
+                            return false;
+                          }
+                        } else {
+                          return false;
+                        }
+                      };
+                      const _releaseContainerTag = () => {
+                        if (elementsContainerHoverStates[side].hovered) {
+                          const newTagMesh = handsGrabberObject;
+                          handsGrabber.release();
+
+                          elementManager.add(newTagMesh);
+
+                          _saveTags();
+
+                          e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+
+                          return true;
+                        } else if (equipmentContainerHoverStates[side].hovered) {
+                          const freeIndex = tags.getTagsClassFreeIndex('elements');
+
+                          if (freeIndex !== -1) {
+                            const newTagMesh = handsGrabberObject;
+                            handsGrabber.release();
+
+                            equipmentManager.set(freeindex, newTagMesh);
+
+                            _saveTags();
+
+                            e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+
+                            return true;
+                          } else {
+                            return false;
+                          }
+                        } else {
+                          return false;
+                        }
+                      };
+                      const _releaseWorldTag = () => {
                         handsGrabber.on('release', () => { // so the item matrix is saved first
                           _saveTags();
                         });
                       };
 
-                      if (elementsContainerHoverStates[side].hovered) {
-                        const newTagMesh = handsGrabberObject;
-                        handsGrabber.release();
-
-                        elementManager.add(newTagMesh);
-
-                        _saveTags();
-
-                        e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-                      } else if (equipmentContainerHoverStates[side].hovered) {
-                        const freeIndex = tags.getTagsClassFreeIndex('elements');
-
-                        if (freeIndex !== -1) {
-                          const newTagMesh = handsGrabberObject;
-                          handsGrabber.release();
-
-                          equipmentManager.set(freeindex, newTagMesh);
-
-                          _saveTags();
-
-                          e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-                        } else {
-                          _normalRelease();
-                        }
-                      } else {
-                        _normalRelease();
-                      }
-
-                      return true;
+                      return _releaseInventoryTag() || _releaseContainerTag() || _releaseWorldTag();
                     } else {
                       return false;
                     }
                   };
                   const _releaseFile = () => {
-                    if (fs.isFile(handsGrabberObject)) {
+                    const _releaseInventoryFile = () => {
+                      const hoveredItemIndex = backpack.getHoveredItemIndex(side);
+
+                      if (hoveredItemIndex !== -1) {
+                        const hoveredItem = backpack.getItem(hoveredItemIndex);
+
+                        if (!hoveredItem) {
+                          const newFileMesh = handsGrabberObject;
+                          handsGrabber.release();
+
+                          const item = {
+                            type: 'file',
+                            mesh: newFileMesh,
+                          };
+                          backpack.setItem(hoveredItemIndex, item);
+
+                          _saveInventory();
+
+                          e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _releaseWorldFile = () => {
                       handsGrabber.on('release', () => { // so the item matrix is saved first
                         _saveFiles();
                       });
 
                       return true;
+                    };
+
+                    if (fs.isFile(handsGrabberObject)) {
+                      return _releaseInventoryFile() || _releaseWorldFile();
                     } else {
                       return false;
                     }
                   };
 
-                  _releaseTag() || _releaseFile()();
+                  _releaseTag() || _releaseFile();
                 } else {
                   const _releaseEquipment = () => {
                     const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
@@ -1451,6 +1572,36 @@ class World {
                     menuMesh.add(fileMesh);
                   }
                 };
+                const _initializeInventory = () => {
+                  const {items} = inventoryJson;
+
+                  for (let i = 0; i < items.length; i++) {
+                    const itemSpec = items[i];
+
+                    if (itemSpec) {
+                      const {type} = itemSpec;
+
+                      if (type === 'tag') {
+                        const {item: itemData} = itemSpec;
+                        const tagMesh = tags.makeTag(itemData);
+                        const item = {
+                          type: 'tag',
+                          mesh: tagMesh,
+                        };
+                        backpack.setItem(i, item);
+                      } else if (type === 'file') {
+                        const {item: itemData} = itemSpec;
+                        const tagMesh = fs.makeFile(itemData);
+                        const item = {
+                          type: 'file',
+                          mesh: tagMesh,
+                        };
+                        backpack.setItem(i, item);
+                      }
+                    }
+                  }
+                  _alignTagMeshes(tags.getTagsClass('equipment'));
+                };
                 const _initializeQuests = () => {
                   const questMesh = quest.makeQuest({
                     id: _makeId(),
@@ -1467,6 +1618,7 @@ class World {
                 _initializeElements();
                 _initializeEquipment();
                 _initializeFiles();
+                _initializeInventory();
                 _initializeQuests();
               };
               _initialize();

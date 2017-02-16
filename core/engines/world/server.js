@@ -21,6 +21,9 @@ const DEFAULT_TAGS = {
 const DEFAULT_FILES = {
   files: [],
 };
+const DEFAULT_INVENTORY = {
+  items: [],
+};
 
 class World {
   constructor(archae) {
@@ -39,6 +42,7 @@ class World {
     const worldPath = path.join(dirname, dataDirectory, 'world');
     const worldTagsJsonPath = path.join(worldPath, 'tags.json');
     const worldFilesJsonPath = path.join(worldPath, 'files.json');
+    const worldInventoryJsonPath = path.join(worldPath, 'inventory.json');
 
     const _requestFile = (p, defaultValue) => new Promise((accept, reject) => {
       fs.readFile(p, 'utf8', (err, s) => {
@@ -55,6 +59,7 @@ class World {
     });
     const _requestTagsJson = () => _requestFile(worldTagsJsonPath, DEFAULT_TAGS);
     const _requestFilesJson = () => _requestFile(worldFilesJsonPath, DEFAULT_FILES);
+    const _requestInventoryJson = () => _requestFile(worldInventoryJsonPath, DEFAULT_INVENTORY);
     const _ensureWorldPath = () => new Promise((accept, reject) => {
       const worldPath = path.join(dirname, dataDirectory, 'world');
 
@@ -70,11 +75,13 @@ class World {
     return Promise.all([
       _requestTagsJson(),
       _requestFilesJson(),
+      _requestInventoryJson(),
       _ensureWorldPath(),
     ])
       .then(([
         tagsJson,
         filesJson,
+        inventoryJson,
         ensureWorldPathResult,
       ]) => {
         if (live) {
@@ -162,6 +169,41 @@ class World {
             });
           }
           app.put('/archae/world/files.json', serveFilesSet);
+          function serveInventoryGet(req, res, next) {
+            res.json(inventoryJson);
+          }
+          app.get('/archae/world/inventory.json', serveInventoryGet);
+          function serveInventorySet(req, res, next) {
+            bodyParserJson(req, res, () => {
+              const {body: data} = req;
+
+              const _respondInvalid = () => {
+                res.status(400);
+                res.send();
+              };
+
+              if (
+                typeof data === 'object' && data !== null &&
+                data.items && Array.isArray(data.items)
+              ) {
+                inventoryJson = {
+                  items: data.items,
+                };
+
+                _saveFile(worldInventoryJsonPath, inventoryJson)
+                  .then(() => {
+                    res.send();
+                  })
+                  .catch(err => {
+                    res.status(500);
+                    res.send(err.stack);
+                  });
+              } else {
+                _respondInvalid();
+              }
+            });
+          }
+          app.put('/archae/world/inventory.json', serveInventorySet);
 
           const startTime = Date.now();
           function serveStartTime(req, res, next) {
@@ -178,6 +220,8 @@ class World {
                 route.handle.name === 'serveTagsSet' ||
                 route.handle.name === 'serveFilesGet' ||
                 route.handle.name === 'serveFilesSet' ||
+                route.handle.name === 'serveInventoryGet' ||
+                route.handle.name === 'serveInventorySet' ||
                 route.handle.name === 'serveStartTime'
               ) {
                 routes.splice(i, 1);

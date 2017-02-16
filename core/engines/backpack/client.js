@@ -45,13 +45,27 @@ class Backpack {
           return {position, rotation, scale};
         };
 
+        const zeroVector = new THREE.Vector3(0, 0, 0);
+        const zeroQuaternion = new THREE.Quaternion();
+        const oneVector = new THREE.Vector3(1, 1, 1);
+
         const _makeHoverState = () => ({
           hovered: false,
-          targetItemBoxMesh: null,
+          targetItemIndex: -1,
         });
         const hoverStates = {
           left: _makeHoverState(),
           right: _makeHoverState(),
+        };
+
+        const itemsState = {
+          items: (() => {
+            const result = Array(numItems);
+            for (let i = 0; i < numItems; i++) {
+              result[i] = null;
+            }
+            return result;
+          })(),
         };
 
         const mesh = (() => {
@@ -127,23 +141,25 @@ class Backpack {
 
                   return nearDistance < nearPlaneDistance && farDistance < farPlaneDistance;
                 };
-                const _getClosestItemMesh = position => {
+                const _getClosestItemMeshIndex = position => {
                   const {itemBoxMeshes} = mesh;
-                  const itemBoxMeshSpecs = itemBoxMeshes.map(itemBoxMesh => {
+                  const itemBoxMeshSpecs = itemBoxMeshes.map((itemBoxMesh, index) => {
                     const {position: itemBoxMeshPosition} = _decomposeObjectMatrixWorld(itemBoxMesh);
                     const distance = position.distanceTo(itemBoxMeshPosition);
                     return {
-                      itemBoxMesh,
+                      index,
                       distance,
                     };
                   });
-                  const closestItemBoxMesh = itemBoxMeshSpecs.sort((a, b) => a.distance - b.distance)[0].itemBoxMesh;
-                  return closestItemBoxMesh;
+                  const closestItemBoxMeshIndex = itemBoxMeshSpecs.sort((a, b) => a.distance - b.distance)[0].index;
+                  return closestItemBoxMeshIndex;
                 };
 
                 const {position: controllerPosition} = gamepad;
-                hoverState.hovered = _isBehindCamera(controllerPosition);
-                hoverState.targetItemBoxMesh = _getClosestItemMesh(controllerPosition);
+                const hovered = _isBehindCamera(controllerPosition);
+                hoverState.hovered = hovered;
+                const targetItemIndex = hovered ? _getClosestItemMeshIndex(controllerPosition) : -1;
+                hoverState.targetItemIndex = targetItemIndex;
               }
             });
           };
@@ -159,9 +175,8 @@ class Backpack {
 
               const {itemBoxMeshes} = mesh;
               for (let i = 0; i < numItems; i++) {
-                const itemBoxMesh = itemBoxMeshes[i];
-                const hovered = SIDES.some(side => hoverStates[side].targetItemBoxMesh === itemBoxMesh);
-                itemBoxMesh.material.color = new THREE.Color(hovered ? 0x0000FF : 0x808080);
+                const hovered = SIDES.some(side => hoverStates[side].targetItemIndex === i);
+                itemBoxMeshes[i].material.color = new THREE.Color(hovered ? 0x0000FF : 0x808080);
               }
 
               if (!mesh.visible) {
@@ -252,6 +267,33 @@ class Backpack {
           rend.removeListener('update', _update);
           /* input.removeListener('gripdown', _gripdown);
           input.removeListener('gripup', _gripup); */
+        };
+
+        const _getItems = () => itemsState.items;
+        const _getItem = index => itemsState.items[index];
+        const _setItem = (index, item) => {
+          const {items} = itemsState;
+          items[index] = item;
+
+          const {itemBoxMeshes} = mesh;
+          const {mesh: itemMesh} = item;
+          itemMesh.position.copy(zeroVector);
+          itemMesh.quaternion.copy(zeroQuaternion);
+          itemMesh.scale.copy(oneVector);
+          itemBoxMeshes[index].add(itemMesh);
+        };
+        const _getHoveredItemIndex = side => {
+          const hoverState = hoverStates[side];
+          const {targetItemIndex} = hoverState;
+
+          return targetItemIndex;
+        };
+
+        return {
+          getItems: _getItems,
+          getItem: _getItem,
+          setItem: _setItem,
+          getHoveredItemIndex: _getHoveredItemIndex,
         };
       }
     });
