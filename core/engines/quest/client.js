@@ -162,18 +162,18 @@ class Quest {
                 scene.add(grabBoxMeshes.left);
                 scene.add(grabBoxMeshes.right);
 
-                const questState = {};
+                const mailState = {
+                  page: 'threads',
+                };
                 const focusState = {
                   type: '',
                 };
 
-                menuUi.pushPage(({quest, focus: {type}}) => {
-                  const focus = type === 'npm';
-
+                menuUi.pushPage(({mail, focus: {type}}) => {
                   return [
                     {
                       type: 'html',
-                      src: questRenderer.getThreadsPageSrc(),
+                      src: questRenderer.getMailPageSrc(mail),
                       x: 0,
                       y: 0,
                       w: WIDTH,
@@ -184,7 +184,7 @@ class Quest {
                 }, {
                   type: 'main',
                   state: {
-                    quest: questState,
+                    mail: mailState,
                     focus: focusState,
                   },
                   immediate: true,
@@ -267,7 +267,7 @@ class Quest {
 
                       if (type === 'main') {
                         page.update({
-                          quest: questState,
+                          mail: mailState,
                           focus: focusState,
                         }, pend);
                       } else if (type === 'quest') {
@@ -293,9 +293,25 @@ class Quest {
                   const onclick = (anchor && anchor.onclick) || '';
 
                   let match;
-                  if (match = onclick.match(/^mail:thread:([0-9]+)$/)) {
+                  if (onclick === 'mail:threads') {
+                    mailState.page = 'threads';
+
+                    _updatePages();
+                  } else if (onclick === 'mail:notifications') {
+                    mailState.page = 'notifications';
+
+                    _updatePages();
+                  } else if (onclick === 'mail:newThread') {
+                    mailState.page = 'newThread';
+
+                    _updatePages();
+                  } else if (match = onclick.match(/^mail:thread:([0-9]+)$/)) {
                     const threadIndex = match[1];
                     console.log('get thread index', threadIndex);
+
+                    mailState.page = 'thread';
+
+                    _updatePages();
                   }
                 };
                 input.on('trigger', _trigger);

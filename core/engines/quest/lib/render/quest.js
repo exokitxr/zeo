@@ -10,6 +10,17 @@ const karmaWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaWhiteIcon);
 
 const makeRenderer = ({creatureUtils}) => {
 
+const getMailPageSrc = ({page}) => {
+  switch (page) {
+    case 'threads':
+    case 'notifications':
+      return getThreadsPageSrc();
+    case 'thread': return getThreadPageSrc();
+    case 'newThread': return getNewThreadPageSrc();
+    default: return '';
+  }
+};
+
 const getThreadsPageSrc = () => {
   const leftSrc = (() => {
     const headerSrc = (() => `\
@@ -92,6 +103,18 @@ const getThreadsPageSrc = () => {
   `;
 };
 
+const getThreadPageSrc = () => {
+  return `\
+    <div>Thread</div>
+  `;
+};
+
+const getNewThreadPageSrc = () => {
+  return `\
+    <div>New thread</div>
+  `;
+};
+
 const getQuestSrc = ({id, name, author, created}) => `\
   <div style="min-height: ${QUEST_HEIGHT}px; background-color: #FFF;">
     <div style="padding-left: 30px; background-color: #000; color: #FFF; font-size: 40px; line-height: 80px;">
@@ -132,6 +155,7 @@ const getQuestSrc = ({id, name, author, created}) => `\
 `;
 
 return  {
+  getMailPageSrc,
   getThreadsPageSrc,
   getQuestSrc,
 };
