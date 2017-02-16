@@ -10,25 +10,74 @@ const karmaWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaWhiteIcon);
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getIncomingQuestsSrc = () => `\
-  <div style="padding: 20px">
-    <h1 style="margin: 0; margin-bottom: 10px; font-size: 30px; font-weight: 400;">Incoming quests</h1>
-    <div style="font-size: 20px; color: #CCC; justify-content: center; align-items: center;">&lt;None&gt;</div>
-  </div>
-`;
+const getThreadsPageSrc = () => {
+  const leftSrc = (() => {
+    const threadsSrc = (() => {
+      const _getThreadSrc = index => {
+        const author = _makeId();
+        const created = Date.now() - (60 * 2 * 1000);
 
-const getOutgoingQuestsSrc = () => `\
-  <div style="padding: 20px">
-    <h1 style="margin: 0; margin-bottom: 10px; font-size: 30px; font-weight: 400;">Outgoing quests</h1>
-    <div style="font-size: 20px; color: #CCC; justify-content: center; align-items: center;">&lt;None&gt;</div>
-  </div>
-`;
+        return `\
+          <a style="position: relative; display: flex; margin-bottom: 10px; background-color: #EEE; font-size: 16px; line-height: 1.4; text-decoration: none; flex-direction: column;" onclick="mail:thread:${index}">
+            <div style="position: absolute; display: flex; top: 0; right: 0; color: #FFF; font-weight: 400;">
+              <div style="display: flex; width: 50px; padding: 5px; background-color: #2196F3; justify-content: center; align-items: center; box-sizing: border-box; ${Math.random() < 0.5 ? '' : 'visibility: hidden;'}">${Math.floor(Math.random() * 10)} rep</div>
+              <div style="display: flex; width: 50px; padding: 5px; background-color: #E91E63; justify-content: center; align-items: center; $box-sizing: border-box; {Math.random() < 0.5 ? '' : 'visibility: hidden;'}">Pos</div>
+              <div style="display: flex; width: 50px; padding: 5px; background-color: #673AB7; justify-content: center; align-items: center; box-sizing: border-box; ${Math.random() < 0.5 ? '' : 'visibility: hidden;'}">Att </div>
+            </div>
+            <div style="padding: 5px 0;">
+              <div style="padding: 0 20px; font-weight: 400;">This is a thread title</div>
+              <div style="display: flex; padding: 0 20px; align-items: center;">
+                <img src="${creatureUtils.makeStaticCreature('user:' + author)}" width="24" height="24" style="margin-right: 5px; image-rendering: pixelated;" />
+                <div>${author} posted ${timeago.ago(created)}</div>
+              </div>
+            </div>
+          </a>
+        `;
+      };
 
-const getAvailableQuestsSrc = () => `\
- <div style="min-height: ${HEIGHT}px; padding: 20px; background-color: #000; font-size: 30px; line-height: 1.4;">
-    <div style="position: relative; color: #FFF;">Available quests</div>
-  </div> 
-`;
+      let result = '';
+      for (let i = 0; i < 10; i++) {
+        result += _getThreadSrc(i);
+      }
+      return result;
+    })();
+
+    return `\
+      <div style="display: flex; padding: 20px 30px; flex-grow: 1; flex-direction: column;">
+        ${threadsSrc}
+      </div>
+    `;
+  })();
+  const rightSrc = (() => {
+    const searchSrc = (() => {
+      const inputText = '';
+      const inputValue = 0;
+      const inputPlaceholder = 'Search threads';
+      const focus = false;
+
+      return `\
+        <a style="position: relative; display: block; margin-bottom: 20px; background-color: #FFF; text-decoration: none;" onclick="mail:focus">
+          ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+          <div>${inputText}</div>
+          ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}
+        </a>
+      `;
+    })();
+
+    return `\
+      <div style="width: 300px; padding: 20px 30px; background-color: #000; color: #FFF; box-sizing: border-box;">
+        ${searchSrc}
+      </div>
+    `;
+  })();
+
+  return `\
+    <div style="display: flex; font-size: 30px; line-height: 1.4;">
+      ${leftSrc}
+      ${rightSrc}
+    </div>
+  `;
+};
 
 const getQuestSrc = ({id, name, author, created}) => `\
   <div style="min-height: ${QUEST_HEIGHT}px; background-color: #FFF;">
@@ -70,13 +119,13 @@ const getQuestSrc = ({id, name, author, created}) => `\
 `;
 
 return  {
-  getIncomingQuestsSrc,
-  getOutgoingQuestsSrc,
-  getAvailableQuestsSrc,
+  getThreadsPageSrc,
   getQuestSrc,
 };
 
 };
+
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = {
   makeRenderer,

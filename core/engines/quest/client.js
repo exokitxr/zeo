@@ -169,28 +169,10 @@ class Quest {
                   return [
                     {
                       type: 'html',
-                      src: questRenderer.getIncomingQuestsSrc(),
+                      src: questRenderer.getThreadsPageSrc(),
                       x: 0,
                       y: 0,
-                      w: WIDTH / 2,
-                      h: HEIGHT / 2,
-                      scroll: true,
-                    },
-                    {
-                      type: 'html',
-                      src: questRenderer.getOutgoingQuestsSrc(),
-                      x: 0,
-                      y: HEIGHT / 2,
-                      w: WIDTH / 2,
-                      h: HEIGHT / 2,
-                      scroll: true,
-                    },
-                    {
-                      type: 'html',
-                      src: questRenderer.getAvailableQuestsSrc(),
-                      x: WIDTH / 2,
-                      y: 0,
-                      w: WIDTH / 2,
+                      w: WIDTH,
                       h: HEIGHT,
                       scroll: true,
                     },
@@ -378,35 +360,39 @@ class Quest {
                     });
                   };
                   const _updateMenuAnchors = () => {
-                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
-                    const {gamepads} = webvr.getStatus();
+                    const tab = rend.getTab();
 
-                    SIDES.forEach(side => {
-                      const gamepad = gamepads[side];
+                    if (tab === 'quests') {
+                      const {gamepads} = webvr.getStatus();
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
 
-                      if (gamepad) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                      SIDES.forEach(side => {
+                        const gamepad = gamepads[side];
 
-                        const dotMesh = dotMeshes[side];
-                        const boxMesh = boxMeshes[side];
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                        biolumi.updateAnchors({
-                          objects: [{
-                            matrixObject: menuMatrixObject,
-                            ui: menuUi,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                          }],
-                          dotMesh: dotMesh,
-                          boxMesh: boxMesh,
-                          controllerPosition,
-                          controllerRotation,
-                        });
-                      }
-                    });
+                          const dotMesh = dotMeshes[side];
+                          const boxMesh = boxMeshes[side];
+
+                          biolumi.updateAnchors({
+                            objects: [{
+                              matrixObject: menuMatrixObject,
+                              ui: menuUi,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                            }],
+                            dotMesh: dotMesh,
+                            boxMesh: boxMesh,
+                            controllerPosition,
+                            controllerRotation,
+                          });
+                        }
+                      });
+                    }
                   };
                   const _updateQuestAnchors = () => {
                     const {gamepads} = webvr.getStatus();
