@@ -101,9 +101,6 @@ const getNavbarSrc = ({tab}) => {
       <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'equipment' ? 'z-index: 1;' : ''}" onclick="navbar:equipment">
         ${tab === 'equipment' ? focusedContent('Equipment') : unfocusedContent('Equipment')}
       </a>
-      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'inventory' ? 'z-index: 1;' : ''}" onclick="navbar:inventory">
-        ${tab === 'inventory' ? focusedContent('Inventory') : unfocusedContent('Inventory')}
-      </a>
       <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'worlds' ? 'z-index: 1;' : ''}" onclick="navbar:worlds">
         ${tab === 'worlds' ? focusedContent('Worlds') : unfocusedContent('Worlds')}
       </a>

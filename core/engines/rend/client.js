@@ -331,8 +331,6 @@ class Rend {
                   })();
                   object.add(shadowMesh);
 
-                  object.inventoryMesh = null;
-
                   return object;
                 })();
                 scene.add(menuMesh);
@@ -529,7 +527,6 @@ class Rend {
                             case 'world': return menuMesh.worldMesh;
                             case 'quests': return menuMesh.questMesh;
                             case 'equipment': return menuMesh.equipmentMesh;
-                            case 'inventory': return menuMesh.inventoryMesh;
                             case 'worlds': return menuMesh.universeMesh;
                             case 'options': return menuMesh.configMesh;
                             default: return null;
