@@ -22,7 +22,7 @@ const {
   HEIGHT,
 } = require('../constants/menu');
 
-const getStatusSrc = ({status: {username, accountType, karma, incomingQuests, outgoingQuests, worldname, users, numTags, numFiles}}) => {
+const getStatusSrc = ({status: {username, accountType, karma, incomingMails, outgoingMails, worldname, users, numTags, numFiles}}) => {
   return `\
     <div style="padding: 30px;">
       <div style="display: flex; margin-bottom: 20px; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
@@ -62,11 +62,11 @@ const getStatusSrc = ({status: {username, accountType, karma, incomingQuests, ou
       </div>
       <div style="display: flex; margin-bottom: 5px; font-size: 20px; align-items: center;">
         <img src="${landImgSrc}" width="28" height="28" style="margin-right: 10px;">
-        <div>${incomingQuests} Incoming quests</div>
+        <div>${incomingMails} Incoming mails</div>
       </div>
       <div style="display: flex; margin-bottom: 5px; font-size: 20px; align-items: center;">
         <img src="${landIconImgSrc}" width="28" height="28" style="margin-right: 10px;">
-        <div>${outgoingQuests} Outgoing quests</div>
+        <div>${outgoingMails} Outgoing mail</div>
       </div>
     </div>
   `;
@@ -92,14 +92,11 @@ const getNavbarSrc = ({tab}) => {
       <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'world' ? 'z-index: 1;' : ''}" onclick="navbar:world">
         ${tab === 'world' ? focusedContent('World') : unfocusedContent('World')}
       </a>
-      <!-- <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'files' ? 'z-index: 1;' : ''}" onclick="navbar:files">
-        ${tab === 'files' ? focusedContent('Files') : unfocusedContent('Files')}
-      </a> -->
-      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'quests' ? 'z-index: 1;' : ''}" onclick="navbar:quests">
-        ${tab === 'quests' ? focusedContent('Quests') : unfocusedContent('Quests')}
-      </a>
       <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'equipment' ? 'z-index: 1;' : ''}" onclick="navbar:equipment">
         ${tab === 'equipment' ? focusedContent('Equipment') : unfocusedContent('Equipment')}
+      </a>
+      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'mail' ? 'z-index: 1;' : ''}" onclick="navbar:mail">
+        ${tab === 'mail' ? focusedContent('Mail') : unfocusedContent('Mail')}
       </a>
       <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'worlds' ? 'z-index: 1;' : ''}" onclick="navbar:worlds">
         ${tab === 'worlds' ? focusedContent('Worlds') : unfocusedContent('Worlds')}

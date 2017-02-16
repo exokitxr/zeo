@@ -5,27 +5,27 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
-  QUEST_WIDTH,
-  QUEST_HEIGHT,
-  QUEST_WORLD_WIDTH,
-  QUEST_WORLD_HEIGHT,
-  QUEST_WORLD_DEPTH,
-} from './lib/constants/quest';
-import questRender from './lib/render/quest';
+  MAIL_WIDTH,
+  MAIL_HEIGHT,
+  MAIL_WORLD_WIDTH,
+  MAIL_WORLD_HEIGHT,
+  MAIL_WORLD_DEPTH,
+} from './lib/constants/mail';
+import mailRender from './lib/render/mail';
 import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
 const DEFAULT_GRAB_RADIUS = 0.2;
-const DEFAULT_QUEST_MATRIX = [
+const DEFAULT_MAIL_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
 ];
 
-const questFlagSymbol = Symbol();
+const mailFlagSymbol = Symbol();
 
-class Quest {
+class Mail {
   constructor(archae) {
     this._archae = archae;
   }
@@ -62,7 +62,7 @@ class Quest {
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
 
-          const questRenderer = questRender.makeRenderer({creatureUtils});
+          const mailRenderer = mailRender.makeRenderer({creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -114,22 +114,22 @@ class Quest {
                 scene.add(boxMeshes.left);
                 scene.add(boxMeshes.right);
 
-                const questHoverStates = {
+                const mailHoverStates = {
                   left: biolumi.makeMenuHoverState(),
                   right: biolumi.makeMenuHoverState(),
                 };
-                const questDotMeshes = {
+                const mailDotMeshes = {
                   left: biolumi.makeMenuDotMesh(),
                   right: biolumi.makeMenuDotMesh(),
                 };
-                scene.add(questDotMeshes.left);
-                scene.add(questDotMeshes.right);
-                const questBoxMeshes = {
+                scene.add(mailDotMeshes.left);
+                scene.add(mailDotMeshes.right);
+                const mailBoxMeshes = {
                   left: biolumi.makeMenuBoxMesh(),
                   right: biolumi.makeMenuBoxMesh(),
                 };
-                scene.add(questBoxMeshes.left);
-                scene.add(questBoxMeshes.right);
+                scene.add(mailBoxMeshes.left);
+                scene.add(mailBoxMeshes.right);
 
                 const _makeGrabState = () => ({
                   grabber: null,
@@ -140,9 +140,9 @@ class Quest {
                 };
 
                 const _makeGrabBoxMesh = () => {
-                  const width = QUEST_WORLD_WIDTH;
-                  const height = QUEST_WORLD_HEIGHT;
-                  const depth = QUEST_WORLD_DEPTH;
+                  const width = MAIL_WORLD_WIDTH;
+                  const height = MAIL_WORLD_HEIGHT;
+                  const depth = MAIL_WORLD_DEPTH;
 
                   const geometry = new THREE.BoxBufferGeometry(width, height, depth);
                   const material = wireframeMaterial;
@@ -173,7 +173,7 @@ class Quest {
                   return [
                     {
                       type: 'html',
-                      src: questRenderer.getMailPageSrc(mail),
+                      src: mailRenderer.getMailPageSrc(mail),
                       x: 0,
                       y: 0,
                       w: WIDTH,
@@ -217,7 +217,7 @@ class Quest {
 
                   return mesh;
                 })();
-                rend.addMenuMesh('questMesh', menuMesh);
+                rend.addMenuMesh('mailMesh', menuMesh);
 
                 const _updatePages = menuUtils.debounce(next => {
                   const pageSpecs = (() => {
@@ -231,9 +231,9 @@ class Quest {
                       });
                     }
 
-                    for (let i = 0; i < questMeshes.length; i++) {
-                      const questMesh = questMeshes[i];
-                      const {ui, quest} = questMeshes;
+                    for (let i = 0; i < mailMeshes.length; i++) {
+                      const mailMesh = mailMeshes[i];
+                      const {ui, mail} = mailMeshes;
 
                       if (ui) {
                         const pages = ui.getPages();
@@ -242,7 +242,7 @@ class Quest {
                           const page = pages[j];
                           const pageSpec = {
                             page,
-                            quest,
+                            mail,
                           };
                           result.push(pageSpec);
                         }
@@ -270,11 +270,11 @@ class Quest {
                           mail: mailState,
                           focus: focusState,
                         }, pend);
-                      } else if (type === 'quest') {
-                        const {quest} = pageSpec;
+                      } else if (type === 'mail') {
+                        const {mail} = pageSpec;
 
                         page.update({
-                          quest,
+                          mail,
                         }, pend);
                       } else {
                         pend();
@@ -321,9 +321,9 @@ class Quest {
                 const _gripdown = e => {
                   const {side} = e;
 
-                  const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                  if (bestGrabbableQuestMesh) {
-                    questInstance.grabQuest(side, bestGrabbableQuestMesh);
+                  const bestGrabbableMailMesh = hands.getBestGrabbable(side, mailMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                  if (bestGrabbableMailMesh) {
+                    mailInstance.grabMail(side, bestGrabbableMailMesh);
                   }
                 };
                 input.on('gripdown', _gripdown);
@@ -341,7 +341,7 @@ class Quest {
                   const _updateMenuTextures = () => {
                     const tab = rend.getTab();
 
-                    if (tab === 'quests') {
+                    if (tab === 'mail') {
                       const {
                         menuMaterial,
                       } = menuMesh;
@@ -354,15 +354,15 @@ class Quest {
                       });
                     }
                   };
-                  const _updateQuestTextures = () => {
+                  const _updateMailTextures = () => {
                     const uiTime = rend.getUiTime();
 
-                    for (let i = 0; i < questMeshes.length; i++) {
-                      const questMesh = questMeshes[i];
+                    for (let i = 0; i < mailMeshes.length; i++) {
+                      const mailMesh = mailMeshes[i];
                       const {
                         ui,
                         planeMesh,
-                      } = questMesh;
+                      } = mailMesh;
 
                       if (ui && planeMesh) {
                         const {menuMaterial} = planeMesh;
@@ -380,11 +380,11 @@ class Quest {
                       const grabState = grabStates[side];
                       const grabBoxMesh = grabBoxMeshes[side];
 
-                      const bestGrabbableQuestMesh = hands.getBestGrabbable(side, questMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                      if (bestGrabbableQuestMesh) {
-                        const {position: questMeshPosition, rotation: questMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableQuestMesh);
-                        grabBoxMesh.position.copy(questMeshPosition);
-                        grabBoxMesh.quaternion.copy(questMeshRotation);
+                      const bestGrabbableMailMesh = hands.getBestGrabbable(side, mailMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                      if (bestGrabbableMailMesh) {
+                        const {position: mailMeshPosition, rotation: mailMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableMailMesh);
+                        grabBoxMesh.position.copy(mailMeshPosition);
+                        grabBoxMesh.quaternion.copy(mailMeshRotation);
 
                         if (!grabBoxMesh.visible) {
                           grabBoxMesh.visible = true;
@@ -399,7 +399,7 @@ class Quest {
                   const _updateMenuAnchors = () => {
                     const tab = rend.getTab();
 
-                    if (tab === 'quests') {
+                    if (tab === 'mail') {
                       const {gamepads} = webvr.getStatus();
                       const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
 
@@ -433,7 +433,7 @@ class Quest {
                       });
                     }
                   };
-                  const _updateQuestAnchors = () => {
+                  const _updateMailAnchors = () => {
                     const {gamepads} = webvr.getStatus();
 
                     SIDES.forEach(side => {
@@ -441,13 +441,13 @@ class Quest {
 
                       if (gamepad) {
                         const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                        const questHoverState = questHoverStates[side];
-                        const questDotMesh = questDotMeshes[side];
-                        const questBoxMesh = questBoxMeshes[side];
+                        const mailHoverState = mailHoverStates[side];
+                        const mailDotMesh = mailDotMeshes[side];
+                        const mailBoxMesh = mailBoxMeshes[side];
 
                         biolumi.updateAnchors({
-                          objects: questMeshes.map(questMesh => {
-                            const {ui, planeMesh} = questMesh;
+                          objects: mailMeshes.map(mailMesh => {
+                            const {ui, planeMesh} = mailMesh;
 
                             if (ui && planeMesh) {
                               const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
@@ -455,19 +455,19 @@ class Quest {
                               return {
                                 matrixObject: matrixObject,
                                 ui: ui,
-                                width: QUEST_WIDTH,
-                                height: QUEST_HEIGHT,
-                                worldWidth: QUEST_WORLD_WIDTH,
-                                worldHeight: QUEST_WORLD_HEIGHT,
-                                worldDepth: QUEST_WORLD_DEPTH,
+                                width: MAIL_WIDTH,
+                                height: MAIL_HEIGHT,
+                                worldWidth: MAIL_WORLD_WIDTH,
+                                worldHeight: MAIL_WORLD_HEIGHT,
+                                worldDepth: MAIL_WORLD_DEPTH,
                               };
                             } else {
                               return null;
                             }
                           }).filter(object => object !== null),
-                          hoverState: questHoverState,
-                          dotMesh: questDotMesh,
-                          boxMesh: questBoxMesh,
+                          hoverState: mailHoverState,
+                          dotMesh: mailDotMesh,
+                          boxMesh: mailBoxMesh,
                           controllerPosition,
                           controllerRotation,
                         });
@@ -476,26 +476,26 @@ class Quest {
                   };
 
                   _updateMenuTextures();
-                  _updateQuestTextures();
+                  _updateMailTextures();
                   _updateGrabbers();
                   _updateMenuAnchors();
-                  _updateQuestAnchors();
+                  _updateMailAnchors();
                 };
                 rend.on('update', _update);
 
                 this._cleanup = () => {
-                  rend.removeMenuMesh('questMesh');
+                  rend.removeMenuMesh('mailMesh');
 
-                  for (let i = 0; i < questMeshes.length; i++) {
-                    const questMesh = questMeshes[i];
-                    questMesh.parent.remove(questMesh);
+                  for (let i = 0; i < mailMeshes.length; i++) {
+                    const mailMesh = mailMeshes[i];
+                    mailMesh.parent.remove(mailMesh);
                   }
 
                   SIDES.forEach(side => {
                     scene.remove(dotMeshes[side]);
                     scene.remove(boxMeshes[side]);
-                    scene.remove(questDotMesh[side]);
-                    scene.remove(questBoxMesh[side]);
+                    scene.remove(mailDotMesh[side]);
+                    scene.remove(mailBoxMesh[side]);
                     scene.remove(grabBoxMesh[side]);
                   });
 
@@ -505,7 +505,7 @@ class Quest {
                   rend.removeListener('update', _update);
                 };
 
-                class Quest {
+                class Mail {
                   constructor(id, name, author, created, matrix) {
                     this.id = id;
                     this.name = name;
@@ -515,45 +515,45 @@ class Quest {
                   }
                 }
 
-                const questMeshes = [];
-                class QuestApi {
-                  makeQuest(questSpec) {
+                const mailMeshes = [];
+                class MailApi {
+                  makeMail(mailSpec) {
                     const object = new THREE.Object3D();
-                    object[questFlagSymbol] = true;
+                    object[mailFlagSymbol] = true;
 
-                    const quest = new Quest(questSpec.id, questSpec.name, questSpec.author, questSpec.created, questSpec.matrix);
-                    object.quest = quest;
+                    const mail = new Mail(mailSpec.id, mailSpec.name, mailSpec.author, mailSpec.created, mailSpec.matrix);
+                    object.mail = mail;
 
-                    object.position.set(quest.matrix[0], quest.matrix[1], quest.matrix[2]);
-                    object.quaternion.set(quest.matrix[3], quest.matrix[4], quest.matrix[5], quest.matrix[6]);
-                    object.scale.set(quest.matrix[7], quest.matrix[8], quest.matrix[9]);
+                    object.position.set(mail.matrix[0], mail.matrix[1], mail.matrix[2]);
+                    object.quaternion.set(mail.matrix[3], mail.matrix[4], mail.matrix[5], mail.matrix[6]);
+                    object.scale.set(mail.matrix[7], mail.matrix[8], mail.matrix[9]);
 
                     object.ui = null;
                     object.planeMesh = null;
 
-                    this._requestDecorateQuest(object);
+                    this._requestDecorateMail(object);
 
-                    questMeshes.push(object);
+                    mailMeshes.push(object);
 
                     return object;
                   }
 
-                  _requestDecorateQuest(object) {
+                  _requestDecorateMail(object) {
                     return biolumi.requestUi({
-                      width: QUEST_WIDTH,
-                      height: QUEST_HEIGHT,
+                      width: MAIL_WIDTH,
+                      height: MAIL_HEIGHT,
                     })
                       .then(ui => {
-                        const {quest} = object;
+                        const {mail} = object;
 
-                        ui.pushPage(({quest}) => ([
+                        ui.pushPage(({mail}) => ([
                           {
                             type: 'html',
-                            src: questRenderer.getQuestSrc(quest),
+                            src: mailRenderer.getMailSrc(mail),
                           },
                           /* {
                             type: 'image',
-                            img: creatureUtils.makeAnimatedCreature('quest:' + quest.name),
+                            img: creatureUtils.makeAnimatedCreature('mail:' + mail.name),
                             x: 10,
                             y: 0,
                             w: 100,
@@ -562,9 +562,9 @@ class Quest {
                             pixelated: true,
                           } */
                         ]), {
-                          type: 'quest',
+                          type: 'mail',
                           state: {
-                            quest,
+                            mail,
                           },
                           immediate: true,
                         });
@@ -573,9 +573,9 @@ class Quest {
                         _updatePages();
 
                         const planeMesh = (() => {
-                          const width = QUEST_WORLD_WIDTH;
-                          const height = QUEST_WORLD_HEIGHT;
-                          const depth = QUEST_WORLD_DEPTH;
+                          const width = MAIL_WORLD_WIDTH;
+                          const height = MAIL_WORLD_HEIGHT;
+                          const depth = MAIL_WORLD_DEPTH;
 
                           const menuMaterial = biolumi.makeMenuMaterial();
 
@@ -593,7 +593,7 @@ class Quest {
                         object.planeMesh = planeMesh;
 
                         const shadowMesh = (() => {
-                          const geometry = new THREE.BoxBufferGeometry(QUEST_WORLD_WIDTH, QUEST_WORLD_HEIGHT, 0.01);
+                          const geometry = new THREE.BoxBufferGeometry(MAIL_WORLD_WIDTH, MAIL_WORLD_HEIGHT, 0.01);
                           const material = transparentMaterial.clone();
                           material.depthWrite = false;
 
@@ -605,26 +605,26 @@ class Quest {
                       });
                   };
 
-                  destroyQuest(questMesh) {
-                    const index = questMeshes.indexOf(questMesh);
+                  destroyMail(mailMesh) {
+                    const index = mailMeshes.indexOf(mailMesh);
 
                     if (index !== -1) {
-                      questMeshes.splice(index, 1);
+                      mailMeshes.splice(index, 1);
                     }
                   }
 
-                  isQuest(object) {
-                    return object[questFlagSymbol] === true;
+                  isMail(object) {
+                    return object[mailFlagSymbol] === true;
                   }
 
-                  grabQuest(side, questMesh) {
+                  grabMail(side, mailMesh) {
                     const menuMesh = rend.getMenuMesh();
-                    menuMesh.add(questMesh);
+                    menuMesh.add(mailMesh);
 
-                    const {quest} = questMesh;
-                    quest.matrix = DEFAULT_QUEST_MATRIX;
+                    const {mail} = mailMesh;
+                    mail.matrix = DEFAULT_MAIL_MATRIX;
 
-                    const grabber = hands.grab(side, questMesh);
+                    const grabber = hands.grab(side, mailMesh);
                     grabber.on('update', ({position, rotation}) => {
                       const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
                       const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
@@ -637,13 +637,13 @@ class Quest {
                           new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
                         );
 
-                      questMesh.position.copy(newPosition);
-                      questMesh.quaternion.copy(newRotation);
+                      mailMesh.position.copy(newPosition);
+                      mailMesh.quaternion.copy(newRotation);
                     });
                     grabber.on('release', () => {
-                      const {position, quaternion, quest} = questMesh;
+                      const {position, quaternion, mail} = mailMesh;
                       const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
-                      quest.matrix = newMatrixArray;
+                      mail.matrix = newMatrixArray;
 
                       grabState.grabber = null;
                     });
@@ -653,8 +653,8 @@ class Quest {
                   }
                 };
 
-                const questInstance = new QuestApi();
-                return questInstance;
+                const mailInstance = new MailApi();
+                return mailInstance;
               }
             });
         }
@@ -668,4 +668,4 @@ class Quest {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 
-module.exports = Quest;
+module.exports = Mail;

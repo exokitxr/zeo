@@ -38,7 +38,7 @@ class World {
       '/core/engines/rend',
       '/core/engines/hands',
       '/core/engines/tags',
-      '/core/engines/quest',
+      '/core/engines/mail',
       '/core/engines/bag',
       '/core/engines/backpack',
       '/core/plugins/geometry-utils',
@@ -51,7 +51,7 @@ class World {
       rend,
       hands,
       tags,
-      quest,
+      mail,
       bag,
       backpack,
       geometryUtils,
@@ -1602,8 +1602,8 @@ class World {
                   }
                   _alignTagMeshes(tags.getTagsClass('equipment'));
                 };
-                const _initializeQuests = () => {
-                  const questMesh = quest.makeQuest({
+                const _initializeMails = () => {
+                  const mailMesh = mail.makeMail({
                     id: _makeId(),
                     name: 'Explore with me.',
                     author: 'avaer',
@@ -1612,14 +1612,14 @@ class World {
                   });
 
                   const menuMesh = rend.getMenuMesh();
-                  menuMesh.add(questMesh);
+                  menuMesh.add(mailMesh);
                 };
 
                 _initializeElements();
                 _initializeEquipment();
                 _initializeFiles();
                 _initializeInventory();
-                _initializeQuests();
+                _initializeMails();
               };
               _initialize();
 

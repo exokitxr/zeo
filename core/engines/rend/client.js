@@ -128,8 +128,8 @@ class Rend {
           username: 'avaer',
           accountType: 'admin',
           karma: 1875,
-          incomingQuests: 7,
-          outgoingQuests: 3,
+          incomingMails: 7,
+          outgoingMails: 3,
           worldname: 'Aldous Huxley',
           users: [
             'allie',
@@ -292,7 +292,7 @@ class Rend {
                   object.planeMesh = planeMesh;
 
                   object.worldMesh = null;
-                  object.questMesh = null;
+                  object.mailMesh = null;
                   object.equipmentMesh = null;
                   object.universeMesh = null;
                   object.configMesh = null;
@@ -518,15 +518,15 @@ class Rend {
                       const onclick = (anchor && anchor.onclick) || '';
 
                       let match;
-                      if (match = onclick.match(/^navbar:(status|world|quests|equipment|inventory|worlds|options)$/)) {
+                      if (match = onclick.match(/^navbar:(status|world|equipment|mail|inventory|worlds|options)$/)) {
                         const newTab = match[1];
 
                         const _getTabMesh = tab => {
                           switch (tab) {
                             case 'status': return menuMesh.planeMesh;
                             case 'world': return menuMesh.worldMesh;
-                            case 'quests': return menuMesh.questMesh;
                             case 'equipment': return menuMesh.equipmentMesh;
+                            case 'mail': return menuMesh.mailMesh;
                             case 'worlds': return menuMesh.universeMesh;
                             case 'options': return menuMesh.configMesh;
                             default: return null;
