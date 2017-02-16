@@ -847,7 +847,7 @@ class Tags {
 
                   getFreeTags() {
                     const index = new Map();
-                    const {elements: elementTags, npm: npmTags} = tagClassMeshes;
+                    const {elements: elementTags, npm: npmTags, equipment: equipmentTags} = tagClassMeshes;
                     for (let i = 0; i < elementTags.length; i++) {
                       const elementTag = elementTags[i];
                       index.set(elementTag, true);
@@ -855,6 +855,10 @@ class Tags {
                     for (let i = 0; i < npmTags.length; i++) {
                       const npmTag = npmTags[i];
                       index.set(npmTag, true);
+                    }
+                    for (let i = 0; i < equipmentTags.length; i++) {
+                      const equipmentTag = equipmentTags[i];
+                      index.set(equipmentTag, true);
                     }
 
                     return tagMeshes.filter(tagMesh => !index.has(tagMesh));
