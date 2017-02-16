@@ -40,12 +40,14 @@ class Universe {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
+      '/core/plugins/geometry-utils',
       '/core/plugins/random-utils',
     ]).then(([
       three,
       webvr,
       biolumi,
       rend,
+      geometryUtils,
       randomUtils,
     ]) => {
       if (live) {
@@ -63,10 +65,23 @@ class Universe {
           return {position, rotation, scale};
         };
 
+        const zeroQuaternion = new THREE.Quaternion();
+        const oneVector = new THREE.Vector3(1, 1, 1);
+
         class World {
           constructor(worldName, point) {
             this.worldName = worldName;
             this.point = point;
+          }
+
+          get3dPoint() {
+            const {point} = this;
+
+            return new THREE.Vector3(
+              -(WORLD_WIDTH / 2) + ((WORLD_WIDTH - WORLD_HEIGHT) / 2) + (point.x / NUM_CELLS * WORLD_HEIGHT),
+              (WORLD_HEIGHT / 2) - (point.y / NUM_CELLS * WORLD_HEIGHT),
+              0.05
+            );
           }
         }
 
@@ -235,13 +250,9 @@ class Universe {
 
                       for (let j = 0; j < worlds.length; j++) {
                         const world = worlds[j];
-                        const {point} = world;
+                        const point = world.get3dPoint();
 
-                        array.push(
-                          -(WORLD_WIDTH / 2) + ((WORLD_WIDTH - WORLD_HEIGHT) / 2) + (point.x / NUM_CELLS * WORLD_HEIGHT),
-                          (WORLD_HEIGHT / 2) - (point.y / NUM_CELLS * WORLD_HEIGHT),
-                          0.05
-                        );
+                        array.push(point.x, point.y, point.z);
                       }
                     }
 
@@ -283,6 +294,14 @@ class Universe {
                 right: biolumi.makeMenuHoverState(),
               };
 
+              const _makeForegroundDotMesh = () => biolumi.makeMenuDotMesh({size: 0.05});
+              const foregroundDotMeshes = {
+                left: _makeForegroundDotMesh(),
+                right: _makeForegroundDotMesh(),
+              };
+              scene.add(foregroundDotMeshes.left);
+              scene.add(foregroundDotMeshes.right);
+
               const _updatePages = menuUtils.debounce(next => {
                 const backgroundPages = backgroundUi.getPages();
                 const foregroundPages = foregroundUi.getPages()
@@ -318,10 +337,10 @@ class Universe {
               });
 
               const _update = () => {
-                const _updateTextures = () => {
-                  const tab = rend.getTab();
+                const tab = rend.getTab();
 
-                  if (tab === 'worlds') {
+                if (tab === 'worlds') {
+                  const _updateTextures = () => {
                     const {
                       backgroundMesh: {
                         menuMaterial: backgroundMenuMaterial,
@@ -334,45 +353,130 @@ class Universe {
                       menuMaterial: backgroundMenuMaterial,
                       uiTime,
                     });
-                  }
-                };
-                const _updateAnchors = () => {
-                  const {backgroundMesh} = menuMesh;
-                  const backgroundMatrixObject = _decomposeObjectMatrixWorld(backgroundMesh);
-                  const {gamepads} = webvr.getStatus();
+                  };
+                  const _updateAnchors = () => {
+                    const _updateBackgroundAnchors = () => {
+                      const {backgroundMesh} = menuMesh;
+                      const backgroundMatrixObject = _decomposeObjectMatrixWorld(backgroundMesh);
+                      const {gamepads} = webvr.getStatus();
 
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
+                      SIDES.forEach(side => {
+                        const gamepad = gamepads[side];
 
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                      const backgroundHoverState = backgroundHoverStates[side];
-                      const backgroundDotMesh = backgroundDotMeshes[side];
-                      const backgroundBoxMesh = backgroundBoxMeshes[side];
+                          const backgroundHoverState = backgroundHoverStates[side];
+                          const backgroundDotMesh = backgroundDotMeshes[side];
+                          const backgroundBoxMesh = backgroundBoxMeshes[side];
 
-                      biolumi.updateAnchors({
-                        objects: [{
-                          matrixObject: backgroundMatrixObject,
-                          ui: backgroundUi,
-                          width: WIDTH,
-                          height: HEIGHT,
-                          worldWidth: WORLD_WIDTH,
-                          worldHeight: WORLD_HEIGHT,
-                          worldDepth: WORLD_DEPTH,
-                        }],
-                        hoverState: backgroundHoverState,
-                        dotMesh: backgroundDotMesh,
-                        boxMesh: backgroundBoxMesh,
-                        controllerPosition,
-                        controllerRotation,
-                      })
-                    }
-                  });
-                };
+                          biolumi.updateAnchors({
+                            objects: [{
+                              matrixObject: backgroundMatrixObject,
+                              ui: backgroundUi,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                            }],
+                            hoverState: backgroundHoverState,
+                            dotMesh: backgroundDotMesh,
+                            boxMesh: backgroundBoxMesh,
+                            controllerPosition,
+                            controllerRotation,
+                          })
+                        }
+                      });
+                    };
+                    const _updateForegroundAnchors = () => {
+                      const pointSpecs = (() => {
+                        const result = [];
 
-                _updateTextures();
-                _updateAnchors();
+                        const size = 0.1;
+                        const sizeVector = new THREE.Vector3(size, size, size);
+
+                        const {mapChunks} = mapState;
+                        for (let i = 0; i < mapChunks.length; i++) {
+                          const mapChunk = mapChunks[i];
+                          const {position, worlds} = mapChunk;
+
+                          for (let j = 0; j < worlds.length; j++) {
+                            const world = worlds[j];
+                            const point = world.get3dPoint().applyMatrix4(menuMesh.matrixWorld);
+                            const boxTarget = geometryUtils.makeBoxTarget(
+                              point,
+                              zeroQuaternion,
+                              oneVector,
+                              sizeVector
+                            );
+                            result.push({
+                              world,
+                              point,
+                              boxTarget,
+                            });
+                          }
+                        }
+
+                        return result;
+                      })();
+
+                      const {gamepads} = webvr.getStatus();
+                      SIDES.forEach(side => {
+                        const gamepad = gamepads[side];
+
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                          const controllerLine = new THREE.Line3(
+                            controllerPosition.clone(),
+                            controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation).multiplyScalar(15))
+                          );
+                          const pointIntersectionSpecs = pointSpecs
+                            .map(pointSpec => {
+                              const {boxTarget} = pointSpec;
+                              const intersectionPoint = boxTarget.intersectLine(controllerLine);
+
+                              if (intersectionPoint) {
+                                const {world, point} = pointSpec;
+                                const distance = controllerPosition.distanceTo(intersectionPoint);
+
+                                return {
+                                  world,
+                                  point,
+                                  intersectionPoint,
+                                  distance,
+                                };
+                              } else {
+                                return null;
+                              }
+                            })
+                            .filter(pointIntersectionSpec => pointIntersectionSpec !== null);
+                          const foregroundDotMesh = foregroundDotMeshes[side];
+
+                          if (pointIntersectionSpecs.length > 0) {
+                            const {point} = pointIntersectionSpecs.sort((a, b) => a.distance - b.distance)[0];
+
+                            foregroundDotMesh.position.copy(point);
+
+                            if (!foregroundDotMesh.visible) {
+                              foregroundDotMesh.visible = true;
+                            }
+                          } else {
+                            if (foregroundDotMesh.visible) {
+                              foregroundDotMesh.visible = false;
+                            }
+                          }
+                        }
+                      });
+                    };
+
+                    _updateBackgroundAnchors();
+                    _updateForegroundAnchors();
+                  };
+
+                  _updateTextures();
+                  _updateAnchors();
+                }
               };
               rend.on('update', _update);
 
@@ -382,6 +486,7 @@ class Universe {
                 SIDES.forEach(side => {
                   scene.remove(backgroundDotMeshes[side]);
                   scene.remove(backgroundBoxMeshes[side]);
+                  scene.remove(foregroundDotMeshes[side]);
                 });
 
                 rend.removeListener('update', _update);

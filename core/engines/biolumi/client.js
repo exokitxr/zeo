@@ -777,11 +777,14 @@ class Biolumi {
             color: 0xFF0000,
             size: 0.01,
           });
-          const _makeMenuDotMesh = () => {
+          const _makeMenuDotMesh = ({color = pointsHighlightMaterial.color, size = pointsHighlightMaterial.size} = {}) => {
             const geometry = new THREE.BufferGeometry();
             geometry.addAttribute('position', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
             geometry.addAttribute('color', new THREE.BufferAttribute(Float32Array.from([0, 0, 0]), 3));
-            const material = pointsHighlightMaterial;
+            const material = (color === pointsHighlightMaterial.color && size === pointsHighlightMaterial.size) ? pointsHighlightMaterial : new THREE.PointsMaterial({
+              color: color,
+              size: size,
+            });
 
             return new THREE.Points(geometry, material);
           };
