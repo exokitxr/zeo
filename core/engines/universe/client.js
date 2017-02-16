@@ -37,11 +37,13 @@ class Universe {
 
     return archae.requestPlugins([
       '/core/engines/three',
+      '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/plugins/random-utils',
     ]).then(([
       three,
+      webvr,
       biolumi,
       rend,
       randomUtils,
@@ -263,6 +265,24 @@ class Universe {
               })();
               rend.addMenuMesh('universeMesh', menuMesh);
 
+              const backgroundDotMeshes = {
+                left: biolumi.makeMenuDotMesh(),
+                right: biolumi.makeMenuDotMesh(),
+              };
+              scene.add(backgroundDotMeshes.left);
+              scene.add(backgroundDotMeshes.right);
+              const backgroundBoxMeshes = {
+                left: biolumi.makeMenuBoxMesh(),
+                right: biolumi.makeMenuBoxMesh(),
+              };
+              scene.add(backgroundBoxMeshes.left);
+              scene.add(backgroundBoxMeshes.right);
+
+              const backgroundHoverStates = {
+                left: biolumi.makeMenuHoverState(),
+                right: biolumi.makeMenuHoverState(),
+              };
+
               const _updatePages = menuUtils.debounce(next => {
                 const backgroundPages = backgroundUi.getPages();
                 const foregroundPages = foregroundUi.getPages()
@@ -316,13 +336,53 @@ class Universe {
                     });
                   }
                 };
+                const _updateAnchors = () => {
+                  const {backgroundMesh} = menuMesh;
+                  const backgroundMatrixObject = _decomposeObjectMatrixWorld(backgroundMesh);
+                  const {gamepads} = webvr.getStatus();
+
+                  SIDES.forEach(side => {
+                    const gamepad = gamepads[side];
+
+                    if (gamepad) {
+                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                      const backgroundHoverState = backgroundHoverStates[side];
+                      const backgroundDotMesh = backgroundDotMeshes[side];
+                      const backgroundBoxMesh = backgroundBoxMeshes[side];
+
+                      biolumi.updateAnchors({
+                        objects: [{
+                          matrixObject: backgroundMatrixObject,
+                          ui: backgroundUi,
+                          width: WIDTH,
+                          height: HEIGHT,
+                          worldWidth: WORLD_WIDTH,
+                          worldHeight: WORLD_HEIGHT,
+                          worldDepth: WORLD_DEPTH,
+                        }],
+                        hoverState: backgroundHoverState,
+                        dotMesh: backgroundDotMesh,
+                        boxMesh: backgroundBoxMesh,
+                        controllerPosition,
+                        controllerRotation,
+                      })
+                    }
+                  });
+                };
 
                 _updateTextures();
+                _updateAnchors();
               };
               rend.on('update', _update);
 
               this._cleanup = () => {
                 rend.removeMenuMesh('universeMesh');
+
+                SIDES.forEach(side => {
+                  scene.remove(backgroundDotMeshes[side]);
+                  scene.remove(backgroundBoxMeshes[side]);
+                });
 
                 rend.removeListener('update', _update);
               };
