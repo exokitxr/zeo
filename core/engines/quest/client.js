@@ -297,6 +297,10 @@ class Quest {
                     mailState.page = 'threads';
 
                     _updatePages();
+                  } else if (onclick === 'mail:users') {
+                    mailState.page = 'users';
+
+                    _updatePages();
                   } else if (onclick === 'mail:notifications') {
                     mailState.page = 'notifications';
 
