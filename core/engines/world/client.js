@@ -55,7 +55,7 @@ class World {
       geometryUtils,
     ]) => {
       if (live) {
-        const {THREE, scene} = three;
+        const {THREE, scene, camera} = three;
 
         // constants
         const oneVector = new THREE.Vector3(1, 1, 1);
@@ -1074,7 +1074,8 @@ class World {
 
                         if (gamepad) {
                           const {position, rotation, scale} = gamepad;
-                          item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                          const newQuaternion = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0, camera.rotation.order)));
+                          item.setAttribute('position', position.toArray().concat(newQuaternion.toArray()).concat(scale.toArray()));
                         }
                       }
                     }
@@ -1093,7 +1094,8 @@ class World {
 
                         if (gamepad) {
                           const {position, rotation, scale} = gamepad;
-                          item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                          const newQuaternion = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0, camera.rotation.order)));
+                          item.setAttribute('position', position.toArray().concat(newQuaternion.toArray()).concat(scale.toArray()));
                         }
                       }
                     }
