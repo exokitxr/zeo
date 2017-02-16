@@ -47,6 +47,14 @@ class Bag {
           wireframe: true,
         });
 
+        const _makeHoverPocketState = () => ({
+          pocketMeshIndex: -1,
+        });
+        const hoverPocketStates = {
+          left: _makeHoverPocketState(),
+          right: _makeHoverPocketState(),
+        };
+
         const bagMesh = (() => {
           const result = new THREE.Object3D();
 
@@ -131,6 +139,7 @@ class Bag {
 
             if (gamepad) {
               const {position: controllerPosition} = gamepad;
+              const hoverPocketState = hoverPocketStates[side];
 
               const pocketMeshSpecs = pocketMeshes.map((pocketMesh, i) => {
                 const {position: pocketPosition} = _decomposeObjectMatrixWorld(pocketMesh);
@@ -147,11 +156,15 @@ class Bag {
                 const closestPocketMeshSpec = sortedPocketMeshSpecs[0];
                 const {index: closestPocketMeshIndex} = closestPocketMeshSpec;
 
+                hoverPocketState.pocketMeshIndex = closestPocketMeshIndex;
+
                 const closestPocketMesh = pocketMeshes[closestPocketMeshIndex];
                 closestPocketMesh.visible = false;
 
                 const closestPocketHighlightMesh = pocketHighlightMeshes[closestPocketMeshIndex];
                 closestPocketHighlightMesh.visible = true;
+              } else {
+                hoverPocketState.pocketMeshIndex = -1;
               }
             }
           });
@@ -165,9 +178,19 @@ class Bag {
         };
 
         const _getBagMesh = () => bagMesh;
+        const _getHoveredEquipmentIndex = side => {
+          const {pocketMeshIndex} = hoverPocketStates[side];
+
+          if (pocketMeshIndex !== -1) {
+            return (1 + 2) + pocketMeshIndex;
+          } else {
+            return -1;
+          }
+        };
 
         return {
           getBagMesh: _getBagMesh,
+          getHoveredEquipmentIndex: _getHoveredEquipmentIndex,
         };
       }
     });

@@ -877,8 +877,36 @@ class Tags {
                     }
                   }
 
+                  setTag(tagClass, index, tagMesh) {
+                    tagClassMeshes[tagClass][index] = tagMesh;
+                  }
+
+                  /* unsetTag(tagClass, index) {
+                    tagClassMeshes[tagClass][index] = null;
+                  } */
+
+                  moveTag(tagClass, oldIndex, newIndex) {
+                    const tagMesh = tagClassMeshes[tagClass][oldIndex];
+                    tagClassMeshes[tagClass][oldIndex] = null;
+                    tagClassMeshes[tagClass][newIndex] = tagMesh;
+                  }
+
                   getTagsClass(tagClass) {
                     return tagClassMeshes[tagClass];
+                  }
+
+                  getTagsClassFreeIndex(tagClass) {
+                    const tagMeshes = tagClassMeshes[tagClass];
+
+                    for (let i = 3; i < tagMeshes.length; i++) { // XXX should start at zero but does not to start search at pockets
+                      const tagMesh = tagMeshes[i];
+
+                      if (tagMesh) {
+                        return i;
+                      }
+                    }
+
+                    return -1;;
                   }
 
                   isTag(object) {

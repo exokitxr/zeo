@@ -8,7 +8,15 @@ const bodyParserJson = bodyParser.json();
 const DEFAULT_TAGS = {
   elements: [],
   free: [],
-  equipment: [],
+  equipment: (() => {
+    const numEquipments = (1 + 2 + 8);
+
+    const result = Array(numEquipments);
+    for (let i = 0; i < numEquipments; i++) {
+      result[i] = null;
+    }
+    return result;
+  })(),
 };
 const DEFAULT_FILES = {
   files: [],
