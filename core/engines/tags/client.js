@@ -530,6 +530,52 @@ class Tags {
                 input.on('gripup', _gripup);
                 const _update = () => {
                   const _updateControllers = () => {
+                    const _updateMenuAnchors = () => {
+                      const isOpen = rend.isOpen();
+
+                      if (isOpen) {
+                        const {gamepads} = webvr.getStatus();
+
+                        SIDES.forEach(side => {
+                          const gamepad = gamepads[side];
+
+                          if (gamepad) {
+                            const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                            const hoverState = hoverStates[side];
+                            const dotMesh = dotMeshes[side];
+                            const boxMesh = boxMeshes[side];
+
+                            biolumi.updateAnchors({
+                              objects: tagMeshes.map(tagMesh => {
+                                const {ui, planeMesh} = tagMesh;
+
+                                if (ui && planeMesh) {
+                                  const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                                  const {item: {open}} = tagMesh;
+
+                                  return {
+                                    matrixObject: matrixObject,
+                                    ui: ui,
+                                    width: !open ? WIDTH : OPEN_WIDTH,
+                                    height: !open ? HEIGHT : OPEN_HEIGHT,
+                                    worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                                    worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                                    worldDepth: WORLD_DEPTH,
+                                  };
+                                } else {
+                                  return null;
+                                }
+                              }).filter(object => object !== null),
+                              hoverState: hoverState,
+                              dotMesh: dotMesh,
+                              boxMesh: boxMesh,
+                              controllerPosition,
+                              controllerRotation,
+                            });
+                          }
+                        });
+                      }
+                    };
                     const _updateGrabbers = () => {
                       const isOpen = rend.isOpen();
 
@@ -606,56 +652,10 @@ class Tags {
                         }
                       }
                     };
-                    const _updateMenuAnchors = () => {
-                      const tab = rend.getTab();
 
-                      if (tab === 'world') {
-                        const {gamepads} = webvr.getStatus();
-
-                        SIDES.forEach(side => {
-                          const gamepad = gamepads[side];
-
-                          if (gamepad) {
-                            const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                            const hoverState = hoverStates[side];
-                            const dotMesh = dotMeshes[side];
-                            const boxMesh = boxMeshes[side];
-
-                            biolumi.updateAnchors({
-                              objects: tagMeshes.map(tagMesh => {
-                                const {ui, planeMesh} = tagMesh;
-
-                                if (ui && planeMesh) {
-                                  const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                                  const {item: {open}} = tagMesh;
-
-                                  return {
-                                    matrixObject: matrixObject,
-                                    ui: ui,
-                                    width: !open ? WIDTH : OPEN_WIDTH,
-                                    height: !open ? HEIGHT : OPEN_HEIGHT,
-                                    worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                                    worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                                    worldDepth: WORLD_DEPTH,
-                                  };
-                                } else {
-                                  return null;
-                                }
-                              }).filter(object => object !== null),
-                              hoverState: hoverState,
-                              dotMesh: dotMesh,
-                              boxMesh: boxMesh,
-                              controllerPosition,
-                              controllerRotation,
-                            });
-                          }
-                        });
-                      }
-                    };
-
+                    _updateMenuAnchors();
                     _updateGrabbers();
                     _updatePositioningMesh();
-                    _updateMenuAnchors();
                   };
                   const _updateTextures = () => {
                     const uiTime = rend.getUiTime();

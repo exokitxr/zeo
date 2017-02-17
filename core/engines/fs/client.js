@@ -287,66 +287,85 @@ class Fs {
         const _update = () => {
           const _updateControllers = () => {
             const _updateMenuAnchors = () => {
-              const {gamepads} = webvr.getStatus();
+              const isOpen = rend.isOpen();
 
-              SIDES.forEach(side => {
-                const gamepad = gamepads[side];
+              if (isOpen) {
+                const {gamepads} = webvr.getStatus();
 
-                if (gamepad) {
-                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                  const hoverState = hoverStates[side];
-                  const dotMesh = dotMeshes[side];
-                  const boxMesh = boxMeshes[side];
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
 
-                  biolumi.updateAnchors({
-                    objects: fileMeshes.map(fileMesh => {
-                      const {planeMesh} = fileMesh;
-                      const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                      const {ui, file: {open}} = fileMesh;
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const hoverState = hoverStates[side];
+                    const dotMesh = dotMeshes[side];
+                    const boxMesh = boxMeshes[side];
 
-                      return {
-                        matrixObject: matrixObject,
-                        ui: ui,
-                        width: !open ? WIDTH : OPEN_WIDTH,
-                        height: !open ? HEIGHT : OPEN_HEIGHT,
-                        worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                        worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                        worldDepth: WORLD_DEPTH,
-                      };
-                    }),
-                    hoverState: hoverState,
-                    dotMesh: dotMesh,
-                    boxMesh: boxMesh,
-                    controllerPosition,
-                    controllerRotation,
-                  });
-                }
-              });
+                    biolumi.updateAnchors({
+                      objects: fileMeshes.map(fileMesh => {
+                        const {planeMesh} = fileMesh;
+                        const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                        const {ui, file: {open}} = fileMesh;
+
+                        return {
+                          matrixObject: matrixObject,
+                          ui: ui,
+                          width: !open ? WIDTH : OPEN_WIDTH,
+                          height: !open ? HEIGHT : OPEN_HEIGHT,
+                          worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                          worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                          worldDepth: WORLD_DEPTH,
+                        };
+                      }),
+                      hoverState: hoverState,
+                      dotMesh: dotMesh,
+                      boxMesh: boxMesh,
+                      controllerPosition,
+                      controllerRotation,
+                    });
+                  }
+                });
+              }
             };
             const _updateGrabbers = () => {
-              SIDES.forEach(side => {
-                const grabbableState = grabbableStates[side];
-                const grabBoxMesh = grabBoxMeshes[side];
+              const isOpen = rend.isOpen();
 
-                const bestGrabbableFsMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                if (bestGrabbableFsMesh) {
-                  grabbableState.fileMesh = bestGrabbableFsMesh;
+              if (isOpen) {
+                SIDES.forEach(side => {
+                  const grabbableState = grabbableStates[side];
+                  const grabBoxMesh = grabBoxMeshes[side];
 
-                  const {position: fileMehPosition, rotation: fileMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableFsMesh);
-                  grabBoxMesh.position.copy(fileMehPosition);
-                  grabBoxMesh.quaternion.copy(fileMeshRotation);
+                  const bestGrabbableFsMesh = hands.getBestGrabbable(side, fileMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                  if (bestGrabbableFsMesh) {
+                    grabbableState.fileMesh = bestGrabbableFsMesh;
 
-                  if (!grabBoxMesh.visible) {
-                    grabBoxMesh.visible = true;
+                    const {position: fileMehPosition, rotation: fileMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableFsMesh);
+                    grabBoxMesh.position.copy(fileMehPosition);
+                    grabBoxMesh.quaternion.copy(fileMeshRotation);
+
+                    if (!grabBoxMesh.visible) {
+                      grabBoxMesh.visible = true;
+                    }
+                  } else {
+                    grabbableState.fileMesh = null;
+
+                    if (grabBoxMesh.visible) {
+                      grabBoxMesh.visible = false;
+                    }
                   }
-                } else {
+                });
+              } else {
+                SIDES.forEach(side => {
+                  const grabbableState = grabbableStates[side];
+                  const grabBoxMesh = grabBoxMeshes[side];
+
                   grabbableState.fileMesh = null;
 
                   if (grabBoxMesh.visible) {
                     grabBoxMesh.visible = false;
                   }
-                }
-               });
+                });
+              }
             };
 
             _updateMenuAnchors();
