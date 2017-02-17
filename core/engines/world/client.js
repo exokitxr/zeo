@@ -1127,6 +1127,8 @@ class World {
                     if (elementsTagMeshes.includes(tagMesh)) {
                       elementManager.remove(tagMesh);
 
+                      tags.grabTag(side, tagMesh);
+
                       _saveTags();
 
                       e.stopImmediatePropagation();
