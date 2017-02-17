@@ -1,11 +1,16 @@
-const timeago = require('time-ago')();
+const prettyms = require('pretty-ms');
 const {
+  WIDTH,
   HEIGHT,
 } = require('../constants/servers');
 const karmaBlackIcon = require('../img/karma');
 const karmaBlackIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaBlackIcon);
 const karmaWhiteIcon = require('../img/karma-white');
 const karmaWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaWhiteIcon);
+const pulseIcon = require('../img/pulse');
+const pulseIconSrc = 'data:image/svg+xml;base64,' + btoa(pulseIcon);
+const clockIcon = require('../img/clock');
+const clockIconSrc = 'data:image/svg+xml;base64,' + btoa(clockIcon);
 
 const makeRenderer = ({creatureUtils}) => {
 
@@ -25,45 +30,49 @@ const getServersPageSrc = ({page}) => {
 const getListPageSrc = ({page}) => {
   const leftSrc = (() => {
     const headerSrc = (() => {
-      const _getSelectedStyle = selected => {
-        if (selected) {
-          return 'background-color: #000; border: 1px solid transparent; color: #FFF;';
-        } else {
-          return 'border: 1px solid #333;';
-        }
-      };
-
       return `\
         <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
           <div style="display: flex; flex-grow: 1;">
-            <a style="display: flex; margin-right: 10px; padding: 5px 15px; ${_getSelectedStyle(page === 'threads')}; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:threads">Threads</a>
-            <a style="display: flex; margin-right: 10px; padding: 5px 15px; ${_getSelectedStyle(page === 'users')}; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:users">Users</a>
-            <a style="display: flex; padding: 5px 15px; ${_getSelectedStyle(page === 'notifications')}; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:notifications">
-              <span style="margin-right: 10px;">Notifications</span>
-              <span style="display: flex; padding: 0 7px; background-color: #808080; border-radius: 100px; border-radius: 100px; color: #FFF; font-size: 14px; line-height: 1.4; font-weight: 400; justify-content: center; align-items: center;">3</span>
-            </a>
+            <a style="display: flex; margin-right: 10px; padding: 5px 15px; background-color: #000; border: 1px solid transparent; color: #FFF;; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="servers:list">Servers</a>
           </div>
-          <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:newThread">+ New thread</a>
+          <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="servers:newServer">+ New server</a>
         </div>
       `;
     })();
     const threadsSrc = (() => {
       const _getThreadSrc = index => {
-        const author = _makeId();
-        const created = Date.now() - (60 * 2 * 1000);
+        const worldname = 'avaer/' + _makeId();
+        const users = [
+          'allie',
+          'reede',
+          'fay',
+          'khromix',
+        ];
+        const ping = Math.floor(Math.random() * 1000);
+        const created = Math.floor((Math.random() * 60 * 24) * 60 * 1000);
 
         return `\
-          <a style="position: relative; display: flex; margin-bottom: 10px; background-color: #EEE; font-size: 16px; line-height: 1.4; text-decoration: none; flex-direction: column;" onclick="mail:thread:${index}">
-            <div style="position: absolute; display: flex; top: 0; right: 0; color: #FFF; font-weight: 400;">
-              <div style="display: flex; width: 50px; padding: 5px; background-color: #2196F3; justify-content: center; align-items: center; box-sizing: border-box; ${Math.random() < 0.5 ? '' : 'visibility: hidden;'}">${Math.floor(Math.random() * 10)} rep</div>
-              <div style="display: flex; width: 50px; padding: 5px; background-color: #E91E63; justify-content: center; align-items: center; $box-sizing: border-box; {Math.random() < 0.5 ? '' : 'visibility: hidden;'}">Pos</div>
-              <div style="display: flex; width: 50px; padding: 5px; background-color: #673AB7; justify-content: center; align-items: center; box-sizing: border-box; ${Math.random() < 0.5 ? '' : 'visibility: hidden;'}">Att </div>
-            </div>
-            <div style="padding: 5px 0;">
-              <div style="padding: 0 20px; font-weight: 400;">This is a thread title</div>
-              <div style="display: flex; padding: 0 20px; align-items: center;">
-                <img src="${creatureUtils.makeStaticCreature('user:' + author)}" width="24" height="24" style="margin-right: 5px; image-rendering: pixelated;" />
-                <div>${author} posted ${timeago.ago(created)}</div>
+          <a style="display: flex; margin-bottom: 10px; text-decoration: none;" onclick="servers:server:${index}">
+            <div style="margin-right: 20px; width: 100px; height: 100px; background-color: #FFF;"></div>
+            <div style="display: flex; flex-grow: 1; flex-direction: column;">
+              <div style="display: flex; align-items: center;">
+                <div style="margin-bottom: 5px; margin-right: auto; font-size: 20px; font-weight: 400;">${worldname}</div>
+                <div style="display: flex; height: 32px; margin-right: 10px; font-size: 16px; align-items: center;">
+                  <img src="${pulseIconSrc}" width="20" height="20" style="margin-right: 5px;">
+                  <div>${prettyms(ping)}</div>
+                </div>
+                <div style="display: flex; height: 32px; font-size: 16px; align-items: center;">
+                  <img src="${clockIconSrc}" width="20" height="20" style="margin-right: 5px;">
+                  <div>${prettyms(created)}</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center;">
+                ${users.map(user => `\
+                  <div style="display: flex; margin-right: 10px; margin-bottom: 2px; padding: 2px 10px; background-color: #EEE; border-radius: 100px; font-size: 13px; line-height: 1; align-items: center;">
+                    <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="18" height="18" style="margin-right: 10px; image-rendering: pixelated;" />
+                    <div>${user}</div>
+                  </div>
+                `).join('\n')}
               </div>
             </div>
           </a>
@@ -87,7 +96,7 @@ const getListPageSrc = ({page}) => {
   const rightSrc = getThreadSidebarSrc();
 
   return `\
-    <div style="display: flex; font-size: 30px; line-height: 1.4;">
+    <div style="display: flex; width: ${WIDTH}px; font-size: 30px; line-height: 1.4;">
       ${leftSrc}
       ${rightSrc}
     </div>
@@ -98,7 +107,7 @@ const getServerPageSrc = () => {
   const leftSrc = (() => `\
     <div style="display: flex; padding: 20px 30px; margin-bottom: auto; flex-grow: 1; flex-direction: column;">
       <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
-        <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:threads">< Back</a>
+        <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="servers:list">< Back</a>
       </div>
     </div>
   `)();
@@ -115,30 +124,27 @@ const getServerPageSrc = () => {
 const getNewServerPageSrc = () => {
   const leftSrc = (() => {
     const headerSrc = `\
-      <div style="margin-bottom: 10px; font-size: 24px;">New thread</div>
+      <div style="margin-bottom: 10px; font-size: 24px;">New server</div>
     `;
-    const titleSrc = (() => {
+    const nameSrc = (() => {
       const inputText = '';
       const inputValue = 0;
-      const inputPlaceholder = 'Add post title';
+      const inputPlaceholder = 'Server name';
       const focus = false;
 
       return `\
-        <a style="position: relative; display: block; margin-bottom: 20px; background-color: #EEE; border-radius: 5px; font-size: 24px; text-decoration: none;" onclick="mail:focus:title">
+        <a style="position: relative; display: block; margin-bottom: 20px; background-color: #EEE; border-radius: 5px; font-size: 24px; text-decoration: none;" onclick="servers:focus:title">
           ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
           <div>${inputText}</div>
           ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}
         </a>
       `;
     })();
-    const messageSrc = (() => {
-      const inputText = '';
-      const inputValue = 0;
-      const inputPlaceholder = 'Write a message';
-      const focus = false;
+    const configSrc = (() => {
+      return ''; // XXX
 
       return `\
-        <a style="position: relative; display: block; height: 100px; margin-bottom: 20px; background-color: #EEE; border-radius: 5px; font-size: 16px; text-decoration: none;" onclick="mail:focus:title">
+        <a style="position: relative; display: block; height: 100px; margin-bottom: 20px; background-color: #EEE; border-radius: 5px; font-size: 16px; text-decoration: none;" onclick="servers:focus:message">
           ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
           <div>${inputText}</div>
           ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}
@@ -147,16 +153,16 @@ const getNewServerPageSrc = () => {
     })();
     const buttonsSrc = `\
       <div style="display: flex; flex-grow: 1; font-size: 16px; line-height: 1.4;">
-        <a style="display: block; padding: 5px 15px; margin-right: 10px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:postThread">Post</a>
-        <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="mail:threads">Cancel</a>
+        <a style="display: block; padding: 5px 15px; margin-right: 10px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="servers:createServer">Create</a>
+        <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="servers:list">Cancel</a>
       </div>
     `;
 
     return `\
       <div style="display: flex; padding: 20px 30px; margin-bottom: auto; flex-grow: 1; flex-direction: column;">
         ${headerSrc}
-        ${titleSrc}
-        ${messageSrc}
+        ${nameSrc}
+        ${configSrc}
         ${buttonsSrc}
       </div>
     `;
@@ -175,11 +181,11 @@ const getThreadSidebarSrc = () => {
   const searchSrc = (() => {
     const inputText = '';
     const inputValue = 0;
-    const inputPlaceholder = 'Search threads';
+    const inputPlaceholder = 'Search servers';
     const focus = false;
 
     return `\
-      <a style="position: relative; display: block; margin-bottom: 20px; background-color: #FFF; text-decoration: none;" onclick="mail:focus:search">
+      <a style="position: relative; display: block; margin-bottom: 20px; background-color: #FFF; text-decoration: none;" onclick="servers:focus:search">
         ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
         <div>${inputText}</div>
         ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}

@@ -198,11 +198,11 @@ class Servers {
 
                     _updatePages();
                   } else if (onclick === 'servers:newServer') {
-                    serversState.page = 'newThread';
+                    serversState.page = 'newServer';
 
                     _updatePages();
                   } else if (match = onclick.match(/^servers:server:([0-9]+)$/)) {
-                    // const threadIndex = match[1];
+                    // const serverIndex = match[1];
 
                     serversState.page = 'server';
 

@@ -1,5 +1,6 @@
 const timeago = require('time-ago')();
 const {
+  WIDTH,
   HEIGHT,
   MAIL_HEIGHT,
 } = require('../constants/mail');
@@ -53,7 +54,7 @@ const getThreadsPageSrc = ({page}) => {
     const threadsSrc = (() => {
       const _getThreadSrc = index => {
         const author = _makeId();
-        const created = Date.now() - (60 * 2 * 1000);
+        const created = Date.now() - Math.floor((Math.random() * 60 * 24) * 60 * 1000);
 
         return `\
           <a style="position: relative; display: flex; margin-bottom: 10px; background-color: #EEE; font-size: 16px; line-height: 1.4; text-decoration: none; flex-direction: column;" onclick="mail:thread:${index}">
@@ -90,7 +91,7 @@ const getThreadsPageSrc = ({page}) => {
   const rightSrc = getThreadSidebarSrc();
 
   return `\
-    <div style="display: flex; font-size: 30px; line-height: 1.4;">
+    <div style="display: flex; width: ${WIDTH}px; font-size: 30px; line-height: 1.4;">
       ${leftSrc}
       ${rightSrc}
     </div>
@@ -141,7 +142,7 @@ const getNewThreadPageSrc = () => {
       const focus = false;
 
       return `\
-        <a style="position: relative; display: block; height: 100px; margin-bottom: 20px; background-color: #EEE; border-radius: 5px; font-size: 16px; text-decoration: none;" onclick="mail:focus:title">
+        <a style="position: relative; display: block; height: 100px; margin-bottom: 20px; background-color: #EEE; border-radius: 5px; font-size: 16px; text-decoration: none;" onclick="mail:focus:message">
           ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
           <div>${inputText}</div>
           ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}

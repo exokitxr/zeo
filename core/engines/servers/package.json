@@ -5,6 +5,6 @@
   "keywords": [],
   "client": "client.js",
   "dependencies": {
-    "time-ago": "^0.1.0"
+    "pretty-ms": "^2.1.0"
   }
 }
