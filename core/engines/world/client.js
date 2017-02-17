@@ -1279,6 +1279,12 @@ class World {
                         handsGrabber.release();
 
                         elementManager.add(newTagMesh);
+                        const {item} = newTagMesh;
+                        const {attributes} = item;
+                        if (attributes.position) {
+                          const {position, rotation, scale} = _decomposeObjectMatrixWorld(newTagMesh);
+                          item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                        }
 
                         _saveTags();
 
