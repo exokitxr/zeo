@@ -127,6 +127,7 @@ class Bag {
           return result;
         })();
         scene.add(bagMesh);
+        rend.registerAuxObject('bagMesh', bagMesh);
 
         const _update = () => {
           const {hmd, gamepads} = webvr.getStatus();

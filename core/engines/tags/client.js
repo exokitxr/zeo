@@ -732,6 +732,7 @@ class Tags {
                 }
 
                 const tagMeshes = [];
+                rend.registerAuxObject('tagMeshes', tagMeshes);
                 const tagClassMeshes = {
                   elements: [],
                   npm: [],

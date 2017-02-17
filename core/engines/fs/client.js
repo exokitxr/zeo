@@ -414,6 +414,7 @@ class Fs {
         }
 
         const fileMeshes = [];
+        rend.registerAuxObject('fileMeshes', fileMeshes);
         class FsApi extends EventEmitter {
           makeFile(fileSpec) {
             const object = new THREE.Object3D();

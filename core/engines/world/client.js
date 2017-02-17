@@ -673,7 +673,7 @@ class World {
 
                 return result;
               })();
-              rend.addMenuMesh('worldMesh', worldMesh);
+              rend.registerMenuMesh('worldMesh', worldMesh);
 
               const equipmentMesh = (() => {
                 const result = new THREE.Object3D();
@@ -725,7 +725,7 @@ class World {
 
                 return result;
               })();
-              rend.addMenuMesh('equipmentMesh', equipmentMesh);
+              rend.registerMenuMesh('equipmentMesh', equipmentMesh);
 
               const _makePositioningMesh = ({opacity = 1} = {}) => {
                 const geometry = (() => {
@@ -1552,9 +1552,6 @@ class World {
               _initialize();
 
               this._cleanup = () => {
-                rend.removeMenuMesh('worldMesh');
-                rend.removeMenuMesh('equipmentMesh');
-
                 SIDES.forEach(side => {
                   scene.remove(menuDotMeshes[side]);
                   scene.remove(menuBoxMeshes[side]);

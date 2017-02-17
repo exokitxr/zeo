@@ -105,6 +105,11 @@ class Rend {
         let uiTimer = null;
         let menu = null;
         let menuMesh = null;
+        let auxObjects = {
+          bagMesh: null,
+          tagMeshes: null,
+          fileMeshes: null,
+        };
 
         const menuState = {
           open: true,
@@ -1150,28 +1155,78 @@ class Rend {
                       const factor = animation.getValue();
                       const value = ((1 - factor) * startValue) + (factor * endValue);
 
+                      const {bagMesh: {headMesh, bodyMesh, armMeshes}, tagMeshes, fileMeshes} = auxObjects;
+                      const animatedMeshSpecs = [
+                        {
+                          mesh: menuMesh,
+                          direction: 'y',
+                        },
+                        {
+                          mesh: keyboardMesh,
+                          direction: 'x',
+                        },
+                        {
+                          mesh: headMesh,
+                          direction: 'x',
+                        },
+                        {
+                          mesh: bodyMesh,
+                          direction: 'x',
+                        },
+                      ]
+                        .concat(armMeshes.map(armMesh => ({
+                          mesh: armMesh,
+                          direction: 'x',
+                        })))
+                        .concat(tagMeshes.map(tagMesh => ({
+                          mesh: tagMesh,
+                          direction: 'y',
+                        })))
+                        .concat(fileMeshes.map(fileMesh => ({
+                          mesh: fileMesh,
+                          direction: 'y',
+                        })));
+
                       if (factor < 1) {
                         if (value > 0.001) {
-                          menuMesh.scale.set(1, value, 1);
-                          keyboardMesh.scale.set(value, 1, 1);
+                          animatedMeshSpecs.forEach(meshSpec => {
+                            const {direction, mesh} = meshSpec;
 
-                          menuMesh.visible = true;
-                          keyboardMesh.visible = true;
+                            switch (direction) {
+                              case 'x':
+                                mesh.scale.set(value, 1, 1);
+                                break;
+                              case 'y':
+                                mesh.scale.set(1, value, 1);
+                                break;
+                              case 'z':
+                                mesh.scale.set(1, 1, value);
+                                break;
+                            }
+
+                            if (!mesh.visible) {
+                              mesh.visible = true;
+                            }
+                          });
                         } else {
-                          menuMesh.visible = false;
-                          keyboardMesh.visible = false;
+                          animatedMeshSpecs.forEach(meshSpec => {
+                            const {mesh} = meshSpec;
+
+                            mesh.visible = false;
+                          });
                         }
                       } else {
-                        menuMesh.scale.set(1, 1, 1);
-                        keyboardMesh.scale.set(1, 1, 1);
+                        animatedMeshSpecs.forEach(meshSpec => {
+                          const {mesh} = meshSpec;
 
-                        if (open) {
-                          menuMesh.visible = true;
-                          keyboardMesh.visible = true;
-                        } else {
-                          menuMesh.visible = false;
-                          keyboardMesh.visible = false;
-                        }
+                          mesh.scale.set(1, 1, 1);
+
+                          if (open && !mesh.visible) {
+                            mesh.visible = true;
+                          } else if (!open && mesh.visible) {
+                            mesh.visible = false;
+                          }
+                        });
 
                         menuState.animation = null;
                       }
@@ -1402,15 +1457,13 @@ class Rend {
                 return menuMesh;
               }
 
-              addMenuMesh(name, object) {
+              registerMenuMesh(name, object) {
                 menuMesh.add(object);
                 menuMesh[name] = object;
               }
 
-              removeMenuMesh(name) {
-                const object = menuMesh[name];
-                menuMesh.remove(object);
-                menuMesh[name] = null;
+              registerAuxObject(name, object) {
+                auxObjects[name] = object;
               }
 
               update() { // XXX move this

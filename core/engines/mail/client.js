@@ -217,7 +217,7 @@ class Mail {
 
                   return mesh;
                 })();
-                rend.addMenuMesh('mailMesh', menuMesh);
+                rend.registerMenuMesh('mailMesh', menuMesh);
 
                 const _updatePages = menuUtils.debounce(next => {
                   const pageSpecs = (() => {
@@ -484,8 +484,6 @@ class Mail {
                 rend.on('update', _update);
 
                 this._cleanup = () => {
-                  rend.removeMenuMesh('mailMesh');
-
                   for (let i = 0; i < mailMeshes.length; i++) {
                     const mailMesh = mailMeshes[i];
                     mailMesh.parent.remove(mailMesh);

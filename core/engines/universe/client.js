@@ -274,7 +274,7 @@ class Universe {
 
                 return object;
               })();
-              rend.addMenuMesh('universeMesh', menuMesh);
+              rend.registerMenuMesh('universeMesh', menuMesh);
 
               const backgroundDotMeshes = {
                 left: biolumi.makeMenuDotMesh(),
@@ -481,8 +481,6 @@ class Universe {
               rend.on('update', _update);
 
               this._cleanup = () => {
-                rend.removeMenuMesh('universeMesh');
-
                 SIDES.forEach(side => {
                   scene.remove(backgroundDotMeshes[side]);
                   scene.remove(backgroundBoxMeshes[side]);

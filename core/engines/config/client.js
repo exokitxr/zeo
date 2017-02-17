@@ -243,7 +243,7 @@ class Config {
 
                 return object;
               })();
-              rend.addMenuMesh('configMesh', configMesh);
+              rend.registerMenuMesh('configMesh', configMesh);
 
               const statsMesh = (() => {
                 const object = new THREE.Object3D();
@@ -275,7 +275,7 @@ class Config {
 
                 return object;
               })();
-              rend.addMenuMesh('statsMesh', statsMesh);
+              rend.registerMenuMesh('statsMesh', statsMesh);
 
               const configBoxMeshes = {
                 left: biolumi.makeMenuBoxMesh(),
@@ -542,9 +542,6 @@ class Config {
               rend.on('updateEnd', _updateEnd);
 
               this._cleanup = () => {
-                rend.removeMenuMesh('configMesh');
-                rend.removeMenuMesh('statsMesh');
-
                 SIDES.forEach(side => {
                   scene.remove(configBoxMeshes[side]);
                   scene.remove(configDotMeshes[side]);
