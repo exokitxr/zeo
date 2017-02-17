@@ -60,61 +60,69 @@ class Bag {
 
           const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1, 1, 1, 1);
 
-          const pocketMeshes = [];
-          const pocketHighlightMeshes = [];
-          [
-            {
-              name: 'mesh8',
-              position: [0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET], // top right
-            },
-            {
-              name: 'mesh7',
-              position: [0.2, BAG_Y_OFFSET + 0.05, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh6',
-              position: [0.2, BAG_Y_OFFSET - 0.05, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh5',
-              position: [0.2, BAG_Y_OFFSET - 0.15, BAG_Z_OFFSET], // bottom right
-            },
-            {
-              name: 'mesh4',
-              position: [-0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET], // top left
-            },
-            {
-              name: 'mesh3',
-              position: [-0.2, BAG_Y_OFFSET + 0.05, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh2',
-              position: [-0.2, BAG_Y_OFFSET - 0.05, BAG_Z_OFFSET],
-            },
-            {
-              name: 'mesh1',
-              position: [-0.2, BAG_Y_OFFSET - 0.15, BAG_Z_OFFSET], // bottom left
-            },
-          ].forEach(({name, position: [x, y, z]}, i) => {
+          const _makeMesh = ({position: [x, y, z]}) => {
             const pocketMesh = new THREE.Mesh(geometry, WIREFRAME_DARK_MATERIAL);
             pocketMesh.position.x = x;
             pocketMesh.position.y = y;
             pocketMesh.position.z = z;
             pocketMesh.rotation.x = -Math.PI / 2;
             result.add(pocketMesh);
-            pocketMeshes.push(pocketMesh);
 
-            const pocketHighlightMesh = new THREE.Mesh(geometry, WIREFRAME_HIGHLIGHT_MATERIAL);
-            pocketHighlightMesh.position.x = x;
-            pocketHighlightMesh.position.y = y;
-            pocketHighlightMesh.position.z = z;
-            pocketHighlightMesh.visible = false;
-            pocketHighlightMesh.weaponMesh = null;
-            result.add(pocketHighlightMesh);
-            pocketHighlightMeshes.push(pocketHighlightMesh);
+            const highlightMesh = new THREE.Mesh(geometry, WIREFRAME_HIGHLIGHT_MATERIAL);
+            highlightMesh.position.x = x;
+            highlightMesh.position.y = y;
+            highlightMesh.position.z = z;
+            highlightMesh.visible = false;
+            result.add(highlightMesh);
+            pocketMesh.highlightMesh = highlightMesh;
+
+            return pocketMesh;
+          };
+
+          const headMesh = _makeMesh({
+            position: [0, 0.1, 0.05],
           });
+          result.headMesh = headMesh;
+          const bodyMesh = _makeMesh({
+            position: [0, BAG_Y_OFFSET, BAG_Z_OFFSET],
+          });
+          result.bodyMesh = bodyMesh;
+          const armMeshes = [
+            {
+              position: [0.25, -0.1, 0.05], // right
+            },
+            {
+              position: [-0.25, -0.1, 0.05], // left
+            },
+          ].map(_makeMesh);
+          result.armMeshes = armMeshes;
+          const pocketMeshes = [
+            {
+              position: [0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET], // top right
+            },
+            {
+              position: [0.2, BAG_Y_OFFSET + 0.05, BAG_Z_OFFSET],
+            },
+            {
+              position: [0.2, BAG_Y_OFFSET - 0.05, BAG_Z_OFFSET],
+            },
+            {
+              position: [0.2, BAG_Y_OFFSET - 0.15, BAG_Z_OFFSET], // bottom right
+            },
+            {
+              position: [-0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET], // top left
+            },
+            {
+              position: [-0.2, BAG_Y_OFFSET + 0.05, BAG_Z_OFFSET],
+            },
+            {
+              position: [-0.2, BAG_Y_OFFSET - 0.05, BAG_Z_OFFSET],
+            },
+            {
+              position: [-0.2, BAG_Y_OFFSET - 0.15, BAG_Z_OFFSET], // bottom left
+            },
+          ].map(_makeMesh);
           result.pocketMeshes = pocketMeshes;
-          result.pocketHighlightMeshes = pocketHighlightMeshes;
 
           return result;
         })();
@@ -127,12 +135,12 @@ class Bag {
           const hmdRotation = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order);
           bagMesh.rotation.y = hmdRotation.y;
 
-          const {pocketMeshes, pocketHighlightMeshes} = bagMesh;
+          const {pocketMeshes} = bagMesh;
           pocketMeshes.forEach((pocketMesh, i) => {
             pocketMesh.visible = true;
 
-            const pocketHighlightMesh = pocketHighlightMeshes[i];
-            pocketHighlightMesh.visible = false;
+            const {highlightMesh} = pocketMesh;
+            highlightMesh.visible = false;
           });
           SIDES.forEach(side => {
             const gamepad = gamepads[side];
@@ -161,8 +169,8 @@ class Bag {
                 const closestPocketMesh = pocketMeshes[closestPocketMeshIndex];
                 closestPocketMesh.visible = false;
 
-                const closestPocketHighlightMesh = pocketHighlightMeshes[closestPocketMeshIndex];
-                closestPocketHighlightMesh.visible = true;
+                const {highlightMesh: closestHighlightMesh} = closestPocketMesh;
+                closestHighlightMesh.visible = true;
               } else {
                 hoverPocketState.pocketMeshIndex = -1;
               }
