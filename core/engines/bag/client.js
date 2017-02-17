@@ -47,16 +47,6 @@ class Bag {
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
 
-        const WIREFRAME_DARK_MATERIAL = new THREE.MeshBasicMaterial({
-          color: 0x808080,
-          wireframe: true,
-          transparent: true,
-        });
-        const WIREFRAME_HIGHLIGHT_MATERIAL = new THREE.MeshBasicMaterial({
-          color: 0x0000FF,
-          wireframe: true,
-        });
-
         const _makeEquipmentHoverState = () => ({
           equipmentIndex: -1,
         });
@@ -71,22 +61,19 @@ class Bag {
           const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1, 1, 1, 1);
 
           const _makeMesh = ({position: [x, y, z]}) => {
-            const equipmentMesh = new THREE.Mesh(geometry, WIREFRAME_DARK_MATERIAL);
-            equipmentMesh.position.x = x;
-            equipmentMesh.position.y = y;
-            equipmentMesh.position.z = z;
-            equipmentMesh.rotation.x = -Math.PI / 2;
-            result.add(equipmentMesh);
+            const material = new THREE.MeshBasicMaterial({
+              color: 0x808080,
+              wireframe: true,
+              transparent: true,
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.x = x;
+            mesh.position.y = y;
+            mesh.position.z = z;
+            mesh.rotation.x = -Math.PI / 2;
+            result.add(mesh);
 
-            const highlightMesh = new THREE.Mesh(geometry, WIREFRAME_HIGHLIGHT_MATERIAL);
-            highlightMesh.position.x = x;
-            highlightMesh.position.y = y;
-            highlightMesh.position.z = z;
-            highlightMesh.visible = false;
-            result.add(highlightMesh);
-            equipmentMesh.highlightMesh = highlightMesh;
-
-            return equipmentMesh;
+            return mesh;
           };
 
           const headMesh = _makeMesh({
@@ -149,12 +136,6 @@ class Bag {
           bagMesh.rotation.y = hmdRotation.y;
 
           const {equipmentBoxMeshes} = bagMesh;
-          equipmentBoxMeshes.forEach(equipmentBoxMesh => {
-            equipmentBoxMesh.visible = true;
-
-            const {highlightMesh} = equipmentBoxMesh;
-            highlightMesh.visible = false;
-          });
           SIDES.forEach(side => {
             const gamepad = gamepads[side];
 
@@ -178,17 +159,19 @@ class Bag {
                 const {index: closestEquipmentBoxMeshIndex} = closestEquipmentBoxMeshSpec;
 
                 equipmentHoverState.equipmentIndex = closestEquipmentBoxMeshIndex;
-
-                const closestEquipmentBoxMesh = equipmentBoxMeshes[closestEquipmentBoxMeshIndex];
-                closestEquipmentBoxMesh.visible = false;
-
-                const {highlightMesh: closestHighlightMesh} = closestEquipmentBoxMesh;
-                closestHighlightMesh.visible = true;
               } else {
                 equipmentHoverState.equipmentIndex = -1;
               }
             }
           });
+          for (let i = 0; i < equipmentBoxMeshes.length; i++) {
+            const equipmentBoxMesh = equipmentBoxMeshes[i];
+            const hovered = SIDES.some(side => {
+              const equipmentHoverState = equipmentHoverStates[side];
+              return equipmentHoverState.equipmentIndex === i;
+            });
+            equipmentBoxMesh.material.color = new THREE.Color(hovered ? 0x0000FF : 0x808080);
+          }
         };
         rend.on('update', _update);
 
