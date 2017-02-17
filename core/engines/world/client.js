@@ -1020,7 +1020,7 @@ class World {
                   }
 
                   // right, left pockets
-                  for (let i = 5; i < 12 && i < equipmentTagMeshes.length; i++) {
+                  for (let i = 4; i < 12 && i < equipmentTagMeshes.length; i++) {
                     const equipmentTagMesh = equipmentTagMeshes[i];
 
                     if (equipmentTagMesh) {
