@@ -120,18 +120,12 @@ class World {
             width: WIDTH,
             height: HEIGHT,
           }),
-          biolumi.requestUi({
-            width: WIDTH,
-            height: HEIGHT,
-          }),
         ])
           .then(([
             worldUi,
-            equipmentUi,
             inventoryUi,
           ]) => ({
             worldUi,
-            equipmentUi,
             inventoryUi,
           }));
 
@@ -149,7 +143,6 @@ class World {
             worldTimer,
             {
               worldUi,
-              equipmentUi,
               inventoryUi,
             },
           ]) => {
@@ -263,7 +256,7 @@ class World {
               const _saveTags = menuUtils.debounce(next => {
                 tagsJson = {
                   elements: tags.getTagsClass('elements').map(({item}) => item),
-                  equipment: tags.getTagsClass('equipment').map(equipmentMesh => equipmentMesh ? equipmentMesh.item : null),
+                  equipment: tags.getTagsClass('equipment').map(equipment => equipment ? equipment.item : null),
                 };
                 const tagsJsonString = JSON.stringify(tagsJson);
 
@@ -514,7 +507,6 @@ class World {
                 cancelRemoteRequest: null,
                 cancelModRequest: null,
               };
-              const equipmentState = {};
               const focusState = {
                 type: '',
               };
@@ -551,38 +543,6 @@ class World {
                 type: 'world',
                 state: {
                   elements: elementsState,
-                  npm: npmState,
-                  focus: focusState,
-                },
-                immediate: true,
-              });
-              equipmentUi.pushPage(({equipment, npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
-                const focus = type === 'npm';
-
-                return [
-                  {
-                    type: 'html',
-                    src: worldRenderer.getEquipmentPageSrc(equipment),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH / 2,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                  {
-                    type: 'html',
-                    src: worldRenderer.getNpmPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
-                    x: WIDTH / 2,
-                    y: 0,
-                    w: WIDTH / 2,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                ];
-              }, {
-                type: 'equipment',
-                state: {
-                  equipment: equipmentState,
                   npm: npmState,
                   focus: focusState,
                 },
@@ -675,58 +635,6 @@ class World {
               })();
               rend.registerMenuMesh('worldMesh', worldMesh);
 
-              const equipmentMesh = (() => {
-                const result = new THREE.Object3D();
-                result.visible = false;
-
-                const menuMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
-
-                  const menuMaterial = biolumi.makeMenuMaterial();
-
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.position.z = -1;
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
-
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
-                    const material = transparentMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
-                    return mesh;
-                  })();
-                  mesh.add(shadowMesh);
-
-                  return mesh;
-                })();
-                result.add(menuMesh);
-                result.menuMesh = menuMesh;
-
-                const equipmentMesh = (() => {
-                  const object = new THREE.Object3D();
-                  object.position.x = -0.5 - 0.1;
-                  object.position.y = 0.2;
-                  object.position.z = -1 + 0.05;
-
-                  const containerMesh = _makeContainerMesh();
-                  object.add(containerMesh);
-                  object.containerMesh = containerMesh;
-
-                  return object;
-                })();
-                result.add(equipmentMesh);
-                result.equipmentMesh = equipmentMesh;
-
-                return result;
-              })();
-              rend.registerMenuMesh('equipmentMesh', equipmentMesh);
-
               const _makePositioningMesh = ({opacity = 1} = {}) => {
                 const geometry = (() => {
                   const result = new THREE.BufferGeometry();
@@ -786,7 +694,6 @@ class World {
                   const tab = rend.getTab();
                   switch (tab) {
                     case 'world': return worldUi.getPages();
-                    case 'equipment': equipmentUi.getPages();
                     default: return [];
                   }
                 })();
@@ -809,12 +716,6 @@ class World {
                         npm: npmState,
                         focus: focusState,
                       }, pend);
-                    } else if (type === 'equipment') {
-                      page.update({
-                        equipment: equipmentState,
-                        npm: npmState,
-                        focus: focusState,
-                      }, pend);
                     } else {
                       pend();
                     }
@@ -828,116 +729,52 @@ class World {
                 const tab = rend.getTab();
 
                 const _updateTextures = () => {
-                  const _updateWorldTextures = () => {
-                    const {
-                      menuMesh: {
-                        menuMaterial,
-                      },
-                    } = worldMesh;
-                    const uiTime = rend.getUiTime();
-
-                    biolumi.updateMenuMaterial({
-                      ui: worldUi,
+                  const {
+                    menuMesh: {
                       menuMaterial,
-                      uiTime,
-                    });
-                  };
-                  const _updateEquipmentTextures = () => {
-                    const {
-                      menuMesh: {
-                        menuMaterial,
-                      },
-                    } = equipmentMesh;
-                    const uiTime = rend.getUiTime();
+                    },
+                  } = worldMesh;
+                  const uiTime = rend.getUiTime();
 
-                    biolumi.updateMenuMaterial({
-                      ui: equipmentUi,
-                      menuMaterial,
-                      uiTime,
-                    });
-                  };
-
-                  if (tab === 'world') {
-                    _updateWorldTextures();
-                  } else if (tab === 'equipment') {
-                    _updateEquipmentTextures();
-                  }
+                  biolumi.updateMenuMaterial({
+                    ui: worldUi,
+                    menuMaterial,
+                    uiTime,
+                  });
                 };
                 const _updateAnchors = () => {
-                  const _updateWorldMenuAnchors = () => {
-                    const {menuMesh} = worldMesh;
-                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
-                    const {gamepads} = webvr.getStatus();
+                  const {menuMesh} = worldMesh;
+                  const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                  const {gamepads} = webvr.getStatus();
 
-                    SIDES.forEach(side => {
-                      const gamepad = gamepads[side];
+                  SIDES.forEach(side => {
+                    const gamepad = gamepads[side];
 
-                      if (gamepad) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    if (gamepad) {
+                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                        const menuHoverState = menuHoverStates[side];
-                        const menuDotMesh = menuDotMeshes[side];
-                        const menuBoxMesh = menuBoxMeshes[side];
+                      const menuHoverState = menuHoverStates[side];
+                      const menuDotMesh = menuDotMeshes[side];
+                      const menuBoxMesh = menuBoxMeshes[side];
 
-                        biolumi.updateAnchors({
-                          objects: [{
-                            matrixObject: menuMatrixObject,
-                            ui: worldUi,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                          }],
-                          hoverState: menuHoverState,
-                          dotMesh: menuDotMesh,
-                          boxMesh: menuBoxMesh,
-                          controllerPosition,
-                          controllerRotation,
-                        })
-                      }
-                    });
-                  };
-                  const _updateEquipmentMenuAnchors = () => {
-                    const {menuMesh} = equipmentMesh;
-                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
-                    const {gamepads} = webvr.getStatus();
-
-                    SIDES.forEach(side => {
-                      const gamepad = gamepads[side];
-
-                      if (gamepad) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-
-                        const menuHoverState = menuHoverStates[side];
-                        const menuDotMesh = menuDotMeshes[side];
-                        const menuBoxMesh = menuBoxMeshes[side];
-
-                        biolumi.updateAnchors({
-                          objects: [{
-                            matrixObject: menuMatrixObject,
-                            ui: worldUi,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                          }],
-                          hoverState: menuHoverState,
-                          dotMesh: menuDotMesh,
-                          boxMesh: menuBoxMesh,
-                          controllerPosition,
-                          controllerRotation,
-                        })
-                      }
-                    });
-                  };
-
-                  if (tab === 'world') {
-                    _updateWorldMenuAnchors();
-                  } else if (tab === 'equipment') {
-                    _updateEquipmentMenuAnchors();
-                  }
+                      biolumi.updateAnchors({
+                        objects: [{
+                          matrixObject: menuMatrixObject,
+                          ui: worldUi,
+                          width: WIDTH,
+                          height: HEIGHT,
+                          worldWidth: WORLD_WIDTH,
+                          worldHeight: WORLD_HEIGHT,
+                          worldDepth: WORLD_DEPTH,
+                        }],
+                        hoverState: menuHoverState,
+                        dotMesh: menuDotMesh,
+                        boxMesh: menuBoxMesh,
+                        controllerPosition,
+                        controllerRotation,
+                      })
+                    }
+                  });
                 };
                 const _updateEquipmentPositions = () => {
                   const equipmentTagMeshes = tags.getTagsClass('equipment');
@@ -1043,7 +880,7 @@ class World {
               rend.on('update', _update);
 
               const _tabchange = tab => {
-                if (tab === 'world' || tab === 'equipment') {
+                if (tab === 'world') {
                   npmState.inputText = '';
                   npmState.inputIndex = 0;
                   npmState.inputValue = 0;
@@ -1082,7 +919,7 @@ class World {
               const _trigger = e => {
                 const tab = rend.getTab();
 
-                if (tab === 'world' || tab === 'equipment') {
+                if (tab === 'world') {
                   const {side} = e;
                   const menuHoverState = menuHoverStates[side];
                   const {intersectionPoint} = menuHoverState;
@@ -1424,7 +1261,7 @@ class World {
               const _keydown = e => {
                 const tab = rend.getTab();
 
-                if (tab === 'world' || tab === 'equipment') {
+                if (tab === 'world') {
                   const {type} = focusState;
 
                   if (type === 'npm') {
