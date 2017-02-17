@@ -18,7 +18,7 @@ import menuUtils from './lib/utils/menu';
 const SIDES = ['left', 'right'];
 
 const DEFAULT_GRAB_RADIUS = 0.1;
-const DEFAULT_TAG_MATRIX = [
+const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
@@ -919,7 +919,7 @@ class Tags {
 
                   grabTag(side, tagMesh) {
                     const {item} = tagMesh;
-                    item.matrix = DEFAULT_TAG_MATRIX;
+                    item.matrix = DEFAULT_MATRIX;
 
                     const grabber = hands.grab(side, tagMesh);
                     grabber.on('update', ({position, rotation}) => {

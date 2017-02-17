@@ -10,7 +10,7 @@ import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
-const DEFAULT_QUEST_MATRIX = [
+const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
@@ -266,7 +266,6 @@ class World {
               const _saveTags = menuUtils.debounce(next => {
                 tagsJson = {
                   elements: tags.getTagsClass('elements').map(({item}) => item),
-                  free: tags.getFreeTags().map(({item}) => item),
                   equipment: tags.getTagsClass('equipment').map(equipmentMesh => equipmentMesh ? equipmentMesh.item : null),
                 };
                 const tagsJsonString = JSON.stringify(tagsJson);
@@ -487,26 +486,16 @@ class World {
 
               class EquipmentManager {
                 set(index, tagMesh) {
-                  // place tag into container
-                  const {
-                    equipmentMesh: {
-                      containerMesh: equipmentContainerMesh,
-                    },
-                  } = equipmentMesh;
-                  equipmentContainerMesh.add(tagMesh); // XXX attach to equipment box meshes instead
+                  // register tag
                   tags.setTag('equipment', index, tagMesh);
-                  const equipmentTagMeshes = tags.getTagsClass('equipment');
-                  _alignTagMeshes(equipmentTagMeshes);
 
                   // reify tag
                   _reifyTag(tagMesh);
                 }
 
                 /* unset(index) {
-                  // remove tag from container
+                  // unregister tag
                   tags.unsetTag('equipment', index);
-                  const equipmentTagMeshes = tags.getTagsClass('equipment');
-                  _alignTagMeshes(equipmentTagMeshes);
 
                   // unreify tag
                   _unreifyTag(tagMesh);
@@ -514,8 +503,6 @@ class World {
 
                 move(oldIndex, newIndex) {
                   tags.moveTag('equipment', oldIndex, newIndex);
-                  const equipmentTagMeshes = tags.getTagsClass('equipment');
-                  _alignTagMeshes(equipmentTagMeshes);
                 }
               }
               const equipmentManager = new EquipmentManager();
@@ -535,22 +522,6 @@ class World {
               const equipmentState = {};
               const focusState = {
                 type: '',
-              };
-
-              const _makeContainerHoverState = () => ({
-                hovered: false,
-              });
-              const elementsContainerHoverStates = {
-                left: _makeContainerHoverState(),
-                right: _makeContainerHoverState(),
-              };
-              const npmContainerHoverStates = {
-                left: _makeContainerHoverState(),
-                right: _makeContainerHoverState(),
-              };
-              const equipmentContainerHoverStates = {
-                left: _makeContainerHoverState(),
-                right: _makeContainerHoverState(),
               };
 
               const menuHoverStates = {
@@ -966,120 +937,11 @@ class World {
                       }
                     });
                   };
-                  const _updateWorldAnchors = () => {
-                    const {
-                      elementsMesh: {
-                        containerMesh: elementsContainerMesh,
-                      },
-                      npmMesh: {
-                        containerMesh: npmContainerMesh,
-                      },
-                    } = worldMesh;
-
-                    const elementsContainerMatrixObject = _decomposeObjectMatrixWorld(elementsContainerMesh);
-                    const {position: elementsPosition, rotation: elementsRotation, scale: elementsScale} = elementsContainerMatrixObject;
-                    const elementsBoxTarget = geometryUtils.makeBoxTarget(
-                      elementsPosition,
-                      elementsRotation,
-                      elementsScale,
-                      new THREE.Vector3(elementsContainerMesh.width, elementsContainerMesh.height, elementsContainerMesh.depth)
-                    );
-
-                    const npmContainerMatrixObject = _decomposeObjectMatrixWorld(npmContainerMesh);
-                    const {position: npmPosition, rotation: npmRotation, scale: npmScale} = npmContainerMatrixObject;
-                    const npmBoxTarget = geometryUtils.makeBoxTarget(
-                      npmPosition,
-                      npmRotation,
-                      npmScale,
-                      new THREE.Vector3(npmContainerMesh.width, npmContainerMesh.height, npmContainerMesh.depth)
-                    );
-
-                    const {gamepads} = webvr.getStatus();
-
-                    SIDES.forEach(side => {
-                      const gamepad = gamepads[side];
-
-                      if (gamepad) {
-                        const {position: controllerPosition} = gamepad;
-
-                        const elementsContainerHoverState = elementsContainerHoverStates[side];
-                        elementsContainerHoverState.hovered = elementsBoxTarget.containsPoint(controllerPosition);
-
-                        const npmContainerHoverState = npmContainerHoverStates[side];
-                        npmContainerHoverState.hovered = npmBoxTarget.containsPoint(controllerPosition);
-                      }
-                    });
-                  };
-                  const _updateEquipmentAnchors = () => {
-                    const {
-                      equipmentMesh: {
-                        containerMesh: equipmentContainerMesh,
-                      },
-                    } = equipmentMesh;
-
-                    const equipmentContainerMatrixObject = _decomposeObjectMatrixWorld(equipmentContainerMesh);
-                    const {position: equipmentPosition, rotation: equipmentRotation, scale: equipmentScale} = equipmentContainerMatrixObject;
-                    const equipmentBoxTarget = geometryUtils.makeBoxTarget(
-                      equipmentPosition,
-                      equipmentRotation,
-                      equipmentScale,
-                      new THREE.Vector3(equipmentContainerMesh.width, equipmentContainerMesh.height, equipmentContainerMesh.depth)
-                    );
-
-                    const {gamepads} = webvr.getStatus();
-
-                    SIDES.forEach(side => {
-                      const gamepad = gamepads[side];
-
-                      if (gamepad) {
-                        const {position: controllerPosition} = gamepad;
-
-                        const equipmentContainerHoverState = equipmentContainerHoverStates[side];
-                        equipmentContainerHoverState.hovered = equipmentBoxTarget.containsPoint(controllerPosition);
-                      }
-                    });
-                  };
 
                   if (tab === 'world') {
                     _updateWorldMenuAnchors();
-                    _updateWorldAnchors();
                   } else if (tab === 'equipment') {
                     _updateEquipmentMenuAnchors();
-                    _updateEquipmentAnchors();
-                  }
-                };
-                const _updateAnchorStyles = () => {
-                  const _updateWorldAnchorStyles = () => {
-                    const {
-                      elementsMesh: {
-                        containerMesh: elementsContainerMesh,
-                      }
-                    } = worldMesh;
-                    const elementsHovered = SIDES.some(side => elementsContainerHoverStates[side].hovered);
-                    elementsContainerMesh.material.color = new THREE.Color(elementsHovered ? 0x0000FF : 0x808080);
-
-                    const {
-                      npmMesh: {
-                        containerMesh: npmContainerMesh,
-                      }
-                    } = worldMesh;
-                    const npmHovered = SIDES.some(side => npmContainerHoverStates[side].hovered);
-                    npmContainerMesh.material.color = new THREE.Color(npmHovered ? 0x0000FF : 0x808080);
-                  };
-                  const _updateEquipmentAnchorStyles = () => {
-                    const {
-                      equipmentMesh: {
-                        containerMesh: equipmentContainerMesh,
-                      },
-                    } = equipmentMesh;
-                    const equipmentHovered = SIDES.some(side => equipmentContainerHoverStates[side].hovered);
-                    equipmentContainerMesh.material.color = new THREE.Color(equipmentHovered ? 0x0000FF : 0x808080);
-                  };
-
-                  if (tab === 'world') {
-                    _updateWorldAnchorStyles();
-                  } else if (tab === 'equipment') {
-                    _updateEquipmentAnchorStyles();
                   }
                 };
                 const _updateEquipmentPositions = () => {
@@ -1089,7 +951,7 @@ class World {
 
                   const bagMesh = bag.getBagMesh();
                   bagMesh.updateMatrixWorld();
-                  const {pocketMeshes} = bagMesh;
+                  const {equipmentBoxMeshes} = bagMesh;
 
                   // hmd
                   for (let i = 0; i < 1 && i < equipmentTagMeshes.length; i++) {
@@ -1106,8 +968,24 @@ class World {
                     }
                   }
 
+                  // body
+                  for (let i = 1; i < 2 && i < equipmentTagMeshes.length; i++) {
+                    const equipmentTagMesh = equipmentTagMeshes[i];
+
+                    if (equipmentTagMesh) {
+                      const {item} = equipmentTagMesh;
+                      const {attributes} = item;
+
+                      if (attributes.position) {
+                        const equipmentBoxMesh = equipmentBoxMeshes[i];
+                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(equipmentBoxMesh);
+                        item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                      }
+                    }
+                  }
+
                   // right gamepad
-                  for (let i = 1; i < (1 + 1) && i < equipmentTagMeshes.length; i++) {
+                  for (let i = 2; i < 3 && i < equipmentTagMeshes.length; i++) {
                     const equipmentTagMesh = equipmentTagMeshes[i];
 
                     if (equipmentTagMesh) {
@@ -1127,7 +1005,7 @@ class World {
                   }
 
                   // left gamepad
-                  for (let i = (1 + 1); i < (1 + 2) && i < equipmentTagMeshes.length; i++) {
+                  for (let i = 3; i < 4 && i < equipmentTagMeshes.length; i++) {
                     const equipmentTagMesh = equipmentTagMeshes[i];
 
                     if (equipmentTagMesh) {
@@ -1147,7 +1025,7 @@ class World {
                   }
 
                   // right, left pockets
-                  for (let i = (1 + 2); i < (1 + 2 + 8) && i < equipmentTagMeshes.length; i++) {
+                  for (let i = 5; i < 12 && i < equipmentTagMeshes.length; i++) {
                     const equipmentTagMesh = equipmentTagMeshes[i];
 
                     if (equipmentTagMesh) {
@@ -1155,8 +1033,8 @@ class World {
                       const {attributes} = item;
 
                       if (attributes.position) {
-                        const pocketMesh = pocketMeshes[i - (1 + 2)];
-                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(pocketMesh);
+                        const equipmentBoxMesh = equipmentBoxMeshes[i];
+                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(equipmentBoxMesh);
                         item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
                       }
                     }
@@ -1165,7 +1043,6 @@ class World {
 
                 _updateTextures();
                 _updateAnchors();
-                _updateAnchorStyles();
                 _updateEquipmentPositions();
               };
               rend.on('update', _update);
@@ -1239,26 +1116,54 @@ class World {
               });
               const _gripdown = e => {
                 const {side} = e;
-                const tagMesh = tags.getGrabbableTag(side);
 
-                if (tagMesh) {
-                  const elementsTagMeshes = tags.getTagsClass('elements');
-                  const npmTagMeshes = tags.getTagsClass('npm');
+                const _grabTagMesh = () => {
+                  const tagMesh = tags.getGrabbableTag(side);
 
-                  if (elementsTagMeshes.includes(tagMesh)) {
-                    elementManager.remove(tagMesh);
+                  if (tagMesh) {
+                    const elementsTagMeshes = tags.getTagsClass('elements');
+                    const npmTagMeshes = tags.getTagsClass('npm');
 
-                    _saveTags();
-                  } else if (npmTagMeshes.includes(tagMesh)) {
-                    const tagMeshClone = tags.cloneTag(tagMesh);
+                    if (elementsTagMeshes.includes(tagMesh)) {
+                      elementManager.remove(tagMesh);
 
-                    scene.add(tagMeshClone);
+                      _saveTags();
 
-                    tags.grabTag(side, tagMeshClone);
+                      e.stopImmediatePropagation();
 
-                    _saveTags();
+                      return true;
+                    } else if (npmTagMeshes.includes(tagMesh)) {
+                      const tagMeshClone = tags.cloneTag(tagMesh);
+
+                      scene.add(tagMeshClone);
+
+                      tags.grabTag(side, tagMeshClone);
+
+                      _saveTags();
+
+                      e.stopImmediatePropagation();
+
+                      return true;
+                    } else if (equipmentTagMeshes.includes(tagMesh)) { // XXX make this based on the equipment box mesh instead
+                      equipmentManager.remove(tagMesh);
+
+                      scene.add(tagMesh);
+
+                      tags.grabTag(side, tagMesh);
+
+                      _saveTags();
+
+                      e.stopImmediatePropagation();
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
                   }
-                } else {
+                };
+                const _grabEquipmentMesh = () => {
                   const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                   if (hoveredEquipmentIndex !== -1) {
@@ -1271,9 +1176,19 @@ class World {
                       equipmentManager.move(hoveredEquipmentIndex, controllerEquipmentIndex);
 
                       _saveTags();
+
+                      e.stopImmediatePropagation();
+
+                      return true;
+                    } else {
+                      return false;
                     }
+                  } else {
+                    return false;
                   }
-                }
+                };
+
+                _grabTagMesh() || _grabEquipmentMesh();
               };
               input.on('gripdown', _gripdown, {
                 priority: 1,
@@ -1287,6 +1202,39 @@ class World {
 
                   const _releaseTag = () => {
                     if (tags.isTag(handsGrabberObject)) {
+                      const _releaseEquipmentTag = () => {
+                        const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
+
+                        if (hoveredEquipmentIndex !== -1) {
+                          const equipmentTagMeshes = tags.getTagsClass('equipment');
+                          const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
+                          const controllerEquipmentIndex = side === 'right' ? 1 : 2;
+                          const controllerEquipmentTagMesh = equipmentTagMeshes[controllerEquipmentIndex];
+
+                          if (!hoveredEquipmentTagMesh && controllerEquipmentTagMesh) {
+                            const tagMesh = handsGrabberObject;
+                            handsGrabber.release();
+
+                            const bagMesh = bag.getBagMesh();
+                            const {equipmentBoxMeshes} = bagMesh;
+                            const equipmentBoxMesh = equipmentBoxMeshes[hoveredEquipmentIndex];
+                            equipmentBoxMesh.add(tagMesh);
+
+                            equipmentManager.set(hoveredEquipmentIndex, tagMesh);
+
+                            const {item} = tagMesh;
+                            item.matrix = DEFAULT_MATRIX;
+
+                            _saveTags();
+
+                            return true;
+                          } else {
+                            return false;
+                          }
+                        } else {
+                          return false;
+                        }
+                      };
                       const _releaseInventoryTag = () => {
                         const hoveredItemIndex = backpack.getHoveredItemIndex(side);
 
@@ -1294,14 +1242,17 @@ class World {
                           const hoveredItem = backpack.getItem(hoveredItemIndex);
 
                           if (!hoveredItem) {
-                            const newTagMesh = handsGrabberObject;
+                            const tagMesh = handsGrabberObject;
                             handsGrabber.release();
 
                             const item = {
                               type: 'tag',
-                              mesh: newTagMesh,
+                              mesh: tagMesh,
                             };
                             backpack.setItem(hoveredItemIndex, item);
+
+                            const {item: itemData} = tagMesh;
+                            itemData.matrix = DEFAULT_MATRIX;
 
                             _saveInventory();
 
@@ -1359,7 +1310,7 @@ class World {
                         return true;
                       };
 
-                      return _releaseInventoryTag() || _releaseWorldTag();
+                      return _releaseEquipmentTag() || _releaseInventoryTag() || _releaseWorldTag();
                     } else {
                       return false;
                     }
@@ -1425,7 +1376,13 @@ class World {
                         equipmentManager.move(controllerEquipmentIndex, hoveredEquipmentIndex);
 
                         _saveTags();
+
+                        return true;
+                      } else {
+                        return false;
                       }
+                    } else {
+                      return false;
                     }
                   };
 
@@ -1539,10 +1496,15 @@ class World {
 
                     if (itemSpec) {
                       const tagMesh = tags.makeTag(itemSpec);
+
+                      const bagMesh = bag.getBagMesh();
+                      const {equipmentBoxMeshes} = bagMesh;
+                      const equipmentBoxMesh = equipmentBoxMeshes[i];
+                      equipmentBoxMesh.add(tagMesh);
+
                       equipmentManager.set(i, tagMesh);
                     }
                   }
-                  _alignTagMeshes(tags.getTagsClass('equipment'));
                 };
                 const _initializeFiles = () => {
                   const {files} = filesJson;
@@ -1589,7 +1551,7 @@ class World {
                     name: 'Explore with me.',
                     author: 'avaer',
                     created: Date.now() - (2 * 60 * 1000),
-                    matrix: DEFAULT_QUEST_MATRIX,
+                    matrix: DEFAULT_MATRIX,
                   });
 
                   scene.add(mailMesh);

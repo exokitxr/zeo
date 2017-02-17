@@ -47,12 +47,12 @@ class Bag {
           wireframe: true,
         });
 
-        const _makeHoverPocketState = () => ({
-          pocketMeshIndex: -1,
+        const _makeEquipmentHoverState = () => ({
+          equipmentIndex: -1,
         });
-        const hoverPocketStates = {
-          left: _makeHoverPocketState(),
-          right: _makeHoverPocketState(),
+        const equipmentHoverStates = {
+          left: _makeEquipmentHoverState(),
+          right: _makeEquipmentHoverState(),
         };
 
         const bagMesh = (() => {
@@ -124,6 +124,9 @@ class Bag {
           ].map(_makeMesh);
           result.pocketMeshes = pocketMeshes;
 
+          const equipmentBoxMeshes = [headMesh, bodyMesh].concat(armMeshes).concat(pocketMeshes);
+          result.equipmentBoxMeshes = equipmentBoxMeshes;
+
           return result;
         })();
         scene.add(bagMesh);
@@ -135,11 +138,11 @@ class Bag {
           const hmdRotation = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order);
           bagMesh.rotation.y = hmdRotation.y;
 
-          const {pocketMeshes} = bagMesh;
-          pocketMeshes.forEach((pocketMesh, i) => {
-            pocketMesh.visible = true;
+          const {equipmentBoxMeshes} = bagMesh;
+          equipmentBoxMeshes.forEach(equipmentBoxMesh => {
+            equipmentBoxMesh.visible = true;
 
-            const {highlightMesh} = pocketMesh;
+            const {highlightMesh} = equipmentBoxMesh;
             highlightMesh.visible = false;
           });
           SIDES.forEach(side => {
@@ -147,32 +150,32 @@ class Bag {
 
             if (gamepad) {
               const {position: controllerPosition} = gamepad;
-              const hoverPocketState = hoverPocketStates[side];
+              const equipmentHoverState = equipmentHoverStates[side];
 
-              const pocketMeshSpecs = pocketMeshes.map((pocketMesh, i) => {
-                const {position: pocketPosition} = _decomposeObjectMatrixWorld(pocketMesh);
+              const equipmentBoxMeshSpecs = equipmentBoxMeshes.map((equipmentBoxMesh, i) => {
+                const {position: equipmentBoxMeshPosition} = _decomposeObjectMatrixWorld(equipmentBoxMesh);
 
                 return {
                   index: i,
-                  distance: controllerPosition.distanceTo(pocketPosition),
+                  distance: controllerPosition.distanceTo(equipmentBoxMeshPosition),
                 };
               });
-              const pocketMeshSpecsInRange = pocketMeshSpecs.filter(pocketMeshSpec => pocketMeshSpec.distance <= 0.1);
+              const equipmentBoxMeshSpecsInRange = equipmentBoxMeshSpecs.filter(equipmentBoxMeshSpec => equipmentBoxMeshSpec.distance <= 0.1);
 
-              if (pocketMeshSpecsInRange.length > 0) {
-                const sortedPocketMeshSpecs = pocketMeshSpecsInRange.sort((a, b) => a.distance - b.distance);
-                const closestPocketMeshSpec = sortedPocketMeshSpecs[0];
-                const {index: closestPocketMeshIndex} = closestPocketMeshSpec;
+              if (equipmentBoxMeshSpecsInRange.length > 0) {
+                const sortedEquipmentBoxMeshSpecs = equipmentBoxMeshSpecsInRange.sort((a, b) => a.distance - b.distance);
+                const closestEquipmentBoxMeshSpec = sortedEquipmentBoxMeshSpecs[0];
+                const {index: closestEquipmentBoxMeshIndex} = closestEquipmentBoxMeshSpec;
 
-                hoverPocketState.pocketMeshIndex = closestPocketMeshIndex;
+                equipmentHoverState.equipmentIndex = closestEquipmentBoxMeshIndex;
 
-                const closestPocketMesh = pocketMeshes[closestPocketMeshIndex];
-                closestPocketMesh.visible = false;
+                const closestEquipmentBoxMesh = equipmentBoxMeshes[closestEquipmentBoxMeshIndex];
+                closestEquipmentBoxMesh.visible = false;
 
-                const {highlightMesh: closestHighlightMesh} = closestPocketMesh;
+                const {highlightMesh: closestHighlightMesh} = closestEquipmentBoxMesh;
                 closestHighlightMesh.visible = true;
               } else {
-                hoverPocketState.pocketMeshIndex = -1;
+                equipmentHoverState.equipmentIndex = -1;
               }
             }
           });
@@ -187,10 +190,10 @@ class Bag {
 
         const _getBagMesh = () => bagMesh;
         const _getHoveredEquipmentIndex = side => {
-          const {pocketMeshIndex} = hoverPocketStates[side];
+          const {equipmentIndex} = equipmentHoverStates[side];
 
-          if (pocketMeshIndex !== -1) {
-            return (1 + 2) + pocketMeshIndex;
+          if (equipmentIndex !== -1) {
+            return equipmentIndex;
           } else {
             return -1;
           }

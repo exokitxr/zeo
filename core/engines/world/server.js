@@ -9,7 +9,7 @@ const DEFAULT_TAGS = {
   elements: [],
   free: [],
   equipment: (() => {
-    const numEquipments = (1 + 2 + 8);
+    const numEquipments = (1 + 1 + 2 + 8);
 
     const result = Array(numEquipments);
     for (let i = 0; i < numEquipments; i++) {
