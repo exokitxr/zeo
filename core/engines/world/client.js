@@ -1162,8 +1162,6 @@ class World {
 
                       scene.add(tagMesh);
 
-                      elementManager.add(tagMesh);
-
                       tags.grabTag(side, tagMesh);
 
                       _saveTags();
