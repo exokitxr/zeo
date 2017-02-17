@@ -531,29 +531,44 @@ class Tags {
                 const _update = () => {
                   const _updateControllers = () => {
                     const _updateGrabbers = () => {
-                      SIDES.forEach(side => {
-                        const grabbableState = grabbableStates[side];
-                        const grabBoxMesh = grabBoxMeshes[side];
+                      const isOpen = rend.isOpen();
 
-                        const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                        if (bestGrabbableTagMesh) {
-                          grabbableState.tagMesh = bestGrabbableTagMesh;
+                      if (isOpen) {
+                        SIDES.forEach(side => {
+                          const grabbableState = grabbableStates[side];
+                          const grabBoxMesh = grabBoxMeshes[side];
 
-                          const {position: tagMeshPosition, rotation: tagMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
-                          grabBoxMesh.position.copy(tagMeshPosition);
-                          grabBoxMesh.quaternion.copy(tagMeshRotation);
+                          const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
+                          if (bestGrabbableTagMesh) {
+                            grabbableState.tagMesh = bestGrabbableTagMesh;
 
-                          if (!grabBoxMesh.visible) {
-                            grabBoxMesh.visible = true;
+                            const {position: tagMeshPosition, rotation: tagMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
+                            grabBoxMesh.position.copy(tagMeshPosition);
+                            grabBoxMesh.quaternion.copy(tagMeshRotation);
+
+                            if (!grabBoxMesh.visible) {
+                              grabBoxMesh.visible = true;
+                            }
+                          } else {
+                            grabbableState.tagMesh = null;
+
+                            if (grabBoxMesh.visible) {
+                              grabBoxMesh.visible = false;
+                            }
                           }
-                        } else {
+                        });
+                      } else {
+                        SIDES.forEach(side => {
+                          const grabbableState = grabbableStates[side];
+                          const grabBoxMesh = grabBoxMeshes[side];
+
                           grabbableState.tagMesh = null;
 
                           if (grabBoxMesh.visible) {
                             grabBoxMesh.visible = false;
                           }
-                        }
-                      });
+                        });
+                      }
                     };
                     const _updatePositioningMesh = () => {
                       const {positioningId, positioningName, positioningSide} = detailsState;
