@@ -726,55 +726,61 @@ class World {
               });
 
               const _update = e => {
-                const tab = rend.getTab();
-
                 const _updateTextures = () => {
-                  const {
-                    menuMesh: {
-                      menuMaterial,
-                    },
-                  } = worldMesh;
-                  const uiTime = rend.getUiTime();
+                  const tab = rend.getTab();
 
-                  biolumi.updateMenuMaterial({
-                    ui: worldUi,
-                    menuMaterial,
-                    uiTime,
-                  });
+                  if (tab === 'world') {
+                    const {
+                      menuMesh: {
+                        menuMaterial,
+                      },
+                    } = worldMesh;
+                    const uiTime = rend.getUiTime();
+
+                    biolumi.updateMenuMaterial({
+                      ui: worldUi,
+                      menuMaterial,
+                      uiTime,
+                    });
+                  }
                 };
                 const _updateAnchors = () => {
-                  const {menuMesh} = worldMesh;
-                  const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
-                  const {gamepads} = webvr.getStatus();
+                  const tab = rend.getTab();
 
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
+                  if (tab === 'world') {
+                    const {menuMesh} = worldMesh;
+                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                    const {gamepads} = webvr.getStatus();
 
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
 
-                      const menuHoverState = menuHoverStates[side];
-                      const menuDotMesh = menuDotMeshes[side];
-                      const menuBoxMesh = menuBoxMeshes[side];
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                      biolumi.updateAnchors({
-                        objects: [{
-                          matrixObject: menuMatrixObject,
-                          ui: worldUi,
-                          width: WIDTH,
-                          height: HEIGHT,
-                          worldWidth: WORLD_WIDTH,
-                          worldHeight: WORLD_HEIGHT,
-                          worldDepth: WORLD_DEPTH,
-                        }],
-                        hoverState: menuHoverState,
-                        dotMesh: menuDotMesh,
-                        boxMesh: menuBoxMesh,
-                        controllerPosition,
-                        controllerRotation,
-                      })
-                    }
-                  });
+                        const menuHoverState = menuHoverStates[side];
+                        const menuDotMesh = menuDotMeshes[side];
+                        const menuBoxMesh = menuBoxMeshes[side];
+
+                        biolumi.updateAnchors({
+                          objects: [{
+                            matrixObject: menuMatrixObject,
+                            ui: worldUi,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                          }],
+                          hoverState: menuHoverState,
+                          dotMesh: menuDotMesh,
+                          boxMesh: menuBoxMesh,
+                          controllerPosition,
+                          controllerRotation,
+                        })
+                      }
+                    });
+                  }
                 };
                 const _updateEquipmentPositions = () => {
                   const equipmentTagMeshes = tags.getTagsClass('equipment');
