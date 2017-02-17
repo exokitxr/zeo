@@ -861,13 +861,13 @@ class Tags {
                     return newItemMesh;
                   }
 
-                  /* destroyTag(tagMesh) {
+                  destroyTag(tagMesh) {
                     const index = tagMeshes.indexOf(tagMesh);
 
                     if (index !== -1) {
                       tagMeshes.splice(index, 1);
                     }
-                  } */
+                  }
 
                   getGrabbableTag(side) {
                     return grabbableStates[side].tagMesh;
