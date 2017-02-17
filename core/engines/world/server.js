@@ -7,7 +7,6 @@ const bodyParserJson = bodyParser.json();
 
 const DEFAULT_TAGS = {
   elements: [],
-  free: [],
   equipment: (() => {
     const numEquipments = (1 + 1 + 2 + 8);
 
@@ -111,12 +110,10 @@ class World {
               if (
                 typeof data === 'object' && data !== null &&
                 data.elements && Array.isArray(data.elements) &&
-                data.free && Array.isArray(data.free) &&
                 data.equipment && Array.isArray(data.equipment)
               ) {
                 tagsJson = {
                   elements: data.elements,
-                  free: data.free,
                   equipment: data.equipment,
                 };
 

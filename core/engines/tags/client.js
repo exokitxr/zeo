@@ -735,7 +735,15 @@ class Tags {
                 const tagClassMeshes = {
                   elements: [],
                   npm: [],
-                  equipment: [],
+                  equipment: (() => {
+                    const numEquipments = (1 + 1 + 2 + 8);
+
+                    const result = Array(numEquipments);
+                    for (let i = 0; i < numEquipments; i++) {
+                      result[i] = null;
+                    }
+                    return result;
+                  })(),
                 };
                 class TagsApi {
                   makeTag(itemSpec) {
@@ -883,16 +891,25 @@ class Tags {
 
                   setTag(tagClass, index, tagMesh) {
                     tagClassMeshes[tagClass][index] = tagMesh;
+
+                    return tagMesh;
                   }
 
-                  /* unsetTag(tagClass, index) {
+                  unsetTag(tagClass, index) {
+                    const tagMesh = tagClassMeshes[tagClass][index];
+
                     tagClassMeshes[tagClass][index] = null;
-                  } */
+
+                    return tagMesh;
+                  }
 
                   moveTag(tagClass, oldIndex, newIndex) {
                     const tagMesh = tagClassMeshes[tagClass][oldIndex];
+
                     tagClassMeshes[tagClass][oldIndex] = null;
                     tagClassMeshes[tagClass][newIndex] = tagMesh;
+
+                    return tagMesh;
                   }
 
                   getTagsClass(tagClass) {
