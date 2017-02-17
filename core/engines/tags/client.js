@@ -266,7 +266,7 @@ class Tags {
                 const _saveTags = menuUtils.debounce(next => {
                   tagsJson = {
                     elements: tagsInstance.getTagsClass('elements').map(({item}) => item),
-                    free: tagsInstance.getFreeTags().map(({item}) => item),
+                    equipment: tagsInstance.getTagsClass('equipment').map(({item}) => item),
                   };
                   const tagsJsonString = JSON.stringify(tagsJson);
 
@@ -861,32 +861,13 @@ class Tags {
                     return newItemMesh;
                   }
 
-                  destroyTag(tagMesh) {
+                  /* destroyTag(tagMesh) {
                     const index = tagMeshes.indexOf(tagMesh);
 
                     if (index !== -1) {
                       tagMeshes.splice(index, 1);
                     }
-                  }
-
-                  getFreeTags() {
-                    const index = new Map();
-                    const {elements: elementTags, npm: npmTags, equipment: equipmentTags} = tagClassMeshes;
-                    for (let i = 0; i < elementTags.length; i++) {
-                      const elementTag = elementTags[i];
-                      index.set(elementTag, true);
-                    }
-                    for (let i = 0; i < npmTags.length; i++) {
-                      const npmTag = npmTags[i];
-                      index.set(npmTag, true);
-                    }
-                    for (let i = 0; i < equipmentTags.length; i++) {
-                      const equipmentTag = equipmentTags[i];
-                      index.set(equipmentTag, true);
-                    }
-
-                    return tagMeshes.filter(tagMesh => !index.has(tagMesh));
-                  }
+                  } */
 
                   getGrabbableTag(side) {
                     return grabbableStates[side].tagMesh;
@@ -930,20 +911,6 @@ class Tags {
 
                   getTagsClass(tagClass) {
                     return tagClassMeshes[tagClass];
-                  }
-
-                  getTagsClassFreeIndex(tagClass) {
-                    const tagMeshes = tagClassMeshes[tagClass];
-
-                    for (let i = 3; i < tagMeshes.length; i++) { // XXX should start at zero but does not to start search at pockets
-                      const tagMesh = tagMeshes[i];
-
-                      if (tagMesh) {
-                        return i;
-                      }
-                    }
-
-                    return -1;;
                   }
 
                   isTag(object) {
