@@ -1202,12 +1202,26 @@ class World {
                         const tagMesh = hoveredEquipmentTagMesh;
 
                         const bagMesh = bag.getBagMesh();
-                        bagMesh.updateMatrixWorld();
+                        const {equipmentBoxMeshes} = bagMesh;
+                        const controllerEquipmentBoxMesh = equipmentBoxMeshes[controllerEquipmentIndex];
+                        controllerEquipmentBoxMesh.add(tagMesh);
+
+                        equipmentManager.move(hoveredEquipmentIndex, controllerEquipmentIndex);
+
+                        _saveTags();
+
+                        e.stopImmediatePropagation();
+
+                        return true;
+                      } else if (!hoveredEquipmentTagMesh && controllerEquipmentTagMesh) { // XXX move this to gripup
+                        const tagMesh = controllerEquipmentTagMesh;
+
+                        const bagMesh = bag.getBagMesh();
                         const {equipmentBoxMeshes} = bagMesh;
                         const equipmentBoxMesh = equipmentBoxMeshes[hoveredEquipmentIndex];
                         equipmentBoxMesh.add(tagMesh);
 
-                        equipmentManager.move(hoveredEquipmentIndex, controllerEquipmentIndex);
+                        equipmentManager.move(controllerEquipmentIndex, hoveredEquipmentIndex);
 
                         _saveTags();
 
