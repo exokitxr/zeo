@@ -8,13 +8,13 @@ import {
 import worldRender from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
-const SIDES = ['left', 'right'];
-
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
 ];
+
+const SIDES = ['left', 'right'];
 
 class World {
   constructor(archae) {
@@ -1239,18 +1239,7 @@ class World {
                             const tagMesh = handsGrabberObject;
                             handsGrabber.release();
 
-                            // add tag to equipment box mesh
-                            const bagMesh = bag.getBagMesh();
-                            const {equipmentBoxMeshes} = bagMesh;
-                            const equipmentBoxMesh = equipmentBoxMeshes[hoveredEquipmentIndex];
-                            equipmentBoxMesh.add(tagMesh);
-
-                            // zero tag mesh position
-                            tagMesh.position.copy(zeroVector); // XXX move this into bag engine
-                            tagMesh.quaternion.copy(zeroQuaternion);
-                            tagMesh.scale.copy(oneVector);
-                            const {item} = tagMesh;
-                            item.matrix = DEFAULT_MATRIX;
+                            bag.setEquipment(hoveredEquipmentIndex, tagMesh);
 
                             equipmentManager.set(hoveredEquipmentIndex, tagMesh);
 
@@ -1279,10 +1268,6 @@ class World {
                               mesh: tagMesh,
                             };
                             backpack.setItem(hoveredItemIndex, item);
-
-                            // zero tag mesh position
-                            const {item: itemData} = tagMesh; // XXX move this into backpack engine
-                            itemData.matrix = DEFAULT_MATRIX;
 
                             _saveInventory();
 

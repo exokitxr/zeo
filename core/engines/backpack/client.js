@@ -1,6 +1,11 @@
 const SIDES = ['left', 'right'];
 
 const DEFAULT_GRAB_DISTANCE = 0.12;
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 class Backpack {
   constructor(archae) {
@@ -281,6 +286,17 @@ class Backpack {
           itemMesh.quaternion.copy(zeroQuaternion);
           itemMesh.scale.copy(oneVector);
           itemBoxMeshes[index].add(itemMesh);
+
+          const itemData = (() => {
+            const {type} = item;
+
+            switch (type) {
+              case 'tag': return item.mesh.item;
+              case 'file': return item.mesh.file;
+              default: return null;
+            }
+          })();
+          itemData.matrix = DEFAULT_MATRIX;
         };
         const _getHoveredItemIndex = side => {
           const hoverState = hoverStates[side];

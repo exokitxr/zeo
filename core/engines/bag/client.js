@@ -1,6 +1,12 @@
 const BAG_Y_OFFSET = -0.5;
 const BAG_Z_OFFSET = -0.05;
 
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
+
 const SIDES = ['left', 'right'];
 
 class Bag {
@@ -36,6 +42,10 @@ class Bag {
           matrix.decompose(position, rotation, scale);
           return {position, rotation, scale};
         };
+
+        const zeroVector = new THREE.Vector3(0, 0, 0);
+        const zeroQuaternion = new THREE.Quaternion();
+        const oneVector = new THREE.Vector3(1, 1, 1);
 
         const WIREFRAME_DARK_MATERIAL = new THREE.MeshBasicMaterial({
           color: 0x808080,
@@ -189,6 +199,17 @@ class Bag {
         };
 
         const _getBagMesh = () => bagMesh;
+        const _setEquipment = (index, tagMesh) => {
+          const {equipcmentBoxMeshes} = bagMesh;
+          equipcmentBoxMeshes.add(tagMesh);
+
+          tagMesh.position.copy(zeroVector);
+          tagMesh.quaternion.copy(zeroQuaternion);
+          tagMesh.scale.copy(oneVector);
+
+          const {item} = tagMesh;
+          item.matrix = DEFAULT_MATRIX;
+        };
         const _getHoveredEquipmentIndex = side => {
           const {equipmentIndex} = equipmentHoverStates[side];
 
@@ -201,6 +222,7 @@ class Bag {
 
         return {
           getBagMesh: _getBagMesh,
+          setEquipment: _setEquipment,
           getHoveredEquipmentIndex: _getHoveredEquipmentIndex,
         };
       }
