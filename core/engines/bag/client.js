@@ -71,12 +71,12 @@ class Bag {
           const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1, 1, 1, 1);
 
           const _makeMesh = ({position: [x, y, z]}) => {
-            const pocketMesh = new THREE.Mesh(geometry, WIREFRAME_DARK_MATERIAL);
-            pocketMesh.position.x = x;
-            pocketMesh.position.y = y;
-            pocketMesh.position.z = z;
-            pocketMesh.rotation.x = -Math.PI / 2;
-            result.add(pocketMesh);
+            const equipmentMesh = new THREE.Mesh(geometry, WIREFRAME_DARK_MATERIAL);
+            equipmentMesh.position.x = x;
+            equipmentMesh.position.y = y;
+            equipmentMesh.position.z = z;
+            equipmentMesh.rotation.x = -Math.PI / 2;
+            result.add(equipmentMesh);
 
             const highlightMesh = new THREE.Mesh(geometry, WIREFRAME_HIGHLIGHT_MATERIAL);
             highlightMesh.position.x = x;
@@ -84,9 +84,9 @@ class Bag {
             highlightMesh.position.z = z;
             highlightMesh.visible = false;
             result.add(highlightMesh);
-            pocketMesh.highlightMesh = highlightMesh;
+            equipmentMesh.highlightMesh = highlightMesh;
 
-            return pocketMesh;
+            return equipmentMesh;
           };
 
           const headMesh = _makeMesh({
@@ -200,8 +200,8 @@ class Bag {
 
         const _getBagMesh = () => bagMesh;
         const _setEquipment = (index, tagMesh) => {
-          const {equipcmentBoxMeshes} = bagMesh;
-          equipcmentBoxMeshes.add(tagMesh);
+          const {equipmentBoxMeshes} = bagMesh;
+          equipmentBoxMeshes[index].add(tagMesh);
 
           tagMesh.position.copy(zeroVector);
           tagMesh.quaternion.copy(zeroQuaternion);

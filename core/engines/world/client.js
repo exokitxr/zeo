@@ -59,16 +59,13 @@ class World {
       if (live) {
         const {THREE, scene, camera} = three;
 
-        // constants
-        const oneVector = new THREE.Vector3(1, 1, 1);
-        const zeroQuaternion = new THREE.Quaternion();
-
-        const transparentMaterial = biolumi.getTransparentMaterial();
-        const solidMaterial = biolumi.getSolidMaterial();
-
         const worldRenderer = worldRender.makeRenderer({
           monospaceFonts: biolumi.getMonospaceFonts(),
         });
+
+        // constants
+        const transparentMaterial = biolumi.getTransparentMaterial();
+        const solidMaterial = biolumi.getSolidMaterial();
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
@@ -459,8 +456,6 @@ class World {
                       ((size / 2) - (height / 2) - padding) - (y * (height + padding)),
                       0
                     );
-                    tagMesh.quaternion.copy(zeroQuaternion);
-                    tagMesh.scale.copy(oneVector);
                   }
                 }
               };
@@ -1234,10 +1229,8 @@ class World {
                         if (hoveredEquipmentIndex !== -1) {
                           const equipmentTagMeshes = tags.getTagsClass('equipment');
                           const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
-                          const controllerEquipmentIndex = side === 'right' ? 1 : 2;
-                          const controllerEquipmentTagMesh = equipmentTagMeshes[controllerEquipmentIndex];
 
-                          if (!hoveredEquipmentTagMesh && controllerEquipmentTagMesh) {
+                          if (!hoveredEquipmentTagMesh) {
                             const tagMesh = handsGrabberObject;
                             handsGrabber.release();
 
@@ -1283,37 +1276,6 @@ class World {
                           return false;
                         }
                       };
-                      /* const _releaseContainerTag = () => {
-                        if (equipmentContainerHoverStates[side].hovered) { // XXX make equipment explicitly require releasing on a slot
-                          const freeIndex = tags.getTagsClassFreeIndex('elements');
-
-                          if (freeIndex !== -1) {
-                            const newTagMesh = handsGrabberObject;
-                            handsGrabber.release();
-
-                            equipmentManager.set(freeindex, newTagMesh);
-
-                            _saveTags();
-
-                            e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-
-                            return true;
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          const newTagMesh = handsGrabberObject;
-                          handsGrabber.release();
-
-                          elementManager.add(newTagMesh);
-
-                          _saveTags();
-
-                          e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-
-                          return true;
-                        }
-                      }; */
                       const _releaseWorldTag = () => {
                         const newTagMesh = handsGrabberObject;
                         handsGrabber.release();
@@ -1560,7 +1522,6 @@ class World {
                       }
                     }
                   }
-                  _alignTagMeshes(tags.getTagsClass('equipment'));
                 };
                 const _initializeMails = () => {
                   const mailMesh = mail.makeMail({
