@@ -275,7 +275,7 @@ class Rend {
                   const object = new THREE.Object3D();
                   object.position.y = DEFAULT_USER_HEIGHT;
 
-                  const planeMesh = (() => {
+                  const statusMesh = (() => {
                     const width = WORLD_WIDTH;
                     const height = WORLD_HEIGHT;
                     const depth = WORLD_DEPTH;
@@ -293,12 +293,12 @@ class Rend {
 
                     return mesh;
                   })();
-                  object.add(planeMesh);
-                  object.planeMesh = planeMesh;
+                  object.add(statusMesh);
+                  object.statusMesh = statusMesh;
 
                   object.worldMesh = null;
-                  object.mailMesh = null;
                   object.universeMesh = null;
+                  object.serversMesh = null;
                   object.configMesh = null;
                   object.statsMesh = null;
 
@@ -522,15 +522,16 @@ class Rend {
                       const onclick = (anchor && anchor.onclick) || '';
 
                       let match;
-                      if (match = onclick.match(/^navbar:(status|world|mail|inventory|worlds|options)$/)) {
+                      if (match = onclick.match(/^navbar:(status|world|mail|inventory|worlds|servers|options)$/)) {
                         const newTab = match[1];
 
                         const _getTabMesh = tab => {
                           switch (tab) {
-                            case 'status': return menuMesh.planeMesh;
+                            case 'status': return menuMesh.statusMesh;
                             case 'world': return menuMesh.worldMesh;
                             case 'mail': return menuMesh.mailMesh;
                             case 'worlds': return menuMesh.universeMesh;
+                            case 'servers': return menuMesh.serversMesh;
                             case 'options': return menuMesh.configMesh;
                             default: return null;
                           }
@@ -862,8 +863,8 @@ class Rend {
                         if (scrollLayer) {
                           const {intersectionPoint} = menuHoverState;
 
-                          const {planeMesh} = menuMesh;
-                          const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
+                          const {statusMesh} = menuMesh;
+                          const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(statusMesh);
                           const _getMenuMeshCoordinate = biolumi.makeMeshCoordinateGetter({
                             position: menuPosition,
                             rotation: menuRotation,
@@ -894,8 +895,8 @@ class Rend {
                 const _setLayerScroll = menuHoverState => {
                   const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = menuHoverState;
 
-                  const {planeMesh} = menuMesh;
-                  const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(planeMesh);
+                  const {statusMesh} = menuMesh;
+                  const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(statusMesh);
                   const _getMenuMeshCoordinate = biolumi.makeMeshCoordinateGetter({
                     position: menuPosition,
                     rotation: menuRotation,
@@ -1241,14 +1242,14 @@ class Rend {
 
                       if (tab === 'status') {
                         const {
-                          planeMesh: {
-                            menuMaterial: planeMenuMaterial,
+                          statusMesh: {
+                            menuMaterial: statusMenuMaterial,
                           },
                         } = menuMesh;
 
                         biolumi.updateMenuMaterial({
                           ui: menuUi,
-                          menuMaterial: planeMenuMaterial,
+                          menuMaterial: statusMenuMaterial,
                           uiTime,
                         });
                       }
@@ -1277,8 +1278,8 @@ class Rend {
                       const status = webvr.getStatus();
                       const {gamepads} = status;
 
-                      const {planeMesh, navbarMesh} = menuMesh;
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const {statusMesh, navbarMesh} = menuMesh;
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(statusMesh);
                       const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
 
                       SIDES.forEach(side => {

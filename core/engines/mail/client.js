@@ -17,7 +17,7 @@ import menuUtils from './lib/utils/menu';
 const SIDES = ['left', 'right'];
 
 const DEFAULT_GRAB_RADIUS = 0.2;
-const DEFAULT_MAIL_MATRIX = [
+const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
@@ -620,7 +620,7 @@ class Mail {
                     menuMesh.add(mailMesh);
 
                     const {mail} = mailMesh;
-                    mail.matrix = DEFAULT_MAIL_MATRIX;
+                    mail.matrix = DEFAULT_MATRIX;
 
                     const grabber = hands.grab(side, mailMesh);
                     grabber.on('update', ({position, rotation}) => {
