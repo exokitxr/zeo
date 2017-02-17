@@ -546,22 +546,26 @@ class Tags {
                             const boxMesh = boxMeshes[side];
 
                             biolumi.updateAnchors({
-                              objects: tagMeshes.map(tagMesh => {
-                                const {ui, planeMesh} = tagMesh;
+                              objects: (tagClassMeshes.elements.concat(tagClassMeshes.equipment)).map(tagMesh => {
+                                if (tagMesh) {
+                                  const {ui, planeMesh} = tagMesh;
 
-                                if (ui && planeMesh) {
-                                  const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                                  const {item: {open}} = tagMesh;
+                                  if (ui && planeMesh) {
+                                    const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                                    const {item: {open}} = tagMesh;
 
-                                  return {
-                                    matrixObject: matrixObject,
-                                    ui: ui,
-                                    width: !open ? WIDTH : OPEN_WIDTH,
-                                    height: !open ? HEIGHT : OPEN_HEIGHT,
-                                    worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                                    worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                                    worldDepth: WORLD_DEPTH,
-                                  };
+                                    return {
+                                      matrixObject: matrixObject,
+                                      ui: ui,
+                                      width: !open ? WIDTH : OPEN_WIDTH,
+                                      height: !open ? HEIGHT : OPEN_HEIGHT,
+                                      worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                                      worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                                      worldDepth: WORLD_DEPTH,
+                                    };
+                                  } else {
+                                    return null;
+                                  }
                                 } else {
                                   return null;
                                 }
