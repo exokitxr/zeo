@@ -572,24 +572,15 @@ class Fs {
           }
 
           grabFile(side, fileMesh) {
-            const menuMesh = rend.getMenuMesh();
-            menuMesh.add(fileMesh);
-
             const {file} = fileMesh;
             file.matrix = DEFAULT_FILE_MATRIX;
 
             const grabber = hands.grab(side, fileMesh);
             grabber.on('update', ({position, rotation}) => {
-              const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
-              const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
-
-              const newRotation = menuMeshQuaternionInverse.clone()
-                .multiply(rotation)
+              const newRotation = rotation.clone()
                 .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
-              const newPosition = position.clone().applyMatrix4(menuMeshMatrixInverse)
-                .add(
-                  new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
-                );
+              const newPosition = position.clone()
+                .add(new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation));
 
               fileMesh.position.copy(newPosition);
               fileMesh.quaternion.copy(newRotation);

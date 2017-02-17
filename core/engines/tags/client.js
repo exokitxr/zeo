@@ -918,24 +918,15 @@ class Tags {
                   }
 
                   grabTag(side, tagMesh) {
-                    const menuMesh = rend.getMenuMesh();
-                    menuMesh.add(tagMesh);
-
                     const {item} = tagMesh;
                     item.matrix = DEFAULT_TAG_MATRIX;
 
                     const grabber = hands.grab(side, tagMesh);
                     grabber.on('update', ({position, rotation}) => {
-                      const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
-                      const menuMeshQuaternionInverse = menuMesh.quaternion.clone().inverse();
-
-                      const newRotation = menuMeshQuaternionInverse.clone()
-                        .multiply(rotation)
+                      const newRotation = rotation.clone()
                         .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
-                      const newPosition = position.clone().applyMatrix4(menuMeshMatrixInverse)
-                        .add(
-                          new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation)
-                        );
+                      const newPosition = position.clone()
+                        .add(new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation));
 
                       tagMesh.position.copy(newPosition);
                       tagMesh.quaternion.copy(newRotation);

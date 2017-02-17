@@ -468,34 +468,16 @@ class World {
 
               class ElementManager {
                 add(tagMesh) {
-                  // place tag into container
-                  const {
-                    elementsMesh: {
-                      containerMesh: elementsContainerMesh,
-                    },
-                  } = worldMesh;
-                  elementsContainerMesh.add(tagMesh);
+                  // register tag
                   tags.mountTag('elements', tagMesh);
-                  const elementsTagMeshes = tags.getTagsClass('elements');
-                  _alignTagMeshes(elementsTagMeshes);
-
-                  // update elements state
-                  elementsState.empty = elementsTagMeshes.length === 0;
-                  _updatePages();
 
                   // reify tag
                   _reifyTag(tagMesh);
                 }
 
                 remove(tagMesh) {
-                  // remove tag from container
+                  // unregister tag
                   tags.unmountTag('elements', tagMesh);
-                  const elementsTagMeshes = tags.getTagsClass('elements');
-                  _alignTagMeshes(elementsTagMeshes);
-
-                  // update elements state
-                  elementsState.empty = elementsTagMeshes.length === 0;
-                  _updatePages();
 
                   // unreify tag
                   _unreifyTag(tagMesh);
@@ -511,7 +493,7 @@ class World {
                       containerMesh: equipmentContainerMesh,
                     },
                   } = equipmentMesh;
-                  equipmentContainerMesh.add(tagMesh);
+                  equipmentContainerMesh.add(tagMesh); // XXX attach to equipment box meshes instead
                   tags.setTag('equipment', index, tagMesh);
                   const equipmentTagMeshes = tags.getTagsClass('equipment');
                   _alignTagMeshes(equipmentTagMeshes);
@@ -1267,15 +1249,14 @@ class World {
                     elementManager.remove(tagMesh);
 
                     _saveTags();
-
-                    _updatePages();
                   } else if (npmTagMeshes.includes(tagMesh)) {
                     const tagMeshClone = tags.cloneTag(tagMesh);
+
+                    scene.add(tagMeshClone);
+
                     tags.grabTag(side, tagMeshClone);
 
                     _saveTags();
-
-                    _updatePages();
                   }
                 } else {
                   const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
@@ -1334,19 +1315,8 @@ class World {
                           return false;
                         }
                       };
-                      const _releaseContainerTag = () => {
-                        if (elementsContainerHoverStates[side].hovered) {
-                          const newTagMesh = handsGrabberObject;
-                          handsGrabber.release();
-
-                          elementManager.add(newTagMesh);
-
-                          _saveTags();
-
-                          e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-
-                          return true;
-                        } else if (equipmentContainerHoverStates[side].hovered) {
+                      /* const _releaseContainerTag = () => {
+                        if (equipmentContainerHoverStates[side].hovered) { // XXX make equipment explicitly require releasing on a slot
                           const freeIndex = tags.getTagsClassFreeIndex('elements');
 
                           if (freeIndex !== -1) {
@@ -1364,16 +1334,32 @@ class World {
                             return false;
                           }
                         } else {
-                          return false;
-                        }
-                      };
-                      const _releaseWorldTag = () => {
-                        handsGrabber.on('release', () => { // so the item matrix is saved first
+                          const newTagMesh = handsGrabberObject;
+                          handsGrabber.release();
+
+                          elementManager.add(newTagMesh);
+
                           _saveTags();
-                        });
+
+                          e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+
+                          return true;
+                        }
+                      }; */
+                      const _releaseWorldTag = () => {
+                        const newTagMesh = handsGrabberObject;
+                        handsGrabber.release();
+
+                        elementManager.add(newTagMesh);
+
+                        _saveTags();
+
+                        e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+
+                        return true;
                       };
 
-                      return _releaseInventoryTag() || _releaseContainerTag() || _releaseWorldTag();
+                      return _releaseInventoryTag() || _releaseWorldTag();
                     } else {
                       return false;
                     }
@@ -1397,7 +1383,7 @@ class World {
 
                           _saveInventory();
 
-                          e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+                          e.stopImmediatePropagation(); // so fs engine doesn't pick it up
 
                           return true;
                         } else {
@@ -1408,9 +1394,11 @@ class World {
                       }
                     };
                     const _releaseWorldFile = () => {
-                      handsGrabber.on('release', () => { // so the item matrix is saved first
-                        _saveFiles();
-                      });
+                      handsGrabber.release();
+
+                      _saveFiles();
+
+                      e.stopImmediatePropagation(); // so fs engine doesn't pick it up
 
                       return true;
                     };
@@ -1511,8 +1499,7 @@ class World {
                 });
                 fileMesh.instancing = true;
 
-                const menuMesh = rend.getMenuMesh();
-                menuMesh.add(fileMesh);
+                scene.add(fileMesh);
 
                 fs.updatePages();
               };
@@ -1538,15 +1525,10 @@ class World {
                   for (let i = 0; i < elements.length; i++) {
                     const itemSpec = elements[i];
                     const tagMesh = tags.makeTag(itemSpec);
-                    elementManager.add(tagMesh);
-                  }
-                  _alignTagMeshes(tags.getTagsClass('elements'));
 
-                  const menuMesh = rend.getMenuMesh();
-                  for (let i = 0; i < free.length; i++) {
-                    const itemSpec = free[i];
-                    const tagMesh = tags.makeTag(itemSpec);
-                    menuMesh.add(tagMesh);
+                    scene.add(tagMesh);
+
+                    elementManager.add(tagMesh);
                   }
                 };
                 const _initializeEquipment = () => {
@@ -1565,11 +1547,10 @@ class World {
                 const _initializeFiles = () => {
                   const {files} = filesJson;
 
-                  const menuMesh = rend.getMenuMesh();
                   for (let i = 0; i < files.length; i++) {
                     const fileSpec = files[i];
                     const fileMesh = fs.makeFile(fileSpec);
-                    menuMesh.add(fileMesh);
+                    scene.add(fileMesh);
                   }
                 };
                 const _initializeInventory = () => {
@@ -1611,8 +1592,7 @@ class World {
                     matrix: DEFAULT_QUEST_MATRIX,
                   });
 
-                  const menuMesh = rend.getMenuMesh();
-                  menuMesh.add(mailMesh);
+                  scene.add(mailMesh);
                 };
 
                 _initializeElements();
