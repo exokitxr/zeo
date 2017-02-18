@@ -37,12 +37,14 @@ class Hub {
                 .then(serverJsonData => {
                   serverJson = serverJsonData;
 
-                  window.history.replaceState({}, document.title, serverJson.url);
+                  window.history.pushState({}, document.title, serverJson.url);
 
                   accept();
                 });
             } else {
               serverJson = null;
+
+              window.history.pushState({}, document.title, hubUrl);
 
               return Promise.resolve();
             }
