@@ -31,7 +31,6 @@
   "dependencies": {
     "archae": "0.0.28",
     "body-parser": "^1.16.0",
-    "dockerode": "^2.3.1",
     "fs-extra": "^2.0.0",
     "http-proxy": "^1.16.2",
     "lru-cache": "^4.0.2",
