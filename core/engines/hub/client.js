@@ -8,16 +8,34 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl}}} = archae;
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    const hubUrlPrefix = window.location.protocol + '//' + hubUrl + (window.location.port ? (':' + window.location.port) : '');
+    const fullHubUrl = 'https://' + hubUrl;
 
-    const _requestLogin = () => {
+    const _requestServers = fetch(fullHubUrl + '/hub/servers.json')
+      .then(res => res.json()
+        .then(serversJson => {
+          console.log('got servers', serversJson); // XXX
+
+          const _getServers = () => serversJson;
+
+          return {
+            getServers: _getServers,
+          };
+        })
+      )
+      .catch(err => {
+        console.warn(err);
+      });
+
+
+
+    /* const _requestLogin = () => {
       if (hubEnabled) {
         const token = (() => {
           const tokenParam = getQueryParameterByName('token');
@@ -36,7 +54,7 @@ class Hub {
         })();
 
         if (token !== null) {
-          return fetch(hubUrlPrefix + '/hub/login', {
+          return fetch(fullHubUrl + '/hub/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -82,7 +100,6 @@ class Hub {
         };
 
         const _isEnabled = () => hubEnabled;
-        const _getWorldName = () => worldName;
         const _getUserState = () => userState;
         const _getUserStateJson = () => {
           const {world, matrix} = userState;
@@ -108,7 +125,7 @@ class Hub {
           const {username} = userState;
 
           if (hubEnabled && username) {
-            return fetch(hubUrlPrefix + '/hub/userState', {
+            return fetch(fullHubUrl + '/hub/userState', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -122,7 +139,7 @@ class Hub {
         const _saveUserStateAsync = () => {
           const {username} = userState;
           if (hubEnabled && username) {
-            navigator.sendBeacon(hubUrlPrefix + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
+            navigator.sendBeacon(fullHubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
               type: 'application/json',
             }));
           }
@@ -130,7 +147,6 @@ class Hub {
 
         return {
           isEnabled: _isEnabled,
-          getWorldName: _getWorldName,
           getUserState: _getUserState,
           setUserStateMatrix: _setUserStateMatrix,
           getUserStateInventoryItem: _getUserStateInventoryItem,
@@ -141,7 +157,7 @@ class Hub {
       })
       .catch(err => {
         console.warn(err);
-      });
+      }); */
   }
 
   unmount() {

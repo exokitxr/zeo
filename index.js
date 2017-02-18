@@ -5,12 +5,9 @@ const archae = require('archae');
 
 const args = process.argv.slice(2);
 const flags = {
-  app: args.includes('app'),
+  server: args.includes('server'),
   site: args.includes('site'),
   hub: args.includes('hub'),
-  start: args.includes('start'),
-  stop: args.includes('stop'),
-  reboot: args.includes('reboot'),
   install: args.includes('install'),
   host: (() => {
     for (let i = 0; i < args.length; i++) {
@@ -32,18 +29,8 @@ const flags = {
     }
     return null;
   })(),
-  hubUrl: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^hubUrl=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
 };
-const hasFlag = (() => {
+const hasSomeFlag = (() => {
   for (const k in flags) {
     if (flags[k]) {
       return true;
@@ -51,27 +38,44 @@ const hasFlag = (() => {
   }
   return false;
 })();
-if (!hasFlag) {
-  flags.app = true;
+if (!hasSomeFlag) {
+  flags.server = true;
 }
 
+const hostname = flags.host || 'zeovr.io';
+const port = flags.port || 8000;
 const config = {
   dirname: __dirname,
-  hostname: flags.host || 'zeovr.io',
-  port: flags.port || 8000,
+  hostname: hostname,
+  port: port,
   publicDirectory: 'public',
   dataDirectory: 'data',
-  staticSite: flags.site,
+  installDirectory: 'installed',
+  // staticSite: flags.site, // XXX remove this option from archae
   metadata: {
+    site: {
+      hostname: hostname,
+      port: port,
+      url: hostname + ':' + port,
+    },
     hub: {
-      url: flags.hubUrl || 'zeovr.io',
-      numContainers: 10,
-      startPort: 9000,
-      enabled: Boolean(flags.hub || flags.hubUrl),
+      hostname: 'hub.' + hostname,
+      port: port,
+      url: 'hub.' + hostname + ':' + port,
+    },
+    server: {
+      hostname: 'server.' + hostname,
+      port: port,
+      url: 'server.' + hostname + ':' + port,
     },
   },
 };
 const a = archae(config);
+a.app.getHostname = req => {
+  const hostHeader = req.get('Host') || '';
+  const match = hostHeader.match(/^([^:]+)(?::[\s\S]*)?$/);
+  return match && match[1];
+};
 
 const _install = () => {
   if (flags.install) {
@@ -123,35 +127,9 @@ const _install = () => {
   }
 }
 
-const _stop = () => {
-  const stopPromises = [];
-  if (flags.stop || flags.reboot) {
-    stopPromises.push(require('./lib/hub').stop(a, config));
-  }
-
-  return Promise.all(stopPromises);
-};
-
-const _start = () => {
-  const startPromises = [];
-
-  if (flags.start || flags.reboot) {
-    const hub = require('./lib/hub');
-    const promise = hub.check(a, config)
-      .then(() => hub.start(a, config))
-    startPromises.push(promise);
-  }
-
-  return Promise.all(startPromises);
-};
-
 const _listen = () => {
   const listenPromises = [];
 
-  if (flags.app) {
-    const app = require('./lib/app');
-    listenPromises.push(app.listen(a, config));
-  }
   if (flags.site) {
     const site = require('./lib/site');
     listenPromises.push(site.listen(a, config));
@@ -160,13 +138,15 @@ const _listen = () => {
     const hub = require('./lib/hub');
     listenPromises.push(hub.listen(a, config));
   }
+  if (flags.server) {
+    const server = require('./lib/server');
+    listenPromises.push(server.listen(a, config));
+  }
 
   return Promise.all(listenPromises);
 };
 
 _install()
-  .then(() => _stop())
-  .then(() => _start())
   .then(() => _listen())
   .then(() => new Promise((accept, reject) => {
     const flagList = (() => {
@@ -181,10 +161,18 @@ _install()
 
     console.log('modes:', JSON.stringify(flagList));
 
-    if (flags.app || flags.site) {
+    if (flags.site || flags.hub || flags.server) {
       a.listen(err => {
         if (!err) {
-          console.log('https://' + config.hostname + ':' + config.port + '/');
+          if (flags.site) {
+            console.log('https://' + config.metadata.site.url + '/');
+          }
+          if (flags.hub) {
+            console.log('https://' + config.metadata.hub.url + '/');
+          }
+          if (flags.server) {
+            console.log('https://' + config.metadata.server.url + '/');
+          }
         } else {
           console.warn(err);
         }

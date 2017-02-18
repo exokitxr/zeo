@@ -229,8 +229,6 @@ class World {
             }
             app._router.stack.forEach(removeMiddlewares);
           };
-
-
         }
       });
   }
