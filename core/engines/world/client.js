@@ -91,25 +91,9 @@ class World {
           .then(res => res.json());
         const _requestInventory = () => fetch('/archae/world/inventory.json')
           .then(res => res.json());
-        const _requestWorldTimer = () => fetch('/archae/world/start-time.json')
+        const _requestStartTime = () => fetch('/archae/world/start-time.json')
           .then(res => res.json()
-            .then(({startTime}) => {
-              const now = Date.now();
-              let worldTime = now - startTime;
-
-              rend.on('update', () => {
-                const now = Date.now();
-                worldTime = now - startTime;
-              });
-
-              class WorldTimer {
-                getWorldTime() {
-                  return worldTime;
-                }
-              }
-
-              return new WorldTimer();
-            })
+            .then(({startTime}) => startTime)
           );
         const _requestUis = () => Promise.all([
           biolumi.requestUi({
@@ -129,23 +113,11 @@ class World {
             inventoryUi,
           }));
 
-        return Promise.all([
-          _requestTags(),
-          _requestFiles(),
-          _requestInventory(),
-          _requestWorldTimer(),
-          _requestUis(),
-        ])
-          .then(([
-            tagsJson,
-            filesJson,
-            inventoryJson,
-            worldTimer,
-            {
-              worldUi,
-              inventoryUi,
-            },
-          ]) => {
+        return _requestUis()
+          .then(({
+            worldUi,
+            inventoryUi,
+          }) => {
             if (live) {
               const _requestLocalModSpecs = () => new Promise((accept, reject) => {
                 if (npmState.cancelLocalRequest) {
@@ -252,7 +224,7 @@ class World {
                 );
               });
 
-              let lastTagsJsonString = JSON.stringify(tagsJson);
+              let lastTagsJsonString = null;
               const _saveTags = menuUtils.debounce(next => {
                 tagsJson = {
                   elements: tags.getTagsClass('elements').map(({item}) => item),
@@ -283,7 +255,7 @@ class World {
                   return Promise.resolve();
                 }
               });
-              let lastFilesJsonString = JSON.stringify(filesJson);
+              let lastFilesJsonString = null;
               const _saveFiles = menuUtils.debounce(next => {
                 filesJson = {
                   files: fs.getFiles().map(({file}) => file),
@@ -313,7 +285,7 @@ class World {
                   return Promise.resolve();
                 }
               });
-              let lastInventoryJsonString = JSON.stringify(inventoryJson);
+              let lastInventoryJsonString = null;
               const _saveInventory = menuUtils.debounce(next => {
                 inventoryJson = {
                   items: backpack.getItems().map(item => {
@@ -492,8 +464,39 @@ class World {
                 move(oldIndex, newIndex) {
                   tags.moveTag('equipment', oldIndex, newIndex);
                 }
+
+                removeAll() {
+                  const equipmentTagMeshes = tags.getTagsClass('equipment');
+
+                  for (let i = 0; i < equipmentTagMeshes.length; i++) {
+                    const tagMesh = equipmentTagMeshes[i];
+                    _unreifyTag(tagMesh);
+                  }
+                }
               }
               const equipmentManager = new EquipmentManager();
+
+              class WorldTimer {
+                constructor(startTime = 0) {
+                  this.startTime = startTime;
+                }
+
+                getWorldTime() {
+                  const {startTime} = this;
+                  const now = Date.now();
+                  const worldTime = now - startTime;
+                  return worldTime;
+                }
+
+                setStartTime(startTime) {
+                  this.startTime = startTime;
+                }
+              }
+              const worldTimer = new WorldTimer();
+
+              let tagsJson = null;
+              let filesJson = null;
+              let inventoryJson = null;
 
               const elementsState = {
                 empty: true,
@@ -1346,98 +1349,14 @@ class World {
               };
               fs.on('uploadEnd', uploadEnd);
 
-              const _initialize = () => {
-                const _initializeElements = () => {
-                  const {elements, free} = tagsJson;
-
-                  for (let i = 0; i < elements.length; i++) {
-                    const itemSpec = elements[i];
-                    const tagMesh = tags.makeTag(itemSpec);
-
-                    scene.add(tagMesh);
-
-                    elementManager.add(tagMesh);
-                  }
-                };
-                const _initializeEquipment = () => {
-                  const {equipment} = tagsJson;
-
-                  for (let i = 0; i < equipment.length; i++) {
-                    const itemSpec = equipment[i];
-
-                    if (itemSpec) {
-                      const tagMesh = tags.makeTag(itemSpec);
-
-                      const bagMesh = bag.getBagMesh();
-                      const {equipmentBoxMeshes} = bagMesh;
-                      const equipmentBoxMesh = equipmentBoxMeshes[i];
-                      equipmentBoxMesh.add(tagMesh);
-
-                      equipmentManager.set(i, tagMesh);
-                    }
-                  }
-                };
-                const _initializeFiles = () => {
-                  const {files} = filesJson;
-
-                  for (let i = 0; i < files.length; i++) {
-                    const fileSpec = files[i];
-                    const fileMesh = fs.makeFile(fileSpec);
-                    scene.add(fileMesh);
-                  }
-                };
-                const _initializeInventory = () => {
-                  const {items} = inventoryJson;
-
-                  for (let i = 0; i < items.length; i++) {
-                    const itemSpec = items[i];
-
-                    if (itemSpec) {
-                      const {type} = itemSpec;
-
-                      if (type === 'tag') {
-                        const {item: itemData} = itemSpec;
-                        const tagMesh = tags.makeTag(itemData);
-                        const item = {
-                          type: 'tag',
-                          mesh: tagMesh,
-                        };
-                        backpack.setItem(i, item);
-                      } else if (type === 'file') {
-                        const {item: itemData} = itemSpec;
-                        const tagMesh = fs.makeFile(itemData);
-                        const item = {
-                          type: 'file',
-                          mesh: tagMesh,
-                        };
-                        backpack.setItem(i, item);
-                      }
-                    }
-                  }
-                };
-                const _initializeMails = () => {
-                  const mailMesh = mail.makeMail({
-                    id: _makeId(),
-                    name: 'Explore with me.',
-                    author: 'avaer',
-                    created: Date.now() - (2 * 60 * 1000),
-                    matrix: [
-                      0, 1.5, -0.5,
-                      0, 0, 0, 1,
-                      1, 1, 1,
-                    ],
-                  });
-
-                  scene.add(mailMesh);
-                };
-
-                _initializeElements();
-                _initializeEquipment();
-                _initializeFiles();
-                _initializeInventory();
-                _initializeMails();
+              const connectServer = () => {
+                worldApi.connect();
               };
-              _initialize();
+              rend.addListener('connectServer', connectServer);
+              const disconnectServer = () => {
+                worldApi.disconnect();
+              };
+              rend.addListener('disconnectServer', disconnectServer);
 
               this._cleanup = () => {
                 SIDES.forEach(side => {
@@ -1459,6 +1378,9 @@ class World {
 
                 fs.removeListener('uploadStart', uploadStart);
                 fs.removeListener('uploadEnd', uploadEnd);
+
+                rend.removeListener('connectServer', connectServer);
+                rend.removeListener('disconnectServer', disconnectServer);
               };
 
               const modElementApis = {};
@@ -1477,6 +1399,200 @@ class World {
                   const tag = archae.getName(pluginInstance);
 
                   delete modElementApis[tag];
+                }
+
+                connect() { // XXX track connecting state here
+                  Promise.all([
+                    _requestTags(),
+                    _requestFiles(),
+                    _requestInventory(),
+                    _requestStartTime(),
+                  ])
+                    .then(([
+                      tagsJsonData,
+                      filesJsonData,
+                      inventoryJsonData,
+                      startTime,
+                    ]) => {
+                      tagsJson = tagsJsonData;
+                      filesJson = filesJsonData;
+                      inventoryJson = inventoryJsonData;
+                      lastTagsJsonString = JSON.stringify(tagsJson);
+                      lastFilesJsonString = JSON.stringify(filesJson);
+                      lastInventoryJsonString = JSON.stringify(inventoryJson);
+
+                      const _initializeElements = () => {
+                        const {elements, free} = tagsJson;
+
+                        for (let i = 0; i < elements.length; i++) {
+                          const itemSpec = elements[i];
+                          const tagMesh = tags.makeTag(itemSpec);
+
+                          scene.add(tagMesh);
+
+                          elementManager.add(tagMesh);
+                        }
+                      };
+                      const _initializeEquipment = () => {
+                        const {equipment} = tagsJson;
+
+                        for (let i = 0; i < equipment.length; i++) {
+                          const itemSpec = equipment[i];
+
+                          if (itemSpec) {
+                            const tagMesh = tags.makeTag(itemSpec);
+
+                            const bagMesh = bag.getBagMesh();
+                            const {equipmentBoxMeshes} = bagMesh;
+                            const equipmentBoxMesh = equipmentBoxMeshes[i];
+                            equipmentBoxMesh.add(tagMesh);
+
+                            equipmentManager.set(i, tagMesh);
+                          }
+                        }
+                      };
+                      const _initializeFiles = () => {
+                        const {files} = filesJson;
+
+                        for (let i = 0; i < files.length; i++) {
+                          const fileSpec = files[i];
+                          const fileMesh = fs.makeFile(fileSpec);
+                          scene.add(fileMesh);
+                        }
+                      };
+                      const _initializeInventory = () => {
+                        const {items} = inventoryJson;
+
+                        for (let i = 0; i < items.length; i++) {
+                          const itemSpec = items[i];
+
+                          if (itemSpec) {
+                            const {type} = itemSpec;
+
+                            if (type === 'tag') {
+                              const {item: itemData} = itemSpec;
+                              const tagMesh = tags.makeTag(itemData);
+                              const item = {
+                                type: 'tag',
+                                mesh: tagMesh,
+                              };
+                              backpack.setItem(i, item);
+                            } else if (type === 'file') {
+                              const {item: itemData} = itemSpec;
+                              const tagMesh = fs.makeFile(itemData);
+                              const item = {
+                                type: 'file',
+                                mesh: tagMesh,
+                              };
+                              backpack.setItem(i, item);
+                            }
+                          }
+                        }
+                      };
+                      /* const _initializeMails = () => {
+                        const mailMesh = mail.makeMail({
+                          id: _makeId(),
+                          name: 'Explore with me.',
+                          author: 'avaer',
+                          created: Date.now() - (2 * 60 * 1000),
+                          matrix: [
+                            0, 1.5, -0.5,
+                            0, 0, 0, 1,
+                            1, 1, 1,
+                          ],
+                        });
+
+                        scene.add(mailMesh);
+                      }; */
+
+                      _initializeElements();
+                      _initializeEquipment();
+                      _initializeFiles();
+                      _initializeInventory();
+                      // _initializeMails();
+
+                      worldTimer.setStartTime(startTime);
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+                }
+
+                disconnect() {
+                  const _uninitializeElements = () => {
+                    const elementTagMeshes = tags.getTagsClass('elements').slice();
+
+                    for (let i = 0; i < elementTagMeshes.length; i++) {
+                      const tagMesh = elementTagMeshes[i];
+
+                      elementManager.remove(tagMesh);
+
+                      tags.destroyTag(tagMesh);
+
+                      scene.remove(tagMesh);
+                    }
+                  };
+                  const _uninitializeEquipment = () => {
+                    const equipmentTagMeshes = tags.getTagsClass('equipment').slice();
+
+                    for (let i = 0; i < elementTagMeshes.length; i++) {
+                      const tagMesh = equipmentTagMeshes[i];
+
+                      equipmentManager.remove(tagMesh);
+
+                      tags.destroyTag(tagMesh);
+
+                      scene.remove(tagMesh);
+                    }
+                  };
+                  const _uninitializeFiles = () => {
+                    const fileMeshes = fs.getFiles().slice();
+
+                    for (let i = 0; i < fileMeshes.length; i++) {
+                      const fileMesh = fileMeshes[i];
+
+                      fs.destroyFile(fileMesh);
+
+                      scene.remove(fileMesh);
+                    }
+                  };
+                  const _uninitializeInventory = () => {
+                    const itemSpecs = backpack.getItems();
+
+                    for (let i = 0; i < itemSpecs.length; i++) {
+                      const itemSpec = itemSpecs[i];
+
+                      if (itemSpec) {
+                        const {type} = itemSpec;
+
+                        if (type === 'tag') {
+                          const {mesh: tagMesh} = itemSpec;
+                          tags.destroyTag(tagMesh);
+
+                          backpack.unsetItem(i);
+                        } else if (type === 'file') {
+                          const {mesh: tagMesh} = itemSpec;
+                          fs.destroyFile(tagMesh);
+
+                          backpack.unsetItem(i);
+                        }
+                      }
+                    }
+                  };
+
+                  _uninitializeElements();
+                  _uninitializeEquipment();
+                  _uninitializeFiles();
+                  _uninitializeInventory();
+
+                  tagsJson = null;
+                  filesJson = null;
+                  inventoryJson = null;
+                  lastTagsJsonString = null;
+                  lastFilesJsonString = null;
+                  lastInventoryJsonString = null;
+
+                  worldTimer.setStartTime(0);
                 }
               }
 

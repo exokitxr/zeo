@@ -104,7 +104,7 @@ class Servers {
                 const serversState = {
                   page: 'list',
                   servers: hub.getServers(),
-                  currentServerUrl: hub.getCurrentServerUrl(),
+                  currentServerUrl: hub.getCurrentServerUrl(), // XXX reload this when switching servers
                 };
                 const focusState = {
                   type: '',

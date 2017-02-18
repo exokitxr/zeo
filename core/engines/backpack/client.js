@@ -298,6 +298,10 @@ class Backpack {
           })();
           itemData.matrix = DEFAULT_MATRIX;
         };
+        const _unsetItem = (index) => {
+          const {items} = itemsState;
+          items[index] = null;
+        };
         const _getHoveredItemIndex = side => {
           const hoverState = hoverStates[side];
           const {targetItemIndex} = hoverState;
@@ -309,6 +313,7 @@ class Backpack {
           getItems: _getItems,
           getItem: _getItem,
           setItem: _setItem,
+          unsetItem: _unsetItem,
           getHoveredItemIndex: _getHoveredItemIndex,
         };
       }

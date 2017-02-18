@@ -514,6 +514,14 @@ class Fs {
               });
           }
 
+          destroyFile(fileMesh) {
+            const index = fileMeshes.indexOf(fileMesh);
+
+            if (index !== -1) {
+              fileMeshes.splice(index, 1);
+            }
+          }
+
           getFiles() {
             return fileMeshes;
           }

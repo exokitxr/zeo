@@ -198,6 +198,8 @@ class Zeo {
               return _startRenderLoop()
                 .then(() => {
                   if (live) {
+                    rend.connectServer();
+
                     const _initHelper = () => {
                       const helper = document.createElement('div');
                       helper.id = 'helper';

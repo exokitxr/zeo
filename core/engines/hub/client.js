@@ -19,12 +19,20 @@ class Hub {
 
     const _requestServers = () => fetch(fullHubUrl + '/hub/servers.json')
       .then(res => res.json());
+    const _requestServer = () => fetch(fullHubUrl + '/hub/server.json')
+      .then(res => res.json());
 
-    return _requestServers()
-      .then(serversJson => {
+    return Promise.all([
+      _requestServers(),
+      _requestServer(),
+    ])
+      .then(([
+        serversJson,
+        serverJson,
+      ]) => {
         if (live) {
           const _getServers = () => serversJson.servers;
-          const _getCurrentServerUrl = () => serversJson.currentServerUrl;
+          const _getCurrentServerUrl = () => serverJson.url;
           const hubEnabled = false;
           const worldName = (() => {
             if (hubEnabled) {

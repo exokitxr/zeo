@@ -1492,6 +1492,14 @@ class Rend {
 
                 _removeModApiElement(tag);
               }
+
+              connectServer() {
+                this.emit('connectServer');
+              }
+
+              disconnectServer() {
+                this.emit('disconnectServer');
+              }
             }
             api = new RendApi();
             api.on('update', () => {
