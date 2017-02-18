@@ -81,6 +81,7 @@ const config = {
   port: port,
   publicDirectory: 'public',
   dataDirectory: 'data',
+  cryptoDirectory: 'crypto',
   installDirectory: 'installed',
   // staticSite: flags.site, // XXX remove this option from archae
   metadata: {
