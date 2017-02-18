@@ -39,6 +39,26 @@ const flags = {
     }
     return null;
   })(),
+  cryptoDirectory: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^cryptoDirectory=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
+  installDirectory: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^installDirectory=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
   serverHost: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
@@ -95,6 +115,8 @@ if (!hasSomeFlag) {
 const hostname = flags.host || 'zeovr.io';
 const port = flags.port || 8000;
 const dataDirectory = flags.dataDirectory || 'data';
+const cryptoDirectory = flags.cryptoDirectory || 'crypto';
+const installDirectory = flags.installDirectory || 'installed';
 const serverHost = flags.serverHost || ('server.' + hostname);
 const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
@@ -103,8 +125,8 @@ const config = {
   port: port,
   publicDirectory: 'public',
   dataDirectory: dataDirectory,
-  cryptoDirectory: 'crypto',
-  installDirectory: 'installed',
+  cryptoDirectory: cryptoDirectory,
+  installDirectory: installDirectory,
   // staticSite: flags.site, // XXX remove this option from archae
   metadata: {
     site: {
