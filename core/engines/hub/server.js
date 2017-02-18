@@ -1,6 +1,6 @@
 const https = require('https');
 
-const SERVER_PING_INTERVAL = 4 * 60 * 1000;
+const SERVER_REFRESH_INTERVAL = 30 * 1000;
 
 class Hub {
   constructor(archae) {
@@ -28,15 +28,24 @@ class Hub {
 
     const username = 'avaer'; // XXX source this from hub login
     const worldname = 'proteus';
+    const users = [
+      'allie',
+      'reede',
+      'fay',
+      'khromix',
+    ];
+    const ranked = true;
 
-    const _queuePingServer = _debounce(next => {
-      _tryPingServer()
+    const _queueRefreshServer = _debounce(next => {
+      _tryRefreshServer()
         .then(() => {
           next();
         });
     });
-    const _tryPingServer = () => new Promise((accept, reject) => {
-      _pingServer()
+    const _tryRefreshServer = () => new Promise((accept, reject) => {
+      Promise.all([
+        _announceServer(),
+      ])
         .then(() => {
           accept();
         })
@@ -46,12 +55,12 @@ class Hub {
           accept();
         });
     });
-    const _pingServer = () => new Promise((accept, reject) => {
+    const _announceServer = () => new Promise((accept, reject) => {
       const req = https.request({
         method: 'POST',
         host: hubUrlSpec.host,
         port: hubUrlSpec.port,
-        path: '/hub/server',
+        path: '/hub/servers/announce',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -60,6 +69,8 @@ class Hub {
         username: username,
         worldname: worldname,
         url: serverUrl,
+        users: users,
+        ranked: ranked,
       }));
 
       req.on('response', res => {
@@ -84,15 +95,15 @@ class Hub {
       });
     });
 
-    return _tryPingServer()
+    return _tryRefreshServer()
       .then(() => {
         if (live) {
-          const serverPingInterval = setInterval(() => {
-            _queuePingServer();
-          }, SERVER_PING_INTERVAL);
+          const serverRefreshInterval = setInterval(() => {
+            _queueRefreshServer();
+          }, SERVER_REFRESH_INTERVAL);
 
           this._cleanup = () => {
-            clearInterval(serverPingInterval);
+            clearInterval(serverRefreshInterval);
           };
         }
       });

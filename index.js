@@ -68,6 +68,9 @@ const config = {
       port: port,
       url: 'server.' + hostname + ':' + port,
     },
+    current: {
+      url: 'server.' + hostname + ':' + port,
+    },
   },
 };
 const a = archae(config);

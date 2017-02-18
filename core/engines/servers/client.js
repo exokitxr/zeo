@@ -27,6 +27,7 @@ class Servers {
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
+      '/core/engines/hub',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
@@ -36,6 +37,7 @@ class Servers {
         three,
         input,
         webvr,
+        hub,
         biolumi,
         rend,
         hands,
@@ -101,6 +103,8 @@ class Servers {
 
                 const serversState = {
                   page: 'list',
+                  servers: hub.getServers(),
+                  currentServerUrl: hub.getCurrentServerUrl(),
                 };
                 const focusState = {
                   type: '',

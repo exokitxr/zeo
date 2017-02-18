@@ -23,9 +23,8 @@ class Hub {
     return _requestServers()
       .then(serversJson => {
         if (live) {
-          console.log('got servers', serversJson); // XXX
-
-          const _getServers = () => serversJson;
+          const _getServers = () => serversJson.servers;
+          const _getCurrentServerUrl = () => serversJson.currentServerUrl;
           const hubEnabled = false;
           const worldName = (() => {
             if (hubEnabled) {
@@ -98,6 +97,7 @@ class Hub {
           return {
             isEnabled: _isEnabled,
             getServers: _getServers,
+            getCurrentServerUrl: _getCurrentServerUrl,
             getUserState: _getUserState,
             setUserStateMatrix: _setUserStateMatrix,
             getUserStateInventoryItem: _getUserStateInventoryItem,

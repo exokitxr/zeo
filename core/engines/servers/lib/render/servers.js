@@ -15,10 +15,10 @@ const pulseWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(pulseWhiteIcon);
 
 const makeRenderer = ({creatureUtils}) => {
 
-const getServersPageSrc = ({page}) => {
+const getServersPageSrc = ({page, servers, currentServerUrl}) => {
   switch (page) {
     case 'list':
-      return getListPageSrc({page});
+      return getListPageSrc({page, servers, currentServerUrl});
     case 'server':
       return getServerPageSrc();
     case 'newServer':
@@ -28,7 +28,7 @@ const getServersPageSrc = ({page}) => {
   }
 };
 
-const getListPageSrc = ({page}) => {
+const getListPageSrc = ({page, servers, currentServerUrl}) => {
   const leftSrc = (() => {
     const headerSrc = (() => {
       return `\
@@ -40,20 +40,12 @@ const getListPageSrc = ({page}) => {
         </div>
       `;
     })();
-    const threadsSrc = (() => {
-      const _getThreadSrc = index => {
-        const worldname = 'avaer/' + _makeId();
-        const url = 'https://server.zeovr.io:8000';
-        const users = [
-          'allie',
-          'reede',
-          'fay',
-          'khromix',
-        ];
-        const ping = Math.floor(Math.random() * 1000);
-        const created = Math.floor((Math.random() * 60 * 24) * 60 * 1000);
-        const selected = index === 0;
-        const ranked = Math.random() < 0.5;
+    const serversSrc = (() => {
+      const _getServerSrc = server => {
+        const {username, worldname, url, users, ranked} = server;
+        const fullWorldname = username + '/' + worldname;
+        const ping = Math.floor(Math.random() * 1000); // XXX actually compute this
+        const selected = url === currentServerUrl;
 
         const _getSelectedStyle = selected => {
           if (selected) {
@@ -76,7 +68,7 @@ const getListPageSrc = ({page}) => {
             }
             <div style="display: flex; padding: 5px 20px; flex-grow: 1; flex-direction: column;">
               <div style="display: flex; align-items: center;">
-                <div style="margin-right: auto; font-size: 16px; font-weight: 400;">${worldname}</div>
+                <div style="margin-right: auto; font-size: 16px; font-weight: 400;">${fullWorldname}</div>
                 ${ranked ?
                   `<div style="display: flex; margin-right: 10px; color: #E91E63; font-size: 13px; font-weight: 400; align-items: center;">Ranked</div>`
                 :
@@ -102,8 +94,9 @@ const getListPageSrc = ({page}) => {
       };
 
       let result = '';
-      for (let i = 0; i < 10; i++) {
-        result += _getThreadSrc(i);
+      for (let i = 0; i < servers.length; i++) {
+        const server = servers[i];
+        result += _getServerSrc(server);
       }
       return result;
     })();
@@ -111,7 +104,7 @@ const getListPageSrc = ({page}) => {
     return `\
       <div style="display: flex; padding: 20px 30px; flex-grow: 1; flex-direction: column;">
         ${headerSrc}
-        ${threadsSrc}
+        ${serversSrc}
       </div>
     `;
   })();
