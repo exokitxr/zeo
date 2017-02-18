@@ -10,6 +10,7 @@ class Hub {
   mount() {
     const {_archae: archae} = this;
     const {app, dirname, dataDirectory} = archae.getCore();
+    const {metadata: {server: {url: serverUrl}}} = archae;
 
     const {metadata: {hub: {url: hubUrl}}} = archae;
     const hubUrlSpec = (() => {
@@ -56,8 +57,9 @@ class Hub {
         },
       });
       req.end(JSON.stringify({
-        username,
-        worldname,
+        username: username,
+        worldname: worldname,
+        url: serverUrl,
       }));
 
       req.on('response', res => {
