@@ -17,23 +17,96 @@ class Hub {
 
     const fullHubUrl = 'https://' + hubUrl;
 
-    const _requestServers = fetch(fullHubUrl + '/hub/servers.json')
-      .then(res => res.json()
-        .then(serversJson => {
+    const _requestServers = () => fetch(fullHubUrl + '/hub/servers.json')
+      .then(res => res.json());
+
+    return _requestServers()
+      .then(serversJson => {
+        if (live) {
           console.log('got servers', serversJson); // XXX
 
           const _getServers = () => serversJson;
+          const hubEnabled = false;
+          const worldName = (() => {
+            if (hubEnabled) {
+              const {hostname} = window.location;
+              const match = hostname.match(/^([^.]+)\./);
+              return match && match[1];
+            } else {
+              return null;
+            }
+          })();
+          const userState = {
+            username: null,
+            world: null,
+            matrix: DEFAULT_MATRIX,
+            inventory: (() => {
+              const result = Array(NUM_INVENTORY_ITEMS);
+              for (let i = 0; i < NUM_INVENTORY_ITEMS; i++) {
+                result[i] = null;
+              }
+              return result;
+            })(),
+          };
+
+          const _isEnabled = () => hubEnabled;
+          const _getUserState = () => userState;
+          const _getUserStateJson = () => {
+            const {world, matrix} = userState;
+            return {
+              token: null,
+              state: {
+                world,
+                matrix,
+                inventory,
+              },
+            };
+          };
+          const _setUserStateMatrix = matrix => {
+            userState.matrix = matrix;
+          };
+          const _getUserStateInventoryItem = index => {
+            return userState.inventory[index] || null;
+          };
+          const _setUserStateInventoryItem = (index, item) => {
+            userState.inventory[index] = item;
+          };
+          const _saveUserState = () => {
+            const {username} = userState;
+
+            if (hubEnabled && username) {
+              return fetch(fullHubUrl + '/hub/userState', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(_getUserStateJson()),
+              });
+            } else {
+              return Promise.resolve();
+            }
+          };
+          const _saveUserStateAsync = () => {
+            const {username} = userState;
+            if (hubEnabled && username) {
+              navigator.sendBeacon(fullHubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
+                type: 'application/json',
+              }));
+            }
+          };
 
           return {
+            isEnabled: _isEnabled,
             getServers: _getServers,
+            getUserState: _getUserState,
+            setUserStateMatrix: _setUserStateMatrix,
+            getUserStateInventoryItem: _getUserStateInventoryItem,
+            setUserStateInventoryItem: _setUserStateInventoryItem,
+            saveUserState: _saveUserState,
+            saveUserStateAsync: _saveUserStateAsync,
           };
-        })
-      )
-      .catch(err => {
-        console.warn(err);
+        }
       });
-
-
 
     /* const _requestLogin = () => {
       if (hubEnabled) {
