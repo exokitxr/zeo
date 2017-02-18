@@ -56,7 +56,7 @@ class Hub {
         });
     });
     const _announceServer = () => new Promise((accept, reject) => {
-      const req = https.request({
+      const options = {
         method: 'POST',
         host: hubUrlSpec.host,
         port: hubUrlSpec.port,
@@ -64,7 +64,8 @@ class Hub {
         headers: {
           'Content-Type': 'application/json',
         },
-      });
+      };
+      const req = https.request(options);
       req.end(JSON.stringify({
         username: username,
         worldname: worldname,
@@ -82,7 +83,12 @@ class Hub {
           if (statusCode >= 200 && statusCode < 300) {
             accept();
           } else {
-            const err = new Error('server ping returned erro status code: ' + JSON.stringify(statusCode));
+            const err = new Error('server ping returned error status code: ' + JSON.stringify({
+              host: options.host,
+              port: options.port,
+              path: options.path,
+              statusCode: statusCode,
+            }, null, 2));
             reject(err);
           }
         });

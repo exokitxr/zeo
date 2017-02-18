@@ -29,10 +29,30 @@ const flags = {
     }
     return null;
   })(),
+  dataDirectory: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^dataDirectory=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
   serverHost: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
       const match = arg.match(/^serverHost=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
+  hubUrl: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^hubUrl=(.+)$/);
       if (match) {
         return match[1];
       }
@@ -74,30 +94,26 @@ if (!hasSomeFlag) {
 
 const hostname = flags.host || 'zeovr.io';
 const port = flags.port || 8000;
+const dataDirectory = flags.dataDirectory || 'data';
 const serverHost = flags.serverHost || ('server.' + hostname);
+const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
   dirname: __dirname,
   hostname: hostname,
   port: port,
   publicDirectory: 'public',
-  dataDirectory: 'data',
+  dataDirectory: dataDirectory,
   cryptoDirectory: 'crypto',
   installDirectory: 'installed',
   // staticSite: flags.site, // XXX remove this option from archae
   metadata: {
     site: {
-      hostname: hostname,
-      port: port,
       url: hostname + ':' + port,
     },
     hub: {
-      hostname: 'hub.' + hostname,
-      port: port,
-      url: 'hub.' + hostname + ':' + port,
+      url: hubUrl,
     },
     server: {
-      hostname: serverHost,
-      port: port,
       url: serverHost + ':' + port,
     },
     current: {
@@ -114,53 +130,58 @@ a.app.getHostname = req => {
 
 const _install = () => {
   if (flags.install) {
-    const _flatten = a => {
-      const result = [];
-      for (let i = 0; i < a.length; i++) {
-        const e = a[i];
-        result.push.apply(result, e);
+    return _getAllPlugins()
+     .then(plugins => a.installPlugins(plugins));
+  } else {
+    return Promise.resolve();
+  }
+};
+
+const _getAllPlugins = () => {
+  const _flatten = a => {
+    const result = [];
+    for (let i = 0; i < a.length; i++) {
+      const e = a[i];
+      result.push.apply(result, e);
+    }
+    return result;
+  };
+  const _readdir = p => new Promise((accept, reject) => {
+    fs.readdir(p, (err, files) => {
+      if (!err) {
+        const decoratedFiles = files.map(file => path.join(p, file));
+        accept(decoratedFiles);
+      } else {
+        reject(err);
       }
-      return result;
-    };
-    const _readdir = p => new Promise((accept, reject) => {
-      fs.readdir(p, (err, files) => {
+    });
+  });
+  const _filterDirectories = files => {
+    const acc = [];
+
+    return Promise.all(files.map(file => new Promise((accept, reject) => {
+      fs.lstat(file, (err, stats) => {
         if (!err) {
-          const decoratedFiles = files.map(file => path.join(p, file));
-          accept(decoratedFiles);
+          if (stats.isDirectory()) {
+            acc.push(file);
+          }
+
+          accept();
         } else {
           reject(err);
         }
       });
-    });
-    const _filterDirectories = files => {
-      const acc = [];
+    }))).then(() => acc);
+  };
 
-      return Promise.all(files.map(file => new Promise((accept, reject) => {
-        fs.lstat(file, (err, stats) => {
-          if (!err) {
-            if (stats.isDirectory()) {
-              acc.push(file);
-            }
-
-            accept();
-          } else {
-            reject(err);
-          }
-        });
-      }))).then(() => acc);
-    };
-
-    return Promise.all([
-      path.join(config.dirname, '/core/engines'),
-      path.join(config.dirname, '/core/plugins'),
-    ].map(_readdir))
-      .then(files => _filterDirectories(_flatten(files))
-        .then(directories => a.installPlugins(directories.map(directory => directory.slice(config.dirname.length))))
-      );
-  } else {
-    return Promise.resolve();
-  }
-}
+  return Promise.all([
+    path.join(config.dirname, '/core/engines'),
+    path.join(config.dirname, '/core/plugins'),
+  ].map(_readdir))
+    .then(files => _filterDirectories(_flatten(files))
+      .then(directories => directories.map(directory => directory.slice(config.dirname.length)))
+    );
+};
 
 const _listen = () => {
   const listenPromises = [];
@@ -178,42 +199,47 @@ const _listen = () => {
     listenPromises.push(server.listen(a, config));
   }
 
-  return Promise.all(listenPromises);
+  return Promise.all(listenPromises)
+    .then(() => {
+      if (flags.site || flags.hub || flags.server) {
+        return new Promise((accept, reject) => {
+          a.listen(err => {
+            if (!err) {
+              accept();
+            } else {
+              reject(err);
+            }
+          });
+        });
+      } else {
+        return Promise.resolve();
+      }
+    });
+};
+
+const _boot = () => {
+  if (flags.hub || flags.server) {
+    return _getAllPlugins()
+     .then(plugins => a.requestPlugins(plugins));
+  } else {
+    return Promise.resolve();
+  }
 };
 
 _install()
   .then(() => _listen())
-  .then(() => new Promise((accept, reject) => {
-    const flagList = (() => {
-      const result = [];
-      for (const k in flags) {
-        if (flags[k]) {
-          result.push(k);
-        }
-      }
-      return result;
-    })();
-
-    console.log('modes:', JSON.stringify(flagList));
-
-    if (flags.site || flags.hub || flags.server) {
-      a.listen(err => {
-        if (!err) {
-          if (flags.site) {
-            console.log('https://' + config.metadata.site.url + '/');
-          }
-          if (flags.hub) {
-            console.log('https://' + config.metadata.hub.url + '/');
-          }
-          if (flags.server) {
-            console.log('https://' + config.metadata.server.url + '/');
-          }
-        } else {
-          console.warn(err);
-        }
-      });
+  .then(() => _boot())
+  .then(() => {
+    if (flags.site) {
+      console.log('https://' + config.metadata.site.url + '/');
     }
-  }))
+    if (flags.hub) {
+      console.log('https://' + config.metadata.hub.url + '/');
+    }
+    if (flags.server) {
+      console.log('https://' + config.metadata.server.url + '/');
+    }
+  })
   .catch(err => {
     console.warn(err);
 

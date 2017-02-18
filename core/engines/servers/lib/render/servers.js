@@ -58,7 +58,7 @@ const getListPageSrc = ({page, servers, currentServerUrl}) => {
         return `\
           <div style="display: flex; height: 100px; margin-bottom: 10px; ${_getSelectedStyle(selected)}; box-sizing: border-box;">
             ${!selected ?
-              `<a style="display: flex; width: 100px; height: 100px; margin: -1px 0 -1px -1px; background-color: #FFF; color: #000; font-size: 13px; text-decoration: none; justify-content: center; align-items: center;" onclick="servers:connect:${index}">
+              `<a style="display: flex; width: 100px; height: 100px; margin: -1px 0 -1px -1px; background-color: #FFF; color: #000; font-size: 13px; text-decoration: none; justify-content: center; align-items: center;" onclick="servers:connect:${url}">
                 <div style="padding: 5px 15px; border: 1px solid #333; border-radius: 100px;">Connect</div>
               </a>`
             :
