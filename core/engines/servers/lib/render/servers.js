@@ -42,6 +42,7 @@ const getListPageSrc = ({page}) => {
     const threadsSrc = (() => {
       const _getThreadSrc = index => {
         const worldname = 'avaer/' + _makeId();
+        const url = 'https://server.zeovr.io:8000';
         const users = [
           'allie',
           'reede',
@@ -52,21 +53,24 @@ const getListPageSrc = ({page}) => {
         const created = Math.floor((Math.random() * 60 * 24) * 60 * 1000);
 
         return `\
-          <a style="display: flex; margin-bottom: 10px; text-decoration: none;" onclick="servers:server:${index}">
-            <div style="margin-right: 20px; width: 100px; height: 100px; background-color: #FFF;"></div>
-            <div style="display: flex; flex-grow: 1; flex-direction: column;">
+          <div style="display: flex; margin-bottom: 10px; border: 1px solid #EEE; text-decoration: none;">
+            <a style="display: flex; width: 100px; height: 100px; font-size: 13px; text-decoration: none; justify-content: center; align-items: center;">
+              <div style="padding: 5px 15px; border: 1px solid #333; border-radius: 100px;">Connect</div>
+            </a>
+            <div style="display: flex; padding: 5px 20px; flex-grow: 1; flex-direction: column;">
               <div style="display: flex; align-items: center;">
-                <div style="margin-bottom: 5px; margin-right: auto; font-size: 20px; font-weight: 400;">${worldname}</div>
-                <div style="display: flex; height: 32px; margin-right: 10px; font-size: 16px; align-items: center;">
-                  <img src="${pulseIconSrc}" width="20" height="20" style="margin-right: 5px;">
+                <div style="margin-right: auto; font-size: 16px; font-weight: 400;">${worldname}</div>
+                <div style="display: flex; margin-right: 10px; font-size: 13px; align-items: center;">
+                  <img src="${pulseIconSrc}" width="18" height="18" style="margin-right: 5px;">
                   <div>${prettyms(ping)}</div>
                 </div>
-                <div style="display: flex; height: 32px; font-size: 16px; align-items: center;">
-                  <img src="${clockIconSrc}" width="20" height="20" style="margin-right: 5px;">
+                <div style="display: flex; font-size: 13px; align-items: center;">
+                  <img src="${clockIconSrc}" width="18" height="18" style="margin-right: 5px;">
                   <div>${prettyms(created)}</div>
                 </div>
               </div>
-              <div style="display: flex; align-items: center;">
+              <div style="display: flex; margin-bottom: 5px; font-size: 13px; align-items: center;">${url}</div>
+              <div style="display: flex; margin-bottom: 5px;">
                 ${users.map(user => `\
                   <div style="display: flex; margin-right: 10px; margin-bottom: 2px; padding: 2px 10px; background-color: #EEE; border-radius: 100px; font-size: 13px; line-height: 1; align-items: center;">
                     <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="18" height="18" style="margin-right: 10px; image-rendering: pixelated;" />
@@ -75,7 +79,7 @@ const getListPageSrc = ({page}) => {
                 `).join('\n')}
               </div>
             </div>
-          </a>
+          </div>
         `;
       };
 
