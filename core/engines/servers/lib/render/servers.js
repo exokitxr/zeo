@@ -7,10 +7,16 @@ const karmaBlackIcon = require('../img/karma');
 const karmaBlackIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaBlackIcon);
 const karmaWhiteIcon = require('../img/karma-white');
 const karmaWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(karmaWhiteIcon);
-const pulseIcon = require('../img/pulse');
-const pulseIconSrc = 'data:image/svg+xml;base64,' + btoa(pulseIcon);
-const clockIcon = require('../img/clock');
-const clockIconSrc = 'data:image/svg+xml;base64,' + btoa(clockIcon);
+
+const pulseBlackIcon = require('../img/pulse');
+const pulseBlackIconSrc = 'data:image/svg+xml;base64,' + btoa(pulseBlackIcon);
+const pulseWhiteIcon = require('../img/pulse-white');
+const pulseWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(pulseWhiteIcon);
+
+const clockBlackIcon = require('../img/clock');
+const clockBlackIconSrc = 'data:image/svg+xml;base64,' + btoa(clockBlackIcon);
+const clockWhiteIcon = require('../img/clock-white');
+const clockWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(clockWhiteIcon);
 
 const makeRenderer = ({creatureUtils}) => {
 
@@ -51,28 +57,49 @@ const getListPageSrc = ({page}) => {
         ];
         const ping = Math.floor(Math.random() * 1000);
         const created = Math.floor((Math.random() * 60 * 24) * 60 * 1000);
+        const selected = index === 0;
+        const ranked = Math.random() < 0.5;
+
+        const _getSelectedStyle = selected => {
+          if (selected) {
+            return 'background-color: #000; border: 1px solid transparent; color: #FFF;';
+          } else {
+            return 'background-color: #FFF; border: 1px solid #EEE;';
+          }
+        };
 
         return `\
-          <div style="display: flex; margin-bottom: 10px; border: 1px solid #EEE; text-decoration: none;">
-            <a style="display: flex; width: 100px; height: 100px; font-size: 13px; text-decoration: none; justify-content: center; align-items: center;">
-              <div style="padding: 5px 15px; border: 1px solid #333; border-radius: 100px;">Connect</div>
-            </a>
+          <div style="display: flex; height: 100px; margin-bottom: 10px; ${_getSelectedStyle(selected)}; box-sizing: border-box;">
+            ${!selected ?
+              `<a style="display: flex; width: 100px; height: 100px; margin: -1px 0 -1px -1px; background-color: #FFF; color: #000; font-size: 13px; text-decoration: none; justify-content: center; align-items: center;" onclick="servers:connect:${index}">
+                <div style="padding: 5px 15px; border: 1px solid #333; border-radius: 100px;">Connect</div>
+              </a>`
+            :
+              `<a style="display: flex; width: 100px; height: 100px; margin: -1px 0 -1px -1px; background-color: #FFF; color: #000; font-size: 13px; text-decoration: none; justify-content: center; align-items: center;" onclick="servers:disconnect">
+                <div style="padding: 5px 15px; border: 1px solid #333; border-radius: 100px;">Disconnect</div>
+              </a>`
+            }
             <div style="display: flex; padding: 5px 20px; flex-grow: 1; flex-direction: column;">
               <div style="display: flex; align-items: center;">
                 <div style="margin-right: auto; font-size: 16px; font-weight: 400;">${worldname}</div>
+                ${ranked ?
+                  `<div style="display: flex; margin-right: 10px; color: #E91E63; font-size: 13px; font-weight: 400; align-items: center;">Ranked</div>`
+                :
+                  `<div style="display: flex; margin-right: 10px; font-size: 13px; align-items: center;">Creative</div>`
+                }
                 <div style="display: flex; margin-right: 10px; font-size: 13px; align-items: center;">
-                  <img src="${pulseIconSrc}" width="18" height="18" style="margin-right: 5px;">
+                  <img src="${!selected ? pulseBlackIconSrc : pulseWhiteIconSrc}" width="18" height="18" style="margin-right: 5px;">
                   <div>${prettyms(ping)}</div>
                 </div>
-                <div style="display: flex; font-size: 13px; align-items: center;">
-                  <img src="${clockIconSrc}" width="18" height="18" style="margin-right: 5px;">
+                <!-- <div style="display: flex; font-size: 13px; align-items: center;">
+                  <img src="${!selected ? clockBlackIconSrc : clockWhiteIconSrc}" width="18" height="18" style="margin-right: 5px;">
                   <div>${prettyms(created)}</div>
-                </div>
+                </div> -->
               </div>
               <div style="display: flex; margin-bottom: 5px; font-size: 13px; align-items: center;">${url}</div>
               <div style="display: flex; margin-bottom: 5px;">
                 ${users.map(user => `\
-                  <div style="display: flex; margin-right: 10px; margin-bottom: 2px; padding: 2px 10px; background-color: #EEE; border-radius: 100px; font-size: 13px; line-height: 1; align-items: center;">
+                  <div style="display: flex; margin-right: 10px; margin-bottom: 2px; padding: 2px 10px; background-color: ${selected ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}; border-radius: 100px; font-size: 13px; line-height: 1; align-items: center;">
                     <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="18" height="18" style="margin-right: 10px; image-rendering: pixelated;" />
                     <div>${user}</div>
                   </div>
