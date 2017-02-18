@@ -8,23 +8,21 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl}}} = archae;
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    const fullHubUrl = 'https://' + hubUrl;
-
-    const _requestServers = () => fetch(fullHubUrl + '/hub/servers.json')
+    const _requestServers = hubUrl => fetch('https://' + hubUrl + '/hub/servers.json')
       .then(res => res.json());
-    const _requestServer = () => fetch(fullHubUrl + '/hub/server.json')
+    const _requestServer = serverUrl => fetch('https://' + serverUrl + '/server/server.json')
       .then(res => res.json());
 
     return Promise.all([
-      _requestServers(),
-      _requestServer(),
+      _requestServers(hubUrl),
+      _requestServer(serverUrl),
     ])
       .then(([
         serversJson,
@@ -32,7 +30,23 @@ class Hub {
       ]) => {
         if (live) {
           const _getServers = () => serversJson.servers;
-          const _getCurrentServerUrl = () => serverJson.url;
+          const _getCurrentServerUrl = () => serverJson && serverJson.url;
+          const _changeServer = serverUrl => {
+            if (serverUrl) {
+              return _requestServer(serverUrl)
+                .then(serverJsonData => {
+                  serverJson = serverJsonData;
+
+                  window.history.replaceState({}, document.title, serverJson.url);
+
+                  accept();
+                });
+            } else {
+              serverJson = null;
+
+              return Promise.resolve();
+            }
+          };
           const hubEnabled = false;
           const worldName = (() => {
             if (hubEnabled) {
@@ -106,6 +120,7 @@ class Hub {
             isEnabled: _isEnabled,
             getServers: _getServers,
             getCurrentServerUrl: _getCurrentServerUrl,
+            changeServer: _changeServer,
             getUserState: _getUserState,
             setUserStateMatrix: _setUserStateMatrix,
             getUserStateInventoryItem: _getUserStateInventoryItem,

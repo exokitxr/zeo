@@ -104,7 +104,7 @@ class Servers {
                 const serversState = {
                   page: 'list',
                   servers: hub.getServers(),
-                  currentServerUrl: hub.getCurrentServerUrl(), // XXX reload this when switching servers
+                  currentServerUrl: hub.getCurrentServerUrl(),
                 };
                 const focusState = {
                   type: '',
@@ -205,10 +205,24 @@ class Servers {
                     serversState.page = 'newServer';
 
                     _updatePages();
-                  } else if (match = onclick.match(/^servers:server:([0-9]+)$/)) {
-                    // const serverIndex = match[1];
+                  } else if (match = onclick.match(/^servers:connect:(.+)$/)) {
+                    const serverUrl = match[1];
 
-                    serversState.page = 'server';
+                    hub.changeServer(serverUrl) // XXX handle race conditions here
+                      .then(() => {
+                        rend.connectServer();
+
+                        serversState.currentServerUrl = serverUrl;
+
+                        _updatePages();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+                  } else if (onclick === 'servers:disconnect') {
+                    rend.disconnectServer();
+
+                    serversState.currentServerUrl = null;
 
                     _updatePages();
                   }

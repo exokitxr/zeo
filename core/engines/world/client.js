@@ -1535,14 +1535,19 @@ class World {
                   const _uninitializeEquipment = () => {
                     const equipmentTagMeshes = tags.getTagsClass('equipment').slice();
 
-                    for (let i = 0; i < elementTagMeshes.length; i++) {
+                    for (let i = 0; i < equipmentTagMeshes.length; i++) {
                       const tagMesh = equipmentTagMeshes[i];
 
-                      equipmentManager.remove(tagMesh);
+                      if (tagMesh) {
+                        equipmentManager.unset(i);
 
-                      tags.destroyTag(tagMesh);
+                        tags.destroyTag(tagMesh);
 
-                      scene.remove(tagMesh);
+                        const bagMesh = bag.getBagMesh();
+                        const {equipmentBoxMeshes} = bagMesh;
+                        const equipmentBoxMesh = equipmentBoxMeshes[i];
+                        equipmentBoxMesh.remove(tagMesh);
+                      }
                     }
                   };
                   const _uninitializeFiles = () => {
