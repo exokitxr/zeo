@@ -29,6 +29,36 @@ const flags = {
     }
     return null;
   })(),
+  serverHost: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^serverHost=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
+  username: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^username=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
+  worldname: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^worldname=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -44,6 +74,7 @@ if (!hasSomeFlag) {
 
 const hostname = flags.host || 'zeovr.io';
 const port = flags.port || 8000;
+const serverHost = flags.serverHost || ('server.' + hostname);
 const config = {
   dirname: __dirname,
   hostname: hostname,
@@ -64,12 +95,12 @@ const config = {
       url: 'hub.' + hostname + ':' + port,
     },
     server: {
-      hostname: 'server.' + hostname,
+      hostname: serverHost,
       port: port,
-      url: 'server.' + hostname + ':' + port,
+      url: serverHost + ':' + port,
     },
     current: {
-      url: 'server.' + hostname + ':' + port,
+      url: serverHost + ':' + port,
     },
   },
 };
