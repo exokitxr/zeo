@@ -13,11 +13,6 @@ const pulseBlackIconSrc = 'data:image/svg+xml;base64,' + btoa(pulseBlackIcon);
 const pulseWhiteIcon = require('../img/pulse-white');
 const pulseWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(pulseWhiteIcon);
 
-const clockBlackIcon = require('../img/clock');
-const clockBlackIconSrc = 'data:image/svg+xml;base64,' + btoa(clockBlackIcon);
-const clockWhiteIcon = require('../img/clock-white');
-const clockWhiteIconSrc = 'data:image/svg+xml;base64,' + btoa(clockWhiteIcon);
-
 const makeRenderer = ({creatureUtils}) => {
 
 const getServersPageSrc = ({page}) => {
@@ -91,10 +86,6 @@ const getListPageSrc = ({page}) => {
                   <img src="${!selected ? pulseBlackIconSrc : pulseWhiteIconSrc}" width="18" height="18" style="margin-right: 5px;">
                   <div>${prettyms(ping)}</div>
                 </div>
-                <!-- <div style="display: flex; font-size: 13px; align-items: center;">
-                  <img src="${!selected ? clockBlackIconSrc : clockWhiteIconSrc}" width="18" height="18" style="margin-right: 5px;">
-                  <div>${prettyms(created)}</div>
-                </div> -->
               </div>
               <div style="display: flex; margin-bottom: 5px; font-size: 13px; align-items: center;">${url}</div>
               <div style="display: flex; margin-bottom: 5px;">
