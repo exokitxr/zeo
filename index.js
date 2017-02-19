@@ -133,15 +133,15 @@ const config = {
   metadata: {
     site: {
       url: hostname + ':' + port,
+      enabled: flags.site,
     },
     hub: {
       url: hubUrl,
+      enabled: flags.hub,
     },
     server: {
       url: serverHost + ':' + port,
-    },
-    current: {
-      url: serverHost + ':' + port,
+      enabled: flags.server,
     },
   },
 };
