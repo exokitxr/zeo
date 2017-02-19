@@ -81,8 +81,10 @@ class Login {
               const loginState = {
                 username: '',
                 password: '',
+                inputText: '',
                 inputIndex: 0,
                 inputValue: 0,
+                loading: false,
               };
               const focusState = {
                 type: '',
@@ -93,11 +95,11 @@ class Login {
                 right: biolumi.makeMenuHoverState(),
               };
 
-              menuUi.pushPage(({login: {username, password, inputIndex, inputValue}, focus: {type: focusType}}) => {
+              menuUi.pushPage(({login: {username, password, inputIndex, inputValue, loading}, focus: {type: focusType}}) => {
                 return [
                   {
                     type: 'html',
-                    src: menuRenderer.getLoginSrc({username, password, inputIndex, inputValue, focusType}),
+                    src: menuRenderer.getLoginSrc({username, password, inputIndex, inputValue, loading, focusType}),
                     x: 0,
                     y: 0,
                     w: WIDTH,
@@ -232,6 +234,14 @@ class Login {
                     focusState.type = 'password';
 
                     _updatePages();
+                  } else if (onclick === 'login:submit') {
+                    const {username, password} = loginState;
+
+                    if (username && password) {
+                      loginState.loading = true;
+
+                      _updatePages();
+                    }
                   }
                 }
               };
