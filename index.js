@@ -117,6 +117,7 @@ const port = flags.port || 8000;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
+const staticSite = flags.site && !(flags.hub || flags.server);
 const serverHost = flags.serverHost || ('server.' + hostname);
 const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
@@ -127,7 +128,8 @@ const config = {
   dataDirectory: dataDirectory,
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
-  staticSite: flags.site && !(flags.hub || flags.server),
+  cors: !staticSite,
+  staticSite: staticSite,
   metadata: {
     site: {
       url: hostname + ':' + port,
