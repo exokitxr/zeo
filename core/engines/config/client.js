@@ -69,7 +69,7 @@ class Config {
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
-          fontSize: 72,
+          fontSize: 30,
           lineHeight: 1.4,
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
@@ -357,7 +357,7 @@ class Config {
 
                     if (onclick === 'config:input') {
                       const {value} = configHoverState;
-                      const valuePx = value * (WIDTH - (500 + 40));
+                      const valuePx = value * (640 - (30 * 2));
 
                       const {index, px} = biolumi.getTextPropertiesFromCoord(configState.inputText, mainFontSpec, valuePx);
 
