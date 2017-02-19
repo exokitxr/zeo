@@ -127,7 +127,7 @@ const config = {
   dataDirectory: dataDirectory,
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
-  // staticSite: flags.site, // XXX remove this option from archae
+  staticSite: flags.site && !(flags.hub || flags.server),
   metadata: {
     site: {
       url: hostname + ':' + port,
