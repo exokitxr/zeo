@@ -11,6 +11,7 @@ const getConfigPageSrc = ({inputText, inputValue, focus, sliderValue, airlockChe
       ${getCheckboxSrc('Voice chat', voiceChatCheckboxValue, 'config:voiceChat')}
       ${getCheckboxSrc('Stats', statsCheckboxValue, 'config:stats')}
       ${getCheckboxSrc('Physics debug', physicsDebugCheckboxValue, 'config:physicsDebug')}
+      ${getButtonSrc('Log out', 'config:logOut')}
     </div>
   </div>
 `;
@@ -56,9 +57,14 @@ const getCheckboxSrc = (label, checkboxValue, onclick) => `\
   </div>
 `;
 
+const getButtonSrc = (label, onclick) => `\
+  <a style="display: inline-block; margin-top: 10px; padding: 5px 20px; border: 1px solid #333; border-radius: 100px; color: #333; font-size: 24px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="${onclick}">${label}</a>
+`;
+
 module.exports = {
   getConfigPageSrc,
   getInputSrc,
   getSliderSrc,
   getCheckboxSrc,
+  getButtonSrc,
 };

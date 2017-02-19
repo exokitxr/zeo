@@ -342,9 +342,10 @@ class Config {
               });
 
               const trigger = e => {
+                const isOpen = rend.isOpen();
                 const tab = rend.getTab();
 
-                if (tab === 'options') {
+                if (isOpen && tab === 'options') {
                   const {side} = e;
                   const configHoverState = configHoverStates[side];
                   const {intersectionPoint} = configHoverState;
@@ -418,6 +419,13 @@ class Config {
                       api.updateConfig();
 
                       _updatePages();
+                    } else if (onclick === 'config:logOut') {
+                      rend.logout();
+
+                      SIDES.forEach(side => {
+                        configDotMeshes[side].visible = false;
+                        configBoxMeshes[side].visible = false;
+                      });
                     } else {
                       _updatePages();
                     }
@@ -427,9 +435,10 @@ class Config {
               input.on('trigger', trigger);
 
               const keydown = e => {
+                const isOpen = rend.isOpen();
                 const tab = rend.getTab();
 
-                if (tab === 'config') {
+                if (isOpen && tab === 'config') {
                   const {type} = focusState;
 
                   if (type === 'config') {
@@ -458,10 +467,11 @@ class Config {
 
               const _update = () => {
                 const _updateTextures = () => {
+                  const isOpen = rend.isOpen();
                   const tab = rend.getTab();
                   const uiTime = rend.getUiTime();
 
-                  if (tab === 'options') {
+                  if (isOpen && tab === 'options') {
                     const {
                       planeMesh: {
                         menuMaterial: configMenuMaterial,
@@ -487,9 +497,10 @@ class Config {
                   });
                 };
                 const _updateAnchors = () => {
+                  const isOpen = rend.isOpen();
                   const tab = rend.getTab();
 
-                  if (tab === 'options') {
+                  if (isOpen && tab === 'options') {
                     const {gamepads} = webvr.getStatus();
 
                     const {planeMesh} = configMesh;

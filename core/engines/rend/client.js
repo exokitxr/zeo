@@ -106,6 +106,7 @@ class Rend {
 
         const menuState = {
           open: hub.getCurrentServer().type === 'server',
+          loggedIn: false,
           animation: null,
         };
         const statusState = {
@@ -638,31 +639,35 @@ class Rend {
                 };
                 input.on('triggerup', triggerup);
                 const menudown = () => {
-                  const {open, animation} = menuState;
+                  const {loggedIn} = menuState;
 
-                  if (open) {
-                    menuState.open = false; // XXX need to cancel other menu states as well
-                    menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+                  if (loggedIn) {
+                    const {open, animation} = menuState;
 
-                    SIDES.forEach(side => {
-                      menuBoxMeshes[side].visible = false;
-                      menuDotMeshes[side].visible = false;
+                    if (open) {
+                      menuState.open = false; // XXX need to cancel other menu states as well
+                      menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-                      navbarBoxMeshes[side].visible = false;
-                      navbarDotMeshes[side].visible = false;
-                    });
-                  } else {
-                    menuState.open = true;
-                    menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+                      SIDES.forEach(side => {
+                        menuBoxMeshes[side].visible = false;
+                        menuDotMeshes[side].visible = false;
 
-                    const newPosition = camera.position;
-                    const newRotation = camera.quaternion;
+                        navbarBoxMeshes[side].visible = false;
+                        navbarDotMeshes[side].visible = false;
+                      });
+                    } else {
+                      menuState.open = true;
+                      menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-                    menuMesh.position.copy(newPosition);
-                    menuMesh.quaternion.copy(newRotation);
+                      const newPosition = camera.position;
+                      const newRotation = camera.quaternion;
 
-                    keyboardMesh.position.copy(newPosition);
-                    keyboardMesh.quaternion.copy(newRotation);
+                      menuMesh.position.copy(newPosition);
+                      menuMesh.quaternion.copy(newRotation);
+
+                      keyboardMesh.position.copy(newPosition);
+                      keyboardMesh.quaternion.copy(newRotation);
+                    }
                   }
                 };
                 input.on('menudown', menudown);
@@ -1057,20 +1062,26 @@ class Rend {
 
               login() {
                 menuState.open = true;
+                menuState.loggedIn = true;
 
                 menu.updatePages();
 
                 menuMesh.visible = true;
                 keyboardMesh.visible = true;
+
+                this.emit('login');
               }
 
               logout() {
                 menuState.open = false;
+                menuState.loggedIn = false;
 
                 menu.updatePages();
 
                 menuMesh.visible = false;
                 keyboardMesh.visible = false;
+
+                this.emit('logout');
               }
 
               connectServer() {

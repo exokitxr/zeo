@@ -25,7 +25,7 @@ const getLoginSrc = ({username, password, inputIndex, inputValue, loading, error
             <div>${password}</div>
             ${!password ? `<div style="color: #AAA;">Password</div>` : ''}
           </a>
-            <a style="display: inline-block; padding: 5px 30px; border: 1px solid #333; border-radius: 100px; color: #333; font-size: 40px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="login:submit">Log in</a>
+          <a style="display: inline-block; padding: 5px 30px; border: 1px solid #333; border-radius: 100px; color: #333; font-size: 40px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="login:submit">Log in</a>
         ` : `\
           <div style="font-size: 40px;">Loading...</div>
         `}

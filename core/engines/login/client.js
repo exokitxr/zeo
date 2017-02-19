@@ -199,6 +199,23 @@ class Login {
                 }
               });
 
+              const login = () => {
+                loginState.open = false;
+
+                _updatePages();
+
+                menuMesh.visible = false;
+              };
+              rend.on('login', login);
+              const logout = () => {
+                loginState.open = true;
+
+                _updatePages();
+
+                menuMesh.visible = true;
+              };
+              rend.on('logout', logout);
+
               const _initialLogin = () => {
                 const token = localStorage.getItem('token');
 
@@ -221,27 +238,17 @@ class Login {
                       const {token} = loginSpec;
                       localStorage.setItem('token', token);
 
-                      loginState.open = false;
-
-                      menuMesh.visible = false;
-
                       rend.login();
+
+                      accept();
                     } else {
-                      loginState.error = 'EAUTH';
+                      accept({
+                        error: 'EAUTH',
+                      });
                     }
-
-                    loginState.loading = false;
-
-                    _updatePages();
-
-                    accept();
                   })
                   .catch(err => {
                     console.warn(err);
-
-                    loginState.loading = false;
-
-                    _updatePages();
 
                     accept();
                   });
@@ -299,7 +306,13 @@ class Login {
                             _requestLogin({
                               username,
                               password,
-                            });
+                            })
+                              .then(({error = null} = {}) => {
+                                loginState.loading = false;
+                                loginState.error = error;
+
+                                _updatePages();
+                              });
                           } else {
                             loginState.error = 'EINPUT';
 
@@ -426,9 +439,17 @@ class Login {
                       input.removeListener('keyboarddown', keyboarddown);
 
                       rend.removeListener('update', _update);
+                      rend.removeListener('login', login);
+                      rend.removeListener('logout', logout);
                     };
                   }
                 });
+
+              const _isOpen = () => loginState.open;
+
+              return {
+                isOpen: _isOpen,
+              };
             }
           });
       }
