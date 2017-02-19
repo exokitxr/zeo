@@ -48,12 +48,12 @@ class Hub {
               return Promise.resolve();
             }
           };
-          const _requestLogin = ({username, password}) => fetch('https://' + hubUrl + '/hub/login', {
+          const _requestLogin = ({username, password, token}) => fetch('https://' + hubUrl + '/hub/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({username, password}),
+            body: JSON.stringify({username, password, token}),
           })
             .then(res => {
               if (res.status >= 200 && res.status < 300) {

@@ -77,7 +77,6 @@ class Login {
                 fontWeight: biolumi.getFontWeight(),
                 fontStyle: biolumi.getFontStyle(),
               };
-
               const loginState = {
                 open: true,
                 username: '',
@@ -120,7 +119,6 @@ class Login {
               const menuMesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.y = DEFAULT_USER_HEIGHT;
-                object.visible = loginState.open;
 
                 const planeMesh = (() => {
                   const width = WORLD_WIDTH;
@@ -200,205 +198,237 @@ class Login {
                   next();
                 }
               });
-              const trigger = e => {
-                const {side} = e;
-                const menuHoverState = menuHoverStates[side];
-                const {intersectionPoint} = menuHoverState;
 
-                if (intersectionPoint) {
-                  const {anchor} = menuHoverState;
-                  const onclick = (anchor && anchor.onclick) || '';
+              const _initialLogin = () => {
+                const token = localStorage.getItem('token');
 
-                  focusState.type = '';
+                if (token) {
+                  return _requestLogin({
+                    token,
+                  });
+                } else {
+                  return Promise.resolve();
+                }
+              };
+              const _requestLogin = ({username, password, token}) => new Promise((accept, reject) => {
+                hub.requestLogin({
+                  username,
+                  password,
+                  token,
+                })
+                  .then(loginSpec => {
+                    if (loginSpec) {
+                      const {token} = loginSpec;
+                      localStorage.setItem('token', token);
 
-                  if (onclick === 'login:focus:username') {
-                    const {value} = menuHoverState;
-                    const valuePx = value * 640;
+                      loginState.open = false;
 
-                    loginState.inputText = loginState.username;
+                      menuMesh.visible = false;
 
-                    const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
+                      rend.login();
+                    } else {
+                      loginState.error = 'EAUTH';
+                    }
 
-                    loginState.inputIndex = index;
-                    loginState.inputValue = px;
-                    focusState.type = 'username';
-
-                    _updatePages();
-                  } else if (onclick === 'login:focus:password') {
-                    const {value} = menuHoverState;
-                    const valuePx = value * 640;
-
-                    loginState.inputText = loginState.password;
-
-                    const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
-
-                    loginState.inputIndex = index;
-                    loginState.inputValue = px;
-                    focusState.type = 'password';
+                    loginState.loading = false;
 
                     _updatePages();
-                  } else if (onclick === 'login:submit') {
-                    const {username, password} = loginState;
 
-                    if (username && password) {
-                      loginState.loading = true;
-                      loginState.error = null;
+                    accept();
+                  })
+                  .catch(err => {
+                    console.warn(err);
 
-                      _updatePages();
+                    loginState.loading = false;
 
-                      hub.requestLogin({
-                        username,
-                        password,
-                      })
-                        .then(loginSpec => {
-                          if (loginSpec) {
-                            loginState.open = false;
+                    _updatePages();
 
-                            menuMesh.visible = false;
+                    accept();
+                  });
+              });
 
-                            rend.login();
+              return _initialLogin()
+                .then(() => {
+                  if (live) {
+                    const trigger = e => {
+                      const {side} = e;
+                      const menuHoverState = menuHoverStates[side];
+                      const {intersectionPoint} = menuHoverState;
+
+                      if (intersectionPoint) {
+                        const {anchor} = menuHoverState;
+                        const onclick = (anchor && anchor.onclick) || '';
+
+                        focusState.type = '';
+
+                        if (onclick === 'login:focus:username') {
+                          const {value} = menuHoverState;
+                          const valuePx = value * 640;
+
+                          loginState.inputText = loginState.username;
+
+                          const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
+
+                          loginState.inputIndex = index;
+                          loginState.inputValue = px;
+                          focusState.type = 'username';
+
+                          _updatePages();
+                        } else if (onclick === 'login:focus:password') {
+                          const {value} = menuHoverState;
+                          const valuePx = value * 640;
+
+                          loginState.inputText = loginState.password;
+
+                          const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
+
+                          loginState.inputIndex = index;
+                          loginState.inputValue = px;
+                          focusState.type = 'password';
+
+                          _updatePages();
+                        } else if (onclick === 'login:submit') {
+                          const {username, password} = loginState;
+
+                          if (username && password) {
+                            loginState.loading = true;
+                            loginState.error = null;
+
+                            _updatePages();
+
+                            _requestLogin({
+                              username,
+                              password,
+                            });
                           } else {
-                            loginState.error = 'EAUTH';
+                            loginState.error = 'EINPUT';
+
+                            _updatePages();
+                          }
+                        }
+                      }
+                    };
+                    input.on('trigger', trigger);
+
+                    const keydown = e => {
+                      const {type} = focusState;
+
+                      if (type === 'username') {
+                        const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
+
+                        if (applySpec) {
+                          loginState.username = loginState.inputText;
+
+                          const {commit} = applySpec;
+                          if (commit) {
+                            focusState.type = '';
                           }
 
-                          loginState.loading = false;
+                          _updatePages();
+
+                          e.stopImmediatePropagation();
+                        }
+                      } else if (type === 'password') {
+                        const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
+
+                        if (applySpec) {
+                          loginState.password = loginState.inputText;
+
+                          const {commit} = applySpec;
+                          if (commit) {
+                            focusState.type = '';
+                          }
 
                           _updatePages();
-                        })
-                        .catch(err => {
-                          console.warn(err);
 
-                          loginState.loading = false;
-
-                          _updatePages();
-                        });
-                    } else {
-                      loginState.error = 'EINPUT';
-
-                      _updatePages();
-                    }
-                  }
-                }
-              };
-              input.on('trigger', trigger);
-
-              const keydown = e => {
-                const {type} = focusState;
-
-                if (type === 'username') {
-                  const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
-
-                  if (applySpec) {
-                    loginState.username = loginState.inputText;
-
-                    const {commit} = applySpec;
-                    if (commit) {
-                      focusState.type = '';
-                    }
-
-                    _updatePages();
-
-                    e.stopImmediatePropagation();
-                  }
-                } else if (type === 'password') {
-                  const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
-
-                  if (applySpec) {
-                    loginState.password = loginState.inputText;
-
-                    const {commit} = applySpec;
-                    if (commit) {
-                      focusState.type = '';
-                    }
-
-                    _updatePages();
-
-                    e.stopImmediatePropagation();
-                  }
-                }
-              };
-              input.on('keydown', keydown, {
-                priority: 1,
-              });
-              const keyboarddown = keydown;
-              input.on('keyboarddown', keyboarddown, {
-                priority: 1,
-              });
-
-              const _update = () => {
-                const {open} = loginState;
-
-                if (open) {
-                  const _updateTextures = () => {
-                    const {
-                      planeMesh: {
-                        menuMaterial: statusMenuMaterial,
-                      },
-                    } = menuMesh;
-                    const uiTime = rend.getUiTime();
-
-                    biolumi.updateMenuMaterial({
-                      ui: menuUi,
-                      menuMaterial: statusMenuMaterial,
-                      uiTime,
-                    });
-                  };
-                  const _updateAnchors = () => {
-                    const {gamepads} = webvr.getStatus();
-
-                    const {planeMesh} = menuMesh;
-                    const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
-
-                    SIDES.forEach(side => {
-                      const gamepad = gamepads[side];
-
-                      if (gamepad) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-
-                        const menuHoverState = menuHoverStates[side];
-                        const menuDotMesh = menuDotMeshes[side];
-                        const menuBoxMesh = menuBoxMeshes[side];
-
-                        biolumi.updateAnchors({
-                          objects: [{
-                            matrixObject: menuMatrixObject,
-                            ui: menuUi,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                            worldDepth: WORLD_DEPTH,
-                          }],
-                          hoverState: menuHoverState,
-                          dotMesh: menuDotMesh,
-                          boxMesh: menuBoxMesh,
-                          controllerPosition,
-                          controllerRotation,
-                        });
+                          e.stopImmediatePropagation();
+                        }
                       }
+                    };
+                    input.on('keydown', keydown, {
+                      priority: 1,
                     });
-                  };
+                    const keyboarddown = keydown;
+                    input.on('keyboarddown', keyboarddown, {
+                      priority: 1,
+                    });
 
-                  _updateTextures();
-                  _updateAnchors();
-                }
-              };
-              rend.on('update', _update);
+                    const _update = () => {
+                      const {open} = loginState;
 
-              this._cleanup = () => {
-                scene.remove(menuMesh);
+                      if (open) {
+                        const _updateTextures = () => {
+                          const {
+                            planeMesh: {
+                              menuMaterial: statusMenuMaterial,
+                            },
+                          } = menuMesh;
+                          const uiTime = rend.getUiTime();
 
-                SIDES.forEach(side => {
-                  scene.remove(menuDotMeshes[side]);
-                  scene.remove(menuBoxMeshes[side]);
+                          biolumi.updateMenuMaterial({
+                            ui: menuUi,
+                            menuMaterial: statusMenuMaterial,
+                            uiTime,
+                          });
+                        };
+                        const _updateAnchors = () => {
+                          const {gamepads} = webvr.getStatus();
+
+                          const {planeMesh} = menuMesh;
+                          const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+
+                          SIDES.forEach(side => {
+                            const gamepad = gamepads[side];
+
+                            if (gamepad) {
+                              const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                              const menuHoverState = menuHoverStates[side];
+                              const menuDotMesh = menuDotMeshes[side];
+                              const menuBoxMesh = menuBoxMeshes[side];
+
+                              biolumi.updateAnchors({
+                                objects: [{
+                                  matrixObject: menuMatrixObject,
+                                  ui: menuUi,
+                                  width: WIDTH,
+                                  height: HEIGHT,
+                                  worldWidth: WORLD_WIDTH,
+                                  worldHeight: WORLD_HEIGHT,
+                                  worldDepth: WORLD_DEPTH,
+                                }],
+                                hoverState: menuHoverState,
+                                dotMesh: menuDotMesh,
+                                boxMesh: menuBoxMesh,
+                                controllerPosition,
+                                controllerRotation,
+                              });
+                            }
+                          });
+                        };
+
+                        _updateTextures();
+                        _updateAnchors();
+                      }
+                    };
+                    rend.on('update', _update);
+
+                    this._cleanup = () => {
+                      scene.remove(menuMesh);
+
+                      SIDES.forEach(side => {
+                        scene.remove(menuDotMeshes[side]);
+                        scene.remove(menuBoxMeshes[side]);
+                      });
+
+                      input.removeListener('trigger', trigger);
+                      input.removeListener('keydown', keydown);
+                      input.removeListener('keyboarddown', keyboarddown);
+
+                      rend.removeListener('update', _update);
+                    };
+                  }
                 });
-
-                input.removeListener('trigger', trigger);
-                input.removeListener('keydown', keydown);
-                input.removeListener('keyboarddown', keyboarddown);
-
-                rend.removeListener('update', _update);
-              };
             }
           });
       }
