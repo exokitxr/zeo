@@ -112,7 +112,7 @@ class Rend {
         };
 
         const menuState = {
-          open: true,
+          open: hub.getCurrentServer().type === 'server',
           animation: null,
         };
         const focusState = {
@@ -274,6 +274,7 @@ class Rend {
                 menuMesh = (() => {
                   const object = new THREE.Object3D();
                   object.position.y = DEFAULT_USER_HEIGHT;
+                  object.visible = menuState.open;
 
                   const statusMesh = (() => {
                     const width = WORLD_WIDTH;
@@ -393,6 +394,7 @@ class Rend {
 
                   const object = new THREE.Object3D();
                   object.position.y = DEFAULT_USER_HEIGHT;
+                  object.visible = menuState.open;
                   object.keySpecs = keySpecs;
 
                   const planeMesh = (() => {
