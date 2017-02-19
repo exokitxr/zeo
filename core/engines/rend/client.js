@@ -107,9 +107,6 @@ class Rend {
           open: hub.getCurrentServer().type === 'server',
           animation: null,
         };
-        const focusState = {
-          type: '',
-        };
         const statusState = {
           username: 'avaer',
           accountType: 'admin',

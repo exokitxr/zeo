@@ -70,9 +70,19 @@ class Login {
             menuUi,
           }) => {
             if (live) {
+              const mainFontSpec = {
+                fonts: biolumi.getFonts(),
+                fontSize: 40,
+                lineHeight: 1.4,
+                fontWeight: biolumi.getFontWeight(),
+                fontStyle: biolumi.getFontStyle(),
+              };
+
               const loginState = {
                 username: '',
                 password: '',
+                inputIndex: 0,
+                inputValue: 0,
               };
               const focusState = {
                 type: '',
@@ -83,17 +93,18 @@ class Login {
                 right: biolumi.makeMenuHoverState(),
               };
 
-              menuUi.pushPage(({login}) => [
-                {
-                  type: 'html',
-                  src: menuRenderer.getLoginSrc(login),
-                  x: 0,
-                  y: 0,
-                  w: WIDTH,
-                  h: HEIGHT,
-                  scroll: true,
-                },
-              ], {
+              menuUi.pushPage(({login: {username, password, inputIndex, inputValue}, focus: {type: focusType}}) => {
+                return [
+                  {
+                    type: 'html',
+                    src: menuRenderer.getLoginSrc({username, password, inputIndex, inputValue, focusType}),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                  },
+                ];
+              }, {
                 type: 'login',
                 state: {
                   login: loginState,
@@ -171,7 +182,7 @@ class Login {
                     const page = pages[i];
                     const {type} = page;
 
-                    if (type === 'status') {
+                    if (type === 'login') {
                       page.update({
                         login: loginState,
                         focus: focusState,
@@ -185,9 +196,89 @@ class Login {
                 }
               });
               const trigger = e => {
-                // XXX
+                const {side} = e;
+                const menuHoverState = menuHoverStates[side];
+                const {intersectionPoint} = menuHoverState;
+
+                if (intersectionPoint) {
+                  const {anchor} = menuHoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
+
+                  focusState.type = '';
+
+                  if (onclick === 'login:focus:username') {
+                    const {value} = menuHoverState;
+                    const valuePx = value * 640;
+
+                    loginState.inputText = loginState.username;
+
+                    const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
+
+                    loginState.inputIndex = index;
+                    loginState.inputValue = px;
+                    focusState.type = 'username';
+
+                    _updatePages();
+                  } else if (onclick === 'login:focus:password') {
+                    const {value} = menuHoverState;
+                    const valuePx = value * 640;
+
+                    loginState.inputText = loginState.password;
+
+                    const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
+
+                    loginState.inputIndex = index;
+                    loginState.inputValue = px;
+                    focusState.type = 'password';
+
+                    _updatePages();
+                  }
+                }
               };
               input.on('trigger', trigger);
+
+              const keydown = e => {
+                const {type} = focusState;
+
+                if (type === 'username') {
+                  const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
+
+                  if (applySpec) {
+                    loginState.username = loginState.inputText;
+
+                    const {commit} = applySpec;
+                    if (commit) {
+                      focusState.type = '';
+                    }
+
+                    _updatePages();
+
+                    e.stopImmediatePropagation();
+                  }
+                } else if (type === 'password') {
+                  const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
+
+                  if (applySpec) {
+                    loginState.password = loginState.inputText;
+
+                    const {commit} = applySpec;
+                    if (commit) {
+                      focusState.type = '';
+                    }
+
+                    _updatePages();
+
+                    e.stopImmediatePropagation();
+                  }
+                }
+              };
+              input.on('keydown', keydown, {
+                priority: 1,
+              });
+              const keyboarddown = keydown;
+              input.on('keyboarddown', keyboarddown, {
+                priority: 1,
+              });
 
               const _update = () => {
                 const _updateTextures = () => {
@@ -255,6 +346,9 @@ class Login {
                 });
 
                 input.removeListener('trigger', trigger);
+                input.removeListener('keydown', keydown);
+                input.removeListener('keyboarddown', keyboarddown);
+
                 rend.removeListener('update', _update);
               };
             }
