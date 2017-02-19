@@ -85,13 +85,13 @@ class World {
           return {position, rotation, scale};
         };
 
-        const _requestTags = () => fetch('/archae/world/tags.json')
+        const _requestTags = () => fetchServer('/archae/world/tags.json')
           .then(res => res.json());
-        const _requestFiles = () => fetch('/archae/world/files.json')
+        const _requestFiles = () => fetchServer('/archae/world/files.json')
           .then(res => res.json());
-        const _requestInventory = () => fetch('/archae/world/inventory.json')
+        const _requestInventory = () => fetchServer('/archae/world/inventory.json')
           .then(res => res.json());
-        const _requestStartTime = () => fetch('/archae/world/start-time.json')
+        const _requestStartTime = () => fetchServer('/archae/world/start-time.json')
           .then(res => res.json()
             .then(({startTime}) => startTime)
           );
@@ -130,22 +130,23 @@ class World {
                   live = false;
                 };
 
-                fetch('/archae/rend/mods/local').then(res => res.json()
-                  .then(modSpecs => {
-                    if (live) {
-                      accept(modSpecs);
+                fetchServer('/archae/rend/mods/local')
+                  .then(res => res.json()
+                    .then(modSpecs => {
+                      if (live) {
+                        accept(modSpecs);
 
-                      npmState.cancelLocalRequest = null;
-                    }
-                  })
+                        npmState.cancelLocalRequest = null;
+                      }
+                    })
+                  )
                   .catch(err => {
                     if (live) {
                       reject(err);
 
                       npmState.cancelLocalRequest = null;
                     }
-                  })
-                );
+                  });
               });
               const _requestRemoteModSpecs = q => new Promise((accept, reject) => {
                 if (npmState.cancelRemoteRequest) {
@@ -158,7 +159,7 @@ class World {
                   live = false;
                 };
 
-                fetch('/archae/rend/mods/search', {
+                fetchServer('/archae/rend/mods/search', {
                   method: 'PUT',
                   headers: (() => {
                     const headers = new Headers();
@@ -196,7 +197,7 @@ class World {
                   live = false;
                 };
 
-                fetch('/archae/rend/mods/spec', {
+                fetchServer('/archae/rend/mods/spec', {
                   method: 'POST',
                   headers: (() => {
                     const headers = new Headers();
@@ -235,7 +236,7 @@ class World {
                 if (tagsJsonString !== lastTagsJsonString) {
                   lastTagsJsonString = tagsJsonString;
 
-                  return fetch('/archae/world/tags.json', {
+                  return fetchServer('/archae/world/tags.json', {
                     method: 'PUT',
                     headers: {
                       'Content-Type': 'application/json',
@@ -265,7 +266,7 @@ class World {
                 if (filesJsonString !== lastFilesJsonString) {
                   lastFilesJsonString = filesJsonString;
 
-                  return fetch('/archae/world/files.json', {
+                  return fetchServer('/archae/world/files.json', {
                     method: 'PUT',
                     headers: {
                       'Content-Type': 'application/json',
@@ -315,7 +316,7 @@ class World {
                 if (inventoryJsonString !== lastInventoryJsonString) {
                   lastInventoryJsonString = inventoryJsonString;
 
-                  return fetch('/archae/world/inventory.json', {
+                  return fetchServer('/archae/world/inventory.json', {
                     method: 'PUT',
                     headers: {
                       'Content-Type': 'application/json',
