@@ -17,6 +17,14 @@ import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
+const DEFAULT_EQUIPMENT = (() => {
+  const numEquipmentItems = (1 + 1 + 2 + 8);
+  const result = Array(numEquipmentItems);
+  for (let i = 0; i < numEquipmentItems; i++) {
+    result[i] = null;
+  }
+  return result;
+})();
 const DEFAULT_GRAB_RADIUS = 0.1;
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -755,15 +763,7 @@ class Tags {
                 const tagClassMeshes = {
                   elements: [],
                   npm: [],
-                  equipment: (() => {
-                    const numEquipments = (1 + 1 + 2 + 8);
-
-                    const result = Array(numEquipments);
-                    for (let i = 0; i < numEquipments; i++) {
-                      result[i] = null;
-                    }
-                    return result;
-                  })(),
+                  equipment: DEFAULT_EQUIPMENT,
                 };
                 class TagsApi {
                   makeTag(itemSpec) {

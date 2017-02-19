@@ -1,11 +1,20 @@
-const SIDES = ['left', 'right'];
-
 const DEFAULT_GRAB_DISTANCE = 0.12;
+const NUM_ITEMS = 9;
+const NUM_ITEMS_PER_ROW = 3;
+const DEFAULT_INVENTORY = (() => {
+  const result = Array(NUM_ITEMS);
+  for (let i = 0; i < NUM_ITEMS; i++) {
+    result[i] = null;
+  }
+  return result;
+})();
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
 ];
+
+const SIDES = ['left', 'right'];
 
 class Backpack {
   constructor(archae) {
@@ -38,9 +47,6 @@ class Backpack {
       if (live) {
         const {THREE, scene, camera} = three;
 
-        const numItems = 9;
-        const numItemsPerRow = 3;
-
         const _decomposeObjectMatrixWorld = object => {
           const {matrixWorld} = object;
           const position = new THREE.Vector3();
@@ -64,13 +70,7 @@ class Backpack {
         };
 
         const itemsState = {
-          items: (() => {
-            const result = Array(numItems);
-            for (let i = 0; i < numItems; i++) {
-              result[i] = null;
-            }
-            return result;
-          })(),
+          items: DEFAULT_INVENTORY,
         };
 
         const mesh = (() => {
@@ -89,16 +89,16 @@ class Backpack {
               });
 
               const mesh = new THREE.Mesh(geometry, material);
-              const xIndex = index % numItemsPerRow;
-              mesh.position.x = -(((size * numItemsPerRow) + (padding * (numItemsPerRow - 1))) / 2) + ((size + padding) * xIndex) + (size / 2);
-              const yIndex = Math.floor(index / numItemsPerRow);
+              const xIndex = index % NUM_ITEMS_PER_ROW;
+              mesh.position.x = -(((size * NUM_ITEMS_PER_ROW) + (padding * (NUM_ITEMS_PER_ROW - 1))) / 2) + ((size + padding) * xIndex) + (size / 2);
+              const yIndex = Math.floor(index / NUM_ITEMS_PER_ROW);
               mesh.position.y = (size + padding) - (yIndex * (size + padding));
               // mesh.position.z = -0.5;
               return mesh;
             };
 
-            const result = Array(numItems);
-            for (let i = 0; i < numItems; i++) {
+            const result = Array(NUM_ITEMS);
+            for (let i = 0; i < NUM_ITEMS; i++) {
               result[i] = _makeItemBoxMesh(i);
             }
             return result;
@@ -179,7 +179,7 @@ class Backpack {
               mesh.quaternion.copy(rotation);
 
               const {itemBoxMeshes} = mesh;
-              for (let i = 0; i < numItems; i++) {
+              for (let i = 0; i < NUM_ITEMS; i++) {
                 const hovered = SIDES.some(side => hoverStates[side].targetItemIndex === i);
                 itemBoxMeshes[i].material.color = new THREE.Color(hovered ? 0x0000FF : 0x808080);
               }
