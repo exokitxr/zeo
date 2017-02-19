@@ -55,7 +55,13 @@ class Hub {
             },
             body: JSON.stringify({username, password}),
           })
-            .then(res => res.json());
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.json();
+              } else {
+                return null;
+              }
+            });
           const hubEnabled = false;
           const worldName = (() => {
             if (hubEnabled) {
