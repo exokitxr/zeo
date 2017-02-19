@@ -7,6 +7,11 @@ const bodyParserJson = bodyParser.json();
 
 const DEFAULT_TAGS = {
   elements: [],
+};
+const DEFAULT_FILES = {
+  files: [],
+};
+const DEFAULT_EQUIPMENT = {
   equipment: (() => {
     const numEquipments = (1 + 1 + 2 + 8);
 
@@ -15,10 +20,7 @@ const DEFAULT_TAGS = {
       result[i] = null;
     }
     return result;
-  })(),
-};
-const DEFAULT_FILES = {
-  files: [],
+  })()
 };
 const DEFAULT_INVENTORY = {
   items: [],
@@ -41,6 +43,7 @@ class World {
     const worldPath = path.join(dirname, dataDirectory, 'world');
     const worldTagsJsonPath = path.join(worldPath, 'tags.json');
     const worldFilesJsonPath = path.join(worldPath, 'files.json');
+    const worldEquipmentJsonPath = path.join(worldPath, 'equipment.json');
     const worldInventoryJsonPath = path.join(worldPath, 'inventory.json');
 
     const _requestFile = (p, defaultValue) => new Promise((accept, reject) => {
@@ -58,6 +61,7 @@ class World {
     });
     const _requestTagsJson = () => _requestFile(worldTagsJsonPath, DEFAULT_TAGS);
     const _requestFilesJson = () => _requestFile(worldFilesJsonPath, DEFAULT_FILES);
+    const _requestEquipmentJson = () => _requestFile(worldEquipmentJsonPath, DEFAULT_EQUIPMENT);
     const _requestInventoryJson = () => _requestFile(worldInventoryJsonPath, DEFAULT_INVENTORY);
     const _ensureWorldPath = () => new Promise((accept, reject) => {
       const worldPath = path.join(dirname, dataDirectory, 'world');
@@ -74,12 +78,14 @@ class World {
     return Promise.all([
       _requestTagsJson(),
       _requestFilesJson(),
+      _requestEquipmentJson(),
       _requestInventoryJson(),
       _ensureWorldPath(),
     ])
       .then(([
         tagsJson,
         filesJson,
+        equipmentJson,
         inventoryJson,
         ensureWorldPathResult,
       ]) => {
@@ -109,12 +115,10 @@ class World {
 
               if (
                 typeof data === 'object' && data !== null &&
-                data.elements && Array.isArray(data.elements) &&
-                data.equipment && Array.isArray(data.equipment)
+                data.elements && Array.isArray(data.elements)
               ) {
                 tagsJson = {
                   elements: data.elements,
-                  equipment: data.equipment,
                 };
 
                 _saveFile(worldTagsJsonPath, tagsJson)
@@ -166,6 +170,41 @@ class World {
             });
           }
           app.put('/archae/world/files.json', serveFilesSet);
+          function serveEquipmentGet(req, res, next) {
+            res.json(equipmentJson);
+          }
+          app.get('/archae/world/equipment.json', serveEquipmentGet);
+          function serveEquipmentSet(req, res, next) {
+            bodyParserJson(req, res, () => {
+              const {body: data} = req;
+
+              const _respondInvalid = () => {
+                res.status(400);
+                res.send();
+              };
+
+              if (
+                typeof data === 'object' && data !== null &&
+                data.equipment && Array.isArray(data.equipment)
+              ) {
+                equipmentJson = {
+                  equipment: data.equipment,
+                };
+
+                _saveFile(worldEquipmentJsonPath, equipmentJson)
+                  .then(() => {
+                    res.send();
+                  })
+                  .catch(err => {
+                    res.status(500);
+                    res.send(err.stack);
+                  });
+              } else {
+                _respondInvalid();
+              }
+            });
+          }
+          app.put('/archae/world/equipment.json', serveEquipmentSet);
           function serveInventoryGet(req, res, next) {
             res.json(inventoryJson);
           }

@@ -89,6 +89,8 @@ class World {
           .then(res => res.json());
         const _requestFiles = () => fetchServer('/archae/world/files.json')
           .then(res => res.json());
+        const _requestEquipment = () => fetchServer('/archae/world/equipment.json')
+          .then(res => res.json());
         const _requestInventory = () => fetchServer('/archae/world/inventory.json')
           .then(res => res.json());
         const _requestStartTime = () => fetchServer('/archae/world/start-time.json')
@@ -229,7 +231,6 @@ class World {
               const _saveTags = menuUtils.debounce(next => {
                 tagsJson = {
                   elements: tags.getTagsClass('elements').map(({item}) => item),
-                  equipment: tags.getTagsClass('equipment').map(equipment => equipment ? equipment.item : null),
                 };
                 const tagsJsonString = JSON.stringify(tagsJson);
 
@@ -286,6 +287,36 @@ class World {
                   return Promise.resolve();
                 }
               });
+              let lastEquipmentJsonString = null;
+              const _saveEquipment = menuUtils.debounce(next => {
+                equipmentJson = {
+                  equipment: tags.getTagsClass('equipment').map(equipment => equipment ? equipment.item : null),
+                };
+                const equipmentJsonString = JSON.stringify(equipmentJson);
+
+                if (equipmentJsonString !== lastEquipmentJsonString) {
+                  lastEquipmentJsonString = equipmentJsonString;
+
+                  return fetchServer('/archae/world/equipment.json', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: equipmentJsonString,
+                  })
+                    .then(res => res.blob())
+                    .then(() => {
+                      next();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      next();
+                    })
+                } else {
+                  return Promise.resolve();
+                }
+              });
               let lastInventoryJsonString = null;
               const _saveInventory = menuUtils.debounce(next => {
                 inventoryJson = {
@@ -316,7 +347,7 @@ class World {
                 if (inventoryJsonString !== lastInventoryJsonString) {
                   lastInventoryJsonString = inventoryJsonString;
 
-                  return fetchServer('/archae/world/inventory.json', {
+                  return fetchHub('/archae/world/inventory.json', {
                     method: 'PUT',
                     headers: {
                       'Content-Type': 'application/json',
@@ -497,6 +528,7 @@ class World {
 
               let tagsJson = null;
               let filesJson = null;
+              let equipmentJson = null;
               let inventoryJson = null;
 
               const elementsState = {
@@ -1021,6 +1053,7 @@ class World {
                         tags.grabTag(side, tagMesh);
 
                         _saveTags();
+                        _saveEquipment();
 
                         e.stopImmediatePropagation();
                       } else {
@@ -1056,6 +1089,7 @@ class World {
                         equipmentManager.move(hoveredEquipmentIndex, controllerEquipmentIndex);
 
                         _saveTags();
+                        _saveEquipment();
 
                         e.stopImmediatePropagation();
 
@@ -1107,6 +1141,7 @@ class World {
                               equipmentManager.set(hoveredEquipmentIndex, tagMesh);
 
                               _saveTags();
+                              _saveEquipment();
 
                               return true;
                             } else {
@@ -1249,6 +1284,7 @@ class World {
                         equipmentManager.move(controllerEquipmentIndex, hoveredEquipmentIndex);
 
                         _saveTags();
+                        _saveEquipment();
 
                         e.stopImmediatePropagation();
 
@@ -1406,20 +1442,24 @@ class World {
                   Promise.all([
                     _requestTags(),
                     _requestFiles(),
+                    _requestEquipment(),
                     _requestInventory(),
                     _requestStartTime(),
                   ])
                     .then(([
                       tagsJsonData,
                       filesJsonData,
+                      equipmentJsonData,
                       inventoryJsonData,
                       startTime,
                     ]) => {
                       tagsJson = tagsJsonData;
                       filesJson = filesJsonData;
+                      equipmentJson = equipmentJsonData;
                       inventoryJson = inventoryJsonData;
                       lastTagsJsonString = JSON.stringify(tagsJson);
                       lastFilesJsonString = JSON.stringify(filesJson);
+                      lastEquipmentJsonString = JSON.stringify(equipmentJson);
                       lastInventoryJsonString = JSON.stringify(inventoryJson);
 
                       const _initializeElements = () => {
@@ -1435,7 +1475,7 @@ class World {
                         }
                       };
                       const _initializeEquipment = () => {
-                        const {equipment} = tagsJson;
+                        const {equipment} = equipmentJson;
 
                         for (let i = 0; i < equipment.length; i++) {
                           const itemSpec = equipment[i];
@@ -1596,6 +1636,7 @@ class World {
                   inventoryJson = null;
                   lastTagsJsonString = null;
                   lastFilesJsonString = null;
+                  lastEquipmentJsonString = null;
                   lastInventoryJsonString = null;
 
                   worldTimer.setStartTime(0);
