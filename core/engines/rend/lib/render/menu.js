@@ -13,8 +13,6 @@ const tagImgSrc = 'data:image/svg+xml;base64,' + btoa(tagImg);
 const fileImg = require('../img/file-white');
 const fileImgSrc = 'data:image/svg+xml;base64,' + btoa(fileImg);
 
-const menuUtils = require('../utils/menu');
-
 const makeRenderer = ({creatureUtils}) => {
 
 const {

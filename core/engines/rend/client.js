@@ -28,13 +28,6 @@ const keyboardImgSrc = 'data:image/svg+xml;base64,' + btoa(keyboardImg);
 
 const SIDES = ['left', 'right'];
 
-const ATTRIBUTE_DEFAULTS = {
-  MIN: 0,
-  MAX: 100,
-  STEP: 0,
-  OPTIONS: [],
-};
-
 class Rend {
   constructor(archae) {
     this._archae = archae;
@@ -82,7 +75,6 @@ class Rend {
         const {EventEmitter} = events;
 
         const transparentImg = biolumi.getTransparentImg();
-        const maxNumTextures = biolumi.getMaxNumTextures();
         const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
 
@@ -117,17 +109,6 @@ class Rend {
         };
         const focusState = {
           type: '',
-        };
-        const elementAttributeFilesState = {
-          files: [],
-          inputText: '',
-          inputIndex: 0,
-          inputValue: 0,
-          selectedName: '',
-          clipboardType: null,
-          clipboardPath: '',
-          loaded: false,
-          loading: false,
         };
         const statusState = {
           username: 'avaer',
@@ -490,11 +471,6 @@ class Rend {
                         page.update({
                           status: statusState,
                         }, pend);
-                      } else if (type === 'elementAttributeFiles') {
-                        page.update({
-                          elementAttributeFiles: elementAttributeFilesState,
-                          focus: focusState,
-                        }, pend);
                       } else if (type === 'navbar') {
                         page.update({
                           navbar: navbarState,
@@ -511,12 +487,6 @@ class Rend {
                   const {open} = menuState;
 
                   if (open) {
-                    const oldStates = {
-                      elementAttributeFilesState: {
-                        selectedName: elementAttributeFilesState.selectedName,
-                      },
-                    };
-
                     const _doClickNavbar = e => {
                       const {side} = e;
                       const navbarHoverState = navbarHoverStates[side];
@@ -557,295 +527,8 @@ class Rend {
                         return false;
                       }
                     };
-                    const _doClickMenu = e => {
-                      const {tab} = navbarState;
 
-                      if (tab === 'status') {
-                        const {side} = e;
-                        const menuHoverState = menuHoverStates[side];
-                        const {intersectionPoint} = menuHoverState;
-
-                        if (intersectionPoint) {
-                          const {anchor} = menuHoverState;
-                          const onclick = (anchor && anchor.onclick) || '';
-
-                          focusState.type = '';
-                          elementAttributeFilesState.selectedName = '';
-
-                          const _ensureFilesLoaded = targetState => {
-                            const {loaded} = targetState;
-
-                            if (!loaded) {
-                              targetState.loading = true;
-
-                              const {cwd} = targetState;
-                              fs.getDirectory(cwd)
-                                .then(files => {
-                                  targetState.files = menuUtils.cleanFiles(files);
-                                  targetState.loading = false;
-
-                                  _updatePages();
-                                })
-                                .catch(err => {
-                                  console.warn(err);
-                                });
-                            }
-                          };
-
-                          let match;
-                          if (onclick === 'back') {
-                            menuUi.cancelTransition();
-
-                            if (menuUi.getPages().length > 1) {
-                              menuUi.popPage();
-                            }
-                          } else if (match = onclick.match(/^(file|elementAttributeFile):(.+)$/)) {
-                            menuUi.cancelTransition();
-
-                            const target = match[1];
-                            const name = match[2];
-                            const targetState = (() => {
-                              switch (target) {
-                                case 'elementAttributeFile': return elementAttributeFilesState;
-                                default: return null;
-                              }
-                            })();
-
-                            const _chdir = newCwd => {
-                              targetState.loading = true;
-
-                              targetState.cwd = newCwd;
-                              fs.setCwd(newCwd);
-                              fs.getDirectory(newCwd)
-                                .then(files => {
-                                  targetState.files = menuUtils.cleanFiles(files);
-                                  targetState.loading = false;
-
-                                  _updatePages();
-                                })
-                                .catch(err => {
-                                  console.warn(err);
-                                });
-
-                              _updatePages();
-                            };
-
-                            if (name !== '..') {
-                              const {files} = targetState;
-                              const file = files.find(f => f.name === name);
-                              const {type} = file;
-
-                              if (type === 'file') {
-                                targetState.selectedName = name;
-
-                                _updatePages();
-                              } else if (type === 'directory') {
-                                const {cwd: oldCwd} = targetState;
-                                const newCwd = oldCwd + (!/\/$/.test(oldCwd) ? '/' : '') + name;
-                                _chdir(newCwd);
-                              }
-                            } else {
-                              const {cwd: oldCwd} = targetState;
-                              const newCwd = (() => {
-                                const replacedCwd = oldCwd.replace(/\/[^\/]*$/, '');
-                                if (replacedCwd !== '') {
-                                  return replacedCwd;
-                                } else {
-                                  return '/';
-                                }
-                              })();
-                              _chdir(newCwd);
-                            }
-                          } else if (onclick === 'elementAttributeFiles:select') {
-                            const {
-                              elementsState: {selectedKeyPath: oldElementsSelectedKeyPath},
-                              elementAttributeFilesState: {selectedName: oldFilesSelectedName},
-                            } = oldStates;
-
-                            if (oldFilesSelectedName) {
-                              menuUi.cancelTransition();
-
-                              const {choosingName} = elementsState;
-                              const element = menuUtils.getElementKeyPath({
-                                elements: elementsState.elements,
-                                availableElements: elementsState.availableElements,
-                                clipboardElements: elementsState.clipboardElements,
-                              }, oldElementsSelectedKeyPath);
-                              const instance = menuUtils.getElementKeyPath({
-                                elements: elementsState.elementInstances,
-                              }, oldElementsSelectedKeyPath);
-
-                              const {cwd} = elementAttributeFilesState;
-                              const selectPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-                              const newAttributeValue = JSON.stringify(selectPath);
-                              element.setAttribute(choosingName, newAttributeValue);
-                              instance.setAttribute(choosingName, newAttributeValue);
-
-                              _saveElements();
-
-                              menuUi.popPage();
-                            }
-                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:(cut|copy)$/)) {
-                            const target = match[1];
-                            const type = match[2];
-
-                            const targetState = (() => {
-                              switch (target) {
-                                case 'elementAttributeFile': return elementAttributeFilesState;
-                                default: return null;
-                              }
-                            })();
-                            const oldTargetState = (() => {
-                              switch (target) {
-                                case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                                default: return null;
-                              }
-                            })();
-                            const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                            if (oldFilesSelectedName) {
-                              const {cwd} = targetState;
-                              const cutPath = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-
-                              targetState.selectedName = oldFilesSelectedName;
-                              targetState.clipboardType = type;
-                              targetState.clipboardPath = cutPath;
-
-                              _updatePages();
-                            }
-                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:paste$/)) {
-                            const target = match[1];
-                            const targetState = (() => {
-                              switch (target) {
-                                case 'elementAttributeFile': return elementAttributeFilesState;
-                                default: return null;
-                              }
-                            })();
-
-                            const {clipboardPath} = targetState;
-
-                            if (clipboardPath) {
-                              targetState.uploading = true;
-
-                              const {cwd, clipboardType, clipboardPath} = targetState;
-
-                              const src = clipboardPath;
-                              const name = clipboardPath.match(/\/([^\/]*)$/)[1];
-                              const dst = menuUtils.pathJoin(cwd, name);
-                              fs[(clipboardType === 'cut') ? 'move' : 'copy'](src, dst)
-                                .then(() => fs.getDirectory(cwd)
-                                  .then(files => {
-                                    targetState.files = menuUtils.cleanFiles(files);
-                                    targetState.selectedName = name;
-                                    targetState.uploading = false;
-                                    if (clipboardType === 'cut') {
-                                      targetState.clipboardType = 'copy';
-                                      targetState.clipboardPath = dst;
-                                    }
-
-                                    _updatePages();
-                                  })
-                                )
-                                .catch(err => {
-                                  console.warn(err);
-
-                                  targetState.uploading = true;
-
-                                  _updatePages();
-                                });
-
-                              _updatePages();
-                            }
-                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
-                            const target = match[1];
-
-                            focusState.type = target + 's:createdirectory';
-
-                            _updatePages();
-                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:rename$/)) {
-                            const target = match[1];
-                            const targetState = (() => {
-                              switch (target) {
-                                case 'elementAttributeFile': return elementAttributeFilesState;
-                                default: return null;
-                              }
-                            })();
-                            const oldTargetState = (() => {
-                              switch (target) {
-                                case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                                default: return null;
-                              }
-                            })();
-                            const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                            if (oldFilesSelectedName) {
-                              targetState.inputText = '';
-                              targetState.inputIndex = 0;
-                              targetState.inputValue = 0;
-
-                              focusState.type = 'files:rename:' + oldFilesSelectedName;
-
-                              _updatePages();
-                            }
-                          } else if (match = onclick.match(/^(file|elementAttributeFile)s:remove$/)) {
-                            const target = match[1];
-                            const targetState = (() => {
-                              switch (target) {
-                                case 'elementAttributeFile': return elementAttributeFilesState;
-                                default: return null;
-                              }
-                            })();
-                            const oldTargetState = (() => {
-                              switch (target) {
-                                case 'elementAttributeFile': return oldStates.elementAttributeFilesState;
-                                default: return null;
-                              }
-                            })();
-                            const {selectedName: oldFilesSelectedName} = oldTargetState;
-
-                            if (oldFilesSelectedName) {
-                              targetState.uploading = true;
-
-                              const {cwd} = targetState;
-                              const p = menuUtils.pathJoin(cwd, oldFilesSelectedName);
-                              fs.remove(p)
-                                .then(() => fs.getDirectory(cwd)
-                                  .then(files => {
-                                    targetState.files = menuUtils.cleanFiles(files);
-                                    const {clipboardPath} = targetState;
-                                    if (clipboardPath === p) {
-                                      targetState.clipboardType = null;
-                                      targetState.clipboardPath = '';
-                                    }
-                                    targetState.uploading = false;
-
-                                    _updatePages();
-                                  })
-                                )
-                                .catch(err => {
-                                  console.warn(err);
-
-                                  targetState.uploading = false;
-
-                                  _updatePages();
-                                });
-
-                              _updatePages();
-                            }
-
-                            return false;
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      } else {
-                        return false;
-                      }
-                    };
-
-                    _doClickNavbar(e) || _doClickMenu(e);
+                    _doClickNavbar(e);
                   }
                 };
                 input.on('trigger', trigger);
@@ -986,125 +669,6 @@ class Rend {
                 };
                 input.on('menudown', menudown);
 
-                const keydown = e => {
-                  const {tab} = navbarState;
-
-                  if (tab === 'status') {
-                    const {open} = menuState;
-
-                    if (open) {
-                      const {type} = focusState;
-
-                      let match;
-                      if (match = type.match(/^(file|elementAttributeFile)s:createdirectory$/)) {
-                        const target = match[1];
-                        const targetState = (() => {
-                          switch (target) {
-                            case 'elementAttributeFile': return elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-
-                        const applySpec = biolumi.applyStateKeyEvent(targetState, itemsFontSpec, e);
-
-                        if (applySpec) {
-                          const {commit} = applySpec;
-
-                          if (commit) {
-                            targetState.uploading = true;
-
-                            const {files, inputText} = targetState;
-                            const name = inputText;
-                            if (!files.some(file => file.name === name)) {
-                              const {cwd} = targetState;
-                              fs.createDirectory(menuUtils.pathJoin(cwd, name))
-                                .then(() => fs.getDirectory(cwd)
-                                  .then(files => {
-                                    targetState.files = menuUtils.cleanFiles(files);
-                                    targetState.uploading = false;
-
-                                    _updatePages();
-                                  })
-                                )
-                                .catch(err => {
-                                  console.warn(err);
-
-                                  targetState.uploading = false;
-
-                                  _updatePages();
-                                });
-                            }
-
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
-                      } else if (match = type.match(/^(file|elementAttributeFile)s:rename:(.+)$/)) {
-                        const target = match[1];
-                        const name = match[2];
-                        const targetState = (() => {
-                          switch (target) {
-                            case 'elementAttributeFile': return elementAttributeFilesState;
-                            default: return null;
-                          }
-                        })();
-
-                        const applySpec = biolumi.applyStateKeyEvent(targetState, itemsFontSpec, e);
-
-                        if (applySpec) {
-                          const {commit} = applySpec;
-                          if (commit) {
-                            const {files, inputText} = targetState;
-                            const oldName = name;
-                            const newName = inputText;
-
-                            if (!files.some(file => file.name === newName && file.name !== oldName)) {
-                              targetState.uploading = true;
-
-                              const {cwd} = targetState;
-                              const src = menuUtils.pathJoin(cwd, oldName);
-                              const dst = menuUtils.pathJoin(cwd, newName);
-                              fs.move(src, dst)
-                                .then(() => fs.getDirectory(cwd)
-                                  .then(files => {
-                                    targetState.files = menuUtils.cleanFiles(files);
-                                    targetState.selectedName = newName;
-                                    targetState.uploading = false;
-
-                                    _updatePages();
-                                  })
-                                )
-                                .catch(err => {
-                                  console.warn(err);
-
-                                  targetState.uploading = true;
-
-                                  _updatePages();
-                                });
-                            }
-
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
-                      }
-                    }
-                  }
-                };
-                input.on('keydown', keydown, {
-                  priority: 1,
-                });
-                const keyboarddown = keydown;
-                input.on('keyboarddown', keyboarddown, {
-                  priority: 1,
-                });
-
                 cleanups.push(() => {
                   scene.remove(menuMesh);
                   scene.remove(keyboardMesh);
@@ -1123,8 +687,6 @@ class Rend {
                   input.removeListener('triggerdown', triggerdown);
                   input.removeListener('triggerup', triggerup);
                   input.removeListener('menudown', menudown);
-                  input.removeListener('keydown', keydown);
-                  input.removeListener('keyboarddown', keyboarddown);
                 });
 
                 const menuHoverStates = {
@@ -1521,10 +1083,5 @@ class Rend {
     this._cleanup();
   }
 }
-
-const _pad = (n, width) => {
-  n = n + '';
-  return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
-};
 
 module.exports = Rend;
