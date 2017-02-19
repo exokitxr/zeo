@@ -79,12 +79,14 @@ class Login {
               };
 
               const loginState = {
+                open: true,
                 username: '',
                 password: '',
                 inputText: '',
                 inputIndex: 0,
                 inputValue: 0,
                 loading: false,
+                error: null,
               };
               const focusState = {
                 type: '',
@@ -95,11 +97,11 @@ class Login {
                 right: biolumi.makeMenuHoverState(),
               };
 
-              menuUi.pushPage(({login: {username, password, inputIndex, inputValue, loading}, focus: {type: focusType}}) => {
+              menuUi.pushPage(({login: {username, password, inputIndex, inputValue, loading, error}, focus: {type: focusType}}) => {
                 return [
                   {
                     type: 'html',
-                    src: menuRenderer.getLoginSrc({username, password, inputIndex, inputValue, loading, focusType}),
+                    src: menuRenderer.getLoginSrc({username, password, inputIndex, inputValue, loading, error, focusType}),
                     x: 0,
                     y: 0,
                     w: WIDTH,
@@ -118,6 +120,7 @@ class Login {
               const menuMesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.y = DEFAULT_USER_HEIGHT;
+                object.visible = loginState.open;
 
                 const planeMesh = (() => {
                   const width = WORLD_WIDTH;
@@ -239,6 +242,38 @@ class Login {
 
                     if (username && password) {
                       loginState.loading = true;
+                      loginState.error = null;
+
+                      _updatePages();
+
+                      hub.requestLogin({
+                        username,
+                        password,
+                      })
+                        .then(loginSpec => {
+                          if (loginSpec) {
+                            loginState.open = false;
+
+                            menuMesh.visible = false;
+
+                            rend.login();
+                          } else {
+                            loginState.error = 'EAUTH';
+                          }
+
+                          loginState.loading = false;
+
+                          _updatePages();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+
+                          loginState.loading = false;
+
+                          _updatePages();
+                        });
+                    } else {
+                      loginState.error = 'EINPUT';
 
                       _updatePages();
                     }
@@ -291,59 +326,62 @@ class Login {
               });
 
               const _update = () => {
-                const _updateTextures = () => {
-                  const {
-                    planeMesh: {
+                const {open} = loginState;
+
+                if (open) {
+                  const _updateTextures = () => {
+                    const {
+                      planeMesh: {
+                        menuMaterial: statusMenuMaterial,
+                      },
+                    } = menuMesh;
+                    const uiTime = rend.getUiTime();
+
+                    biolumi.updateMenuMaterial({
+                      ui: menuUi,
                       menuMaterial: statusMenuMaterial,
-                    },
-                  } = menuMesh;
-                  const uiTime = rend.getUiTime();
+                      uiTime,
+                    });
+                  };
+                  const _updateAnchors = () => {
+                    const {gamepads} = webvr.getStatus();
 
-                  biolumi.updateMenuMaterial({
-                    ui: menuUi,
-                    menuMaterial: statusMenuMaterial,
-                    uiTime,
-                  });
-                };
-                const _updateAnchors = () => {
-                  const status = webvr.getStatus();
-                  const {gamepads} = status;
+                    const {planeMesh} = menuMesh;
+                    const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
 
-                  const {planeMesh} = menuMesh;
-                  const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
 
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const menuHoverState = menuHoverStates[side];
+                        const menuDotMesh = menuDotMeshes[side];
+                        const menuBoxMesh = menuBoxMeshes[side];
 
-                      const menuHoverState = menuHoverStates[side];
-                      const menuDotMesh = menuDotMeshes[side];
-                      const menuBoxMesh = menuBoxMeshes[side];
+                        biolumi.updateAnchors({
+                          objects: [{
+                            matrixObject: menuMatrixObject,
+                            ui: menuUi,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                          }],
+                          hoverState: menuHoverState,
+                          dotMesh: menuDotMesh,
+                          boxMesh: menuBoxMesh,
+                          controllerPosition,
+                          controllerRotation,
+                        });
+                      }
+                    });
+                  };
 
-                      biolumi.updateAnchors({
-                        objects: [{
-                          matrixObject: menuMatrixObject,
-                          ui: menuUi,
-                          width: WIDTH,
-                          height: HEIGHT,
-                          worldWidth: WORLD_WIDTH,
-                          worldHeight: WORLD_HEIGHT,
-                          worldDepth: WORLD_DEPTH,
-                        }],
-                        hoverState: menuHoverState,
-                        dotMesh: menuDotMesh,
-                        boxMesh: menuBoxMesh,
-                        controllerPosition,
-                        controllerRotation,
-                      });
-                    }
-                  });
-                };
-
-                _updateTextures();
-                _updateAnchors();
+                  _updateTextures();
+                  _updateAnchors();
+                }
               };
               rend.on('update', _update);
 

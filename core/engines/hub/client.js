@@ -48,6 +48,14 @@ class Hub {
               return Promise.resolve();
             }
           };
+          const _requestLogin = ({username, password}) => fetch('https://' + hubUrl + '/hub/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({username, password}),
+          })
+            .then(res => res.json());
           const hubEnabled = false;
           const worldName = (() => {
             if (hubEnabled) {
@@ -97,7 +105,7 @@ class Hub {
             const {username} = userState;
 
             if (hubEnabled && username) {
-              return fetch(fullHubUrl + '/hub/userState', {
+              return fetch(hubUrl + '/hub/userState', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -111,7 +119,7 @@ class Hub {
           const _saveUserStateAsync = () => {
             const {username} = userState;
             if (hubEnabled && username) {
-              navigator.sendBeacon(fullHubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
+              navigator.sendBeacon(hubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
                 type: 'application/json',
               }));
             }
@@ -122,6 +130,7 @@ class Hub {
             getServers: _getServers,
             getCurrentServer: _getCurrentServer,
             changeServer: _changeServer,
+            requestLogin: _requestLogin,
             getUserState: _getUserState,
             setUserStateMatrix: _setUserStateMatrix,
             getUserStateInventoryItem: _getUserStateInventoryItem,
@@ -151,7 +160,7 @@ class Hub {
         })();
 
         if (token !== null) {
-          return fetch(fullHubUrl + '/hub/login', {
+          return fetch(hubUrl + '/hub/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -222,7 +231,7 @@ class Hub {
           const {username} = userState;
 
           if (hubEnabled && username) {
-            return fetch(fullHubUrl + '/hub/userState', {
+            return fetch(hubUrl + '/hub/userState', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -236,7 +245,7 @@ class Hub {
         const _saveUserStateAsync = () => {
           const {username} = userState;
           if (hubEnabled && username) {
-            navigator.sendBeacon(fullHubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
+            navigator.sendBeacon(hubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
               type: 'application/json',
             }));
           }

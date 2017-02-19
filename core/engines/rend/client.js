@@ -97,6 +97,7 @@ class Rend {
         let uiTimer = null;
         let menu = null;
         let menuMesh = null;
+        let keyboardMesh = null;
         let auxObjects = {
           bagMesh: null,
           tagMeshes: null,
@@ -346,7 +347,7 @@ class Rend {
                 scene.add(navbarBoxMeshes.left);
                 scene.add(navbarBoxMeshes.right);
 
-                const keyboardMesh = (() => {
+                keyboardMesh = (() => {
                   const keySpecs = (() => {
                     const div = document.createElement('div');
                     div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
@@ -1052,6 +1053,24 @@ class Rend {
                 const tag = archae.getName(pluginInstance);
 
                 _removeModApiElement(tag);
+              }
+
+              login() {
+                menuState.open = true;
+
+                menu.updatePages();
+
+                menuMesh.visible = true;
+                keyboardMesh.visible = true;
+              }
+
+              logout() {
+                menuState.open = false;
+
+                menu.updatePages();
+
+                menuMesh.visible = false;
+                keyboardMesh.visible = false;
               }
 
               connectServer() {
