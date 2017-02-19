@@ -1,0 +1,7 @@
+{
+  "name": "login",
+  "description": "Renders the zeo core login interface.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {}
+}
