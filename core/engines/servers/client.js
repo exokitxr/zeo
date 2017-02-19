@@ -17,6 +17,7 @@ class Servers {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {hub: {url: hubUrl}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -104,7 +105,7 @@ class Servers {
                 const serversState = {
                   page: 'list',
                   servers: hub.getServers(),
-                  currentServerUrl: hub.getCurrentServerUrl(),
+                  currentServerUrl: hub.getCurrentServer().url,
                 };
                 const focusState = {
                   type: '',
@@ -208,7 +209,7 @@ class Servers {
                   } else if (match = onclick.match(/^servers:connect:(.+)$/)) {
                     const serverUrl = match[1];
 
-                    hub.changeServer(serverUrl) // XXX handle race conditions here
+                    hub.changeServer(serverUrl) // XXX handle race conditions for these
                       .then(() => {
                         rend.connectServer();
 
@@ -220,11 +221,17 @@ class Servers {
                         console.warn(err);
                       });
                   } else if (onclick === 'servers:disconnect') {
-                    rend.disconnectServer();
+                    hub.changeServer(hubUrl)
+                      .then(() => {
+                        rend.disconnectServer();
 
-                    serversState.currentServerUrl = null;
+                        serversState.currentServerUrl = null;
 
-                    _updatePages();
+                        _updatePages();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
                   }
                 };
                 input.on('trigger', _trigger);

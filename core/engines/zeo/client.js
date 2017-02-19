@@ -198,7 +198,9 @@ class Zeo {
               return _startRenderLoop()
                 .then(() => {
                   if (live) {
-                    rend.connectServer();
+                    if (hub.getCurrentServer().type === 'server') {
+                      rend.connectServer();
+                    }
 
                     const _initHelper = () => {
                       const helper = document.createElement('div');

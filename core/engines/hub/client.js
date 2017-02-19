@@ -10,6 +10,8 @@ class Hub {
     const {_archae: archae} = this;
     const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl}}} = archae;
 
+    const localUrl = window.location.host;
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -22,7 +24,7 @@ class Hub {
 
     return Promise.all([
       _requestServers(hubUrl),
-      _requestServer(serverUrl),
+      _requestServer(localUrl),
     ])
       .then(([
         serversJson,
@@ -30,21 +32,18 @@ class Hub {
       ]) => {
         if (live) {
           const _getServers = () => serversJson.servers;
-          const _getCurrentServerUrl = () => serverJson && serverJson.url;
+          const _getCurrentServer = () => serverJson;
           const _changeServer = serverUrl => {
-            if (serverUrl) {
+            if (serverUrl !== hubUrl) {
               return _requestServer(serverUrl)
                 .then(serverJsonData => {
                   serverJson = serverJsonData;
-
-                  window.history.pushState({}, document.title, serverJson.url);
-
-                  accept();
                 });
             } else {
-              serverJson = null;
-
-              window.history.pushState({}, document.title, hubUrl);
+              serverJson = {
+                type: 'hub',
+                url: hubUrl,
+              };
 
               return Promise.resolve();
             }
@@ -121,7 +120,7 @@ class Hub {
           return {
             isEnabled: _isEnabled,
             getServers: _getServers,
-            getCurrentServerUrl: _getCurrentServerUrl,
+            getCurrentServer: _getCurrentServer,
             changeServer: _changeServer,
             getUserState: _getUserState,
             setUserStateMatrix: _setUserStateMatrix,
