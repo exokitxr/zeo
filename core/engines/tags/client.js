@@ -600,9 +600,10 @@ class Tags {
                           if (bestGrabbableTagMesh) {
                             grabbableState.tagMesh = bestGrabbableTagMesh;
 
-                            const {position: tagMeshPosition, rotation: tagMeshRotation} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
+                            const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
                             grabBoxMesh.position.copy(tagMeshPosition);
                             grabBoxMesh.quaternion.copy(tagMeshRotation);
+                            grabBoxMesh.scale.copy(tagMeshScale);
 
                             if (!grabBoxMesh.visible) {
                               grabBoxMesh.visible = true;

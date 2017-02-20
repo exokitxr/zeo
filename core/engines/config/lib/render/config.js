@@ -18,7 +18,7 @@ const getConfigPageSrc = ({inputText, inputValue, focus, sliderValue, airlockChe
 
 const getInputSrc = (inputText, inputPlaceholder, inputValue, focus, onclick) => `\
   <div style='position: relative; margin-bottom: 5px; font-size: 30px; line-height: 1.4;'>
-    <a style='display: block; background-color: #EEE; border-radius: 10px; text-decoration: none;' onclick="${onclick}">
+    <a style='display: block; background-color: #EEE; border-radius: 5px; text-decoration: none;' onclick="${onclick}">
       ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 20px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
       <div>${inputText}</div>
       ${!inputText ? `<div style="color: #CCC;">${inputPlaceholder}</div>` : ''}

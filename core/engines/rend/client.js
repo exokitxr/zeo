@@ -78,6 +78,8 @@ class Rend {
         const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
 
+        const oneVector = new THREE.Vector3(1, 1, 1);
+
         const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
         });
@@ -757,16 +759,17 @@ class Rend {
                         if (value > 0.001) {
                           animatedMeshSpecs.forEach(meshSpec => {
                             const {direction, mesh} = meshSpec;
+                            const {initialScale = oneVector} = mesh;
 
                             switch (direction) {
                               case 'x':
-                                mesh.scale.set(value, 1, 1);
+                                mesh.scale.set(value * initialScale.x, initialScale.y, initialScale.z);
                                 break;
                               case 'y':
-                                mesh.scale.set(1, value, 1);
+                                mesh.scale.set(initialScale.x, value * initialScale.y, initialScale.z);
                                 break;
                               case 'z':
-                                mesh.scale.set(1, 1, value);
+                                mesh.scale.set(initialScale.x, initialScale.y, value * initialScale.z);
                                 break;
                             }
 
@@ -784,8 +787,9 @@ class Rend {
                       } else {
                         animatedMeshSpecs.forEach(meshSpec => {
                           const {mesh} = meshSpec;
+                          const {initialScale = oneVector} = mesh;
 
-                          mesh.scale.set(1, 1, 1);
+                          mesh.scale.copy(initialScale);
 
                           if (open && !mesh.visible) {
                             mesh.visible = true;

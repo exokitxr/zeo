@@ -5,14 +5,10 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/world';
-import worldRender from './lib/render/world';
+import worldRenderer from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
+const TAGS_PER_ROW = 4;
 
 const SIDES = ['left', 'right'];
 
@@ -61,17 +57,13 @@ class World {
       if (live) {
         const {THREE, scene, camera} = three;
 
-        const worldRenderer = worldRender.makeRenderer({
-          monospaceFonts: biolumi.getMonospaceFonts(),
-        });
-
         // constants
         const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
-          fontSize: 30,
+          fontSize: 36,
           lineHeight: 1.4,
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
@@ -444,28 +436,6 @@ class World {
                   });
               };
 
-              const _alignTagMeshes = tagMeshes => {
-                const aspectRatio = 400 / 150;
-                const size = (0.2 * 3) + ((0.2 / 4) * 2);
-                const width = 0.2;
-                const height = width / aspectRatio;
-                const padding = width / 4;
-
-                for (let i = 0; i < tagMeshes.length; i++) {
-                  const tagMesh = tagMeshes[i];
-
-                  if (tagMesh) {
-                    const x = i % 3;
-                    const y = Math.floor(i / 3);
-                    tagMesh.position.set(
-                      -(width + padding) + x * (width + padding),
-                      ((size / 2) - (height / 2) - padding) - (y * (height + padding)),
-                      0
-                    );
-                  }
-                }
-              };
-
               class ElementManager {
                 add(tagMesh) {
                   // register tag
@@ -540,9 +510,6 @@ class World {
               let equipmentJson = null;
               let inventoryJson = null;
 
-              const elementsState = {
-                empty: true,
-              };
               const npmState = {
                 inputText: '',
                 inputPlaceholder: 'Search npm modules',
@@ -561,25 +528,16 @@ class World {
                 right: biolumi.makeMenuHoverState(),
               };
 
-              worldUi.pushPage(({elements: {empty}, npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
+              worldUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
                 const focus = type === 'npm';
 
                 return [
                   {
                     type: 'html',
-                    src: worldRenderer.getElementsPageSrc({empty}),
+                    src: worldRenderer.getWorldPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
                     x: 0,
                     y: 0,
-                    w: WIDTH / 2,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                  {
-                    type: 'html',
-                    src: worldRenderer.getNpmPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
-                    x: WIDTH / 2,
-                    y: 0,
-                    w: WIDTH / 2,
+                    w: WIDTH,
                     h: HEIGHT,
                     scroll: true,
                   },
@@ -587,32 +545,12 @@ class World {
               }, {
                 type: 'world',
                 state: {
-                  elements: elementsState,
                   npm: npmState,
                   focus: focusState,
                 },
                 immediate: true,
               });
 
-              const _makeContainerMesh = () => {
-                const size = (0.2 * 3) + ((0.2 / 4) * 2);
-                const width = size;
-                const height = size;
-                const depth = size / 2;
-
-                const geometry = new THREE.BoxBufferGeometry(width, height, depth);
-                const material = new THREE.MeshBasicMaterial({
-                  color: 0x808080,
-                  wireframe: true,
-                });
-
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.width = width;
-                mesh.height = height;
-                mesh.depth = depth;
-
-                return mesh;
-              };
               const worldMesh = (() => {
                 const result = new THREE.Object3D();
                 result.visible = false;
@@ -646,30 +584,9 @@ class World {
                 result.add(menuMesh);
                 result.menuMesh = menuMesh;
 
-                const elementsMesh = (() => {
-                  const object = new THREE.Object3D();
-                  object.position.x = -0.5 - 0.1;
-                  object.position.y = 0.2;
-                  object.position.z = -1 + 0.05;
-
-                  const containerMesh = _makeContainerMesh();
-                  object.add(containerMesh);
-                  object.containerMesh = containerMesh;
-
-                  return object;
-                })();
-                result.add(elementsMesh);
-                result.elementsMesh = elementsMesh;
-
                 const npmMesh = (() => {
                   const object = new THREE.Object3D();
-                  object.position.x = 0.5 - 0.1;
-                  object.position.y = 0.2;
-                  object.position.z = -1 + 0.05;
-
-                  const containerMesh = _makeContainerMesh();
-                  object.add(containerMesh);
-                  object.containerMesh = containerMesh;
+                  object.position.z = -1 + 0.01;
 
                   return object;
                 })();
@@ -757,7 +674,6 @@ class World {
 
                     if (type === 'world') {
                       page.update({
-                        elements: elementsState,
                         npm: npmState,
                         focus: focusState,
                       }, pend);
@@ -939,26 +855,42 @@ class World {
                   _requestLocalModSpecs()
                     .then(tagSpecs => tagSpecs.map(tagSpec => tags.makeTag(tagSpec)))
                     .then(tagMeshes => {
+                      // remove old
                       const npmTagMeshes = tags.getTagsClass('npm');
                       for (let i = 0; i < npmTagMeshes.length; i++) {
-                        const npmTagMesh = npmTagMeshes[i];
-                        tags.unmountTag('npm', npmTagMesh);
+                        const oldTagMesh = npmTagMeshes[i];
 
-                        npmTagMesh.parent.remove(npmTagMesh);
-                        tags.destroyTag(npmTagMesh);
+                        oldTagMesh.parent.remove(oldTagMesh);
+
+                        tags.unmountTag('npm', oldTagMesh);
+
+                        tags.destroyTag(oldTagMesh);
                       }
 
+                      // add new
+                      const {npmMesh} = worldMesh;
+                      const aspectRatio = 400 / 150;
+                      const scale = 2;
+                      const width = 0.2 * scale;
+                      const height = width / aspectRatio;
+                      const padding = (WORLD_WIDTH - (TAGS_PER_ROW * width)) / (TAGS_PER_ROW + 1);
                       for (let i = 0; i < tagMeshes.length; i++) {
-                        const tagMesh = tagMeshes[i];
-                        const {
-                          npmMesh: {
-                            containerMesh: npmContainerMesh,
-                          },
-                        } = worldMesh;
-                        npmContainerMesh.add(tagMesh);
-                        tags.mountTag('npm', tagMesh);
+                        const newTagMesh = tagMeshes[i];
+
+                        const x = i % TAGS_PER_ROW;
+                        const y = Math.floor(i / TAGS_PER_ROW);
+                        newTagMesh.position.set(
+                          -(WORLD_WIDTH / 2) + (padding + (width / 2)) + (x * (width + padding)),
+                          (WORLD_HEIGHT / 2) - (padding + height) - (padding / 2) - (y * (height + padding)),
+                          0
+                        );
+                        newTagMesh.scale.set(scale, scale, 1);
+                        newTagMesh.initialScale = newTagMesh.scale.clone();
+
+                        npmMesh.add(newTagMesh);
+
+                        tags.mountTag('npm', newTagMesh);
                       }
-                      _alignTagMeshes(npmTagMeshes);
                     })
                     .catch(err => {
                       console.warn(err);
