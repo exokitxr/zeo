@@ -266,7 +266,10 @@ class World {
                       next();
                     })
                 } else {
-                  return Promise.resolve();
+                  return Promise.resolve()
+                    .then(() => {
+                       next();
+                    });
                 }
               });
               let lastFilesJsonString = null;
