@@ -57,6 +57,7 @@ class Bag {
 
         const bagMesh = (() => {
           const result = new THREE.Object3D();
+          result.visible = false;
 
           const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1, 1, 1, 1);
 
@@ -129,6 +130,14 @@ class Bag {
         scene.add(bagMesh);
         rend.registerAuxObject('bagMesh', bagMesh);
 
+        const login = () => {
+          bagMesh.visible = true;
+        };
+        rend.on('login', login);
+        const logout = () => {
+          bagMesh.visible = false;
+        };
+        rend.on('logout', logout);
         const _update = () => {
           const {hmd, gamepads} = webvr.getStatus();
 
@@ -179,6 +188,8 @@ class Bag {
         this._cleanup = () => {
           scene.remove(bagMesh);
 
+          rend.removeListener('login', login);
+          rend.removeListener('logout', logout);
           rend.removeListener('update', _update);
         };
 
