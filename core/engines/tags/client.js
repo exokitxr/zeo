@@ -90,8 +90,6 @@ class Tags {
             transparent: true,
           });
 
-          const oneVector = new THREE.Vector3(1, 1, 1);
-
           const subcontentFontSpec = {
             fonts: biolumi.getFonts(),
             fontSize: 20,
@@ -138,23 +136,6 @@ class Tags {
                 };
                 scene.add(boxMeshes.left);
                 scene.add(boxMeshes.right);
-
-                const npmHoverStates = {
-                  left: biolumi.makeMenuHoverState(),
-                  right: biolumi.makeMenuHoverState(),
-                };
-                const npmDotMeshes = {
-                  left: biolumi.makeMenuDotMesh(),
-                  right: biolumi.makeMenuDotMesh(),
-                };
-                scene.add(npmDotMeshes.left);
-                scene.add(npmDotMeshes.right);
-                const npmBoxMeshes = {
-                  left: biolumi.makeMenuBoxMesh(),
-                  right: biolumi.makeMenuBoxMesh(),
-                };
-                scene.add(npmBoxMeshes.left);
-                scene.add(npmBoxMeshes.right);
 
                 const _makeGrabBoxMesh = () => {
                   const width = WORLD_WIDTH;
@@ -531,36 +512,8 @@ class Tags {
                       return false;
                     }
                   };
-                  const _doClickGrab = () => {
-                    const npmHoverState = npmHoverStates[side];
-                    const {intersectionPoint} = npmHoverState;
 
-                    if (intersectionPoint) {
-                      const {anchor} = npmHoverState;
-                      const onclick = (anchor && anchor.onclick) || '';
-
-                      let match;
-                      if (match = onclick.match(/^tag:(.+?)$/)) {
-                        const id = match[1];
-                        const {npm: npmTagMeshes} = tagClassMeshes;
-                        const npmTagMesh = npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
-
-                        if (hands.canGrab(side, npmTagMesh, {radius: DEFAULT_GRAB_RADIUS})) { // XXX no need to check grab range
-                          tagsInstance.grabTag(side, npmTagMesh);
-
-                          return true;
-                        } else {
-                          return false;
-                        }
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  };
-
-                  _doClickOpen() || _doSetPosition() || _doClickAttribute() || _doClickGrab();
+                  _doClickOpen() || _doSetPosition() || _doClickAttribute();
                 };
                 input.on('trigger', _trigger);
                 const _gripdown = e => {
@@ -627,56 +580,6 @@ class Tags {
                               hoverState: hoverState,
                               dotMesh: dotMesh,
                               boxMesh: boxMesh,
-                              controllerPosition,
-                              controllerRotation,
-                            });
-                          }
-                        });
-                      }
-                    };
-                    const _updateNpmAnchors = () => {
-                      const isOpen = rend.isOpen();
-                      const tab = rend.getTab();
-
-                      if (isOpen && tab === 'world') {
-                        const {gamepads} = webvr.getStatus();
-
-                        SIDES.forEach(side => {
-                          const gamepad = gamepads[side];
-
-                          if (gamepad) {
-                            const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                            const npmHoverState = npmHoverStates[side];
-                            const npmDotMesh = npmDotMeshes[side];
-                            const npmBoxMesh = npmBoxMeshes[side];
-
-                            biolumi.updateAnchors({
-                              objects: tagClassMeshes.npm.map(tagMesh => {
-                                if (tagMesh) {
-                                  const {ui, planeMesh, initialScale = oneVector} = tagMesh;
-
-                                  if (ui && planeMesh) {
-                                    const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-
-                                    return {
-                                      matrixObject: matrixObject,
-                                      ui: ui,
-                                      width: WIDTH,
-                                      height: HEIGHT,
-                                      worldWidth: WORLD_WIDTH * initialScale.x,
-                                      worldHeight: WORLD_HEIGHT * initialScale.y,
-                                      worldDepth: WORLD_DEPTH * initialScale.z,
-                                    };
-                                  } else {
-                                    return null;
-                                  }
-                                } else {
-                                  return null;
-                                }
-                              }).filter(object => object !== null),
-                              hoverState: npmHoverState,
-                              dotMesh: npmDotMesh,
-                              boxMesh: npmBoxMesh,
                               controllerPosition,
                               controllerRotation,
                             });
@@ -763,7 +666,6 @@ class Tags {
                     };
 
                     _updateElementAnchors();
-                    _updateNpmAnchors();
                     _updateGrabbers();
                     _updatePositioningMesh();
                   };
@@ -802,9 +704,6 @@ class Tags {
                   SIDES.forEach(side => {
                     scene.remove(dotMeshes[side]);
                     scene.remove(boxMeshes[side]);
-
-                    scene.remove(npmDotMeshes[side]);
-                    scene.remove(npmBoxMeshes[side]);
 
                     scene.remove(grabBoxMeshes[side]);
 

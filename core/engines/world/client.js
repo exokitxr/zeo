@@ -4,6 +4,12 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
+
+  TAGS_WIDTH,
+  TAGS_HEIGHT,
+  TAGS_WORLD_WIDTH,
+  TAGS_WORLD_HEIGHT,
+  TAGS_WORLD_DEPTH,
 } from './lib/constants/world';
 import worldRenderer from './lib/render/world';
 import menuUtils from './lib/utils/menu';
@@ -542,6 +548,23 @@ class World {
                 right: biolumi.makeMenuHoverState(),
               };
 
+              const npmHoverStates = {
+                left: biolumi.makeMenuHoverState(),
+                right: biolumi.makeMenuHoverState(),
+              };
+              const npmDotMeshes = {
+                left: biolumi.makeMenuDotMesh(),
+                right: biolumi.makeMenuDotMesh(),
+              };
+              scene.add(npmDotMeshes.left);
+              scene.add(npmDotMeshes.right);
+              const npmBoxMeshes = {
+                left: biolumi.makeMenuBoxMesh(),
+                right: biolumi.makeMenuBoxMesh(),
+              };
+              scene.add(npmBoxMeshes.left);
+              scene.add(npmBoxMeshes.right);
+
               worldUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
                 const focus = type === 'npm';
 
@@ -735,7 +758,7 @@ class World {
                     });
                   }
                 };
-                const _updateAnchors = () => {
+                const _updateMenuAnchors = () => {
                   const tab = rend.getTab();
 
                   if (tab === 'world') {
@@ -769,6 +792,56 @@ class World {
                           controllerPosition,
                           controllerRotation,
                         })
+                      }
+                    });
+                  }
+                };
+                const _updateNpmAnchors = () => {
+                  const isOpen = rend.isOpen();
+                  const tab = rend.getTab();
+
+                  if (isOpen && tab === 'world') {
+                    const {gamepads} = webvr.getStatus();
+
+                    SIDES.forEach(side => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const npmHoverState = npmHoverStates[side];
+                        // const npmDotMesh = npmDotMeshes[side];
+                        const npmBoxMesh = npmBoxMeshes[side];
+
+                        biolumi.updateAnchors({
+                          objects: tags.getTagsClass('npm').map(tagMesh => {
+                            if (tagMesh) {
+                              const {ui, planeMesh, initialScale = oneVector} = tagMesh;
+
+                              if (ui && planeMesh) {
+                                const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+
+                                return {
+                                  matrixObject: matrixObject,
+                                  ui: ui,
+                                  width: TAGS_WIDTH,
+                                  height: TAGS_HEIGHT,
+                                  worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
+                                  worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
+                                  worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
+                                };
+                              } else {
+                                return null;
+                              }
+                            } else {
+                              return null;
+                            }
+                          }).filter(object => object !== null),
+                          hoverState: npmHoverState,
+                          // dotMesh: npmDotMesh,
+                          boxMesh: npmBoxMesh,
+                          controllerPosition,
+                          controllerRotation,
+                        });
                       }
                     });
                   }
@@ -879,6 +952,7 @@ class World {
                       const highlightState = highlightStates[side];
                       const {startPoint} = highlightState;
 
+                      const highlightBoxMesh = highlightBoxMeshes[side];
                       if (startPoint) {
                         const {position: currentPoint} = gamepad;
 
@@ -888,7 +962,6 @@ class World {
                         size.y = Math.abs(size.y);
                         size.z = Math.abs(size.z);
 
-                        const highlightBoxMesh = highlightBoxMeshes[side];
                         if (size.x > 0.001 && size.y > 0.001 && size.z > 0.001) {
                           const midPoint = startPoint.clone()
                             .add(currentPoint)
@@ -896,8 +969,16 @@ class World {
 
                           highlightBoxMesh.position.copy(midPoint);
                           highlightBoxMesh.scale.copy(size);
-                          highlightBoxMesh.visible = true;
+                          if (!highlightBoxMesh.visible) {
+                            highlightBoxMesh.visible = true;
+                          }
                         } else {
+                          if (highlightBoxMesh.visible) {
+                            highlightBoxMesh.visible = false;
+                          }
+                        }
+                      } else {
+                        if (highlightBoxMesh.visible) {
                           highlightBoxMesh.visible = false;
                         }
                       }
@@ -906,7 +987,8 @@ class World {
                 };
 
                 _updateTextures();
-                _updateAnchors();
+                _updateMenuAnchors();
+                _updateNpmAnchors();
                 _updateEquipmentPositions();
                 _updateHighlight();
               };
@@ -968,31 +1050,91 @@ class World {
               rend.on('tabchange', _tabchange);
 
               const _trigger = e => {
-                const tab = rend.getTab();
+                const {side} = e;
 
-                if (tab === 'world') {
-                  const {side} = e;
-                  const menuHoverState = menuHoverStates[side];
-                  const {intersectionPoint} = menuHoverState;
+                const _clickNpm = () => {
+                  const {gamepads} = webvr.getStatus();
+                  const gamepad = gamepads[side];
 
-                  if (intersectionPoint) {
-                    const {anchor} = menuHoverState;
-                    const onclick = (anchor && anchor.onclick) || '';
+                  if (gamepad) {
+                    const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
-                    if (onclick === 'npm:focus') {
-                      const {value} = menuHoverState;
-                      const valuePx = value * (WIDTH - (500 + 40));
+                    if (gripPressed) {
+                      const npmHoverState = npmHoverStates[side];
+                      const {intersectionPoint} = npmHoverState;
+                      const handsGrabber = hands.peek(side);
 
-                      const {index, px} = biolumi.getTextPropertiesFromCoord(npmState.inputText, mainFontSpec, valuePx);
+                      if (intersectionPoint && !handsGrabber) {
+                        const {anchor} = npmHoverState;
+                        const onclick = (anchor && anchor.onclick) || '';
 
-                      npmState.inputIndex = index;
-                      npmState.inputValue = px;
-                      focusState.type = 'npm';
+                        let match;
+                        if (match = onclick.match(/^tag:(.+?)$/)) {
+                          const id = match[1];
+                          const npmTagMeshes = tags.getTagsClass('npm');
+                          const tagMesh = npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
 
-                      _updatePages();
+                          const tagMeshClone = tags.cloneTag(tagMesh);
+
+                          scene.add(tagMeshClone);
+
+                          tags.grabTag(side, tagMeshClone);
+
+                          _saveTags();
+
+                          const highlightState = highlightStates[side];
+                          highlightState.startPoint = null;
+
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
                     }
+                  } else {
+                    return false;
                   }
-                }
+                };
+                const _clickMenu = () => {
+                  const tab = rend.getTab();
+
+                  if (tab === 'world') {
+                    const menuHoverState = menuHoverStates[side];
+                    const {intersectionPoint} = menuHoverState;
+
+                    if (intersectionPoint) {
+                      const {anchor} = menuHoverState;
+                      const onclick = (anchor && anchor.onclick) || '';
+
+                      if (onclick === 'npm:focus') {
+                        const {value} = menuHoverState;
+                        const valuePx = value * (WIDTH - (500 + 40));
+
+                        const {index, px} = biolumi.getTextPropertiesFromCoord(npmState.inputText, mainFontSpec, valuePx);
+
+                        npmState.inputIndex = index;
+                        npmState.inputValue = px;
+                        focusState.type = 'npm';
+
+                        _updatePages();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                };
+
+                _clickNpm() || _clickMenu();
               };
               input.on('trigger', _trigger, {
                 priority: 1,
@@ -1122,9 +1264,6 @@ class World {
 
                     const highlightState = highlightStates[side];
                     highlightState.startPoint = controllerPosition.clone();
-
-                    const highlightBoxMesh = highlightBoxMeshes[side];
-                    highlightBoxMesh.scale.copy(oneVector);
 
                     return true;
                   } else {
@@ -1435,6 +1574,9 @@ class World {
                 SIDES.forEach(side => {
                   scene.remove(menuDotMeshes[side]);
                   scene.remove(menuBoxMeshes[side]);
+
+                  scene.remove(npmDotMeshes[side]);
+                  scene.remove(npmBoxMeshes[side]);
                 });
 
                 scene.remove(positioningMesh);
