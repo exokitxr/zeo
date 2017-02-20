@@ -90,6 +90,8 @@ class Tags {
             transparent: true,
           });
 
+          const oneVector = new THREE.Vector3(1, 1, 1);
+
           const subcontentFontSpec = {
             fonts: biolumi.getFonts(),
             fontSize: 20,
@@ -112,11 +114,6 @@ class Tags {
                   right: _makeGrabbableState(),
                 };
 
-                const hoverStates = {
-                  left: biolumi.makeMenuHoverState(),
-                  right: biolumi.makeMenuHoverState(),
-                };
-
                 const _makeGrabState = () => ({
                   grabber: null,
                 });
@@ -125,6 +122,10 @@ class Tags {
                   right: _makeGrabState(),
                 };
 
+                const hoverStates = {
+                  left: biolumi.makeMenuHoverState(),
+                  right: biolumi.makeMenuHoverState(),
+                };
                 const dotMeshes = {
                   left: biolumi.makeMenuDotMesh(),
                   right: biolumi.makeMenuDotMesh(),
@@ -137,6 +138,23 @@ class Tags {
                 };
                 scene.add(boxMeshes.left);
                 scene.add(boxMeshes.right);
+
+                const npmHoverStates = {
+                  left: biolumi.makeMenuHoverState(),
+                  right: biolumi.makeMenuHoverState(),
+                };
+                const npmDotMeshes = {
+                  left: biolumi.makeMenuDotMesh(),
+                  right: biolumi.makeMenuDotMesh(),
+                };
+                scene.add(npmDotMeshes.left);
+                scene.add(npmDotMeshes.right);
+                const npmBoxMeshes = {
+                  left: biolumi.makeMenuBoxMesh(),
+                  right: biolumi.makeMenuBoxMesh(),
+                };
+                scene.add(npmBoxMeshes.left);
+                scene.add(npmBoxMeshes.right);
 
                 const _makeGrabBoxMesh = () => {
                   const width = WORLD_WIDTH;
@@ -538,7 +556,7 @@ class Tags {
                 input.on('gripup', _gripup);
                 const _update = () => {
                   const _updateControllers = () => {
-                    const _updateMenuAnchors = () => {
+                    const _updateElementAnchors = () => {
                       const isOpen = rend.isOpen();
 
                       if (isOpen) {
@@ -581,6 +599,56 @@ class Tags {
                               hoverState: hoverState,
                               dotMesh: dotMesh,
                               boxMesh: boxMesh,
+                              controllerPosition,
+                              controllerRotation,
+                            });
+                          }
+                        });
+                      }
+                    };
+                    const _updateNpmAnchors = () => {
+                      const isOpen = rend.isOpen();
+                      const tab = rend.getTab();
+
+                      if (isOpen && tab === 'world') {
+                        const {gamepads} = webvr.getStatus();
+
+                        SIDES.forEach(side => {
+                          const gamepad = gamepads[side];
+
+                          if (gamepad) {
+                            const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                            const npmHoverState = npmHoverStates[side];
+                            const npmDotMesh = npmDotMeshes[side];
+                            const npmBoxMesh = npmBoxMeshes[side];
+
+                            biolumi.updateAnchors({
+                              objects: tagClassMeshes.npm.map(tagMesh => {
+                                if (tagMesh) {
+                                  const {ui, planeMesh, initialScale = oneVector} = tagMesh;
+
+                                  if (ui && planeMesh) {
+                                    const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+
+                                    return {
+                                      matrixObject: matrixObject,
+                                      ui: ui,
+                                      width: WIDTH,
+                                      height: HEIGHT,
+                                      worldWidth: WORLD_WIDTH * initialScale.x,
+                                      worldHeight: WORLD_HEIGHT * initialScale.y,
+                                      worldDepth: WORLD_DEPTH * initialScale.z,
+                                    };
+                                  } else {
+                                    return null;
+                                  }
+                                } else {
+                                  return null;
+                                }
+                              }).filter(object => object !== null),
+                              hoverState: npmHoverState,
+                              dotMesh: npmDotMesh,
+                              boxMesh: npmBoxMesh,
                               controllerPosition,
                               controllerRotation,
                             });
@@ -666,7 +734,8 @@ class Tags {
                       }
                     };
 
-                    _updateMenuAnchors();
+                    _updateElementAnchors();
+                    _updateNpmAnchors();
                     _updateGrabbers();
                     _updatePositioningMesh();
                   };
@@ -705,6 +774,10 @@ class Tags {
                   SIDES.forEach(side => {
                     scene.remove(dotMeshes[side]);
                     scene.remove(boxMeshes[side]);
+
+                    scene.remove(npmDotMeshes[side]);
+                    scene.remove(npmBoxMeshes[side]);
+
                     scene.remove(grabBoxMeshes[side]);
 
                     scene.remove(positioningMesh);
@@ -767,7 +840,7 @@ class Tags {
                   equipment: DEFAULT_EQUIPMENT,
                 };
                 class TagsApi {
-                  makeTag(itemSpec) {
+                  makeTag(itemSpec, options) {
                     const object = new THREE.Object3D();
                     object[tagFlagSymbol] = true;
 
@@ -781,14 +854,14 @@ class Tags {
                     object.ui = null;
                     object.planeMesh = null;
 
-                    this._requestDecorateTag(object);
+                    this._requestDecorateTag(object, options);
 
                     tagMeshes.push(object);
 
                     return object;
                   }
 
-                  _requestDecorateTag(object) {
+                  _requestDecorateTag(object, options) {
                     return biolumi.requestUi({
                       width: WIDTH,
                       height: HEIGHT,
@@ -804,11 +877,12 @@ class Tags {
                               attributeName: match[2],
                             };
                           })();
+                          const highlight = Boolean(options && options.highlight);
 
                           return [
                             {
                               type: 'html',
-                              src: tagsRenderer.getTagSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}),
+                              src: tagsRenderer.getTagSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight}),
                               w: !item.open ? WIDTH : OPEN_WIDTH,
                               h: !item.open ? HEIGHT : OPEN_HEIGHT,
                             },

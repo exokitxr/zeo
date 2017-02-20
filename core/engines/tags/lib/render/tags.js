@@ -5,8 +5,10 @@ const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 const barsWhiteImg = require('../img/bars-white');
 const barsWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(barsWhiteImg);
 
-const getTagSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
+const getTagSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight}) => {
   const {id, displayName, description, version, instancing, open} = item;
+  const tagName = highlight ? 'a' : 'div';
+  const linkTagName = highlight ? 'div' : 'a';
 
   const headerSrc = `\
     <div style="position: relative; display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
@@ -19,13 +21,13 @@ const getTagSrc = ({item, inputText, inputValue, positioningId, positioningName,
         </div>
       </div>
       ${!open ?
-        `<a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="tag:open:${id}">
+        `<${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="tag:open:${id}">
           <img src="${barsBlackImgSrc}" width="50" height="50">
-        </a>`
+        </${linkTagName}>`
       :
-        `<a style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="tag:close:${id}">
+        `<${linkTagName} style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="tag:close:${id}">
           <img src="${barsWhiteImgSrc}" width="50" height="50">
-        </a>`
+        </${linkTagName}>`
       }
     </div>
   `;
@@ -36,10 +38,10 @@ const getTagSrc = ({item, inputText, inputValue, positioningId, positioningName,
   ` : '';
   
   return `\
-    <div>
+    <${tagName} style="display: block; text-decoration: none;" onclick="tag">
       ${headerSrc}
       ${bodySrc}
-    </div>
+    </${tagName}>
   `;
 };
 

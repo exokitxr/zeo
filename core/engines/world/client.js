@@ -919,7 +919,9 @@ class World {
                   npmState.inputValue = 0;
 
                   _requestLocalModSpecs()
-                    .then(tagSpecs => tagSpecs.map(tagSpec => tags.makeTag(tagSpec)))
+                    .then(tagSpecs => tagSpecs.map(tagSpec => tags.makeTag(tagSpec, {
+                      highlight: true,
+                    })))
                     .then(tagMeshes => {
                       // remove old
                       const npmTagMeshes = tags.getTagsClass('npm');
