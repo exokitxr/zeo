@@ -87,20 +87,21 @@ class World {
           return {position, rotation, scale};
         };
 
+        const _getAuthorization = () => 'Token ' + login.getAuthentication();
         const _requestTags = () => fetchServer('/archae/world/tags.json')
           .then(res => res.json());
         const _requestFiles = () => fetchServer('/archae/world/files.json')
           .then(res => res.json());
         const _requestEquipment = () => fetchServer('/archae/world/equipment.json', {
-          headers: {
-            'Authorization': 'Token ' + login.getAuthentication(),
-          },
+          headers: new Headers({
+            'Authorization': _getAuthorization(),
+          }),
         })
           .then(res => res.json());
         const _requestInventory = () => fetchServer('/archae/world/inventory.json', {
-          headers: {
-            'Authorization': 'Token ' + login.getAuthentication(),
-          },
+          headers: new Headers({
+            'Authorization': _getAuthorization(),
+          }),
         })
           .then(res => res.json());
         const _requestStartTime = () => fetchServer('/archae/world/start-time.json')
@@ -173,11 +174,9 @@ class World {
 
                 fetchServer('/archae/rend/mods/search', {
                   method: 'PUT',
-                  headers: (() => {
-                    const headers = new Headers();
-                    headers.set('Content-Type', 'application/json');
-                    return headers;
-                  })(),
+                  headers: new Headers({
+                    'Content-Type': 'application/json',
+                  }),
                   body: JSON.stringify({
                     q,
                   }),
@@ -211,11 +210,9 @@ class World {
 
                 fetchServer('/archae/rend/mods/spec', {
                   method: 'POST',
-                  headers: (() => {
-                    const headers = new Headers();
-                    headers.set('Content-Type', 'application/json');
-                    return headers;
-                  })(),
+                  headers: new Headers({
+                    'Content-Type': 'application/json',
+                  }),
                   body: JSON.stringify({
                     mod,
                   }),
@@ -249,9 +246,9 @@ class World {
 
                   return fetchServer('/archae/world/tags.json', {
                     method: 'PUT',
-                    headers: {
+                    headers: new Headers({
                       'Content-Type': 'application/json',
-                    },
+                    }),
                     body: tagsJsonString,
                   })
                     .then(res => res.blob())
@@ -279,9 +276,9 @@ class World {
 
                   return fetchServer('/archae/world/files.json', {
                     method: 'PUT',
-                    headers: {
+                    headers: new Headers({
                       'Content-Type': 'application/json',
-                    },
+                    }),
                     body: filesJsonString,
                   })
                     .then(res => res.blob())
@@ -309,9 +306,10 @@ class World {
 
                   return fetchServer('/archae/world/equipment.json', {
                     method: 'PUT',
-                    headers: {
+                    headers: new Headers({
                       'Content-Type': 'application/json',
-                    },
+                      'Authorization': _getAuthorization(),
+                    }),
                     body: equipmentJsonString,
                   })
                     .then(res => res.blob())
@@ -359,9 +357,10 @@ class World {
 
                   return fetchHub('/archae/world/inventory.json', {
                     method: 'PUT',
-                    headers: {
+                    headers: new Headers({
                       'Content-Type': 'application/json',
-                    },
+                      'Authorization': _getAuthorization(),
+                    }),
                     body: inventoryJsonString,
                   })
                     .then(res => res.blob())
@@ -1473,7 +1472,7 @@ class World {
                       lastInventoryJsonString = JSON.stringify(inventoryJson);
 
                       const _initializeElements = () => {
-                        const {elements, free} = tagsJson;
+                        const {elements} = tagsJson;
 
                         for (let i = 0; i < elements.length; i++) {
                           const itemSpec = elements[i];

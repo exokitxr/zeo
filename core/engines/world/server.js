@@ -181,11 +181,11 @@ class World {
                 function serveEquipmentGet(req, res, next) {
                   hub.authHub(req, (err, username) => {
                     if (!err) {
-                      /* if (serverType === 'ranked') { // XXX proxy for ranked servers
-                        hub.proxyHub(req, res, '/archae/world/equipment.json');
-                      } else { */
+                      if (serverType === 'ranked') {
+                        hub.proxyHub(req, res, '/hub/world/equipment.json');
+                      } else {
                         res.json(equipmentJson); // XXX make this per-user
-                      // }
+                      }
                     } else {
                       res.status(err.code === 'EAUTH' ? 401 : 500);
                       res.send(err.stack);
@@ -197,9 +197,9 @@ class World {
                   bodyParserJson(req, res, () => {
                     hub.authHub(req, (err, username) => {
                       if (!err) {
-                        /* if (serverType === 'ranked') {
-                          hub.proxyHub(req, res, '/archae/world/equipment.json');
-                        } else { */
+                        if (serverType === 'ranked') {
+                          hub.proxyHub(req, res, '/hub/world/equipment.json');
+                        } else {
                           const {body: data} = req;
 
                           const _respondInvalid = () => {
@@ -226,7 +226,7 @@ class World {
                           } else {
                             _respondInvalid();
                           }
-                        // }
+                        }
                       } else {
                         res.status(err.code === 'EAUTH' ? 401 : 500);
                         res.send(err.stack);
@@ -238,11 +238,11 @@ class World {
                 function serveInventoryGet(req, res, next) {
                   hub.authHub(req, (err, username) => {
                     if (!err) {
-                      /* if (serverType === 'ranked') {
-                        hub.proxyHub(req, res, '/archae/world/inventory.json');
-                      } else { */
+                      if (serverType === 'ranked') {
+                        hub.proxyHub(req, res, '/hub/world/inventory.json');
+                      } else {
                         res.json(inventoryJson);
-                      // }
+                      }
                     } else {
                       res.status(err.code === 'EAUTH' ? 401 : 500);
                       res.send(err.stack);
@@ -254,9 +254,9 @@ class World {
                   bodyParserJson(req, res, () => {
                     hub.authHub(req, (err, username) => {
                       if (!err) {
-                        /* if (serverType === 'ranked') {
-                          hub.proxyHub(req, res, '/archae/world/inventory.json');
-                        } else { */
+                        if (serverType === 'ranked') {
+                          hub.proxyHub(req, res, '/hub/world/inventory.json');
+                        } else {
                           const {body: data} = req;
 
                           const _respondInvalid = () => {
@@ -283,7 +283,7 @@ class World {
                           } else {
                             _respondInvalid();
                           }
-                        // }
+                        }
                       } else {
                         res.status(err.code === 'EAUTH' ? 401 : 500);
                         res.send(err.stack);

@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require('fs');
 const https = require('https');
 
 const SERVER_REFRESH_INTERVAL = 30 * 1000;
@@ -10,7 +12,7 @@ class Hub {
   mount() {
     const {_archae: archae} = this;
     const {app, dirname, dataDirectory} = archae.getCore();
-    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, type: serverType}}} = archae;
 
     const hubSpec = (() => {
       const match = hubUrl.match(/^(.*?)(?::([0-9]*?))?$/);
@@ -33,7 +35,7 @@ class Hub {
       'fay',
       'khromix',
     ];
-    const ranked = true;
+    const ranked = serverType === 'ranked';
 
     const _queueRefreshServer = _debounce(next => {
       _tryRefreshServer()
@@ -114,11 +116,12 @@ class Hub {
           const _proxyHub = (req, res, url) => {
             const proxyReq = https.request({
               method: req.method,
-              host: hubSpec.host,
+              hostname: hubSpec.host,
               port: hubSpec.port,
               path: url,
               headers: req.headers,
             });
+            proxyReq.end();
             proxyReq.on('error', err => {
               res.status(500);
               res.end(err.stack);
@@ -138,7 +141,7 @@ class Hub {
             if (authentication) {
               const proxyReq = https.request({
                 method: 'POST',
-                host: hubSpec.host,
+                hostname: hubSpec.host,
                 port: hubSpec.port,
                 path: '/hub/auth',
                 headers: {
