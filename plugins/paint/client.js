@@ -80,6 +80,7 @@ class Paint {
                     });
 
                     const mesh = new THREE.Mesh(geometry, material);
+                    mesh.drawMode = THREE.TriangleStripDrawMode;
                     mesh.frustumCulled = false;
                     return mesh;
                   })();
@@ -142,72 +143,125 @@ class Paint {
 
                           const gamepad = gamepads[side];
                           const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                          const baseIndex = lastPoint * 3;
+
+                          const brushSize = 0.1;
+                          const direction = new THREE.Vector3(1, 0, 0)
+                            .applyQuaternion(controllerRotation);
+                          const posA = controllerPosition.clone()
+                            .add(direction.clone().multiplyScalar(brushSize / 2));
+                          const posB = controllerPosition.clone()
+                            .add(direction.clone().multiplyScalar(-brushSize / 2));
 
                           // positions
-                          const topLeft = controllerPosition.clone()
-                            .add(new THREE.Vector3(-SIZE, -SIZE, 0).applyQuaternion(controllerRotation));
-                          const topRight = controllerPosition.clone()
-                            .add(new THREE.Vector3(SIZE, -SIZE, 0).applyQuaternion(controllerRotation))
-                          const bottomLeft = controllerPosition.clone()
-                            .add(new THREE.Vector3(-SIZE, SIZE, 0).applyQuaternion(controllerRotation))
-                          const bottomRight = controllerPosition.clone()
-                            .add(new THREE.Vector3(SIZE, SIZE, 0).applyQuaternion(controllerRotation))
-
-                          positions[baseIndex + 0] = topLeft.x;
-                          positions[baseIndex + 1] = topLeft.y;
-                          positions[baseIndex + 2] = topLeft.z;
-
-                          positions[baseIndex + 3] = bottomLeft.x;
-                          positions[baseIndex + 4] = bottomLeft.y;
-                          positions[baseIndex + 5] = bottomLeft.z;
-
-                          positions[baseIndex + 6] = topRight.x;
-                          positions[baseIndex + 7] = topRight.y;
-                          positions[baseIndex + 8] = topRight.z;
-
-                          positions[baseIndex + 9] = bottomLeft.x;
-                          positions[baseIndex + 10] = bottomLeft.y;
-                          positions[baseIndex + 11] = bottomLeft.z;
-
-                          positions[baseIndex + 12] = bottomRight.x;
-                          positions[baseIndex + 13] = bottomRight.y;
-                          positions[baseIndex + 14] = bottomRight.z;
-
-                          positions[baseIndex + 15] = topRight.x;
-                          positions[baseIndex + 16] = topRight.y;
-                          positions[baseIndex + 17] = topRight.z;
+                          const basePositionIndex = lastPoint * 2 * 3;
+                          positions[basePositionIndex + 0] = posA.x;
+                          positions[basePositionIndex + 1] = posA.y;
+                          positions[basePositionIndex + 2] = posA.z;
+                          positions[basePositionIndex + 3] = posB.x;
+                          positions[basePositionIndex + 4] = posB.y;
+                          positions[basePositionIndex + 5] = posB.z;
 
                           // normals
-                          const downVector = new THREE.Vector3(0, -1, 0).applyQuaternion(controllerRotation);
-                          for (let i = 0; i < 6; i++) {
-                            const baseIndexNormal = baseIndex + (i * 3);
-                            normals[baseIndexNormal + 0] = downVector.x;
-                            normals[baseIndexNormal + 1] = downVector.y;
-                            normals[baseIndexNormal + 2] = downVector.z;
-                          }
+                          (() => {
+                            const pA = new THREE.Vector3();
+                            const pB = new THREE.Vector3();
+                            const pC = new THREE.Vector3();
+                            const cb = new THREE.Vector3();
+                            const ab = new THREE.Vector3();
+
+                            const idx = lastPoint * 6;
+                            for (let i = 0, il = idx; i < il; i++) {
+                              normals[i] = 0;
+                            }
+
+                            let pair = true;
+                            for (let i = 0, il = idx; i < il; i += 3) {
+                              if (pair) {
+                                pA.fromArray(positions, i);
+                                pB.fromArray(positions, i + 3);
+                                pC.fromArray(positions, i + 6);
+                              } else {
+                                pA.fromArray(positions, i + 3);
+                                pB.fromArray(positions, i);
+                                pC.fromArray(positions, i + 6);
+                              }
+                              pair = !pair;
+
+                              cb.subVectors(pC, pB);
+                              ab.subVectors(pA, pB);
+                              cb.cross(ab);
+                              cb.normalize();
+
+                              normals[i] += cb.x;
+                              normals[i + 1] += cb.y;
+                              normals[i + 2] += cb.z;
+
+                              normals[i + 3] += cb.x;
+                              normals[i + 4] += cb.y;
+                              normals[i + 5] += cb.z;
+
+                              normals[i + 6] += cb.x;
+                              normals[i + 7] += cb.y;
+                              normals[i + 8] += cb.z;
+                            }
+
+                            /*
+                            first and last vertice (0 and 8) belongs just to one triangle
+                            second and penultimate (1 and 7) belongs to two triangles
+                            the rest of the vertices belongs to three triangles
+                              1_____3_____5_____7
+                              /\    /\    /\    /\
+                             /  \  /  \  /  \  /  \
+                            /____\/____\/____\/____\
+                            0    2     4     6     8
+                            */
+
+                            // Vertices that are shared across three triangles
+                            for (let i = 2 * 3, il = idx - 2 * 3; i < il; i++) {
+                              normals[i] = normals[i] / 3;
+                            }
+
+                            // Second and penultimate triangle, that shares just two triangles
+                            normals[3] = normals[3] / 2;
+                            normals[3 + 1] = normals[3 + 1] / 2;
+                            normals[3 + 2] = normals[3 * 1 + 2] / 2;
+
+                            normals[idx - 2 * 3] = normals[idx - 2 * 3] / 2;
+                            normals[idx - 2 * 3 + 1] = normals[idx - 2 * 3 + 1] / 2;
+                            normals[idx - 2 * 3 + 2] = normals[idx - 2 * 3 + 2] / 2;
+
+                            mesh.geometry.normalizeNormals();
+                          })();
 
                           // colors
                           const {color} = this;
-                          for (let i = 0; i < 6; i++) {
-                            const baseIndexColor = baseIndex + (i * 3);
-                            colors[baseIndexColor + 0] = color.r;
-                            colors[baseIndexColor + 1] = color.g;
-                            colors[baseIndexColor + 2] = color.b;
+                          for (let i = 0; i < 2; i++) {
+                            const baseColorIndex = basePositionIndex + (i * 3);
+
+                            colors[baseColorIndex + 0] = color.r;
+                            colors[baseColorIndex + 1] = color.g;
+                            colors[baseColorIndex + 2] = color.b;
                           }
 
                           // uvs
-                          const baseIndexUv = lastPoint * 2;
-                          uvs.set(planeUvs, baseIndexUv);
+                          for (i = 0; i <= lastPoint; i++) {
+                            const baseUvIndex = i * 2 * 2;
+
+                            uvs[baseUvIndex + 0] = i / (lastPoint - 1);
+                            uvs[baseUvIndex + 1] = 0;
+                            uvs[baseUvIndex + 2] = i / (lastPoint - 1);
+                            uvs[baseUvIndex + 3] = 1;
+                          }
 
                           positionsAttribute.needsUpdate = true;
                           normalsAttribute.needsUpdate = true;
                           colorsAttribute.needsUpdate = true;
                           uvsAttribute.needsUpdate = true;
-                          lastPoint += 6;
+
+                          lastPoint++;
 
                           const {geometry} = mesh;
-                          geometry.setDrawRange(0, lastPoint);
+                          geometry.setDrawRange(0, lastPoint * 2);
 
                           paintState.lastPointTime = lastPointTime;
                         }
