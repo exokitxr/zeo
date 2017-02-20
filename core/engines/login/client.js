@@ -86,6 +86,7 @@ class Login {
                 inputValue: 0,
                 loading: false,
                 error: null,
+                authentication: null,
               };
               const focusState = {
                 type: '',
@@ -208,7 +209,10 @@ class Login {
               };
               rend.on('login', login);
               const logout = () => {
+                const token = localStorage.removeItem('token');
+
                 loginState.open = true;
+                loginState.authentication = null;
 
                 _updatePages();
 
@@ -235,8 +239,10 @@ class Login {
                 })
                   .then(loginSpec => {
                     if (loginSpec) {
-                      const {token} = loginSpec;
+                      const {token, authentication} = loginSpec;
                       localStorage.setItem('token', token);
+
+                      loginState.authentication = authentication;
 
                       rend.login();
 
@@ -442,14 +448,16 @@ class Login {
                       rend.removeListener('login', login);
                       rend.removeListener('logout', logout);
                     };
+
+                    const _isOpen = () => loginState.open;
+                    const _getAuthentication = () => loginState.authentication;
+
+                    return {
+                      isOpen: _isOpen,
+                      getAuthentication: _getAuthentication,
+                    };
                   }
                 });
-
-              const _isOpen = () => loginState.open;
-
-              return {
-                isOpen: _isOpen,
-              };
             }
           });
       }

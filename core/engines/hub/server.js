@@ -10,14 +10,13 @@ class Hub {
   mount() {
     const {_archae: archae} = this;
     const {app, dirname, dataDirectory} = archae.getCore();
-    const {metadata: {server: {url: serverUrl}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl}}} = archae;
 
-    const {metadata: {hub: {url: hubUrl}}} = archae;
-    const hubUrlSpec = (() => {
-      const match = hubUrl.match(/^(.+?):(.+?)$/);
+    const hubSpec = (() => {
+      const match = hubUrl.match(/^(.*?)(?::([0-9]*?))?$/);
       return match && {
         host: match[1],
-        port: match[2],
+        port: match[2] ? parseInt(match[2], 10) : 443,
       };
     })();
 
@@ -58,8 +57,8 @@ class Hub {
     const _announceServer = () => new Promise((accept, reject) => {
       const options = {
         method: 'POST',
-        host: hubUrlSpec.host,
-        port: hubUrlSpec.port,
+        host: hubSpec.host,
+        port: hubSpec.port,
         path: '/hub/servers/announce',
         headers: {
           'Content-Type': 'application/json',
@@ -111,6 +110,80 @@ class Hub {
           this._cleanup = () => {
             clearInterval(serverRefreshInterval);
           };
+
+          const _proxyHub = (req, res, url) => {
+            const proxyReq = https.request({
+              method: req.method,
+              host: hubSpec.host,
+              port: hubSpec.port,
+              path: url,
+              headers: req.headers,
+            });
+            proxyReq.on('error', err => {
+              res.status(500);
+              res.end(err.stack);
+            });
+            proxyReq.on('response', proxyResponse => {
+              res.status(proxyResponse.statusCode);
+              res.set(proxyResponse.headers);
+              proxyResponse.pipe(res);
+            });
+          };
+          const _authHub = (req, cb) => {
+            const authentication = (() => {
+              const authorization = req.get('Authorization') || '';
+              const match = authorization.match(/^Token (.+)$/);
+              return match && match[1];
+            })();
+            if (authentication) {
+              const proxyReq = https.request({
+                method: 'POST',
+                host: hubSpec.host,
+                port: hubSpec.port,
+                path: '/hub/auth',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              });
+              proxyReq.end(JSON.stringify({
+                authentication,
+              }));
+              proxyReq.on('error', err => {
+                cb(err);
+              });
+              proxyReq.on('response', proxyResponse => {
+                const bs = [];
+                proxyResponse.on('data', d => {
+                  bs.push(d);
+                });
+                proxyResponse.on('end', () => {
+                  const b = Buffer.concat(bs);
+                  const s = b.toString('utf8');
+                  const j = _jsonParse(s);
+                  const username = j ? j.username : null;
+
+                  if (username) {
+                    cb(null, username);
+                  } else {
+                    cb({
+                      code: 'EAUTH',
+                    });
+                  }
+                });
+              });
+            } else {
+              process.nextTick(() => {
+                cb({
+                  code: 'EAUTH',
+                });
+              });
+            }
+          };
+
+          return {
+            proxyHub: _proxyHub,
+            authHub: _authHub,
+          };
         }
       });
   }
@@ -120,6 +193,20 @@ class Hub {
   }
 }
 
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return null;
+  }
+};
 const _debounce = fn => {
   let running = false;
   let queued = false;

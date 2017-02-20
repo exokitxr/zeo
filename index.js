@@ -69,6 +69,16 @@ const flags = {
     }
     return null;
   })(),
+  serverType: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^serverType=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
   hubUrl: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
@@ -142,6 +152,7 @@ const config = {
     server: {
       url: serverHost + ':' + port,
       enabled: flags.server,
+      type: flags.serverType || 'ranked',
     },
   },
 };

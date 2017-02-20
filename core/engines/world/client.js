@@ -33,11 +33,12 @@ class World {
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
-      '/core/engines/fs',
+      '/core/engines/login',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
       '/core/engines/tags',
+      '/core/engines/fs',
       '/core/engines/mail',
       '/core/engines/bag',
       '/core/engines/backpack',
@@ -46,11 +47,12 @@ class World {
       three,
       input,
       webvr,
-      fs,
+      login,
       biolumi,
       rend,
       hands,
       tags,
+      fs,
       mail,
       bag,
       backpack,
@@ -89,9 +91,17 @@ class World {
           .then(res => res.json());
         const _requestFiles = () => fetchServer('/archae/world/files.json')
           .then(res => res.json());
-        const _requestEquipment = () => fetchServer('/archae/world/equipment.json')
+        const _requestEquipment = () => fetchServer('/archae/world/equipment.json', {
+          headers: {
+            'Authorization': 'Token ' + login.getAuthentication(),
+          },
+        })
           .then(res => res.json());
-        const _requestInventory = () => fetchServer('/archae/world/inventory.json')
+        const _requestInventory = () => fetchServer('/archae/world/inventory.json', {
+          headers: {
+            'Authorization': 'Token ' + login.getAuthentication(),
+          },
+        })
           .then(res => res.json());
         const _requestStartTime = () => fetchServer('/archae/world/start-time.json')
           .then(res => res.json()

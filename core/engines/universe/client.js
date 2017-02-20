@@ -28,7 +28,6 @@ class Universe {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata} = archae;
 
     let live = true;
     this._cleanup = () => {
