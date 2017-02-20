@@ -61,6 +61,11 @@ class World {
         const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
 
+        const wireframeMaterial = new THREE.MeshBasicMaterial({
+          color: 0x808080,
+          wireframe: true,
+        });
+
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
           fontSize: 36,
@@ -68,6 +73,8 @@ class World {
           fontWeight: biolumi.getFontWeight(),
           fontStyle: biolumi.getFontStyle(),
         };
+
+        const oneVector = new THREE.Vector3(1, 1, 1);
 
         // helper functions
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -519,6 +526,13 @@ class World {
                 cancelRemoteRequest: null,
                 cancelModRequest: null,
               };
+              const _makeHighlightState = () => ({
+                startPoint: null,
+              });
+              const highlightStates = {
+                left: _makeHighlightState(),
+                right: _makeHighlightState(),
+              };
               const focusState = {
                 type: '',
               };
@@ -596,6 +610,22 @@ class World {
                 return result;
               })();
               rend.registerMenuMesh('worldMesh', worldMesh);
+
+              const _makeGrabBoxMesh = () => {
+                const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+                const material = wireframeMaterial;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.rotation.order = camera.rotation.order;
+                mesh.visible = false;
+                return mesh;
+              };
+              const highlightBoxMeshes = {
+                left: _makeGrabBoxMesh(),
+                right: _makeGrabBoxMesh(),
+              };
+              scene.add(highlightBoxMeshes.left);
+              scene.add(highlightBoxMeshes.right);
 
               const _makePositioningMesh = ({opacity = 1} = {}) => {
                 const geometry = (() => {
@@ -839,10 +869,46 @@ class World {
                     }
                   }
                 };
+                const _updateHighlight = () => {
+                  const {gamepads} = webvr.getStatus();
+
+                  SIDES.forEach(side => {
+                    const gamepad = gamepads[side];
+
+                    if (gamepad) {
+                      const highlightState = highlightStates[side];
+                      const {startPoint} = highlightState;
+
+                      if (startPoint) {
+                        const {position: currentPoint} = gamepad;
+
+                        const size = currentPoint.clone()
+                          .sub(startPoint);
+                        size.x = Math.abs(size.x);
+                        size.y = Math.abs(size.y);
+                        size.z = Math.abs(size.z);
+
+                        const highlightBoxMesh = highlightBoxMeshes[side];
+                        if (size.x > 0.001 && size.y > 0.001 && size.z > 0.001) {
+                          const midPoint = startPoint.clone()
+                            .add(currentPoint)
+                            .divideScalar(2);
+
+                          highlightBoxMesh.position.copy(midPoint);
+                          highlightBoxMesh.scale.copy(size);
+                          highlightBoxMesh.visible = true;
+                        } else {
+                          highlightBoxMesh.visible = false;
+                        }
+                      }
+                    }
+                  });
+                };
 
                 _updateTextures();
                 _updateAnchors();
                 _updateEquipmentPositions();
+                _updateHighlight();
               };
               rend.on('update', _update);
 
@@ -1045,8 +1111,26 @@ class World {
                     return false;
                   }
                 };
+                const _startHighlight = () => {
+                  const {gamepads} = webvr.getStatus();
+                  const gamepad = gamepads[side];
 
-                _grabWorldTagMesh() || _grabEquipmentTagMesh() || _grabEquipmentMesh();
+                  if (gamepad) {
+                    const {position: controllerPosition} = gamepad;
+
+                    const highlightState = highlightStates[side];
+                    highlightState.startPoint = controllerPosition.clone();
+
+                    const highlightBoxMesh = highlightBoxMeshes[side];
+                    highlightBoxMesh.scale.copy(oneVector);
+
+                    return true;
+                  } else {
+                    return false;
+                  }
+                };
+
+                _grabWorldTagMesh() || _grabEquipmentTagMesh() || _grabEquipmentMesh() || _startHighlight();
               };
               input.on('gripdown', _gripdown, {
                 priority: 1,
@@ -1240,6 +1324,15 @@ class World {
 
                   _releaseEquipmentMesh();
                 }
+
+                const _endHighlight = () => {
+                  const highlightState = highlightStates[side];
+                  highlightState.startPoint = null;
+
+                  const highlightBoxMesh = highlightBoxMeshes[side];
+                  highlightBoxMesh.visible = false;
+                };
+                _endHighlight();
               };
               input.on('gripup', _gripup, {
                 priority: 1,
