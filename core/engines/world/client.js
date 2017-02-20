@@ -809,7 +809,7 @@ class World {
                       if (gamepad) {
                         const {position: controllerPosition, rotation: controllerRotation} = gamepad;
                         const npmHoverState = npmHoverStates[side];
-                        // const npmDotMesh = npmDotMeshes[side];
+                        const npmDotMesh = npmDotMeshes[side];
                         const npmBoxMesh = npmBoxMeshes[side];
 
                         biolumi.updateAnchors({
@@ -837,7 +837,7 @@ class World {
                             }
                           }).filter(object => object !== null),
                           hoverState: npmHoverState,
-                          // dotMesh: npmDotMesh,
+                          dotMesh: npmDotMesh,
                           boxMesh: npmBoxMesh,
                           controllerPosition,
                           controllerRotation,
