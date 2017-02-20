@@ -38,7 +38,7 @@ const getTagSrc = ({item, inputText, inputValue, positioningId, positioningName,
   ` : '';
   
   return `\
-    <${tagName} style="display: block; text-decoration: none;" onclick="tag">
+    <${tagName} style="display: block; text-decoration: none;" onclick="tag:${id}">
       ${headerSrc}
       ${bodySrc}
     </${tagName}>

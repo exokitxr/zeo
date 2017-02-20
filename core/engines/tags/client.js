@@ -531,8 +531,36 @@ class Tags {
                       return false;
                     }
                   };
+                  const _doClickGrab = () => {
+                    const npmHoverState = npmHoverStates[side];
+                    const {intersectionPoint} = npmHoverState;
 
-                  _doClickOpen() || _doSetPosition() || _doClickAttribute();
+                    if (intersectionPoint) {
+                      const {anchor} = npmHoverState;
+                      const onclick = (anchor && anchor.onclick) || '';
+
+                      let match;
+                      if (match = onclick.match(/^tag:(.+?)$/)) {
+                        const id = match[1];
+                        const {npm: npmTagMeshes} = tagClassMeshes;
+                        const npmTagMesh = npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                        if (hands.canGrab(side, npmTagMesh, {radius: DEFAULT_GRAB_RADIUS})) { // XXX no need to check grab range
+                          tagsInstance.grabTag(side, npmTagMesh);
+
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  };
+
+                  _doClickOpen() || _doSetPosition() || _doClickAttribute() || _doClickGrab();
                 };
                 input.on('trigger', _trigger);
                 const _gripdown = e => {
