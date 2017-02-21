@@ -50,12 +50,11 @@ export default class VoiceChat {
             cleanups.length = 0;
           };
 
-          let live = false;
-
+          let enabled = false;
           const _enable = () => {
-            live = true;
+            enabled = true;
             cleanups.push(() => {
-              live = false;
+              enabled = false;
             });
 
             const _requestCallInterface = () => new Promise((accept, reject) => {
@@ -250,11 +249,11 @@ export default class VoiceChat {
           const _updateEnabled = () => {
             const connected = hub.getCurrentServer().type === 'server';
             const {voiceChat} = config.getConfig();
-            const shouldBeLive = connected && voiceChat;
+            const shouldBeEnabled = connected && voiceChat;
 
-            if (shouldBeLive && !live) {
+            if (shouldBeEnabled && !enabled) {
               _enable();
-            } else if (!shouldBeLive && live) {
+            } else if (!shouldBeEnabled && enabled) {
               _disable();
             };
           };
