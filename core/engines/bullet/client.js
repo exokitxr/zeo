@@ -633,10 +633,8 @@ class Bullet {
             };
             requestHandlers.set(id, requestHandler);
           } else {
-            setTimeout(() => {
-              const err = new Error('physics engine not connected');
-              cb(err);
-            });
+            const err = new Error('physics engine not connected');
+            cb(err);
           }
         };
 
