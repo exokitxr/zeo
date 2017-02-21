@@ -1,3 +1,5 @@
+import WebAudioBufferQueue from './lib/web-audio-buffer-queue/web-audio-buffer-queue.js';
+
 const DATA_RATE = 50;
 
 export default class VoiceChat {
@@ -51,29 +53,16 @@ export default class VoiceChat {
           let live = false;
 
           const _enable = () => {
-window.makeAudio = () => {
-  const startTime = Date.now();
-  const url = 'https://' + hub.getCurrentServer().url + '/archae/voicechat/' + peerId;
-  const audio = document.createElement('audio');
-  // audio.type = 'audio/ogg';
-  audio.src = url;
-  audio.load();
-  audio.oncanplay = () => {
-    audio.play();
-    const endTime = Date.now();
-    console.log('can play after', (endTime - startTime) / 1000);
-  };
-  document.body.appendChild(audio);
-  return audio;
-};
             live = true;
             cleanups.push(() => {
               live = false;
             });
 
             const _requestCallInterface = () => new Promise((accept, reject) => {
+              let remotePeerId = null;
+
               const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/voicechat');
-              connection.binaryType = 'blob';
+              connection.binaryType = 'arraybuffer';
               connection.onopen = () => {
                 const e = {
                   type: 'init',
@@ -88,7 +77,26 @@ window.makeAudio = () => {
                 reject(err);
               };
               connection.onmessage = msg => {
-                console.warn('got unexpected voice chat connection message', msg);
+                if (typeof msg.data === 'string') {
+                  const e = JSON.parse(msg.data) ;
+                  const {type} = e;
+
+                  if (type === 'id') {
+                    const {id: messageId} = e;
+                    remotePeerId = messageId;
+                  } else {
+                    console.warn('unknown message type', JSON.stringify(type));
+                  }
+                } else {
+                  if (remotePeerId !== null) {
+                    callInterface.emit('buffer', {
+                      id: remotePeerId,
+                      data: new Int16Array(msg.data),
+                    });
+                  } else {
+                    console.warn('buffer data before remote peer id', msg);
+                  }
+                }
               };
               connection.onclose = () => {
                 callInterface.close();
@@ -154,18 +162,29 @@ window.makeAudio = () => {
                 mediaStream,
               ]) => {
                 if (callInterface.open) {
+                  const audioContext = THREE.AudioContext.getContext();
+
                   const _makeSoundBody = id => {
-                    const audio = document.createElement('audio');
-                    audio.src = 'https://' + hub.getCurrentServer().url + '/archae/voicechat/' + id;
-                    // audio.type = 'audio/ogg';
-                    audio.autoplay = true;
                     const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
 
+                    const inputNode = new WebAudioBufferQueue({
+                      audioContext,
+                      // channels: 2,
+                      channels: 1,
+                      // bufferSize: 16384,
+                      objectMode: true,
+                    });
+
                     const result = new sound.Body();
-                    result.setInputElement(audio);
+                    result.setInputSource(inputNode);
+                    result.inputNode = inputNode;
                     result.setObject(remotePlayerMesh);
+
+                    inputNode.write(new Int16Array(64 * 1024));
+
                     return result;
                   };
+
                   const soundBodies = (() => {
                     const playerStatuses = multiplayer.getPlayerStatuses();
 
@@ -190,6 +209,15 @@ window.makeAudio = () => {
                   cleanups.push(() => {
                     multiplayer.removeListener('playerEnter', _playerEnter);
                     multiplayer.removeListener('playerLeave', _playerLeave);
+                  });
+
+                  callInterface.on('buffer', ({id, data}) => {
+                    const soundBody = soundBodies.get(id);
+
+                    if (soundBody) {
+                      const {inputNode} = soundBody;
+                      inputNode.write(data);
+                    }
                   });
 
                   callInterface.on('close', () => {

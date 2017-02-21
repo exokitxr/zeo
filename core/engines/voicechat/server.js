@@ -4,7 +4,7 @@ const stream = require('stream');
 const {PassThrough} = stream;
 const child_process = require('child_process');
 
-const MIN_BUFFER_LENGTH = 4 * 1024;
+const MIN_BUFFER_LENGTH = 64 * 1024;
 const MAX_BUFFER_LENGTH = MIN_BUFFER_LENGTH * 2;
 
 class VoiceChat {
@@ -38,16 +38,7 @@ class VoiceChat {
           'pipe:1'
         ]);
         ffmpeg.stdout.on('data', d => {
-          this.buffers.push(d);
-          this.length += d.length;
-
           this.emit('update', d);
-
-          if (this.length > MAX_BUFFER_LENGTH) {
-            const buffer = Buffer.concat(this.buffers, this.length).slice(-MIN_BUFFER_LENGTH);
-            this.buffers = [buffer];
-            this.length = buffer.length;
-          }
         });
 
         ffmpeg.stderr.pipe(process.stderr);
@@ -66,95 +57,6 @@ class VoiceChat {
         const {_ffmpeg: ffmpeg} = this;
         ffmpeg.stdin.write(d);
       }
-    }
-
-    class AudioStream extends PassThrough {
-      constructor(audioBuffer) {
-        super();
-
-        this.audioBuffer = audioBuffer;
-
-        this._ffmpeg = null;
-
-        this.listen();
-      }
-
-      listen() {
-        const {audioBuffer} = this;
-
-        const ffmpeg = child_process.spawn('ffmpeg', [
-          '-loglevel', 'panic',
-          // '-re',
-          '-f', 's16le',
-          '-ar', '44100',
-          '-ac', '1',
-          '-i', '-',
-          // '-codec:a', 'libopus',
-          // '-f', 'ogg',
-          '-f', 'wav',
-          'pipe:1',
-        ]);
-        ffmpeg.stderr.pipe(process.stderr);
-        ffmpeg.on('error', err => {
-          console.warn(err);
-        });
-        ffmpeg.on('exit', exitCode => {
-          if (exitCode !== 0) {
-            console.warn('ffmpeg non-zero exit code: ' + exitCode);
-          }
-        });
-
-        const {buffers} = audioBuffer;
-        for (let i = 0; i < buffers.length; i++) {
-          const buffer = buffers[i];
-          ffmpeg.stdin.write(buffer);
-        }
-        ffmpeg.stdout.pipe(this, {
-          end: false,
-        });
-
-        this.on('error', err => {
-          console.log('stream error', err);
-        });
-        ffmpeg.on('error', err => {
-          console.log('ffmpeg error', err);
-        });
-        ffmpeg.stdin.on('error', err => {
-          console.log('ffmpeg stdin error', err);
-        });
-        ffmpeg.stdout.on('error', err => {
-          console.log('ffmpeg stdout error', err);
-        });
-        ffmpeg.stderr.on('error', err => {
-          console.log('ffmpeg stderr error', err);
-        });
-        this._ffmpeg = ffmpeg;
-
-        const _update = d => {
-          ffmpeg.stdin.write(d);
-        };
-        audioBuffer.on('update', _update);
-        ffmpeg.stdin.on('close', () => {
-          audioBuffer.removeListener('update', _update);
-
-          this.emit('close');
-        });
-      }
-
-      pipe(outStream, options) {
-        PassThrough.prototype.pipe.call(this, outStream, options);
-
-        outStream.on('close', () => {
-          const {_ffmpeg: ffmpeg} = this;
-          ffmpeg.kill();
-        });
-        outStream.on('error', err => {
-          console.log('out stream error', err);
-        });
-        outStream.connection.on('error', err => { // XXX this one is hammered
-          console.log('out stream connection error', err);
-        });
-      }
 
       close() {
         const {_ffmpeg: ffmpeg} = this;
@@ -162,20 +64,44 @@ class VoiceChat {
       }
     }
 
-    const _getAudioBuffer = id => { // XXX time these out when not used
+    const _getAudioBuffer = id => {
       let audioBuffer = audioBuffers.get(id);
       if (!audioBuffer) {
         audioBuffer = new AudioBuffer();
+        audioBuffer.on('update', d => {
+          const e = {
+            type: 'id',
+            id: id,
+          };
+          const es = JSON.stringify(e);
+
+          for (let i = 0; i < connections.length; i++) {
+            const connection = connections[i];
+            if (connection.peerId !== id) {
+              connection.send(es);
+              connection.send(d);
+            }
+          }
+        });
         audioBuffers.set(id, audioBuffer);
       }
       return audioBuffer;
+    };
+    const _removeAudioBuffer = id => {
+      const audioBuffer = audioBuffers.get(id);
+
+      if (audioBuffer) {
+        audioBuffer.close();
+
+        audioBuffers.delete(id);
+      }
     };
 
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
 
       if (url === '/archae/voicechat') {
-        let id = null;
+        c.peerId = null;
 
         c.on('message', (msg, flags) => {
           if (!flags.binary) {
@@ -184,13 +110,13 @@ class VoiceChat {
 
             if (type === 'init') {
               const {id: messageId} = e;
-              id = messageId;
+              c.peerId = messageId;
             } else {
               console.warn('unknown message type', JSON.stringify(type));
             }
           } else {
-            if (id !== null) {
-              const audioBuffer = _getAudioBuffer(id);
+            if (c.peerId !== null) {
+              const audioBuffer = _getAudioBuffer(c.peerId);
               audioBuffer.write(msg);
             } else {
               console.warn('voicechat broadcast before init');
@@ -199,23 +125,14 @@ class VoiceChat {
         });
         c.on('close', () => {
           connections.splice(connections.indexOf(c), 1);
+
+          if (c.peerId !== null) {
+            _removeAudioBuffer(c.peerId);
+          }
         });
 
         connections.push(c);
       }
-    });
-
-    app.get('/archae/voicechat/:id', (req, res, next) => {
-      const {id} = req.params;
-
-      const audioStream = new AudioStream(_getAudioBuffer(id));
-      audioStreams.push(audioStream);
-      audioStream.on('close', () => {
-        audioStreams.splice(audioStreams.indexOf(audioStream), 1);
-      });
-
-      res.type('audio/wav');
-      audioStream.pipe(res);
     });
 
     this._cleanup = () => {
