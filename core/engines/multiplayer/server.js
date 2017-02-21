@@ -38,16 +38,17 @@ class Multiplayer {
 
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
-      if (url === '/archae/multiplayer') {
-        const remoteAddress = c.upgradeReq.connection.remoteAddress.replace(/^::ffff:/, '');
-        console.log('multiplayer connection', remoteAddress);
 
-        const id = _makeId();
+      let match;
+      if (match = url.match(/^\/archae\/multiplayer\?id=(.+)$/)) {
+        const id = match[1];
+
+        const remoteAddress = c.upgradeReq.connection.remoteAddress.replace(/^::ffff:/, '');
+        console.log('multiplayer connection', {id, remoteAddress});
 
         const _sendInit = () => {
           const e = {
             type: 'init',
-            id: id,
             statuses: _getAllStatuses(),
           };
           const es = JSON.stringify(e);
@@ -121,7 +122,5 @@ class Multiplayer {
     this._cleanup();
   }
 }
-
-const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Multiplayer;

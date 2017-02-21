@@ -72,20 +72,17 @@ class Multiplayer {
         ]) => {
           if (live) {
             class MutiplayerInterface extends EventEmitter {
-              constructor() {
+              constructor(id) {
                 super();
 
-                this.id = null;
+                this.id = id;
+
                 this.playerStatuses = new Map();
                 this.remotePlayerMeshes = new Map();
               }
 
               getId() {
                 return this.id;
-              }
-
-              setId(id) {
-                this.id = id;
               }
 
               getPlayerStatuses() {
@@ -114,7 +111,6 @@ class Multiplayer {
               reset() {
                 const {remotePlayerMeshes: oldRemotePlayerMeshes} = this;
 
-                this.id = null;
                 this.playerStatuses = new Map();
                 this.remotePlayerMeshes = new Map();
 
@@ -123,7 +119,7 @@ class Multiplayer {
                 });
               }
             }
-            const multiplayerInterface = new MutiplayerInterface();
+            const multiplayerInterface = new MutiplayerInterface(_makeId());
 
             const _makeRemotePlayerMesh = status => {
               const object = new THREE.Object3D();
@@ -276,7 +272,7 @@ class Multiplayer {
                 enabled = false;
               });
 
-              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayer');
+              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayer?id=' + multiplayerInterface.getId());
               const queue = [];
               connection.onopen = () => {
                 if (queue.length > 0) {
@@ -296,9 +292,7 @@ class Multiplayer {
                 const {type} = m;
 
                 if (type === 'init') {
-                  const {id, statuses} = m;
-
-                  _handleId(id);
+                  const {statuses} = m;
 
                   for (let i = 0; i < statuses.length; i++) {
                     const statusEntry = statuses[i];
@@ -312,9 +306,6 @@ class Multiplayer {
                 }
               };
 
-              const _handleId = id => {
-                multiplayerInterface.setId(id);
-              };
               const _handleStatusEntry = statusEntry => {
                 const {id, status} = statusEntry;
 
