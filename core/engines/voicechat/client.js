@@ -231,7 +231,9 @@ export default class VoiceChat {
                     callInterface.write(blob);
                   };
                   const interval = setInterval(() => {
-                    mediaRecorder.requestData();
+                    if (mediaRecorder.state === 'recording') {
+                      mediaRecorder.requestData();
+                    }
                   }, DATA_RATE);
                   mediaRecorder.onstop = () => {
                     clearInterval(interval);
