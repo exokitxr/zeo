@@ -15,6 +15,7 @@ class Context {
 
     const world = new Bullet.World();
     this.setWorld(world);
+    engine.add(world);
   }
 
   getEngine() {

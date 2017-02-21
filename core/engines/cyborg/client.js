@@ -414,6 +414,9 @@ class Cyborg {
               controllerPhysicsBody.setLinearVelocity([0, 0, 0]);
               controllerPhysicsBody.setAngularVelocity([0, 0, 0]);
               controllerPhysicsBody.disableDeactivation();
+
+              const controller = controllers[side];
+              const {mesh} = controller;
               controllerPhysicsBody.setObject(mesh);
 
               physicsWorld.add(controllerPhysicsBody);

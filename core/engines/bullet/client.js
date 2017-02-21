@@ -19,11 +19,13 @@ class Bullet {
     return archae.requestPlugins([
       '/core/engines/hub',
       '/core/engines/three',
+      '/core/engines/rend',
       '/core/engines/config',
       '/core/plugins/js-utils',
     ]).then(([
       hub,
       three,
+      rend,
       config,
       jsUtils,
     ]) => {
@@ -609,7 +611,7 @@ class Bullet {
         let connection = null;
         const requestHandlers = new Map();
         const _request = (method, args, cb) => {
-          if (connection) {
+          if (bulletInstance.isConnected()) {
             const id = idUtils.makeId();
 
             const e = {
@@ -617,12 +619,8 @@ class Bullet {
               id,
               args,
             };
-            if (connection.readyState === WebSocket.OPEN) {
-              const es = JSON.stringify(e);
-              connection.send(es);
-            } else {
-              queue.push(e);
-            }
+            const es = JSON.stringify(e);
+            connection.send(es);
 
             const requestHandler = (err, result) => {
               if (!err) {
@@ -662,7 +660,7 @@ class Bullet {
           connection.onopen = () => {
             bulletInstance.emit('connectServer');
           };
-          onnection.onclose = () => {
+          connection.onclose = () => {
             bulletInstance.emit('disconnectServer');
           };
           connection.onerror = err => {
@@ -744,7 +742,7 @@ class Bullet {
 
         class BulletApi extends EventEmitter {
           isConnected() {
-            return Boolean(connection);
+            return Boolean(connection) && connection.readyState === WebSocket.OPEN;
           }
 
           getPhysicsWorld() {
