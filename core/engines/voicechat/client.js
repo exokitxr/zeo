@@ -1,7 +1,4 @@
-import MediaStreamRecorder from './lib/msr/msr.js';
-import WebAudioBufferQueue from './lib/web-audio-buffer-queue/web-audio-buffer-queue.js';
-
-export default class WebRtc {
+export default class VoiceChat {
   constructor(archae) {
     this._archae = archae;
   }
@@ -15,6 +12,7 @@ export default class WebRtc {
     };
 
     return archae.requestPlugins([
+      '/core/engines/hub',
       '/core/engines/three',
       '/core/engines/somnifer',
       '/core/engines/config',
@@ -22,6 +20,7 @@ export default class WebRtc {
       '/core/plugins/js-utils',
     ])
       .then(([
+        hub,
         three,
         somnifer,
         config,
@@ -54,10 +53,8 @@ export default class WebRtc {
             });
 
             const _requestCallInterface = () => new Promise((accept, reject) => {
-              let remotePeerId = null;
-
-              const connection = new WebSocket('wss://' + location.host + '/archae/webrtc');
-              connection.binaryType = 'arraybuffer';
+              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/voicechat');
+              connection.binaryType = 'blob';
               connection.onopen = () => {
                 const e = {
                   type: 'init',
@@ -72,26 +69,7 @@ export default class WebRtc {
                 reject(err);
               };
               connection.onmessage = msg => {
-                if (typeof msg.data === 'string') {
-                  const e = JSON.parse(msg.data) ;
-                  const {type} = e;
-
-                  if (type === 'id') {
-                    const {id: messageId} = e;
-                    remotePeerId = messageId;
-                  } else {
-                    console.warn('unknown message type', JSON.stringify(type));
-                  }
-                } else {
-                  if (remotePeerId !== null) {
-                    callInterface.emit('buffer', {
-                      id: remotePeerId,
-                      data: msg.data,
-                    });
-                  } else {
-                    console.warn('buffer data before remote peer id', msg);
-                  }
-                }
+                console.warn('got unexpected voice chat connection message', msg);
               };
               connection.onclose = () => {
                 callInterface.close();
@@ -138,7 +116,7 @@ export default class WebRtc {
 
               return mediaStream;
             });
-            const _requestCameraMediaStream = () => navigator.mediaDevices.getUserMedia({
+            /* const _requestCameraMediaStream = () => navigator.mediaDevices.getUserMedia({
               audio: true,
             }).then(mediaStream => {
               cleanups.push(() => {
@@ -146,7 +124,7 @@ export default class WebRtc {
               });
 
               return mediaStream;
-            });
+            }); */
 
             Promise.all([
               _requestCallInterface(),
@@ -157,21 +135,15 @@ export default class WebRtc {
                 mediaStream,
               ]) => {
                 if (callInterface.open) {
-                  const audioContext = THREE.AudioContext.getContext();
-
                   const _makeSoundBody = id => {
+                    const audio = document.createElement('audio');
+                    audio.src = 'https://' + hub.getCurrentServer().url + '/archae/voicechat/' + id;
+                    audio.type = 'audio/ogg';
+                    audio.autoplay = true;
                     const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
 
-                    const inputNode = new WebAudioBufferQueue({
-                      audioContext,
-                      channels: 2,
-                      // bufferSize: 256,
-                      objectMode: true,
-                    });
-
                     const result = new sound.Body();
-                    result.setInputSource(inputNode);
-                    result.inputNode = inputNode;
+                    result.setInputElement(audio);
                     result.setObject(remotePlayerMesh);
                     return result;
                   };
@@ -201,33 +173,17 @@ export default class WebRtc {
                     multiplayer.removeListener('playerLeave', _playerLeave);
                   });
 
-                  callInterface.on('buffer', ({id, data}) => {
-                    const soundBody = soundBodies.get(id);
-
-                    if (soundBody) {
-                      audioContext.decodeAudioData(data, decodedData => {
-                        const {inputNode} = soundBody;
-                        inputNode.write(decodedData);
-                      }, err => {
-                        console.warn(err);
-                      });
-                    }
-                  });
                   callInterface.on('close', () => {
                     mediaStreamRecorder.stop();
                   });
 
-                  const mediaStreamRecorder = new MediaStreamRecorder(mediaStream);
-                  mediaStreamRecorder.mimeType = 'audio/wav';
-                  mediaStreamRecorder.start(50);
-                  mediaStreamRecorder.ondataavailable = blob => {
-                    const fileReader = new FileReader();
-                    fileReader.onload = () => {
-                      const arrayBuffer = fileReader.result;
-
-                      callInterface.write(arrayBuffer);
-                    };
-                    fileReader.readAsArrayBuffer(blob);
+                  const mediaStreamRecorder = new MediaRecorder(mediaStream, {
+                    mimeType: 'audio/webm;codecs=vorbis',
+                  });
+                  mediaStreamRecorder.start();
+                  mediaStreamRecorder.ondataavailable = e => {
+                    const {data: blob} = e;
+                    callInterface.write(blob);
                   };
 
                   cleanups.push(() => {
