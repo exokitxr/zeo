@@ -1567,11 +1567,11 @@ class World {
               const connectServer = () => {
                 worldApi.connect();
               };
-              rend.addListener('connectServer', connectServer);
+              rend.on('connectServer', connectServer);
               const disconnectServer = () => {
                 worldApi.disconnect();
               };
-              rend.addListener('disconnectServer', disconnectServer);
+              rend.on('disconnectServer', disconnectServer);
 
               this._cleanup = () => {
                 SIDES.forEach(side => {

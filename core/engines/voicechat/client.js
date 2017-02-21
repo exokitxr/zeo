@@ -15,6 +15,7 @@ export default class VoiceChat {
       '/core/engines/hub',
       '/core/engines/three',
       '/core/engines/somnifer',
+      '/core/engines/rend',
       '/core/engines/config',
       '/core/engines/multiplayer',
       '/core/plugins/js-utils',
@@ -23,6 +24,7 @@ export default class VoiceChat {
         hub,
         three,
         somnifer,
+        rend,
         config,
         multiplayer,
         jsUtils,
@@ -198,29 +200,29 @@ export default class VoiceChat {
             cleanup();
           };
 
-          const _init = () => {
+          const _updateEnabled = () => {
+            const connected = hub.getCurrentServer().type === 'server';
             const {voiceChat} = config.getConfig();
+            const shouldBeLive = connected && voiceChat;
 
-            if (voiceChat) {
+            if (shouldBeLive && !live) {
               _enable();
-            }
-          };
-          _init();
-
-          const _config = c => {
-            const {voiceChat} = c;
-
-            if (voiceChat && !live) {
-              _enable();
-            } else if (!voiceChat && live) {
+            } else if (!shouldBeLive && live) {
               _disable();
             };
           };
+          const _connectServer = _updateEnabled;
+          rend.on('connectServer', _connectServer);
+          const _disconnectServer = _updateEnabled;
+          rend.on('disconnectServer', _disconnectServer);
+          const _config = _updateEnabled;
           config.on('config', _config);
 
           this._cleanup = () => {
             cleanup();
 
+            rend.removeListener('connectServer', _connectServer);
+            rend.removeListener('disconnectServer', _disconnectServer);
             config.removeListener('config', _config);
           };
 
