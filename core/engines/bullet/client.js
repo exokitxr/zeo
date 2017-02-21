@@ -3,7 +3,7 @@ const idUtils = require('./lib/idUtils');
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
 
-class BulletClient {
+class Bullet {
   constructor(archae) {
     this._archae = archae;
   }
@@ -715,28 +715,28 @@ class BulletClient {
 
         return _initializeWorld()
           .then(world => {
-            let live = false;
+            let debugEnabled = false;
             const _enablePhysicsDebugMesh = () => {
               world.bodies.forEach(body => {
                 body.addDebug();
               });
 
-              live = true;
+              debugEnabled = true;
             };
             const _disablePhysicsDebugMesh = () => {
               world.bodies.forEach(body => {
                 body.removeDebug();
               });
 
-              live = false;
+              debugEnabled = false;
             };
 
             const _config = config => {
               const {physicsDebug} = config;
 
-              if (physicsDebug && !live) {
+              if (physicsDebug && !debugEnabled) {
                 _enablePhysicsDebugMesh();
-              } else if (!physicsDebug && live) {
+              } else if (!physicsDebug && debugEnabled) {
                 _disablePhysicsDebugMesh();
               };
             };
@@ -794,4 +794,4 @@ const _warnError = err => {
   }
 };
 
-module.exports = BulletClient;
+module.exports = Bullet;
