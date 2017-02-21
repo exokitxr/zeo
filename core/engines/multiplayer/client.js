@@ -111,9 +111,14 @@ class Multiplayer {
                 remotePlayerMeshes.delete(id);
               }
 
-              destroy() {
-                const {remotePlayerMeshes} = this;
-                remotePlayerMeshes.forEach(mesh => {
+              reset() {
+                const {remotePlayerMeshes: oldRemotePlayerMeshes} = this;
+
+                this.id = null;
+                this.playerStatuses = new Map();
+                this.remotePlayerMeshes = new Map();
+
+                oldRemotePlayerMeshes.forEach(mesh => {
                   scene.remove(mesh);
                 });
               }
@@ -347,6 +352,8 @@ class Multiplayer {
               };
 
               cleanups.push(() => {
+                multiplayerInterface.reset();
+
                 connection.close();
               });
             };
@@ -369,8 +376,6 @@ class Multiplayer {
             rend.on('disconnectServer', _disconnectServer);
 
             this._cleanup = () => {
-              multiplayerInterface.destroy();
-
               cleanup();
 
               multiplayerInterface.removeListener('playerStatusUpdate', playerStatusUpdate);
