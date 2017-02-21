@@ -11,28 +11,26 @@ class Bullet {
   mount() {
     const {_archae: archae} = this;
 
-    const cleanups = [];
+    let live = true;
     this._cleanup = () => {
-      for (let i = 0; i < cleanups.length; i++) {
-        const cleanup = cleanups[i];
-        cleanup();
-      }
+      live = false;
     };
 
-    let live = true;
-    cleanups.push(() => {
-      live = false;
-    });
-
     return archae.requestPlugins([
+      '/core/engines/hub',
       '/core/engines/three',
       '/core/engines/config',
+      '/core/plugins/js-utils',
     ]).then(([
+      hub,
       three,
       config,
+      jsUtils,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
 
         const debugMaterial = new THREE.MeshBasicMaterial({
           color: 0xFF0000,
@@ -178,33 +176,11 @@ class Bullet {
           }
         }
 
-        class Engine extends Entity {
+        /* class Engine extends Entity {
           constructor(opts = {}) {
             super('engine', opts.id);
-
-            this.worlds = new Map();
           }
-
-          add(world) {
-            Entity.prototype.add.call(this, world);
-
-            const {id: worldId} = world;
-            this.worlds.set(worldId, world);
-          }
-
-          remove(world) {
-            Entity.prototype.remove.call(this, world);
-
-            const {id: worldId} = world;
-            this.worlds.delete(worldId);
-          }
-
-          destroy() {
-            this.worlds.forEach(world => {
-              world.destroy();
-            });
-          }
-        }
+        } */
 
         class World extends Entity {
           constructor(opts = {}) {
@@ -215,11 +191,6 @@ class Bullet {
             this.bodies = new Map();
             this.running = false;
             this.timeout = null;
-
-            _request('create', [type, id, _except(opts, ['id'])], _warnError);
-
-            const {engine} = opts;
-            engine.add(this);
           }
 
           add(object) {
@@ -617,13 +588,9 @@ class Bullet {
           });
         };
 
-        const _requestEngine = () => Promise.resolve(new Engine({
-          id: null, // must match the backend
-        }));
-        const _requestWorld = engine => new Promise((accept, reject) => {
+        const _makeWorld = () => {
           const world = new World({
             id: 'world',
-            engine,
           });
           world.Plane = Plane;
           world.Box = Box;
@@ -635,131 +602,154 @@ class Bullet {
           world.makeBody = _makeBody;
           world.makeConvexHullBody = _makeConvexHullBody;
           world.makeTriangleMeshBody = _makeTriangleMeshBody;
-
-          accept(world);
-        });
-        const _initializeWorld = () => _requestEngine()
-          .then(engine => _requestWorld(engine));
+          return world;
+        };
+        const world = _makeWorld();
 
         let connection = null;
-        let queue = [];
-        const _ensureConnection = () => {
-          if (!connection) {
-            connection = new WebSocket('wss://' + location.host + '/archae/bulletWs');
-            connection.onopen = () => {
-              if (queue.length > 0) {
-                for (let i = 0; i < queue.length; i++) {
-                  const e = queue[i];
-                  const es = JSON.stringify(e);
-                  connection.send(es);
-                }
-
-                queue = [];
-              }
-            };
-            connection.onerror = err => {
-              connection = null;
-
-              console.warn(err);
-            };
-            connection.onmessage = msg => {
-              const m = JSON.parse(msg.data);
-              const {id} = m;
-
-              const requestHandler = requestHandlers.get(id);
-              if (requestHandler) {
-                const {error, result} = m;
-                requestHandler(error, result);
-              } else {
-                console.warn('unregistered handler:', JSON.stringify(id));
-              }
-            };
-          }
-        };
-
         const requestHandlers = new Map();
         const _request = (method, args, cb) => {
-          _ensureConnection();
+          if (connection) {
+            const id = idUtils.makeId();
 
-          const id = idUtils.makeId();
-
-          const e = {
-            method,
-            id,
-            args,
-          };
-          if (connection.readyState === WebSocket.OPEN) {
-            const es = JSON.stringify(e);
-            connection.send(es);
-          } else {
-            queue.push(e);
-          }
-
-          const requestHandler = (err, result) => {
-            if (!err) {
-              cb(null, result);
+            const e = {
+              method,
+              id,
+              args,
+            };
+            if (connection.readyState === WebSocket.OPEN) {
+              const es = JSON.stringify(e);
+              connection.send(es);
             } else {
-              cb(err);
+              queue.push(e);
             }
 
-            requestHandlers.delete(id);
-          };
-          requestHandlers.set(id, requestHandler);
+            const requestHandler = (err, result) => {
+              if (!err) {
+                cb(null, result);
+              } else {
+                cb(err);
+              }
+
+              requestHandlers.delete(id);
+            };
+            requestHandlers.set(id, requestHandler);
+          } else {
+            setTimeout(() => {
+              const err = new Error('physics engine not connected');
+              cb(err);
+            });
+          }
         };
 
-        cleanups.push(() => {
-          if (connection) {
-            connection.close();
+        const cleanups = [];
+        const cleanup = () => {
+          for (let i = 0; i < cleanups.length; i++) {
+            const cleanup = cleanups[i];
+            cleanup();
           }
-        });
+          cleanups.length = 0;
+        };
 
-        return _initializeWorld()
-          .then(world => {
-            let debugEnabled = false;
-            const _enablePhysicsDebugMesh = () => {
-              world.bodies.forEach(body => {
-                body.addDebug();
-              });
-
-              debugEnabled = true;
-            };
-            const _disablePhysicsDebugMesh = () => {
-              world.bodies.forEach(body => {
-                body.removeDebug();
-              });
-
-              debugEnabled = false;
-            };
-
-            const _config = config => {
-              const {physicsDebug} = config;
-
-              if (physicsDebug && !debugEnabled) {
-                _enablePhysicsDebugMesh();
-              } else if (!physicsDebug && debugEnabled) {
-                _disablePhysicsDebugMesh();
-              };
-            };
-            config.on('config', _config);
-
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              _enablePhysicsDebugMesh();
-            }
-
-            cleanups.push(() => {
-              config.removeListner('config', _config);
-            });
-
-            class BulletApi {
-              getPhysicsWorld() {
-                return world;
-              }
-            }
-
-            const bulletApiInstance = new BulletApi();
-            return bulletApiInstance;
+        let enabled = false;
+        const _enable = () => { // XXX handle race conditions here
+          enabled = true;
+          cleanups.push(() => {
+            enabled = false;
           });
+
+          connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/bulletWs');
+          connection.onopen = () => {
+            bulletInstance.emit('connectServer');
+          };
+          onnection.onclose = () => {
+            bulletInstance.emit('disconnectServer');
+          };
+          connection.onerror = err => {
+            console.warn(err);
+          };
+          connection.onmessage = msg => {
+            const m = JSON.parse(msg.data);
+            const {id} = m;
+
+            const requestHandler = requestHandlers.get(id);
+            if (requestHandler) {
+              const {error, result} = m;
+              requestHandler(error, result);
+            } else {
+              console.warn('unregistered handler:', JSON.stringify(id));
+            }
+          };
+
+          cleanups.push(() => {
+            connection.close();
+          });
+        };
+        const _disable = () => {
+          cleanup();
+        };
+        const _updateEnabled = () => {
+          const connected = hub.getCurrentServer().type === 'server';
+
+          if (connected && !enabled) {
+            _enable();
+          } else if (!connected && enabled) {
+            _disable();
+          };
+        };
+        const _connectServer = _updateEnabled;
+        rend.on('connectServer', _connectServer);
+        const _disconnectServer = _updateEnabled;
+        rend.on('disconnectServer', _disconnectServer);
+
+        let debugEnabled = false;
+        const _enablePhysicsDebugMesh = () => {
+          world.bodies.forEach(body => {
+            body.addDebug();
+          });
+
+          debugEnabled = true;
+        };
+        const _disablePhysicsDebugMesh = () => {
+          world.bodies.forEach(body => {
+            body.removeDebug();
+          });
+
+          debugEnabled = false;
+        };
+        const _config = config => {
+          const {physicsDebug} = config;
+
+          if (physicsDebug && !debugEnabled) {
+            _enablePhysicsDebugMesh();
+          } else if (!physicsDebug && debugEnabled) {
+            _disablePhysicsDebugMesh();
+          };
+        };
+        config.on('config', _config);
+
+        const {physicsDebug} = config.getConfig();
+        if (physicsDebug) {
+          _enablePhysicsDebugMesh();
+        }
+
+        this._cleanup = () => {
+          cleanup();
+
+          rend.removeListener('connectServer', _connectServer);
+          rend.removeListener('disconnectServer', _disconnectServer);
+
+          config.removeListner('config', _config);
+        };
+
+        class BulletApi extends EventEmitter {
+          getPhysicsWorld() {
+            return world;
+          }
+        }
+        const bulletInstance = new BulletApi();
+
+        return bulletInstance;
       }
     });
   }

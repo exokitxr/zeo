@@ -1,7 +1,8 @@
 const Bullet = require('bullet');
 
 const OPEN = 1; // ws.OPEN
-const engineKey = null;
+const engineKey = 'engine';
+const worldKey = 'world';
 
 class Context {
   constructor() {
@@ -11,6 +12,9 @@ class Context {
 
     const engine = new Bullet();
     this.setEngine(engine);
+
+    const world = new Bullet.World();
+    this.setWorld(world);
   }
 
   getEngine() {
@@ -19,6 +23,14 @@ class Context {
 
   setEngine(engine) {
     this.objects.set(engineKey, engine);
+  }
+
+  getWorld() {
+    return this.objects.get(worldKey);
+  }
+
+  setWorld(world) {
+    return this.objects.set(worldKey, world);
   }
 
   hasRunnableObjects() {
@@ -33,7 +45,7 @@ class Context {
       return false;
     };
 
-    return _hasInstanceOf(Bullet.World) && _hasInstanceOf(Bullet.Body);
+    return _hasInstanceOf(Bullet.Body);
   }
 
   create(type, id, opts) {
@@ -42,7 +54,6 @@ console.log('create', {type, id});
     if (!this.objects.has(id)) {
       const object = (() => {
         switch (type) {
-          case 'world': return new Bullet.World(opts);
           case 'plane': return new Bullet.Plane(opts);
           case 'box': return new Bullet.Box(opts);
           case 'sphere': return new Bullet.Sphere(opts);

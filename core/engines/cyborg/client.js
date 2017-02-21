@@ -304,7 +304,7 @@ class Cyborg {
               scene.add(mesh);
               this.mesh = mesh;
 
-              const physicsBody = new physicsWorld.Compound({
+              const physicsBody = new physicsWorld.Compound({ // XXX do not construct this until bullet.on('connectServer')
                 children: [
                   {
                     type: 'box',
@@ -346,7 +346,7 @@ class Cyborg {
             destroy() {
               const {mesh, physicsBody} = this;
               scene.remove(mesh);
-              physicsWorld.remove(physicsBody);
+              physicsWorld.remove(physicsBody); // XXX ensure that this gets destroyed serverside when bullet.on('disconnectServer')
             }
           }
 
