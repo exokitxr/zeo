@@ -398,6 +398,10 @@ class Cyborg {
           const _enable = () => {
             enabled = true;
 
+            cleanups.push(() => {
+              enabled = false;
+            });
+
             SIDES.forEach(side => {
               const controllerPhysicsBody = new physicsWorld.Compound({
                 children: [
