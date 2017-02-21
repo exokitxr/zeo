@@ -424,6 +424,8 @@ class Cyborg {
               controllerPhysicsBody.setObject(mesh);
 
               physicsWorld.addConnectionBound(controllerPhysicsBody);
+              controllerPhysicsBody.sync();
+
               controllerPhysicsBodies[side] = controllerPhysicsBody;
             });
 
