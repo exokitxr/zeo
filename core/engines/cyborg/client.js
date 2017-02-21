@@ -419,14 +419,14 @@ class Cyborg {
               const {mesh} = controller;
               controllerPhysicsBody.setObject(mesh);
 
-              physicsWorld.add(controllerPhysicsBody);
+              physicsWorld.addConnectionBound(controllerPhysicsBody);
               controllerPhysicsBodies[side] = controllerPhysicsBody;
             });
 
             cleanups.push(() => {
               SIDES.forEach(side => {
-                const controllerPhysicsBody = controllerPhysicsBodies[side]; // XXX ensure this gets removed serverside when the physics engine disconnects
-                physicsWorld.remove(controllerPhysicsBody);
+                const controllerPhysicsBody = controllerPhysicsBodies[side];
+                physicsWorld.removeConnectionBound(controllerPhysicsBody);
                 controllerPhysicsBodies[side] = null;
               });
             });

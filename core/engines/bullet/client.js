@@ -151,11 +151,22 @@ class Bullet {
             _request('add', [parentId, childId], _warnError);
           }
 
+          addConnectionBound(child) {
+            const {id: parentId} = this;
+            const {id: childId} = child;
+
+            _request('addConnectionBound', [parentId, childId], _warnError);
+          }
+
           remove(child) {
             const {id: parentId} = this;
             const {id: childId} = child;
 
             _request('remove', [parentId, childId], _warnError);
+          }
+
+          removeConnectionBound() {
+            // nothing
           }
 
           addDebug() {
@@ -211,8 +222,40 @@ class Bullet {
             }
           }
 
+          addConnectionBound(object) {
+            Entity.prototype.addConnectionBound.call(this, object);
+
+            const {id: objectId} = object;
+            this.bodies.set(objectId, object);
+
+            const {physicsDebug} = config.getConfig();
+            if (physicsDebug) {
+              object.addDebug();
+            }
+
+            if (!this.running) {
+              this.start();
+            }
+          }
+
           remove(object) {
             Entity.prototype.remove.call(this, object);
+
+            const {id: objectId} = object;
+            this.bodies.delete(objectId);
+
+            const {physicsDebug} = config.getConfig();
+            if (physicsDebug) {
+              object.removeDebug();
+            }
+
+            if (this.bodies.size === 0) {
+              this.stop();
+            }
+          }
+
+          removeConnectionBound(object) {
+            Entity.prototype.removeConnectionBound.call(this, object);
 
             const {id: objectId} = object;
             this.bodies.delete(objectId);

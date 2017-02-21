@@ -296,6 +296,15 @@ class BulletServer {
               context.add(parentId, childId);
 
               cb();
+            } else if (method === 'addConnectionBound') {
+              const [parentId, childId] = args;
+              context.add(parentId, childId);
+
+              c.on('close', () => {
+                context.remove(parentId, childId);
+              });
+
+              cb();
             } else if (method === 'remove') {
               const [parentId, childId] = args;
               context.remove(parentId, childId);
