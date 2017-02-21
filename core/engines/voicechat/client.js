@@ -1,3 +1,5 @@
+const DATA_RATE = 50;
+
 export default class VoiceChat {
   constructor(archae) {
     this._archae = archae;
@@ -49,6 +51,21 @@ export default class VoiceChat {
           let live = false;
 
           const _enable = () => {
+window.makeAudio = () => {
+  const startTime = Date.now();
+  const url = 'https://' + hub.getCurrentServer().url + '/archae/voicechat/' + peerId;
+  const audio = document.createElement('audio');
+  // audio.type = 'audio/ogg';
+  audio.src = url;
+  audio.load();
+  audio.oncanplay = () => {
+    audio.play();
+    const endTime = Date.now();
+    console.log('can play after', (endTime - startTime) / 1000);
+  };
+  document.body.appendChild(audio);
+  return audio;
+};
             live = true;
             cleanups.push(() => {
               live = false;
@@ -140,7 +157,7 @@ export default class VoiceChat {
                   const _makeSoundBody = id => {
                     const audio = document.createElement('audio');
                     audio.src = 'https://' + hub.getCurrentServer().url + '/archae/voicechat/' + id;
-                    audio.type = 'audio/ogg';
+                    // audio.type = 'audio/ogg';
                     audio.autoplay = true;
                     const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
 
@@ -176,21 +193,23 @@ export default class VoiceChat {
                   });
 
                   callInterface.on('close', () => {
-                    mediaStreamRecorder.stop();
+                    mediaRecorder.stop();
                   });
 
-                  const mediaStreamRecorder = new MediaRecorder(mediaStream, {
-                    mimeType: 'audio/webm;codecs=vorbis',
+                  const mediaRecorder = new MediaRecorder(mediaStream, {
+                    mimeType: 'audio/webm;codecs=opus',
                   });
-                  mediaStreamRecorder.start();
-                  mediaStreamRecorder.ondataavailable = e => {
+                  mediaRecorder.ondataavailable = e => {
                     const {data: blob} = e;
                     callInterface.write(blob);
                   };
-
-                  cleanups.push(() => {
-                    mediaStreamRecorder.stop();
-                  });
+                  const interval = setInterval(() => {
+                    mediaRecorder.requestData();
+                  }, DATA_RATE);
+                  mediaRecorder.onstop = () => {
+                    clearInterval(interval);
+                  };
+                  mediaRecorder.start();
                 } else {
                   _closeMediaStream(mediaStream);
                 }

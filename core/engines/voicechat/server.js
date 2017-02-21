@@ -4,7 +4,7 @@ const stream = require('stream');
 const {PassThrough} = stream;
 const child_process = require('child_process');
 
-const MIN_BUFFER_LENGTH = 64 * 1024;
+const MIN_BUFFER_LENGTH = 4 * 1024;
 const MAX_BUFFER_LENGTH = MIN_BUFFER_LENGTH * 2;
 
 class VoiceChat {
@@ -16,31 +16,6 @@ class VoiceChat {
     const {_archae: archae} = this;
     const {app, wss} = archae.getCore();
 
-    const _decodeAudio = (d, dataCb, doneCb) => {
-      const ffmpeg = child_process.execFile('ffmpeg', [
-        '-i', '-',
-        '-f', 's16le',
-        '-ar', '44100',
-        '-ac', '1',
-        '-acodec', 'pcm_s16le',
-        'pipe:1'
-      ]);
-      ffmpeg.stdin.end(d);      
-      ffmpeg.stdout.on('data', d => {
-        dataCb(d);
-      });
-      ffmpeg.stderr.pipe(process.stderr);
-      ffmpeg.on('close', exitCode => {
-        if (exitCode === 0) {
-          doneCb();
-        } else {
-          const err = new Error('ffmpeg exited with non-zero exit code');
-          err.exitCode = exitCode;
-          doneCb(err);
-        }
-      });
-    };
-
     const connections = [];
     const audioBuffers = new Map();
     const audioStreams = [];
@@ -51,24 +26,52 @@ class VoiceChat {
 
         this.buffers = [];
         this.length = 0;
+
+        const ffmpeg = child_process.spawn('ffmpeg', [
+          '-loglevel', 'panic',
+          // '-re',
+          '-i', '-',
+          '-f', 's16le',
+          '-ar', '44100',
+          '-ac', '1',
+          '-acodec', 'pcm_s16le',
+          'pipe:1'
+        ]);
+        ffmpeg.stdout.on('data', d => {
+          this.buffers.push(d);
+          this.length += d.length;
+
+          this.emit('update', d);
+
+          if (this.length > MAX_BUFFER_LENGTH) {
+            const buffer = Buffer.concat(this.buffers, this.length).slice(-MIN_BUFFER_LENGTH);
+            this.buffers = [buffer];
+            this.length = buffer.length;
+          }
+        });
+
+        ffmpeg.stderr.pipe(process.stderr);
+        ffmpeg.on('error', err => {
+          console.warn(err);
+        });
+        ffmpeg.on('exit', exitCode => {
+          if (exitCode !== 0) {
+            console.warn('ffmpeg non-zero exit code: ' + exitCode);
+          }
+        });
+        this._ffmpeg = ffmpeg;
       }
 
       write(d) {
-        this.buffers.push(d);
-        this.length += d.length;
-
-        this.emit('update', d);
-
-        if (this.length > MAX_BUFFER_LENGTH) {
-          const buffer = Buffer.concat(this.buffers, this.length).slice(-MIN_BUFFER_LENGTH);
-          this.buffers = [buffer];
-          this.length = buffer.length;
-        }
+        const {_ffmpeg: ffmpeg} = this;
+        ffmpeg.stdin.write(d);
       }
     }
 
     class AudioStream extends PassThrough {
       constructor(audioBuffer) {
+        super();
+
         this.audioBuffer = audioBuffer;
 
         this._ffmpeg = null;
@@ -78,45 +81,78 @@ class VoiceChat {
 
       listen() {
         const {audioBuffer} = this;
-        const {buffers} = audioBuffer;
 
-        const ffmpeg = child_process.execFile('ffmpeg', [
+        const ffmpeg = child_process.spawn('ffmpeg', [
+          '-loglevel', 'panic',
+          // '-re',
           '-f', 's16le',
           '-ar', '44100',
           '-ac', '1',
           '-i', '-',
-          '-codec:a', 'libmp3lame',
-          '-f', 'mp3',
+          // '-codec:a', 'libopus',
+          // '-f', 'ogg',
+          '-f', 'wav',
           'pipe:1',
         ]);
         ffmpeg.stderr.pipe(process.stderr);
+        ffmpeg.on('error', err => {
+          console.warn(err);
+        });
+        ffmpeg.on('exit', exitCode => {
+          if (exitCode !== 0) {
+            console.warn('ffmpeg non-zero exit code: ' + exitCode);
+          }
+        });
 
+        const {buffers} = audioBuffer;
         for (let i = 0; i < buffers.length; i++) {
           const buffer = buffers[i];
-          ffmpeg.write(buffer);
+          ffmpeg.stdin.write(buffer);
         }
         ffmpeg.stdout.pipe(this, {
           end: false,
         });
+
+        this.on('error', err => {
+          console.log('stream error', err);
+        });
+        ffmpeg.on('error', err => {
+          console.log('ffmpeg error', err);
+        });
+        ffmpeg.stdin.on('error', err => {
+          console.log('ffmpeg stdin error', err);
+        });
+        ffmpeg.stdout.on('error', err => {
+          console.log('ffmpeg stdout error', err);
+        });
+        ffmpeg.stderr.on('error', err => {
+          console.log('ffmpeg stderr error', err);
+        });
         this._ffmpeg = ffmpeg;
 
-        const update = d => {
-          ffmpeg.write(d);
+        const _update = d => {
+          ffmpeg.stdin.write(d);
         };
-        audioBuffer.on('update', update);
-        ffmpeg.on('close', () => {
-          audioBuffer.removeListener('update', update);
+        audioBuffer.on('update', _update);
+        ffmpeg.stdin.on('close', () => {
+          audioBuffer.removeListener('update', _update);
 
           this.emit('close');
         });
       }
 
       pipe(outStream, options) {
-        super.pipe(outStream, options);
+        PassThrough.prototype.pipe.call(this, outStream, options);
 
         outStream.on('close', () => {
           const {_ffmpeg: ffmpeg} = this;
           ffmpeg.kill();
+        });
+        outStream.on('error', err => {
+          console.log('out stream error', err);
+        });
+        outStream.connection.on('error', err => { // XXX this one is hammered
+          console.log('out stream connection error', err);
         });
       }
 
@@ -141,35 +177,6 @@ class VoiceChat {
       if (url === '/archae/voicechat') {
         let id = null;
 
-        let running = false;
-        const queue = [];
-        const _tryDecodeAudio = msg => {
-          if (id !== null) {
-            if (!running) {
-              running = true;
-
-              const audioBuffer = _getAudioBuffer(id);
-              _decodeAudio(msg, d => {
-                audioBuffer.write(d);
-              }, err => {
-                if (err) {
-                  console.warn(err);
-                }
-
-                running = false;
-                if (queue.length > 0) {
-                  const msg = queue.shift();
-                  _tryDecodeAudio(msg);
-                }
-              });
-            } else {
-              queue.push(msg);
-            }
-          } else {
-            console.warn('voicechat broadcast before init');
-          }
-        };
-
         c.on('message', (msg, flags) => {
           if (!flags.binary) {
             const e = JSON.parse(msg);
@@ -182,7 +189,12 @@ class VoiceChat {
               console.warn('unknown message type', JSON.stringify(type));
             }
           } else {
-            _tryDecodeAudio(msg);
+            if (id !== null) {
+              const audioBuffer = _getAudioBuffer(id);
+              audioBuffer.write(msg);
+            } else {
+              console.warn('voicechat broadcast before init');
+            }
           }
         });
         c.on('close', () => {
@@ -202,7 +214,7 @@ class VoiceChat {
         audioStreams.splice(audioStreams.indexOf(audioStream), 1);
       });
 
-      res.type('audio/ogg');
+      res.type('audio/wav');
       audioStream.pipe(res);
     });
 
