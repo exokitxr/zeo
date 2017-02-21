@@ -427,6 +427,7 @@ class Cyborg {
               SIDES.forEach(side => {
                 const controllerPhysicsBody = controllerPhysicsBodies[side]; // XXX ensure this gets removed serverside when the physics engine disconnects
                 physicsWorld.remove(controllerPhysicsBody);
+                controllerPhysicsBodies[side] = null;
               });
             });
           };
