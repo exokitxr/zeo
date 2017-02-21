@@ -9,6 +9,8 @@ const NUM_PREV_STATUSES = 3;
 const BUTTON_COLOR = 0xFF4444;
 const BUTTON_COLOR_HIGHLIGHT = 0xffbb33;
 
+const SIDES = ['left', 'right'];
+
 class Cyborg {
   constructor(archae) {
     this._archae = archae;
@@ -185,9 +187,10 @@ class Cyborg {
               const lastStatus = prevStatuses[prevStatuses.length - 1];
 
               if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
-                const controller = controllers[side];
-                const {physicsBody} = controller;
-                physicsBody.sync();
+                const controllerPhysicsBody = controllerPhysicsBodies[side];
+                if (controllerPhysicsBody) {
+                  controllerPhysicsBody.sync();
+                }
 
                 this.emit('controllerUpdate', {
                   side,
@@ -199,9 +202,7 @@ class Cyborg {
           }
 
           class Controller {
-            constructor(index) {
-              this._index = index;
-
+            constructor() {
               const mesh = (() => {
                 const object = new THREE.Object3D();
 
@@ -301,27 +302,7 @@ class Cyborg {
 
                 return object;
               })();
-              scene.add(mesh);
               this.mesh = mesh;
-
-              const physicsBody = new physicsWorld.Compound({ // XXX do not construct this until bullet.on('connectServer')
-                children: [
-                  {
-                    type: 'box',
-                    dimensions: [0.115, 0.075, 0.215],
-                    position: [0, -(0.075 / 2), (0.215 / 2) - 0.045],
-                  },
-                ],
-                mass: 1,
-              });
-              physicsBody.setLinearFactor([0, 0, 0]);
-              physicsBody.setAngularFactor([0, 0, 0]);
-              physicsBody.setLinearVelocity([0, 0, 0]);
-              physicsBody.setAngularVelocity([0, 0, 0]);
-              physicsBody.disableDeactivation();
-              physicsBody.setObject(mesh);
-              physicsWorld.add(physicsBody);
-              this.physicsBody = physicsBody;
             }
 
             update(gamepadStatus) {
@@ -342,51 +323,53 @@ class Cyborg {
               mesh.padMesh.position.x = axes[0] * 0.02;
               mesh.padMesh.position.z = -axes[1] * 0.02;
             }
-
-            destroy() {
-              const {mesh, physicsBody} = this;
-              scene.remove(mesh);
-              physicsWorld.remove(physicsBody); // XXX ensure that this gets destroyed serverside when bullet.on('disconnectServer')
-            }
           }
 
           const player = new Player();
 
-          const controllers = (() => {
-            const result = [
-              new Controller(0),
-              new Controller(1),
-            ];
-            result.left = result[0];
-            result.right = result[1];
-            return result;
-          })();
+          const controllers = {
+            left: new Controller(),
+            right: new Controller(),
+          };
+          SIDES.forEach(side => {
+            const controller = controllers[side];
+            const {mesh} = controller;
+            scene.add(mesh);
+          });
+
+          const controllerPhysicsBodies = {
+            left: null,
+            right: null,
+          };
 
           const _getPlayer = () => player;
           const _getControllers = () => controllers;
           const _update = () => {
             // update camera
             const status = webvr.getStatus();
-            camera.position.copy(status.hmd.position);
-            camera.quaternion.copy(status.hmd.rotation);
-            camera.scale.copy(status.hmd.scale);
+            const {hmd} = status;
+            camera.position.copy(hmd.position);
+            camera.quaternion.copy(hmd.rotation);
+            camera.scale.copy(hmd.scale);
             camera.updateMatrixWorld();
 
             // update controllers
-            for (let i = 0; i < controllers.length; i++) {
-              const controller = controllers[i];
-              const gamepadStatus = status.gamepads[i === 0 ? 'left' : 'right'];
-              if (gamepadStatus) {
-                controller.update(gamepadStatus);
+            const {gamepads} = status;
+            SIDES.forEach(side => {
+              const controller = controllers[side];
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                controller.update(gamepad);
               }
-            }
+            });
 
             // emit updates
             player.updateHmd({
-              position: status.hmd.position.clone(),
-              rotation: status.hmd.rotation.clone(),
+              position: hmd.position.clone(),
+              rotation: hmd.rotation.clone(),
             });
-            ['left', 'right'].forEach(side => {
+            SIDES.forEach(side => {
               const controller = controllers[side];
               const {mesh} = controller;
 
@@ -400,16 +383,80 @@ class Cyborg {
             // snapshot current status
             player.snapshotStatus();
           };
-
           rend.on('update', _update);
 
-          this._cleanup = () => {
-            for (let i = 0; i < controllers.length; i++) {
-              const controller = controllers[i];
-              controller.destroy();
+          const cleanups = [];
+          const cleanup = () => {
+            for (let i = 0; i < cleanups.length; i++) {
+              const cleanup = cleanups[i];
+              cleanup();
             }
+            cleanups.length = 0;
+          };
+
+          let enabled = false;
+          const _enable = () => {
+            enabled = true;
+
+            SIDES.forEach(side => {
+              const controllerPhysicsBody = new physicsWorld.Compound({
+                children: [
+                  {
+                    type: 'box',
+                    dimensions: [0.115, 0.075, 0.215],
+                    position: [0, -(0.075 / 2), (0.215 / 2) - 0.045],
+                  },
+                ],
+                mass: 1,
+              });
+              controllerPhysicsBody.setLinearFactor([0, 0, 0]);
+              controllerPhysicsBody.setAngularFactor([0, 0, 0]);
+              controllerPhysicsBody.setLinearVelocity([0, 0, 0]);
+              controllerPhysicsBody.setAngularVelocity([0, 0, 0]);
+              controllerPhysicsBody.disableDeactivation();
+              controllerPhysicsBody.setObject(mesh);
+
+              physicsWorld.add(controllerPhysicsBody);
+              controllerPhysicsBodies[side] = controllerPhysicsBody;
+            });
+
+            cleanups.push(() => {
+              SIDES.forEach(side => {
+                const controllerPhysicsBody = controllerPhysicsBodies[side]; // XXX ensure this gets removed serverside when the physics engine disconnects
+                physicsWorld.remove(controllerPhysicsBody);
+              });
+            });
+          };
+          const _disable = () => {
+            cleanup();
+          };
+          const _updateEnabled = () => {
+            const connected = bullet.isConnected();
+
+            if (connected && !enabled) {
+              _enable();
+            } else if (!connected && enabled) {
+              _disable();
+            };
+          };
+          const _connectServer = _updateEnabled;
+          bullet.on('connectServer', _connectServer);
+          const _disconnectServer = _updateEnabled;
+          bullet.on('disconnectServer', _disconnectServer);
+
+          this._cleanup = () => {
+            cleanup();
+
+            SIDES.forEach(side => {
+              const controller = controllers[side];
+              const {mesh} = controller;
+              scene.remove(mesh);
+            });
 
             rend.removeListener('update', _update);
+
+            bullet.removeListener('connectServer', _connectServer);
+            bullet.removeListener('disconnectServer', _disconnectServer);
           };
 
           return {

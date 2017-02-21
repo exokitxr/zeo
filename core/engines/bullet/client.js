@@ -743,6 +743,10 @@ class Bullet {
         };
 
         class BulletApi extends EventEmitter {
+          isConnected() {
+            return Boolean(connection);
+          }
+
           getPhysicsWorld() {
             return world;
           }
