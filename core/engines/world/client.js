@@ -656,6 +656,21 @@ class World {
               }
               const elementManager = new ElementManager();
 
+              class NpmManager {
+                constructor() {
+                  this.tagMeshes = [];
+                }
+
+                getTagMeshes() {
+                  return this.tagMeshes;
+                }
+
+                setTagMeshes(tagMeshes) {
+                  this.tagMeshes = tagMeshes;
+                }
+              }
+              const npmManager = new NpmManager();
+
               class EquipmentManager {
                 set(index, tagMesh) {
                   // register tag
@@ -1020,11 +1035,11 @@ class World {
                       }
                     };
 
+                    const tagMeshes = elementManager.getTagMeshes().concat(npmManager.getTagMeshes());
                     SIDES.forEach(side => {
                       const grabbableState = grabbableStates[side];
                       const grabBoxMesh = grabBoxMeshes[side];
 
-                      const tagMeshes = elementManager.getTagMeshes();
                       const bestGrabbableTagMesh = _getBestGrabbable(side, tagMeshes);
                       if (bestGrabbableTagMesh) {
                         grabbableState.mesh = bestGrabbableTagMesh;
@@ -1269,13 +1284,10 @@ class World {
                     })))
                     .then(tagMeshes => {
                       // remove old
-                      const npmTagMeshes = tags.getTagsClass('npm');
-                      for (let i = 0; i < npmTagMeshes.length; i++) {
-                        const oldTagMesh = npmTagMeshes[i];
-
+                      const oldTagMeshes = npmManager.getTagMeshes();
+                      for (let i = 0; i < oldTagMeshes.length; i++) {
+                        const oldTagMesh = oldTagMeshes[i];
                         oldTagMesh.parent.remove(oldTagMesh);
-
-                        tags.unmountTag('npm', oldTagMesh);
 
                         tags.destroyTag(oldTagMesh);
                       }
@@ -1287,6 +1299,7 @@ class World {
                       const width = 0.2 * scale;
                       const height = width / aspectRatio;
                       const padding = (WORLD_WIDTH - (TAGS_PER_ROW * width)) / (TAGS_PER_ROW + 1);
+                      const newTagMeshes = [];
                       for (let i = 0; i < tagMeshes.length; i++) {
                         const newTagMesh = tagMeshes[i];
 
@@ -1302,8 +1315,9 @@ class World {
 
                         npmMesh.add(newTagMesh);
 
-                        tags.mountTag('npm', newTagMesh);
+                        newTagMeshes.push(newTagMesh);
                       }
+                      npmManager.setTagMeshes(newTagMeshes);
                     })
                     .catch(err => {
                       console.warn(err);

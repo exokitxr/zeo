@@ -98,22 +98,6 @@ class Tags {
             fontStyle: biolumi.getFontStyle(),
           };
 
-          const _makeGrabbableState = () => ({
-            tagMesh: null,
-          });
-          const grabbableStates = {
-            left: _makeGrabbableState(),
-            right: _makeGrabbableState(),
-          };
-
-          const _makeGrabState = () => ({
-            grabber: null,
-          });
-          const grabStates = {
-            left: _makeGrabState(),
-            right: _makeGrabState(),
-          };
-
           const hoverStates = {
             left: biolumi.makeMenuHoverState(),
             right: biolumi.makeMenuHoverState(),
@@ -478,25 +462,6 @@ class Tags {
             _doClickOpen() || _doSetPosition() || _doClickAttribute();
           };
           input.on('trigger', _trigger);
-          const _gripdown = e => {
-            const {side} = e;
-
-            const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
-            if (bestGrabbableTagMesh) {
-              tagsInstance.grabTag(side, bestGrabbableTagMesh);
-            }
-          };
-          input.on('gripdown', _gripdown);
-          const _gripup = e => {
-            const {side} = e;
-            const grabState = grabStates[side];
-            const {grabber} = grabState;
-
-            if (grabber) {
-              grabber.release();
-            }
-          };
-          input.on('gripup', _gripup);
           const _update = () => {
             const _updateControllers = () => {
               const _updateElementAnchors = () => {
@@ -549,47 +514,6 @@ class Tags {
                   });
                 }
               };
-              const _updateGrabbers = () => {
-                const isOpen = rend.isOpen();
-
-                if (isOpen) {
-                  SIDES.forEach(side => {
-                    const grabbableState = grabbableStates[side];
-                    const grabBoxMesh = grabBoxMeshes[side];
-
-                    const bestGrabbableTagMesh = hands.getBestGrabbable(side, tagMeshes, {radius: DEFAULT_GRAB_RADIUS});
-                    if (bestGrabbableTagMesh) {
-                      grabbableState.tagMesh = bestGrabbableTagMesh;
-
-                      const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
-                      grabBoxMesh.position.copy(tagMeshPosition);
-                      grabBoxMesh.quaternion.copy(tagMeshRotation);
-                      grabBoxMesh.scale.copy(tagMeshScale);
-
-                      if (!grabBoxMesh.visible) {
-                        grabBoxMesh.visible = true;
-                      }
-                    } else {
-                      grabbableState.tagMesh = null;
-
-                      if (grabBoxMesh.visible) {
-                        grabBoxMesh.visible = false;
-                      }
-                    }
-                  });
-                } else {
-                  SIDES.forEach(side => {
-                    const grabbableState = grabbableStates[side];
-                    const grabBoxMesh = grabBoxMeshes[side];
-
-                    grabbableState.tagMesh = null;
-
-                    if (grabBoxMesh.visible) {
-                      grabBoxMesh.visible = false;
-                    }
-                  });
-                }
-              };
               const _updatePositioningMesh = () => {
                 const {positioningId, positioningName, positioningSide} = detailsState;
 
@@ -628,7 +552,6 @@ class Tags {
               };
 
               _updateElementAnchors();
-              _updateGrabbers();
               _updatePositioningMesh();
             };
             const _updateTextures = () => {
@@ -674,8 +597,6 @@ class Tags {
             });
 
             input.removeListener('trigger', _trigger);
-            input.removeListener('gripdown', _gripdown);
-            input.removeListener('gripup', _gripup);
             rend.removeListener('update', _update);
           };
 
@@ -829,10 +750,6 @@ class Tags {
               }
             }
 
-            getGrabbableTag(side) {
-              return grabbableStates[side].tagMesh;
-            }
-
             mountTag(tagClass, tagMesh) {
               tagClassMeshes[tagClass].push(tagMesh);
             }
@@ -875,32 +792,6 @@ class Tags {
 
             isTag(object) {
               return object[tagFlagSymbol] === true;
-            }
-
-            grabTag(side, tagMesh) {
-              const {item} = tagMesh;
-              item.matrix = DEFAULT_MATRIX;
-
-              const grabber = hands.grab(side, tagMesh);
-              grabber.on('update', ({position, rotation}) => {
-                const newRotation = rotation.clone()
-                  .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)));
-                const newPosition = position.clone()
-                  .add(new THREE.Vector3(0, 0.02, 0).applyQuaternion(newRotation));
-
-                tagMesh.position.copy(newPosition);
-                tagMesh.quaternion.copy(newRotation);
-              });
-              grabber.on('release', () => {
-                const {position, quaternion, item} = tagMesh;
-                const newMatrixArray = position.toArray().concat(quaternion.toArray()).concat(new THREE.Vector3(1, 1, 1).toArray());
-                item.matrix = newMatrixArray;
-
-                grabState.grabber = null;
-              });
-
-              const grabState = grabStates[side];
-              grabState.grabber = grabber;
             }
 
             updatePages() {
