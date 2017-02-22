@@ -5,6 +5,8 @@ const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 
+const OPEN = 1; // ws.OPEN
+
 const DEFAULT_TAGS = {
   tags: {},
 };
@@ -146,88 +148,90 @@ class World {
                     };
 
                     c.on('message', s => {
-                      const e = _jsonParse(s);
+                      const m = _jsonParse(s);
 
-                      if (e !== null) {
-                        if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
-                          const {method, id, args} = m;
+                      if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
+                        const {method, id, args} = m;
 
-                          let cb = (err = null, result = null) => {
-                            if (c.readyState === OPEN) {
-                              const e = {
-                                id: id,
-                                error: err,
-                                result: result,
-                              };
-                              const es = JSON.stringify(e);
-                              c.send(es);
+                        let cb = (err = null, result = null) => {
+                          if (c.readyState === OPEN) {
+                            const e = {
+                              id: id,
+                              error: err,
+                              result: result,
+                            };
+                            const es = JSON.stringify(e);
+                            c.send(es);
+                          }
+                        };
+
+                        if (method === 'addTag') {
+                          const [userId, itemSpec, dst] = args;
+                          const {id} = itemSpec;
+                          const side = dst.match(/^hand:(left|right)$/)[1];
+
+                          const user = usersJson[userId];
+                          const {hands} = user;
+                          hands[side] = itemSpec;
+
+                          _broadcast('addTag', [userId, itemSpec, dst]);
+
+                          cb();
+                        } else if (method === 'moveTag') {
+                          const [userId, src, dst] = args;
+
+                          cb = (cb => err => {
+                            if (!err) {
+                              _broadcast('moveTag', [userId, id, src, dst]);
                             }
-                          };
 
-                          if (method === 'addTag') {
-                            const [userId, itemSpec, dst] = args;
-                            const {id} = itemSpec;
-                            const side = dst.match(/^hand:(left|right)$/)[1];
+                            cb(err);
+                          })(cb);
 
-                            const user = usersJson[userId];
-                            const {hands} = user;
-                            hands[side] = itemSpec;
+                          let match;
+                          if (match = src.match(/^world:(.+)$/)) {
+                            const id = match[1];
 
-                            _broadcast('addTag', [userId, itemSpec, dst]);
-
-                            cb();
-                          } else if (method === 'moveTag') {
-                            const [userId, src, dst] = args;
-
-                            cb = (cb => err => {
-                              if (!err) {
-                                _broadcast('moveTag', [userId, id, src, dst]);
-                              }
-
-                              cb(err);
-                            })(cb);
-
-                            let match;
-                            if (match = src.match(/^world:(.+)$/)) {
-                              const id = match[1];
-
-                              if (match = dst.match(/^hand:(left|right)$/)) {
-                                const side = match[1];
-
-                                const itemSpec = tagsJson.tags[id];
-                                usersJson[userId][side] = itemSpec;
-
-                                cb();
-                              } else {
-                                cb(_makeInvalidArgsError());
-                              }
-                            } else if (match = src.match(/^hand:(left|right)$/)) {
+                            if (match = dst.match(/^hand:(left|right)$/)) {
                               const side = match[1];
 
-                              if (match = dst.match(/^world:(.+)$/)) {
-                                const matrixArrayString = match[1];
-                                const matrixArray = JSON.parse(matrixArrayString);
+                              const itemSpec = tagsJson.tags[id];
+                              const user = usersJson[userId];
+                              const {hands} = user;
+                              hands[side] = itemSpec;
 
-                                const itemSpec = usersJson[userId][side];
-                                itemSpec.matrix = matrixArray;
+                              cb();
+                            } else {
+                              cb(_makeInvalidArgsError());
+                            }
+                          } else if (match = src.match(/^hand:(left|right)$/)) {
+                            const side = match[1];
 
-                                const {id} = itemSpec;
-                                tagsJson.tags[id] = itemSpec;
+                            if (match = dst.match(/^world:(.+)$/)) {
+                              const matrixArrayString = match[1];
+                              const matrixArray = JSON.parse(matrixArrayString);
 
-                                cb();
-                              } else {
-                                cb(_makeInvalidArgsError());
-                              }
+                              const user = usersJson[userId];
+                              const {hands} = user;
+                              const itemSpec = hands[side];
+                              itemSpec.matrix = matrixArray;
+
+                              const {id} = itemSpec;
+                              tagsJson.tags[id] = itemSpec;
+
+                              cb();
                             } else {
                               cb(_makeInvalidArgsError());
                             }
                           } else {
-                            const err = new Error('no such method:' + JSON.stringify(method));
-                            cb(err.stack);
+                            cb(_makeInvalidArgsError());
                           }
+                        } else {
+                          const err = new Error('no such method:' + JSON.stringify(method));
+                          cb(err.stack);
                         }
                       } else {
-                        console.log('failed to parse message', JSON.stringify(s));
+                        console.warn('invalid message', m);
                       }
                     });
                     c.on('close', () => {

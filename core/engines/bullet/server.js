@@ -372,6 +372,8 @@ class BulletServer {
               const err = new Error('no such method:' + JSON.stringify(method));
               cb(err.stack);
             }
+          } else {
+            console.warn('invalid message', m);
           }
         });
         c.on('close', () => {
