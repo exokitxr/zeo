@@ -82,6 +82,8 @@ class World {
           fontStyle: biolumi.getFontStyle(),
         };
 
+        const controllerMeshOffset = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
+        const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
         const oneVector = new THREE.Vector3(1, 1, 1);
 
         // helper functions
@@ -119,7 +121,10 @@ class World {
 
                 const controllerMeshes = cyborg.getControllers();
                 const controllerMesh = controllers[side];
-                controllerMesh.add(mesh); // XXX adjust mesh matrix to controller mode
+                mesh.position.copy(controllerMeshOffset);
+                mesh.quaternion.copy(controllerMeshQuaternion);
+                mesh.scale.copy(oneVector);
+                controllerMesh.add(mesh);
               } else {
                 console.warn('invalid add tag arguments', {userId, itemSpec, dst});
               }
@@ -141,7 +146,10 @@ class World {
 
                   const controllerMeshes = cyborg.getControllers();
                   const controllerMesh = controllers[side];
-                  controllerMesh.add(mesh); // XXX adjust mesh matrix to controller mode
+                  mesh.position.copy(controllerMeshOffset);
+                  mesh.quaternion.copy(controllerMeshQuaternion);
+                  mesh.scale.copy(oneVector);
+                  controllerMesh.add(mesh);
                 } else {
                   console.warn('invalid move tag arguments', {itemSpec, src, dst});
                 }
