@@ -39,8 +39,6 @@ export default class VoiceChat {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
-          const peerId = multiplayer.getId();
-
           const cleanups = [];
           const cleanup = () => {
             for (let i = 0; i < cleanups.length; i++) {
@@ -60,16 +58,9 @@ export default class VoiceChat {
             const _requestCallInterface = () => new Promise((accept, reject) => {
               let remotePeerId = null;
 
-              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/voicechat');
+              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/voicechatWs?id=' + multiplayer.getId());
               connection.binaryType = 'arraybuffer';
               connection.onopen = () => {
-                const e = {
-                  type: 'init',
-                  id: peerId,
-                };
-                const es = JSON.stringify(e);
-                connection.send(es);
-
                 accept(callInterface);
               };
               connection.onerror = err => {

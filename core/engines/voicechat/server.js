@@ -100,27 +100,15 @@ class VoiceChat {
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
 
-      if (url === '/archae/voicechat') {
-        c.peerId = null;
+      let match;
+      if (match = url.match(/\/archae\/voicechatWs\?id=(.+)$/)) {
+        const peerId = match[1];
 
+        c.peerId = peerId;
         c.on('message', (msg, flags) => {
-          if (!flags.binary) {
-            const e = JSON.parse(msg);
-            const {type} = e;
-
-            if (type === 'init') {
-              const {id: messageId} = e;
-              c.peerId = messageId;
-            } else {
-              console.warn('unknown message type', JSON.stringify(type));
-            }
-          } else {
-            if (c.peerId !== null) {
-              const audioBuffer = _getAudioBuffer(c.peerId);
-              audioBuffer.write(msg);
-            } else {
-              console.warn('voicechat broadcast before init');
-            }
+          if (flags.binary) {
+            const audioBuffer = _getAudioBuffer(c.peerId);
+            audioBuffer.write(msg);
           }
         });
         c.on('close', () => {
