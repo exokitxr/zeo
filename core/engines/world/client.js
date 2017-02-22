@@ -1066,7 +1066,7 @@ class World {
                     });
                   }
                 };
-                /* const _updateNpmAnchors = () => { // XXX make these based on local mesh tracking
+                const _updateNpmAnchors = () => {
                   const isOpen = rend.isOpen();
                   const tab = rend.getTab();
 
@@ -1083,7 +1083,7 @@ class World {
                         const npmBoxMesh = npmBoxMeshes[side];
 
                         biolumi.updateAnchors({
-                          objects: tags.getTagsClass('npm').map(tagMesh => {
+                          objects: npmManager.getTagMeshes().map(tagMesh => {
                             if (tagMesh) {
                               const {ui, planeMesh, initialScale = oneVector} = tagMesh;
 
@@ -1116,7 +1116,7 @@ class World {
                     });
                   }
                 };
-                const _updateEquipmentPositions = () => {
+                /* const _updateEquipmentPositions = () => { // XXX re-enable this
                   const equipmentTagMeshes = tags.getTagsClass('equipment');
 
                   const {hmd, gamepads} = webvr.getStatus();
@@ -1259,7 +1259,7 @@ class World {
                 _updateTextures();
                 _updateMenuAnchors();
                 _updateGrabbers();
-                // _updateNpmAnchors();
+                _updateNpmAnchors();
                 // _updateEquipmentPositions();
                 _updateHighlight();
               };
