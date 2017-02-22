@@ -224,10 +224,10 @@ class World {
                   return this.tagMeshes[id];
                 }
 
-                add(itemSpec) {
-                  const tagMesh = tags.makeTag(itemSpec);
+                add(tagMesh) {
                   const {tagMeshes} = this;
-                  const {id} = itemSpec;
+                  const {item} = tagMesh;
+                  const {id} = item;
                   tagMeshes[id] = tagMesh;
 
                   scene.add(tagMesh);
@@ -559,7 +559,9 @@ class World {
                 if (userId === localUserId) {
                   let match;
                   if (dst === 'world') {
-                    elementManager.add(itemSpec);
+                    const tagMesh = tags.makeTag(itemSpec);
+
+                    elementManager.add(tagMesh);
                   } else if (match = dst.match(/^hand:(left|right)$/)) {
                     const side = match[1];
 
