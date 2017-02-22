@@ -103,7 +103,10 @@ class World {
                 wss.on('connection', c => {
                   const {url} = c.upgradeReq;
 
-                  if (url === '/archae/worldWs') {
+                  let match;
+                  if (match = url.match(/\//archae\//worldWs\?authentication=(.+)$/) {
+                    const authentication = match[1]; // XXX use this to authenticate inventory with the hub
+
                     const _sendInit = () => {
                       const e = {
                         type: 'init',

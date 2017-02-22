@@ -94,9 +94,8 @@ class World {
           return {position, rotation, scale};
         };
 
-        const _getAuthorization = () => 'Token ' + login.getAuthentication();
         const _requestConnection - () => new Promise((accept, reject) => {
-          const _handleSetTag = itemSpec => {
+          const _handleSetTag = itemSpec => { // XXX rewrite these
             const tagMesh = tags.makeTag(itemSpec);
 
             scene.add(tagMesh);
@@ -107,7 +106,7 @@ class World {
             
           };
 
-          const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs');
+          const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?authentication=' + login.getAuthentication()); // XXX handle authentication on the backend
           connection.onmessage = msg => {
             const m = JSON.parse(msg.data);
             const {type} = m;
@@ -135,20 +134,6 @@ class World {
             console.warn('world connection close');
           };
         });
-        const _requestFiles = () => fetchServer('/archae/world/files.json')
-          .then(res => res.json());
-        const _requestEquipment = () => fetchServer('/archae/world/equipment.json', {
-          headers: new Headers({
-            'Authorization': _getAuthorization(),
-          }),
-        })
-          .then(res => res.json());
-        const _requestInventory = () => fetchServer('/archae/world/inventory.json', {
-          headers: new Headers({
-            'Authorization': _getAuthorization(),
-          }),
-        })
-          .then(res => res.json());
         const _requestStartTime = () => fetchServer('/archae/world/start-time.json')
           .then(res => res.json()
             .then(({startTime}) => startTime)
@@ -206,7 +191,7 @@ class World {
                     }
                   });
               });
-              const _requestRemoteModSpecs = q => new Promise((accept, reject) => {
+              /* const _requestRemoteModSpecs = q => new Promise((accept, reject) => {
                 if (npmState.cancelRemoteRequest) {
                   npmState.cancelRemoteRequest();
                   npmState.cancelRemoteRequest = null;
@@ -277,7 +262,7 @@ class World {
                     }
                   })
                 );
-              });
+              }); */
 
               const _request = (method, args, cb) => {
                 const id = _makeId();
@@ -301,15 +286,61 @@ class World {
                 };
                 requestHandlers.set(id, requestHandler);
               };
-              const _setTag = (itemSpec) => {
+              /* const _setTag = (itemSpec) => {
+                _handleSetTag(itemSpec);
+
                 _request('setTag', [itemSpec], _warnError);
               };
               const _removeTag = itemSpec => {
                 const {id} = itemSpec;
 
                 _request('removeTag', [id], _warnError);
+              }; */
+              const _addTag = (itemSpec, dst) => { // XXX handle these by sending both remote messages and handling the local scene transformation
+                if (match = dst.match(/^hand:(.+)$/)) {
+                  const tagMesh = tags.makeTag(itemSpec);
+                  tags.grabTag(side, tagMesh);
+                }
               };
-              let lastFilesJsonString = null;
+              const _moveTag = (itemSpec, src, dst) => {
+                if (src === 'world') {
+                  elementManager.remove(tagMesh);
+                } else if (src === 'equipment') {
+                  // XXX 1: equipment to controller
+                  equipmentManager.unset(hoveredEquipmentIndex); // XXX pass in the index here
+
+                  // XXX 2: equipment to equipment
+                  const bagMesh = bag.getBagMesh();
+                  const {equipmentBoxMeshes} = bagMesh;
+                  const controllerEquipmentBoxMesh = equipmentBoxMeshes[controllerEquipmentIndex];
+                  controllerEquipmentBoxMesh.add(tagMesh);
+                  equipmentManager.move(hoveredEquipmentIndex, controllerEquipmentIndex);
+
+                  // XXX 3: controller to equipment
+                  handsGrabber.release();
+                  bag.setEquipment(hoveredEquipmentIndex, tagMesh);
+                  equipmentManager.set(hoveredEquipmentIndex, tagMesh);
+
+                  // XXX 4: controller to inventory (could be file)
+                  handsGrabber.release();
+                  backpack.setItem(hoveredItemIndex, item);
+
+                  // XXX 5: controller to world
+                  handsGrabber.release();
+
+                  elementManager.add(tagMesh);
+                }
+
+                let match;
+                if (match = dst.match(/^hand:(.+)$/)) {
+                  const side = match[1];
+
+                  tags.grabTag(side, tagMesh);
+                }
+
+                scene.add(tagMesh); // XXX figure out the right place to add here
+              };
+              /* let lastFilesJsonString = null;
               const _saveFiles = menuUtils.debounce(next => {
                 filesJson = {
                   files: fs.getFiles().map(({file}) => file),
@@ -420,7 +451,7 @@ class World {
                 } else {
                   return Promise.resolve();
                 }
-              });
+              }); */
               const _reifyTag = tagMesh => {
                 const {item} = tagMesh;
                 const {instance, instancing} = item;
@@ -1113,14 +1144,9 @@ class World {
                           const npmTagMeshes = tags.getTagsClass('npm');
                           const tagMesh = npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
 
-                          const tagMeshClone = tags.cloneTag(tagMesh);
-
-                          scene.add(tagMeshClone);
-
-                          tags.grabTag(side, tagMeshClone);
-
-                          // XXX make tag -> hands
-                          _setTag(tagMeshClone.item);
+                          const item = _clone(tagMesh.item);
+                          item.id = _makeId();
+                          _addTag(item, 'hand:' + side);
 
                           const highlightState = highlightStates[side];
                           highlightState.startPoint = null;
@@ -1193,25 +1219,15 @@ class World {
                       const npmTagMeshes = tags.getTagsClass('npm');
 
                       if (elementsTagMeshes.includes(tagMesh)) {
-                        elementManager.remove(tagMesh);
-
-                        tags.grabTag(side, tagMesh);
-
-                        // XXX move tag world -> hands
-                        _setTag(tagMesh.item);
+                        _moveTag(tagMesh.item, 'world', 'hand:' + side);
 
                         e.stopImmediatePropagation();
 
                         return true;
                       } else if (npmTagMeshes.includes(tagMesh)) {
-                        const tagMeshClone = tags.cloneTag(tagMesh);
-
-                        scene.add(tagMeshClone);
-
-                        tags.grabTag(side, tagMeshClone);
-
-                        // XXX make tag -> hands
-                        _setTag(tagMeshClone.item);
+                        const item = _clone(tagMesh.item);
+                        item.id = _makeId();
+                        _addTag(item, 'hand:' + side);
 
                         e.stopImmediatePropagation();
 
@@ -1239,14 +1255,8 @@ class World {
 
                       if (hoveredEquipmentTagMesh && !handsGrabber) {
                         const tagMesh = hoveredEquipmentTagMesh;
-                        equipmentManager.unset(hoveredEquipmentIndex);
-
-                        scene.add(tagMesh);
-
-                        tags.grabTag(side, tagMesh);
-
-                        // XXX move tag equipment -> hands
-                        _saveEquipment();
+                        const {item} = tagMesh;
+                        _moveTag(item, 'equipment', 'hand:' + side);
 
                         e.stopImmediatePropagation();
                       } else {
@@ -1273,16 +1283,8 @@ class World {
 
                       if (hoveredEquipmentTagMesh && !controllerEquipmentTagMesh) {
                         const tagMesh = hoveredEquipmentTagMesh;
-
-                        const bagMesh = bag.getBagMesh();
-                        const {equipmentBoxMeshes} = bagMesh;
-                        const controllerEquipmentBoxMesh = equipmentBoxMeshes[controllerEquipmentIndex];
-                        controllerEquipmentBoxMesh.add(tagMesh);
-
-                        equipmentManager.move(hoveredEquipmentIndex, controllerEquipmentIndex);
-
-                        // XXX move tag equipment -> hands
-                        _saveEquipment();
+                        const {item} = tagMesh;
+                        _moveTag(item, 'equipment', 'hand:' + side);
 
                         e.stopImmediatePropagation();
 
@@ -1342,14 +1344,8 @@ class World {
 
                             if (!hoveredEquipmentTagMesh) {
                               const tagMesh = handsGrabberObject;
-                              handsGrabber.release();
-
-                              bag.setEquipment(hoveredEquipmentIndex, tagMesh);
-
-                              equipmentManager.set(hoveredEquipmentIndex, tagMesh);
-
-                              // XXX move tag hands -> equipment
-                              _saveEquipment();
+                              const {item} = tagMesh;
+                              _moveTag(item, 'hand:' + side, 'equipment');
 
                               return true;
                             } else {
@@ -1373,16 +1369,12 @@ class World {
 
                             if (!hoveredItem) {
                               const tagMesh = handsGrabberObject;
-                              handsGrabber.release();
 
                               const item = {
                                 type: 'tag',
                                 mesh: tagMesh,
                               };
-                              backpack.setItem(hoveredItemIndex, item);
-
-                              // XXX move tag hands -> inventory
-                              _saveInventory();
+                              _moveTag(item, 'hand:' + side, 'inventory');
 
                               e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
@@ -1401,19 +1393,16 @@ class World {
                         const isTag = tags.isTag(handsGrabberObject);
 
                         if (isTag) {
-                          const newTagMesh = handsGrabberObject;
-                          handsGrabber.release();
+                          const tagMesh = handsGrabberObject;
 
-                          elementManager.add(newTagMesh);
-                          const {item} = newTagMesh;
+                          const {item} = tagMesh;
                           const {attributes} = item;
                           if (attributes.position) {
-                            const {position, rotation, scale} = _decomposeObjectMatrixWorld(newTagMesh);
+                            const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
                             item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
                           }
 
-                          // XXX move tag hands -> world
-                          _setTag(item);
+                          _moveTag(item, 'hand:' + side, 'world');
 
                           e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
@@ -1433,17 +1422,13 @@ class World {
                           const hoveredItem = backpack.getItem(hoveredItemIndex);
 
                           if (!hoveredItem) {
-                            const newFileMesh = handsGrabberObject;
-                            handsGrabber.release();
+                            const fileMesh = handsGrabberObject;
 
                             const item = {
                               type: 'file',
-                              mesh: newFileMesh,
+                              mesh: fileMesh,
                             };
-                            backpack.setItem(hoveredItemIndex, item);
-
-                            // XXX move file hands -> inventory
-                            _saveInventory();
+                            _moveTag(item, 'hand:' + side, 'inventory');
 
                             e.stopImmediatePropagation(); // so fs engine doesn't pick it up
 
@@ -1456,10 +1441,9 @@ class World {
                         }
                       };
                       const _releaseWorldFile = () => {
-                        handsGrabber.release();
-
-                        // XXX move file hands -> world
-                        _saveFiles();
+                        const fileMesh = handsGrabberObject;
+                        const {file} = fileMesh;
+                        _moveTag(file, 'hand:' + side, 'world');
 
                         e.stopImmediatePropagation(); // so fs engine doesn't pick it up
 
@@ -1487,16 +1471,8 @@ class World {
 
                       if (!hoveredEquipmentTagMesh && controllerEquipmentTagMesh) {
                         const tagMesh = controllerEquipmentTagMesh;
-
-                        const bagMesh = bag.getBagMesh();
-                        const {equipmentBoxMeshes} = bagMesh;
-                        const equipmentBoxMesh = equipmentBoxMeshes[hoveredEquipmentIndex];
-                        equipmentBoxMesh.add(tagMesh);
-
-                        equipmentManager.move(controllerEquipmentIndex, hoveredEquipmentIndex);
-
-                        // XXX move equipment hands -> world
-                        _saveEquipment();
+                        const {item} = tagMesh;
+                        _moveTag(item, 'equipment:' + controllerEquipmentIndex, 'equipment:' + hoveredEquipmentIndex);
 
                         e.stopImmediatePropagation();
 
@@ -1578,14 +1554,15 @@ class World {
 
                   return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
                 })();
-
-                const fileMesh = fs.makeFile({
+                const file = {
                   id,
                   name,
                   type,
                   directory,
                   matrix,
-                });
+                };
+
+                const fileMesh = fs.makeFile(file);
                 fileMesh.instancing = true;
 
                 scene.add(fileMesh);
@@ -1602,7 +1579,7 @@ class World {
 
                   fs.updatePages();
 
-                  // XXX make file -> world
+                  // XXX make file -> world; figure out how to do this in the face of uploads
                   _saveFiles();
                 }
               };

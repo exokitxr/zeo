@@ -859,14 +859,6 @@ class Tags {
                       });
                   }
 
-                  cloneTag(tagMesh) {
-                    const {item: oldItem} = tagMesh;
-                    const newItemMesh = this.makeTag(oldItem);
-                    const {item: newItem} = newItemMesh;
-                    newItem.id = _makeId();
-                    return newItemMesh;
-                  }
-
                   destroyTag(tagMesh) {
                     const index = tagMeshes.indexOf(tagMesh);
 
