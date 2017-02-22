@@ -443,6 +443,7 @@ const _jsonParse = s => {
     return null;
   }
 };
+const _clone = o => JSON.parse(JSON.stringify(o));
 const _arrayify = o => Object.keys(o).map(k => o[k]);
 const _makeInvalidArgsError = () => {
   const err = new Error('invalid arguments');
