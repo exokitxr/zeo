@@ -104,151 +104,6 @@ class World {
           return {position, rotation, scale};
         };
 
-        const localUserId = multiplayer.getId();
-        const _makeGrabState = () => ({
-          mesh: null,
-        });
-        const grabStates = {
-          left: _makeGrabState(),
-          right: _makeGrabState(),
-        };
-        const _makeGrabbableState = () => ({
-          mesh: null,
-        });
-        const grabbableStates = {
-          left: _makeGrabbableState(),
-          right: _makeGrabbableState(),
-        };
-
-        const _makeGrabBoxMesh = () => {
-          const width = TAGS_WORLD_WIDTH;
-          const height = TAGS_WORLD_HEIGHT;
-          const depth = TAGS_WORLD_DEPTH;
-
-          const geometry = new THREE.BoxBufferGeometry(width, height, depth);
-          const material = wireframeHighlightMaterial;
-
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.y = 1.2;
-          mesh.rotation.order = camera.rotation.order;
-          mesh.rotation.y = Math.PI / 2;
-          mesh.depthWrite = false;
-          mesh.visible = false;
-          return mesh;
-        };
-        const grabBoxMeshes = {
-          left: _makeGrabBoxMesh(),
-          right: _makeGrabBoxMesh(),
-        };
-        scene.add(grabBoxMeshes.left);
-        scene.add(grabBoxMeshes.right);
-
-        const _requestConnection = () => new Promise((accept, reject) => {
-          const _handleAddTag = (userId, itemSpec, dst) => {
-            if (userId === localUserId) {
-              let match;
-              if (dst === 'world') {
-                elementManager.add(itemSpec);
-              } else if (match = dst.match(/^hand:(left|right)$/)) {
-                const side = match[1];
-
-                const tagMesh = tags.makeTag(itemSpec);
-
-                const grabState = grabStates[side];
-                grabState.mesh = mesh;
-
-                const controllerMeshes = cyborg.getControllers();
-                const controllerMesh = controllers[side];
-                mesh.position.copy(controllerMeshOffset);
-                mesh.quaternion.copy(controllerMeshQuaternion);
-                mesh.scale.copy(oneVector);
-                controllerMesh.add(mesh);
-              } else {
-                console.warn('invalid add tag arguments', {userId, itemSpec, dst});
-              }
-            } else {
-              // XXX add tag to remote user's controller mesh
-            }
-          };
-          const _handleMoveTag = (userId, src, dst) => {
-            if (userId === localUserId) {
-              let match;
-              if (match = src.match(/^world:(.+)$/)) {
-                const id = match[1];
-
-                if (match = dst.match(/^hand:(left|right)$/)) {
-                  const side = match[1];
-
-                  const grabState = grabStates[side];
-                  grabState.mesh = mesh;
-
-                  const controllerMeshes = cyborg.getControllers();
-                  const controllerMesh = controllers[side];
-                  mesh.position.copy(controllerMeshOffset);
-                  mesh.quaternion.copy(controllerMeshQuaternion);
-                  mesh.scale.copy(oneVector);
-                  controllerMesh.add(mesh);
-                } else {
-                  console.warn('invalid move tag arguments', {itemSpec, src, dst});
-                }
-              } else if (match = src.match(/^hand:(left|right)$/)) {
-                const side = match[1];
-
-                if (match = dst.match(/^world:(.+)$/)) {
-                  const matrixArrayString = match[1];
-                  const matrixArray = JSON.parse(matrixArrayString);
-
-                  const grabState = grabStates[side];
-                  const {mesh} = grabState;
-                  mesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
-                  mesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
-                  mesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
-
-                  elementManager.add(mesh);
-                  grabState.mesh = null;
-                } else {
-                  console.warn('invalid move tag arguments', {itemSpec, src, dst});
-                }
-              } else {
-                console.warn('invalid move tag arguments', {itemSpec, src, dst});
-              }
-            } else {
-              // XXX add tag to remote user's controller mesh
-            }
-          };
-
-          const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication()); // XXX handle authentication on the backend
-          connection.onmessage = msg => {
-            const m = JSON.parse(msg.data);
-            const {type} = m;
-
-            if (type === 'init') {
-              const {args: [itemSpecs]} = m;
-
-              for (let i = 0; i < itemSpecs.length; i++) {
-                const itemSpec = itemSpecs[i];
-                _handleAddTag(localUserId, itemSpec, 'world');
-              }
-            } else if (type === 'addTag') {
-              const {args: [userId, itemSpec, dst]} = m;
-
-              _handleAddTag(userId, itemSpec, dst);
-            } else if (type === 'moveTag') {
-              const {args: [userId, src, dst]} = m;
-
-              _handleMoveTag(userId, src, dst);
-            } else {
-              console.log('unknown message type', JSON.stringify(type));
-            }
-          };
-          connection.onclose = () => {
-            console.warn('world connection close');
-          };
-        });
-        const _requestStartTime = () => fetchServer('/archae/world/start-time.json')
-          .then(res => res.json()
-            .then(({startTime}) => startTime)
-          );
         const _requestUis = () => Promise.all([
           biolumi.requestUi({
             width: WIDTH,
@@ -273,108 +128,251 @@ class World {
             inventoryUi,
           }) => {
             if (live) {
-              const _requestLocalModSpecs = () => new Promise((accept, reject) => {
-                if (npmState.cancelLocalRequest) {
-                  npmState.cancelLocalRequest();
-                  npmState.cancelLocalRequest = null;
+              const localUserId = multiplayer.getId();
+              const _makeGrabState = () => ({
+                mesh: null,
+              });
+              const grabStates = {
+                left: _makeGrabState(),
+                right: _makeGrabState(),
+              };
+              const _makeGrabbableState = () => ({
+                mesh: null,
+              });
+              const grabbableStates = {
+                left: _makeGrabbableState(),
+                right: _makeGrabbableState(),
+              };
+
+              const _makeGrabBoxMesh = () => {
+                const width = TAGS_WORLD_WIDTH;
+                const height = TAGS_WORLD_HEIGHT;
+                const depth = TAGS_WORLD_DEPTH;
+
+                const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+                const material = wireframeHighlightMaterial;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.y = 1.2;
+                mesh.rotation.order = camera.rotation.order;
+                mesh.rotation.y = Math.PI / 2;
+                mesh.depthWrite = false;
+                mesh.visible = false;
+                return mesh;
+              };
+              const grabBoxMeshes = {
+                left: _makeGrabBoxMesh(),
+                right: _makeGrabBoxMesh(),
+              };
+              scene.add(grabBoxMeshes.left);
+              scene.add(grabBoxMeshes.right);
+
+              let connection = null;
+              const _requestConnection = () => new Promise((accept, reject) => {
+                connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication()); // XXX handle authentication on the backend
+                connection.onmessage = msg => {
+                  const m = JSON.parse(msg.data);
+                  const {type} = m;
+
+                  if (type === 'init') {
+                    const {args: [itemSpecs]} = m;
+
+                    for (let i = 0; i < itemSpecs.length; i++) {
+                      const itemSpec = itemSpecs[i];
+                      _handleAddTag(localUserId, itemSpec, 'world');
+                    }
+                  } else if (type === 'addTag') {
+                    const {args: [userId, itemSpec, dst]} = m;
+
+                    _handleAddTag(userId, itemSpec, dst);
+                  } else if (type === 'moveTag') {
+                    const {args: [userId, src, dst]} = m;
+
+                    _handleMoveTag(userId, src, dst);
+                  } else {
+                    console.log('unknown message type', JSON.stringify(type));
+                  }
+                };
+                connection.onclose = () => {
+                  connection = null;
+
+                  console.warn('world connection close');
+                };
+              });
+              const _requestStartTime = () => fetchServer('/archae/world/start-time.json')
+                .then(res => res.json()
+                  .then(({startTime}) => startTime)
+                );
+
+              class ElementManager {
+                constructor() {
+                  this.tagMeshes = {};
                 }
 
-                let live = true;
-                npmState.cancelLocalRequest = () => {
-                  live = false;
-                };
+                getTagMeshes() {
+                  const {tagMeshes} = this;
 
-                fetchServer('/archae/rend/mods/local')
-                  .then(res => res.json()
-                    .then(modSpecs => {
-                      if (live) {
-                        accept(modSpecs);
+                  const result = [];
+                  for (const k in tagMeshes) {
+                    const tagMesh = tagMeshes[k];
+                    result.push(tagMesh);
+                  }
+                  return result;
+                }
 
-                        npmState.cancelLocalRequest = null;
+                getTagMesh(id) {
+                  return this.tagMeshes[id];
+                }
+
+                add(itemSpec) {
+                  const tagMesh = tags.makeTag(itemSpec);
+                  const {tagMeshes} = this;
+                  const {id} = itemSpec;
+                  tagMeshes[id] = tagMesh;
+
+                  scene.add(tagMesh);
+
+                  _reifyTag(tagMesh);
+                }
+
+                remove(tagMesh) {
+                  const {tagMeshes} = this;
+                  const {item} = tagMesh;
+                  const {id} = item;
+                  delete tagMeshes[id];
+
+                  scene.remove(tagMesh);
+
+                  _unreifyTag(tagMesh);
+                }
+              }
+              const elementManager = new ElementManager();
+
+              class NpmManager {
+                constructor() {
+                  this.tagMeshes = [];
+                }
+
+                getTagMeshes() {
+                  return this.tagMeshes;
+                }
+
+                setTagMeshes(tagMeshes) {
+                  this.tagMeshes = tagMeshes;
+                }
+              }
+              const npmManager = new NpmManager();
+
+              class EquipmentManager {
+                set(index, tagMesh) {
+                  // register tag
+                  tags.setTag('equipment', index, tagMesh);
+
+                  // reify tag
+                  _reifyTag(tagMesh);
+                }
+
+                unset(index) {
+                  // unregister tag
+                  const tagMesh = tags.unsetTag('equipment', index);
+
+                  // unreify tag
+                  _unreifyTag(tagMesh);
+                }
+
+                move(oldIndex, newIndex) {
+                  tags.moveTag('equipment', oldIndex, newIndex);
+                }
+              }
+              const equipmentManager = new EquipmentManager();
+
+              class WorldTimer {
+                constructor(startTime = 0) {
+                  this.startTime = startTime;
+                }
+
+                getWorldTime() {
+                  const {startTime} = this;
+                  const now = Date.now();
+                  const worldTime = now - startTime;
+                  return worldTime;
+                }
+
+                setStartTime(startTime) {
+                  this.startTime = startTime;
+                }
+              }
+              const worldTimer = new WorldTimer();
+
+              const _reifyTag = tagMesh => {
+                const {item} = tagMesh;
+                const {instance, instancing} = item;
+
+                if (!instance && !instancing) {
+                  const {name} = item;
+
+                  item.lock()
+                    .then(unlock => {
+                      archae.requestPlugin(name)
+                        .then(pluginInstance => {
+                          const name = archae.getName(pluginInstance);
+
+                          const tag = name;
+                          let elementApi = modElementApis[tag];
+                          if (!HTMLElement.isPrototypeOf(elementApi)) {
+                            elementApi = HTMLElement;
+                          }
+                          const {attributes} = item;
+                          const baseClass = elementApi;
+
+                          const element = menuUtils.makeZeoElement({
+                            tag,
+                            attributes,
+                            baseClass,
+                          });
+                          item.instance = element;
+                          item.instancing = false;
+                          item.attributes = _clone(attributes);
+
+                          _updatePages();
+                          tags.updatePages();
+
+                          unlock();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+
+                          unlock();
+                        });
+                    });
+
+                  item.instancing = true;
+
+                  _updatePages();
+                  tags.updatePages();
+                }
+              };
+              const _unreifyTag = tagMesh => {
+                const {item} = tagMesh;
+
+                item.lock()
+                  .then(unlock => {
+                    const {instance} = item;
+
+                    if (instance) {
+                      if (typeof instance.destructor === 'function') {
+                        instance.destructor();
                       }
-                    })
-                  )
-                  .catch(err => {
-                    if (live) {
-                      reject(err);
+                      item.instance = null;
 
-                      npmState.cancelLocalRequest = null;
+                      _updatePages();
                     }
+
+                    unlock();
                   });
-              });
-              /* const _requestRemoteModSpecs = q => new Promise((accept, reject) => {
-                if (npmState.cancelRemoteRequest) {
-                  npmState.cancelRemoteRequest();
-                  npmState.cancelRemoteRequest = null;
-                }
+              };
 
-                let live = true;
-                npmState.cancelRemoteRequest = () => {
-                  live = false;
-                };
-
-                fetchServer('/archae/rend/mods/search', {
-                  method: 'PUT',
-                  headers: new Headers({
-                    'Content-Type': 'application/json',
-                  }),
-                  body: JSON.stringify({
-                    q,
-                  }),
-                }).then(res => res.json()
-                  .then(modSpecs => {
-                    if (live) {
-                      accept(modSpecs);
-
-                      npmState.cancelRemoteRequest = null;
-                    }
-                  })
-                  .catch(err => {
-                    if (live) {
-                      reject(err);
-
-                      npmState.cancelRemoteRequest = null;
-                    }
-                  })
-                );
-              });
-              const _requestModSpec = mod => new Promise((accept, reject) => {
-                if (npmState.cancelModRequest) {
-                  npmState.cancelModRequest();
-                  npmState.cancelModRequest = null;
-                }
-
-                let live = true;
-                npmState.cancelModRequest = () => {
-                  live = false;
-                };
-
-                fetchServer('/archae/rend/mods/spec', {
-                  method: 'POST',
-                  headers: new Headers({
-                    'Content-Type': 'application/json',
-                  }),
-                  body: JSON.stringify({
-                    mod,
-                  }),
-                }).then(res => res.json()
-                  .then(modSpecs => {
-                    if (live) {
-                      accept(modSpecs);
-
-                      npmState.cancelModRequest = null;
-                    }
-                  })
-                  .catch(err => {
-                    if (live) {
-                      reject(err);
-
-                      npmState.cancelModRequest = null;
-                    }
-                  })
-                );
-              }); */
-
+              const requestHandlers = new Map();
               const _request = (method, args, cb) => {
                 const id = _makeId();
 
@@ -556,173 +554,113 @@ class World {
                   return Promise.resolve();
                 }
               }); */
-              const _reifyTag = tagMesh => {
-                const {item} = tagMesh;
-                const {instance, instancing} = item;
 
-                if (!instance && !instancing) {
-                  const {name} = item;
+              const _handleAddTag = (userId, itemSpec, dst) => {
+                if (userId === localUserId) {
+                  let match;
+                  if (dst === 'world') {
+                    elementManager.add(itemSpec);
+                  } else if (match = dst.match(/^hand:(left|right)$/)) {
+                    const side = match[1];
 
-                  item.lock()
-                    .then(unlock => {
-                      archae.requestPlugin(name)
-                        .then(pluginInstance => {
-                          const name = archae.getName(pluginInstance);
+                    const tagMesh = tags.makeTag(itemSpec);
 
-                          const tag = name;
-                          let elementApi = modElementApis[tag];
-                          if (!HTMLElement.isPrototypeOf(elementApi)) {
-                            elementApi = HTMLElement;
-                          }
-                          const {attributes} = item;
-                          const baseClass = elementApi;
+                    const grabState = grabStates[side];
+                    grabState.mesh = tagMesh;
 
-                          const element = menuUtils.makeZeoElement({
-                            tag,
-                            attributes,
-                            baseClass,
-                          });
-                          item.instance = element;
-                          item.instancing = false;
-                          item.attributes = _clone(attributes);
-
-                          _updatePages();
-                          tags.updatePages();
-
-                          unlock();
-                        })
-                        .catch(err => {
-                          console.warn(err);
-
-                          unlock();
-                        });
-                    });
-
-                  item.instancing = true;
-
-                  _updatePages();
-                  tags.updatePages();
-                }
-              };
-              const _unreifyTag = tagMesh => {
-                const {item} = tagMesh;
-
-                item.lock()
-                  .then(unlock => {
-                    const {instance} = item;
-
-                    if (instance) {
-                      if (typeof instance.destructor === 'function') {
-                        instance.destructor();
-                      }
-                      item.instance = null;
-
-                      _updatePages();
-                    }
-
-                    unlock();
-                  });
-              };
-
-              class ElementManager {
-                constructor() {
-                  this.tagMeshes = {};
-                }
-
-                getTagMeshes() {
-                  const {tagMeshes} = this;
-
-                  const result = [];
-                  for (const k in tagMeshes) {
-                    const tagMesh = tagMeshes[k];
-                    result.push(tagMesh);
+                    const controllers = cyborg.getControllers();
+                    const controller = controllers[side];
+                    const {mesh: controllerMesh} = controller;
+                    tagMesh.position.copy(controllerMeshOffset);
+                    tagMesh.quaternion.copy(controllerMeshQuaternion);
+                    tagMesh.scale.copy(oneVector);
+                    controllerMesh.add(tagMesh);
+                  } else {
+                    console.warn('invalid add tag arguments', {userId, itemSpec, dst});
                   }
-                  return result;
+                } else {
+                  // XXX add tag to remote user's controller mesh
+                }
+              };
+              const _handleMoveTag = (userId, src, dst) => {
+                if (userId === localUserId) {
+                  let match;
+                  if (match = src.match(/^world:(.+)$/)) {
+                    const id = match[1];
+
+                    if (match = dst.match(/^hand:(left|right)$/)) {
+                      const side = match[1];
+
+                      const tagMesh = elementManager.getTagMesh(id);
+
+                      const grabState = grabStates[side];
+                      grabState.mesh = tagMesh;
+
+                      const controllers = cyborg.getControllers();
+                      const controller = controllers[side];
+                      const {mesh: controllerMesh} = controller;
+                      tagMesh.position.copy(controllerMeshOffset);
+                      tagMesh.quaternion.copy(controllerMeshQuaternion);
+                      tagMesh.scale.copy(oneVector);
+                      controllerMesh.add(tagMesh);
+                    } else {
+                      console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                    }
+                  } else if (match = src.match(/^hand:(left|right)$/)) {
+                    const side = match[1];
+
+                    if (match = dst.match(/^world:(.+)$/)) {
+                      const matrixArrayString = match[1];
+                      const matrixArray = JSON.parse(matrixArrayString);
+
+                      const grabState = grabStates[side];
+                      const {mesh} = grabState;
+                      mesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
+                      mesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
+                      mesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
+
+                      elementManager.add(mesh);
+                      grabState.mesh = null;
+                    } else {
+                      console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                    }
+                  } else {
+                    console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                  }
+                } else {
+                  // XXX add tag to remote user's controller mesh
+                }
+              };
+
+              const _requestLocalModSpecs = () => new Promise((accept, reject) => {
+                if (npmState.cancelLocalRequest) {
+                  npmState.cancelLocalRequest();
+                  npmState.cancelLocalRequest = null;
                 }
 
-                add(itemSpec) {
-                  const tagMesh = tags.makeTag(itemSpec);
-                  const {tagMeshes} = this;
-                  const {id} = itemSpec;
-                  tagMeshes[id] = tagMesh;
+                let live = true;
+                npmState.cancelLocalRequest = () => {
+                  live = false;
+                };
 
-                  scene.add(tagMesh);
+                fetchServer('/archae/rend/mods/local')
+                  .then(res => res.json()
+                    .then(modSpecs => {
+                      if (live) {
+                        accept(modSpecs);
 
-                  _reifyTag(tagMesh);
-                }
+                        npmState.cancelLocalRequest = null;
+                      }
+                    })
+                  )
+                  .catch(err => {
+                    if (live) {
+                      reject(err);
 
-                remove(tagMesh) {
-                  const {tagMeshes} = this;
-                  const {item} = tagMesh;
-                  const {id} = item;
-                  delete tagMeshes[id];
-
-                  scene.remove(tagMesh);
-
-                  _unreifyTag(tagMesh);
-                }
-              }
-              const elementManager = new ElementManager();
-
-              class NpmManager {
-                constructor() {
-                  this.tagMeshes = [];
-                }
-
-                getTagMeshes() {
-                  return this.tagMeshes;
-                }
-
-                setTagMeshes(tagMeshes) {
-                  this.tagMeshes = tagMeshes;
-                }
-              }
-              const npmManager = new NpmManager();
-
-              class EquipmentManager {
-                set(index, tagMesh) {
-                  // register tag
-                  tags.setTag('equipment', index, tagMesh);
-
-                  // reify tag
-                  _reifyTag(tagMesh);
-                }
-
-                unset(index) {
-                  // unregister tag
-                  const tagMesh = tags.unsetTag('equipment', index);
-
-                  // unreify tag
-                  _unreifyTag(tagMesh);
-                }
-
-                move(oldIndex, newIndex) {
-                  tags.moveTag('equipment', oldIndex, newIndex);
-                }
-              }
-              const equipmentManager = new EquipmentManager();
-
-              class WorldTimer {
-                constructor(startTime = 0) {
-                  this.startTime = startTime;
-                }
-
-                getWorldTime() {
-                  const {startTime} = this;
-                  const now = Date.now();
-                  const worldTime = now - startTime;
-                  return worldTime;
-                }
-
-                setStartTime(startTime) {
-                  this.startTime = startTime;
-                }
-              }
-              const worldTimer = new WorldTimer();
-
-              let filesJson = null;
-              let equipmentJson = null;
-              let inventoryJson = null;
+                      npmState.cancelLocalRequest = null;
+                    }
+                  });
+              });
 
               const npmState = {
                 inputText: '',
@@ -2016,15 +1954,9 @@ class World {
                   };
 
                   _uninitializeElements();
-                  _uninitializeEquipment();
-                  _uninitializeFiles();
-                  _uninitializeInventory();
-
-                  filesJson = null;
-                  inventoryJson = null;
-                  lastFilesJsonString = null;
-                  lastEquipmentJsonString = null;
-                  lastInventoryJsonString = null;
+                  // _uninitializeEquipment();
+                  // _uninitializeFiles();
+                  // _uninitializeInventory();
 
                   worldTimer.setStartTime(0);
                 }

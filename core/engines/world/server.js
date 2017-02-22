@@ -113,7 +113,7 @@ class World {
                       equipment: _clone(DEFAULT_EQUIPMENT),
                       inventory: _clone(DEFAULT_INVENTORY),
                     };
-                    usersJson[id] = user;
+                    usersJson[userId] = user;
 
                     const _sendInit = () => {
                       const e = {
@@ -146,7 +146,7 @@ class World {
                     };
 
                     c.on('message', s => {
-                      const e = _jsonParse(msg);
+                      const e = _jsonParse(s);
 
                       if (e !== null) {
                         if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
