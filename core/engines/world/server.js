@@ -231,6 +231,8 @@ class World {
                       }
                     });
                     c.on('close', () => {
+                      delete usersJson[userId];
+
                       connections.splice(connections.indexOf(c), 1);
                     });
 
