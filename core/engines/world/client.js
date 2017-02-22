@@ -1369,8 +1369,8 @@ class World {
                       if (elementsTagMeshes.includes(grabMesh)) {
                         const tagMesh = grabMesh;
                         const {item} = tagMesh;
-                        const {id} =item;
-                        _moveTag('world:' + i0d, 'hand:' + side);
+                        const {id} = item;
+                        _moveTag('world:' + id, 'hand:' + side);
 
                         e.stopImmediatePropagation();
 
