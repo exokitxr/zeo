@@ -75,6 +75,12 @@ class World {
           color: 0x808080,
           wireframe: true,
         });
+        const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
+          color: 0x0000FF,
+          wireframe: true,
+          opacity: 0.5,
+          transparent: true,
+        });
 
         const mainFontSpec = {
           fonts: biolumi.getFonts(),
@@ -120,7 +126,7 @@ class World {
           const depth = TAGS_WORLD_DEPTH;
 
           const geometry = new THREE.BoxBufferGeometry(width, height, depth);
-          const material = wireframeMaterial;
+          const material = wireframeHighlightMaterial;
 
           const mesh = new THREE.Mesh(geometry, material);
           mesh.position.y = 1.2;
@@ -829,7 +835,7 @@ class World {
               })();
               rend.registerMenuMesh('worldMesh', worldMesh);
 
-              const _makeGrabBoxMesh = () => {
+              const _makeHighlightBoxMesh = () => {
                 const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
                 const material = wireframeMaterial;
 
@@ -839,8 +845,8 @@ class World {
                 return mesh;
               };
               const highlightBoxMeshes = {
-                left: _makeGrabBoxMesh(),
-                right: _makeGrabBoxMesh(),
+                left: _makeHighlightBoxMesh(),
+                right: _makeHighlightBoxMesh(),
               };
               scene.add(highlightBoxMeshes.left);
               scene.add(highlightBoxMeshes.right);
