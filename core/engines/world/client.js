@@ -36,10 +36,10 @@ class World {
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
+      '/core/engines/cyborg',
       '/core/engines/login',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/engines/hands',
       '/core/engines/tags',
       '/core/engines/fs',
       '/core/engines/mail',
@@ -51,10 +51,10 @@ class World {
       three,
       input,
       webvr,
+      cyborg,
       login,
       biolumi,
       rend,
-      hands,
       tags,
       fs,
       mail,
@@ -94,19 +94,84 @@ class World {
           return {position, rotation, scale};
         };
 
+        const localUserId = multiplayer.getId();
+        const _makeGrabState = () => ({
+          mesh: null,
+        });
+        const grabStates = {
+          left: _makeGrabState(),
+          right: _makeGrabState(),
+        };
+
         const _requestConnection - () => new Promise((accept, reject) => {
-          const _handleSetTag = itemSpec => { // XXX rewrite these
-            const tagMesh = tags.makeTag(itemSpec);
+          const _handleAddTag = (userId, itemSpec, dst) => {
+            if (userId === localUserId) {
+              let match;
+              if (dst === 'world') {
+                elementManager.add(itemSpec);
+              } else if (match = dst.match(/^hand:(left|right)$/)) {
+                const side = match[1];
 
-            scene.add(tagMesh);
+                const tagMesh = tags.makeTag(itemSpec);
 
-            elementManager.add(tagMesh);
+                const grabState = grabStates[side];
+                grabState.mesh = mesh;
+
+                const controllerMeshes = cyborg.getControllers();
+                const controllerMesh = controllers[side];
+                controllerMesh.add(mesh); // XXX adjust mesh matrix to controller mode
+              } else {
+                console.warn('invalid add tag arguments', {userId, itemSpec, dst});
+              }
+            } else {
+              // XXX add tag to remote user's controller mesh
+            }
           };
-          const _handleRemoveTag = id => {
-            
+          const _handleMoveTag = (userId, src, dst) => {
+            if (userId === localUserId) {
+              let match;
+              if (match = src.match(/^world:(.+)$/)) {
+                const id = match[1];
+
+                if (match = dst.match(/^hand:(left|right)$/)) {
+                  const side = match[1];
+
+                  const grabState = grabStates[side];
+                  grabState.mesh = mesh;
+
+                  const controllerMeshes = cyborg.getControllers();
+                  const controllerMesh = controllers[side];
+                  controllerMesh.add(mesh); // XXX adjust mesh matrix to controller mode
+                } else {
+                  console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                }
+              } else if (match = src.match(/^hand:(left|right)$/)) {
+                const side = match[1];
+
+                if (match = dst.match(/^world:(.+)$/)) {
+                  const matrixArrayString = match[1];
+                  const matrixArray = JSON.parse(matrixArrayString);
+
+                  const grabState = grabStates[side];
+                  const {mesh} = grabState;
+                  mesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
+                  mesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
+                  mesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
+
+                  elementManager.add(mesh);
+                  grabState.mesh = null;
+                } else {
+                  console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                }
+              } else {
+                console.warn('invalid move tag arguments', {itemSpec, src, dst});
+              }
+            } else {
+              // XXX add tag to remote user's controller mesh
+            }
           };
 
-          const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?authentication=' + login.getAuthentication()); // XXX handle authentication on the backend
+          const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication()); // XXX handle authentication on the backend
           connection.onmessage = msg => {
             const m = JSON.parse(msg.data);
             const {type} = m;
@@ -116,16 +181,16 @@ class World {
 
               for (let i = 0; i < itemSpecs.length; i++) {
                 const itemSpec = itemSpecs[i];
-                _handleSetTag(itemSpec);
+                _handleAddTag(localUserId, itemSpec, 'world');
               }
-            } else if (type === 'setTag') {
-              const {args: [itemSpec]} = m;
+            } else if (type === 'addTag') {
+              const {args: [userId, itemSpec, dst]} = m;
 
-              _handleSetTag(itemSpec);
-            } else if (type === 'removeTag') {
-              const {args: [id]} = m;
+              _handleAddTag(userId, itemSpec, dst);
+            } else if (type === 'moveTag') {
+              const {args: [userId, src, dst]} = m;
 
-              _handleRemoveTag(id);
+              _handleMoveTag(userId, src, dst);
             } else {
               console.log('unknown message type', JSON.stringify(type));
             }
@@ -286,24 +351,17 @@ class World {
                 };
                 requestHandlers.set(id, requestHandler);
               };
-              /* const _setTag = (itemSpec) => {
-                _handleSetTag(itemSpec);
+              const _addTag = (itemSpec, dst) => {
+                _handleAddTag(localUserId, itemSpec, dst);
 
-                _request('setTag', [itemSpec], _warnError);
+                _request('addTag', [localUserId, itemSpec, dst], _warnError);
               };
-              const _removeTag = itemSpec => {
-                const {id} = itemSpec;
+              const _moveTag = (src, dst) => {
+                _handleMoveTag(localUserId, src, dst);
 
-                _request('removeTag', [id], _warnError);
-              }; */
-              const _addTag = (itemSpec, dst) => { // XXX handle these by sending both remote messages and handling the local scene transformation
-                if (match = dst.match(/^hand:(.+)$/)) {
-                  const tagMesh = tags.makeTag(itemSpec);
-                  tags.grabTag(side, tagMesh);
-                }
-              };
-              const _moveTag = (itemSpec, src, dst) => {
-                if (src === 'world') {
+                _request('moveTag', [localUserId, src, dst], _warnError);
+
+                /* if (src === 'world') {
                   elementManager.remove(tagMesh);
                 } else if (src === 'equipment') {
                   // XXX 1: equipment to controller
@@ -338,7 +396,7 @@ class World {
                   tags.grabTag(side, tagMesh);
                 }
 
-                scene.add(tagMesh); // XXX figure out the right place to add here
+                scene.add(tagMesh); // XXX figure out the right place to add here */
               };
               /* let lastFilesJsonString = null;
               const _saveFiles = menuUtils.debounce(next => {
@@ -521,19 +579,27 @@ class World {
               };
 
               class ElementManager {
-                add(tagMesh) {
-                  // register tag
-                  tags.mountTag('elements', tagMesh);
+                constructor() {
+                  this.tagMeshes = {};
+                }
 
-                  // reify tag
+                add(itemSpec) {
+                  const tagMesh = tags.makeTag(itemSpec);
+                  const {tagMeshes} = this;
+                  const {id} = itemSpec;
+                  tagMeshes[id] = tagMesh;
+
+                  scene.add(tagMesh);
+
                   _reifyTag(tagMesh);
                 }
 
                 remove(tagMesh) {
-                  // unregister tag
-                  tags.unmountTag('elements', tagMesh);
+                  const {tagMeshes} = this;
+                  const {item} = tagMesh;
+                  const {id} = item;
+                  delete tagMeshes[id];
 
-                  // unreify tag
                   _unreifyTag(tagMesh);
                 }
               }
@@ -1132,9 +1198,10 @@ class World {
                     if (gripPressed) {
                       const npmHoverState = npmHoverStates[side];
                       const {intersectionPoint} = npmHoverState;
-                      const handsGrabber = hands.peek(side);
+                      const grabState = grabStates[side];
+                      const {mesh: grabMesh} = grabState;
 
-                      if (intersectionPoint && !handsGrabber) {
+                      if (intersectionPoint && !grabMesh) {
                         const {anchor} = npmHoverState;
                         const onclick = (anchor && anchor.onclick) || '';
 
@@ -1212,14 +1279,16 @@ class World {
                   const isOpen = rend.isOpen();
 
                   if (isOpen) {
-                    const tagMesh = tags.getGrabbableTag(side);
+                    const tagMesh = tags.getGrabbableTag(side); // XXX get this via world engine tracking
 
                     if (tagMesh) {
                       const elementsTagMeshes = tags.getTagsClass('elements');
                       const npmTagMeshes = tags.getTagsClass('npm');
 
                       if (elementsTagMeshes.includes(tagMesh)) {
-                        _moveTag(tagMesh.item, 'world', 'hand:' + side);
+                        const {item} = tagMesh;
+                        const {id} =item;
+                        _moveTag('world:' + i0d, 'hand:' + side);
 
                         e.stopImmediatePropagation();
 
@@ -1251,9 +1320,10 @@ class World {
                     if (hoveredEquipmentIndex !== -1) {
                       const equipmentTagMeshes = tags.getTagsClass('equipment');
                       const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
-                      const handsGrabber = hands.peek(side);
+                      const grabState = grabStates[side];
+                      const {mesh: grabMesh} = grabState;
 
-                      if (hoveredEquipmentTagMesh && !handsGrabber) {
+                      if (hoveredEquipmentTagMesh && !grabMesh) {
                         const tagMesh = hoveredEquipmentTagMesh;
                         const {item} = tagMesh;
                         _moveTag(item, 'equipment', 'hand:' + side);
@@ -1326,14 +1396,13 @@ class World {
                 const isOpen = rend.isOpen();
 
                 if (isOpen) {
-                  const handsGrabber = hands.peek(side);
+                  const grabState = grabStates[side];
+                  const {mesh: grabMesh} = grabState;
 
-                  if (handsGrabber) {
-                    const {object: handsGrabberObject} = handsGrabber;
-
+                  if (grabMesh) {
                     const _releaseTag = () => {
                       const _releaseEquipmentTag = () => {
-                        const isTag = tags.isTag(handsGrabberObject);
+                        const isTag = tags.isTag(grabMesh);
 
                         if (isTag) {
                           const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
@@ -1343,7 +1412,7 @@ class World {
                             const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
 
                             if (!hoveredEquipmentTagMesh) {
-                              const tagMesh = handsGrabberObject;
+                              const tagMesh = grabMesh;
                               const {item} = tagMesh;
                               _moveTag(item, 'hand:' + side, 'equipment');
 
@@ -1359,7 +1428,7 @@ class World {
                         }
                       };
                       const _releaseInventoryTag = () => {
-                        const isTag = tags.isTag(handsGrabberObject);
+                        const isTag = tags.isTag(grabMesh);
 
                         if (isTag) {
                           const hoveredItemIndex = backpack.getHoveredItemIndex(side);
@@ -1368,7 +1437,7 @@ class World {
                             const hoveredItem = backpack.getItem(hoveredItemIndex);
 
                             if (!hoveredItem) {
-                              const tagMesh = handsGrabberObject;
+                              const tagMesh = grabMesh;
 
                               const item = {
                                 type: 'tag',
@@ -1390,19 +1459,20 @@ class World {
                         }
                       };
                       const _releaseWorldTag = () => {
-                        const isTag = tags.isTag(handsGrabberObject);
+                        const isTag = tags.isTag(grabMesh);
 
                         if (isTag) {
-                          const tagMesh = handsGrabberObject;
+                          const tagMesh = grabMesh;
+                          const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
 
                           const {item} = tagMesh;
                           const {attributes} = item;
                           if (attributes.position) {
-                            const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
                             item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
                           }
 
-                          _moveTag(item, 'hand:' + side, 'world');
+                          const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                          _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
 
                           e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
@@ -1422,7 +1492,7 @@ class World {
                           const hoveredItem = backpack.getItem(hoveredItemIndex);
 
                           if (!hoveredItem) {
-                            const fileMesh = handsGrabberObject;
+                            const fileMesh = grabMesh;
 
                             const item = {
                               type: 'file',
@@ -1441,16 +1511,18 @@ class World {
                         }
                       };
                       const _releaseWorldFile = () => {
-                        const fileMesh = handsGrabberObject;
-                        const {file} = fileMesh;
-                        _moveTag(file, 'hand:' + side, 'world');
+                        const fileMesh = grabMesh;
+                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
+
+                        const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                        _moveTag('hand:' + side, 'world:' + matrixArray);
 
                         e.stopImmediatePropagation(); // so fs engine doesn't pick it up
 
                         return true;
                       };
 
-                      if (fs.isFile(handsGrabberObject)) {
+                      if (fs.isFile(grabMesh)) {
                         return _releaseInventoryFile() || _releaseWorldFile();
                       } else {
                         return false;
@@ -1508,7 +1580,7 @@ class World {
                   const {type} = focusState;
 
                   if (type === 'npm') {
-                    const applySpec = biolumi.applyStateKeyEvent(npmState, mainFontSpec, e);
+                    const applySpec = biolum<F2>i.applyStateKeyEvent(npmState, mainFontSpec, e);
 
                     if (applySpec) {
                       const {commit} = applySpec;

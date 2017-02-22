@@ -69,8 +69,6 @@ class World {
           });
           const _requestTagsJson = () => _requestFile(worldTagsJsonPath, DEFAULT_TAGS);
           const _requestFilesJson = () => _requestFile(worldFilesJsonPath, DEFAULT_FILES);
-          const _requestEquipmentJson = () => _requestFile(worldEquipmentJsonPath, DEFAULT_EQUIPMENT);
-          const _requestInventoryJson = () => _requestFile(worldInventoryJsonPath, DEFAULT_INVENTORY);
           const _ensureWorldPath = () => new Promise((accept, reject) => {
             const worldPath = path.join(dirname, dataDirectory, 'world');
 
@@ -86,31 +84,44 @@ class World {
           return Promise.all([
             _requestTagsJson(),
             _requestFilesJson(),
-            _requestEquipmentJson(),
-            _requestInventoryJson(),
             _ensureWorldPath(),
           ])
             .then(([
               tagsJson,
               filesJson,
-              equipmentJson,
-              inventoryJson,
               ensureWorldPathResult,
             ]) => {
               if (live) {
+                const usersJson = {};
+
                 const connections = [];
 
                 wss.on('connection', c => {
                   const {url} = c.upgradeReq;
 
                   let match;
-                  if (match = url.match(/\//archae\//worldWs\?authentication=(.+)$/) {
-                    const authentication = match[1]; // XXX use this to authenticate inventory with the hub
+                  if (match = url.match(/\/archae\/worldWs\?id=(.+)&authentication=(.+)$/)) {
+                    const userId = match[1];
+                    const authentication = match[2]; // XXX use this to authenticate inventory with the hub
+
+                    const user = {
+                      id: userId,
+                      hands: {
+                        left: null,
+                        right: null,
+                      },
+                      equipment: _clone(DEFAULT_EQUIPMENT),
+                      inventory: _clone(DEFAULT_INVENTORY),
+                    };
+                    usersJson[id] = user;
 
                     const _sendInit = () => {
                       const e = {
                         type: 'init',
-                        tags: _arrayify(tagsJson.tags),
+                        args: [
+                          _arrayify(tagsJson.tags),
+                          _arrayify(usersJson),
+                        ],
                       };
                       const es = JSON.stringify(e);
                       c.send(es);
@@ -141,7 +152,7 @@ class World {
                         if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
                           const {method, id, args} = m;
 
-                          const cb = (err = null, result = null) => {
+                          let cb = (err = null, result = null) => {
                             if (c.readyState === OPEN) {
                               const e = {
                                 id: id,
@@ -153,23 +164,63 @@ class World {
                             }
                           };
 
-                          if (method === 'setTag') {
-                            const [itemSpec] = args;
+                          if (method === 'addTag') {
+                            const [userId, itemSpec, dst] = args;
                             const {id} = itemSpec;
-                            
-                            tagsJson.tags[id] = itemSpec;
+                            const side = dst.match(/^hand:(left|right)$/)[1];
 
-                            _broadcast('setTag', [itemSpec]);
+                            const user = usersJson[userId];
+                            const {hands} = user;
+                            hands[side] = itemSpec;
 
-                            cb();
-                          } else if (method === 'removeTag') {
-                            const [id] = args;
-                            
-                            delete tagsJson.tags[id];
-
-                            _broadcast('removeTag', [id]);
+                            _broadcast('addTag', [userId, itemSpec, dst]);
 
                             cb();
+                          } else if (method === 'moveTag') {
+                            const [userId, src, dst] = args;
+
+                            cb = (cb => err => {
+                              if (!err) {
+                                _broadcast('moveTag', [userId, id, src, dst]);
+                              }
+
+                              cb(err);
+                            })(cb);
+
+                            let match;
+                            if (match = src.match(/^world:(.+)$/) {
+                              const id = match[1];
+
+                              if (match = dst.match(/^hand:(left|right)$/)) {
+                                const side = match[1];
+
+                                const itemSpec = tagsJson.tags[id];
+                                usersJson[userId][side] = itemSpec;
+
+                                cb();
+                              } else {
+                                cb(_makeInvalidArgsError());
+                              }
+                            } else if (match = src.match(/^hand:(left|right)$/)) {
+                              const side = match[1];
+
+                              if (match = dst.match(/^world:(.+)$/)) {
+                                const matrixArrayString = match[1];
+                                const matrixArray = JSON.parse(matrixArrayString);
+
+                                const itemSpec = usersJson[userId][side];
+                                itemSpec.matrix = matrixArray;
+
+                                const {id} = itemSpec;
+                                tagsJson.tags[id] = itemSpec;
+
+                                cb();
+                              } else {
+                                cb(_makeInvalidArgsError());
+                              }
+                            } else {
+                              cb(_makeInvalidArgsError());
+                            }
                           } else {
                             const err = new Error('no such method:' + JSON.stringify(method));
                             cb(err.stack);
@@ -197,7 +248,7 @@ class World {
                   });
                 });
 
-                function serveFilesGet(req, res, next) {
+                /* function serveFilesGet(req, res, next) {
                   res.json(filesJson);
                 }
                 app.get('/archae/world/files.json', serveFilesGet);
@@ -339,7 +390,7 @@ class World {
                     });
                   });
                 }
-                app.put('/archae/world/inventory.json', serveInventorySet);
+                app.put('/archae/world/inventory.json', serveInventorySet); */
 
                 const startTime = Date.now();
                 function serveStartTime(req, res, next) {
@@ -352,10 +403,6 @@ class World {
                 this._cleanup = () => {
                   function removeMiddlewares(route, i, routes) {
                     if (
-                      route.handle.name === 'serveFilesGet' ||
-                      route.handle.name === 'serveFilesSet' ||
-                      route.handle.name === 'serveInventoryGet' ||
-                      route.handle.name === 'serveInventorySet' ||
                       route.handle.name === 'serveStartTime'
                     ) {
                       routes.splice(i, 1);
@@ -365,6 +412,11 @@ class World {
                     }
                   }
                   app._router.stack.forEach(removeMiddlewares);
+
+                  for (let i = 0; i < connections.length; i++) {
+                    const connection = connections[i];
+                    connection.close();
+                  }
                 };
               }
             });
@@ -392,5 +444,10 @@ const _jsonParse = s => {
   }
 };
 const _arrayify = o => Object.keys(o).map(k => o[k]);
+const _makeInvalidArgsError = () => {
+  const err = new Error('invalid arguments');
+  err.code = 'EARGS';
+  return err;
+};
 
 module.exports = World;

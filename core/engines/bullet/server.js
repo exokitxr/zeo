@@ -387,7 +387,6 @@ class BulletServer {
         const connection = connections[i];
         connection.close();
       }
-      connections = [];
 
       live = false;
     };
