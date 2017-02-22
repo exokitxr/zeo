@@ -109,6 +109,8 @@ class VoiceChat {
           if (flags.binary) {
             const audioBuffer = _getAudioBuffer(c.peerId);
             audioBuffer.write(msg);
+          } else {
+            console.warn('voicechat inalid message', {msg, flags});
           }
         });
         c.on('close', () => {
@@ -141,29 +143,5 @@ class VoiceChat {
     this._cleanup();
   }
 }
-
-const _debounce = fn => {
-  let running = false;
-  let queued = false;
-
-  const _go = () => {
-    if (!running) {
-      running = true;
-
-      fn(() => {
-        running = false;
-
-        if (queued) {
-          queued = false;
-
-          _go();
-        }
-      });
-    } else {
-      queued = true;
-    }
-  };
-  return _go;
-};
 
 module.exports = VoiceChat;
