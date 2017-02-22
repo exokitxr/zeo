@@ -188,7 +188,7 @@ class World {
                             })(cb);
 
                             let match;
-                            if (match = src.match(/^world:(.+)$/) {
+                            if (match = src.match(/^world:(.+)$/)) {
                               const id = match[1];
 
                               if (match = dst.match(/^hand:(left|right)$/)) {

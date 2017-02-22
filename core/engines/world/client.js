@@ -37,6 +37,7 @@ class World {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/cyborg',
+      '/core/engines/multiplayer',
       '/core/engines/login',
       '/core/engines/biolumi',
       '/core/engines/rend',
@@ -52,6 +53,7 @@ class World {
       input,
       webvr,
       cyborg,
+      multiplayer,
       login,
       biolumi,
       rend,
@@ -104,8 +106,38 @@ class World {
           left: _makeGrabState(),
           right: _makeGrabState(),
         };
+        const _makeGrabbableState = () => ({
+          mesh: null,
+        });
+        const grabbableStates = {
+          left: _makeGrabbableState(),
+          right: _makeGrabbableState(),
+        };
 
-        const _requestConnection - () => new Promise((accept, reject) => {
+        const _makeGrabBoxMesh = () => {
+          const width = TAGS_WORLD_WIDTH;
+          const height = TAGS_WORLD_HEIGHT;
+          const depth = TAGS_WORLD_DEPTH;
+
+          const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+          const material = wireframeMaterial;
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.y = 1.2;
+          mesh.rotation.order = camera.rotation.order;
+          mesh.rotation.y = Math.PI / 2;
+          mesh.depthWrite = false;
+          mesh.visible = false;
+          return mesh;
+        };
+        const grabBoxMeshes = {
+          left: _makeGrabBoxMesh(),
+          right: _makeGrabBoxMesh(),
+        };
+        scene.add(grabBoxMeshes.left);
+        scene.add(grabBoxMeshes.right);
+
+        const _requestConnection = () => new Promise((accept, reject) => {
           const _handleAddTag = (userId, itemSpec, dst) => {
             if (userId === localUserId) {
               let match;
@@ -591,6 +623,17 @@ class World {
                   this.tagMeshes = {};
                 }
 
+                getTagMeshes() {
+                  const {tagMeshes} = this;
+
+                  const result = [];
+                  for (const k in tagMeshes) {
+                    const tagMesh = tagMeshes[k];
+                    result.push(tagMesh);
+                  }
+                  return result;
+                }
+
                 add(itemSpec) {
                   const tagMesh = tags.makeTag(itemSpec);
                   const {tagMeshes} = this;
@@ -940,7 +983,82 @@ class World {
                     });
                   }
                 };
-                const _updateNpmAnchors = () => {
+                const _updateGrabbers = () => {
+                  const isOpen = rend.isOpen();
+
+                  if (isOpen) {
+                    const _getBestGrabbable = (side, objects) => {
+                      const grabState = grabStates[side];
+                      const {mesh: grabMesh} = grabState;
+
+                      if (!grabMesh) {
+                        const {gamepads} = webvr.getStatus();
+                        const gamepad = gamepads[side];
+
+                        if (gamepad) {
+                          const {position: controllerPosition} = gamepad;
+
+                          const objectDistanceSpecs = objects.map(object => {
+                            const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
+                            const distance = controllerPosition.distanceTo(objectPosition);
+                            return {
+                              object,
+                              distance,
+                            };
+                          }).filter(({distance}) => distance <= 0.2);
+
+                          if (objectDistanceSpecs.length > 0) {
+                            return objectDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].object;
+                          } else {
+                            return null;
+                          }
+                        } else {
+                          return null;
+                        }
+                      } else {
+                        return null;
+                      }
+                    };
+
+                    SIDES.forEach(side => {
+                      const grabbableState = grabbableStates[side];
+                      const grabBoxMesh = grabBoxMeshes[side];
+
+                      const tagMeshes = elementManager.getTagMeshes();
+                      const bestGrabbableTagMesh = _getBestGrabbable(side, tagMeshes);
+                      if (bestGrabbableTagMesh) {
+                        grabbableState.mesh = bestGrabbableTagMesh;
+
+                        const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
+                        grabBoxMesh.position.copy(tagMeshPosition);
+                        grabBoxMesh.quaternion.copy(tagMeshRotation);
+                        grabBoxMesh.scale.copy(tagMeshScale);
+
+                        if (!grabBoxMesh.visible) {
+                          grabBoxMesh.visible = true;
+                        }
+                      } else {
+                        grabbableState.mesh = null;
+
+                        if (grabBoxMesh.visible) {
+                          grabBoxMesh.visible = false;
+                        }
+                      }
+                    });
+                  } else {
+                    SIDES.forEach(side => {
+                      const grabbableState = grabbableStates[side];
+                      const grabBoxMesh = grabBoxMeshes[side];
+
+                      grabbableState.mesh = null;
+
+                      if (grabBoxMesh.visible) {
+                        grabBoxMesh.visible = false;
+                      }
+                    });
+                  }
+                };
+                /* const _updateNpmAnchors = () => { // XXX make these based on local mesh tracking
                   const isOpen = rend.isOpen();
                   const tab = rend.getTab();
 
@@ -1085,7 +1203,7 @@ class World {
                       }
                     }
                   }
-                };
+                }; */
                 const _updateHighlight = () => {
                   const {gamepads} = webvr.getStatus();
 
@@ -1132,8 +1250,9 @@ class World {
 
                 _updateTextures();
                 _updateMenuAnchors();
-                _updateNpmAnchors();
-                _updateEquipmentPositions();
+                _updateGrabbers();
+                // _updateNpmAnchors();
+                // _updateEquipmentPositions();
                 _updateHighlight();
               };
               rend.on('update', _update);
@@ -1681,6 +1800,8 @@ class World {
 
                   scene.remove(npmDotMeshes[side]);
                   scene.remove(npmBoxMeshes[side]);
+
+                  scene.remove(grabBoxMeshes[side]);
                 });
 
                 scene.remove(positioningMesh);
