@@ -90,7 +90,7 @@ class World {
           fontStyle: biolumi.getFontStyle(),
         };
 
-        const controllerMeshOffset = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
+        const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
         const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
         const oneVector = new THREE.Vector3(1, 1, 1);
 
