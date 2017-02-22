@@ -659,8 +659,8 @@ class Bullet {
 
             const e = {
               method,
-              id,
               args,
+              id,
             };
             const es = JSON.stringify(e);
             connection.send(es);
@@ -813,14 +813,12 @@ const _except = (o, excepts) => {
 
   return result;
 };
-
 const _getGeometryPoints = geometry => {
   if (!(geometry instanceof BufferGeometry)) {
     geometry = new THREE.BufferGeometry().fromGeometry(geometry);
   }
   return Array.from(geometry.getAttribute('position').array);
 };
-
 const _warnError = err => {
   if (err) {
     console.warn(err);

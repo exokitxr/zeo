@@ -266,7 +266,7 @@ class BulletServer {
       if (url === '/archae/bulletWs') {
         c.on('message', s => {
           const m = JSON.parse(s);
-          if (typeof m === 'object' && m && typeof m.method === 'string' && typeof m.id === 'string' && Array.isArray(m.args)) {
+          if (typeof m === 'object' && m && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
             const {method, id, args} = m;
 
             const cb = (err = null, result = null) => {

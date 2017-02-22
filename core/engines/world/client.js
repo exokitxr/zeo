@@ -32,6 +32,7 @@ class World {
     };
 
     return archae.requestPlugins([
+      '/core/engines/hub',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
@@ -46,6 +47,7 @@ class World {
       '/core/engines/backpack',
       '/core/plugins/geometry-utils',
     ]).then(([
+      hub,
       three,
       input,
       webvr,
@@ -93,8 +95,46 @@ class World {
         };
 
         const _getAuthorization = () => 'Token ' + login.getAuthentication();
-        const _requestTags = () => fetchServer('/archae/world/tags.json')
-          .then(res => res.json());
+        const _requestConnection - () => new Promise((accept, reject) => {
+          const _handleSetTag = itemSpec => {
+            const tagMesh = tags.makeTag(itemSpec);
+
+            scene.add(tagMesh);
+
+            elementManager.add(tagMesh);
+          };
+          const _handleRemoveTag = id => {
+            
+          };
+
+          const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs');
+          connection.onmessage = msg => {
+            const m = JSON.parse(msg.data);
+            const {type} = m;
+
+            if (type === 'init') {
+              const {args: [itemSpecs]} = m;
+
+              for (let i = 0; i < itemSpecs.length; i++) {
+                const itemSpec = itemSpecs[i];
+                _handleSetTag(itemSpec);
+              }
+            } else if (type === 'setTag') {
+              const {args: [itemSpec]} = m;
+
+              _handleSetTag(itemSpec);
+            } else if (type === 'removeTag') {
+              const {args: [id]} = m;
+
+              _handleRemoveTag(id);
+            } else {
+              console.log('unknown message type', JSON.stringify(type));
+            }
+          };
+          connection.onclose = () => {
+            console.warn('world connection close');
+          };
+        });
         const _requestFiles = () => fetchServer('/archae/world/files.json')
           .then(res => res.json());
         const _requestEquipment = () => fetchServer('/archae/world/equipment.json', {
@@ -239,39 +279,36 @@ class World {
                 );
               });
 
-              let lastTagsJsonString = null;
-              const _saveTags = menuUtils.debounce(next => {
-                tagsJson = {
-                  elements: tags.getTagsClass('elements').map(({item}) => item),
+              const _request = (method, args, cb) => {
+                const id = _makeId();
+
+                const e = {
+                  method,
+                  args,
+                  id,
                 };
-                const tagsJsonString = JSON.stringify(tagsJson);
+                const es = JSON.stringify(e);
+                connection.send(es);
 
-                if (tagsJsonString !== lastTagsJsonString) {
-                  lastTagsJsonString = tagsJsonString;
+                const requestHandler = (err, result) => {
+                  if (!err) {
+                    cb(null, result);
+                  } else {
+                    cb(err);
+                  }
 
-                  return fetchServer('/archae/world/tags.json', {
-                    method: 'PUT',
-                    headers: new Headers({
-                      'Content-Type': 'application/json',
-                    }),
-                    body: tagsJsonString,
-                  })
-                    .then(res => res.blob())
-                    .then(() => {
-                      next();
-                    })
-                    .catch(err => {
-                      console.warn(err);
+                  requestHandlers.delete(id);
+                };
+                requestHandlers.set(id, requestHandler);
+              };
+              const _setTag = (itemSpec) => {
+                _request('setTag', [itemSpec], _warnError);
+              };
+              const _removeTag = itemSpec => {
+                const {id} = itemSpec;
 
-                      next();
-                    })
-                } else {
-                  return Promise.resolve()
-                    .then(() => {
-                       next();
-                    });
-                }
-              });
+                _request('removeTag', [id], _warnError);
+              };
               let lastFilesJsonString = null;
               const _saveFiles = menuUtils.debounce(next => {
                 filesJson = {
@@ -521,7 +558,6 @@ class World {
               }
               const worldTimer = new WorldTimer();
 
-              let tagsJson = null;
               let filesJson = null;
               let equipmentJson = null;
               let inventoryJson = null;
@@ -1083,7 +1119,8 @@ class World {
 
                           tags.grabTag(side, tagMeshClone);
 
-                          _saveTags();
+                          // XXX make tag -> hands
+                          _setTag(tagMeshClone.item);
 
                           const highlightState = highlightStates[side];
                           highlightState.startPoint = null;
@@ -1160,7 +1197,8 @@ class World {
 
                         tags.grabTag(side, tagMesh);
 
-                        _saveTags();
+                        // XXX move tag world -> hands
+                        _setTag(tagMesh.item);
 
                         e.stopImmediatePropagation();
 
@@ -1172,7 +1210,8 @@ class World {
 
                         tags.grabTag(side, tagMeshClone);
 
-                        _saveTags();
+                        // XXX make tag -> hands
+                        _setTag(tagMeshClone.item);
 
                         e.stopImmediatePropagation();
 
@@ -1206,7 +1245,7 @@ class World {
 
                         tags.grabTag(side, tagMesh);
 
-                        _saveTags();
+                        // XXX move tag equipment -> hands
                         _saveEquipment();
 
                         e.stopImmediatePropagation();
@@ -1242,7 +1281,7 @@ class World {
 
                         equipmentManager.move(hoveredEquipmentIndex, controllerEquipmentIndex);
 
-                        _saveTags();
+                        // XXX move tag equipment -> hands
                         _saveEquipment();
 
                         e.stopImmediatePropagation();
@@ -1309,7 +1348,7 @@ class World {
 
                               equipmentManager.set(hoveredEquipmentIndex, tagMesh);
 
-                              _saveTags();
+                              // XXX move tag hands -> equipment
                               _saveEquipment();
 
                               return true;
@@ -1342,6 +1381,7 @@ class World {
                               };
                               backpack.setItem(hoveredItemIndex, item);
 
+                              // XXX move tag hands -> inventory
                               _saveInventory();
 
                               e.stopImmediatePropagation(); // so tags engine doesn't pick it up
@@ -1372,7 +1412,8 @@ class World {
                             item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
                           }
 
-                          _saveTags();
+                          // XXX move tag hands -> world
+                          _setTag(item);
 
                           e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
@@ -1401,6 +1442,7 @@ class World {
                             };
                             backpack.setItem(hoveredItemIndex, item);
 
+                            // XXX move file hands -> inventory
                             _saveInventory();
 
                             e.stopImmediatePropagation(); // so fs engine doesn't pick it up
@@ -1416,6 +1458,7 @@ class World {
                       const _releaseWorldFile = () => {
                         handsGrabber.release();
 
+                        // XXX move file hands -> world
                         _saveFiles();
 
                         e.stopImmediatePropagation(); // so fs engine doesn't pick it up
@@ -1452,7 +1495,7 @@ class World {
 
                         equipmentManager.move(controllerEquipmentIndex, hoveredEquipmentIndex);
 
-                        _saveTags();
+                        // XXX move equipment hands -> world
                         _saveEquipment();
 
                         e.stopImmediatePropagation();
@@ -1559,6 +1602,7 @@ class World {
 
                   fs.updatePages();
 
+                  // XXX make file -> world
                   _saveFiles();
                 }
               };
@@ -1619,42 +1663,28 @@ class World {
                   delete modElementApis[tag];
                 }
 
-                connect() { // XXX track connecting state here
+                connect() { // XXX handle race conditions here
                   Promise.all([
-                    _requestTags(),
+                    _requestConnection(),
                     _requestFiles(),
                     _requestEquipment(),
                     _requestInventory(),
                     _requestStartTime(),
                   ])
                     .then(([
-                      tagsJsonData,
+                      connection,
                       filesJsonData,
                       equipmentJsonData,
                       inventoryJsonData,
                       startTime,
                     ]) => {
-                      tagsJson = tagsJsonData;
                       filesJson = filesJsonData;
                       equipmentJson = equipmentJsonData;
                       inventoryJson = inventoryJsonData;
-                      lastTagsJsonString = JSON.stringify(tagsJson);
                       lastFilesJsonString = JSON.stringify(filesJson);
                       lastEquipmentJsonString = JSON.stringify(equipmentJson);
                       lastInventoryJsonString = JSON.stringify(inventoryJson);
 
-                      const _initializeElements = () => {
-                        const {elements} = tagsJson;
-
-                        for (let i = 0; i < elements.length; i++) {
-                          const itemSpec = elements[i];
-                          const tagMesh = tags.makeTag(itemSpec);
-
-                          scene.add(tagMesh);
-
-                          elementManager.add(tagMesh);
-                        }
-                      };
                       const _initializeEquipment = () => {
                         const {equipment} = equipmentJson;
 
@@ -1727,7 +1757,6 @@ class World {
                         scene.add(mailMesh);
                       }; */
 
-                      _initializeElements();
                       _initializeEquipment();
                       _initializeFiles();
                       _initializeInventory();
@@ -1812,10 +1841,8 @@ class World {
                   _uninitializeFiles();
                   _uninitializeInventory();
 
-                  tagsJson = null;
                   filesJson = null;
                   inventoryJson = null;
-                  lastTagsJsonString = null;
                   lastFilesJsonString = null;
                   lastEquipmentJsonString = null;
                   lastInventoryJsonString = null;
@@ -1839,5 +1866,10 @@ class World {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _makeId = () => Math.random().toString(36).substring(7);
+const _warnError = err => {
+  if (err) {
+    console.warn(err);
+  }
+};
 
 module.exports = World;

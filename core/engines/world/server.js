@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 
 const DEFAULT_TAGS = {
-  elements: [],
+  tags: {},
 };
 const DEFAULT_FILES = {
   files: [],
@@ -34,7 +34,7 @@ class World {
   mount() {
     const {_archae: archae} = this;
     const {metadata: {hub: {url: hubUrl}, server: {type: serverType}}} = archae;
-    const {app, dirname, dataDirectory} = archae.getCore();
+    const {app, wss, dirname, dataDirectory} = archae.getCore();
 
     let live = true;
     this._cleanup = () => {
@@ -98,6 +98,92 @@ class World {
               ensureWorldPathResult,
             ]) => {
               if (live) {
+                const connections = [];
+
+                wss.on('connection', c => {
+                  const {url} = c.upgradeReq;
+
+                  if (url === '/archae/worldWs') {
+                    const _sendInit = () => {
+                      const e = {
+                        type: 'init',
+                        tags: _arrayify(tagsJson.tags),
+                      };
+                      const es = JSON.stringify(e);
+                      c.send(es);
+                    };
+                    _sendInit();
+
+                    const _broadcast = (type, args) => {
+                      if (connections.length > 0) {
+                        const e = {
+                          type,
+                          args,
+                        };
+                        const es = JSON.stringify(e);
+
+                        for (let i = 0; i < connections.length; i++) {
+                          const connection = connections[i];
+                          if (connection !== c) {
+                            connection.send(es);
+                          }
+                        }
+                      }
+                    };
+
+                    c.on('message', s => {
+                      const e = _jsonParse(msg);
+
+                      if (e !== null) {
+                        if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
+                          const {method, id, args} = m;
+
+                          const cb = (err = null, result = null) => {
+                            if (c.readyState === OPEN) {
+                              const e = {
+                                id: id,
+                                error: err,
+                                result: result,
+                              };
+                              const es = JSON.stringify(e);
+                              c.send(es);
+                            }
+                          };
+
+                          if (method === 'setTag') {
+                            const [itemSpec] = args;
+                            const {id} = itemSpec;
+                            
+                            tagsJson.tags[id] = itemSpec;
+
+                            _broadcast('setTag', [itemSpec]);
+
+                            cb();
+                          } else if (method === 'removeTag') {
+                            const [id] = args;
+                            
+                            delete tagsJson.tags[id];
+
+                            _broadcast('removeTag', [id]);
+
+                            cb();
+                          } else {
+                            const err = new Error('no such method:' + JSON.stringify(method));
+                            cb(err.stack);
+                          }
+                        }
+                      } else {
+                        console.log('failed to parse message', JSON.stringify(s));
+                      }
+                    });
+                    c.on('close', () => {
+                      connections.splice(connections.indexOf(c), 1);
+                    });
+
+                    connections.push(c);
+                  }
+                });
+
                 const _saveFile = (p, j) => new Promise((accept, reject) => {
                   fs.writeFile(p, JSON.stringify(j, null, 2), 'utf8', err => {
                     if (!err) {
@@ -108,41 +194,6 @@ class World {
                   });
                 });
 
-                function serveTagsGet(req, res, next) {
-                  res.json(tagsJson);
-                }
-                app.get('/archae/world/tags.json', serveTagsGet);
-                function serveTagsSet(req, res, next) {
-                  bodyParserJson(req, res, () => {
-                    const {body: data} = req;
-
-                    const _respondInvalid = () => {
-                      res.status(400);
-                      res.send();
-                    };
-
-                    if (
-                      typeof data === 'object' && data !== null &&
-                      data.elements && Array.isArray(data.elements)
-                    ) {
-                      tagsJson = {
-                        elements: data.elements,
-                      };
-
-                      _saveFile(worldTagsJsonPath, tagsJson)
-                        .then(() => {
-                          res.send();
-                        })
-                        .catch(err => {
-                          res.status(500);
-                          res.send(err.stack);
-                        });
-                    } else {
-                      _respondInvalid();
-                    }
-                  });
-                }
-                app.put('/archae/world/tags.json', serveTagsSet);
                 function serveFilesGet(req, res, next) {
                   res.json(filesJson);
                 }
@@ -160,9 +211,7 @@ class World {
                       typeof data === 'object' && data !== null &&
                       data.files && Array.isArray(data.files)
                     ) {
-                      filesJson = {
-                        files: data.files,
-                      };
+                      filesJson.files = data.files;
 
                       _saveFile(worldFilesJsonPath, filesJson)
                         .then(() => {
@@ -211,9 +260,7 @@ class World {
                             typeof data === 'object' && data !== null &&
                             data.equipment && Array.isArray(data.equipment)
                           ) {
-                            equipmentJson = {
-                              equipment: data.equipment,
-                            };
+                            equipmentJson.equipment = data.equipment;
 
                             _saveFile(worldEquipmentJsonPath, equipmentJson)
                               .then(() => {
@@ -268,9 +315,7 @@ class World {
                             typeof data === 'object' && data !== null &&
                             data.items && Array.isArray(data.items)
                           ) {
-                            inventoryJson = {
-                              items: data.items,
-                            };
+                            inventoryJson.items = data.items;
 
                             _saveFile(worldInventoryJsonPath, inventoryJson)
                               .then(() => {
@@ -304,8 +349,6 @@ class World {
                 this._cleanup = () => {
                   function removeMiddlewares(route, i, routes) {
                     if (
-                      route.handle.name === 'serveTagsGet' ||
-                      route.handle.name === 'serveTagsSet' ||
                       route.handle.name === 'serveFilesGet' ||
                       route.handle.name === 'serveFilesSet' ||
                       route.handle.name === 'serveInventoryGet' ||
@@ -330,5 +373,21 @@ class World {
     this._cleanup();
   }
 }
+
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return null;
+  }
+};
+const _arrayify = o => Object.keys(o).map(k => o[k]);
 
 module.exports = World;
