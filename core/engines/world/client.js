@@ -1854,26 +1854,13 @@ class World {
                 connect() { // XXX handle race conditions here
                   Promise.all([
                     _requestConnection(),
-                    _requestFiles(),
-                    _requestEquipment(),
-                    _requestInventory(),
                     _requestStartTime(),
                   ])
                     .then(([
                       connection,
-                      filesJsonData,
-                      equipmentJsonData,
-                      inventoryJsonData,
                       startTime,
                     ]) => {
-                      filesJson = filesJsonData;
-                      equipmentJson = equipmentJsonData;
-                      inventoryJson = inventoryJsonData;
-                      lastFilesJsonString = JSON.stringify(filesJson);
-                      lastEquipmentJsonString = JSON.stringify(equipmentJson);
-                      lastInventoryJsonString = JSON.stringify(inventoryJson);
-
-                      const _initializeEquipment = () => {
+                      /* const _initializeEquipment = () => {
                         const {equipment} = equipmentJson;
 
                         for (let i = 0; i < equipment.length; i++) {
@@ -1928,7 +1915,7 @@ class World {
                             }
                           }
                         }
-                      };
+                      }; */
                       /* const _initializeMails = () => {
                         const mailMesh = mail.makeMail({
                           id: _makeId(),
@@ -1945,9 +1932,9 @@ class World {
                         scene.add(mailMesh);
                       }; */
 
-                      _initializeEquipment();
+                      /* _initializeEquipment();
                       _initializeFiles();
-                      _initializeInventory();
+                      _initializeInventory(); */
                       // _initializeMails();
 
                       worldTimer.setStartTime(startTime);
