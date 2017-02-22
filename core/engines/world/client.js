@@ -651,6 +651,8 @@ class World {
                   const {id} = item;
                   delete tagMeshes[id];
 
+                  scene.remove(tagMesh);
+
                   _unreifyTag(tagMesh);
                 }
               }
@@ -690,15 +692,6 @@ class World {
 
                 move(oldIndex, newIndex) {
                   tags.moveTag('equipment', oldIndex, newIndex);
-                }
-
-                removeAll() {
-                  const equipmentTagMeshes = tags.getTagsClass('equipment');
-
-                  for (let i = 0; i < equipmentTagMeshes.length; i++) {
-                    const tagMesh = equipmentTagMeshes[i];
-                    _unreifyTag(tagMesh);
-                  }
                 }
               }
               const equipmentManager = new EquipmentManager();
@@ -1349,7 +1342,7 @@ class World {
                         let match;
                         if (match = onclick.match(/^tag:(.+?)$/)) {
                           const id = match[1];
-                          const npmTagMeshes = tags.getTagsClass('npm');
+                          const npmTagMeshes = npmManager.getTagMeshes();
                           const tagMesh = npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
 
                           const item = _clone(tagMesh.item);
@@ -1420,13 +1413,15 @@ class World {
                   const isOpen = rend.isOpen();
 
                   if (isOpen) {
-                    const tagMesh = tags.getGrabbableTag(side); // XXX get this via world engine tracking
+                    const grabbableState = grabbableStates[side];
+                    const {mesh: grabMesh} = grabbableState;
 
-                    if (tagMesh) {
-                      const elementsTagMeshes = tags.getTagsClass('elements');
-                      const npmTagMeshes = tags.getTagsClass('npm');
+                    if (grabMesh) {
+                      const elementsTagMeshes = elementManager.getTagMeshes();
+                      const npmTagMeshes = npmManager.getTagMeshes();
 
-                      if (elementsTagMeshes.includes(tagMesh)) {
+                      if (elementsTagMeshes.includes(grabMesh)) {
+                        const tagMesh = grabMesh;
                         const {item} = tagMesh;
                         const {id} =item;
                         _moveTag('world:' + i0d, 'hand:' + side);
@@ -1434,7 +1429,8 @@ class World {
                         e.stopImmediatePropagation();
 
                         return true;
-                      } else if (npmTagMeshes.includes(tagMesh)) {
+                      } else if (npmTagMeshes.includes(grabMesh)) {
+                        const tagMesh = grabMesh;
                         const item = _clone(tagMesh.item);
                         item.id = _makeId();
                         _addTag(item, 'hand:' + side);
@@ -1459,7 +1455,7 @@ class World {
                     const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                     if (hoveredEquipmentIndex !== -1) {
-                      const equipmentTagMeshes = tags.getTagsClass('equipment');
+                      const equipmentTagMeshes = tags.getTagsClass('equipment'); // XXX use equipment manager here
                       const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
                       const grabState = grabStates[side];
                       const {mesh: grabMesh} = grabState;
@@ -1487,7 +1483,7 @@ class World {
                     const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                     if (hoveredEquipmentIndex !== -1) {
-                      const equipmentTagMeshes = tags.getTagsClass('equipment');
+                      const equipmentTagMeshes = tags.getTagsClass('equipment'); // XXX use equipment manager here
                       const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
                       const controllerEquipmentIndex = side === 'right' ? 2 : 3;
                       const controllerEquipmentTagMesh = equipmentTagMeshes[controllerEquipmentIndex];
@@ -1549,7 +1545,7 @@ class World {
                           const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                           if (hoveredEquipmentIndex !== -1) {
-                            const equipmentTagMeshes = tags.getTagsClass('equipment');
+                            const equipmentTagMeshes = tags.getTagsClass('equipment'); // XXX use equipment manager here
                             const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
 
                             if (!hoveredEquipmentTagMesh) {
@@ -1677,7 +1673,7 @@ class World {
                     const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                     if (hoveredEquipmentIndex !== -1) {
-                      const equipmentTagMeshes = tags.getTagsClass('equipment');
+                      const equipmentTagMeshes = tags.getTagsClass('equipment'); // XXX use equipment manager here
                       const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
                       const controllerEquipmentIndex = side === 'right' ? 2 : 3;
                       const controllerEquipmentTagMesh = equipmentTagMeshes[controllerEquipmentIndex];
@@ -1963,7 +1959,7 @@ class World {
 
                 disconnect() {
                   const _uninitializeElements = () => {
-                    const elementTagMeshes = tags.getTagsClass('elements').slice();
+                    const elementTagMeshes = elementManager.getTagMeshes().slice();
 
                     for (let i = 0; i < elementTagMeshes.length; i++) {
                       const tagMesh = elementTagMeshes[i];
@@ -1971,12 +1967,10 @@ class World {
                       elementManager.remove(tagMesh);
 
                       tags.destroyTag(tagMesh);
-
-                      scene.remove(tagMesh);
                     }
                   };
                   const _uninitializeEquipment = () => {
-                    const equipmentTagMeshes = tags.getTagsClass('equipment').slice();
+                    const equipmentTagMeshes = tags.getTagsClass('equipment').slice(); // XXX use equipment manager here
 
                     for (let i = 0; i < equipmentTagMeshes.length; i++) {
                       const tagMesh = equipmentTagMeshes[i];
