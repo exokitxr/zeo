@@ -189,8 +189,18 @@ class World {
                     const {args: [userId, src, dst]} = m;
 
                     _handleMoveTag(userId, src, dst);
+                  } else if (type === 'response') {
+                    const {id} = m;
+
+                    const requestHandler = requestHandlers.get(id);
+                    if (requestHandler) {
+                      const {error, result} = m;
+                      requestHandler(error, result);
+                    } else {
+                      console.warn('unregistered handler:', JSON.stringify(id));
+                    }
                   } else {
-                    console.log('unknown message type', JSON.stringify(type));
+                    console.log('unknown message', m);
                   }
                 };
                 connection.onclose = () => {

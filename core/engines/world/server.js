@@ -156,6 +156,7 @@ class World {
                         let cb = (err = null, result = null) => {
                           if (c.readyState === OPEN) {
                             const e = {
+                              type: 'response',
                               id: id,
                               error: err,
                               result: result,
