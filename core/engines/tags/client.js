@@ -324,7 +324,7 @@ class Tags {
 
                 _updatePages();
 
-                _saveTags(); // XXX rewrite these
+                _saveTags(); // XXX rewrite these to send attributes to the backend via the world engine
 
                 return true;
               } else {

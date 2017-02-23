@@ -231,6 +231,32 @@ class World {
                           } else {
                             cb(_makeInvalidArgsError());
                           }
+                        } else if (method === 'setTagAttribute') {
+                          const [userId, src, attributeName, attributeValue] = args;
+
+                          cb = (cb => err => {
+                            if (!err) {
+                              _broadcast('setTagAttribute', [userId, src, attributeName, attributeValue]);
+                            }
+
+                            cb(err);
+                          })(cb);
+
+                          let match;
+                          if (match = src.match(/^world:(.+)$/)) {
+                            const id = match[1];
+
+                            const itemSpec = tagsJson.tags[id];
+                            const {attributes} = itemSpec;
+                            const attribute = attributes[attributeName];
+                            attribute.value = attributeValue;
+
+                            _saveTags();
+
+                            cb();
+                          } else {
+                            cb(_makeInvalidArgsError()); 
+                          }
                         } else {
                           const err = new Error('no such method:' + JSON.stringify(method));
                           cb(err.stack);

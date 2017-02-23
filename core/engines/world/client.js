@@ -189,6 +189,10 @@ class World {
                     const {args: [userId, src, dst]} = m;
 
                     _handleMoveTag(userId, src, dst);
+                  } else if (type === 'setTagAttribute') {
+                    const {args: [userId, src, attributeName, attributeValue]} = m;
+
+                    _setTagAttribute(userId, src, attributeName, attributeValue);
                   } else if (type === 'response') {
                     const {id} = m;
 
@@ -452,6 +456,11 @@ class World {
 
                 scene.add(tagMesh); // XXX figure out the right place to add here */
               };
+              const _setTagAttribute = (src, attributeName, attributeValue) => {
+                _handleSetTagAttribute(localUserId, src, attributeName, attributeValue);
+
+                _request('setTagAttribute', [localUserId, src, attributeName, attributeValue], _warnError);
+              };
               /* let lastFilesJsonString = null;
               const _saveFiles = menuUtils.debounce(next => {
                 filesJson = {
@@ -641,6 +650,22 @@ class World {
                   }
                 } else {
                   // XXX add tag to remote user's controller mesh
+                }
+              };
+              const _handleSetTagAttribute = (userId, src, attributeName, attributeValue) => {
+                if (userId === localUserId) {
+                  let match;
+                  if (match = src.match(/^world:(.+)$/)) {
+                    const id = match[1];
+
+                    const tagMesh = elementManager.getTagMesh(id);
+                    const {item} = tagMesh;
+                    item.setAttribute(attributeName, attributeValue);
+                  } else {
+                    console.warn('invalid set tag attribute arguments', {src, attributeName, attributeValue});
+                  }
+                } else {
+                  // XXX set property on remote user's mesh
                 }
               };
 
@@ -1563,7 +1588,9 @@ class World {
                           const {item} = tagMesh;
                           const {attributes} = item;
                           if (attributes.position) {
-                            item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                            const {id} = item;
+                            const newValue = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                            _setTagAttribute('world:' + id, 'position', newValue);
                           }
 
                           const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
