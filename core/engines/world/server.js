@@ -13,20 +13,24 @@ const DEFAULT_TAGS = {
 const DEFAULT_FILES = {
   files: [],
 };
-const DEFAULT_EQUIPMENT = {
-  equipment: (() => {
-    const numEquipments = (1 + 1 + 2 + 8);
+const DEFAULT_EQUIPMENT = (() => {
+  const numEquipments = (1 + 1 + 2 + 8);
 
-    const result = Array(numEquipments);
-    for (let i = 0; i < numEquipments; i++) {
-      result[i] = null;
-    }
-    return result;
-  })(),
-};
-const DEFAULT_INVENTORY = {
-  items: [],
-};
+  const result = Array(numEquipments);
+  for (let i = 0; i < numEquipments; i++) {
+    result[i] = null;
+  }
+  return result;
+})();
+const DEFAULT_INVENTORY = (() => {
+  const numItems = 9;
+
+  const result = Array(numItems);
+  for (let i = 0; i < numItems; i++) {
+    result[i] = null;
+  }
+  return result;
+})();
 
 class World {
   constructor(archae) {
@@ -241,6 +245,20 @@ class World {
                               // XXX save user equipment here
 
                               cb();
+                            } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
+                              const inventoryIndex = parseInt(match[1], 10);
+
+                              const user = usersJson[userId];
+                              const {hands} = user;
+                              const itemSpec = hands[side];
+                              hands[side] = null;
+
+                              const {inventory} = user;
+                              inventory[inventoryIndex] = itemSpec;
+
+                              // XXX save user inventory here
+
+                              cb();
                             } else {
                               cb(_makeInvalidArgsError());
                             }
@@ -271,6 +289,26 @@ class World {
                               equipment[dstEquipmentIndex] = itemSpec;
 
                               // XXX save user equipment here
+
+                              cb();
+                            } else {
+                              cb(_makeInvalidArgsError());
+                            }
+                          } else if (match = src.match(/^inventory:([0-9]+)$/)) {
+                            const inventoryIndex = parseInt(match[1], 10);
+
+                            if (match = dst.match(/^hand:(left|right)$/)) {
+                              const side = match[1];
+
+                              const user = usersJson[userId];
+                              const {inventory} = user;
+                              const itemSpec = inventory[inventoryIndex];
+                              inventory[inventoryIndex] = null;
+
+                              const {hands} = user;
+                              hands[side] = itemSpec;
+
+                              // XXX save user inventory here
 
                               cb();
                             } else {

@@ -1,13 +1,6 @@
 const DEFAULT_GRAB_DISTANCE = 0.12;
 const NUM_ITEMS = 9;
 const NUM_ITEMS_PER_ROW = 3;
-const DEFAULT_INVENTORY = (() => {
-  const result = Array(NUM_ITEMS);
-  for (let i = 0; i < NUM_ITEMS; i++) {
-    result[i] = null;
-  }
-  return result;
-})();
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -67,10 +60,6 @@ class Backpack {
         const hoverStates = {
           left: _makeHoverState(),
           right: _makeHoverState(),
-        };
-
-        const itemsState = {
-          items: DEFAULT_INVENTORY,
         };
 
         const mesh = (() => {
@@ -274,34 +263,7 @@ class Backpack {
           input.removeListener('gripup', _gripup); */
         };
 
-        const _getItems = () => itemsState.items;
-        const _getItem = index => itemsState.items[index];
-        const _setItem = (index, item) => {
-          const {items} = itemsState;
-          items[index] = item;
-
-          const {itemBoxMeshes} = mesh;
-          const {mesh: itemMesh} = item;
-          itemMesh.position.copy(zeroVector);
-          itemMesh.quaternion.copy(zeroQuaternion);
-          itemMesh.scale.copy(oneVector);
-          itemBoxMeshes[index].add(itemMesh);
-
-          const itemData = (() => {
-            const {type} = item;
-
-            switch (type) {
-              case 'tag': return item.mesh.item;
-              case 'file': return item.mesh.file;
-              default: return null;
-            }
-          })();
-          itemData.matrix = DEFAULT_MATRIX;
-        };
-        const _unsetItem = (index) => {
-          const {items} = itemsState;
-          items[index] = null;
-        };
+        const _getBackpackMesh = () => mesh;
         const _getHoveredItemIndex = side => {
           const hoverState = hoverStates[side];
           const {targetItemIndex} = hoverState;
@@ -310,10 +272,7 @@ class Backpack {
         };
 
         return {
-          getItems: _getItems,
-          getItem: _getItem,
-          setItem: _setItem,
-          unsetItem: _unsetItem,
+          getBackpackMesh: _getBackpackMesh,
           getHoveredItemIndex: _getHoveredItemIndex,
         };
       }
