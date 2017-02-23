@@ -1593,6 +1593,34 @@ class World {
               const _gripdown = e => {
                 const {side} = e;
 
+                const _grabInventoryTagMesh = () => {
+                  const isOpen = rend.isOpen();
+
+                  if (isOpen) {
+                    const hoveredItemIndex = backpack.getHoveredItemIndex(side);
+
+                    if (hoveredItemIndex !== -1) {
+                      const inventoryTagMeshes = inventoryManager.getTagMeshes();
+                      const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
+                      const grabState = grabStates[side];
+                      const {mesh: grabMesh} = grabState;
+
+                      if (hoveredItemTagMesh && !grabMesh) {
+                        _moveTag('inventory:' + hoveredItemIndex, 'hand:' + side);
+
+                        e.stopImmediatePropagation();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                };
                 const _grabEquipmentTagMesh = () => {
                   const isOpen = rend.isOpen();
 
@@ -1710,7 +1738,7 @@ class World {
                   }
                 };
 
-                _grabEquipmentTagMesh() || _grabEquipmentMesh() || _grabWorldTagMesh() || _startHighlight();
+                _grabInventoryTagMesh() || _grabEquipmentTagMesh() || _grabEquipmentMesh() || _grabWorldTagMesh() || _startHighlight();
               };
               input.on('gripdown', _gripdown, {
                 priority: 1,
