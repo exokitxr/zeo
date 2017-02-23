@@ -212,6 +212,7 @@ class World {
                               const user = usersJson[userId];
                               const {hands} = user;
                               hands[side] = itemSpec;
+                              delete tagsJson.tags[id];
 
                               _saveTags();
 
