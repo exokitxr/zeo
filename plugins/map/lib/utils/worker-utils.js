@@ -66,11 +66,11 @@ const _random = (() => {
     random: rng,
   });
   const elevationNoise = generator.uniform({
-    frequency: 0.008,
+    frequency: 0.002,
     octaves: 8,
   });
   const moistureNoise = generator.uniform({
-    frequency: 0.005,
+    frequency: 0.001,
     octaves: 2,
   });
 
@@ -90,13 +90,13 @@ const buildMapChunk = ({offset}) => {
   
         const dx = (offset.x * NUM_CELLS) + x;
         const dy = (offset.y * NUM_CELLS) + y;
-        const elevation = (() => {
+        const elevation = (-0.5 + Math.pow(_random.elevationNoise.in2D(dx, dy), 0.5)) * 64;/* (() => {
           const y = _random.elevationNoise.in2D(dx, dy);
           const scaleFactor = 1;
           const powFactor = 0.3;
           const x = Math.pow(scaleFactor, powFactor) - Math.pow(scaleFactor * (1 - y), powFactor);
-          return (x * 18) - 6;
-        })();
+          return x - 0.5;
+        })(); */
         const moisture = _random.moistureNoise.in2D(dx, dy);
         const land = elevation > 0;
         const water = !land;
@@ -394,7 +394,7 @@ const recompileMapChunk = mapChunk => {
 };
 
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
-const _getCaveIndex = (x, y, z) => x + ((y + NUM_CELLS_OVERSCAN) * NUM_CELLS_OVERSCAN) + (z * NUM_CELLS_OVERSCAN * (NUM_CELLS_OVERSCAN * 2));
+// const _getCaveIndex = (x, y, z) => x + ((y + NUM_CELLS_OVERSCAN) * NUM_CELLS_OVERSCAN) + (z * NUM_CELLS_OVERSCAN * (NUM_CELLS_OVERSCAN * 2));
 
 const _normalizeElevation = elevation => {
   if (elevation >= 0) {
@@ -409,21 +409,21 @@ const _getBiome = p => {
   } else if (p.ocean) {
     return 'OCEAN';
   } else if (p.water) {
-    if (p.elevation < 1) { return 'MARSH'; }
-    if (p.elevation > 6) { return 'ICE'; }
+    if (p.elevation < 4) { return 'MARSH'; }
+    if (p.elevation > 28) { return 'ICE'; }
     return 'LAKE';
   } else if (p.lava > 2) {
     return 'MAGMA';
-  } else if (p.elevation > 7) {
+  } else if (p.elevation > 28) {
     if (p.moisture > 0.50) { return 'SNOW'; }
     else if (p.moisture > 0.33) { return 'TUNDRA'; }
     else if (p.moisture > 0.16) { return 'BARE'; }
     else { return 'SCORCHED'; }
-  } else if (p.elevation > 5) {
+  } else if (p.elevation > 16) {
     if (p.moisture > 0.66) { return 'TAIGA'; }
     else if (p.moisture > 0.33) { return 'SHRUBLAND'; }
     else { return 'TEMPERATE_DESERT'; }
-  } else if (p.elevation > 3) {
+  } else if (p.elevation > 4) {
     if (p.moisture > 0.83) { return 'TEMPERATE_RAIN_FOREST'; }
     else if (p.moisture > 0.50) { return 'TEMPERATE_DECIDUOUS_FOREST'; }
     else if (p.moisture > 0.16) { return 'GRASSLAND'; }
