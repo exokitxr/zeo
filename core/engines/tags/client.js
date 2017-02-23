@@ -656,7 +656,7 @@ class Tags {
 
               const item = new Item(itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.attributes, itemSpec.matrix);
               object.item = item;
-              object.highlight = highlight;
+              object.highlight = itemSpec.highlight;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
