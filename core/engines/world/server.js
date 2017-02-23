@@ -22,7 +22,7 @@ const DEFAULT_EQUIPMENT = {
       result[i] = null;
     }
     return result;
-  })()
+  })(),
 };
 const DEFAULT_INVENTORY = {
   items: [],
@@ -217,12 +217,60 @@ class World {
                               const user = usersJson[userId];
                               const {hands} = user;
                               const itemSpec = hands[side];
+                              hands[side] = null;
+
                               itemSpec.matrix = matrixArray;
 
                               const {id} = itemSpec;
                               tagsJson.tags[id] = itemSpec;
 
                               _saveTags();
+
+                              cb();
+                            } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                              const equipmentIndex = parseInt(match[1], 10);
+
+                              const user = usersJson[userId];
+                              const {hands} = user;
+                              const itemSpec = hands[side];
+                              hands[side] = null;
+
+                              const {equipment} = user;
+                              equipment[equipmentIndex] = itemSpec;
+
+                              // XXX save user equipment here
+
+                              cb();
+                            } else {
+                              cb(_makeInvalidArgsError());
+                            }
+                          } else if (match = src.match(/^equipment:([0-9]+)$/)) {
+                            const srcEquipmentIndex = parseInt(match[1], 10);
+
+                            if (match = dst.match(/^hand:(left|right)$/)) {
+                              const side = match[1];
+
+                              const user = usersJson[userId];
+                              const {equipment} = user;
+                              const itemSpec = equipment[srcEquipmentIndex];
+                              equipment[srcEquipmentIndex] = null;
+
+                              const {hands} = user;
+                              hands[side] = itemSpec;
+
+                              // XXX save user equipment here
+
+                              cb();
+                            } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                              const dstEquipmentIndex = parseInt(match[1], 10);
+
+                              const user = usersJson[userId];
+                              const {equipment} = user;
+                              const itemSpec = equipment[srcEquipmentIndex];
+                              equipment[srcEquipmentIndex] = null;
+                              equipment[dstEquipmentIndex] = itemSpec;
+
+                              // XXX save user equipment here
 
                               cb();
                             } else {

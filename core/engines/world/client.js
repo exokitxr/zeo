@@ -90,9 +90,11 @@ class World {
           fontStyle: biolumi.getFontStyle(),
         };
 
+        const oneVector = new THREE.Vector3(1, 1, 1);
+        const zeroVector = new THREE.Vector3(0, 0, 0);
+        const zeroQuaternion = new THREE.Quaternion();
         const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
         const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
-        const oneVector = new THREE.Vector3(1, 1, 1);
 
         // helper functions
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -278,24 +280,39 @@ class World {
               const npmManager = new NpmManager();
 
               class EquipmentManager {
-                set(index, tagMesh) {
-                  // register tag
-                  tags.setTag('equipment', index, tagMesh);
+                constructor() {
+                  const tagMeshes = (() => {
+                    const numEquipments = (1 + 1 + 2 + 8);
 
-                  // reify tag
+                    const result = Array(numEquipments);
+                    for (let i = 0; i < numEquipments; i++) {
+                      result[i] = null;
+                    }
+                    return result;
+                  })();
+                  this.tagMeshes = tagMeshes;
+                }
+
+                getTagMeshes() {
+                  return this.tagMeshes;
+                }
+
+                set(index, tagMesh) {
+                  this.tagMeshes[index] = tagMesh;
+
                   _reifyTag(tagMesh);
                 }
 
                 unset(index) {
-                  // unregister tag
-                  const tagMesh = tags.unsetTag('equipment', index);
+                  const tagMesh = this.tagMeshes[index];
+                  this.tagMeshes[index] = null;
 
-                  // unreify tag
                   _unreifyTag(tagMesh);
                 }
 
                 move(oldIndex, newIndex) {
-                  tags.moveTag('equipment', oldIndex, newIndex);
+                  this.tagMeshes[newIndex] = oldIndex;
+                  this.tagMeshes[oldIndex] = null;
                 }
               }
               const equipmentManager = new EquipmentManager();
@@ -620,10 +637,10 @@ class World {
                       const controllers = cyborg.getControllers();
                       const controller = controllers[side];
                       const {mesh: controllerMesh} = controller;
+                      controllerMesh.add(tagMesh);
                       tagMesh.position.copy(controllerMeshOffset);
                       tagMesh.quaternion.copy(controllerMeshQuaternion);
                       tagMesh.scale.copy(oneVector);
-                      controllerMesh.add(tagMesh);
                     } else {
                       console.warn('invalid move tag arguments', {itemSpec, src, dst});
                     }
@@ -642,6 +659,61 @@ class World {
 
                       elementManager.add(mesh);
                       grabState.mesh = null;
+                    } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                      const equipmentIndex = parseInt(match[1], 10);
+
+                      const grabState = grabStates[side];
+                      const {mesh: tagMesh} = grabState;
+
+                      const bagMesh = bag.getBagMesh();
+                      const {equipmentBoxMeshes} = bagMesh;
+                      const equipmentBoxMesh = equipmentBoxMeshes[equipmentIndex];
+                      equipmentBoxMesh.add(tagMesh);
+                      tagMesh.position.copy(zeroVector);
+                      tagMesh.quaternion.copy(zeroQuaternion);
+                      tagMesh.scale.copy(oneVector);
+
+                      equipmentManager.set(equipmentIndex, tagMesh);
+                      grabState.mesh = null;
+                    } else {
+                      console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                    }
+                  } else if (match = src.match(/^equipment:([0-9]+)$/)) {
+                    const srcEquipmentIndex = parseInt(match[1], 10);
+
+                    if (match = dst.match(/^hand:(left|right)$/)) {
+                      const side = match[1];
+
+                      const equipmentTagMeshes = equipmentManager.getTagMeshes();
+                      const tagMesh = equipmentTagMeshes[srcEquipmentIndex];
+
+                      const grabState = grabStates[side];
+                      grabState.mesh = tagMesh;
+
+                      const controllers = cyborg.getControllers();
+                      const controller = controllers[side];
+                      const {mesh: controllerMesh} = controller;
+                      controllerMesh.add(tagMesh);
+                      tagMesh.position.copy(controllerMeshOffset);
+                      tagMesh.quaternion.copy(controllerMeshQuaternion);
+                      tagMesh.scale.copy(oneVector);
+
+                      equipmentManager.unset(srcEquipmentIndex);
+                    } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                      const dstEquipmentIndex = parseInt(match[1], 10);
+
+                      const equipmentTagMeshes = equipmentManager.getTagMeshes();
+                      const tagMesh = equipmentTagMeshes[srcEquipmentIndex];
+
+                      const bagMesh = bag.getBagMesh();
+                      const {equipmentBoxMeshes} = bagMesh;
+                      const equipmentBoxMesh = equipmentBoxMeshes[dstEquipmentIndex];
+                      equipmentBoxMesh.add(tagMesh);
+                      tagMesh.position.copy(zeroVector);
+                      tagMesh.quaternion.copy(zeroQuaternion);
+                      tagMesh.scale.copy(oneVector);
+
+                      equipmentManager.move(srcEquipmentIndex, dstEquipmentIndex);
                     } else {
                       console.warn('invalid move tag arguments', {itemSpec, src, dst});
                     }
@@ -1392,45 +1464,6 @@ class World {
               const _gripdown = e => {
                 const {side} = e;
 
-                const _grabWorldTagMesh = () => {
-                  const isOpen = rend.isOpen();
-
-                  if (isOpen) {
-                    const grabbableState = grabbableStates[side];
-                    const {mesh: grabMesh} = grabbableState;
-
-                    if (grabMesh) {
-                      const elementsTagMeshes = elementManager.getTagMeshes();
-                      const npmTagMeshes = npmManager.getTagMeshes();
-
-                      if (elementsTagMeshes.includes(grabMesh)) {
-                        const tagMesh = grabMesh;
-                        const {item} = tagMesh;
-                        const {id} = item;
-                        _moveTag('world:' + id, 'hand:' + side);
-
-                        e.stopImmediatePropagation();
-
-                        return true;
-                      } else if (npmTagMeshes.includes(grabMesh)) {
-                        const tagMesh = grabMesh;
-                        const item = _clone(tagMesh.item);
-                        item.id = _makeId();
-                        _addTag(item, 'hand:' + side);
-
-                        e.stopImmediatePropagation();
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  } else {
-                    return false;
-                  }
-                };
                 const _grabEquipmentTagMesh = () => {
                   const isOpen = rend.isOpen();
 
@@ -1438,17 +1471,17 @@ class World {
                     const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                     if (hoveredEquipmentIndex !== -1) {
-                      const equipmentTagMeshes = tags.getTagsClass('equipment'); // XXX use equipment manager here
+                      const equipmentTagMeshes = equipmentManager.getTagMeshes();
                       const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
                       const grabState = grabStates[side];
                       const {mesh: grabMesh} = grabState;
 
                       if (hoveredEquipmentTagMesh && !grabMesh) {
-                        const tagMesh = hoveredEquipmentTagMesh;
-                        const {item} = tagMesh;
-                        _moveTag(item, 'equipment', 'hand:' + side);
+                        _moveTag('equipment:' + hoveredEquipmentIndex, 'hand:' + side);
 
                         e.stopImmediatePropagation();
+
+                        return true;
                       } else {
                         return false;
                       }
@@ -1466,19 +1499,62 @@ class World {
                     const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                     if (hoveredEquipmentIndex !== -1) {
-                      const equipmentTagMeshes = tags.getTagsClass('equipment'); // XXX use equipment manager here
+                      const equipmentTagMeshes = equipmentManager.getTagMeshes();
                       const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
                       const controllerEquipmentIndex = side === 'right' ? 2 : 3;
                       const controllerEquipmentTagMesh = equipmentTagMeshes[controllerEquipmentIndex];
 
                       if (hoveredEquipmentTagMesh && !controllerEquipmentTagMesh) {
-                        const tagMesh = hoveredEquipmentTagMesh;
-                        const {item} = tagMesh;
-                        _moveTag(item, 'equipment', 'hand:' + side);
+                        _moveTag('equipment:' + hoveredEquipmentIndex, 'equipment:' + controllerEquipmentIndex);
 
                         e.stopImmediatePropagation();
 
                         return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                };
+                const _grabWorldTagMesh = () => {
+                  const isOpen = rend.isOpen();
+
+                  if (isOpen) {
+                    const grabbableState = grabbableStates[side];
+                    const {mesh: grabMesh} = grabbableState;
+
+                    if (grabMesh) {
+                      const equipmentTagMeshes = equipmentManager.getTagMeshes();
+
+                      if (!equipmentTagMeshes.includes(grabMesh)) {
+                        const elementsTagMeshes = elementManager.getTagMeshes();
+                        const npmTagMeshes = npmManager.getTagMeshes();
+
+                        if (elementsTagMeshes.includes(grabMesh)) {
+                          const tagMesh = grabMesh;
+                          const {item} = tagMesh;
+                          const {id} = item;
+                          _moveTag('world:' + id, 'hand:' + side);
+
+                          e.stopImmediatePropagation();
+
+                          return true;
+                        } else if (npmTagMeshes.includes(grabMesh)) {
+                          const tagMesh = grabMesh;
+                          const item = _clone(tagMesh.item);
+                          item.id = _makeId();
+                          _addTag(item, 'hand:' + side);
+
+                          e.stopImmediatePropagation();
+
+                          return true;
+                        } else {
+                          return false;
+                        }
                       } else {
                         return false;
                       }
@@ -1505,7 +1581,7 @@ class World {
                   }
                 };
 
-                _grabWorldTagMesh() || _grabEquipmentTagMesh() || _grabEquipmentMesh() || _startHighlight();
+                _grabEquipmentTagMesh() || _grabEquipmentMesh() || _grabWorldTagMesh() || _startHighlight();
               };
               input.on('gripdown', _gripdown, {
                 priority: 1,
@@ -1528,13 +1604,11 @@ class World {
                           const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                           if (hoveredEquipmentIndex !== -1) {
-                            const equipmentTagMeshes = tags.getTagsClass('equipment'); // XXX use equipment manager here
+                            const equipmentTagMeshes = equipmentManager.getTagMeshes();
                             const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
 
                             if (!hoveredEquipmentTagMesh) {
-                              const tagMesh = grabMesh;
-                              const {item} = tagMesh;
-                              _moveTag(item, 'hand:' + side, 'equipment');
+                              _moveTag('hand:' + side, 'equipment:' + hoveredEquipmentIndex);
 
                               return true;
                             } else {
@@ -1585,6 +1659,9 @@ class World {
                           const tagMesh = grabMesh;
                           const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
 
+                          const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                          _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+
                           const {item} = tagMesh;
                           const {attributes} = item;
                           if (attributes.position) {
@@ -1592,9 +1669,6 @@ class World {
                             const newValue = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
                             _setTagAttribute('world:' + id, 'position', newValue);
                           }
-
-                          const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                          _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
 
                           e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
@@ -1658,15 +1732,13 @@ class World {
                     const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
                     if (hoveredEquipmentIndex !== -1) {
-                      const equipmentTagMeshes = tags.getTagsClass('equipment'); // XXX use equipment manager here
+                      const equipmentTagMeshes = equipmentManager.getTagMeshes();
                       const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
                       const controllerEquipmentIndex = side === 'right' ? 2 : 3;
                       const controllerEquipmentTagMesh = equipmentTagMeshes[controllerEquipmentIndex];
 
                       if (!hoveredEquipmentTagMesh && controllerEquipmentTagMesh) {
-                        const tagMesh = controllerEquipmentTagMesh;
-                        const {item} = tagMesh;
-                        _moveTag(item, 'equipment:' + controllerEquipmentIndex, 'equipment:' + hoveredEquipmentIndex);
+                        _moveTag('equipment:' + controllerEquipmentIndex, 'equipment:' + hoveredEquipmentIndex);
 
                         e.stopImmediatePropagation();
 
@@ -1942,7 +2014,7 @@ class World {
                     }
                   };
                   const _uninitializeEquipment = () => {
-                    const equipmentTagMeshes = tags.getTagsClass('equipment').slice(); // XXX use equipment manager here
+                    const equipmentTagMeshes = equipmentManager.getTagMeshes().slice();
 
                     for (let i = 0; i < equipmentTagMeshes.length; i++) {
                       const tagMesh = equipmentTagMeshes[i];
@@ -1951,11 +2023,6 @@ class World {
                         equipmentManager.unset(i);
 
                         tags.destroyTag(tagMesh);
-
-                        const bagMesh = bag.getBagMesh();
-                        const {equipmentBoxMeshes} = bagMesh;
-                        const equipmentBoxMesh = equipmentBoxMeshes[i];
-                        equipmentBoxMesh.remove(tagMesh);
                       }
                     }
                   };
