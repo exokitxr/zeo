@@ -728,6 +728,8 @@ class World {
                       tagMesh.position.copy(controllerMeshOffset);
                       tagMesh.quaternion.copy(controllerMeshQuaternion);
                       tagMesh.scale.copy(oneVector);
+
+                      _unreifyTag(tagMesh);
                     } else {
                       console.warn('invalid move tag arguments', {itemSpec, src, dst});
                     }
@@ -1724,18 +1726,20 @@ class World {
 
                   if (grabMesh) {
                     const _releaseTag = () => {
-                      const _releaseEquipmentTag = () => {
+                      const _releaseInventoryTag = () => {
                         const isTag = tags.isTag(grabMesh);
 
                         if (isTag) {
-                          const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
+                          const hoveredItemIndex = backpack.getHoveredItemIndex(side);
 
-                          if (hoveredEquipmentIndex !== -1) {
-                            const equipmentTagMeshes = equipmentManager.getTagMeshes();
-                            const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
+                          if (hoveredItemIndex !== -1) {
+                            const inventoryTagMeshes = inventoryManager.getTagMeshes();
+                            const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
 
-                            if (!hoveredEquipmentTagMesh) {
-                              _moveTag('hand:' + side, 'equipment:' + hoveredEquipmentIndex);
+                            if (!hoveredItemTagMesh) {
+                              _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
+
+                              e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
                               return true;
                             } else {
@@ -1748,19 +1752,18 @@ class World {
                           return false;
                         }
                       };
-                      const _releaseInventoryTag = () => {
+                      const _releaseEquipmentTag = () => {
                         const isTag = tags.isTag(grabMesh);
 
                         if (isTag) {
-                          const hoveredItemIndex = backpack.getHoveredItemIndex(side);
+                          const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
-                          if (hoveredItemIndex !== -1) {
-                            const hoveredItem = backpack.getItem(hoveredItemIndex);
+                          if (hoveredEquipmentIndex !== -1) {
+                            const equipmentTagMeshes = equipmentManager.getTagMeshes();
+                            const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
 
-                            if (!hoveredItem) {
-                              _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
-
-                              e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+                            if (!hoveredEquipmentTagMesh) {
+                              _moveTag('hand:' + side, 'equipment:' + hoveredEquipmentIndex);
 
                               return true;
                             } else {
@@ -1799,16 +1802,17 @@ class World {
                         }
                       };
 
-                      return _releaseEquipmentTag() || _releaseInventoryTag() || _releaseWorldTag();
+                      return _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
                     };
                     const _releaseFile = () => {
                       const _releaseInventoryFile = () => {
                         const hoveredItemIndex = backpack.getHoveredItemIndex(side);
 
                         if (hoveredItemIndex !== -1) {
-                          const hoveredItem = backpack.getItem(hoveredItemIndex);
+                          const inventoryTagMeshes = inventoryManager.getTagMeshes();
+                          const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
 
-                          if (!hoveredItem) {
+                          if (!hoveredItemTagMesh) {
                             _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
 
                             e.stopImmediatePropagation(); // so fs engine doesn't pick it up
