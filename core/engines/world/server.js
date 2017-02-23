@@ -201,6 +201,8 @@ class World {
                               const {hands} = user;
                               hands[side] = itemSpec;
 
+                              _saveTags();
+
                               cb();
                             } else {
                               cb(_makeInvalidArgsError());
@@ -219,6 +221,8 @@ class World {
 
                               const {id} = itemSpec;
                               tagsJson.tags[id] = itemSpec;
+
+                              _saveTags();
 
                               cb();
                             } else {
@@ -253,6 +257,15 @@ class World {
                       reject(err);
                     }
                   });
+                });
+                const _saveTags = _debounce(next => {
+                  _saveFile(worldTagsJsonPath, tagsJson)
+                    .then(() => {
+                      next();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
                 });
 
                 /* function serveFilesGet(req, res, next) {
@@ -452,6 +465,29 @@ const _jsonParse = s => {
 };
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _arrayify = o => Object.keys(o).map(k => o[k]);
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 const _makeInvalidArgsError = () => {
   const err = new Error('invalid arguments');
   err.code = 'EARGS';

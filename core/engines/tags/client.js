@@ -480,8 +480,8 @@ class Tags {
                       const boxMesh = boxMeshes[side];
 
                       biolumi.updateAnchors({
-                        objects: (tagClassMeshes.elements.concat(tagClassMeshes.equipment)).map(tagMesh => {
-                          if (tagMesh) {
+                        objects: tagMeshes.map(tagMesh => {
+                          if (tagMesh && !tagMesh.npm) {
                             const {ui, planeMesh} = tagMesh;
 
                             if (ui && planeMesh) {
@@ -650,12 +650,13 @@ class Tags {
             equipment: DEFAULT_EQUIPMENT,
           };
           class TagsApi {
-            makeTag(itemSpec, options) {
+            makeTag(itemSpec) {
               const object = new THREE.Object3D();
               object[tagFlagSymbol] = true;
 
               const item = new Item(itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.attributes, itemSpec.matrix);
               object.item = item;
+              object.highlight = highlight;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
@@ -664,20 +665,20 @@ class Tags {
               object.ui = null;
               object.planeMesh = null;
 
-              this._requestDecorateTag(object, options);
+              this._requestDecorateTag(object);
 
               tagMeshes.push(object);
 
               return object;
             }
 
-            _requestDecorateTag(object, options) {
+            _requestDecorateTag(object) {
               return biolumi.requestUi({
                 width: WIDTH,
                 height: HEIGHT,
               })
                 .then(ui => {
-                  const {item} = object;
+                  const {item, highlight} = object;
 
                   ui.pushPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type}}) => {
                     const focusAttributeSpec = (() => {
@@ -687,7 +688,6 @@ class Tags {
                         attributeName: match[2],
                       };
                     })();
-                    const highlight = Boolean(options && options.highlight);
 
                     return [
                       {
