@@ -409,7 +409,7 @@ const _getBiome = p => {
   } else if (p.ocean) {
     return 'OCEAN';
   } else if (p.water) {
-    if (p.elevation < 4) { return 'MARSH'; }
+    if (p.elevation < 6) { return 'MARSH'; }
     if (p.elevation > 28) { return 'ICE'; }
     return 'LAKE';
   } else if (p.lava > 2) {
@@ -419,11 +419,11 @@ const _getBiome = p => {
     else if (p.moisture > 0.33) { return 'TUNDRA'; }
     else if (p.moisture > 0.16) { return 'BARE'; }
     else { return 'SCORCHED'; }
-  } else if (p.elevation > 16) {
+  } else if (p.elevation > 18) {
     if (p.moisture > 0.66) { return 'TAIGA'; }
     else if (p.moisture > 0.33) { return 'SHRUBLAND'; }
     else { return 'TEMPERATE_DESERT'; }
-  } else if (p.elevation > 4) {
+  } else if (p.elevation > 6) {
     if (p.moisture > 0.83) { return 'TEMPERATE_RAIN_FOREST'; }
     else if (p.moisture > 0.50) { return 'TEMPERATE_DECIDUOUS_FOREST'; }
     else if (p.moisture > 0.16) { return 'GRASSLAND'; }
