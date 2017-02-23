@@ -177,11 +177,28 @@ class World {
                   const {type} = m;
 
                   if (type === 'init') {
-                    const {args: [itemSpecs]} = m;
+                    const {args: [itemSpecs, equipmentSpecs, inventorySpecs]} = m;
 
                     for (let i = 0; i < itemSpecs.length; i++) {
                       const itemSpec = itemSpecs[i];
+
                       _handleAddTag(localUserId, itemSpec, 'world');
+                    }
+
+                    for (let i = 0; i < equipmentSpecs.length; i++) {
+                      const itemSpec = equipmentSpecs[i];
+
+                      if (itemSpec) {
+                        _handleAddTag(localUserId, itemSpec, 'equipment:' + i);
+                      }
+                    }
+
+                    for (let i = 0; i < inventorySpecs.length; i++) {
+                      const itemSpec = inventorySpecs[i];
+
+                      if (itemSpec) {
+                        _handleAddTag(localUserId, itemSpec, 'inventory:' + i);
+                      }
                     }
                   } else if (type === 'addTag') {
                     const {args: [userId, itemSpec, dst]} = m;
@@ -641,6 +658,48 @@ class World {
                     tagMesh.quaternion.copy(controllerMeshQuaternion);
                     tagMesh.scale.copy(oneVector);
                     controllerMesh.add(tagMesh);
+                  } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                    const equipmentIndex = parseInt(match[1], 10);
+
+                    const tagMesh = tags.makeTag(itemSpec);
+
+                    const bagMesh = bag.getBagMesh();
+                    const {equipmentBoxMeshes} = bagMesh;
+                    const equipmentBoxMesh = equipmentBoxMeshes[equipmentIndex];
+                    equipmentBoxMesh.add(tagMesh);
+
+                    equipmentManager.set(equipmentIndex, tagMesh);
+                  } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
+                    const inventoryIndex = parseInt(match[1], 10);
+
+                    const tagMesh = tags.makeTag(itemSpec);
+
+                    const backpackMesh = backpack.getBackpackMesh();
+                    const {itemBoxMeshes} = backpackMesh;
+                    const itemBoxMesh = itemBoxMeshes[inventoryIndex];
+                    itemBoxMesh.add(tagMesh);
+
+                    inventoryManager.set(inventoryIndex, tagMesh);
+
+                    /* const {type} = itemSpec;
+
+                    if (type === 'tag') {
+                      const {item: itemData} = itemSpec;
+                      const tagMesh = tags.makeTag(itemData);
+                      const item = {
+                        type: 'tag',
+                        mesh: tagMesh,
+                      };
+                      backpack.setItem(i, item);
+                    } else if (type === 'file') {
+                      const {item: itemData} = itemSpec;
+                      const tagMesh = fs.makeFile(itemData);
+                      const item = {
+                        type: 'file',
+                        mesh: tagMesh,
+                      };
+                      backpack.setItem(i, item);
+                    } */
                   } else {
                     console.warn('invalid add tag arguments', {userId, itemSpec, dst});
                   }
@@ -1973,22 +2032,6 @@ class World {
                       connection,
                       startTime,
                     ]) => {
-                      const _initializeEquipment = () => {
-                        for (let i = 0; i < equipmentJson.length; i++) {
-                          const itemSpec = equipmentJson[i];
-
-                          if (itemSpec) {
-                            const tagMesh = tags.makeTag(itemSpec);
-
-                            const bagMesh = bag.getBagMesh();
-                            const {equipmentBoxMeshes} = bagMesh;
-                            const equipmentBoxMesh = equipmentBoxMeshes[i];
-                            equipmentBoxMesh.add(tagMesh);
-
-                            equipmentManager.set(i, tagMesh);
-                          }
-                        }
-                      };
                       /* const _initializeFiles = () => {
                         const {files} = filesJson;
 
@@ -1997,42 +2040,8 @@ class World {
                           const fileMesh = fs.makeFile(fileSpec);
                           scene.add(fileMesh);
                         }
-                      }; */
-                      const _initializeInventory = () => {
-                        for (let i = 0; i < inventoryJson.length; i++) {
-                          const itemSpec = inventoryJson[i];
-
-                          if (itemSpec) {
-                            const tagMesh = tags.makeTag(itemData);
-
-                            const backpackMesh = backpack.getBackpackMesh();
-                            const {itemBoxMeshes} = backpackMesh;
-                            const itemBoxMesh = itemBoxMeshes[inventoryIndex];
-                            itemBoxMesh.add(tagMesh);
-
-                            /* const {type} = itemSpec;
-
-                            if (type === 'tag') {
-                              const {item: itemData} = itemSpec;
-                              const tagMesh = tags.makeTag(itemData);
-                              const item = {
-                                type: 'tag',
-                                mesh: tagMesh,
-                              };
-                              backpack.setItem(i, item);
-                            } else if (type === 'file') {
-                              const {item: itemData} = itemSpec;
-                              const tagMesh = fs.makeFile(itemData);
-                              const item = {
-                                type: 'file',
-                                mesh: tagMesh,
-                              };
-                              backpack.setItem(i, item);
-                            } */
-                          }
-                        }
                       };
-                      /* const _initializeMails = () => {
+                      const _initializeMails = () => {
                         const mailMesh = mail.makeMail({
                           id: _makeId(),
                           name: 'Explore with me.',
@@ -2048,9 +2057,7 @@ class World {
                         scene.add(mailMesh);
                       }; */
 
-                      _initializeEquipment();
                       // _initializeFiles();
-                      _initializeInventory();
                       // _initializeMails();
 
                       worldTimer.setStartTime(startTime);

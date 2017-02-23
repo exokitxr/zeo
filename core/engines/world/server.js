@@ -98,6 +98,12 @@ class World {
               ensureWorldPathResult,
             ]) => {
               if (live) {
+                const equipmentJson = { // XXX actually fetch these from the hub
+                  equipment: _clone(DEFAULT_EQUIPMENT),
+                };
+                const inventoryJson = {
+                  inventory: _clone(DEFAULT_INVENTORY),
+                };
                 const usersJson = {};
 
                 const connections = [];
@@ -126,6 +132,8 @@ class World {
                         type: 'init',
                         args: [
                           _arrayify(tagsJson.tags),
+                          equipmentJson.equipment,
+                          inventoryJson.inventory,
                           _arrayify(usersJson),
                         ],
                       };
