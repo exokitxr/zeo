@@ -1,7 +1,7 @@
 {
-  "name": "map",
+  "name": "terrain",
   "version": "0.0.1",
-  "description": "Procedurally genetarated map mesh.",
+  "description": "Procedurally genetarated terrain mesh.",
   "client": "client.js",
   "worker": "worker.js",
   "dependencies": {

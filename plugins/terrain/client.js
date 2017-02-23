@@ -14,7 +14,7 @@ const DIRECTIONS = (() => {
   return result;
 })();
 
-class MapPlugin {
+class Terrain {
   constructor(archae) {
     this._archae = archae;
   }
@@ -210,4 +210,4 @@ class MapPlugin {
   }
 }
 
-module.exports = MapPlugin;
+module.exports = Terrain;
