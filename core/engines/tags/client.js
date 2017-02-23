@@ -481,7 +481,7 @@ class Tags {
 
                       biolumi.updateAnchors({
                         objects: tagMeshes.map(tagMesh => {
-                          if (tagMesh && !tagMesh.npm) {
+                          if (tagMesh && !tagMesh.highlight) {
                             const {ui, planeMesh} = tagMesh;
 
                             if (ui && planeMesh) {
