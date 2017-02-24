@@ -42,7 +42,7 @@ If you're using a different package manager it almost certainly has these, under
 
 ## Starting an insecure server
 
-:bomb: This is _completely_ insecure. This will give everyone who logs in the ability to install and run any `npm` module on your system. Secure hub authentication is on the way, but you're using alpha software.
+:bomb: This is _completely_ insecure. This will give everyone who logs in the ability to install and run any `npm` module on your system. Secure hub authentication is on the way, but you're using alpha software. :bomb:
 
 ```
 ./scripts/insecure.sh
