@@ -15,7 +15,7 @@ class Hub {
     const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, type: serverType}}} = archae;
 
     const hubSpec = (() => {
-      const match = hubUrl.match(/^(.*?)(?::([0-9]*?))?$/);
+      const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
       return match && {
         host: match[1],
         port: match[2] ? parseInt(match[2], 10) : 443,
