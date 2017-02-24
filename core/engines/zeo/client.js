@@ -200,18 +200,6 @@ class Zeo {
               return _startRenderLoop()
                 .then(() => {
                   if (live) {
-                   window.fetchServer = (url, options) => {
-                      if (/^\//.test(url)) {
-                        url = 'https://' + hub.getCurrentServer().url + url;
-                      }
-
-                      return fetch(url, options);
-                    };
-
-                    if (hub.getCurrentServer().type === 'server') {
-                      rend.connectServer();
-                    }
-
                     const _initHelper = () => {
                       const helper = document.createElement('div');
                       helper.id = 'helper';

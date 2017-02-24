@@ -17,7 +17,7 @@ class Hub {
       live = false;
     };
 
-    const _requestServers = hubUrl => fetch('https://' + hubUrl + '/hub/servers.json')
+    const _requestServers = hubUrl => fetch('https://' + serverUrl + '/server/servers.json')
       .then(res => res.json());
     const _requestServer = serverUrl => fetch('https://' + serverUrl + '/server/server.json')
       .then(res => res.json());
@@ -34,7 +34,7 @@ class Hub {
           const _getServers = () => serversJson.servers;
           const _getCurrentServer = () => serverJson;
           const _changeServer = serverUrl => {
-            if (serverUrl !== hubUrl) {
+            if (serverUrl !== null) {
               return _requestServer(serverUrl)
                 .then(serverJsonData => {
                   serverJson = serverJsonData;
@@ -42,13 +42,13 @@ class Hub {
             } else {
               serverJson = {
                 type: 'hub',
-                url: hubUrl,
+                url: null,
               };
 
               return Promise.resolve();
             }
           };
-          const _requestLogin = ({username, password, token}) => fetch('https://' + hubUrl + '/hub/login', {
+          const _requestLogin = ({username, password, token}) => fetch('https://' + serverUrl + '/server/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

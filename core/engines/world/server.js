@@ -49,7 +49,7 @@ class World {
     const {app, wss, dirname, dataDirectory} = archae.getCore();
 
     const hubSpec = (() => {
-      const match = hubUrl.match(/^(.*?)(?::([0-9]*?))?$/);
+      const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
       return match && {
         host: match[1],
         port: match[2] ? parseInt(match[2], 10) : 443,

@@ -19,12 +19,14 @@ class Bullet {
     return archae.requestPlugins([
       '/core/engines/hub',
       '/core/engines/three',
+      '/core/engines/login',
       '/core/engines/rend',
       '/core/engines/config',
       '/core/plugins/js-utils',
     ]).then(([
       hub,
       three,
+      login,
       rend,
       config,
       jsUtils,
@@ -729,10 +731,12 @@ class Bullet {
         };
         const _updateEnabled = () => {
           const connected = hub.getCurrentServer().type === 'server';
+          const loggedIn = !login.isOpen();
+          const shouldBeEnabled = connected && loggedIn;
 
-          if (connected && !enabled) {
+          if (shouldBeEnabled && !enabled) {
             _enable();
-          } else if (!connected && enabled) {
+          } else if (!shouldBeEnabled && enabled) {
             _disable();
           };
         };
@@ -740,6 +744,10 @@ class Bullet {
         rend.on('connectServer', _connectServer);
         const _disconnectServer = _updateEnabled;
         rend.on('disconnectServer', _disconnectServer);
+        const _login = _updateEnabled;
+        rend.on('login', _login);
+        const _logout = _updateEnabled;
+        rend.on('logout', _logout);
 
         let debugEnabled = false;
         const _enablePhysicsDebugMesh = () => {
@@ -777,6 +785,8 @@ class Bullet {
 
           rend.removeListener('connectServer', _connectServer);
           rend.removeListener('disconnectServer', _disconnectServer);
+          rend.removeListener('login', _login);
+          rend.removeListener('logout', _logout);
 
           config.removeListner('config', _config);
         };
