@@ -189,18 +189,18 @@ class World {
                   }
                 });
                 const _requestEquipmentJson = ({authentication}) => {
-                  if (serverType === 'ranked') {
+                  if (serverType === 'secure') {
                     return _requestHub({
                       authentication,
                       method: 'GET',
                       url: '/hub/world/equipment.json',
                     });
                   } else {
-                    return Promise.resolve(equipmentJson); // XXX figure out how to handle non-ranked server hub requests
+                    return Promise.resolve(equipmentJson); // XXX figure out how to handle insecure server hub requests
                   }
                 };
                 const _requestInventoryJson = ({authentication}) => {
-                  if (serverType === 'ranked') {
+                  if (serverType === 'secure') {
                     return _requestHub({
                       authentication,
                       method: 'GET',
@@ -599,7 +599,7 @@ class World {
                 function serveEquipmentGet(req, res, next) {
                   hub.authHub(req, (err, username) => {
                     if (!err) {
-                      if (serverType === 'ranked') {
+                      if (serverType === 'secure') {
                         hub.proxyHub(req, res, '/hub/world/equipment.json');
                       } else {
                         res.json(equipmentJson); // XXX make this per-user
@@ -615,7 +615,7 @@ class World {
                   bodyParserJson(req, res, () => {
                     hub.authHub(req, (err, username) => {
                       if (!err) {
-                        if (serverType === 'ranked') {
+                        if (serverType === 'secure') {
                           hub.proxyHub(req, res, '/hub/world/equipment.json');
                         } else {
                           const {body: data} = req;
@@ -654,7 +654,7 @@ class World {
                 function serveInventoryGet(req, res, next) {
                   hub.authHub(req, (err, username) => {
                     if (!err) {
-                      if (serverType === 'ranked') {
+                      if (serverType === 'secure') {
                         hub.proxyHub(req, res, '/hub/world/inventory.json');
                       } else {
                         res.json(inventoryJson);
@@ -670,7 +670,7 @@ class World {
                   bodyParserJson(req, res, () => {
                     hub.authHub(req, (err, username) => {
                       if (!err) {
-                        if (serverType === 'ranked') {
+                        if (serverType === 'secure') {
                           hub.proxyHub(req, res, '/hub/world/inventory.json');
                         } else {
                           const {body: data} = req;

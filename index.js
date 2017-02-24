@@ -152,7 +152,7 @@ const config = {
     server: {
       url: serverHost + ':' + port,
       enabled: flags.server,
-      type: flags.serverType || 'ranked',
+      type: flags.serverType || 'secure',
     },
   },
 };

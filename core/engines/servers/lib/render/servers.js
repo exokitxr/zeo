@@ -42,7 +42,7 @@ const getListPageSrc = ({page, servers, currentServerUrl}) => {
     })();
     const serversSrc = (() => {
       const _getServerSrc = server => {
-        const {username, worldname, url, users, ranked} = server;
+        const {username, worldname, url, users, secure} = server;
         const fullWorldname = username + '/' + worldname;
         const ping = Math.floor(Math.random() * 1000); // XXX actually compute this
         const selected = url === currentServerUrl;
@@ -69,10 +69,10 @@ const getListPageSrc = ({page, servers, currentServerUrl}) => {
             <div style="display: flex; padding: 5px 20px; flex-grow: 1; flex-direction: column;">
               <div style="display: flex; align-items: center;">
                 <div style="margin-right: auto; font-size: 16px; font-weight: 400;">${fullWorldname}</div>
-                ${ranked ?
+                ${secure ?
                   `<div style="display: flex; margin-right: 10px; color: #E91E63; font-size: 13px; font-weight: 400; align-items: center;">Ranked</div>`
                 :
-                  `<div style="display: flex; margin-right: 10px; font-size: 13px; align-items: center;">Creative</div>`
+                  `<div style="display: flex; margin-right: 10px; font-size: 13px; align-items: center;">Insecure</div>`
                 }
                 <div style="display: flex; margin-right: 10px; font-size: 13px; align-items: center;">
                   <img src="${!selected ? pulseBlackIconSrc : pulseWhiteIconSrc}" width="18" height="18" style="margin-right: 5px;">

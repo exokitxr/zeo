@@ -35,7 +35,7 @@ class Hub {
       'fay',
       'khromix',
     ];
-    const ranked = serverType === 'ranked';
+    const secure = serverType === 'secure';
 
     const _queueRefreshServer = _debounce(next => {
       _tryRefreshServer()
@@ -72,7 +72,7 @@ class Hub {
         worldname: worldname,
         url: serverUrl,
         users: users,
-        ranked: ranked,
+        secure: secure,
       }));
 
       req.on('response', res => {
