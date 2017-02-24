@@ -316,25 +316,21 @@ class Tags {
               if (positioningSide && side === positioningSide) {
                 const {positioningId, positioningName} = detailsState;
 
-                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === positioningId);
-                const {item} = tagMesh;
                 const newValue = (() => {
                   const {position, quaternion, scale} = positioningMesh;
                   return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
                 })();
-                item.setAttribute(positioningName, newValue); // XXX make these emit instead, and let the world engine handle the actual set
+                tagsInstance.emit('setAttribute', {
+                  id: positioningId,
+                  attribute: positioningName,
+                  value: newValue,
+                });
 
                 detailsState.positioningId = null;
                 detailsState.positioningName = null;
                 detailsState.positioningSide = null;
 
                 _updatePages();
-
-                tagsInstance.emit('setAttribute', {
-                  id: positioningId,
-                  attribute: positioningName,
-                  value: newValue,
-                });
 
                 return true;
               } else {
@@ -401,18 +397,16 @@ class Tags {
 
                     focusState.type = 'attribute:' + tagId + ':' + attributeName;
                   } else if (action === 'set') {
-                    item.setAttribute(attributeName, value);
-
-                    focusState.type = '';
-
                     tagsInstance.emit('setAttribute', {
                       id: tagId,
                       attribute: attributeName,
                       value: value,
                     });
+
+                    focusState.type = '';
                   } else if (action === 'tweak') {
                     const {value} = hoverState;
-                    const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attribute;
+                    const {min, max, step} = attribute;
 
                     const newValue = (() => {
                       let n = min + (value * (max - min));
@@ -421,18 +415,15 @@ class Tags {
                       }
                       return n;
                     })();
-                    item.setAttribute(attributeName, newValue);
-
-                    focusState.type = '';
-
                     tagsInstance.emit('setAttribute', {
                       id: tagId,
                       attribute: attributeName,
                       value: newValue,
                     });
+
+                    focusState.type = '';
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
-                    item.setAttribute(attributeName, newValue);
 
                     tagsInstance.emit('setAttribute', {
                       id: tagId,
@@ -503,35 +494,34 @@ class Tags {
                       const dotMesh = dotMeshes[side];
                       const boxMesh = boxMeshes[side];
 
-                      const objects = tagMeshes.map(tagMesh => {
-                        if (
-                          tagMesh &&
-                          ((tagMesh.parent === scene) || controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh))
-                        ) {
-                          const {ui, planeMesh} = tagMesh;
+                      biolumi.updateAnchors({
+                        objects: tagMeshes.map(tagMesh => {
+                          if (
+                            tagMesh &&
+                            ((tagMesh.parent === scene) || controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh))
+                          ) {
+                            const {ui, planeMesh} = tagMesh;
 
-                          if (ui && planeMesh) {
-                            const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                            const {item: {open}} = tagMesh;
+                            if (ui && planeMesh) {
+                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                              const {item: {open}} = tagMesh;
 
-                            return {
-                              matrixObject: matrixObject,
-                              ui: ui,
-                              width: !open ? WIDTH : OPEN_WIDTH,
-                              height: !open ? HEIGHT : OPEN_HEIGHT,
-                              worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                              worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            };
+                              return {
+                                matrixObject: matrixObject,
+                                ui: ui,
+                                width: !open ? WIDTH : OPEN_WIDTH,
+                                height: !open ? HEIGHT : OPEN_HEIGHT,
+                                worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                                worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                                worldDepth: WORLD_DEPTH,
+                              };
+                            } else {
+                              return null;
+                            }
                           } else {
                             return null;
                           }
-                        } else {
-                          return null;
-                        }
-                      }).filter(object => object !== null);
-                      biolumi.updateAnchors({
-                        objects: objecta,
+                        }).filter(object => object !== null),
                         hoverState: hoverState,
                         dotMesh: dotMesh,
                         boxMesh: boxMesh,
@@ -635,7 +625,66 @@ class Tags {
               this.displayName = displayName;
               this.description = description;
               this.version = version;
-              this.attributes = attributes;
+              this.attributes = (() => {
+                const result = {};
+
+                for (const k in attributes) {
+                  const attribute = attributes[k];
+
+                  const v = (() => {
+                    const {type} = attribute;
+                    
+                    switch (type) {
+                      case 'matrix':
+                        return {
+                          type: 'matrix',
+                          value: attribute.value,
+                        };
+                      case 'text':
+                        return {
+                          type: 'text',
+                          value: attribute.value,
+                        };
+                      case 'color':
+                        return {
+                          type: 'color',
+                          value: attribute.value,
+                        };
+                      case 'select':
+                        return {
+                          type: 'select',
+                          value: attribute.value,
+                          options: Array.isArray(attribute.options) ? attribute.options : [],
+                        };
+                      case 'number':
+                        return {
+                          type: 'number',
+                          value: attribute.value,
+                          min: typeof attribute.min === 'number' ? attribute.min : 1,
+                          max: typeof attribute.max === 'number' ? attribute.max : 10,
+                          step: typeof attribute.step === 'number' ? attribute.step : 1,
+                        };
+                      case 'checkbox':
+                        return {
+                          type: 'checkbox',
+                          value: attribute.value,
+                        };
+                      case 'file':
+                        return {
+                          type: 'file',
+                          value: attribute.value,
+                        };
+                      default:
+                        return null;
+                    }
+                  })();
+                  if (v !== null) {
+                    result[k] = v;
+                  }
+                }
+
+                return result;
+              })();
               this.matrix = matrix;
 
               this[itemInstanceSymbol] = null;

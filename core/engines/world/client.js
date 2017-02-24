@@ -1900,7 +1900,7 @@ class World {
                 fs.updatePages();
               };
               fs.on('uploadStart', _uploadStart);
-              const uploadEnd = ({id}) => {
+              const _uploadEnd = ({id}) => {
                 const fileMesh = fs.getFile(id);
 
                 if (fileMesh) {
