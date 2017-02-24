@@ -142,41 +142,63 @@ class Hub {
             });
           };
           const _authHub = (authentication, cb) => {
-            const proxyReq = https.request({
-              method: 'POST',
-              hostname: hubSpec.host,
-              port: hubSpec.port,
-              path: '/hub/auth',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            });
-            proxyReq.end(JSON.stringify({
-              authentication,
-            }));
-            proxyReq.on('error', err => {
-              cb(err);
-            });
-            proxyReq.on('response', proxyResponse => {
-              const bs = [];
-              proxyResponse.on('data', d => {
-                bs.push(d);
+            if (hubSpec) {
+              const proxyReq = https.request({
+                method: 'POST',
+                hostname: hubSpec.host,
+                port: hubSpec.port,
+                path: '/hub/auth',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
               });
-              proxyResponse.on('end', () => {
-                const b = Buffer.concat(bs);
-                const s = b.toString('utf8');
-                const j = _jsonParse(s);
-                const username = j ? j.username : null;
+              proxyReq.end(JSON.stringify({
+                authentication,
+              }));
+              proxyReq.on('error', err => {
+                cb(err);
+              });
+              proxyReq.on('response', proxyResponse => {
+                const bs = [];
+                proxyResponse.on('data', d => {
+                  bs.push(d);
+                });
+                proxyResponse.on('end', () => {
+                  const b = Buffer.concat(bs);
+                  const s = b.toString('utf8');
+                  const j = _jsonParse(s);
+                  const username = j ? j.username : null;
 
-                if (username) {
+                  if (username) {
+                    cb(null, username);
+                  } else {
+                    cb({
+                      code: 'EAUTH',
+                    });
+                  }
+                });
+              });
+            } else {
+              const authenticationString = new Buffer(authentication, 'base64').toString('utf8');
+              const match = authenticationString.match(/^(.+?):(.+?)$/);
+
+              if (match) {
+                const username = match[1];
+                const password = match[2];
+
+                if (username === serverUsername && password === serverPassword) {
                   cb(null, username);
                 } else {
                   cb({
                     code: 'EAUTH',
                   });
                 }
-              });
-            });
+              } else {
+                cb({
+                  code: 'EAUTH',
+                });
+              }
+            }
           };
           const _authHubRequest = (req, cb) => {
             const authentication = (() => {

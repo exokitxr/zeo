@@ -99,10 +99,10 @@ const flags = {
     }
     return null;
   })(),
-  worldname: (() => {
+  password: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
-      const match = arg.match(/^worldname=(.+)$/);
+      const match = arg.match(/^password=(.+)$/);
       if (match) {
         return match[1];
       }
@@ -153,6 +153,8 @@ const config = {
       url: serverHost + ':' + port,
       enabled: flags.server,
       type: flags.serverType || 'secure',
+      username: flags.username || 'username',
+      password: flags.password || 'password',
     },
   },
 };
