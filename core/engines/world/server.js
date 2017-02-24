@@ -190,22 +190,6 @@ class World {
                     return Promise.resolve(inventoryJson);
                   }
                 };
-                const _broadcast = (type, args) => {
-                  if (connections.length > 0) {
-                    const e = {
-                      type,
-                      args,
-                    };
-                    const es = JSON.stringify(e);
-
-                    for (let i = 0; i < connections.length; i++) {
-                      const connection = connections[i];
-                      if (connection !== c) {
-                        connection.send(es);
-                      }
-                    }
-                  }
-                };
 
                 const connections = [];
 
@@ -255,6 +239,22 @@ class World {
                             };
                             _sendInit();
 
+                            const _broadcast = (type, args) => {
+                              if (connections.length > 0) {
+                                const e = {
+                                  type,
+                                  args,
+                                };
+                                const es = JSON.stringify(e);
+
+                                for (let i = 0; i < connections.length; i++) {
+                                  const connection = connections[i];
+                                  if (connection !== c) {
+                                    connection.send(es);
+                                  }
+                                }
+                              }
+                            };
                             const _saveEquipment = _debounce(next => {
                               _requestHub({
                                 authentication,
