@@ -1,6 +1,4 @@
 const svgSrc = `data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -141,10 +139,13 @@ function downloadCanvas(link, canvas, filename) {
 }
 
 function drawLogo() {
+  document.head.innerHTML = '<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400" rel="stylesheet">';
+
   const img = new Image();
   img.src = svgSrc;
   img.onload = () => {
-    var size = 32;
+    // var size = 32;
+    var size = 64;
     // var size = 256;
 
     var canvas = document.createElement('canvas');
@@ -219,8 +220,20 @@ function drawLogo() {
     });
 
     document.body.innerHTML = '';
-    document.body.appendChild(canvas);
+
+    const main = document.createElement('div');
+    main.appendChild(canvas);
+    const h1 = document.createElement('div');
+    h1.style.cssText = `margin-bottom: ${size / 4}px; margin-left: ${size / 4}px; font-family: "Open Sans"; font-size: ${size * 1.5}px; line-height: 1; font-weight: 300;`;
+    h1.innerText = 'zeo vr';
+    main.appendChild(h1);
+
+    document.body.appendChild(main);
     document.body.appendChild(link);
+
+    document.body.style.cssText = 'margin: 0; background-color: #000;';
+    main.style.cssText = 'display: inline-flex; margin-right: 10px; align-items: center; background-color: #FFF';
+    link.style.cssText = 'color: #FFF;';
   };
   img.onerror = err => {
     console.warn(err);
