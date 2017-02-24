@@ -32,6 +32,11 @@ const DEFAULT_INVENTORY = (() => {
   }
   return result;
 })();
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 class World {
   constructor(archae) {
@@ -131,9 +136,15 @@ class World {
                     hostname: hubSpec.host,
                     port: hubSpec.port,
                     path: url,
-                    headers: {
-                      'Authorization': 'Token ' + authentication,
-                    },
+                    headers: (() => {
+                      const result = {
+                        'Authorization': 'Token ' + authentication,
+                      };
+                      if (body) {
+                        result['Content-Type'] = 'application/json';
+                      }
+                      return result;
+                    })(),
                   });
                   proxyReq.on('error', err => {
                     reject(err);
@@ -148,11 +159,20 @@ class World {
                       const s = b.toString('utf8');
 
                       if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
-                        const j = JSON.parse(s);
+                        if (/^application\/json(?:;|$)/.test(proxyRes.headers['content-type'])) {
+                          const j = JSON.parse(s);
 
-                        accept(j);
+                          accept(j);
+                        } else {
+                          accept();
+                        }
                       } else {
-                        const err = new Error('hub returned failure status code: ' + proxyRes.statusCode);
+                        const err = new Error('hub returned failure status code: ' + JSON.stringify({
+                          method,
+                          url,
+                          statusCode: proxyRes.statusCode,
+                          body: s,
+                        }, null, 2));
 
                         reject(err);
                       }
@@ -163,7 +183,7 @@ class World {
                   });
 
                   if (body) {
-                    proxyReq.end(body);
+                    proxyReq.end(JSON.stringify(body));
                   } else {
                     proxyReq.end();
                   }
@@ -260,7 +280,7 @@ class World {
                                 authentication,
                                 method: 'PUT',
                                 url: '/hub/world/equipment.json',
-                                body: JSON.stringify(equipmentJson),
+                                body: equipmentJson,
                               })
                                 .then(() => {
                                   next();
@@ -276,7 +296,7 @@ class World {
                                 authentication,
                                 method: 'PUT',
                                 url: '/hub/world/inventory.json',
-                                body: JSON.stringify(inventoryJson),
+                                body: inventoryJson,
                               })
                                 .then(() => {
                                   next();
@@ -377,6 +397,8 @@ class World {
                                       const itemSpec = hands[side];
                                       hands[side] = null;
 
+                                      itemSpec.matrix = DEFAULT_MATRIX;
+
                                       const {equipment} = user;
                                       equipment[equipmentIndex] = itemSpec;
 
@@ -390,6 +412,8 @@ class World {
                                       const {hands} = user;
                                       const itemSpec = hands[side];
                                       hands[side] = null;
+
+                                      itemSpec.matrix = DEFAULT_MATRIX;
 
                                       const {inventory} = user;
                                       inventory[inventoryIndex] = itemSpec;

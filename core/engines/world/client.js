@@ -15,6 +15,11 @@ import worldRenderer from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
 const TAGS_PER_ROW = 4;
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 const SIDES = ['left', 'right'];
 
