@@ -237,7 +237,7 @@ class World {
                   console.warn('world connection close');
                 };
               });
-              const _requestStartTime = () => fetchServer('/archae/world/start-time.json')
+              const _requestStartTime = () => fetch('https://' + hub.getCurrentServer().url + '/archae/world/start-time.json')
                 .then(res => res.json()
                   .then(({startTime}) => startTime)
                 );
@@ -501,7 +501,7 @@ class World {
                 if (filesJsonString !== lastFilesJsonString) {
                   lastFilesJsonString = filesJsonString;
 
-                  return fetchServer('/archae/world/files.json', {
+                  return fetch('https://' + hub.getCurrentServer().url + '/archae/world/files.json', {
                     method: 'PUT',
                     headers: new Headers({
                       'Content-Type': 'application/json',
@@ -767,7 +767,7 @@ class World {
                   live = false;
                 };
 
-                fetchServer('/archae/rend/mods/local')
+                fetch('https://' + hub.getCurrentServer().url + '/archae/rend/mods/local')
                   .then(res => res.json()
                     .then(modSpecs => {
                       if (live) {

@@ -24,20 +24,22 @@ class Servers {
     };
 
     return archae.requestPlugins([
+      '/core/engines/hub',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
-      '/core/engines/hub',
+      '/core/engines/login',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
       '/core/plugins/creature-utils',
     ])
       .then(([
+        hub,
         three,
         input,
         webvr,
-        hub,
+        login,
         biolumi,
         rend,
         hands,
@@ -46,6 +48,7 @@ class Servers {
         if (live) {
           const {THREE, scene, camera} = three;
 
+          // constants
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
 
@@ -67,6 +70,41 @@ class Servers {
             transparent: true,
           });
 
+          // states
+          const serversState = {
+            page: 'list',
+            servers: hub.getServers(),
+            currentServerUrl: null,
+          };
+          const focusState = {
+            type: '',
+          };
+
+          // helper functions
+          const _requestInitialConnect = () => new Promise((accept, reject) => {
+            const loggedIn = !login.isOpen();
+            const currentServer = hub.getCurrentServer()
+
+            if (loggedIn && currentServer.type === 'server') {
+              const {url: currentServerUrl} = currentServer;
+
+              hub.changeServer(currentServerUrl)
+                .then(() => {
+                  rend.connectServer();
+
+                  serversState.currentServerUrl = currentServerUrl;
+
+                  accept();
+                })
+                .catch(err => {
+                  console.warn(err);
+
+                  accept();
+                });
+            } else {
+              accept();
+            }
+          });
           const _requestUis = () => Promise.all([
             biolumi.requestUi({
               width: WIDTH,
@@ -79,10 +117,16 @@ class Servers {
               menuUi,
             }));
 
-          return _requestUis()
-            .then(({
-              menuUi
-            }) => {
+          return Promise.all([
+            _requestInitialConnect(),
+            _requestUis(),
+          ])
+            .then(([
+              initialConnectResult,
+              {
+                menuUi,
+              }
+            ]) => {
               if (live) {
                 const menuHoverStates = {
                   left: biolumi.makeMenuHoverState(),
@@ -100,15 +144,6 @@ class Servers {
                 };
                 scene.add(boxMeshes.left);
                 scene.add(boxMeshes.right);
-
-                const serversState = {
-                  page: 'list',
-                  servers: hub.getServers(),
-                  currentServerUrl: null,
-                };
-                const focusState = {
-                  type: '',
-                };
 
                 menuUi.pushPage(({servers, focus: {type}}) => {
                   return [
@@ -234,6 +269,7 @@ class Servers {
                   }
                 };
                 input.on('trigger', _trigger);
+
                 const _update = () => {
                   const _updateTextures = () => {
                     const tab = rend.getTab();
@@ -301,6 +337,8 @@ class Servers {
                   });
 
                   input.removeListener('trigger', _trigger);
+
+                  rend.removeListener('login', _login);
                   rend.removeListener('update', _update);
                 };
 

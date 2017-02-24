@@ -220,7 +220,7 @@ class Login {
               };
               rend.on('logout', logout);
 
-              const _initialLogin = () => {
+              const _requestInitialLogin = () => {
                 const token = localStorage.getItem('token');
 
                 if (token) {
@@ -260,7 +260,7 @@ class Login {
                   });
               });
 
-              return _initialLogin()
+              return _requestInitialLogin()
                 .then(() => {
                   if (live) {
                     const trigger = e => {
