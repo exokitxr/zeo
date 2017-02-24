@@ -176,7 +176,7 @@ class World {
 
               let connection = null;
               const _requestConnection = () => new Promise((accept, reject) => {
-                connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication()); // XXX handle authentication on the backend
+                connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication());
                 connection.onmessage = msg => {
                   const m = JSON.parse(msg.data);
                   const {type} = m;
@@ -214,9 +214,9 @@ class World {
 
                     _handleMoveTag(userId, src, dst);
                   } else if (type === 'setTagAttribute') {
-                    const {args: [userId, src, attributeName, attributeValue]} = m;
+                    const {args: [userId, src, attribute, value]} = m;
 
-                    _setTagAttribute(userId, src, attributeName, attributeValue);
+                    _handleSetTagAttribute(userId, src, attribute, value);
                   } else if (type === 'response') {
                     const {id} = m;
 
@@ -485,48 +485,11 @@ class World {
                 _handleMoveTag(localUserId, src, dst);
 
                 _request('moveTag', [localUserId, src, dst], _warnError);
-
-                /* if (src === 'world') {
-                  elementManager.remove(tagMesh);
-                } else if (src === 'equipment') {
-                  // XXX 1: equipment to controller
-                  equipmentManager.unset(hoveredEquipmentIndex); // XXX pass in the index here
-
-                  // XXX 2: equipment to equipment
-                  const bagMesh = bag.getBagMesh();
-                  const {equipmentBoxMeshes} = bagMesh;
-                  const controllerEquipmentBoxMesh = equipmentBoxMeshes[controllerEquipmentIndex];
-                  controllerEquipmentBoxMesh.add(tagMesh);
-                  equipmentManager.move(hoveredEquipmentIndex, controllerEquipmentIndex);
-
-                  // XXX 3: controller to equipment
-                  handsGrabber.release();
-                  bag.setEquipment(hoveredEquipmentIndex, tagMesh);
-                  equipmentManager.set(hoveredEquipmentIndex, tagMesh);
-
-                  // XXX 4: controller to inventory (could be file)
-                  handsGrabber.release();
-                  backpack.setItem(hoveredItemIndex, item);
-
-                  // XXX 5: controller to world
-                  handsGrabber.release();
-
-                  elementManager.add(tagMesh);
-                }
-
-                let match;
-                if (match = dst.match(/^hand:(.+)$/)) {
-                  const side = match[1];
-
-                  tags.grabTag(side, tagMesh);
-                }
-
-                scene.add(tagMesh); // XXX figure out the right place to add here */
               };
-              const _setTagAttribute = (src, attributeName, attributeValue) => {
-                _handleSetTagAttribute(localUserId, src, attributeName, attributeValue);
+              const _setTagAttribute = (src, attribute, value) => {
+                _handleSetTagAttribute(localUserId, src, attribute, value);
 
-                _request('setTagAttribute', [localUserId, src, attributeName, attributeValue], _warnError);
+                _request('setTagAttribute', [localUserId, src, attribute, value], _warnError);
               };
               /* let lastFilesJsonString = null;
               const _saveFiles = menuUtils.debounce(next => {
@@ -544,88 +507,6 @@ class World {
                       'Content-Type': 'application/json',
                     }),
                     body: filesJsonString,
-                  })
-                    .then(res => res.blob())
-                    .then(() => {
-                      next();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      next();
-                    })
-                } else {
-                  return Promise.resolve();
-                }
-              });
-              let lastEquipmentJsonString = null;
-              const _saveEquipment = menuUtils.debounce(next => {
-                equipmentJson = {
-                  equipment: tags.getTagsClass('equipment').map(equipment => equipment ? equipment.item : null),
-                };
-                const equipmentJsonString = JSON.stringify(equipmentJson);
-
-                if (equipmentJsonString !== lastEquipmentJsonString) {
-                  lastEquipmentJsonString = equipmentJsonString;
-
-                  return fetchServer('/archae/world/equipment.json', {
-                    method: 'PUT',
-                    headers: new Headers({
-                      'Content-Type': 'application/json',
-                      'Authorization': _getAuthorization(),
-                    }),
-                    body: equipmentJsonString,
-                  })
-                    .then(res => res.blob())
-                    .then(() => {
-                      next();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      next();
-                    })
-                } else {
-                  return Promise.resolve();
-                }
-              });
-              let lastInventoryJsonString = null;
-              const _saveInventory = menuUtils.debounce(next => {
-                inventoryJson = {
-                  items: backpack.getItems().map(item => {
-                    if (item) {
-                      const {type, mesh} = item;
-
-                      if (type === 'tag') {
-                        return {
-                          type: 'tag',
-                          item: mesh.item,
-                        };
-                      } else if (type === 'file') {
-                        return {
-                          type: 'file',
-                          item: mesh.file,
-                        };
-                      } else {
-                        return null;
-                      }
-                    } else {
-                      return null;
-                    }
-                  }),
-                };
-                const inventoryJsonString = JSON.stringify(inventoryJson);
-
-                if (inventoryJsonString !== lastInventoryJsonString) {
-                  lastInventoryJsonString = inventoryJsonString;
-
-                  return fetchHub('/archae/world/inventory.json', {
-                    method: 'PUT',
-                    headers: new Headers({
-                      'Content-Type': 'application/json',
-                      'Authorization': _getAuthorization(),
-                    }),
-                    body: inventoryJsonString,
                   })
                     .then(res => res.blob())
                     .then(() => {
@@ -858,7 +739,7 @@ class World {
                   // XXX add tag to remote user's controller mesh
                 }
               };
-              const _handleSetTagAttribute = (userId, src, attributeName, attributeValue) => {
+              const _handleSetTagAttribute = (userId, src, attribute, value) => {
                 if (userId === localUserId) {
                   let match;
                   if (match = src.match(/^world:(.+)$/)) {
@@ -866,7 +747,7 @@ class World {
 
                     const tagMesh = elementManager.getTagMesh(id);
                     const {item} = tagMesh;
-                    item.setAttribute(attributeName, attributeValue);
+                    item.setAttribute(attribute, value);
                   } else {
                     console.warn('invalid set tag attribute arguments', {src, attributeName, attributeValue});
                   }
@@ -1954,7 +1835,38 @@ class World {
                 priority: 1,
               });
 
-              const uploadStart = ({id, name, type}) => {
+              const _setAttribute = ({id, attribute, value}) => {
+                const src = (() => {
+                  const _getWorldSrc = () => {
+                    if (elementManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
+                      return 'world:' + id;
+                    } else {
+                      return null;
+                    }
+                  };
+                  const _getHandSrc = () => {
+                    const controllers = cyborg.getControllers();
+
+                    for (let i = 0; i < SIDES.length; i++) {
+                      const side = SIDES[i];
+                      const grabState = grabStates[side];
+                      const {mesh: grabMesh} = grabState;
+
+                      if (grabMesh && grabMesh.item.id === id) {
+                        return 'hand:' + side;
+                      }
+                    }
+                    return null;
+                  };
+
+                  return _getWorldSrc() || _getHandSrc();
+                })();
+
+                _setTagAttribute(src, attribute, value);
+              };
+              tags.on('setAttribute', _setAttribute);
+
+              const _uploadStart = ({id, name, type}) => {
                 const directory = '/';
                 const matrix = (() => {
                   const {hmd} = webvr.getStatus();
@@ -1987,7 +1899,7 @@ class World {
 
                 fs.updatePages();
               };
-              fs.on('uploadStart', uploadStart);
+              fs.on('uploadStart', _uploadStart);
               const uploadEnd = ({id}) => {
                 const fileMesh = fs.getFile(id);
 
@@ -2001,16 +1913,16 @@ class World {
                   _saveFiles();
                 }
               };
-              fs.on('uploadEnd', uploadEnd);
+              fs.on('uploadEnd', _uploadEnd);
 
-              const connectServer = () => {
+              const _connectServer = () => {
                 worldApi.connect();
               };
-              rend.on('connectServer', connectServer);
-              const disconnectServer = () => {
+              rend.on('connectServer', _connectServer);
+              const _disconnectServer = () => {
                 worldApi.disconnect();
               };
-              rend.on('disconnectServer', disconnectServer);
+              rend.on('disconnectServer', _disconnectServer);
 
               this._cleanup = () => {
                 SIDES.forEach(side => {
@@ -2035,11 +1947,13 @@ class World {
                 input.removeListener('keydown', _keydown);
                 input.removeListener('keyboarddown', _keyboarddown);
 
-                fs.removeListener('uploadStart', uploadStart);
-                fs.removeListener('uploadEnd', uploadEnd);
+                tags.removeListener('setAttribute', _setAttribute);
 
-                rend.removeListener('connectServer', connectServer);
-                rend.removeListener('disconnectServer', disconnectServer);
+                fs.removeListener('uploadStart', _uploadStart);
+                fs.removeListener('uploadEnd', _uploadEnd);
+
+                rend.removeListener('connectServer', _connectServer);
+                rend.removeListener('disconnectServer', _disconnectServer);
               };
 
               const modElementApis = {};

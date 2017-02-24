@@ -54,22 +54,28 @@ class Tags {
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
+      '/core/engines/cyborg',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/hands',
+      '/core/plugins/js-utils',
       '/core/plugins/creature-utils',
     ])
       .then(([
         three,
         input,
         webvr,
+        cyborg,
         biolumi,
         rend,
         hands,
+        jsUtils,
         creatureUtils,
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
+          const {events} = jsUtils;
+          const {EventEmitter} = events;
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
@@ -316,7 +322,7 @@ class Tags {
                   const {position, quaternion, scale} = positioningMesh;
                   return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
                 })();
-                item.setAttribute(positioningName, newValue);
+                item.setAttribute(positioningName, newValue); // XXX make these emit instead, and let the world engine handle the actual set
 
                 detailsState.positioningId = null;
                 detailsState.positioningName = null;
@@ -324,7 +330,11 @@ class Tags {
 
                 _updatePages();
 
-                _saveTags(); // XXX rewrite these to send attributes to the backend via the world engine
+                tagsInstance.emit('setAttribute', {
+                  id: positioningId,
+                  attribute: positioningName,
+                  value: newValue,
+                });
 
                 return true;
               } else {
@@ -395,7 +405,11 @@ class Tags {
 
                     focusState.type = '';
 
-                    _saveTags();
+                    tagsInstance.emit('setAttribute', {
+                      id: tagId,
+                      attribute: attributeName,
+                      value: value,
+                    });
                   } else if (action === 'tweak') {
                     const {value} = hoverState;
                     const {min = ATTRIBUTE_DEFAULTS.MIN, max = ATTRIBUTE_DEFAULTS.MAX, step = ATTRIBUTE_DEFAULTS.STEP} = attribute;
@@ -411,12 +425,20 @@ class Tags {
 
                     focusState.type = '';
 
-                    _saveTags();
+                    tagsInstance.emit('setAttribute', {
+                      id: tagId,
+                      attribute: attributeName,
+                      value: newValue,
+                    });
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
                     item.setAttribute(attributeName, newValue);
 
-                    _saveTags();
+                    tagsInstance.emit('setAttribute', {
+                      id: tagId,
+                      attribute: attributeName,
+                      value: newValue,
+                    });
                   } else if (action === 'choose') {
                     /* menuUi.cancelTransition();
 
@@ -469,6 +491,8 @@ class Tags {
 
                 if (isOpen) {
                   const {gamepads} = webvr.getStatus();
+                  const controllers = cyborg.getControllers();
+                  const controllerMeshes = SIDES.map(side => controllers[side].mesh);
 
                   SIDES.forEach(side => {
                     const gamepad = gamepads[side];
@@ -479,31 +503,35 @@ class Tags {
                       const dotMesh = dotMeshes[side];
                       const boxMesh = boxMeshes[side];
 
-                      biolumi.updateAnchors({
-                        objects: tagMeshes.map(tagMesh => {
-                          if (tagMesh && !tagMesh.highlight) {
-                            const {ui, planeMesh} = tagMesh;
+                      const objects = tagMeshes.map(tagMesh => {
+                        if (
+                          tagMesh &&
+                          ((tagMesh.parent === scene) || controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh))
+                        ) {
+                          const {ui, planeMesh} = tagMesh;
 
-                            if (ui && planeMesh) {
-                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                              const {item: {open}} = tagMesh;
+                          if (ui && planeMesh) {
+                            const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                            const {item: {open}} = tagMesh;
 
-                              return {
-                                matrixObject: matrixObject,
-                                ui: ui,
-                                width: !open ? WIDTH : OPEN_WIDTH,
-                                height: !open ? HEIGHT : OPEN_HEIGHT,
-                                worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                                worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                                worldDepth: WORLD_DEPTH,
-                              };
-                            } else {
-                              return null;
-                            }
+                            return {
+                              matrixObject: matrixObject,
+                              ui: ui,
+                              width: !open ? WIDTH : OPEN_WIDTH,
+                              height: !open ? HEIGHT : OPEN_HEIGHT,
+                              worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                              worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                            };
                           } else {
                             return null;
                           }
-                        }).filter(object => object !== null),
+                        } else {
+                          return null;
+                        }
+                      }).filter(object => object !== null);
+                      biolumi.updateAnchors({
+                        objects: objecta,
                         hoverState: hoverState,
                         dotMesh: dotMesh,
                         boxMesh: boxMesh,
@@ -532,7 +560,7 @@ class Tags {
                     const {attributes} = item;
                     const attribute = attributes[positioningName];
                     const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                    item.setAttribute(positioningName, newValue);
+                    item.setAttribute(positioningName, newValue); // XXX figure out what to do with this live update
                   }
 
                   if (!positioningMesh.visible) {
@@ -649,7 +677,7 @@ class Tags {
             npm: [],
             equipment: DEFAULT_EQUIPMENT,
           };
-          class TagsApi {
+          class TagsApi extends EventEmitter {
             makeTag(itemSpec) {
               const object = new THREE.Object3D();
               object[tagFlagSymbol] = true;
