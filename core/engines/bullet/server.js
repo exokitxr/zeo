@@ -265,8 +265,9 @@ class BulletServer {
 
       if (url === '/archae/bulletWs') {
         c.on('message', s => {
-          const m = JSON.parse(s);
-          if (typeof m === 'object' && m && typeof m.method === 'string' && typeof m.id === 'string' && Array.isArray(m.args)) {
+          const m = _jsonParse(s);
+
+          if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
             const {method, id, args} = m;
 
             const cb = (err = null, result = null) => {
@@ -371,6 +372,8 @@ class BulletServer {
               const err = new Error('no such method:' + JSON.stringify(method));
               cb(err.stack);
             }
+          } else {
+            console.warn('invalid message', m);
           }
         });
         c.on('close', () => {
@@ -387,7 +390,6 @@ class BulletServer {
         const connection = connections[i];
         connection.close();
       }
-      connections = [];
 
       live = false;
     };
@@ -397,5 +399,20 @@ class BulletServer {
     this._cleanup();
   }
 }
+
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return null;
+  }
+};
 
 module.exports = BulletServer;

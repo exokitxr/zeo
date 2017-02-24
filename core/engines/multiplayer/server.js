@@ -40,7 +40,7 @@ class Multiplayer {
       const {url} = c.upgradeReq;
 
       let match;
-      if (match = url.match(/^\/archae\/multiplayer\?id=(.+)$/)) {
+      if (match = url.match(/^\/archae\/multiplayerWs\?id=(.+)$/)) {
         const id = match[1];
 
         const remoteAddress = c.upgradeReq.connection.remoteAddress.replace(/^::ffff:/, '');

@@ -4,9 +4,6 @@ import indev from 'indev';
 import {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
-
-  SCALE,
-
   DEFAULT_SEED,
 } from '../constants/constants';
 import {MapPoint} from '../records/records';
@@ -66,11 +63,11 @@ const _random = (() => {
     random: rng,
   });
   const elevationNoise = generator.uniform({
-    frequency: 0.002,
+    frequency: 0.008,
     octaves: 8,
   });
   const moistureNoise = generator.uniform({
-    frequency: 0.001,
+    frequency: 0.005,
     octaves: 2,
   });
 
@@ -80,7 +77,7 @@ const _random = (() => {
   };
 })();
 
-const buildMapChunk = ({offset}) => {
+const buildMapChunk = ({offset, position}) => {
   const points = (() => {
     const points = Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
@@ -88,15 +85,15 @@ const buildMapChunk = ({offset}) => {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
         const index = _getCoordOverscanIndex(x, y);
   
-        const dx = (offset.x * NUM_CELLS) + x;
-        const dy = (offset.y * NUM_CELLS) + y;
-        const elevation = (-0.5 + Math.pow(_random.elevationNoise.in2D(dx, dy), 0.5)) * 64;/* (() => {
+        const mapCoords = _getMapCoords(position.x + x, position.y + y);
+        const [dx, dy] = mapCoords;
+        const elevation = (() => {
           const y = _random.elevationNoise.in2D(dx, dy);
           const scaleFactor = 1;
           const powFactor = 0.3;
           const x = Math.pow(scaleFactor, powFactor) - Math.pow(scaleFactor * (1 - y), powFactor);
-          return x - 0.5;
-        })(); */
+          return (x * 18) - 6;
+        })();
         const moisture = _random.moistureNoise.in2D(dx, dy);
         const land = elevation > 0;
         const water = !land;
@@ -203,24 +200,26 @@ const buildMapChunk = ({offset}) => {
     return points;
   })();
 
-  // const caves = new Float32Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_OVERSCAN * 2) * NUM_CELLS_OVERSCAN);
+  const caves = new Float32Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_OVERSCAN * 2) * NUM_CELLS_OVERSCAN);
 
   return {
     offset,
+    position,
     points,
-    // caves
+    caves
   };
 };
 
 const compileMapChunk = mapChunk => {
-  const {offset, points/*, caves*/} = mapChunk;
+  const {offset, position, points, caves} = mapChunk;
   const mapChunkUpdate = recompileMapChunk(mapChunk);
   const {positions, normals, colors, heightField} = mapChunkUpdate;
 
   return {
     offset,
+    position,
     points,
-    // caves,
+    caves,
     positions,
     normals,
     colors,
@@ -229,12 +228,7 @@ const compileMapChunk = mapChunk => {
 };
 
 const recompileMapChunk = mapChunk => {
-  const {offset, points/*, caves*/} = mapChunk;
-
-  const position = {
-    x: offset.x * NUM_CELLS,
-    y: offset.y * NUM_CELLS,
-  };
+  const {offset, position, points, caves} = mapChunk;
 
   const cubes = isosurface.marchingCubes([ NUM_CELLS_OVERSCAN, NUM_CELLS_OVERSCAN * 2, NUM_CELLS_OVERSCAN ], (x, y, z) => {
     const index = _getCoordOverscanIndex(x, z);
@@ -249,13 +243,13 @@ const recompileMapChunk = mapChunk => {
       }
     }
 
-    /* if (caves.length > 0) {
+    if (caves.length > 0) {
       const caveIndex = _getCaveIndex(x, y, z);
       const cave = caves[caveIndex];
       if (cave !== 0) {
         value += cave * 2;
       }
-    } */
+    }
 
     return value;
   }, [
@@ -274,17 +268,17 @@ const recompileMapChunk = mapChunk => {
     const vb = cubePositions[fb];
     const vc = cubePositions[fc];
 
-    positions[(i * 9) + 0] = (position.x + va[0]) * SCALE;
-    positions[(i * 9) + 1] = va[1] * SCALE;
-    positions[(i * 9) + 2] = (position.y + va[2]) * SCALE;
+    positions[(i * 9) + 0] = position.x + va[0];
+    positions[(i * 9) + 1] = va[1];
+    positions[(i * 9) + 2] = position.y + va[2];
 
-    positions[(i * 9) + 3] = (position.x + vb[0]) * SCALE;
-    positions[(i * 9) + 4] = vb[1] * SCALE;
-    positions[(i * 9) + 5] = (position.y + vb[2]) * SCALE;
+    positions[(i * 9) + 3] = position.x + vb[0];
+    positions[(i * 9) + 4] = vb[1];
+    positions[(i * 9) + 5] = position.y + vb[2];
 
-    positions[(i * 9) + 6] = (position.x + vc[0]) * SCALE;
-    positions[(i * 9) + 7] = vc[1] * SCALE;
-    positions[(i * 9) + 8] = (position.y + vc[2]) * SCALE;
+    positions[(i * 9) + 6] = position.x + vc[0];
+    positions[(i * 9) + 7] = vc[1];
+    positions[(i * 9) + 8] = position.y + vc[2];
 
     const paIndex = _getCoordOverscanIndex(Math.round(va[0]), Math.round(va[2]));
     const pa = points[paIndex];
@@ -345,6 +339,7 @@ const recompileMapChunk = mapChunk => {
           return entry;
         } else {
           const newEntry = (() => {
+            const {position} = mapChunk;
             const pointIndex = _getCoordOverscanIndex(x - position.x, y - position.y);
             const point = points[pointIndex];
             const elevation = point ? point.elevation : 0;
@@ -386,6 +381,7 @@ const recompileMapChunk = mapChunk => {
 
   return {
     offset,
+    position,
     positions,
     normals,
     colors,
@@ -394,7 +390,14 @@ const recompileMapChunk = mapChunk => {
 };
 
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
-// const _getCaveIndex = (x, y, z) => x + ((y + NUM_CELLS_OVERSCAN) * NUM_CELLS_OVERSCAN) + (z * NUM_CELLS_OVERSCAN * (NUM_CELLS_OVERSCAN * 2));
+const _getMapCoords = (x, y) => {
+  if (y % 2 === 0) {
+    return [x, y];
+  } else {
+    return [x + 0.5, y];
+  }
+};
+const _getCaveIndex = (x, y, z) => x + ((y + NUM_CELLS_OVERSCAN) * NUM_CELLS_OVERSCAN) + (z * NUM_CELLS_OVERSCAN * (NUM_CELLS_OVERSCAN * 2));
 
 const _normalizeElevation = elevation => {
   if (elevation >= 0) {
@@ -409,21 +412,21 @@ const _getBiome = p => {
   } else if (p.ocean) {
     return 'OCEAN';
   } else if (p.water) {
-    if (p.elevation < 6) { return 'MARSH'; }
-    if (p.elevation > 28) { return 'ICE'; }
+    if (p.elevation < 1) { return 'MARSH'; }
+    if (p.elevation > 6) { return 'ICE'; }
     return 'LAKE';
   } else if (p.lava > 2) {
     return 'MAGMA';
-  } else if (p.elevation > 28) {
+  } else if (p.elevation > 7) {
     if (p.moisture > 0.50) { return 'SNOW'; }
     else if (p.moisture > 0.33) { return 'TUNDRA'; }
     else if (p.moisture > 0.16) { return 'BARE'; }
     else { return 'SCORCHED'; }
-  } else if (p.elevation > 18) {
+  } else if (p.elevation > 5) {
     if (p.moisture > 0.66) { return 'TAIGA'; }
     else if (p.moisture > 0.33) { return 'SHRUBLAND'; }
     else { return 'TEMPERATE_DESERT'; }
-  } else if (p.elevation > 6) {
+  } else if (p.elevation > 3) {
     if (p.moisture > 0.83) { return 'TEMPERATE_RAIN_FOREST'; }
     else if (p.moisture > 0.50) { return 'TEMPERATE_DECIDUOUS_FOREST'; }
     else if (p.moisture > 0.16) { return 'GRASSLAND'; }

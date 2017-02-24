@@ -10,13 +10,13 @@ const MAP_CHUNK_UPDATE_HEADER_SIZE = UINT32_SIZE * MAP_CHUNK_HEADER_ENTRIES;
 const POINT_SIZE = 7 * FLOAT32_SIZE;
 
 const _getMapChunkSizeFromMetadata = metadata => {
-  const {numPoints, /* numCaves, */numPositions, numNormals, numColors, numHeightFields} = metadata;
+  const {numPoints, numCaves, numPositions, numNormals, numColors, numHeightFields} = metadata;
 
   return MAP_CHUNK_HEADER_SIZE + // header
     (INT32_SIZE * 2) + // offset
-    // (INT32_SIZE * 2) + // position
+    (INT32_SIZE * 2) + // position
     (POINT_SIZE * numPoints) + // points
-    // (FLOAT32_SIZE * numCaves) + // caves
+    (FLOAT32_SIZE * numCaves) + // caves
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numNormals) +  // normals
     (FLOAT32_SIZE * numColors) + // colors
@@ -24,10 +24,10 @@ const _getMapChunkSizeFromMetadata = metadata => {
 };
 
 const _getMapChunkSize = mapChunk => {
-  const {points, /*caves, */positions, normals, colors, heightField} = mapChunk;
+  const {points, caves, positions, normals, colors, heightField} = mapChunk;
 
   const numPoints = points.length;
-  // const numCaves = caves.length;
+  const numCaves = caves.length;
   const numPositions = positions.length;
   const numNormals = normals.length;
   const numColors = colors.length;
@@ -35,7 +35,7 @@ const _getMapChunkSize = mapChunk => {
 
   return _getMapChunkSizeFromMetadata({
     numPoints,
-    // numCaves,
+    numCaves,
     numPositions,
     numNormals,
     numColors,
@@ -46,15 +46,15 @@ const _getMapChunkSize = mapChunk => {
 const _getMapChunkBufferSize = (buffer, byteOffset) => {
   const headerBuffer = new Uint32Array(buffer.buffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   const numPoints = headerBuffer[0];
-  // const numCaves = headerBuffer[1];
-  const numPositions = headerBuffer[1];
-  const numNormals = headerBuffer[2];
-  const numColors = headerBuffer[3];
-  const numHeightFields = headerBuffer[4];
+  const numCaves = headerBuffer[1];
+  const numPositions = headerBuffer[2];
+  const numNormals = headerBuffer[3];
+  const numColors = headerBuffer[4];
+  const numHeightFields = headerBuffer[5];
 
   return _getMapChunkSizeFromMetadata({
     numPoints,
-    // numCaves,
+    numCaves,
     numPositions,
     numNormals,
     numColors,
@@ -67,7 +67,7 @@ const _getMapChunkUpdateSizeFromMetadata = metadata => {
 
   return MAP_CHUNK_HEADER_SIZE + // header
     (INT32_SIZE * 2) + // offset
-    // (INT32_SIZE * 2) + // position
+    (INT32_SIZE * 2) + // position
     (FLOAT32_SIZE * numPositions) + // positions
     (FLOAT32_SIZE * numNormals) +  // normals
     (FLOAT32_SIZE * numColors) + // colors
@@ -93,7 +93,7 @@ const _getMapChunkUpdateSize = mapChunkUpdate => {
 // stringification
 
 const stringifyMapChunk = (mapChunk, buffer, byteOffset) => {
-  const {offset, /* position,*/ points, /* caves, */positions, normals, colors, heightField} = mapChunk;
+  const {offset, position, points, caves, positions, normals, colors, heightField} = mapChunk;
 
   if (buffer === undefined || byteOffset === undefined) {
     const bufferSize = _getMapChunkSize(mapChunk);
@@ -103,21 +103,21 @@ const stringifyMapChunk = (mapChunk, buffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(buffer.buffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   headerBuffer[0] = points.length;
-  // headerBuffer[1] = caves.length;
-  headerBuffer[1] = positions.length;
-  headerBuffer[2] = normals.length;
-  headerBuffer[3] = colors.length;
-  headerBuffer[4] = heightField.length;
+  headerBuffer[1] = caves.length;
+  headerBuffer[2] = positions.length;
+  headerBuffer[3] = normals.length;
+  headerBuffer[4] = colors.length;
+  headerBuffer[5] = heightField.length;
 
   const offsetBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE, 2);
   offsetBuffer[0] = offset.x;
   offsetBuffer[1] = offset.y;
 
-  /* const positionBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2), 2);
+  const positionBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2), 2);
   positionBuffer[0] = position.x;
-  positionBuffer[1] = position.y; */
+  positionBuffer[1] = position.y;
 
-  const pointsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2), points.length * 7);
+  const pointsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2), points.length * 7);
   for (let i = 0; i < points.length; i++) {
     const point = points[i];
     const {elevation, moisture, land, water, ocean, lake, lava} = point;
@@ -132,19 +132,19 @@ const stringifyMapChunk = (mapChunk, buffer, byteOffset) => {
     pointsBuffer[index + 6] = lava;
   }
 
-  /* const cavesBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * points.length), caves.length);
-  cavesBuffer.set(caves); */
+  const cavesBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * points.length), caves.length);
+  cavesBuffer.set(caves);
 
-  const positionsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (POINT_SIZE * points.length) /*+ (FLOAT32_SIZE * caves.length)*/, positions.length);
+  const positionsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * caves.length), positions.length);
   positionsBuffer.set(positions);
 
-  const normalsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (POINT_SIZE * points.length) /*+ (FLOAT32_SIZE * caves.length)*/ + (FLOAT32_SIZE * positions.length), normals.length);
+  const normalsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * caves.length) + (FLOAT32_SIZE * positions.length), normals.length);
   normalsBuffer.set(normals);
 
-  const colorsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (POINT_SIZE * points.length) /*+ (FLOAT32_SIZE * caves.length)*/ + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length), colors.length);
+  const colorsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * caves.length) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length), colors.length);
   colorsBuffer.set(colors);
 
-  const heightFieldBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (POINT_SIZE * points.length) /*+ (FLOAT32_SIZE * caves.length)*/ + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length), heightField.length);
+  const heightFieldBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * points.length) + (FLOAT32_SIZE * caves.length) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length), heightField.length);
   heightFieldBuffer.set(heightField);
 
   return buffer;
@@ -178,7 +178,7 @@ const stringifyMapChunks = mapChunks => {
 };
 
 const stringifyMapChunkUpdate = (mapChunkUpdate, buffer, byteOffset) => {
-  const {offset, /*position,*/ positions, normals, colors, heightField} = mapChunkUpdate;
+  const {offset, position, positions, normals, colors, heightField} = mapChunkUpdate;
 
   if (buffer === undefined || byteOffset === undefined) {
     const bufferSize = _getMapChunkUpdateSize(mapChunkUpdate);
@@ -196,20 +196,20 @@ const stringifyMapChunkUpdate = (mapChunkUpdate, buffer, byteOffset) => {
   offsetBuffer[0] = offset.x;
   offsetBuffer[1] = offset.y;
 
-  /* const positionBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2), 2);
+  const positionBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2), 2);
   positionBuffer[0] = position.x;
-  positionBuffer[1] = position.y; */
+  positionBuffer[1] = position.y;
 
-  const positionsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2), positions.length);
+  const positionsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2), positions.length);
   positionsBuffer.set(positions);
 
-  const normalsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (FLOAT32_SIZE * positions.length), normals.length);
+  const normalsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (FLOAT32_SIZE * positions.length), normals.length);
   normalsBuffer.set(normals);
 
-  const colorsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length), colors.length);
+  const colorsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length), colors.length);
   colorsBuffer.set(colors);
 
-  const heightFieldBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length), heightField.length);
+  const heightFieldBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (FLOAT32_SIZE * positions.length) + (FLOAT32_SIZE * normals.length) + (FLOAT32_SIZE * colors.length), heightField.length);
   heightFieldBuffer.set(heightField);
 
   return buffer;
@@ -224,11 +224,11 @@ const parseMapChunk = (buffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(buffer.buffer, byteOffset, MAP_CHUNK_HEADER_ENTRIES);
   const numPoints = headerBuffer[0];
-  // const numCaves = headerBuffer[1];
-  const numPositions = headerBuffer[1];
-  const numNormals = headerBuffer[2];
-  const numColors = headerBuffer[3];
-  const numHeightFields = headerBuffer[4];
+  const numCaves = headerBuffer[1];
+  const numPositions = headerBuffer[2];
+  const numNormals = headerBuffer[3];
+  const numColors = headerBuffer[4];
+  const numHeightFields = headerBuffer[5];
 
   const offsetBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE, 2);
   const offset = {
@@ -236,13 +236,13 @@ const parseMapChunk = (buffer, byteOffset) => {
     y: offsetBuffer[1],
   };
 
-  /* const positionBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2), 2);
+  const positionBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2), 2);
   const position = {
     x: positionBuffer[0],
     y: positionBuffer[1],
-  }; */
+  };
 
-  const pointsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2), numPoints * 7);
+  const pointsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2), numPoints * 7);
   const points = Array(numPoints);
   for (let i = 0; i < numPoints; i++) {
     const index = i * 7;
@@ -266,26 +266,26 @@ const parseMapChunk = (buffer, byteOffset) => {
     );
   }
 
-  /* const cavesBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * numPoints), numCaves);
-  const caves = cavesBuffer; */
+  const cavesBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * numPoints), numCaves);
+  const caves = cavesBuffer;
 
-  const positionsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) /*+ (FLOAT32_SIZE * numCaves)*/, numPositions);
+  const positionsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numCaves), numPositions);
   const positions = positionsBuffer;
 
-  const normalsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) /*+ (FLOAT32_SIZE * numCaves)*/ + (FLOAT32_SIZE * numPositions), numNormals);
+  const normalsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numCaves) + (FLOAT32_SIZE * numPositions), numNormals);
   const normals = normalsBuffer;
 
-  const colorsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) /*+ (FLOAT32_SIZE * numCaves)*/ + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals), numColors);
+  const colorsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numCaves) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals), numColors);
   const colors = colorsBuffer;
 
-  const heightFieldBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) /*+ (FLOAT32_SIZE * numCaves)*/ + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors), numHeightFields);
+  const heightFieldBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (POINT_SIZE * numPoints) + (FLOAT32_SIZE * numCaves) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors), numHeightFields);
   const heightField = heightFieldBuffer;
 
   return {
     offset,
-    // position,
+    position,
     points,
-    // caves,
+    caves,
     positions,
     normals,
     colors,
@@ -325,27 +325,27 @@ const parseMapChunkUpdate = (buffer, byteOffset) => {
     y: offsetBuffer[1],
   };
 
-  /* const positionBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2), 2);
+  const positionBuffer = new Int32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2), 2);
   const position = {
     x: positionBuffer[0],
     y: positionBuffer[1],
-  }; */
+  };
 
-  const positionsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2), numPositions);
+  const positionsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2), numPositions);
   const positions = positionsBuffer;
 
-  const normalsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (FLOAT32_SIZE * numPositions), numNormals);
+  const normalsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (FLOAT32_SIZE * numPositions), numNormals);
   const normals = normalsBuffer;
 
-  const colorsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals), numColors);
+  const colorsBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals), numColors);
   const colors = colorsBuffer;
 
-  const heightFieldBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE /*+ (INT32_SIZE * 2)*/ + (INT32_SIZE * 2) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors), numHeightFields);
+  const heightFieldBuffer = new Float32Array(buffer.buffer, byteOffset + MAP_CHUNK_UPDATE_HEADER_SIZE + (INT32_SIZE * 2) + (INT32_SIZE * 2) + (FLOAT32_SIZE * numPositions) + (FLOAT32_SIZE * numNormals) + (FLOAT32_SIZE * numColors), numHeightFields);
   const heightField = heightFieldBuffer;
 
   return {
     offset,
-    // position,
+    position,
     positions,
     normals,
     colors,

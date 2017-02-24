@@ -1,13 +1,6 @@
 const DEFAULT_GRAB_DISTANCE = 0.12;
 const NUM_ITEMS = 9;
 const NUM_ITEMS_PER_ROW = 3;
-const DEFAULT_INVENTORY = (() => {
-  const result = Array(NUM_ITEMS);
-  for (let i = 0; i < NUM_ITEMS; i++) {
-    result[i] = null;
-  }
-  return result;
-})();
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -67,10 +60,6 @@ class Backpack {
         const hoverStates = {
           left: _makeHoverState(),
           right: _makeHoverState(),
-        };
-
-        const itemsState = {
-          items: DEFAULT_INVENTORY,
         };
 
         const mesh = (() => {
@@ -199,109 +188,13 @@ class Backpack {
         };
         rend.on('update', _update);
 
-        /* const _gripdown = e => {
-          const {side} = e;
-          const hoverState = hoverStates[side];
-          const {target} = hoverState;
-
-          if (target === 'back' || target == 'handle') {
-            const grabber = hands.grab(side, mesh);
-            grabber.on('update', ({position, rotation}) => {
-              mesh.position.copy(position);
-              mesh.quaternion.copy(rotation);
-            });
-            grabber.on('release', ({position, rotation}) => {
-              const {target} = hoverState;
-              if (target === 'back') {
-                mesh.visible = false;
-                backpackState.visible = false;
-              }
-
-              grabState.grabber = null;
-            });
-
-            const grabState = grabStates[side];
-            grabState.grabber = grabber;
-
-            mesh.visible = true;
-            backpackState.visible = true;
-          }
-        };
-        input.on('gripdown', _gripdown);
-        const _gripup = e => {
-          const {side} = e;
-
-          const grabState = grabStates[side];
-          const {grabber: localGrabber} = grabState;
-          if (localGrabber) {
-            localGrabber.release();
-          }
-
-          const handsGrabber = hands.peek(side);
-          if (handsGrabber) {
-            const {object: handsGrabberObject} = handsGrabber;
-
-            if (tags.isTag(handsGrabberObject)) {
-              const tagMesh = handsGrabberObject;
-
-              handsGrabber.release();
-
-              const hoverState = hoverStates[side];
-              const {target} = hoverState;
-              const match = target !== null ? target.match(/^item:([0-9]+)$/) : null;
-              if (match) {
-                const {itemBoxMeshes} = mesh;
-                const index = parseInt(match[1], 10);
-                const itemBoxMesh = itemBoxMeshes[index];
-
-                itemBoxMesh.add(tagMesh);
-                tagMesh.position.copy(new THREE.Vector3());
-                tagMesh.quaternion.copy(new THREE.Quaternion());
-                tagMesh.scale.set(1, 1, 1);
-              }
-            }
-          }
-        };
-        input.on('gripup', _gripup, {
-          priority: 1,
-        }); */
-
         this._cleanup = () => {
           scene.remove(mesh);
 
           rend.removeListener('update', _update);
-          /* input.removeListener('gripdown', _gripdown);
-          input.removeListener('gripup', _gripup); */
         };
 
-        const _getItems = () => itemsState.items;
-        const _getItem = index => itemsState.items[index];
-        const _setItem = (index, item) => {
-          const {items} = itemsState;
-          items[index] = item;
-
-          const {itemBoxMeshes} = mesh;
-          const {mesh: itemMesh} = item;
-          itemMesh.position.copy(zeroVector);
-          itemMesh.quaternion.copy(zeroQuaternion);
-          itemMesh.scale.copy(oneVector);
-          itemBoxMeshes[index].add(itemMesh);
-
-          const itemData = (() => {
-            const {type} = item;
-
-            switch (type) {
-              case 'tag': return item.mesh.item;
-              case 'file': return item.mesh.file;
-              default: return null;
-            }
-          })();
-          itemData.matrix = DEFAULT_MATRIX;
-        };
-        const _unsetItem = (index) => {
-          const {items} = itemsState;
-          items[index] = null;
-        };
+        const _getBackpackMesh = () => mesh;
         const _getHoveredItemIndex = side => {
           const hoverState = hoverStates[side];
           const {targetItemIndex} = hoverState;
@@ -310,10 +203,7 @@ class Backpack {
         };
 
         return {
-          getItems: _getItems,
-          getItem: _getItem,
-          setItem: _setItem,
-          unsetItem: _unsetItem,
+          getBackpackMesh: _getBackpackMesh,
           getHoveredItemIndex: _getHoveredItemIndex,
         };
       }

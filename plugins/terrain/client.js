@@ -1,7 +1,5 @@
 const {
   NUM_CELLS,
-
-  SCALE,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
@@ -16,7 +14,7 @@ const DIRECTIONS = (() => {
   return result;
 })();
 
-class MapClient {
+class Terrain {
   constructor(archae) {
     this._archae = archae;
   }
@@ -84,7 +82,6 @@ class MapClient {
               };
 
               const object = new THREE.Object3D();
-              object.position.y = 0.5;
               scene.add(object);
 
               cleanups.push(() => {
@@ -105,7 +102,7 @@ class MapClient {
               const _getMapChunkOffsetKey = (x, y) => x + ',' + y;
               const _requestRefreshMapChunks = () => {
                 const {position: cameraPosition} = camera;
-                const cameraMapChunkOffset = [Math.floor(cameraPosition.x / (NUM_CELLS * SCALE)), Math.floor(cameraPosition.z / (NUM_CELLS * SCALE))];
+                const cameraMapChunkOffset = [Math.floor(cameraPosition.x / NUM_CELLS), Math.floor(cameraPosition.z / NUM_CELLS)];
 
                 const requiredMapChunkOffsets = DIRECTIONS.map(([x, y]) => ([cameraMapChunkOffset[0] + x, cameraMapChunkOffset[1] + y]));
                 const missingMapChunkOffsets = requiredMapChunkOffsets.filter(([x, y]) => {
@@ -129,6 +126,10 @@ class MapClient {
                       offset: {
                         x,
                         y,
+                      },
+                      position: {
+                        x: x * NUM_CELLS,
+                        y: y * NUM_CELLS,
                       },
                     }
                   ]).then(({mapChunk: mapChunkBuffer}) => {
@@ -209,4 +210,4 @@ class MapClient {
   }
 }
 
-module.exports = MapClient;
+module.exports = Terrain;

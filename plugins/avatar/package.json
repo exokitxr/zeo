@@ -1,0 +1,8 @@
+{
+  "name": "avatar",
+  "description": "A simple 3D polygon avatar.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}

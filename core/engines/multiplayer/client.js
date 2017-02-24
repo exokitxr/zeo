@@ -272,7 +272,7 @@ class Multiplayer {
                 enabled = false;
               });
 
-              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayer?id=' + multiplayerInterface.getId());
+              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayerWs?id=' + multiplayerInterface.getId());
               const queue = [];
               connection.onopen = () => {
                 if (queue.length > 0) {

@@ -43,12 +43,13 @@ self.onrequest = (method, args, cb) => {
   switch (method) {
     case 'generate': {
       const opts = args[0];
-      const {offset} = opts;
+      const {offset, position} = opts;
 
       _requestWorkerUtilsInstance()
         .then(workerUtilsInstance => {
           const builtMapChunk = workerUtilsInstance.buildMapChunk({
             offset,
+            position,
           });
           const compiledMapChunk = workerUtilsInstance.compileMapChunk(builtMapChunk);
           const mapChunkBuffer = protocolUtils.stringifyMapChunk(compiledMapChunk);
