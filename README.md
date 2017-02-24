@@ -40,6 +40,22 @@ sudo apt-get install build-essential cmake python ffmpeg
 
 If you're using a different package manager it almost certainly has these, under slightly different names.
 
+## Starting an insecure server
+
+:bomb: This is _completely_ insecure. This will give everyone who logs in the ability to install and run any `npm` module on your system. Secure hub authentication is on the way, but you're using alpha software.
+
+```
+./scripts/insecure.sh
+```
+
+The last line of output should look like `https://insecure.zeovr.io:8000/?username=username&password=password`. If you hit that URL you'll automatically log in and connect to your local server. _However, since you probably don't control that domain, so you'll need to first add the following line to your `/etc/hosts` file:_
+
+```
+127.0.0.1 insecure.zeovr.io
+```
+
+After adding that `hosts` line, the URL should work in your browser.
+
 ## Example: Bouncy ball
 
 Here is the full code for `Bouncy ball`, a little game you can play with tracked controllers. It's packaged as a Zeo module in [`plugins/demo`](https://github.com/modulesio/zeo/tree/master/plugins/demo).
