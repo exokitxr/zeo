@@ -88,12 +88,8 @@ class Servers {
             if (loggedIn && currentServer.type === 'server') {
               const {url: currentServerUrl} = currentServer;
 
-              hub.changeServer(currentServerUrl)
+              _connectServer(currentServerUrl)
                 .then(() => {
-                  rend.connectServer();
-
-                  serversState.currentServerUrl = currentServerUrl;
-
                   accept();
                 })
                 .catch(err => {
@@ -105,6 +101,12 @@ class Servers {
               accept();
             }
           });
+          const _connectServer = serverUrl => hub.changeServer(serverUrl)
+            .then(() => {
+              rend.connectServer();
+
+              serversState.currentServerUrl = serverUrl;
+            });
           const _requestUis = () => Promise.all([
             biolumi.requestUi({
               width: WIDTH,
@@ -243,12 +245,8 @@ class Servers {
                   } else if (match = onclick.match(/^servers:connect:(.+)$/)) {
                     const serverUrl = match[1];
 
-                    hub.changeServer(serverUrl) // XXX handle race conditions for these
+                    _connectServer(serverUrl) // XXX handle race conditions for these
                       .then(() => {
-                        rend.connectServer();
-
-                        serversState.currentServerUrl = serverUrl;
-
                         _updatePages();
                       })
                       .catch(err => {
