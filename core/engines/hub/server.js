@@ -132,48 +132,51 @@ class Hub {
               proxyResponse.pipe(res);
             });
           };
-          const _authHub = (req, cb) => {
+          const _authHub = (authentication, cb) => {
+            const proxyReq = https.request({
+              method: 'POST',
+              hostname: hubSpec.host,
+              port: hubSpec.port,
+              path: '/hub/auth',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            proxyReq.end(JSON.stringify({
+              authentication,
+            }));
+            proxyReq.on('error', err => {
+              cb(err);
+            });
+            proxyReq.on('response', proxyResponse => {
+              const bs = [];
+              proxyResponse.on('data', d => {
+                bs.push(d);
+              });
+              proxyResponse.on('end', () => {
+                const b = Buffer.concat(bs);
+                const s = b.toString('utf8');
+                const j = _jsonParse(s);
+                const username = j ? j.username : null;
+
+                if (username) {
+                  cb(null, username);
+                } else {
+                  cb({
+                    code: 'EAUTH',
+                  });
+                }
+              });
+            });
+          };
+          const _authHubRequest = (req, cb) => {
             const authentication = (() => {
               const authorization = req.get('Authorization') || '';
               const match = authorization.match(/^Token (.+)$/);
               return match && match[1];
             })();
             if (authentication) {
-              const proxyReq = https.request({
-                method: 'POST',
-                hostname: hubSpec.host,
-                port: hubSpec.port,
-                path: '/hub/auth',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-              proxyReq.end(JSON.stringify({
-                authentication,
-              }));
-              proxyReq.on('error', err => {
-                cb(err);
-              });
-              proxyReq.on('response', proxyResponse => {
-                const bs = [];
-                proxyResponse.on('data', d => {
-                  bs.push(d);
-                });
-                proxyResponse.on('end', () => {
-                  const b = Buffer.concat(bs);
-                  const s = b.toString('utf8');
-                  const j = _jsonParse(s);
-                  const username = j ? j.username : null;
-
-                  if (username) {
-                    cb(null, username);
-                  } else {
-                    cb({
-                      code: 'EAUTH',
-                    });
-                  }
-                });
-              });
+              _authHub(authentication, cb);
             } else {
               process.nextTick(() => {
                 cb({
@@ -186,6 +189,7 @@ class Hub {
           return {
             proxyHub: _proxyHub,
             authHub: _authHub,
+            authHubRequest: _authHubRequest,
           };
         }
       });

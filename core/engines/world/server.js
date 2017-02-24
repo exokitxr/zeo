@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 
 const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
@@ -42,6 +43,14 @@ class World {
     const {metadata: {hub: {url: hubUrl}, server: {type: serverType}}} = archae;
     const {app, wss, dirname, dataDirectory} = archae.getCore();
 
+    const hubSpec = (() => {
+      const match = hubUrl.match(/^(.*?)(?::([0-9]*?))?$/);
+      return match && {
+        host: match[1],
+        port: match[2] ? parseInt(match[2], 10) : 443,
+      };
+    })();
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -57,8 +66,6 @@ class World {
           const worldPath = path.join(dirname, dataDirectory, 'world');
           const worldTagsJsonPath = path.join(worldPath, 'tags.json');
           const worldFilesJsonPath = path.join(worldPath, 'files.json');
-          const worldEquipmentJsonPath = path.join(worldPath, 'equipment.json');
-          const worldInventoryJsonPath = path.join(worldPath, 'inventory.json');
 
           const _requestFile = (p, defaultValue) => new Promise((accept, reject) => {
             fs.readFile(p, 'utf8', (err, s) => {
@@ -98,11 +105,11 @@ class World {
               ensureWorldPathResult,
             ]) => {
               if (live) {
-                const equipmentJson = { // XXX actually fetch these from the hub
-                  equipment: _clone(DEFAULT_EQUIPMENT),
+                const equipmentJson = {
+                  equipment: DEFAULT_EQUIPMENT,
                 };
                 const inventoryJson = {
-                  inventory: _clone(DEFAULT_INVENTORY),
+                  inventory: DEFAULT_INVENTORY,
                 };
                 const usersJson = {};
 
@@ -114,259 +121,364 @@ class World {
                   let match;
                   if (match = url.match(/\/archae\/worldWs\?id=(.+)&authentication=(.+)$/)) {
                     const userId = match[1];
-                    const authentication = match[2]; // XXX use this to authenticate inventory with the hub
+                    const authentication = match[2];
 
-                    const user = {
-                      id: userId,
-                      hands: {
-                        left: null,
-                        right: null,
-                      },
-                      equipment: _clone(DEFAULT_EQUIPMENT),
-                      inventory: _clone(DEFAULT_INVENTORY),
-                    };
-                    usersJson[userId] = user;
-
-                    const _sendInit = () => {
-                      const e = {
-                        type: 'init',
-                        args: [
-                          _arrayify(tagsJson.tags),
-                          equipmentJson.equipment,
-                          inventoryJson.inventory,
-                          _arrayify(usersJson),
-                        ],
-                      };
-                      const es = JSON.stringify(e);
-                      c.send(es);
-                    };
-                    _sendInit();
-
-                    const _broadcast = (type, args) => {
-                      if (connections.length > 0) {
-                        const e = {
-                          type,
-                          args,
-                        };
-                        const es = JSON.stringify(e);
-
-                        for (let i = 0; i < connections.length; i++) {
-                          const connection = connections[i];
-                          if (connection !== c) {
-                            connection.send(es);
-                          }
-                        }
-                      }
-                    };
-
-                    c.on('message', s => {
-                      const m = _jsonParse(s);
-
-                      if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
-                        const {method, id, args} = m;
-
-                        let cb = (err = null, result = null) => {
-                          if (c.readyState === OPEN) {
-                            const e = {
-                              type: 'response',
-                              id: id,
-                              error: err,
-                              result: result,
-                            };
-                            const es = JSON.stringify(e);
-                            c.send(es);
-                          }
-                        };
-
-                        if (method === 'addTag') {
-                          const [userId, itemSpec, dst] = args;
-                          const {id} = itemSpec;
-                          const side = dst.match(/^hand:(left|right)$/)[1];
-
-                          const user = usersJson[userId];
-                          const {hands} = user;
-                          hands[side] = itemSpec;
-
-                          _broadcast('addTag', [userId, itemSpec, dst]);
-
-                          cb();
-                        } else if (method === 'moveTag') {
-                          const [userId, src, dst] = args;
-
-                          cb = (cb => err => {
-                            if (!err) {
-                              _broadcast('moveTag', [userId, id, src, dst]);
-                            }
-
-                            cb(err);
-                          })(cb);
-
-                          let match;
-                          if (match = src.match(/^world:(.+)$/)) {
-                            const id = match[1];
-
-                            if (match = dst.match(/^hand:(left|right)$/)) {
-                              const side = match[1];
-
-                              const itemSpec = tagsJson.tags[id];
-                              const user = usersJson[userId];
-                              const {hands} = user;
-                              hands[side] = itemSpec;
-                              delete tagsJson.tags[id];
-
-                              _saveTags();
-
-                              cb();
-                            } else {
-                              cb(_makeInvalidArgsError());
-                            }
-                          } else if (match = src.match(/^hand:(left|right)$/)) {
-                            const side = match[1];
-
-                            if (match = dst.match(/^world:(.+)$/)) {
-                              const matrixArrayString = match[1];
-                              const matrixArray = JSON.parse(matrixArrayString);
-
-                              const user = usersJson[userId];
-                              const {hands} = user;
-                              const itemSpec = hands[side];
-                              hands[side] = null;
-
-                              itemSpec.matrix = matrixArray;
-
-                              const {id} = itemSpec;
-                              tagsJson.tags[id] = itemSpec;
-
-                              _saveTags();
-
-                              cb();
-                            } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
-                              const equipmentIndex = parseInt(match[1], 10);
-
-                              const user = usersJson[userId];
-                              const {hands} = user;
-                              const itemSpec = hands[side];
-                              hands[side] = null;
-
-                              const {equipment} = user;
-                              equipment[equipmentIndex] = itemSpec;
-
-                              // XXX save user equipment here
-
-                              cb();
-                            } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
-                              const inventoryIndex = parseInt(match[1], 10);
-
-                              const user = usersJson[userId];
-                              const {hands} = user;
-                              const itemSpec = hands[side];
-                              hands[side] = null;
-
-                              const {inventory} = user;
-                              inventory[inventoryIndex] = itemSpec;
-
-                              // XXX save user inventory here
-
-                              cb();
-                            } else {
-                              cb(_makeInvalidArgsError());
-                            }
-                          } else if (match = src.match(/^equipment:([0-9]+)$/)) {
-                            const srcEquipmentIndex = parseInt(match[1], 10);
-
-                            if (match = dst.match(/^hand:(left|right)$/)) {
-                              const side = match[1];
-
-                              const user = usersJson[userId];
-                              const {equipment} = user;
-                              const itemSpec = equipment[srcEquipmentIndex];
-                              equipment[srcEquipmentIndex] = null;
-
-                              const {hands} = user;
-                              hands[side] = itemSpec;
-
-                              // XXX save user equipment here
-
-                              cb();
-                            } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
-                              const dstEquipmentIndex = parseInt(match[1], 10);
-
-                              const user = usersJson[userId];
-                              const {equipment} = user;
-                              const itemSpec = equipment[srcEquipmentIndex];
-                              equipment[srcEquipmentIndex] = null;
-                              equipment[dstEquipmentIndex] = itemSpec;
-
-                              // XXX save user equipment here
-
-                              cb();
-                            } else {
-                              cb(_makeInvalidArgsError());
-                            }
-                          } else if (match = src.match(/^inventory:([0-9]+)$/)) {
-                            const inventoryIndex = parseInt(match[1], 10);
-
-                            if (match = dst.match(/^hand:(left|right)$/)) {
-                              const side = match[1];
-
-                              const user = usersJson[userId];
-                              const {inventory} = user;
-                              const itemSpec = inventory[inventoryIndex];
-                              inventory[inventoryIndex] = null;
-
-                              const {hands} = user;
-                              hands[side] = itemSpec;
-
-                              // XXX save user inventory here
-
-                              cb();
-                            } else {
-                              cb(_makeInvalidArgsError());
-                            }
-                          } else {
-                            cb(_makeInvalidArgsError());
-                          }
-                        } else if (method === 'setTagAttribute') {
-                          const [userId, src, attributeName, attributeValue] = args;
-
-                          cb = (cb => err => {
-                            if (!err) {
-                              _broadcast('setTagAttribute', [userId, src, attributeName, attributeValue]);
-                            }
-
-                            cb(err);
-                          })(cb);
-
-                          let match;
-                          if (match = src.match(/^world:(.+)$/)) {
-                            const id = match[1];
-
-                            const itemSpec = tagsJson.tags[id];
-                            const {attributes} = itemSpec;
-                            const attribute = attributes[attributeName];
-                            attribute.value = attributeValue;
-
-                            _saveTags();
-
-                            cb();
-                          } else {
-                            cb(_makeInvalidArgsError()); 
-                          }
+                    const _requestHubAuthentication = () => new Promise((accept, reject) => {
+                      hub.authHub(authentication, (err, username) => {
+                        if (!err) {
+                          accept({
+                            username,
+                            authentication,
+                          });
                         } else {
-                          const err = new Error('no such method:' + JSON.stringify(method));
-                          cb(err.stack);
+                          reject(err);
                         }
+                      });
+                    });
+                    const _requestHub = ({authentication, method, url, body}) => new Promise((accept, reject) => {
+                      const proxyReq = https.request({
+                        method,
+                        hostname: hubSpec.host,
+                        port: hubSpec.port,
+                        path: url,
+                        headers: {
+                          'Authorization': 'Token ' + authentication,
+                        },
+                      });
+                      proxyReq.on('error', err => {
+                        reject(err);
+                      });
+                      proxyReq.on('response', proxyRes => {
+                        const bs = [];
+                        proxyRes.on('data', d => {
+                          bs.push(d);
+                        });
+                        proxyRes.on('end', () => {
+                          const b = Buffer.concat(bs);
+                          const s = b.toStirng('utf8');
+                          const j = JSON.parse(s);
+
+                          accept(j);
+                        });
+                        proxyRes.on('error', err => {
+                          reject(err);
+                        });
+                      });
+
+                      if (body) {
+                        proxyReq.end(body);
                       } else {
-                        console.warn('invalid message', m);
+                        proxyReq.end();
                       }
                     });
-                    c.on('close', () => {
-                      delete usersJson[userId];
-
-                      connections.splice(connections.indexOf(c), 1);
+                    const _requestEquipmentJson = ({authentication}) => {
+                      if (serverType === 'ranked') {
+                        return _requestHub({
+                          authentication,
+                          method: 'GET',
+                          url: '/hub/world/equipment.json',
+                        });
+                      } else {
+                        return Promise.resolve(equipmentJson); // XXX figure out how to handle non-ranked server hub requests
+                      }
+                    };
+                    const _requestInventoryJson = (username, authentication) => new Promise((accept, reject) => {
+                      if (serverType === 'ranked') {
+                        return _requestHub({
+                          authentication,
+                          method: 'GET',
+                          url: '/hub/world/inventory.json',
+                        });
+                        hub.proxyHub(req, res, '/hub/world/inventory.json');
+                      } else {
+                        return Promise.resolve(inventoryJson);
+                      }
                     });
+
+                    _requestHubAuthentication(()
+                      .then(({
+                        authentication,
+                      }) =>
+                        Promise.all([
+                          _requestEquipmentJson({authentication}),
+                          _requestInventoryJson({authentication}),
+                        ])
+                          .then(([
+                            equipmentJson,
+                            inventoryJson,
+                          ]) => {
+                            const user = {
+                              id: userId,
+                              hands: {
+                                left: null,
+                                right: null,
+                              },
+                              equipment: equipmentJson.equipment,
+                              inventory: inventoryJson.inventory,
+                            };
+                            usersJson[userId] = user;
+
+                            const _sendInit = () => {
+                              const e = {
+                                type: 'init',
+                                args: [
+                                  _arrayify(tagsJson.tags),
+                                  equipmentJson.equipment,
+                                  inventoryJson.inventory,
+                                  _arrayify(usersJson),
+                                ],
+                              };
+                              const es = JSON.stringify(e);
+                              c.send(es);
+                            };
+                            _sendInit();
+
+                            const _broadcast = (type, args) => {
+                              if (connections.length > 0) {
+                                const e = {
+                                  type,
+                                  args,
+                                };
+                                const es = JSON.stringify(e);
+
+                                for (let i = 0; i < connections.length; i++) {
+                                  const connection = connections[i];
+                                  if (connection !== c) {
+                                    connection.send(es);
+                                  }
+                                }
+                              }
+                            };
+
+                            c.on('message', s => {
+                              const m = _jsonParse(s);
+
+                              if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args) && typeof m.id === 'string') {
+                                const {method, id, args} = m;
+
+                                let cb = (err = null, result = null) => {
+                                  if (c.readyState === OPEN) {
+                                    const e = {
+                                      type: 'response',
+                                      id: id,
+                                      error: err,
+                                      result: result,
+                                    };
+                                    const es = JSON.stringify(e);
+                                    c.send(es);
+                                  }
+                                };
+
+                                if (method === 'addTag') {
+                                  const [userId, itemSpec, dst] = args;
+                                  const {id} = itemSpec;
+                                  const side = dst.match(/^hand:(left|right)$/)[1];
+
+                                  const user = usersJson[userId];
+                                  const {hands} = user;
+                                  hands[side] = itemSpec;
+
+                                  _broadcast('addTag', [userId, itemSpec, dst]);
+
+                                  cb();
+                                } else if (method === 'moveTag') {
+                                  const [userId, src, dst] = args;
+
+                                  cb = (cb => err => {
+                                    if (!err) {
+                                      _broadcast('moveTag', [userId, id, src, dst]);
+                                    }
+
+                                    cb(err);
+                                  })(cb);
+
+                                  let match;
+                                  if (match = src.match(/^world:(.+)$/)) {
+                                    const id = match[1];
+
+                                    if (match = dst.match(/^hand:(left|right)$/)) {
+                                      const side = match[1];
+
+                                      const itemSpec = tagsJson.tags[id];
+                                      const user = usersJson[userId];
+                                      const {hands} = user;
+                                      hands[side] = itemSpec;
+                                      delete tagsJson.tags[id];
+
+                                      _saveTags();
+
+                                      cb();
+                                    } else {
+                                      cb(_makeInvalidArgsError());
+                                    }
+                                  } else if (match = src.match(/^hand:(left|right)$/)) {
+                                    const side = match[1];
+
+                                    if (match = dst.match(/^world:(.+)$/)) {
+                                      const matrixArrayString = match[1];
+                                      const matrixArray = JSON.parse(matrixArrayString);
+
+                                      const user = usersJson[userId];
+                                      const {hands} = user;
+                                      const itemSpec = hands[side];
+                                      hands[side] = null;
+
+                                      itemSpec.matrix = matrixArray;
+
+                                      const {id} = itemSpec;
+                                      tagsJson.tags[id] = itemSpec;
+
+                                      _saveTags();
+
+                                      cb();
+                                    } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                                      const equipmentIndex = parseInt(match[1], 10);
+
+                                      const user = usersJson[userId];
+                                      const {hands} = user;
+                                      const itemSpec = hands[side];
+                                      hands[side] = null;
+
+                                      const {equipment} = user;
+                                      equipment[equipmentIndex] = itemSpec;
+
+                                      // XXX save user equipment here
+
+                                      cb();
+                                    } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
+                                      const inventoryIndex = parseInt(match[1], 10);
+
+                                      const user = usersJson[userId];
+                                      const {hands} = user;
+                                      const itemSpec = hands[side];
+                                      hands[side] = null;
+
+                                      const {inventory} = user;
+                                      inventory[inventoryIndex] = itemSpec;
+
+                                      // XXX save user inventory here
+
+                                      cb();
+                                    } else {
+                                      cb(_makeInvalidArgsError());
+                                    }
+                                  } else if (match = src.match(/^equipment:([0-9]+)$/)) {
+                                    const srcEquipmentIndex = parseInt(match[1], 10);
+
+                                    if (match = dst.match(/^hand:(left|right)$/)) {
+                                      const side = match[1];
+
+                                      const user = usersJson[userId];
+                                      const {equipment} = user;
+                                      const itemSpec = equipment[srcEquipmentIndex];
+                                      equipment[srcEquipmentIndex] = null;
+
+                                      const {hands} = user;
+                                      hands[side] = itemSpec;
+
+                                      // XXX save user equipment here
+
+                                      cb();
+                                    } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                                      const dstEquipmentIndex = parseInt(match[1], 10);
+
+                                      const user = usersJson[userId];
+                                      const {equipment} = user;
+                                      const itemSpec = equipment[srcEquipmentIndex];
+                                      equipment[srcEquipmentIndex] = null;
+                                      equipment[dstEquipmentIndex] = itemSpec;
+
+                                      // XXX save user equipment here
+
+                                      cb();
+                                    } else {
+                                      cb(_makeInvalidArgsError());
+                                    }
+                                  } else if (match = src.match(/^inventory:([0-9]+)$/)) {
+                                    const inventoryIndex = parseInt(match[1], 10);
+
+                                    if (match = dst.match(/^hand:(left|right)$/)) {
+                                      const side = match[1];
+
+                                      const user = usersJson[userId];
+                                      const {inventory} = user;
+                                      const itemSpec = inventory[inventoryIndex];
+                                      inventory[inventoryIndex] = null;
+
+                                      const {hands} = user;
+                                      hands[side] = itemSpec;
+
+                                      // XXX save user inventory here
+
+                                      cb();
+                                    } else {
+                                      cb(_makeInvalidArgsError());
+                                    }
+                                  } else {
+                                    cb(_makeInvalidArgsError());
+                                  }
+                                } else if (method === 'setTagAttribute') {
+                                  const [userId, src, attributeName, attributeValue] = args;
+
+                                  cb = (cb => err => {
+                                    if (!err) {
+                                      _broadcast('setTagAttribute', [userId, src, attributeName, attributeValue]);
+                                    }
+
+                                    cb(err);
+                                  })(cb);
+
+                                  let match;
+                                  if (match = src.match(/^world:(.+)$/)) {
+                                    const id = match[1];
+
+                                    const itemSpec = tagsJson.tags[id];
+                                    const {attributes} = itemSpec;
+                                    const attribute = attributes[attributeName];
+                                    attribute.value = attributeValue;
+
+                                    _saveTags();
+
+                                    cb();
+                                  } else {
+                                    cb(_makeInvalidArgsError()); 
+                                  }
+                                } else {
+                                  const err = new Error('no such method:' + JSON.stringify(method));
+                                  cb(err.stack);
+                                }
+                              } else {
+                                console.warn('invalid message', m);
+                              }
+                            });
+
+                            cleanups.push(() => {
+                              delete usersJson[userId];
+                            });
+                          })
+                      )
+                      .catch(err => {
+                        console.warn(err);
+
+                        connection.close();
+                      });
+
+                    c.on('close', () => {
+                      cleanup();
+                    });
+
+                    const cleanups = [];
+                    const cleanup = () => {
+                      for (let i = 0; i < cleanups.length; i++) {
+                        const cleanup = cleanups[i];
+                        cleanup();
+                      }
+                    };
 
                     connections.push(c);
+                    cleanups.push(() => {
+                      connections.splice(connections.indexOf(c), 1);
+                    });
                   }
                 });
 
@@ -584,7 +696,6 @@ const _jsonParse = s => {
     return null;
   }
 };
-const _clone = o => JSON.parse(JSON.stringify(o));
 const _arrayify = o => Object.keys(o).map(k => o[k]);
 const _debounce = fn => {
   let running = false;
