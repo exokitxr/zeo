@@ -193,12 +193,17 @@ Here's a showcase of some of the `npm` modules you can run on Zeo:
 ## In progress
 
   - A menu UI infrastructure
-  - Plugin management without leaving VR
-  - Voice controls and reading backed by Watson
+  - Voice controls and reading backed by IBM Watson
   - Virtual tools you can pick up and play with
   - Keyboard emulation
   - Emulated game consoles with Retroarch
 
+## Contributing
+
+File an issue if something doesn't seem right.
+
+PRs are welcome and encouraged, but please file an issue first if you're not sure.
+
 ## Contact
 
-Issues and PR's are welcome. If you want to reach me privately, I'm Avaer Kazmer <a@modules.io>.
+If you want to reach me privately, I'm Avaer Kazmer <a@modules.io>.
