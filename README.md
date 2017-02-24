@@ -11,13 +11,13 @@ Runs in your browser, using either headset or mouse + keyboard. The goal is to _
 ## Features
 
 - One command `npm install`
-- WebVR-based and polyfilled for older browsers
+- WebVR based, polyfilled for older browsers
 - World persistence
 - [NPM](https://npmjs.org) ecosystem access from VR
 - In-VR module configurator
 - Multiplayer with voice chat
 - Server-side physics
-- Modules are plain THREE.js WebComponents
+- Modules are plain [`three.js`](https://threejs.org) [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components)
 - Modules hotload on front + backend via [`archae`](https://github.com/modulesio/archae)
 - Browser API for HMD + Controllers querying
 - Per-frame, per-eye callbacks
