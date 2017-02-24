@@ -113,6 +113,100 @@ class World {
                 };
                 const usersJson = {};
 
+                const _requestHubAuthentication = authentication => new Promise((accept, reject) => {
+                  hub.authHub(authentication, (err, username) => {
+                    if (!err) {
+                      accept({
+                        username,
+                        authentication,
+                      });
+                    } else {
+                      reject(err);
+                    }
+                  });
+                });
+                const _requestHub = ({authentication, method, url, body}) => new Promise((accept, reject) => {
+                  const proxyReq = https.request({
+                    method,
+                    hostname: hubSpec.host,
+                    port: hubSpec.port,
+                    path: url,
+                    headers: {
+                      'Authorization': 'Token ' + authentication,
+                    },
+                  });
+                  proxyReq.on('error', err => {
+                    reject(err);
+                  });
+                  proxyReq.on('response', proxyRes => {
+                    const bs = [];
+                    proxyRes.on('data', d => {
+                      bs.push(d);
+                    });
+                    proxyRes.on('end', () => {
+                      const b = Buffer.concat(bs);
+                      const s = b.toString('utf8');
+
+                      if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+                        const j = JSON.parse(s);
+
+                        accept(j);
+                      } else {
+                        const err = new Error('hub returned failure status code: ' + proxyRes.statusCode);
+
+                        reject(err);
+                      }
+                    });
+                    proxyRes.on('error', err => {
+                      reject(err);
+                    });
+                  });
+
+                  if (body) {
+                    proxyReq.end(body);
+                  } else {
+                    proxyReq.end();
+                  }
+                });
+                const _requestEquipmentJson = ({authentication}) => {
+                  if (serverType === 'ranked') {
+                    return _requestHub({
+                      authentication,
+                      method: 'GET',
+                      url: '/hub/world/equipment.json',
+                    });
+                  } else {
+                    return Promise.resolve(equipmentJson); // XXX figure out how to handle non-ranked server hub requests
+                  }
+                };
+                const _requestInventoryJson = ({authentication}) => {
+                  if (serverType === 'ranked') {
+                    return _requestHub({
+                      authentication,
+                      method: 'GET',
+                      url: '/hub/world/inventory.json',
+                    });
+                  } else {
+                    return Promise.resolve(inventoryJson);
+                  }
+                };
+                const _broadcast = (type, args) => {
+                  if (connections.length > 0) {
+                    const e = {
+                      type,
+                      args,
+                    };
+                    const es = JSON.stringify(e);
+
+                    for (let i = 0; i < connections.length; i++) {
+                      const connection = connections[i];
+                      if (connection !== c) {
+                        connection.send(es);
+                      }
+                    }
+                  }
+                };
+
                 const connections = [];
 
                 wss.on('connection', c => {
@@ -123,79 +217,7 @@ class World {
                     const userId = match[1];
                     const authentication = match[2];
 
-                    const _requestHubAuthentication = () => new Promise((accept, reject) => {
-                      hub.authHub(authentication, (err, username) => {
-                        if (!err) {
-                          accept({
-                            username,
-                            authentication,
-                          });
-                        } else {
-                          reject(err);
-                        }
-                      });
-                    });
-                    const _requestHub = ({authentication, method, url, body}) => new Promise((accept, reject) => {
-                      const proxyReq = https.request({
-                        method,
-                        hostname: hubSpec.host,
-                        port: hubSpec.port,
-                        path: url,
-                        headers: {
-                          'Authorization': 'Token ' + authentication,
-                        },
-                      });
-                      proxyReq.on('error', err => {
-                        reject(err);
-                      });
-                      proxyReq.on('response', proxyRes => {
-                        const bs = [];
-                        proxyRes.on('data', d => {
-                          bs.push(d);
-                        });
-                        proxyRes.on('end', () => {
-                          const b = Buffer.concat(bs);
-                          const s = b.toStirng('utf8');
-                          const j = JSON.parse(s);
-
-                          accept(j);
-                        });
-                        proxyRes.on('error', err => {
-                          reject(err);
-                        });
-                      });
-
-                      if (body) {
-                        proxyReq.end(body);
-                      } else {
-                        proxyReq.end();
-                      }
-                    });
-                    const _requestEquipmentJson = ({authentication}) => {
-                      if (serverType === 'ranked') {
-                        return _requestHub({
-                          authentication,
-                          method: 'GET',
-                          url: '/hub/world/equipment.json',
-                        });
-                      } else {
-                        return Promise.resolve(equipmentJson); // XXX figure out how to handle non-ranked server hub requests
-                      }
-                    };
-                    const _requestInventoryJson = (username, authentication) => new Promise((accept, reject) => {
-                      if (serverType === 'ranked') {
-                        return _requestHub({
-                          authentication,
-                          method: 'GET',
-                          url: '/hub/world/inventory.json',
-                        });
-                        hub.proxyHub(req, res, '/hub/world/inventory.json');
-                      } else {
-                        return Promise.resolve(inventoryJson);
-                      }
-                    });
-
-                    _requestHubAuthentication(()
+                    _requestHubAuthentication(authentication)
                       .then(({
                         authentication,
                       }) =>
@@ -233,22 +255,38 @@ class World {
                             };
                             _sendInit();
 
-                            const _broadcast = (type, args) => {
-                              if (connections.length > 0) {
-                                const e = {
-                                  type,
-                                  args,
-                                };
-                                const es = JSON.stringify(e);
+                            const _saveEquipment = _debounce(next => {
+                              _requestHub({
+                                authentication,
+                                method: 'PUT',
+                                url: '/hub/world/equipment.json',
+                                body: JSON.stringify(equipmentJson),
+                              })
+                                .then(() => {
+                                  next();
+                                })
+                                .catch(err => {
+                                  console.warn(err);
 
-                                for (let i = 0; i < connections.length; i++) {
-                                  const connection = connections[i];
-                                  if (connection !== c) {
-                                    connection.send(es);
-                                  }
-                                }
-                              }
-                            };
+                                  next();
+                                });
+                            });
+                            const _saveInventory = _debounce(next => {
+                              _requestHub({
+                                authentication,
+                                method: 'PUT',
+                                url: '/hub/world/inventory.json',
+                                body: JSON.stringify(inventoryJson),
+                              })
+                                .then(() => {
+                                  next();
+                                })
+                                .catch(err => {
+                                  console.warn(err);
+
+                                  next();
+                                });
+                            });
 
                             c.on('message', s => {
                               const m = _jsonParse(s);
@@ -342,7 +380,7 @@ class World {
                                       const {equipment} = user;
                                       equipment[equipmentIndex] = itemSpec;
 
-                                      // XXX save user equipment here
+                                      _saveEquipment();
 
                                       cb();
                                     } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
@@ -356,7 +394,7 @@ class World {
                                       const {inventory} = user;
                                       inventory[inventoryIndex] = itemSpec;
 
-                                      // XXX save user inventory here
+                                      _saveInventory();
 
                                       cb();
                                     } else {
@@ -376,7 +414,7 @@ class World {
                                       const {hands} = user;
                                       hands[side] = itemSpec;
 
-                                      // XXX save user equipment here
+                                      _saveEquipment();
 
                                       cb();
                                     } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
@@ -388,7 +426,7 @@ class World {
                                       equipment[srcEquipmentIndex] = null;
                                       equipment[dstEquipmentIndex] = itemSpec;
 
-                                      // XXX save user equipment here
+                                      _saveEquipment();
 
                                       cb();
                                     } else {
@@ -408,7 +446,7 @@ class World {
                                       const {hands} = user;
                                       hands[side] = itemSpec;
 
-                                      // XXX save user inventory here
+                                      _saveInventory();
 
                                       cb();
                                     } else {
@@ -460,7 +498,7 @@ class World {
                       .catch(err => {
                         console.warn(err);
 
-                        connection.close();
+                        c.close();
                       });
 
                     c.on('close', () => {
