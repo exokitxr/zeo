@@ -34,7 +34,7 @@ class Hub {
           const _getServers = () => serversJson.servers;
           const _getCurrentServer = () => serverJson;
           const _changeServer = serverUrl => {
-            if (serverUrl !== hubUrl) {
+            if (serverUrl !== null) {
               return _requestServer(serverUrl)
                 .then(serverJsonData => {
                   serverJson = serverJsonData;
@@ -42,7 +42,7 @@ class Hub {
             } else {
               serverJson = {
                 type: 'hub',
-                url: hubUrl,
+                url: null,
               };
 
               return Promise.resolve();

@@ -3,6 +3,6 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$DIR"/../;
-npm start -- server &
+npm start -- server serverHost=insecure.zeovr.io serverType=insecure hubUrl=none &
 sleep infinity;
 popd;

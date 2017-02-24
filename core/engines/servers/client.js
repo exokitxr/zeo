@@ -17,7 +17,6 @@ class Servers {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -221,7 +220,7 @@ class Servers {
                         console.warn(err);
                       });
                   } else if (onclick === 'servers:disconnect') {
-                    hub.changeServer(hubUrl)
+                    hub.changeServer(null)
                       .then(() => {
                         rend.disconnectServer();
 

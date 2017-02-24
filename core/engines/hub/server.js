@@ -37,6 +37,13 @@ class Hub {
     ];
     const secure = serverType === 'secure';
 
+    const _initialAnnounce = () => {
+      if (hubSpec) {
+        return _tryRefreshServer();
+      } else {
+        return Promise.resolve();
+      }
+    };
     const _queueRefreshServer = _debounce(next => {
       _tryRefreshServer()
         .then(() => {
@@ -102,16 +109,18 @@ class Hub {
       });
     });
 
-    return _tryRefreshServer()
+    return _initialAnnounce()
       .then(() => {
         if (live) {
-          const serverRefreshInterval = setInterval(() => {
-            _queueRefreshServer();
-          }, SERVER_REFRESH_INTERVAL);
+          if (hubSpec) {
+            const serverRefreshInterval = setInterval(() => {
+              _queueRefreshServer();
+            }, SERVER_REFRESH_INTERVAL);
 
-          this._cleanup = () => {
-            clearInterval(serverRefreshInterval);
-          };
+            this._cleanup = () => {
+              clearInterval(serverRefreshInterval);
+            };
+          }
 
           const _proxyHub = (req, res, url) => {
             const proxyReq = https.request({
