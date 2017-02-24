@@ -221,14 +221,24 @@ class Login {
               rend.on('logout', logout);
 
               const _requestInitialLogin = () => {
-                const token = localStorage.getItem('token');
+                const username = _getQueryVariable('username');
+                const password = _getQueryVariable('password');
 
-                if (token) {
+                if (username !== null && password !== null) {
                   return _requestLogin({
-                    token,
+                    username,
+                    password,
                   });
                 } else {
-                  return Promise.resolve();
+                  const token = localStorage.getItem('token');
+
+                  if (token) {
+                    return _requestLogin({
+                      token,
+                    });
+                  } else {
+                    return Promise.resolve();
+                  }
                 }
               };
               const _requestLogin = ({username, password, token}) => new Promise((accept, reject) => {
@@ -467,6 +477,20 @@ class Login {
   unmount() {
     this._cleanup();
   }
+}
+
+const _getQueryVariable = variable => {
+  const query = window.location.search.substring(1);
+  const vars = query.split('&');
+
+  for (let i = 0; i < vars.length; i++) {
+    const pair = vars[i].split('=');
+
+    if (decodeURIComponent(pair[0]) === variable) {
+      return decodeURIComponent(pair[1]);
+    }
+  }
+  return null;
 }
 
 module.exports = Login;
