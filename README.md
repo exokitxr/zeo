@@ -11,37 +11,38 @@ If you know how to run `node`, you can pick up your headset + controllers and bu
 ## Features
 
 - One command `npm install`
-- Works with WebVR 1.0, polyfilled
+- WebVR-based and polyfilled for older browsers
 - World persistence
-- In-VR plugin UI
-- API for HMD / controller position
-- Multiplayer support
+- [NPM](https://npmjs.org) ecosystem access from VR
+- In-VR module configurator
+- Multiplayer with voice chat
 - Server-side physics
+- Modules are plain THREE.js WebComponents
+- Modules hotload on front + backend via [`archae`](https://github.com/modulesio/archae)
+- Browser API for HMD + Controllers querying
 - Per-frame, per-eye callbacks
 - Positional audio support
 - File upload/download integration
-- Full access to [NPM](https://npmjs.org) ecosystem
 - HMD + controller emulation with keyboard + mouse
-- Hotload plugins with [`archae`](https://github.com/modulesio/archae)
-- Javascript all the way down
+- It's just Javascript, so change whatever you like
 
 ## Quick install (Linux)
 
 ```bash
-npm install zeo # requires node 6+
+npm install git+https://github.com/modulesio/zeo.git # requires node 6+
 ```
 
-:point_right: The _required dependencies_ are `build-essential cmake python`. These are needed to build some native node modules -- most notably the third-party [Bullet physics engine](https://github.com/bulletphysics/bullet3). On Debian/Ubuntu you can get these dependencies with:
+:point_right: The _required dependencies_ are `build-essential cmake python ffmpeg`. These are needed to build some native node modules ([Bullet physics engine](https://github.com/bulletphysics/bullet3)) and for voice audio processing on the server. On Debian/Ubuntu you can get these dependencies with:
 
 ```bash
-sudo apt-get install build-essential cmake python
+sudo apt-get install build-essential cmake python ffmpeg
 ```
 
 If you're using a different package manager it almost certainly has these, under slightly different names.
 
 ## Example: Bouncy ball
 
-Here is the full code for `Bouncy ball`, a little game you can play with tracked controllers. It's packaged as a Zeo  module in [`plugins/demo`](https://github.com/modulesio/zeo/tree/master/plugins/demo).
+Here is the full code for `Bouncy ball`, a little game you can play with tracked controllers. It's packaged as a Zeo module in [`plugins/demo`](https://github.com/modulesio/zeo/tree/master/plugins/demo).
 
 ```js
 module.exports = archae => ({ // `archae` is the Zeo plugin loader
