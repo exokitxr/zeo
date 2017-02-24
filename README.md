@@ -1,14 +1,12 @@
-# [zeo.sh](https://zeo.sh)
+<img src="https://cdn.rawgit.com/modulesio/zeo/de2961d8bf3edbad67d0e2ce8491314ae6b065bf/public/img/heading.jpg" width="200px">
 
-WebVR worlds in Javascript.
+Multiplayer WebVR worlds made out of `npm` modules. Both frontend and backend.
 
-Zeo.sh lets you run `npm` modules in VR from your browser, using a headset or keyboard + mouse. The goal is _Javascript from fingers to face at the speed of thought_.
+Runs in your browser, using either headset or mouse + keyboard. The goal is to _let anyone build anything out of Javascript_ and share it with the world. Virtually, of course.
 
-<img src="https://cdn.rawgit.com/modulesio/zeo/eb6065396e423095150bd2572c1bd68ee7eaac09/public/img/heading.png" width="300px">
+:warning: Alpha software, not documented yet. If you want updates, [add your email here](http://eepurl.com/cDEnID). :warning:
 
 <img src="https://cdn.rawgit.com/modulesio/zeo-data/defb101e115250f6512ab6f6c29e69ce9e75a80b/video/demo.gif" width="512px">
-
-If you know how to run `node`, you can pick up your headset + controllers and build worlds out of Zeo modules on `npm`. If you know Javascript, `THREE.js`, and `npm`, then you can write your own.
 
 ## Features
 
