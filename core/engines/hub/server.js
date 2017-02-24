@@ -84,12 +84,12 @@ class Hub {
           if (statusCode >= 200 && statusCode < 300) {
             accept();
           } else {
-            const err = new Error('server ping returned error status code: ' + JSON.stringify({
+            const err = 'server ping returned error status code: ' + JSON.stringify({
               host: options.host,
               port: options.port,
               path: options.path,
               statusCode: statusCode,
-            }, null, 2));
+            });
             reject(err);
           }
         });
