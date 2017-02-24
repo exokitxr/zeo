@@ -107,7 +107,7 @@ class Rend {
         };
 
         const menuState = {
-          open: hub.getCurrentServer().type === 'server',
+          open: false,
           loggedIn: false,
           animation: null,
         };

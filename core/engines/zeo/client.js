@@ -208,10 +208,6 @@ class Zeo {
                       return fetch(url, options);
                     };
 
-                    if (hub.getCurrentServer().type === 'server') {
-                      rend.connectServer();
-                    }
-
                     const _initHelper = () => {
                       const helper = document.createElement('div');
                       helper.id = 'helper';

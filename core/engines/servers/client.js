@@ -104,7 +104,7 @@ class Servers {
                 const serversState = {
                   page: 'list',
                   servers: hub.getServers(),
-                  currentServerUrl: hub.getCurrentServer().url,
+                  currentServerUrl: null,
                 };
                 const focusState = {
                   type: '',

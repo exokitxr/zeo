@@ -20,12 +20,14 @@ class Multiplayer {
       '/core/engines/hub',
       '/core/engines/three',
       '/core/engines/webvr',
+      '/core/engines/login',
       '/core/engines/rend',
       '/core/plugins/js-utils',
     ]).then(([
       hub,
       three,
       webvr,
+      login,
       rend,
       jsUtils,
     ]) => {
@@ -354,10 +356,12 @@ class Multiplayer {
 
             const _updateEnabled = () => {
               const connected = hub.getCurrentServer().type === 'server';
+              const loggedIn = !login.isOpen();
+              const shouldBeEnabled = connected && loggedIn;
 
-              if (connected && !enabled) {
+              if (shouldBeEnabled && !enabled) {
                 _enable();
-              } else if (!connected && enabled) {
+              } else if (!shouldBeEnabled && enabled) {
                 _disable();
               };
             };
@@ -365,6 +369,10 @@ class Multiplayer {
             rend.on('connectServer', _connectServer);
             const _disconnectServer = _updateEnabled;
             rend.on('disconnectServer', _disconnectServer);
+            const _login = _updateEnabled;
+            rend.on('login', _login);
+            const _logout = _updateEnabled;
+            rend.on('logout', _logout);
 
             this._cleanup = () => {
               cleanup();
@@ -376,6 +384,8 @@ class Multiplayer {
               rend.removeListener('update', _update);
               rend.on('connectServer', _connectServer);
               rend.on('disconnectServer', _disconnectServer);
+              rend.on('login', _login);
+              rend.on('logout', _logout);
             };
 
             return multiplayerInterface;

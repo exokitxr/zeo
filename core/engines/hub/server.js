@@ -12,7 +12,7 @@ class Hub {
   mount() {
     const {_archae: archae} = this;
     const {app, dirname, dataDirectory} = archae.getCore();
-    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, type: serverType}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, type: serverType, username: serverUsername, password: serverPassword}}} = archae;
 
     const hubSpec = (() => {
       const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
