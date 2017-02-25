@@ -402,6 +402,10 @@ class Zeo {
                         return world.getGrabElement(side);
                       }
 
+                      createFile(blob) {
+                        return world.createFile(blob);
+                      }
+
                       getPhysicsWorld() {
                         return bullet.getPhysicsWorld();
                       }

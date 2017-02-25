@@ -1906,7 +1906,7 @@ class World {
                 }
 
                 createFile(blob) {
-                  const id = _makeId();
+                  const id = _makeFileId();
                   const {name = _makeId(), type: mimeType} = blob;
                   const matrix = _getInFrontOfCameraMatrix();
                   const itemSpec = {
@@ -1920,19 +1920,25 @@ class World {
                   const {item} = tagMesh;
                   item.instancing = true;
 
-                  fs.writeFile(id, blob)
-                    .then(() => {
-                      item.instancing = false;
+                  elementManager.add(tagMesh);
 
-                      tags.updatePages();
-                    })
-                    .catch(err => {
-                      console.warn(err);
+                  return new Promise((accept, reject) => {
+                    fs.writeFile(id, blob)
+                      .then(() => {
+                        item.instancing = false;
 
-                      item.instancing = false;
+                        tags.updatePages();
 
-                      tags.updatePages();
-                    });
+                        accept(tagMesh);
+                      })
+                      .catch(err => {
+                        item.instancing = false;
+
+                        tags.updatePages();
+
+                        reject(err);
+                      });
+                  });
 
                   // XXX perform an actual tags save via _addTag here
                 }
@@ -2044,6 +2050,17 @@ class World {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _makeId = () => Math.random().toString(36).substring(7);
+const _padNumber = (n, width) => {
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+};
+const _makeFileId = () => {
+  const array = new Uint8Array(128 / 8);
+  crypto.getRandomValues(array);
+  return array.reduce((acc, i) => {
+    return acc + _padNumber(i.toString(16), 2);
+  }, '');
+};
 const _warnError = err => {
   if (err) {
     console.warn(err);

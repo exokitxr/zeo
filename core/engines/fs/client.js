@@ -647,7 +647,7 @@ class Fs {
   }
 }
 
-const _pad = (n, width) => {
+const _padNumber = (n, width) => {
   n = n + '';
   return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
 };
@@ -655,7 +655,7 @@ const _makeId = () => {
   const array = new Uint8Array(128 / 8);
   crypto.getRandomValues(array);
   return array.reduce((acc, i) => {
-    return acc + _pad(i.toString(16), 2);
+    return acc + _padNumber(i.toString(16), 2);
   }, '');
 };
 

@@ -108,7 +108,7 @@ class Teleport {
             const teleportAirMesh = teleportAirMeshes[side];
 
             if (gamepadStatus) {
-              const {position: controllerPosition, rotation: controllerRotation, axes ,buttons} = gamepadStatus;
+              const {position: controllerPosition, rotation: controllerRotation, axes, buttons} = gamepadStatus; // XXX break this out into acutal event handlers
               const padButtonPressed = buttons.pad.pressed;
 
               if (padButtonPressed) {

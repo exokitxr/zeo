@@ -162,7 +162,7 @@ class Camera {
             }
           }
 
-          getImageDataUrl() {
+          requestImageData() {
             const {renderTarget} = this;
             const {width, height} = renderTarget;
             const buffer = new Uint8Array(width * height * 4);
@@ -178,7 +178,8 @@ class Camera {
             ctx.putImageData(imageData, 0, 0);
 
             const dataUrl = canvas.toDataURL('image/png');
-            return dataUrl;
+            return fetch(dataUrl)
+              .then(res => res.blob());
           }
         }
         zeo.registerElement(this, CameraElement);
@@ -190,12 +191,27 @@ class Camera {
           const cameraElement = cameraElements.find(cameraElement => cameraElement === grabElement);
 
           if (cameraElement) {
-            console.log('camera snapshot', cameraElement); // XXX
+            cameraElement.requestImageData()
+              .then(blob => {
+                blob.name = 'Screenshot-1';
+
+                return zeo.createFile(blob)
+                  .then(tagMesh => {
+                    console.log('uploaded', tagMesh);
+                  });
+              })
+              .catch(err => {
+                console.warn(err);
+              });
 
             e.stopImmediatePropagation();
           }
         };
-        zeo.on('pad', _pad);
+        zeo.on('pad', _pad, {
+          priority: 1,
+        });
+
+        // XXX also override paddown, padup to make sure teleport doesn't interfere
 
         zeo.on('update', _update);
 
