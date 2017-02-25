@@ -206,7 +206,7 @@ class Camera {
           if (cameraElement) {
             cameraElement.requestImageData()
               .then(blob => {
-                blob.name = 'Screenshot-1';
+                blob.name = 'Screenshot-1.png';
 
                 return zeo.createFile(blob)
                   .then(tagMesh => {

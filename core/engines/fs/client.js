@@ -529,13 +529,21 @@ class Fs {
             return fileMeshes.find(({file: {id: fileId}}) => fileId === id) || null;
           }
 
+          getFileUrl(id) {
+            return '/archae/fs/' + id;
+          }
+
           readFile(id) {
-            return fetch('/archae/fs/' + id)
+            const fileUrl = this.getFileUrl(id);
+
+            return fetch(fileUrl)
               .then(res => res.blob());
           }
 
           writeFile(id, blob) {
-            return fetch('/archae/fs/' + id, {
+            const fileUrl = this.getFileUrl(id);
+
+            return fetch(fileUrl, {
               method: 'PUT',
               body: blob,
             }).then(res => res.blob()

@@ -8,6 +8,8 @@ const playBlackImg = require('../img/play-black');
 const playBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(playBlackImg);
 const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
+const downloadBlackImg = require('../img/download-black');
+const downloadBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(downloadBlackImg);
 
 const getElementSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight}) => {
   const {id, displayName, description, version, instancing, open} = item;
@@ -227,7 +229,8 @@ const getFileSrc = ({item}) => {
       <div style="width: 190px; margin-right: 10px;">
         <div style="height: 100px;">
           <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
-          <p style="margin: 0; font-size: 15px; line-height: 1.4;">File in /</p>
+          <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">File in /</p>
+          <a style="display: inline-flex; padding: 4px 20px; border: 1px solid #333; border-radius: 100px; font-size: 28px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:download:${id}">Download</a>
         </div>
       </div>
       ${!open ?

@@ -303,6 +303,16 @@ class Tags {
                   e.stopImmediatePropagation();
 
                   return true;
+                } else if (match = onclick.match(/^tag:download:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tagMesh;
+                  const {name} = item;
+
+                  tagsApi.emit('download', {
+                    id,
+                    name,
+                  });
                 } else {
                   return false;
                 }
@@ -320,7 +330,7 @@ class Tags {
                   const {position, quaternion, scale} = positioningMesh;
                   return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
                 })();
-                tagsInstance.emit('setAttribute', {
+                tagsApi.emit('setAttribute', {
                   id: positioningId,
                   attribute: positioningName,
                   value: newValue,
@@ -397,7 +407,7 @@ class Tags {
 
                     focusState.type = 'attribute:' + tagId + ':' + attributeName;
                   } else if (action === 'set') {
-                    tagsInstance.emit('setAttribute', {
+                    tagsApi.emit('setAttribute', {
                       id: tagId,
                       attribute: attributeName,
                       value: value,
@@ -415,7 +425,7 @@ class Tags {
                       }
                       return n;
                     })();
-                    tagsInstance.emit('setAttribute', {
+                    tagsApi.emit('setAttribute', {
                       id: tagId,
                       attribute: attributeName,
                       value: newValue,
@@ -425,7 +435,7 @@ class Tags {
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
 
-                    tagsInstance.emit('setAttribute', {
+                    tagsApi.emit('setAttribute', {
                       id: tagId,
                       attribute: attributeName,
                       value: newValue,
@@ -902,8 +912,8 @@ class Tags {
             }
           };
 
-          const tagsInstance = new TagsApi();
-          return tagsInstance;
+          const tagsApi = new TagsApi();
+          return tagsApi;
         }
       });
   }

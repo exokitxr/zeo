@@ -1779,6 +1779,17 @@ class World {
               };
               tags.on('setAttribute', _setAttribute);
 
+              const _download = ({id, name}) => {
+                const a = document.createElement('a');
+                a.href = fs.getFileUrl(id);
+                a.download = name;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              };
+              tags.on('download', _download);
+
               const _uploadStart = ({id, name, mimeType}) => {
                 const matrix = (() => {
                   const {hmd} = webvr.getStatus();
@@ -1858,6 +1869,7 @@ class World {
                 input.removeListener('keydown', _keydown);
                 input.removeListener('keyboarddown', _keyboarddown);
 
+                tags.removeListener('download', _download);
                 tags.removeListener('setAttribute', _setAttribute);
 
                 fs.removeListener('uploadStart', _uploadStart);
