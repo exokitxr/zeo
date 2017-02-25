@@ -84,8 +84,9 @@ class Servers {
           const _requestInitialConnect = () => new Promise((accept, reject) => {
             const loggedIn = !login.isOpen();
             const currentServer = hub.getCurrentServer()
+            const shouldConnect = loggedIn && currentServer.type === 'server';
 
-            if (loggedIn && currentServer.type === 'server') {
+            if (shouldConnect) {
               const {url: currentServerUrl} = currentServer;
 
               _connectServer(currentServerUrl)
