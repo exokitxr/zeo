@@ -946,13 +946,12 @@ class Rend {
                             });
                           };
                           const _updateKeyboardAnchors = () => {
+                            // NOTE: there should be at most one intersecting anchor box since keys do not overlap
+                            const {keySpecs} = keyboardMesh;
+                            const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
+
                             const {key: oldKey} = keyboardHoverState;
-                            const newKey = (() => {
-                              // NOTE: there should be at most one intersecting anchor box since keys do not overlap
-                              const {keySpecs} = keyboardMesh;
-                              const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
-                              return newKeySpec ? newKeySpec.key : null;
-                            })();
+                            const newKey = newKeySpec ? newKeySpec.key : null;
                             keyboardHoverState.key = newKey;
 
                             if (oldKey && newKey !== oldKey) {
@@ -981,7 +980,9 @@ class Rend {
                               });
                             }
 
-                            if (anchorBoxTarget) {
+                            if (newKeySpec) {
+                              const {anchorBoxTarget} = newKeySpec;
+
                               keyboardBoxMesh.position.copy(anchorBoxTarget.position);
                               keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
                               keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
