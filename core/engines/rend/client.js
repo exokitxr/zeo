@@ -70,7 +70,7 @@ class Rend {
       creatureUtils,
     ]) => {
       if (live) {
-        const {THREE, scene, camera} = three;
+        const {THREE, scene, camera, renderer} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
@@ -711,6 +711,9 @@ class Rend {
                 };
 
                 localUpdates.push(() => {
+                  const _updateRenderer = () => {
+                    renderer.shadowMap.needsUpdate = true;
+                  };
                   const _updateMeshes = () => {
                     const {animation} = menuState;
 
@@ -797,6 +800,7 @@ class Rend {
                       }
                     }
                   };
+                  _updateRenderer();
                   _updateMeshes();
 
                   const {open} = menuState;
