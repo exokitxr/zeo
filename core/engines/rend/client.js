@@ -723,7 +723,7 @@ class Rend {
                       const factor = animation.getValue();
                       const value = ((1 - factor) * startValue) + (factor * endValue);
 
-                      const {bagMesh: {headMesh, bodyMesh, armMeshes}, tagMeshes, fileMeshes} = auxObjects;
+                      const {bagMesh: {headMesh, bodyMesh, armMeshes}, tagMeshes} = auxObjects;
                       const animatedMeshSpecs = [
                         {
                           mesh: menuMesh,
@@ -748,10 +748,6 @@ class Rend {
                         })))
                         .concat(tagMeshes.map(tagMesh => ({
                           mesh: tagMesh,
-                          direction: 'y',
-                        })))
-                        .concat(fileMeshes.map(fileMesh => ({
-                          mesh: fileMesh,
                           direction: 'y',
                         })));
 
