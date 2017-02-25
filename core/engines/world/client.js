@@ -333,7 +333,7 @@ class World {
                 }
 
                 move(oldIndex, newIndex) {
-                  this.tagMeshes[newIndex] = oldIndex;
+                  this.tagMeshes[newIndex] = this.tagMeshes[oldIndex];
                   this.tagMeshes[oldIndex] = null;
                 }
               }
