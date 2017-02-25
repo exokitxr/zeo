@@ -17,21 +17,6 @@ import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
-const DEFAULT_EQUIPMENT = (() => {
-  const numEquipmentItems = (1 + 1 + 2 + 8);
-  const result = Array(numEquipmentItems);
-  for (let i = 0; i < numEquipmentItems; i++) {
-    result[i] = null;
-  }
-  return result;
-})();
-const DEFAULT_GRAB_RADIUS = 0.1;
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
-
 const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemMutexSymbol = Symbol();
@@ -743,11 +728,7 @@ class Tags {
 
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
-          const tagClassMeshes = {
-            elements: [],
-            npm: [],
-            equipment: DEFAULT_EQUIPMENT,
-          };
+
           class TagsApi extends EventEmitter {
             makeTag(itemSpec) {
               const object = new THREE.Object3D();
@@ -861,50 +842,6 @@ class Tags {
               if (index !== -1) {
                 tagMeshes.splice(index, 1);
               }
-            }
-
-            mountTag(tagClass, tagMesh) {
-              tagClassMeshes[tagClass].push(tagMesh);
-            }
-
-            unmountTag(tagClass, tagMesh) {
-              const entries = tagClassMeshes[tagClass];
-              const index = entries.indexOf(tagMesh);
-
-              if (index !== -1) {
-                entries.splice(index, 1);
-              }
-            }
-
-            setTag(tagClass, index, tagMesh) {
-              tagClassMeshes[tagClass][index] = tagMesh;
-
-              return tagMesh;
-            }
-
-            unsetTag(tagClass, index) {
-              const tagMesh = tagClassMeshes[tagClass][index];
-
-              tagClassMeshes[tagClass][index] = null;
-
-              return tagMesh;
-            }
-
-            moveTag(tagClass, oldIndex, newIndex) {
-              const tagMesh = tagClassMeshes[tagClass][oldIndex];
-
-              tagClassMeshes[tagClass][oldIndex] = null;
-              tagClassMeshes[tagClass][newIndex] = tagMesh;
-
-              return tagMesh;
-            }
-
-            getTagsClass(tagClass) {
-              return tagClassMeshes[tagClass];
-            }
-
-            isTag(object) {
-              return object[tagFlagSymbol] === true;
             }
 
             updatePages() {
