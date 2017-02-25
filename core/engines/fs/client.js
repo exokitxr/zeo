@@ -73,18 +73,8 @@ class Fs {
           const {dataTransfer: {files}} = e;
           if (files.length > 0) {
             const file = files[0];
-            const id = _makeId();
-            file.id = id;
 
-            fsApi.emit('uploadStart', file);
-
-            fsApi.writeFile(id, file)
-              .then(() => {
-                fsApi.emit('uploadEnd', file);
-              })
-              .catch(err => {
-                console.warn(err);
-              });
+            fsApi.emit('upload', file);
           }
         };
         domElement.addEventListener('drop', drop);

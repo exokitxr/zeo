@@ -1790,52 +1790,13 @@ class World {
               };
               tags.on('download', _download);
 
-              const _uploadStart = ({id, name, mimeType}) => {
-                const matrix = (() => {
-                  const {hmd} = webvr.getStatus();
-                  const {position, rotation} = hmd;
-                  const menuMesh = rend.getMenuMesh();
-                  const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
-
-                  const newMatrix = new THREE.Matrix4().compose(
-                    position.clone()
-                      .add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)),
-                    rotation,
-                    new THREE.Vector3(1, 1, 1)
-                  ).multiply(menuMeshMatrixInverse);
-                  const {position: newPosition, rotation: newRotation, scale: newScale} = _decomposeMatrix(newMatrix);
-
-                  return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
-                })();
-                const file = {
-                  id,
-                  name,
-                  mimeType,
-                  matrix,
-                };
-
-                const fileMesh = fs.makeFile(file);
-                fileMesh.instancing = true;
-
-                scene.add(fileMesh);
-
-                fs.updatePages();
+              const _upload = file => {
+                worldApi.createFile(file)
+                  .then(tagMesh => {
+                    console.log('upoaded file', tagMesh);
+                  });
               };
-              fs.on('uploadStart', _uploadStart);
-              const _uploadEnd = ({id}) => {
-                const fileMesh = fs.getFile(id);
-
-                if (fileMesh) {
-                  const {file} = fileMesh;
-                  file.instancing = false;
-
-                  fs.updatePages();
-
-                  // XXX make file -> world; figure out how to do this in the face of uploads
-                  _saveFiles();
-                }
-              };
-              fs.on('uploadEnd', _uploadEnd);
+              fs.on('upload', _upload);
 
               const _connectServer = () => {
                 worldApi.connect();
@@ -1872,8 +1833,7 @@ class World {
                 tags.removeListener('download', _download);
                 tags.removeListener('setAttribute', _setAttribute);
 
-                fs.removeListener('uploadStart', _uploadStart);
-                fs.removeListener('uploadEnd', _uploadEnd);
+                fs.removeListener('upload', _upload);
 
                 rend.removeListener('connectServer', _connectServer);
                 rend.removeListener('disconnectServer', _disconnectServer);
