@@ -252,9 +252,6 @@ class WebVR {
                   });
 
                   this._frameData = (display instanceof FakeVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
-                  cleanups.push(() => {
-                    this._frameData = null;
-                  });
 
                   if (display && stereoscopic) {
                     const {getVRDisplays} = navigator; // HACK to prevent VREffect from initializing VR displays
@@ -309,6 +306,8 @@ class WebVR {
 
                     this.setStageMatrix(new THREE.Matrix4());
                     this.updateStatus();
+
+                    this._frameData = null;
                   });
 
                   const _renderLoop = () => {
@@ -656,7 +655,7 @@ class WebVR {
               const {position: userPosition, rotation: userQuaternion, scale: userScale} = _getPropertiesFromMatrix(userStageMatrix);
               const userRotationY = new THREE.Euler().setFromQuaternion(userQuaternion, camera.rotation.order).y;
 
-              const frameData = new VRFrameData();
+              const {_frameData: frameData} = this;
               display.getFrameData(frameData);
               const displayPosition = new THREE.Vector3().fromArray(frameData.pose.position);
               const displayQuaternion = new THREE.Quaternion().fromArray(frameData.pose.orientation);
