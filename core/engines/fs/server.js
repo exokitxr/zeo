@@ -142,6 +142,7 @@ class Fs {
                   const ws = fs.createWriteStream(path.join(fsPath, slicedUrl));
 
                   req.pipe(ws);
+
                   ws.on('finish', () => {
                     res.send();
                   });

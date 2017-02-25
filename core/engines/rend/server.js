@@ -373,6 +373,7 @@ class Rend {
           const _cleanName = name => name.match(/([^\/]*)$/)[1];
           const _getInstalledModSpec = mod => _getInstalledPluginPackageJson(mod)
             .then(packageJson => ({
+              type: 'element',
               id: mod,
               name: mod,
               displayName: _cleanName(mod),
@@ -393,6 +394,7 @@ class Rend {
               packageJson,
               readmeMd,
             ]) => ({
+              type: 'element',
               id: mod,
               name: mod,
               displayName: _cleanName(mod),
@@ -409,6 +411,7 @@ class Rend {
           const _getUninstalledModSpecs = mods => Promise.all(mods.map(mod =>
             _getUninstalledPluginPackageJson(mod)
               .then(packageJson => ({
+                type: 'element',
                 id: mod,
                 name: mod,
                 displayName: _cleanName(mod),

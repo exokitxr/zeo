@@ -162,7 +162,7 @@ class Camera {
             }
           }
 
-          getImageDataUrl() {
+          requestImageData() {
             const {renderTarget} = this;
             const {width, height} = renderTarget;
             const buffer = new Uint8Array(width * height * 4);
@@ -178,31 +178,60 @@ class Camera {
             ctx.putImageData(imageData, 0, 0);
 
             const dataUrl = canvas.toDataURL('image/png');
-            return dataUrl;
+            return fetch(dataUrl)
+              .then(res => res.blob());
           }
         }
         zeo.registerElement(this, CameraElement);
 
-        const _pad = e => {
+        const _paddown = e => {
           const {side} = e;
 
           const grabElement = zeo.getGrabElement(side);
           const cameraElement = cameraElements.find(cameraElement => cameraElement === grabElement);
 
           if (cameraElement) {
-            console.log('camera snapshot', cameraElement); // XXX
+            e.stopImmediatePropagation();
+          }
+        };
+        zeo.on('paddown', _paddown, {
+          priority: 1,
+        });
+        const _padup = e => {
+          const {side} = e;
+
+          const grabElement = zeo.getGrabElement(side);
+          const cameraElement = cameraElements.find(cameraElement => cameraElement === grabElement);
+
+          if (cameraElement) {
+            cameraElement.requestImageData()
+              .then(blob => {
+                blob.name = 'Screenshot-1.png';
+
+                return zeo.createFile(blob)
+                  .then(tagMesh => {
+                    console.log('uploaded', tagMesh);
+                  });
+              })
+              .catch(err => {
+                console.warn(err);
+              });
 
             e.stopImmediatePropagation();
           }
         };
-        zeo.on('pad', _pad);
+        zeo.on('padup', _padup, {
+          priority: 1,
+        });
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
           zeo.unregisterElement(this);
 
-          zeo.removeListener('pad', _pad);
+          zeo.removeListener('paddown', _paddown);
+          zeo.removeListener('padup', _padup);
+
           zeo.removeListener('update', _update);
         };
 

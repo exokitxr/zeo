@@ -241,6 +241,16 @@ class World {
                 .then(res => res.json()
                   .then(({startTime}) => startTime)
                 );
+              const _getInFrontOfCameraMatrix = () => {
+                const {hmd} = webvr.getStatus();
+                const {position, rotation} = hmd;
+
+                const newPosition = position.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation));
+                const newRotation = rotation;
+                const newScale = oneVector;
+
+                return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
+              };
 
               class ElementManager {
                 constructor() {
@@ -270,7 +280,10 @@ class World {
 
                   scene.add(tagMesh);
 
-                  _reifyTag(tagMesh);
+                  const {type} = item;
+                  if (type === 'element') {
+                    _reifyTag(tagMesh);
+                  }
                 }
 
                 remove(tagMesh) {
@@ -281,7 +294,10 @@ class World {
 
                   scene.remove(tagMesh);
 
-                  _unreifyTag(tagMesh);
+                  const {type} = item;
+                  if (type === 'element') {
+                    _unreifyTag(tagMesh);
+                  }
                 }
               }
               const elementManager = new ElementManager();
@@ -322,14 +338,22 @@ class World {
                 set(index, tagMesh) {
                   this.tagMeshes[index] = tagMesh;
 
-                  _reifyTag(tagMesh);
+                  const {item} = tagMesh;
+                  const {type} = item;
+                  if (type === 'element') {
+                    _reifyTag(tagMesh);
+                  }
                 }
 
                 unset(index) {
                   const tagMesh = this.tagMeshes[index];
                   this.tagMeshes[index] = null;
 
-                  _unreifyTag(tagMesh);
+                  const {item} = tagMesh;
+                  const {type} = item;
+                  if (type === 'element') {
+                    _unreifyTag(tagMesh);
+                  }
                 }
 
                 move(oldIndex, newIndex) {
@@ -491,36 +515,6 @@ class World {
 
                 _request('setTagAttribute', [localUserId, src, attribute, value], _warnError);
               };
-              /* let lastFilesJsonString = null;
-              const _saveFiles = menuUtils.debounce(next => {
-                filesJson = {
-                  files: fs.getFiles().map(({file}) => file),
-                };
-                const filesJsonString = JSON.stringify(filesJson);
-
-                if (filesJsonString !== lastFilesJsonString) {
-                  lastFilesJsonString = filesJsonString;
-
-                  return fetch('https://' + hub.getCurrentServer().url + '/archae/world/files.json', {
-                    method: 'PUT',
-                    headers: new Headers({
-                      'Content-Type': 'application/json',
-                    }),
-                    body: filesJsonString,
-                  })
-                    .then(res => res.blob())
-                    .then(() => {
-                      next();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      next();
-                    })
-                } else {
-                  return Promise.resolve();
-                }
-              }); */
 
               const _handleAddTag = (userId, itemSpec, dst) => {
                 if (userId === localUserId) {
@@ -566,26 +560,6 @@ class World {
                     itemBoxMesh.add(tagMesh);
 
                     inventoryManager.set(inventoryIndex, tagMesh);
-
-                    /* const {type} = itemSpec;
-
-                    if (type === 'tag') {
-                      const {item: itemData} = itemSpec;
-                      const tagMesh = tags.makeTag(itemData);
-                      const item = {
-                        type: 'tag',
-                        mesh: tagMesh,
-                      };
-                      backpack.setItem(i, item);
-                    } else if (type === 'file') {
-                      const {item: itemData} = itemSpec;
-                      const tagMesh = fs.makeFile(itemData);
-                      const item = {
-                        type: 'file',
-                        mesh: tagMesh,
-                      };
-                      backpack.setItem(i, item);
-                    } */
                   } else {
                     console.warn('invalid add tag arguments', {userId, itemSpec, dst});
                   }
@@ -1639,74 +1613,15 @@ class World {
                   const {mesh: grabMesh} = grabState;
 
                   if (grabMesh) {
-                    const _releaseTag = () => {
-                      const _releaseInventoryTag = () => {
-                        const isTag = tags.isTag(grabMesh);
+                    const _releaseInventoryTag = () => {
+                      const hoveredItemIndex = backpack.getHoveredItemIndex(side);
 
-                        if (isTag) {
-                          const hoveredItemIndex = backpack.getHoveredItemIndex(side);
+                      if (hoveredItemIndex !== -1) {
+                        const inventoryTagMeshes = inventoryManager.getTagMeshes();
+                        const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
 
-                          if (hoveredItemIndex !== -1) {
-                            const inventoryTagMeshes = inventoryManager.getTagMeshes();
-                            const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
-
-                            if (!hoveredItemTagMesh) {
-                              _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
-
-                              e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-
-                              return true;
-                            } else {
-                              return false;
-                            }
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      };
-                      const _releaseEquipmentTag = () => {
-                        const isTag = tags.isTag(grabMesh);
-
-                        if (isTag) {
-                          const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
-
-                          if (hoveredEquipmentIndex !== -1) {
-                            const equipmentTagMeshes = equipmentManager.getTagMeshes();
-                            const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
-
-                            if (!hoveredEquipmentTagMesh) {
-                              _moveTag('hand:' + side, 'equipment:' + hoveredEquipmentIndex);
-
-                              return true;
-                            } else {
-                              return false;
-                            }
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      };
-                      const _releaseWorldTag = () => {
-                        const isTag = tags.isTag(grabMesh);
-
-                        if (isTag) {
-                          const tagMesh = grabMesh;
-                          const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-
-                          const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                          _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
-
-                          const {item} = tagMesh;
-                          const {attributes} = item;
-                          if (attributes.position) {
-                            const {id} = item;
-                            const newValue = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                            _setTagAttribute('world:' + id, 'position', newValue);
-                          }
+                        if (!hoveredItemTagMesh) {
+                          _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
 
                           e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
@@ -1714,51 +1629,49 @@ class World {
                         } else {
                           return false;
                         }
-                      };
-
-                      return _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
-                    };
-                    const _releaseFile = () => {
-                      const _releaseInventoryFile = () => {
-                        const hoveredItemIndex = backpack.getHoveredItemIndex(side);
-
-                        if (hoveredItemIndex !== -1) {
-                          const inventoryTagMeshes = inventoryManager.getTagMeshes();
-                          const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
-
-                          if (!hoveredItemTagMesh) {
-                            _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
-
-                            e.stopImmediatePropagation(); // so fs engine doesn't pick it up
-
-                            return true;
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      };
-                      const _releaseWorldFile = () => {
-                        const fileMesh = grabMesh;
-                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-
-                        const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                        _moveTag('hand:' + side, 'world:' + matrixArray);
-
-                        e.stopImmediatePropagation(); // so fs engine doesn't pick it up
-
-                        return true;
-                      };
-
-                      if (fs.isFile(grabMesh)) {
-                        return _releaseInventoryFile() || _releaseWorldFile();
                       } else {
                         return false;
                       }
                     };
+                    const _releaseEquipmentTag = () => {
+                      const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
-                    _releaseTag() || _releaseFile();
+                      if (hoveredEquipmentIndex !== -1) {
+                        const equipmentTagMeshes = equipmentManager.getTagMeshes();
+                        const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
+
+                        if (!hoveredEquipmentTagMesh) {
+                          _moveTag('hand:' + side, 'equipment:' + hoveredEquipmentIndex);
+
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _releaseWorldTag = () => {
+                      const tagMesh = grabMesh;
+                      const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
+
+                      const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                      _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+
+                      const {item} = tagMesh;
+                      const {attributes} = item;
+                      if (attributes.position) {
+                        const {id} = item;
+                        const newValue = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                        _setTagAttribute('world:' + id, 'position', newValue);
+                      }
+
+                      e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+
+                      return true;
+                    };
+
+                    _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
                   }
                 } else {
                   const _releaseEquipmentMesh = () => {
@@ -1866,54 +1779,24 @@ class World {
               };
               tags.on('setAttribute', _setAttribute);
 
-              const _uploadStart = ({id, name, type}) => {
-                const directory = '/';
-                const matrix = (() => {
-                  const {hmd} = webvr.getStatus();
-                  const {position, rotation} = hmd;
-                  const menuMesh = rend.getMenuMesh();
-                  const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
-
-                  const newMatrix = new THREE.Matrix4().compose(
-                    position.clone()
-                      .add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)),
-                    rotation,
-                    new THREE.Vector3(1, 1, 1)
-                  ).multiply(menuMeshMatrixInverse);
-                  const {position: newPosition, rotation: newRotation, scale: newScale} = _decomposeMatrix(newMatrix);
-
-                  return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
-                })();
-                const file = {
-                  id,
-                  name,
-                  type,
-                  directory,
-                  matrix,
-                };
-
-                const fileMesh = fs.makeFile(file);
-                fileMesh.instancing = true;
-
-                scene.add(fileMesh);
-
-                fs.updatePages();
+              const _download = ({id, name}) => {
+                const a = document.createElement('a');
+                a.href = fs.getFileUrl(id);
+                a.download = name;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
               };
-              fs.on('uploadStart', _uploadStart);
-              const _uploadEnd = ({id}) => {
-                const fileMesh = fs.getFile(id);
+              tags.on('download', _download);
 
-                if (fileMesh) {
-                  const {file} = fileMesh;
-                  file.instancing = false;
-
-                  fs.updatePages();
-
-                  // XXX make file -> world; figure out how to do this in the face of uploads
-                  _saveFiles();
-                }
+              const _upload = file => {
+                worldApi.createFile(file)
+                  .then(tagMesh => {
+                    console.log('upoaded file', tagMesh);
+                  });
               };
-              fs.on('uploadEnd', _uploadEnd);
+              fs.on('upload', _upload);
 
               const _connectServer = () => {
                 worldApi.connect();
@@ -1947,10 +1830,10 @@ class World {
                 input.removeListener('keydown', _keydown);
                 input.removeListener('keyboarddown', _keyboarddown);
 
+                tags.removeListener('download', _download);
                 tags.removeListener('setAttribute', _setAttribute);
 
-                fs.removeListener('uploadStart', _uploadStart);
-                fs.removeListener('uploadEnd', _uploadEnd);
+                fs.removeListener('upload', _upload);
 
                 rend.removeListener('connectServer', _connectServer);
                 rend.removeListener('disconnectServer', _disconnectServer);
@@ -1988,6 +1871,54 @@ class World {
                   }
                 }
 
+                createFile(blob) {
+                  const id = _makeFileId();
+                  const {name = _makeId(), type: mimeType} = blob;
+                  const matrix = _getInFrontOfCameraMatrix();
+                  const itemSpec = {
+                    type: 'file',
+                    id,
+                    name,
+                    mimeType,
+                    matrix,
+                  };
+                  _handleAddTag(localUserId, itemSpec, 'world');
+
+                  const elementTagMeshes = elementManager.getTagMeshes();
+                  const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tempTagMesh;
+                  item.instancing = true;
+
+                  tags.updatePages();
+
+                  const _cleanupTempTagMesh = () => {
+                    elementManager.remove(tempTagMesh);
+
+                    tags.destroyTag(tempTagMesh);
+                  };
+
+                  return new Promise((accept, reject) => {
+                    fs.writeFile(id, blob)
+                      .then(() => {
+                        _cleanupTempTagMesh();
+
+                        _addTag(itemSpec, 'world');
+
+                        const elementTagMeshes = elementManager.getTagMeshes();
+                        const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                        accept(tagMesh);
+                      })
+                      .catch(err => {
+                        _cleanupTempTagMesh();
+
+                        reject(err);
+                      });
+                  });
+
+                  // XXX perform an actual tags save via _addTag here
+                }
+
                 connect() { // XXX handle race conditions here
                   Promise.all([
                     _requestConnection(),
@@ -1997,16 +1928,7 @@ class World {
                       connection,
                       startTime,
                     ]) => {
-                      /* const _initializeFiles = () => {
-                        const {files} = filesJson;
-
-                        for (let i = 0; i < files.length; i++) {
-                          const fileSpec = files[i];
-                          const fileMesh = fs.makeFile(fileSpec);
-                          scene.add(fileMesh);
-                        }
-                      };
-                      const _initializeMails = () => {
+                      /* const _initializeMails = () => {
                         const mailMesh = mail.makeMail({
                           id: _makeId(),
                           name: 'Explore with me.',
@@ -2022,7 +1944,6 @@ class World {
                         scene.add(mailMesh);
                       }; */
 
-                      // _initializeFiles();
                       // _initializeMails();
 
                       worldTimer.setStartTime(startTime);
@@ -2062,17 +1983,6 @@ class World {
                       }
                     }
                   };
-                  /* const _uninitializeFiles = () => {
-                    const fileMeshes = fs.getFiles().slice();
-
-                    for (let i = 0; i < fileMeshes.length; i++) {
-                      const fileMesh = fileMeshes[i];
-
-                      fs.destroyFile(fileMesh);
-
-                      scene.remove(fileMesh);
-                    }
-                  }; */
                   const _uninitializeInventory = () => {
                     const inventoryTagMeshes = inventoryManager.getTagMeshes().slice();
                     const backpackMesh = backpack.getBackpackMesh();
@@ -2088,20 +1998,6 @@ class World {
                         inventoryManager.unset(i);
 
                         tags.destroyTag(tagMesh);
-
-                        /* const {type} = itemSpec;
-
-                        if (type === 'tag') {
-                          const {mesh: tagMesh} = itemSpec;
-                          tags.destroyTag(tagMesh);
-
-                          backpack.unsetItem(i);
-                        } else if (type === 'file') {
-                          const {mesh: tagMesh} = itemSpec;
-                          fs.destroyFile(tagMesh);
-
-                          backpack.unsetItem(i);
-                        } */
                       }
                     }
                   };
@@ -2130,6 +2026,17 @@ class World {
 
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _makeId = () => Math.random().toString(36).substring(7);
+const _padNumber = (n, width) => {
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+};
+const _makeFileId = () => {
+  const array = new Uint8Array(128 / 8);
+  crypto.getRandomValues(array);
+  return array.reduce((acc, i) => {
+    return acc + _padNumber(i.toString(16), 2);
+  }, '');
+};
 const _warnError = err => {
   if (err) {
     console.warn(err);

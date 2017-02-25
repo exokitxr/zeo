@@ -329,16 +329,34 @@ class World {
 
                                 if (method === 'addTag') {
                                   const [userId, itemSpec, dst] = args;
-                                  const {id} = itemSpec;
-                                  const side = dst.match(/^hand:(left|right)$/)[1];
 
-                                  const user = usersJson[userId];
-                                  const {hands} = user;
-                                  hands[side] = itemSpec;
+                                  cb = (cb => err => {
+                                    if (!err) {
+                                      _broadcast('addTag', [userId, itemSpec, dst]);
+                                    }
 
-                                  _broadcast('addTag', [userId, itemSpec, dst]);
+                                    cb(err);
+                                  })(cb);
 
-                                  cb();
+                                  let match;
+                                  if (dst === 'world') {
+                                    const {id} = itemSpec;
+                                    tagsJson.tags[id] = itemSpec;
+
+                                    _saveTags();
+
+                                    cb();
+                                  } else if (match = dst.match(/^hand:(left|right)$/)) {
+                                    const side = match[1];
+
+                                    const user = usersJson[userId];
+                                    const {hands} = user;
+                                    hands[side] = itemSpec;
+
+                                    cb();
+                                  } else {
+                                    cb(_makeInvalidArgsError());
+                                  }
                                 } else if (method === 'moveTag') {
                                   const [userId, src, dst] = args;
 

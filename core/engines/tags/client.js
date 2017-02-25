@@ -17,21 +17,6 @@ import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
 
-const DEFAULT_EQUIPMENT = (() => {
-  const numEquipmentItems = (1 + 1 + 2 + 8);
-  const result = Array(numEquipmentItems);
-  for (let i = 0; i < numEquipmentItems; i++) {
-    result[i] = null;
-  }
-  return result;
-})();
-const DEFAULT_GRAB_RADIUS = 0.1;
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
-
 const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemMutexSymbol = Symbol();
@@ -303,6 +288,16 @@ class Tags {
                   e.stopImmediatePropagation();
 
                   return true;
+                } else if (match = onclick.match(/^tag:download:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tagMesh;
+                  const {name} = item;
+
+                  tagsApi.emit('download', {
+                    id,
+                    name,
+                  });
                 } else {
                   return false;
                 }
@@ -320,7 +315,7 @@ class Tags {
                   const {position, quaternion, scale} = positioningMesh;
                   return position.toArray().concat(quaternion.toArray()).concat(scale.toArray());
                 })();
-                tagsInstance.emit('setAttribute', {
+                tagsApi.emit('setAttribute', {
                   id: positioningId,
                   attribute: positioningName,
                   value: newValue,
@@ -397,7 +392,7 @@ class Tags {
 
                     focusState.type = 'attribute:' + tagId + ':' + attributeName;
                   } else if (action === 'set') {
-                    tagsInstance.emit('setAttribute', {
+                    tagsApi.emit('setAttribute', {
                       id: tagId,
                       attribute: attributeName,
                       value: value,
@@ -415,7 +410,7 @@ class Tags {
                       }
                       return n;
                     })();
-                    tagsInstance.emit('setAttribute', {
+                    tagsApi.emit('setAttribute', {
                       id: tagId,
                       attribute: attributeName,
                       value: newValue,
@@ -425,7 +420,7 @@ class Tags {
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
 
-                    tagsInstance.emit('setAttribute', {
+                    tagsApi.emit('setAttribute', {
                       id: tagId,
                       attribute: attributeName,
                       value: newValue,
@@ -619,7 +614,18 @@ class Tags {
           };
 
           class Item {
-            constructor(id, name, displayName, description, version, attributes, matrix) {
+            constructor(
+              type,
+              id,
+              name,
+              displayName,
+              description,
+              version,
+              attributes,
+              mimeType,
+              matrix
+            ) {
+              this.type = type;
               this.id = id;
               this.name = name;
               this.displayName = displayName;
@@ -685,6 +691,7 @@ class Tags {
 
                 return result;
               })();
+              this.mimeType = mimeType;
               this.matrix = matrix;
 
               this[itemInstanceSymbol] = null;
@@ -721,17 +728,23 @@ class Tags {
 
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
-          const tagClassMeshes = {
-            elements: [],
-            npm: [],
-            equipment: DEFAULT_EQUIPMENT,
-          };
+
           class TagsApi extends EventEmitter {
             makeTag(itemSpec) {
               const object = new THREE.Object3D();
               object[tagFlagSymbol] = true;
 
-              const item = new Item(itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.attributes, itemSpec.matrix);
+              const item = new Item(
+                itemSpec.type,
+                itemSpec.id,
+                itemSpec.name,
+                itemSpec.displayName,
+                itemSpec.description,
+                itemSpec.version,
+                itemSpec.attributes,
+                itemSpec.mimeType,
+                itemSpec.matrix
+              );
               object.item = item;
               object.highlight = itemSpec.highlight;
 
@@ -757,9 +770,10 @@ class Tags {
                 .then(ui => {
                   const {item, highlight} = object;
 
-                  ui.pushPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type}}) => {
+                  ui.pushPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type: focusType}}) => {
+                    const {type} = item;
                     const focusAttributeSpec = (() => {
-                      const match = type.match(/^attribute:(.+?):(.+?)$/);
+                      const match = focusType.match(/^attribute:(.+?):(.+?)$/);
                       return match && {
                         tagId: match[1],
                         attributeName: match[2],
@@ -769,13 +783,16 @@ class Tags {
                     return [
                       {
                         type: 'html',
-                        src: tagsRenderer.getTagSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight}),
+                        src: type === 'element' ?
+                          tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
+                        :
+                          tagsRenderer.getFileSrc({item}),
                         w: !item.open ? WIDTH : OPEN_WIDTH,
                         h: !item.open ? HEIGHT : OPEN_HEIGHT,
                       },
                       {
                         type: 'image',
-                        img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
+                        img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
                         x: 10,
                         y: 0,
                         w: 100,
@@ -787,7 +804,7 @@ class Tags {
                   }, {
                     type: 'tag',
                     state: {
-                      item,
+                      item: item,
                       details: detailsState,
                       focus: focusState,
                     },
@@ -827,57 +844,13 @@ class Tags {
               }
             }
 
-            mountTag(tagClass, tagMesh) {
-              tagClassMeshes[tagClass].push(tagMesh);
-            }
-
-            unmountTag(tagClass, tagMesh) {
-              const entries = tagClassMeshes[tagClass];
-              const index = entries.indexOf(tagMesh);
-
-              if (index !== -1) {
-                entries.splice(index, 1);
-              }
-            }
-
-            setTag(tagClass, index, tagMesh) {
-              tagClassMeshes[tagClass][index] = tagMesh;
-
-              return tagMesh;
-            }
-
-            unsetTag(tagClass, index) {
-              const tagMesh = tagClassMeshes[tagClass][index];
-
-              tagClassMeshes[tagClass][index] = null;
-
-              return tagMesh;
-            }
-
-            moveTag(tagClass, oldIndex, newIndex) {
-              const tagMesh = tagClassMeshes[tagClass][oldIndex];
-
-              tagClassMeshes[tagClass][oldIndex] = null;
-              tagClassMeshes[tagClass][newIndex] = tagMesh;
-
-              return tagMesh;
-            }
-
-            getTagsClass(tagClass) {
-              return tagClassMeshes[tagClass];
-            }
-
-            isTag(object) {
-              return object[tagFlagSymbol] === true;
-            }
-
             updatePages() {
               _updatePages();
             }
           };
 
-          const tagsInstance = new TagsApi();
-          return tagsInstance;
+          const tagsApi = new TagsApi();
+          return tagsApi;
         }
       });
   }
