@@ -1639,74 +1639,15 @@ class World {
                   const {mesh: grabMesh} = grabState;
 
                   if (grabMesh) {
-                    const _releaseTag = () => {
-                      const _releaseInventoryTag = () => {
-                        const isTag = tags.isTag(grabMesh);
+                    const _releaseInventoryTag = () => {
+                      const hoveredItemIndex = backpack.getHoveredItemIndex(side);
 
-                        if (isTag) {
-                          const hoveredItemIndex = backpack.getHoveredItemIndex(side);
+                      if (hoveredItemIndex !== -1) {
+                        const inventoryTagMeshes = inventoryManager.getTagMeshes();
+                        const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
 
-                          if (hoveredItemIndex !== -1) {
-                            const inventoryTagMeshes = inventoryManager.getTagMeshes();
-                            const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
-
-                            if (!hoveredItemTagMesh) {
-                              _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
-
-                              e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-
-                              return true;
-                            } else {
-                              return false;
-                            }
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      };
-                      const _releaseEquipmentTag = () => {
-                        const isTag = tags.isTag(grabMesh);
-
-                        if (isTag) {
-                          const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
-
-                          if (hoveredEquipmentIndex !== -1) {
-                            const equipmentTagMeshes = equipmentManager.getTagMeshes();
-                            const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
-
-                            if (!hoveredEquipmentTagMesh) {
-                              _moveTag('hand:' + side, 'equipment:' + hoveredEquipmentIndex);
-
-                              return true;
-                            } else {
-                              return false;
-                            }
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      };
-                      const _releaseWorldTag = () => {
-                        const isTag = tags.isTag(grabMesh);
-
-                        if (isTag) {
-                          const tagMesh = grabMesh;
-                          const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-
-                          const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                          _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
-
-                          const {item} = tagMesh;
-                          const {attributes} = item;
-                          if (attributes.position) {
-                            const {id} = item;
-                            const newValue = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                            _setTagAttribute('world:' + id, 'position', newValue);
-                          }
+                        if (!hoveredItemTagMesh) {
+                          _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
 
                           e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
@@ -1714,51 +1655,49 @@ class World {
                         } else {
                           return false;
                         }
-                      };
-
-                      return _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
-                    };
-                    const _releaseFile = () => {
-                      const _releaseInventoryFile = () => {
-                        const hoveredItemIndex = backpack.getHoveredItemIndex(side);
-
-                        if (hoveredItemIndex !== -1) {
-                          const inventoryTagMeshes = inventoryManager.getTagMeshes();
-                          const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
-
-                          if (!hoveredItemTagMesh) {
-                            _moveTag('hand:' + side, 'inventory:' + hoveredItemIndex);
-
-                            e.stopImmediatePropagation(); // so fs engine doesn't pick it up
-
-                            return true;
-                          } else {
-                            return false;
-                          }
-                        } else {
-                          return false;
-                        }
-                      };
-                      const _releaseWorldFile = () => {
-                        const fileMesh = grabMesh;
-                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
-
-                        const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                        _moveTag('hand:' + side, 'world:' + matrixArray);
-
-                        e.stopImmediatePropagation(); // so fs engine doesn't pick it up
-
-                        return true;
-                      };
-
-                      if (fs.isFile(grabMesh)) {
-                        return _releaseInventoryFile() || _releaseWorldFile();
                       } else {
                         return false;
                       }
                     };
+                    const _releaseEquipmentTag = () => {
+                      const hoveredEquipmentIndex = bag.getHoveredEquipmentIndex(side);
 
-                    _releaseTag() || _releaseFile();
+                      if (hoveredEquipmentIndex !== -1) {
+                        const equipmentTagMeshes = equipmentManager.getTagMeshes();
+                        const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
+
+                        if (!hoveredEquipmentTagMesh) {
+                          _moveTag('hand:' + side, 'equipment:' + hoveredEquipmentIndex);
+
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      } else {
+                        return false;
+                      }
+                    };
+                    const _releaseWorldTag = () => {
+                      const tagMesh = grabMesh;
+                      const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
+
+                      const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                      _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
+
+                      const {item} = tagMesh;
+                      const {attributes} = item;
+                      if (attributes.position) {
+                        const {id} = item;
+                        const newValue = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                        _setTagAttribute('world:' + id, 'position', newValue);
+                      }
+
+                      e.stopImmediatePropagation(); // so tags engine doesn't pick it up
+
+                      return true;
+                    };
+
+                    _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
                   }
                 } else {
                   const _releaseEquipmentMesh = () => {
