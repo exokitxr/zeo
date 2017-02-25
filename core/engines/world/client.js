@@ -1882,25 +1882,35 @@ class World {
                     mimeType,
                     matrix,
                   };
-                  const tagMesh = tags.makeTag(itemSpec);
-                  const {item} = tagMesh;
+                  _handleAddTag(localUserId, itemSpec, 'world');
+
+                  const elementTagMeshes = elementManager.getTagMeshes();
+                  const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tempTagMesh;
                   item.instancing = true;
 
-                  elementManager.add(tagMesh);
+                  tags.updatePages();
+
+                  const _cleanupTempTagMesh = () => {
+                    elementManager.remove(tempTagMesh);
+
+                    tags.destroyTag(tempTagMesh);
+                  };
 
                   return new Promise((accept, reject) => {
                     fs.writeFile(id, blob)
                       .then(() => {
-                        item.instancing = false;
+                        _cleanupTempTagMesh();
 
-                        tags.updatePages();
+                        _addTag(itemSpec, 'world');
+
+                        const elementTagMeshes = elementManager.getTagMeshes();
+                        const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
 
                         accept(tagMesh);
                       })
                       .catch(err => {
-                        item.instancing = false;
-
-                        tags.updatePages();
+                        _cleanupTempTagMesh();
 
                         reject(err);
                       });
