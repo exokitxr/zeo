@@ -27,25 +27,25 @@ class Camera {
           }
         };
 
+        const cameraElements = [];
         class CameraElement extends HTMLElement {
           createdCallback() {
+            const cameraWidth = 0.2;
+            const cameraHeight = 0.15;
+            const cameraAspectRatio = cameraWidth / cameraHeight;
+            const cameraDepth = 0.1;
+
             const renderTarget = (() => {
-              const rendererSize = renderer.getSize();
-              const rendererPixelRatio = renderer.getPixelRatio();
-              const renderPixelFactor = 0.05;
-              const resolutionWidth = rendererSize.width * rendererPixelRatio * renderPixelFactor;
-              const resolutionHeight = rendererSize.height * rendererPixelRatio * renderPixelFactor;
-              const renderTarget = new THREE.WebGLRenderTarget(resolutionWidth, resolutionHeight, {
+              const width = 1024;
+              const height = width / cameraAspectRatio;
+              const renderTarget = new THREE.WebGLRenderTarget(width, height, {
                 minFilter: THREE.NearestFilter,
                 magFilter: THREE.NearestFilter,
                 format: THREE.RGBAFormat,
               });
               return renderTarget;
             })();
-
-            const cameraWidth = 0.2;
-            const cameraHeight = 0.15;
-            const cameraDepth = 0.1;
+            this.renderTarget = renderTarget;
 
             const mesh = (() => {
               const result = new THREE.Object3D();
@@ -114,6 +114,8 @@ class Camera {
             scene.add(mesh);
             this.mesh = mesh;
 
+            cameraElements.push(this);
+
             const sourceCamera = new THREE.PerspectiveCamera(45, cameraWidth / cameraHeight, camera.near, camera.far);
 
             const update = () => {
@@ -136,6 +138,8 @@ class Camera {
             this._cleanup = () => {
               scene.remove(mesh);
 
+              cameraElements.splice(cameraElements.indexOf(this), 1);
+
               updates.splice(updates.indexOf(update), 1);
             };
           }
@@ -157,14 +161,48 @@ class Camera {
               }
             }
           }
+
+          getImageDataUrl() {
+            const {renderTarget} = this;
+            const {width, height} = renderTarget;
+            const buffer = new Uint8Array(width * height * 4);
+            renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, buffer);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const {data: imageDataData} = imageData;
+            imageDataData.set(buffer);
+            ctx.putImageData(imageData, 0, 0);
+
+            const dataUrl = canvas.toDataURL('image/png');
+            return dataUrl;
+          }
         }
         zeo.registerElement(this, CameraElement);
+
+        const _pad = e => {
+          const {side} = e;
+
+          const grabElement = zeo.getGrabElement(side);
+          const cameraElement = cameraElements.find(cameraElement => cameraElement === grabElement);
+
+          if (cameraElement) {
+            console.log('camera snapshot', cameraElement); // XXX
+
+            e.stopImmediatePropagation();
+          }
+        };
+        zeo.on('pad', _pad);
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
           zeo.unregisterElement(this);
 
+          zeo.removeListener('pad', _pad);
           zeo.removeListener('update', _update);
         };
 

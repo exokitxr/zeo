@@ -1974,6 +1974,20 @@ class World {
                   delete modElementApis[tag];
                 }
 
+                getGrabElement(side) {
+                  const equipmentTagMeshes = equipmentManager.getTagMeshes();
+                  const tagMesh = equipmentTagMeshes[side === 'right' ? 2 : 3];
+
+                  if (tagMesh) {
+                    const {item} = tagMesh;
+                    const {instance} = item;
+
+                    return instance;
+                  } else {
+                    return null;
+                  }
+                }
+
                 connect() { // XXX handle race conditions here
                   Promise.all([
                     _requestConnection(),

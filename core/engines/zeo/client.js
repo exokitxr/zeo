@@ -398,6 +398,10 @@ class Zeo {
                         return world.getWorldTime();
                       }
 
+                      getGrabElement(side) {
+                        return world.getGrabElement(side);
+                      }
+
                       getPhysicsWorld() {
                         return bullet.getPhysicsWorld();
                       }
