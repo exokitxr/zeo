@@ -137,6 +137,12 @@ class WebVR {
             this.scale = scale;
           }
         }
+        class GamepadsStatus {
+          constructor(left, right) {
+            this.left = left;
+            this.right = right;
+          }
+        }
         class GamepadStatus {
           constructor(pose, position, rotation, scale, buttons, axes) {
             this.pose = pose;
@@ -210,10 +216,10 @@ class WebVR {
 
             this.status = {
               hmd: _makeDefaultHmdStatus(),
-              gamepads: {
-                left: _makeDefaultGamepadStatus(stageMatrix, 0),
-                right: _makeDefaultGamepadStatus(stageMatrix, 1),
-              },
+              gamepads: new GamepadsStatus(
+                _makeDefaultGamepadStatus(stageMatrix, 0),
+                _makeDefaultGamepadStatus(stageMatrix, 1)
+              ),
             };
 
             this._frameData = null;
@@ -518,9 +524,31 @@ class WebVR {
             };
             const _getGamepadsStatus = ({stageMatrix}) => {
               const {display} = this;
-              const gamepads = (display && display.getGamepads) ? display.getGamepads() : navigator.getGamepads();
-              const leftGamepad = gamepads[0];
-              const rightGamepad = gamepads[1];
+              const gamepads = (() => {
+                if (display && display.getGamepads) {
+                  const gamepads = display.getGamepads();
+                  const [left, right] = gamepads;
+
+                  return new GamepadsStatus(left, right);
+                } else {
+                  let left = null;
+                  let right = null;
+
+                  const gamepads = navigator.getGamepads();
+                  for (let i = 0; i < gamepads.length; i++) {
+                    const gamepad = gamepads[i];
+                    const {hand} = gamepad;
+
+                    if (hand === 'left') {
+                      left = gamepad;
+                    } else if (hand === 'right') {
+                      right = gamepad;
+                    }
+                  }
+
+                  return new GamepadsStatus(left, right);
+                }
+              })();
 
               const _isGamepadAvailable = gamepad => Boolean(gamepad) && Boolean(gamepad.pose) && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
               const _getGamepadPose = gamepad => {
@@ -555,10 +583,10 @@ class WebVR {
                 );
               };
 
-              return {
-                left: _isGamepadAvailable(leftGamepad) ? _getGamepadPose(leftGamepad) : null,
-                right: _isGamepadAvailable(rightGamepad) ? _getGamepadPose(rightGamepad) : null,
-              };
+              return new GamepadsStatus(
+                _isGamepadAvailable(gamepads.left) ? _getGamepadPose(gamepads.left) : null,
+                _isGamepadAvailable(gamepads.right) ? _getGamepadPose(gamepads.right) : null
+              );
             };
 
             const {status: oldStatus} = this;
