@@ -62,9 +62,6 @@ class Tags {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
-          const transparentMaterial = biolumi.getTransparentMaterial();
-          const solidMaterial = biolumi.getSolidMaterial();
-
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
             const position = new THREE.Vector3();
@@ -823,11 +820,10 @@ class Tags {
                     const menuMaterial = biolumi.makeMenuMaterial();
 
                     const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, menuMaterial];
-
-                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                    const material = menuMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
                     // mesh.position.y = 1.5;
-                    mesh.receiveShadow = true;
+                    // mesh.receiveShadow = true;
                     mesh.menuMaterial = menuMaterial;
 
                     return mesh;
