@@ -537,12 +537,15 @@ class WebVR {
                   const gamepads = navigator.getGamepads();
                   for (let i = 0; i < gamepads.length; i++) {
                     const gamepad = gamepads[i];
-                    const {hand} = gamepad;
 
-                    if (hand === 'left') {
-                      left = gamepad;
-                    } else if (hand === 'right') {
-                      right = gamepad;
+                    if (gamepad) {
+                      const {hand} = gamepad;
+
+                      if (hand === 'left') {
+                        left = gamepad;
+                      } else if (hand === 'right') {
+                        right = gamepad;
+                      }
                     }
                   }
 
