@@ -254,11 +254,11 @@ class Servers {
                   } else if (onclick === 'servers:disconnect') {
                     hub.changeServer(null)
                       .then(() => {
-                        rend.disconnectServer();
-
                         serversState.currentServerUrl = null;
 
                         _updatePages();
+
+                        rend.disconnectServer();
                       })
                       .catch(err => {
                         console.warn(err);
