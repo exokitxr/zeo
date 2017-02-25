@@ -31,7 +31,6 @@ class Servers {
       '/core/engines/login',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/engines/hands',
       '/core/plugins/creature-utils',
     ])
       .then(([
@@ -42,7 +41,6 @@ class Servers {
         login,
         biolumi,
         rend,
-        hands,
         creatureUtils,
       ]) => {
         if (live) {
@@ -104,9 +102,9 @@ class Servers {
           });
           const _connectServer = serverUrl => hub.changeServer(serverUrl)
             .then(() => {
-              rend.connectServer();
-
               serversState.currentServerUrl = serverUrl;
+
+              rend.connectServer();
             });
           const _requestUis = () => Promise.all([
             biolumi.requestUi({
@@ -341,7 +339,14 @@ class Servers {
                   rend.removeListener('update', _update);
                 };
 
-                return {};
+                class ServersApi {
+                  isConnected() {
+                    return Boolean(serversState.currentServerUrl);
+                  }
+                }
+                const serversApi = new ServersApi();
+
+                return serversApi;
               }
             });
         }
