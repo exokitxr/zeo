@@ -1184,8 +1184,8 @@ class World {
                     });
                   }
                 };
-                /* const _updateEquipmentPositions = () => { // XXX re-enable this
-                  const equipmentTagMeshes = tags.getTagsClass('equipment');
+                const _updateEquipmentPositions = () => {
+                  const equipmentTagMeshes = equipmentManager.getTagMeshes();
 
                   const {hmd, gamepads} = webvr.getStatus();
 
@@ -1279,7 +1279,7 @@ class World {
                       }
                     }
                   }
-                }; */
+                };
                 const _updateHighlight = () => {
                   const {gamepads} = webvr.getStatus();
 
@@ -1328,7 +1328,7 @@ class World {
                 _updateMenuAnchors();
                 _updateGrabbers();
                 _updateNpmAnchors();
-                // _updateEquipmentPositions();
+                _updateEquipmentPositions();
                 _updateHighlight();
               };
               rend.on('update', _update);
