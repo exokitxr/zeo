@@ -225,7 +225,7 @@ const getFileSrc = ({item}) => {
       <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #E91E63; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">File</div>
       <div style="width: 100px; height: 100px; margin: 0 10px;"></div>
       <div style="width: 190px; margin-right: 10px;">
-        <div style="height: 100px;">
+        <div style="height: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
           <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
           <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">File in /</p>
           <a style="display: inline-flex; padding: 4px 20px; border: 1px solid #333; border-radius: 100px; font-size: 28px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:download:${id}">Download</a>
