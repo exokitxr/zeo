@@ -44,6 +44,7 @@ class World {
       '/core/engines/cyborg',
       '/core/engines/multiplayer',
       '/core/engines/login',
+      '/core/engines/servers',
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/engines/tags',
@@ -60,6 +61,7 @@ class World {
       cyborg,
       multiplayer,
       login,
+      servers,
       biolumi,
       rend,
       tags,
@@ -1798,14 +1800,120 @@ class World {
               };
               fs.on('upload', _upload);
 
-              const _connectServer = () => {
-                worldApi.connect();
+              let connecting = false;
+              const _connect = () => {
+                connecting = true;
+
+                Promise.all([
+                  _requestConnection(),
+                  _requestStartTime(),
+                ])
+                  .then(([
+                    connection,
+                    startTime,
+                  ]) => {
+                    /* const _initializeMails = () => {
+                      const mailMesh = mail.makeMail({
+                        id: _makeId(),
+                        name: 'Explore with me.',
+                        author: 'avaer',
+                        created: Date.now() - (2 * 60 * 1000),
+                        matrix: [
+                          0, 1.5, -0.5,
+                          0, 0, 0, 1,
+                          1, 1, 1,
+                        ],
+                      });
+
+                      scene.add(mailMesh);
+                    }; */
+
+                    // _initializeMails();
+
+                    worldTimer.setStartTime(startTime);
+
+                    connecting = false;
+                    connected = false;
+                  })
+                  .catch(err => {
+                    console.warn(err);
+
+                    connecting = false;
+                  });
               };
+              const _disconnect = () => {
+                const _uninitializeElements = () => {
+                  const elementTagMeshes = elementManager.getTagMeshes().slice();
+
+                  for (let i = 0; i < elementTagMeshes.length; i++) {
+                    const tagMesh = elementTagMeshes[i];
+
+                    elementManager.remove(tagMesh);
+
+                    tags.destroyTag(tagMesh);
+                  }
+                };
+                const _uninitializeEquipment = () => {
+                  const equipmentTagMeshes = equipmentManager.getTagMeshes().slice();
+                  const bagMesh = bag.getBagMesh();
+                  const {equipmentBoxMeshes} = bagMesh;
+
+                  for (let i = 0; i < equipmentTagMeshes.length; i++) {
+                    const tagMesh = equipmentTagMeshes[i];
+
+                    if (tagMesh) {
+                      const equipmentBoxMesh = equipmentBoxMeshes[i];
+                      equipmentBoxMesh.remove(tagMesh);
+
+                      equipmentManager.unset(i);
+
+                      tags.destroyTag(tagMesh);
+                    }
+                  }
+                };
+                const _uninitializeInventory = () => {
+                  const inventoryTagMeshes = inventoryManager.getTagMeshes().slice();
+                  const backpackMesh = backpack.getBackpackMesh();
+                  const {itemBoxMeshes} = backpackMesh
+
+                  for (let i = 0; i < inventoryTagMeshes.length; i++) {
+                    const tagMesh = inventoryTagMeshes[i];
+
+                    if (tagMesh) {
+                      const itemBoxMesh = itemBoxMeshes[i];
+                      itemBoxMesh.remove(tagMesh);
+
+                      inventoryManager.unset(i);
+
+                      tags.destroyTag(tagMesh);
+                    }
+                  }
+                };
+
+                _uninitializeElements();
+                _uninitializeEquipment();
+                // _uninitializeFiles();
+                _uninitializeInventory();
+
+                worldTimer.setStartTime(0);
+              };
+
+              const _updateEnabled = () => {
+                const enabled = Boolean(connection) || connecting;
+                const shouldBeEnabled = servers.isConnected();
+
+                if (shouldBeEnabled && !enabled) {
+                  _connect();
+                } else if (!shouldBeEnabled && enabled) {
+                  _disconnect();
+                }
+              };
+              const _connectServer = _updateEnabled;
               rend.on('connectServer', _connectServer);
-              const _disconnectServer = () => {
-                worldApi.disconnect();
-              };
+              const _disconnectServer = _updateEnabled;
               rend.on('disconnectServer', _disconnectServer);
+
+              _updateEnabled();
 
               this._cleanup = () => {
                 SIDES.forEach(side => {
@@ -1915,103 +2023,10 @@ class World {
                         reject(err);
                       });
                   });
-
-                  // XXX perform an actual tags save via _addTag here
-                }
-
-                connect() { // XXX handle race conditions here
-                  Promise.all([
-                    _requestConnection(),
-                    _requestStartTime(),
-                  ])
-                    .then(([
-                      connection,
-                      startTime,
-                    ]) => {
-                      /* const _initializeMails = () => {
-                        const mailMesh = mail.makeMail({
-                          id: _makeId(),
-                          name: 'Explore with me.',
-                          author: 'avaer',
-                          created: Date.now() - (2 * 60 * 1000),
-                          matrix: [
-                            0, 1.5, -0.5,
-                            0, 0, 0, 1,
-                            1, 1, 1,
-                          ],
-                        });
-
-                        scene.add(mailMesh);
-                      }; */
-
-                      // _initializeMails();
-
-                      worldTimer.setStartTime(startTime);
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
-                }
-
-                disconnect() {
-                  const _uninitializeElements = () => {
-                    const elementTagMeshes = elementManager.getTagMeshes().slice();
-
-                    for (let i = 0; i < elementTagMeshes.length; i++) {
-                      const tagMesh = elementTagMeshes[i];
-
-                      elementManager.remove(tagMesh);
-
-                      tags.destroyTag(tagMesh);
-                    }
-                  };
-                  const _uninitializeEquipment = () => {
-                    const equipmentTagMeshes = equipmentManager.getTagMeshes().slice();
-                    const bagMesh = bag.getBagMesh();
-                    const {equipmentBoxMeshes} = bagMesh;
-
-                    for (let i = 0; i < equipmentTagMeshes.length; i++) {
-                      const tagMesh = equipmentTagMeshes[i];
-
-                      if (tagMesh) {
-                        const equipmentBoxMesh = equipmentBoxMeshes[i];
-                        equipmentBoxMesh.remove(tagMesh);
-
-                        equipmentManager.unset(i);
-
-                        tags.destroyTag(tagMesh);
-                      }
-                    }
-                  };
-                  const _uninitializeInventory = () => {
-                    const inventoryTagMeshes = inventoryManager.getTagMeshes().slice();
-                    const backpackMesh = backpack.getBackpackMesh();
-                    const {itemBoxMeshes} = backpackMesh
-
-                    for (let i = 0; i < inventoryTagMeshes.length; i++) {
-                      const tagMesh = inventoryTagMeshes[i];
-
-                      if (tagMesh) {
-                        const itemBoxMesh = itemBoxMeshes[i];
-                        itemBoxMesh.remove(tagMesh);
-
-                        inventoryManager.unset(i);
-
-                        tags.destroyTag(tagMesh);
-                      }
-                    }
-                  };
-
-                  _uninitializeElements();
-                  _uninitializeEquipment();
-                  // _uninitializeFiles();
-                  _uninitializeInventory();
-
-                  worldTimer.setStartTime(0);
                 }
               }
-
               const worldApi = new WorldApi();
+
               return worldApi;
             }
           });
