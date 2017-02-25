@@ -619,7 +619,8 @@ class Tags {
           };
 
           class Item {
-            constructor(id, name, displayName, description, version, attributes, matrix) {
+            constructor(type, id, name, displayName, description, version, attributes, matrix) {
+              this.type = type;
               this.id = id;
               this.name = name;
               this.displayName = displayName;
@@ -731,7 +732,7 @@ class Tags {
               const object = new THREE.Object3D();
               object[tagFlagSymbol] = true;
 
-              const item = new Item(itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.attributes, itemSpec.matrix);
+              const item = new Item(itemSpec.type, itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.attributes, itemSpec.matrix);
               object.item = item;
               object.highlight = itemSpec.highlight;
 
@@ -757,9 +758,10 @@ class Tags {
                 .then(ui => {
                   const {item, highlight} = object;
 
-                  ui.pushPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type}}) => {
+                  ui.pushPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type: focusType}}) => {
+                    const {type} = item;
                     const focusAttributeSpec = (() => {
-                      const match = type.match(/^attribute:(.+?):(.+?)$/);
+                      const match = focusType.match(/^attribute:(.+?):(.+?)$/);
                       return match && {
                         tagId: match[1],
                         attributeName: match[2],
@@ -769,13 +771,16 @@ class Tags {
                     return [
                       {
                         type: 'html',
-                        src: tagsRenderer.getTagSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight}),
+                        src: type === 'element' ?
+                          tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
+                        :
+                          tagsRenderer.getFileSrc({item}),
                         w: !item.open ? WIDTH : OPEN_WIDTH,
                         h: !item.open ? HEIGHT : OPEN_HEIGHT,
                       },
                       {
                         type: 'image',
-                        img: creatureUtils.makeAnimatedCreature('tag:' + item.displayName),
+                        img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
                         x: 10,
                         y: 0,
                         w: 100,
@@ -787,7 +792,7 @@ class Tags {
                   }, {
                     type: 'tag',
                     state: {
-                      item,
+                      item: item,
                       details: detailsState,
                       focus: focusState,
                     },

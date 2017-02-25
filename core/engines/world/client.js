@@ -270,7 +270,10 @@ class World {
 
                   scene.add(tagMesh);
 
-                  _reifyTag(tagMesh);
+                  const {type} = item;
+                  if (type === 'element') {
+                    _reifyTag(tagMesh);
+                  }
                 }
 
                 remove(tagMesh) {
@@ -281,7 +284,10 @@ class World {
 
                   scene.remove(tagMesh);
 
-                  _unreifyTag(tagMesh);
+                  const {type} = item;
+                  if (type === 'element') {
+                    _unreifyTag(tagMesh);
+                  }
                 }
               }
               const elementManager = new ElementManager();
@@ -322,14 +328,22 @@ class World {
                 set(index, tagMesh) {
                   this.tagMeshes[index] = tagMesh;
 
-                  _reifyTag(tagMesh);
+                  const {item} = tagMesh;
+                  const {type} = item;
+                  if (type === 'element') {
+                    _reifyTag(tagMesh);
+                  }
                 }
 
                 unset(index) {
                   const tagMesh = this.tagMeshes[index];
                   this.tagMeshes[index] = null;
 
-                  _unreifyTag(tagMesh);
+                  const {item} = tagMesh;
+                  const {type} = item;
+                  if (type === 'element') {
+                    _unreifyTag(tagMesh);
+                  }
                 }
 
                 move(oldIndex, newIndex) {
@@ -491,36 +505,6 @@ class World {
 
                 _request('setTagAttribute', [localUserId, src, attribute, value], _warnError);
               };
-              /* let lastFilesJsonString = null;
-              const _saveFiles = menuUtils.debounce(next => {
-                filesJson = {
-                  files: fs.getFiles().map(({file}) => file),
-                };
-                const filesJsonString = JSON.stringify(filesJson);
-
-                if (filesJsonString !== lastFilesJsonString) {
-                  lastFilesJsonString = filesJsonString;
-
-                  return fetch('https://' + hub.getCurrentServer().url + '/archae/world/files.json', {
-                    method: 'PUT',
-                    headers: new Headers({
-                      'Content-Type': 'application/json',
-                    }),
-                    body: filesJsonString,
-                  })
-                    .then(res => res.blob())
-                    .then(() => {
-                      next();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      next();
-                    })
-                } else {
-                  return Promise.resolve();
-                }
-              }); */
 
               const _handleAddTag = (userId, itemSpec, dst) => {
                 if (userId === localUserId) {
@@ -566,26 +550,6 @@ class World {
                     itemBoxMesh.add(tagMesh);
 
                     inventoryManager.set(inventoryIndex, tagMesh);
-
-                    /* const {type} = itemSpec;
-
-                    if (type === 'tag') {
-                      const {item: itemData} = itemSpec;
-                      const tagMesh = tags.makeTag(itemData);
-                      const item = {
-                        type: 'tag',
-                        mesh: tagMesh,
-                      };
-                      backpack.setItem(i, item);
-                    } else if (type === 'file') {
-                      const {item: itemData} = itemSpec;
-                      const tagMesh = fs.makeFile(itemData);
-                      const item = {
-                        type: 'file',
-                        mesh: tagMesh,
-                      };
-                      backpack.setItem(i, item);
-                    } */
                   } else {
                     console.warn('invalid add tag arguments', {userId, itemSpec, dst});
                   }
@@ -1936,16 +1900,7 @@ class World {
                       connection,
                       startTime,
                     ]) => {
-                      /* const _initializeFiles = () => {
-                        const {files} = filesJson;
-
-                        for (let i = 0; i < files.length; i++) {
-                          const fileSpec = files[i];
-                          const fileMesh = fs.makeFile(fileSpec);
-                          scene.add(fileMesh);
-                        }
-                      };
-                      const _initializeMails = () => {
+                      /* const _initializeMails = () => {
                         const mailMesh = mail.makeMail({
                           id: _makeId(),
                           name: 'Explore with me.',
@@ -1961,7 +1916,6 @@ class World {
                         scene.add(mailMesh);
                       }; */
 
-                      // _initializeFiles();
                       // _initializeMails();
 
                       worldTimer.setStartTime(startTime);
@@ -2001,17 +1955,6 @@ class World {
                       }
                     }
                   };
-                  /* const _uninitializeFiles = () => {
-                    const fileMeshes = fs.getFiles().slice();
-
-                    for (let i = 0; i < fileMeshes.length; i++) {
-                      const fileMesh = fileMeshes[i];
-
-                      fs.destroyFile(fileMesh);
-
-                      scene.remove(fileMesh);
-                    }
-                  }; */
                   const _uninitializeInventory = () => {
                     const inventoryTagMeshes = inventoryManager.getTagMeshes().slice();
                     const backpackMesh = backpack.getBackpackMesh();
@@ -2027,20 +1970,6 @@ class World {
                         inventoryManager.unset(i);
 
                         tags.destroyTag(tagMesh);
-
-                        /* const {type} = itemSpec;
-
-                        if (type === 'tag') {
-                          const {mesh: tagMesh} = itemSpec;
-                          tags.destroyTag(tagMesh);
-
-                          backpack.unsetItem(i);
-                        } else if (type === 'file') {
-                          const {mesh: tagMesh} = itemSpec;
-                          fs.destroyFile(tagMesh);
-
-                          backpack.unsetItem(i);
-                        } */
                       }
                     }
                   };
