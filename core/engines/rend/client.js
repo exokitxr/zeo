@@ -350,33 +350,9 @@ class Rend {
                 scene.add(navbarBoxMeshes.right);
 
                 keyboardMesh = (() => {
-                  const keySpecs = (() => {
-                    const div = document.createElement('div');
-                    div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
-                    div.innerHTML = keyboardImg;
-
-                    document.body.appendChild(div);
-
-                    const keyEls = div.querySelectorAll(':scope > svg > g[key]');
-                    const result = Array(keyEls.length);
-                    for (let i = 0; i < keyEls.length; i++) {
-                      const keyEl = keyEls[i];
-                      const key = keyEl.getAttribute('key');
-                      const rect = keyEl.getBoundingClientRect();
-
-                      const keySpec = {key, rect};
-                      result[i] = keySpec;
-                    }
-
-                    document.body.removeChild(div);
-
-                    return result;
-                  })();
-
                   const object = new THREE.Object3D();
                   object.position.y = DEFAULT_USER_HEIGHT;
                   object.visible = menuState.open;
-                  object.keySpecs = keySpecs;
 
                   const planeMesh = (() => {
                     const _requestKeyboardImage = () => new Promise((accept, reject) => {
@@ -438,6 +414,67 @@ class Rend {
                   })();
                   object.add(planeMesh);
                   object.planeMesh = planeMesh;
+
+                  const keySpecs = (() => {
+                    class KeySpec {
+                      constructor(key, rect) {
+                        this.key = key;
+                        this.rect = rect;
+
+                        this.anchorBoxTarget = null;
+                      }
+                    }
+
+                    const div = document.createElement('div');
+                    div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
+                    div.innerHTML = keyboardImg;
+
+                    document.body.appendChild(div);
+
+                    const keyEls = div.querySelectorAll(':scope > svg > g[key]');
+                    const result = Array(keyEls.length);
+                    for (let i = 0; i < keyEls.length; i++) {
+                      const keyEl = keyEls[i];
+                      const key = keyEl.getAttribute('key');
+                      const rect = keyEl.getBoundingClientRect();
+
+                      const keySpec = new KeySpec(key, rect);
+                      result[i] = keySpec;
+                    }
+
+                    document.body.removeChild(div);
+
+                    return result;
+                  })();
+                  object.keySpecs = keySpecs;
+
+                  const _updateKeySpecAnchorBoxTargets = () => {
+                    const {position: keyboardPosition, rotation: keyboardRotation, scale: keyboardScale} = _decomposeObjectMatrixWorld(planeMesh);
+
+                    for (let i = 0; i < keySpecs.length; i++) {
+                      const keySpec = keySpecs[i];
+                      const {key, rect} = keySpec;
+
+                      const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                        keyboardPosition,
+                        keyboardRotation,
+                        keyboardScale,
+                        new THREE.Vector3(
+                          -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
+                          (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
+                          -WORLD_DEPTH
+                        ),
+                        new THREE.Vector3(
+                          -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
+                          (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
+                          WORLD_DEPTH
+                        )
+                      );
+                      keySpec.anchorBoxTarget = anchorBoxTarget;
+                    }
+                  };
+                  _updateKeySpecAnchorBoxTargets();
+                  // XXX update this when the keyboard position changes
 
                   return object;
                 })();
@@ -909,36 +946,13 @@ class Rend {
                             });
                           };
                           const _updateKeyboardAnchors = () => {
-                            const {planeMesh} = keyboardMesh;
-                            const {position: keyboardPosition, rotation: keyboardRotation, scale: keyboardScale} = _decomposeObjectMatrixWorld(planeMesh);
-
-                            const {keySpecs} = keyboardMesh;
-                            const anchorBoxTargets = keySpecs.map(keySpec => {
-                              const {key, rect} = keySpec;
-
-                              const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                                keyboardPosition,
-                                keyboardRotation,
-                                keyboardScale,
-                                new THREE.Vector3(
-                                  -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                                  (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                                  -WORLD_DEPTH
-                                ),
-                                new THREE.Vector3(
-                                  -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                                  (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                                  WORLD_DEPTH
-                                )
-                              );
-                              anchorBoxTarget.key = key;
-                              return anchorBoxTarget;
-                            });
-                            // NOTE: there should be at most one intersecting anchor box since keys do not overlap
-                            const anchorBoxTarget = anchorBoxTargets.find(anchorBoxTarget => anchorBoxTarget.containsPoint(controllerPosition));
-
                             const {key: oldKey} = keyboardHoverState;
-                            const newKey = anchorBoxTarget ? anchorBoxTarget.key : null;
+                            const newKey = (() => {
+                              // NOTE: there should be at most one intersecting anchor box since keys do not overlap
+                              const {keySpecs} = keyboardMesh;
+                              const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
+                              return newKeySpec ? newKeySpec.key : null;
+                            })();
                             keyboardHoverState.key = newKey;
 
                             if (oldKey && newKey !== oldKey) {
