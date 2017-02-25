@@ -103,7 +103,6 @@ class Rend {
         let auxObjects = {
           bagMesh: null,
           tagMeshes: null,
-          fileMeshes: null,
         };
 
         const menuState = {
