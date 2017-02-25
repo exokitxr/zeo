@@ -244,16 +244,10 @@ class World {
               const _getInFrontOfCameraMatrix = () => {
                 const {hmd} = webvr.getStatus();
                 const {position, rotation} = hmd;
-                const menuMesh = rend.getMenuMesh();
-                const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
 
-                const newMatrix = new THREE.Matrix4().compose(
-                  position.clone()
-                    .add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)),
-                  rotation,
-                  new THREE.Vector3(1, 1, 1)
-                ).multiply(menuMeshMatrixInverse);
-                const {position: newPosition, rotation: newRotation, scale: newScale} = _decomposeMatrix(newMatrix);
+                const newPosition = position.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation));
+                const newRotation = rotation;
+                const newScale = oneVector;
 
                 return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
               };

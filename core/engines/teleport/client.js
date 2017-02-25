@@ -19,16 +19,31 @@ class Teleport {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/webvr',
+      '/core/engines/input',
       '/core/engines/rend',
       '/core/engines/cyborg',
     ]).then(([
       three,
       webvr,
+      input,
       rend,
       cyborg,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
+
+        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        const _decomposeMatrix = matrix => {
+          const position = new THREE.Vector3();
+          const quaternion = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          matrix.decompose(position, quaternion, scale);
+          return {
+            position,
+            quaternion,
+            scale,
+          };
+        };
 
         const teleportMeshMaterial = new THREE.MeshBasicMaterial({
           color: 0x808080,
@@ -74,6 +89,7 @@ class Teleport {
         scene.add(teleportAirMeshes.right);
 
         const _makeTeleportState = () => ({
+          teleporting: false,
           teleportFloorPoint: null,
           teleportAirPoint: null,
         });
@@ -82,36 +98,41 @@ class Teleport {
           right: _makeTeleportState(),
         };
 
-        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-        const _decomposeMatrix = matrix => {
-          const position = new THREE.Vector3();
-          const quaternion = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          matrix.decompose(position, quaternion, scale);
-          return {
-            position,
-            quaternion,
-            scale,
-          };
-        };
-
         let airHeight = 0;
+
+        const _paddown = e => {
+          const {side} = e;
+
+          const teleportState = teleportStates[side];
+
+          teleportState.teleporting = true;
+        };
+        input.on('paddown', _paddown);
+        const _padup = e => {
+          const {side} = e;
+
+          const teleportState = teleportStates[side];
+
+          teleportState.teleporting = false;
+        };
+        input.on('padup', _padup);
 
         const _update = options => {
           const status = webvr.getStatus();
           const {gamepads} = status;
 
           SIDES.forEach(side => {
-            const gamepadStatus = gamepads[side];
-            const teleportState = teleportStates[side];
-            const teleportFloorMesh = teleportFloorMeshes[side];
-            const teleportAirMesh = teleportAirMeshes[side];
+            const gamepad = gamepads[side];
 
-            if (gamepadStatus) {
-              const {position: controllerPosition, rotation: controllerRotation, axes, buttons} = gamepadStatus; // XXX break this out into acutal event handlers
-              const padButtonPressed = buttons.pad.pressed;
+            if (gamepad) {
+              const teleportState = teleportStates[side];
+              const {teleporting} = teleportState;
+              const teleportFloorMesh = teleportFloorMeshes[side];
+              const teleportAirMesh = teleportAirMeshes[side];
 
-              if (padButtonPressed) {
+              if (teleporting) {
+                const {position: controllerPosition, rotation: controllerRotation, axes} = gamepad;
+
                 const ray = new THREE.Vector3(0, 0, -1)
                   .applyQuaternion(controllerRotation);
                 const axisFactor = (axes[1] - (-1)) / 2;
@@ -202,7 +223,6 @@ class Teleport {
             }
           });
         };
-
         rend.on('update', _update);
 
         this._cleanup = () => {
@@ -210,6 +230,9 @@ class Teleport {
             scene.remove(teleportFloorMeshes[side]);
             scene.remove(teleportAirMeshes[side]);
           });
+
+          input.removeListener('paddown', _paddown);
+          input.removeListener('padup', _padup);
 
           rend.removeListener('update', _update);
         };

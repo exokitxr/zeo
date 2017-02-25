@@ -184,7 +184,20 @@ class Camera {
         }
         zeo.registerElement(this, CameraElement);
 
-        const _pad = e => {
+        const _paddown = e => {
+          const {side} = e;
+
+          const grabElement = zeo.getGrabElement(side);
+          const cameraElement = cameraElements.find(cameraElement => cameraElement === grabElement);
+
+          if (cameraElement) {
+            e.stopImmediatePropagation();
+          }
+        };
+        zeo.on('paddown', _paddown, {
+          priority: 1,
+        });
+        const _padup = e => {
           const {side} = e;
 
           const grabElement = zeo.getGrabElement(side);
@@ -207,18 +220,18 @@ class Camera {
             e.stopImmediatePropagation();
           }
         };
-        zeo.on('pad', _pad, {
+        zeo.on('padup', _padup, {
           priority: 1,
         });
-
-        // XXX also override paddown, padup to make sure teleport doesn't interfere
 
         zeo.on('update', _update);
 
         this._cleanup = () => {
           zeo.unregisterElement(this);
 
-          zeo.removeListener('pad', _pad);
+          zeo.removeListener('paddown', _paddown);
+          zeo.removeListener('padup', _padup);
+
           zeo.removeListener('update', _update);
         };
 
