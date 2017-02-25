@@ -12,6 +12,13 @@ window.WebVRConfig = {
   // DIRTY_SUBMIT_FRAME_BINDINGS: false,
 };
 require('webvr-polyfill');
+const {VRFrameData: VRFrameDataFake} = require('webvr-polyfill/src/base');
+class VRPoseFake {
+  constructor(position, orientation) {
+    this.position = position;
+    this.orientation = orientation;
+  }
+}
 
 const SynchronousPromise = require('synchronous-promise').SynchronousPromise;
 const mod = require('mod-loop');
@@ -209,7 +216,7 @@ class WebVR {
               },
             };
 
-            this._frameData = new VRFrameData();
+            this._frameData = null;
           }
 
           supportsWebVR() {
@@ -234,9 +241,13 @@ class WebVR {
                   this.display = display;
                   this.stereoscopic = stereoscopic;
                   this.isOpen = true;
-
                   cleanups.push(() => {
                     this.isOpen = false;
+                  });
+
+                  this._frameData = (display instanceof FakeVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
+                  cleanups.push(() => {
+                    this._frameData = null;
                   });
 
                   if (display && stereoscopic) {
@@ -405,10 +416,13 @@ class WebVR {
             const result = _checkNotOpening()
               .then(_startOpening)
               .then(() => {
-                let display = bestDisplay;
-                if (!_canPresent(display)) {
-                  display = new FakeVRDisplay();
-                }
+                const display = (() => {
+                  if (stereoscopic && _canPresent(bestDisplay)) {
+                    return bestDisplay;
+                  } else {
+                    return new FakeVRDisplay();
+                  }
+                })();
 
                 return display.requestPresent([
                   {
@@ -485,13 +499,12 @@ class WebVR {
           }
 
           updateStatus() {
-            const {display, _frameData: frameData} = this;
-
             const _getHmdStatus = ({stageMatrix}) => {
-              if (display) {
+              const {display, _frameData: frameData} = this;
+              if (display && frameData) {
                 display.getFrameData(frameData);
               }
-              const {pose} = frameData;
+              const pose = frameData && frameData.pose;
 
               const matrix = _getMatrixFromPose(pose, stageMatrix);
               const {position, rotation, scale} = _getPropertiesFromMatrix(matrix);
@@ -504,6 +517,7 @@ class WebVR {
               );
             };
             const _getGamepadsStatus = ({stageMatrix}) => {
+              const {display} = this;
               const gamepads = (display && display.getGamepads) ? display.getGamepads() : navigator.getGamepads();
               const leftGamepad = gamepads[0];
               const rightGamepad = gamepads[1];
@@ -934,10 +948,7 @@ class WebVR {
             frameData.rightProjectionMatrix.set(eyeCameraProjectionMatrixArray);
 
             const {position, rotation} = this;
-            frameData.pose = {
-              position: position.toArray(),
-              orientation: rotation.toArray(),
-            };
+            frameData.pose = new VRPoseFake(position.toArray(), rotation.toArray());
           }
 
           getEyeParameters(side) {
