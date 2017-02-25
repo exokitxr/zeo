@@ -454,6 +454,8 @@ class Cyborg {
           const _disconnectServer = _updateEnabled;
           bullet.on('disconnectServer', _disconnectServer);
 
+          _updateEnabled();
+
           this._cleanup = () => {
             cleanup();
 

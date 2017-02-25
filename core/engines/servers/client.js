@@ -31,7 +31,6 @@ class Servers {
       '/core/engines/login',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/engines/hands',
       '/core/plugins/creature-utils',
     ])
       .then(([
@@ -42,7 +41,6 @@ class Servers {
         login,
         biolumi,
         rend,
-        hands,
         creatureUtils,
       ]) => {
         if (live) {

@@ -20,6 +20,7 @@ class Bullet {
       '/core/engines/hub',
       '/core/engines/three',
       '/core/engines/login',
+      '/core/engines/servers',
       '/core/engines/rend',
       '/core/engines/config',
       '/core/plugins/js-utils',
@@ -27,6 +28,7 @@ class Bullet {
       hub,
       three,
       login,
+      servers,
       rend,
       config,
       jsUtils,
@@ -730,7 +732,7 @@ class Bullet {
           cleanup();
         };
         const _updateEnabled = () => {
-          const connected = hub.getCurrentServer().type === 'server';
+          const connected = servers.isConnected();
           const loggedIn = !login.isOpen();
           const shouldBeEnabled = connected && loggedIn;
 
@@ -748,6 +750,8 @@ class Bullet {
         rend.on('login', _login);
         const _logout = _updateEnabled;
         rend.on('logout', _logout);
+
+        _updateEnabled();
 
         let debugEnabled = false;
         const _enablePhysicsDebugMesh = () => {
