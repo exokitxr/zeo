@@ -231,11 +231,11 @@ const getFileSrc = ({item}) => {
         </div>
       </div>
       ${!open ?
-        `<a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="file:open:${id}">
+        `<a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="tag:open:${id}">
           <img src="${playBlackImgSrc}" width="50" height="50">
         </a>`
       :
-        `<a style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="file:close:${id}">
+        `<a style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="tag:close:${id}">
           <img src="${playWhiteImgSrc}" width="50" height="50">
         </a>`
       }
