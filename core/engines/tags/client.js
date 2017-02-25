@@ -619,7 +619,17 @@ class Tags {
           };
 
           class Item {
-            constructor(type, id, name, displayName, description, version, attributes, matrix) {
+            constructor(
+              type,
+              id,
+              name,
+              displayName,
+              description,
+              version,
+              attributes,
+              mimeType,
+              matrix
+            ) {
               this.type = type;
               this.id = id;
               this.name = name;
@@ -686,6 +696,7 @@ class Tags {
 
                 return result;
               })();
+              this.mimeType = mimeType;
               this.matrix = matrix;
 
               this[itemInstanceSymbol] = null;
@@ -732,7 +743,17 @@ class Tags {
               const object = new THREE.Object3D();
               object[tagFlagSymbol] = true;
 
-              const item = new Item(itemSpec.type, itemSpec.id, itemSpec.name, itemSpec.displayName, itemSpec.description, itemSpec.version, itemSpec.attributes, itemSpec.matrix);
+              const item = new Item(
+                itemSpec.type,
+                itemSpec.id,
+                itemSpec.name,
+                itemSpec.displayName,
+                itemSpec.description,
+                itemSpec.version,
+                itemSpec.attributes,
+                itemSpec.mimeType,
+                itemSpec.matrix
+              );
               object.item = item;
               object.highlight = itemSpec.highlight;
 

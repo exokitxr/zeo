@@ -241,6 +241,22 @@ class World {
                 .then(res => res.json()
                   .then(({startTime}) => startTime)
                 );
+              const _getInFrontOfCameraMatrix = () => {
+                const {hmd} = webvr.getStatus();
+                const {position, rotation} = hmd;
+                const menuMesh = rend.getMenuMesh();
+                const menuMeshMatrixInverse = new THREE.Matrix4().getInverse(menuMesh.matrix);
+
+                const newMatrix = new THREE.Matrix4().compose(
+                  position.clone()
+                    .add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)),
+                  rotation,
+                  new THREE.Vector3(1, 1, 1)
+                ).multiply(menuMeshMatrixInverse);
+                const {position: newPosition, rotation: newRotation, scale: newScale} = _decomposeMatrix(newMatrix);
+
+                return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
+              };
 
               class ElementManager {
                 constructor() {
@@ -1769,8 +1785,7 @@ class World {
               };
               tags.on('setAttribute', _setAttribute);
 
-              const _uploadStart = ({id, name, type}) => {
-                const directory = '/';
+              const _uploadStart = ({id, name, mimeType}) => {
                 const matrix = (() => {
                   const {hmd} = webvr.getStatus();
                   const {position, rotation} = hmd;
@@ -1790,8 +1805,7 @@ class World {
                 const file = {
                   id,
                   name,
-                  type,
-                  directory,
+                  mimeType,
                   matrix,
                 };
 
@@ -1889,6 +1903,38 @@ class World {
                   } else {
                     return null;
                   }
+                }
+
+                createFile(blob) {
+                  const id = _makeId();
+                  const {name = _makeId(), type: mimeType} = blob;
+                  const matrix = _getInFrontOfCameraMatrix();
+                  const itemSpec = {
+                    type: 'file',
+                    id,
+                    name,
+                    mimeType,
+                    matrix,
+                  };
+                  const tagMesh = tags.makeTag(itemSpec);
+                  const {item} = tagMesh;
+                  item.instancing = true;
+
+                  fs.writeFile(id, blob)
+                    .then(() => {
+                      item.instancing = false;
+
+                      tags.updatePages();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      item.instancing = false;
+
+                      tags.updatePages();
+                    });
+
+                  // XXX perform an actual tags save via _addTag here
                 }
 
                 connect() { // XXX handle race conditions here

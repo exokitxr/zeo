@@ -419,11 +419,10 @@ class Fs {
         };
 
         class FsFile {
-          constructor(id, name, type, directory, matrix) {
+          constructor(id, name, mimeType, matrix) {
             this.id = id;
             this.name = name;
-            this.type = type;
-            this.directory = directory;
+            this.mimeType = mimeType;
             this.matrix = matrix;
 
             this.instancing = false;
@@ -439,7 +438,7 @@ class Fs {
             const object = new THREE.Object3D();
             object[fileFlagSymbol] = true;
 
-            const file = new FsFile(fileSpec.id, fileSpec.name, fileSpec.type, fileSpec.directory, fileSpec.matrix);
+            const file = new FsFile(fileSpec.id, fileSpec.name, fileSpec.mimeType, fileSpec.matrix);
             object.file = file;
 
             object.position.set(file.matrix[0], file.matrix[1], file.matrix[2]);
@@ -532,7 +531,15 @@ class Fs {
 
           readFile(id) {
             return fetch('/archae/fs/' + id)
-              .then(res => res.blob()
+              .then(res => res.blob());
+          }
+
+          writeFile(id, blob) {
+            return fetch('/archae/fs/' + id, {
+              method: 'PUT',
+              body: blob,
+            }).then(res => res.blob()
+              .then(() => {})
             );
           }
 
@@ -543,15 +550,6 @@ class Fs {
               }
             }).then(res => res.json());
           } */
-
-          writeFile(id, blob) {
-            return fetch('/archae/fs/' + id, {
-              method: 'PUT',
-              body: blob,
-            }).then(res => res.blob()
-              .then(() => {})
-            );
-          }
 
           /* createDirectory(p) {
             return fetch('/archae/fs' + p, {
