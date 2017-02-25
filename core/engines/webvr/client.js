@@ -405,10 +405,13 @@ class WebVR {
             const result = _checkNotOpening()
               .then(_startOpening)
               .then(() => {
-                let display = bestDisplay;
-                if (!_canPresent(display)) {
-                  display = new FakeVRDisplay();
-                }
+                const display = (() => {
+                  if (stereoscopic && _canPresent(bestDisplay)) {
+                    return bestDisplay;
+                  } else {
+                    return new FakeVRDisplay();
+                  }
+                })();
 
                 return display.requestPresent([
                   {
