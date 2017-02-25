@@ -8,8 +8,6 @@ const playBlackImg = require('../img/play-black');
 const playBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(playBlackImg);
 const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
-const downloadBlackImg = require('../img/download-black');
-const downloadBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(downloadBlackImg);
 
 const getElementSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight}) => {
   const {id, displayName, description, version, instancing, open} = item;
