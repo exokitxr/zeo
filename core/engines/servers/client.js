@@ -203,6 +203,7 @@ class Servers {
 
                   menuUi.update({uiTime});
                 };
+                _updatePages();
 
                 const _trigger = e => {
                   const {side} = e;

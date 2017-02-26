@@ -954,6 +954,7 @@ class World {
 
                 worldUi.update({uiTime});
               };
+              _updatePages();
 
               const _update = e => {
                 const _updateMenuAnchors = () => {

@@ -183,6 +183,7 @@ class Login {
 
                 menuUi.update({uiTime});
               };
+              _updatePages();
 
               const login = () => {
                 loginState.open = false;

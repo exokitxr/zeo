@@ -532,7 +532,7 @@ class Biolumi {
 
                   return mesh;
                 })();
-                // XXX potentially trigger a page update on the next frame
+
                 return planeMesh;
               }
 

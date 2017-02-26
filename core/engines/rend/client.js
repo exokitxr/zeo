@@ -223,7 +223,9 @@ class Rend {
                   object.visible = menuState.open;
 
                   const statusMesh = (() => {
-                    const mesh = menuUi.addPage(({status}) => [
+                    const mesh = menuUi.addPage(({
+                      status,
+                    }) => [
                       {
                         type: 'html',
                         src: menuRenderer.getStatusSrc({status}),
@@ -256,7 +258,11 @@ class Rend {
                   object.statsMesh = null;
 
                   const navbarMesh = (() => {
-                    const mesh = navbarUi.addPage(({navbar: {tab}}) => ([
+                    const mesh = navbarUi.addPage(({
+                      navbar: {
+                        tab,
+                      },
+                    }) => ([
                       {
                         type: 'html',
                         src: menuRenderer.getNavbarSrc({tab}),
@@ -473,6 +479,8 @@ class Rend {
                   menuUi.update({uiTime});
                   navbarUi.update({uiTime});
                 };
+                _updatePages();
+
                 const trigger = e => {
                   const {open} = menuState;
 

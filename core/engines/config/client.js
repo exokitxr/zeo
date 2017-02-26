@@ -316,6 +316,7 @@ class Config {
                 configUi.update({uiTime});
                 statsUi.update({uiTime});
               };
+              _updatePages();
 
               const trigger = e => {
                 const isOpen = rend.isOpen();

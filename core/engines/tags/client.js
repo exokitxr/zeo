@@ -712,6 +712,7 @@ class Tags {
                         const {item, highlight} = object;
 
                         // XXX rewrite this to handle multi-tag tenancy in a UI
+                        // XXX make sure to _updatePages after adding a page
                         ui.addPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type: focusType}}) => {
                           const {type} = item;
                           const focusAttributeSpec = (() => {

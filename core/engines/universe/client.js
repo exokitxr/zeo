@@ -304,6 +304,7 @@ class Universe {
                 backgroundUi.update({uiTime});
                 foregroundUi.update({uiTime});
               };
+              _updatePages();
 
               const _update = () => {
                 const tab = rend.getTab();
