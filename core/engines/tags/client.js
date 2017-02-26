@@ -96,7 +96,7 @@ class Tags {
 
               let lastUi = uis.length > 0 ? uis[uis.length - 1] : null;
               if (!lastUi || !lastUi.hasFreePages()) {
-                lastUi = biolumi.requestUi({
+                lastUi = biolumi.makeUi({
                   width: WIDTH,
                   height: HEIGHT,
                 });
