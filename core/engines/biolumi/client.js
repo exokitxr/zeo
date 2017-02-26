@@ -448,13 +448,12 @@ class Biolumi {
 
                         if (layer.img.needsUpdate) {
                           const texture = textures.value[i];
-                          const {image} = texture;
 
                           // ensure the texture exists with the right size
                           // we are assuming that all page's layers have identical metrics
-                          const requiredWidth = layer.width * atlasSize;
-                          const requiredHeight = layer.height * atlasSize;
-                          if (image.width !== requiredWidth || image.height !== requiredHeight) {
+                          const requiredWidth = layer.w * atlasSize;
+                          const requiredHeight = layer.h * atlasSize;
+                          if (texture.image.width !== requiredWidth || texture.image.height !== requiredHeight) {
                             const canvas = document.createElement('canvas');
                             canvas.width = requiredWidth;
                             canvas.height = requiredHeight;
@@ -466,7 +465,7 @@ class Biolumi {
 
                           // draw the layer image into the texture atlas
                           const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
-                          texture.image.ctx.drawImage(layer.img, textureAtlasUv.x * layer.width, textureAtlasUv.y * layer.height);
+                          texture.image.ctx.drawImage(layer.img, textureAtlasUv.x * layer.w, textureAtlasUv.y * layer.h);
 
                           // set texture pixelation properties
                           if (!layer.pixelated) {
@@ -535,8 +534,21 @@ class Biolumi {
 
                 const planeMesh = (() => {
                   const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-                  const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
-                  const atlasUvs = Float32Array.from(textureAtlasUvs.toArray());
+                  const atlasUvs = (() => {
+                    const positions = geometry.getAttribute('position').array;
+                    const numPositions = positions.length / 3;
+
+                    const array = Array(numPositions * 2);
+                    const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
+                    for (let i = 0; i < numPositions; i++) {
+                      const baseIndex = i * 2;
+                      array[baseIndex + 0] = textureAtlasUvs.x;
+                      array[baseIndex + 1] = textureAtlasUvs.y;
+                    }
+
+                    const float32Array = Float32Array.from(array);
+                    return float32Array;
+                  })();
                   geometry.addAttribute('atlasUv', new THREE.BufferAttribute(atlasUvs, 2));
 
                   const material = megaTexture.getMaterial();
