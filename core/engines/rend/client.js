@@ -449,6 +449,7 @@ class Rend {
                   object.keySpecs = keySpecs;
 
                   const _updateKeySpecAnchorBoxTargets = () => {
+                    object.updateMatrixWorld();
                     const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
 
                     for (let i = 0; i < keySpecs.length; i++) {
