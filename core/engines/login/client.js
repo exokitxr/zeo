@@ -143,7 +143,6 @@ class Login {
                   // mesh.position.y = 1.5;
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
 
                   return mesh;
                 })();
@@ -180,7 +179,9 @@ class Login {
               scene.add(menuBoxMeshes.right);
 
               const _updatePages = {
-                menuUi.update();
+                const uiTime = rend.getUiTime();
+
+                menuUi.update({uiTime});
               };
 
               const login = () => {
@@ -369,20 +370,6 @@ class Login {
                       const {open} = loginState;
 
                       if (open) {
-                        const _updateTextures = () => {
-                          const {
-                            planeMesh: {
-                              menuMaterial: statusMenuMaterial,
-                            },
-                          } = menuMesh;
-                          const uiTime = rend.getUiTime();
-
-                          biolumi.updateMenuMaterial({
-                            ui: menuUi,
-                            menuMaterial: statusMenuMaterial,
-                            uiTime,
-                          });
-                        };
                         const _updateAnchors = () => {
                           const {gamepads} = webvr.getStatus();
 
@@ -418,8 +405,6 @@ class Login {
                             }
                           });
                         };
-
-                        _updateTextures();
                         _updateAnchors();
                       }
                     };

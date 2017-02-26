@@ -311,8 +311,10 @@ class Config {
               };
 
               const _updatePages = {
-                configUi.update();
-                statsUi.update();
+                const uiTime = rend.getUiTime();
+
+                configUi.update({uiTime});
+                statsUi.update({uiTime});
               };
 
               const trigger = e => {
@@ -440,36 +442,6 @@ class Config {
               });
 
               const _update = () => {
-                const _updateTextures = () => {
-                  const isOpen = rend.isOpen();
-                  const tab = rend.getTab();
-                  const uiTime = rend.getUiTime();
-
-                  if (isOpen && tab === 'options') {
-                    const {
-                      planeMesh: {
-                        menuMaterial: configMenuMaterial,
-                      },
-                    } = configMesh;
-
-                    biolumi.updateMenuMaterial({
-                      ui: configUi,
-                      menuMaterial: configMenuMaterial,
-                      uiTime,
-                    });
-                  }
-
-                  const {
-                    planeMesh: {
-                      menuMaterial: statsMenuMaterial,
-                    },
-                  } = statsMesh;
-                  biolumi.updateMenuMaterial({
-                    ui: statsUi,
-                    menuMaterial: statsMenuMaterial,
-                    uiTime,
-                  });
-                };
                 const _updateAnchors = () => {
                   const isOpen = rend.isOpen();
                   const tab = rend.getTab();
@@ -510,8 +482,6 @@ class Config {
                     });
                   }
                 };
-
-                _updateTextures();
                 _updateAnchors();
 
                 stats.render();

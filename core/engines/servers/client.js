@@ -199,7 +199,9 @@ class Servers {
                 rend.registerMenuMesh('serversMesh', menuMesh);
 
                 const _updatePages = {
-                  menuUi.update();
+                  const uiTime = rend.getUiTime();
+
+                  menuUi.update({uiTime});
                 };
 
                 const _trigger = e => {
@@ -245,25 +247,7 @@ class Servers {
                 input.on('trigger', _trigger);
 
                 const _update = () => {
-                  const _updateTextures = () => {
-                    const tab = rend.getTab();
-
-                    if (tab === 'servers') {
-                      const {
-                        planeMesh: {
-                          menuMaterial,
-                        },
-                      } = menuMesh;
-                      const uiTime = rend.getUiTime();
-
-                      biolumi.updateMenuMaterial({
-                        ui: menuUi,
-                        menuMaterial,
-                        uiTime,
-                      });
-                    }
-                  };
-                  const _updateMenuAnchors = () => {
+                  const _updateAnchors = () => {
                     const tab = rend.getTab();
 
                     if (tab === 'servers') {
@@ -300,9 +284,7 @@ class Servers {
                       });
                     }
                   };
-
-                  _updateTextures();
-                  _updateMenuAnchors();
+                  _updateAnchors();
                 };
                 rend.on('update', _update);
 

@@ -468,8 +468,10 @@ class Rend {
                 scene.add(keyboardBoxMeshes.right);
 
                 const _updatePages = {
-                  menuUi.update();
-                  navbarUi.update();
+                  const uiTime = uiTimer.getUiTime();
+
+                  menuUi.update({uiTime});
+                  navbarUi.update({uiTime});
                 };
                 const trigger = e => {
                   const {open} = menuState;
@@ -520,113 +522,6 @@ class Rend {
                   }
                 };
                 input.on('trigger', trigger);
-                const triggerdown = e => {
-                  const {open} = menuState;
-
-                  if (open) {
-                    const {side} = e;
-                    const menuHoverState = menuHoverStates[side];
-
-                    const _doScroll = () => {
-                      const {tab} = navbarState;
-
-                      if (tab === 'status') {
-                        const {scrollLayer} = menuHoverState;
-
-                        if (scrollLayer) {
-                          const {intersectionPoint} = menuHoverState;
-
-                          const {statusMesh} = menuMesh;
-                          const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(statusMesh);
-                          const _getMenuMeshCoordinate = biolumi.makeMeshCoordinateGetter({
-                            position: menuPosition,
-                            rotation: menuRotation,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                          });
-                          const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
-                          menuHoverState.mousedownScrollLayer = scrollLayer;
-                          menuHoverState.mousedownStartCoord = mousedownStartCoord;
-                          menuHoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
-
-                          return true;
-                        } else {
-                          return false;
-                        }
-                      } else {
-                        return false;
-                      }
-                    };
-
-                    _doScroll();
-                  }
-                };
-                input.on('triggerdown', triggerdown);
-
-                const _setLayerScroll = menuHoverState => {
-                  const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = menuHoverState;
-
-                  const {statusMesh} = menuMesh;
-                  const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(statusMesh);
-                  const _getMenuMeshCoordinate = biolumi.makeMeshCoordinateGetter({
-                    position: menuPosition,
-                    rotation: menuRotation,
-                    width: WIDTH,
-                    height: HEIGHT,
-                    worldWidth: WORLD_WIDTH,
-                    worldHeight: WORLD_HEIGHT,
-                  });
-                  const mousedownCurCoord = _getMenuMeshCoordinate(intersectionPoint);
-                  const mousedownCoordDiff = mousedownCurCoord.clone()
-                    .sub(mousedownStartCoord)
-                    .multiply(new THREE.Vector2(WIDTH / WORLD_WIDTH, HEIGHT / WORLD_HEIGHT));
-                  const scrollLeft = 0;
-                  const scrollTop = Math.max(
-                    Math.min(
-                      mousedownStartScrollTop - mousedownCoordDiff.y,
-                      (mousedownScrollLayer.scrollHeight > mousedownScrollLayer.h) ?
-                        (mousedownScrollLayer.scrollHeight - mousedownScrollLayer.h)
-                      :
-                        0
-                    ),
-                    0
-                  );
-
-                  mousedownScrollLayer.scrollTo(scrollLeft, scrollTop);
-                };
-                const triggerup = e => {
-                  const {side} = e;
-
-                  const _doScroll = () => {
-                    const {tab} = navbarState;
-
-                    if (tab === 'status') {
-                      const menuHoverState = menuHoverStates[side ];
-                      const {mousedownStartCoord} = menuHoverState;
-
-                      if (mousedownStartCoord) {
-                        const {intersectionPoint} = menuHoverState;
-                        if (intersectionPoint) {
-                          _setLayerScroll(menuHoverState);
-                        }
-
-                        menuHoverState.mousedownScrollLayer = null;
-                        menuHoverState.mousedownStartCoord = null;
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  };
-
-                  _doScroll();
-                };
-                input.on('triggerup', triggerup);
                 const menudown = () => {
                   const {loggedIn} = menuState;
 
@@ -683,8 +578,6 @@ class Rend {
                   });
 
                   input.removeListener('trigger', trigger);
-                  input.removeListener('triggerdown', triggerdown);
-                  input.removeListener('triggerup', triggerup);
                   input.removeListener('menudown', menudown);
                 });
 
@@ -801,44 +694,6 @@ class Rend {
                   const {open} = menuState;
 
                   if (open) {
-                    const _updateTextures = () => {
-                      const {tab} = navbarState;
-                      const uiTime = uiTimer.getUiTime();
-
-                      if (tab === 'status') {
-                        const {
-                          statusMesh: {
-                            menuMaterial: statusMenuMaterial,
-                          },
-                        } = menuMesh;
-
-                        biolumi.updateMenuMaterial({
-                          ui: menuUi,
-                          menuMaterial: statusMenuMaterial,
-                          uiTime,
-                        });
-                      }
-
-                      const {
-                        navbarMesh: {
-                          menuMaterial: navbarMenuMaterial,
-                        },
-                      } = menuMesh;
-                      biolumi.updateMenuMaterial({
-                        ui: navbarUi,
-                        menuMaterial: navbarMenuMaterial,
-                        uiTime,
-                      });
-
-                      SIDES.forEach(side => {
-                        const menuHoverState = menuHoverStates[side];
-
-                        const {mousedownStartCoord, intersectionPoint} = menuHoverState;
-                        if (mousedownStartCoord && intersectionPoint) {
-                          _setLayerScroll(menuHoverState);
-                        }
-                      });
-                    };
                     const _updateAnchors = () => {
                       const status = webvr.getStatus();
                       const {gamepads} = status;
@@ -960,8 +815,6 @@ class Rend {
                         }
                       });
                     };
-
-                    _updateTextures();
                     _updateAnchors();
                   }
                 });

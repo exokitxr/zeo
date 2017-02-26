@@ -950,30 +950,12 @@ class World {
               scene.add(menuBoxMeshes.right);
 
               const _updatePages = {
-                worldUi.update();
+                const uiTime = rend.getUiTime();
+
+                worldUi.update({uiTime});
               };
 
               const _update = e => {
-                const _updateTextures = () => {
-                  const tab = rend.getTab();
-
-                  if (tab === 'world') {
-                    const {
-                      menuMesh: {
-                        planeMesh: {
-                          menuMaterial,
-                        },
-                      },
-                    } = worldMesh;
-                    const uiTime = rend.getUiTime();
-
-                    biolumi.updateMenuMaterial({
-                      ui: worldUi,
-                      menuMaterial,
-                      uiTime,
-                    });
-                  }
-                };
                 const _updateMenuAnchors = () => {
                   const tab = rend.getTab();
 
@@ -1273,7 +1255,6 @@ class World {
                   });
                 };
 
-                _updateTextures();
                 _updateMenuAnchors();
                 _updateGrabbers();
                 _updateNpmAnchors();

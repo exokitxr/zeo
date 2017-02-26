@@ -299,30 +299,16 @@ class Universe {
               scene.add(foregroundDotMeshes.right);
 
               const _updatePages = {
-                backgroundUi.update();
-                foregroundUi.update();
+                const uiTime = rend.getUiTime();
+
+                backgroundUi.update({uiTime});
+                foregroundUi.update({uiTime});
               };
 
               const _update = () => {
                 const tab = rend.getTab();
 
                 if (tab === 'worlds') {
-                  const _updateTextures = () => {
-                    const {
-                      backgroundMesh: {
-                        planeMesh: {
-                          menuMaterial: backgroundMenuMaterial,
-                        },
-                      },
-                    } = menuMesh;
-                    const uiTime = rend.getUiTime();
-
-                    biolumi.updateMenuMaterial({
-                      ui: backgroundUi,
-                      menuMaterial: backgroundMenuMaterial,
-                      uiTime,
-                    });
-                  };
                   const _updateAnchors = () => {
                     const _updateBackgroundAnchors = () => {
                       const {backgroundMesh} = menuMesh;
@@ -442,8 +428,6 @@ class Universe {
                     _updateBackgroundAnchors();
                     _updateForegroundAnchors();
                   };
-
-                  _updateTextures();
                   _updateAnchors();
                 }
               };

@@ -198,7 +198,9 @@ class Tags {
                 };
 
                 const _updatePages = {
-                  tagsUi.update();
+                  const uiTime = rend.getUiTime();
+
+                  tagsUi.update({uiTime});
                 };
 
                 const _trigger = e => {
@@ -529,30 +531,7 @@ class Tags {
                     _updateElementAnchors();
                     _updatePositioningMesh();
                   };
-                  const _updateTextures = () => {
-                    const uiTime = rend.getUiTime();
-
-                    for (let i = 0; i < tagMeshes.length; i++) {
-                      const tagMesh = tagMeshes[i];
-                      const {
-                        ui,
-                        planeMesh,
-                      } = tagMesh;
-
-                      if (ui && planeMesh) {
-                        const {menuMaterial} = planeMesh;
-
-                        biolumi.updateMenuMaterial({
-                          ui,
-                          menuMaterial,
-                          uiTime,
-                        });
-                      }
-                    }
-                  };
-
                   _updateControllers();
-                  _updateTextures();
                 };
                 rend.on('update', _update);
 
