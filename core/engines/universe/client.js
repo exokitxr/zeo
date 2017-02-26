@@ -299,7 +299,7 @@ class Universe {
 
               const _updatePages = () => {
                 backgroundUi.update();
-                foregroundUi.update();
+                // foregroundUi.update();
               };
               _updatePages();
 
