@@ -54,308 +54,384 @@ class Biolumi {
         if (live) {
           const {THREE} = three;
 
-          const _requestUi = ({width, height}) => new Promise((accept, reject) => {
-            const pages = [];
+          class Page {
+            constructor(parent, spec, type, state) {
+              this.parent = parent;
+              this.spec = spec;
+              this.type = type;
+              this.state = state;
 
-            class Page {
-              constructor(parent, spec, type, state) {
-                this.parent = parent;
-                this.spec = spec;
-                this.type = type;
-                this.state = state;
+              this.layers = [];
 
-                this.layers = [];
+              this.x = 0;
+              this.y = 0;
 
-                this.x = 0;
-                this.y = 0;
+              this._lastStateJson = '';
+            }
 
-                this._lastStateJson = '';
-              }
+            update(cb = () => {}) {
+              const {state} = this;
+              const stateJson = JSON.stringify(state);
+              const {_lastStateJson: lastStateJson} = this;
 
-              update(cb = () => {}) {
-                const {state} = this;
-                const stateJson = JSON.stringify(state);
-                const {_lastStateJson: lastStateJson} = this;
+              if (stateJson !== lastStateJson) {
+                this._lastStateJson = stateJson;
 
-                if (stateJson !== lastStateJson) {
-                  this._lastStateJson = stateJson;
+                const {spec} = this;
+                const layers = [];
+                const layersSpec = typeof spec === 'function' ? spec(state) : spec;
+                if (layersSpec.length > 0) {
+                  let pending = layersSpec.length;
+                  const pend = () => {
+                    if (--pending === 0) {
+                      this.layers = layers;
 
-                  const {spec} = this;
-                  const layers = [];
-                  const layersSpec = typeof spec === 'function' ? spec(state) : spec;
-                  if (layersSpec.length > 0) {
-                    let pending = layersSpec.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        this.layers = layers;
+                      cb();
+                    }
+                  };
 
-                        cb();
+                  for (let i = 0; i < layersSpec.length; i++) {
+                    const layerSpec = layersSpec[i];
+                    const {type = 'html'} = layerSpec;
+
+                    if (type === 'html') {
+                      const {parent: {width, height}} = this;
+                      const {src, x = 0, y = 0, w = width, h = height, scroll = false, pixelated = false} = layerSpec;
+
+                      const innerSrc = (() => {
+                        const el = document.createElement('div');
+                        el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+                        el.setAttribute('style', rootCss);
+                        el.innerHTML = src
+                          .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
+
+                        const imgs = el.querySelectorAll('img');
+
+                        // do not load images without an explicit width + height
+                        for (let i = 0; i < imgs.length; i++) {
+                          const img = imgs[i];
+                          if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
+                            img.parentNode.removeChild(img);
+                          }
+                        }
+
+                        // remove empty anchors
+                        const as = el.querySelectorAll('a');
+                        for (let i = 0; i < as.length; i++) {
+                          const a = as[i];
+                          if (a.childNodes.length > 0) {
+                            if (!a.style.textDecoration) {
+                              a.style.textDecoration = 'underline';
+                            }
+                          } else {
+                            a.parentNode.removeChild(a);
+                          }
+                        }
+
+                        return new XMLSerializer().serializeToString(el);
+                      })();
+                      const divEl = (() => {
+                        const el = document.createElement('div');
+                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                        el.innerHTML = innerSrc;
+
+                        return el;
+                      })();
+                      document.body.appendChild(divEl);
+
+                      const {scrollHeight, scrollWidth} = divEl;
+
+                      const anchors = (() => {
+                        const as = divEl.querySelectorAll('a');
+                        const numAs = as.length;
+
+                        const result = Array(numAs);
+                        for (let i = 0; i < numAs; i++) {
+                          const a = as[i];
+
+                          const rect = a.getBoundingClientRect();
+                          const onclick = a.getAttribute('onclick') || null;
+                          const onmousedown = a.getAttribute('onmousedown') || null;
+                          const onmouseup = a.getAttribute('onmouseup') || null;
+
+                          const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
+                          result[i] = anchor;
+                        }
+
+                        return result;
+                      })();
+
+                      document.body.removeChild(divEl);
+
+                      const img = new Image();
+                      img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + scrollWidth + '\' height=\'' + scrollHeight + '\'>' +
+                        '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                          innerSrc +
+                        '</foreignObject>' +
+                      '</svg>');
+                      img.onload = () => {
+                        layer.img = img;
+
+                        pend();
+                      };
+                      img.onerror = err => {
+                        console.warn('biolumi image load error', {src: img.src}, err);
+
+                        pend();
+                      };
+
+                      const layer = new Layer(this);
+                      layer.anchors = anchors;
+                      layer.x = x;
+                      layer.y = y;
+                      layer.w = w;
+                      layer.h = h;
+                      layer.scrollHeight = scrollHeight;
+                      layer.scrollWidth = scrollWidth;
+                      layer.scroll = scroll;
+                      layer.pixelated = pixelated;
+                      layers.push(layer);
+                    } else if (type === 'image') {
+                      let {img: imgs} = layerSpec;
+                      if (!Array.isArray(imgs)) {
+                        imgs = [imgs];
                       }
-                    };
+                      const {parent: {width, height}} = this;
+                      const {x = 0, y = 0, w = width, h = height, frameTime = 300, pixelated = false} = layerSpec;
 
-                    for (let i = 0; i < layersSpec.length; i++) {
-                      const layerSpec = layersSpec[i];
-                      const {type = 'html'} = layerSpec;
+                      setTimeout(pend);
 
-                      if (type === 'html') {
-                        const {src, x = 0, y = 0, w = width, h = height, scroll = false, pixelated = false} = layerSpec;
-
-                        const innerSrc = (() => {
-                          const el = document.createElement('div');
-                          el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-                          el.setAttribute('style', rootCss);
-                          el.innerHTML = src
-                            .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
-
-                          const imgs = el.querySelectorAll('img');
-
-                          // do not load images without an explicit width + height
-                          for (let i = 0; i < imgs.length; i++) {
-                            const img = imgs[i];
-                            if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
-                              img.parentNode.removeChild(img);
-                            }
-                          }
-
-                          // remove empty anchors
-                          const as = el.querySelectorAll('a');
-                          for (let i = 0; i < as.length; i++) {
-                            const a = as[i];
-                            if (a.childNodes.length > 0) {
-                              if (!a.style.textDecoration) {
-                                a.style.textDecoration = 'underline';
-                              }
-                            } else {
-                              a.parentNode.removeChild(a);
-                            }
-                          }
-
-                          return new XMLSerializer().serializeToString(el);
-                        })();
-                        const divEl = (() => {
-                          const el = document.createElement('div');
-                          el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                          el.innerHTML = innerSrc;
-
-                          return el;
-                        })();
-                        document.body.appendChild(divEl);
-
-                        const {scrollHeight, scrollWidth} = divEl;
-
-                        const anchors = (() => {
-                          const as = divEl.querySelectorAll('a');
-                          const numAs = as.length;
-
-                          const result = Array(numAs);
-                          for (let i = 0; i < numAs; i++) {
-                            const a = as[i];
-
-                            const rect = a.getBoundingClientRect();
-                            const onclick = a.getAttribute('onclick') || null;
-                            const onmousedown = a.getAttribute('onmousedown') || null;
-                            const onmouseup = a.getAttribute('onmouseup') || null;
-
-                            const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
-                            result[i] = anchor;
-                          }
-
-                          return result;
-                        })();
-
-                        document.body.removeChild(divEl);
-
-                        const img = new Image();
-                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + scrollWidth + '\' height=\'' + scrollHeight + '\'>' +
-                          '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                            innerSrc +
-                          '</foreignObject>' +
-                        '</svg>');
-                        img.onload = () => {
-                          layer.img = img;
-
-                          pend();
-                        };
-                        img.onerror = err => {
-                          console.warn('biolumi image load error', {src: img.src}, err);
-
-                          pend();
-                        };
+                      for (let j = 0; j < imgs.length; j++) {
+                        const img = imgs[j];
 
                         const layer = new Layer(this);
-                        layer.anchors = anchors;
+                        layer.img = img;
                         layer.x = x;
                         layer.y = y;
                         layer.w = w;
                         layer.h = h;
-                        layer.scrollHeight = scrollHeight;
-                        layer.scrollWidth = scrollWidth;
-                        layer.scroll = scroll;
+                        layer.scrollHeight = h;
+                        layer.scrollWidth = w;
+                        layer.numFrames = imgs.length;
+                        layer.frameIndex = j;
+                        layer.frameTime = frameTime;
                         layer.pixelated = pixelated;
                         layers.push(layer);
-                      } else if (type === 'image') {
-                        let {img: imgs} = layerSpec;
-                        if (!Array.isArray(imgs)) {
-                          imgs = [imgs];
-                        }
-                        const {x = 0, y = 0, w = width, h = height, frameTime = 300, pixelated = false} = layerSpec;
-
-                        setTimeout(pend);
-
-                        for (let j = 0; j < imgs.length; j++) {
-                          const img = imgs[j];
-
-                          const layer = new Layer(this);
-                          layer.img = img;
-                          layer.x = x;
-                          layer.y = y;
-                          layer.w = w;
-                          layer.h = h;
-                          layer.scrollHeight = h;
-                          layer.scrollWidth = w;
-                          layer.numFrames = imgs.length;
-                          layer.frameIndex = j;
-                          layer.frameTime = frameTime;
-                          layer.pixelated = pixelated;
-                          layers.push(layer);
-                        }
-                      } else {
-                        throw new Error('unknown layer type: ' + type);
                       }
+                    } else {
+                      throw new Error('unknown layer type: ' + type);
                     }
-                  } else {
-                    cb();
                   }
-                  });
                 } else {
                   cb();
                 }
-              }
-            }
-
-            class Layer {
-              constructor(parent) {
-                this.parent = parent;
-
-                this.img = null;
-                this.anchors = [];
-                const {parent: {width, height}} = parent;
-
-                this.x = 0;
-                this.y = 0;
-                this.w = width;
-                this.h = height;
-                this.scrollHeight = height;
-                this.scrollWidth = width;
-                this.scroll = false;
-                this.scrollTop = 0;
-                this.scrollLeft = 0;
-                this.numFrames = 1;
-                this.frameIndex = 0;
-                this.frameTime = 0;
-                this.pixelated = false;
-              }
-
-              getValid({uiTime}) {
-                const {numFrames} = this;
-
-                if (numFrames > 1) {
-                  const {parent, frameIndex, frameTime} = this;
-                  const currentFrameIndex = Math.floor(uiTime / frameTime) % numFrames;
-                  return currentFrameIndex === frameIndex;
-                } else {
-                  return true; // XXX optimize this
-                }
-              }
-
-              getPosition() {
-                const {parent} = this;
-                const {parent: {width, height}} = parent;
-
-                return new Position(
-                  parent.x + (this.x / width),
-                  parent.y + (this.y / height),
-                  this.w / width,
-                  this.h / height,
-                  this.scrollTop / height,
-                  this.scrollHeight / height,
-                  this.scrollLeft / width,
-                  this.scrollWidth / width
-                );
-              }
-
-              getRect() {
-                const position = this.getPosition();
-                const {x: px, y: py, w: pw, h: ph} = position;
-                const {parent: {parent: {width, height}}} = this;
-
-                return new Rect(
-                  clamp(py * height, 0, height),
-                  clamp((py + ph) * height, 0, height),
-                  clamp(px * width, 0, width),
-                  clamp((px + pw) * width, 0, width)
-                );
-              }
-
-              getAnchors() {
-                const position = this.getPosition();
-                const {x: px, y: py, w: pw, h: ph} = position;
-                const {parent: {parent: {width, height}}} = this;
-
-                return this.anchors.map(anchor => {
-                  const {rect, onclick, onmousedown, onmouseup} = anchor;
-                  const {top, bottom, left, right} = rect;
-
-                  return new Anchor(
-                    new Rect(
-                      clamp((py * height) + top, 0, (py + ph) * height),
-                      clamp((py * height) + bottom, 0, (py + ph) * height),
-                      clamp((px * width) + left, 0, (px + pw) * width),
-                      clamp((px * width) + right, 0, (px + pw) * width)
-                    ),
-                    onclick,
-                    onmousedown,
-                    onmouseup
-                  );
                 });
+              } else {
+                cb();
               }
+            }
+          }
 
-              scrollTo(scrollLeft = 0, scrollTop = 0) {
-                this.scrollLeft = scrollLeft;
-                this.scrollTop = scrollTop;
+          class Layer {
+            constructor(parent) {
+              this.parent = parent;
+
+              this.img = null;
+              this.anchors = [];
+              const {parent: {width, height}} = parent;
+
+              this.x = 0;
+              this.y = 0;
+              this.w = width;
+              this.h = height;
+              this.scrollHeight = height;
+              this.scrollWidth = width;
+              this.scroll = false;
+              this.scrollTop = 0;
+              this.scrollLeft = 0;
+              this.numFrames = 1;
+              this.frameIndex = 0;
+              this.frameTime = 0;
+              this.pixelated = false;
+            }
+
+            getValid({uiTime}) {
+              const {numFrames} = this;
+
+              if (numFrames > 1) {
+                const {parent, frameIndex, frameTime} = this;
+                const currentFrameIndex = Math.floor(uiTime / frameTime) % numFrames;
+                return currentFrameIndex === frameIndex;
+              } else {
+                return true; // XXX optimize this
               }
             }
 
-            class Anchor {
-              constructor(rect, onclick, onmousedown, onmouseup) {
-                this.rect = rect;
-                this.onclick = onclick;
-                this.onmousedown = onmousedown;
-                this.onmouseup = onmouseup;
-              }
+            getPosition() {
+              const {parent} = this;
+              const {parent: {width, height}} = parent;
+
+              return new Position(
+                parent.x + (this.x / width),
+                parent.y + (this.y / height),
+                this.w / width,
+                this.h / height,
+                this.scrollTop / height,
+                this.scrollHeight / height,
+                this.scrollLeft / width,
+                this.scrollWidth / width
+              );
             }
 
-            class Position {
-              constructor(x, y, w, h, st, sh, sl, sw) {
-                this.x = x; // x position
-                this.y = y; // y position
-                this.w = w; // texture data width
-                this.h = h; // texture data height
-                this.st = st; // scroll top
-                this.sh = sh; // scroll height
-                this.sl = sl; // scroll left
-                this.sw = sw; // scroll width
-              }
+            getRect() {
+              const position = this.getPosition();
+              const {x: px, y: py, w: pw, h: ph} = position;
+              const {parent: {parent: {width, height}}} = this;
+
+              return new Rect(
+                clamp(py * height, 0, height),
+                clamp((py + ph) * height, 0, height),
+                clamp(px * width, 0, width),
+                clamp((px + pw) * width, 0, width)
+              );
             }
 
-            class Rect {
-              constructor(top, bottom, left, right) {
-                this.top = top;
-                this.bottom = bottom;
-                this.left = left;
-                this.right = right;
-              }
+            getAnchors() {
+              const position = this.getPosition();
+              const {x: px, y: py, w: pw, h: ph} = position;
+              const {parent: {parent: {width, height}}} = this;
+
+              return this.anchors.map(anchor => {
+                const {rect, onclick, onmousedown, onmouseup} = anchor;
+                const {top, bottom, left, right} = rect;
+
+                return new Anchor(
+                  new Rect(
+                    clamp((py * height) + top, 0, (py + ph) * height),
+                    clamp((py * height) + bottom, 0, (py + ph) * height),
+                    clamp((px * width) + left, 0, (px + pw) * width),
+                    clamp((px * width) + right, 0, (px + pw) * width)
+                  ),
+                  onclick,
+                  onmousedown,
+                  onmouseup
+                );
+              });
             }
+
+            scrollTo(scrollLeft = 0, scrollTop = 0) {
+              this.scrollLeft = scrollLeft;
+              this.scrollTop = scrollTop;
+            }
+          }
+
+          class Anchor {
+            constructor(rect, onclick, onmousedown, onmouseup) {
+              this.rect = rect;
+              this.onclick = onclick;
+              this.onmousedown = onmousedown;
+              this.onmouseup = onmouseup;
+            }
+          }
+
+          class Position {
+            constructor(x, y, w, h, st, sh, sl, sw) {
+              this.x = x; // x position
+              this.y = y; // y position
+              this.w = w; // texture data width
+              this.h = h; // texture data height
+              this.st = st; // scroll top
+              this.sh = sh; // scroll height
+              this.sl = sl; // scroll left
+              this.sw = sw; // scroll width
+            }
+          }
+
+          class Rect {
+            constructor(top, bottom, left, right) {
+              this.top = top;
+              this.bottom = bottom;
+              this.left = left;
+              this.right = right;
+            }
+          }
+
+          const menuShader = menuShaders.getShader({
+            maxNumTextures: MAX_NUM_TEXTURES,
+          });
+          const _makeMenuMaterial = ({color = [1, 1, 1, 1]} = {}) => {
+            const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
+            shaderUniforms.textures.value = (() => {
+              const result = Array(MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                const texture = new THREE.Texture(
+                  transparentImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.LinearFilter,
+                  THREE.LinearFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  16
+                );
+
+                result[i] = texture;
+              }
+              return result;
+            })();
+            shaderUniforms.validTextures.value = (() => {
+              const result = Array(MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[i] = 0;
+              }
+              return result;
+            })();
+            shaderUniforms.texturePositions.value = (() => {
+              const result = Array(2 * MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[(i * 2) + 0] = 0;
+                result[(i * 2) + 1] = 0;
+              }
+              return result;
+            })();
+            shaderUniforms.textureLimits.value = (() => {
+              const result = Array(2 * MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[(i * 2) + 0] = 0;
+                result[(i * 2) + 1] = 0;
+              }
+              return result;
+            })();
+            shaderUniforms.textureOffsets.value = (() => {
+              const result = Array(MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[i] = 0;
+              }
+              return result;
+            })();
+            shaderUniforms.textureDimensions.value = (() => {
+              const result = Array(MAX_NUM_TEXTURES);
+              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                result[i] = 0;
+              }
+              return result;
+            })();
+            const shaderMaterial = new THREE.ShaderMaterial({
+              uniforms: shaderUniforms,
+              vertexShader: menuShader.vertexShader,
+              fragmentShader: menuShader.fragmentShader,
+              side: THREE.DoubleSide,
+              transparent: true,
+            });
+            shaderUniforms.backgroundColor.value = Float32Array.from(color);
+            // shaderMaterial.polygonOffset = true;
+            // shaderMaterial.polygonOffsetFactor = 1;
+            return shaderMaterial;
+          };
+
+          const _requestUi = ({width, height}) => new Promise((accept, reject) => {
+            const pages = [];
 
             class Ui {
               constructor(width, height) {
@@ -535,77 +611,6 @@ class Biolumi {
             mousedownStartCoord: null,
             mousedownStartScrollTop: null,
           });
-          const menuShader = menuShaders.getShader({maxNumTextures: MAX_NUM_TEXTURES});
-          const _makeMenuMaterial = ({color = [1, 1, 1, 1]} = {}) => {
-            const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
-            shaderUniforms.textures.value = (() => {
-              const result = Array(MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                const texture = new THREE.Texture(
-                  transparentImg,
-                  THREE.UVMapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.LinearFilter,
-                  THREE.LinearFilter,
-                  THREE.RGBAFormat,
-                  THREE.UnsignedByteType,
-                  16
-                );
-
-                result[i] = texture;
-              }
-              return result;
-            })();
-            shaderUniforms.validTextures.value = (() => {
-              const result = Array(MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[i] = 0;
-              }
-              return result;
-            })();
-            shaderUniforms.texturePositions.value = (() => {
-              const result = Array(2 * MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[(i * 2) + 0] = 0;
-                result[(i * 2) + 1] = 0;
-              }
-              return result;
-            })();
-            shaderUniforms.textureLimits.value = (() => {
-              const result = Array(2 * MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[(i * 2) + 0] = 0;
-                result[(i * 2) + 1] = 0;
-              }
-              return result;
-            })();
-            shaderUniforms.textureOffsets.value = (() => {
-              const result = Array(MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[i] = 0;
-              }
-              return result;
-            })();
-            shaderUniforms.textureDimensions.value = (() => {
-              const result = Array(MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[i] = 0;
-              }
-              return result;
-            })();
-            const shaderMaterial = new THREE.ShaderMaterial({
-              uniforms: shaderUniforms,
-              vertexShader: menuShader.vertexShader,
-              fragmentShader: menuShader.fragmentShader,
-              side: THREE.DoubleSide,
-              transparent: true,
-            });
-            shaderUniforms.backgroundColor.value = Float32Array.from(color);
-            // shaderMaterial.polygonOffset = true;
-            // shaderMaterial.polygonOffsetFactor = 1;
-            return shaderMaterial;
-          };
 
           const pointsHighlightMaterial = new THREE.PointsMaterial({
             color: 0xFF0000,
@@ -921,6 +926,7 @@ class Biolumi {
 
           return {
             requestUi: _requestUi,
+
             getFonts: _getFonts,
             getMonospaceFonts: _getMonospaceFonts,
             getFontWeight: _getFontWeight,
@@ -937,7 +943,6 @@ class Biolumi {
             applyStateKeyEvent: _applyStateKeyEvent,
 
             makeMenuHoverState: _makeMenuHoverState,
-            makeMenuMaterial: _makeMenuMaterial,
             makeMenuDotMesh: _makeMenuDotMesh,
             makeMenuBoxMesh: _makeMenuBoxMesh,
             makeMeshPointGetter: _makeMeshPointGetter,
