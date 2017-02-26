@@ -1126,24 +1126,20 @@ class World {
 
                         biolumi.updateAnchors({ // XXX optimize this by caching the anchor box tagets here
                           objects: npmManager.getTagMeshes().map(tagMesh => {
-                            if (tagMesh) {
-                              const {ui, planeMesh, initialScale = oneVector} = tagMesh;
+                            const {ui, planeMesh, initialScale = oneVector} = tagMesh;
 
-                              if (ui && planeMesh) {
-                                const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                            if (ui && planeMesh) {
+                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
 
-                                return {
-                                  matrixObject: matrixObject,
-                                  ui: ui,
-                                  width: TAGS_WIDTH,
-                                  height: TAGS_HEIGHT,
-                                  worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
-                                  worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
-                                  worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
-                                };
-                              } else {
-                                return null;
-                              }
+                              return {
+                                matrixObject: matrixObject,
+                                ui: ui,
+                                width: TAGS_WIDTH,
+                                height: TAGS_HEIGHT,
+                                worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
+                                worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
+                                worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
+                              };
                             } else {
                               return null;
                             }
