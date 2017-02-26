@@ -250,8 +250,6 @@ class Biolumi {
               this.scrollHeight = height;
               this.scrollWidth = width;
               this.scroll = false;
-              this.scrollTop = 0;
-              this.scrollLeft = 0;
               this.numFrames = 1;
               this.frameIndex = 0;
               this.frameTime = 0;
@@ -279,10 +277,6 @@ class Biolumi {
                 parent.y + (this.y / height),
                 this.w / width,
                 this.h / height,
-                this.scrollTop / height,
-                this.scrollHeight / height,
-                this.scrollLeft / width,
-                this.scrollWidth / width
               );
             }
 
@@ -321,11 +315,6 @@ class Biolumi {
                 );
               });
             }
-
-            scrollTo(scrollLeft = 0, scrollTop = 0) {
-              this.scrollLeft = scrollLeft;
-              this.scrollTop = scrollTop;
-            }
           }
 
           class Anchor {
@@ -338,15 +327,11 @@ class Biolumi {
           }
 
           class Position {
-            constructor(x, y, w, h, st, sh, sl, sw) {
+            constructor(x, y, w, h) {
               this.x = x; // x position
               this.y = y; // y position
               this.w = w; // texture data width
               this.h = h; // texture data height
-              this.st = st; // scroll top
-              this.sh = sh; // scroll height
-              this.sl = sl; // scroll left
-              this.sw = sw; // scroll width
             }
           }
 
@@ -414,20 +399,8 @@ class Biolumi {
                   }
                   return result;
                 })();
-                shaderUniforms.textureOffsets.value = (() => {
-                  const result = Array(MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                    result[i] = 0;
-                  }
-                  return result;
-                })();
-                shaderUniforms.textureDimensions.value = (() => {
-                  const result = Array(MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                    result[i] = 0;
-                  }
-                  return result;
-                })();
+                shaderUniforms.atlasSize.value = atlasSize;
+                shaderUniforms.backgroundColor.value = Float32Array.from(color);
                 const shaderMaterial = new THREE.ShaderMaterial({
                   uniforms: shaderUniforms,
                   vertexShader: menuShader.vertexShader,
@@ -435,7 +408,6 @@ class Biolumi {
                   side: THREE.DoubleSide,
                   transparent: true,
                 });
-                shaderUniforms.backgroundColor.value = Float32Array.from(color);
                 // shaderMaterial.polygonOffset = true;
                 // shaderMaterial.polygonOffsetFactor = 1;
                 return shaderMaterial;
@@ -447,45 +419,79 @@ class Biolumi {
               return this.material;
             }
 
-            update(pages) {
+            update(pages, {uiTime}) {
               return new Promise((accept, reject) => {
-                const {material} = this;
-                const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = material;
+                if (pages.length > 0) {
+                  const {material} = this;
+                  const {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = material;
+                  
+                  for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i]; // XXX optimize the case of atlasSize = 1: in that case we can skip drawing the texture atlas and feed through the image directly
 
-                const layers = ui.getPageLayers(); // XXX rewrite this to loop over all layers, distributed over textures, and for each layer loop over pages, distributed over the texture atlas
-                for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                  const layer = i < layers.length ? layers[i] : null;
+                    for (let j = 0; j < MAX_NUM_TEXTURES; j++) {
+                      const layer = j < layers.length ? layers[j] : null;
 
-                  if (layer && layer.getValid({uiTime})) {
-                    validTextures.value[i] = 1;
+                      if (layer && layer.getValid({uiTime})) {
+                        validTextures.value[i] = 1;
 
-                    const texture = textures.value[i];
-                    if (texture.image !== layer.img || layer.img.needsUpdate) {
-                      texture.image = layer.img;
-                      if (!layer.pixelated) {
-                        texture.minFilter = THREE.LinearFilter;
-                        texture.magFilter = THREE.LinearFilter;
-                        texture.anisotropy = 16;
+                        if (layer.img.needsUpdate) {
+                          const texture = textures[i];
+                          const {image} = texture;
+
+                          // ensure the texture exists with the right size
+                          // we are assuming that all page's layers have identical metrics
+                          const requiredWidth = layer.width * atlasSize;
+                          const requiredHeight = layer.height * atlasSize;
+                          if (image.width !== requiredWidth || image.height !== requiredHeight) {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = requiredWidth;
+                            canvas.height = requiredHeight;
+                            const ctx = canvas.getContext('2d');
+                            canvas.ctx = ctx;
+
+                            texture.image = canvas;
+                            texture.needsUpdate = true;
+                          }
+
+                          // draw the layer image into the texture atlas
+                          const _getTextureAtlasUv = (atlasSize, pageIndex) => {
+                            const x = pageIndex % atlasSize;
+                            const y = Math.floor(pageIndex / atlasSize);
+                            return new THREE.Vector2(x, y);
+                          };
+                          const textureAtlasUv = _getTextureAtlasUv(atlasSize, pageIndex);
+                          const {canvas} = image;
+                          const {ctx} = canvas;
+                          ctx.drawImage(layer.img, textureAtlasUv.x * layer.width, textureAtlasUv.y * layer.height);
+
+                          // set texture pixelation properties
+                          if (!layerPixelated) {
+                            texture.minFilter = THREE.LinearFilter;
+                            texture.magFilter = THREE.LinearFilter;
+                            texture.anisotropy = 16;
+                          } else {
+                            texture.minFilter = THREE.NearestFilter;
+                            texture.magFilter = THREE.NearestFilter;
+                            texture.anisotropy = 1;
+                          }
+
+                          texture.needsUpdate = true;
+                          layer.img.needsUpdate = false;
+                        }
+
+                        const position = layer.getPosition();
+                        const baseIndex = j * 2;
+                        texturePositions.value[baseIndex + 0] = position.x;
+                        texturePositions.value[baseIndex + 1] = position.y;
+                        textureLimits.value[baseIndex + 0] = position.w;
+                        textureLimits.value[baseIndex + 1] = position.h;
                       } else {
-                        texture.minFilter = THREE.NearestFilter;
-                        texture.magFilter = THREE.NearestFilter;
-                        texture.anisotropy = 1;
+                        validTextures.value[j] = 0;
                       }
-                      texture.needsUpdate = true;
-
-                      layer.img.needsUpdate = false;
                     }
-
-                    const position = layer.getPosition();
-                    texturePositions.value[(i * 2) + 0] = position.x;
-                    texturePositions.value[(i * 2) + 1] = position.y;
-                    textureLimits.value[(i * 2) + 0] = position.w;
-                    textureLimits.value[(i * 2) + 1] = position.h;
-                    textureOffsets.value[i] = position.st;
-                    textureDimensions.value[i] = position.sh;
-                  } else {
-                    validTextures.value[i] = 0;
                   }
+                } else {
+                  accept();
                 }
               }
             });
@@ -503,14 +509,8 @@ class Biolumi {
                 this.update = debounce(this.update.bind(this));
               }
 
-              getPageLayers() {
-                const result = [];
-                for (let i = 0; i < pages.length; i++) {
-                  const page = pages[i];
-                  const {layers} = page;
-                  result.push.apply(result, layers);
-                }
-                return result;
+              getPage(index) {
+                return pages[index];
               }
 
               setDimensions(width, height) { // XXX get rid of this and make each size require its own Ui instance
@@ -522,22 +522,26 @@ class Biolumi {
                 const page = new Page(this, spec, type, state);
                 page.update(state);
 
-                const pageMesh = (() => {
+                const pageIndex = pages.length;
+                pages.push(page);
+
+                const planeMesh = (() => {
                   const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
                   // XXX set the correnct atlas uvs here
                   const material = megaTexture.getMaterial();
                   const mesh = new THREE.Mesh(geometry, material);
+                  mesh.pageIndex = pageIndex;
 
                   return mesh;
                 })();
-                return pageMesh;
+                return planeMesh;
               }
 
-              update(next) {
+              update({uiTime = 0} = {}, next) {
                 Promise.all(
                   pages.map(page => page.update())
                 )
-                  .then(() => megaTexture.update(pages))
+                  .then(() => megaTexture.update(pages, {uiTime}))
                   .then(() => {
                     next();
                   })
@@ -693,12 +697,8 @@ class Biolumi {
 
           const _makeMenuHoverState = () => ({
             intersectionPoint: null,
-            scrollLayer: null,
             anchor: null,
             value: 0,
-            mousedownScrollLayer: null,
-            mousedownStartCoord: null,
-            mousedownStartScrollTop: null,
           });
 
           const pointsHighlightMaterial = new THREE.PointsMaterial({
@@ -777,7 +777,7 @@ class Biolumi {
             controllerRotation,
           }) => {
             const intersectionSpecs = objects.map(object => {
-              const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
+              const {matrixObject, worldWidth, worldHeight, worldDepth, pageIndex} = object;
               const {position, rotation, scale} = matrixObject;
               const controllerLine = (() => {
                 if (controllerRotation) {
@@ -833,44 +833,11 @@ class Biolumi {
                 worldDepth,
               });
 
-              const scrollLayerBoxTargets = ui.getPageLayers() // XXX make this read page layers for the correct plane mesh index
-                .filter(layer => layer.scroll)
-                .map(layer => {
-                  const rect = layer.getRect();
-                  const scrollLayerBoxTarget = geometryUtils.makeBoxTargetOffset(
-                    position,
-                    rotation,
-                    scale,
-                    new THREE.Vector3(
-                      -(worldWidth / 2) + (rect.left / width) * worldWidth,
-                      (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                      -worldDepth
-                    ),
-                    new THREE.Vector3(
-                      -(worldWidth / 2) + (rect.right / width) * worldWidth,
-                      (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                      worldDepth
-                    )
-                  );
-                  scrollLayerBoxTarget.layer = layer;
-                  return scrollLayerBoxTarget;
-                });
-              const scrollLayerBoxTarget = (() => {
-                for (let i = 0; i < scrollLayerBoxTargets.length; i++) {
-                  const layerBoxTarget = scrollLayerBoxTargets[i];
-                  if (layerBoxTarget.intersectLine(controllerLine)) {
-                    return layerBoxTarget;
-                  }
-                }
-                return null;
-              })();
-              if (hoverState) {
-                hoverState.scrollLayer = scrollLayerBoxTarget ? scrollLayerBoxTarget.layer : null;
-              }
-
               const anchorBoxTargets = (() => {
                 const result = [];
-                const layers = ui.getPageLayers(); // XXX make this read page layers for the correct plane mesh index
+
+                const page = ui.getPage(pageIndex);
+                const {layers} = page;
                 for (let i = 0; i < layers.length; i++) {
                   const layer = layers[i];
                   const anchors = layer.getAnchors();
@@ -884,13 +851,13 @@ class Biolumi {
                       rotation,
                       scale,
                       new THREE.Vector3(
-                        -(worldWidth / 2) + ((rect.left + layer.scrollLeft) / width) * worldWidth,
-                        (worldHeight / 2) + ((-rect.top + layer.scrollTop) / height) * worldHeight,
+                        -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                        (worldHeight / 2) + (-rect.top / height) * worldHeight,
                         -worldDepth
                       ),
                       new THREE.Vector3(
-                        -(worldWidth / 2) + ((rect.right + layer.scrollLeft) / width) * worldWidth,
-                        (worldHeight / 2) + ((-rect.bottom + layer.scrollTop) / height) * worldHeight,
+                        -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                        (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
                         worldDepth
                       )
                     );
@@ -899,6 +866,7 @@ class Biolumi {
                     result.push(anchorBoxTarget);
                   }
                 }
+
                 return result;
               })();
               const anchorBoxTarget = (() => {
@@ -956,7 +924,6 @@ class Biolumi {
             } else {
               if (hoverState) {
                 hoverState.intersectionPoint = null;
-                hoverState.scrollLayer = null;
                 hoverState.anchor = null;
                 hoverState.value = 0;
               }
@@ -1018,23 +985,22 @@ const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-fami
 
 const debounce = fn => {
   let running = false;
-  let queued = false;
+  let queue = [];
 
-  const _go = () => {
+  const _go = arg => {
     if (!running) {
       running = true;
 
-      fn(() => {
+      fn(arg, () => {
         running = false;
 
-        if (queued) {
-          queued = false;
-
-          _go();
+        if (queue.length > 0) {
+          const arg = queue.shift();
+          _go(arg);
         }
       });
     } else {
-      queued = true;
+      queue.push(arg);
     }
   };
   return _go;
