@@ -79,7 +79,6 @@ class Biolumi {
                   this._lastStateJson = stateJson;
 
                   const {spec} = this;
-
                   const layers = [];
                   const layersSpec = typeof spec === 'function' ? spec(state) : spec;
                   if (layersSpec.length > 0) {
@@ -177,6 +176,8 @@ class Biolumi {
                         };
                         img.onerror = err => {
                           console.warn('biolumi image load error', {src: img.src}, err);
+
+                          pend();
                         };
 
                         const layer = new Layer(this);
@@ -223,6 +224,7 @@ class Biolumi {
                   } else {
                     cb();
                   }
+                  });
                 } else {
                   cb();
                 }
