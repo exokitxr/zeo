@@ -230,10 +230,15 @@ const creatureUtils = archae => ({
 
                 mirror(ctx);
               }
-              function getFrame(ctx) {
-                const w = SIZE;
-                const h = SIZE;
-                return ctx.getImageData(0, 0, w, h);
+              function getFrame(canvas) {
+                const result = document.createElement('canvas');
+                result.width = canvas.width;
+                result.height = canvas.height;
+
+                const ctx = result.getContext('2d');
+                ctx.drawImage(canvas, 0, 0);
+
+                return result;
               }
               function getDataUrl(canvas) {
                 return canvas.toDataURL('image/png');
@@ -248,11 +253,11 @@ const creatureUtils = archae => ({
               const ctx = canvas.getContext('2d');
 
               renderMainFrame(ctx);
-              const mainFrame = getFrame(ctx);
+              const mainFrame = getFrame(canvas);
 
               if (!single) {
                 renderAltFrame(ctx)
-                const altFrame = getFrame(ctx);
+                const altFrame = getFrame(canvas);
 
                 return [mainFrame, altFrame];
               } else {
