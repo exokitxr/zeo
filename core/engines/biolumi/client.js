@@ -363,7 +363,7 @@ class Biolumi {
                 return pages;
               }
 
-              getLayers() {
+              getPageLayers() {
                 const result = [];
                 for (let i = 0; i < pages.length; i++) {
                   const page = pages[i];
@@ -745,7 +745,7 @@ class Biolumi {
                 worldDepth,
               });
 
-              const scrollLayerBoxTargets = ui.getLayers()
+              const scrollLayerBoxTargets = ui.getPageLayers()
                 .filter(layer => layer.scroll)
                 .map(layer => {
                   const rect = layer.getRect();
@@ -782,7 +782,7 @@ class Biolumi {
 
               const anchorBoxTargets = (() => {
                 const result = [];
-                const layers = ui.getLayers();
+                const layers = ui.getPageLayers();
                 for (let i = 0; i < layers.length; i++) {
                   const layer = layers[i];
                   const anchors = layer.getAnchors();
@@ -888,7 +888,7 @@ class Biolumi {
           const _updateMenuMaterial = ({ui, menuMaterial, uiTime}) => {
             const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = menuMaterial;
 
-            const layers = ui.getLayers();
+            const layers = ui.getPageLayers();
             for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
               const layer = i < layers.length ? layers[i] : null;
 
