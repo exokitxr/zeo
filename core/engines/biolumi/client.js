@@ -353,27 +353,6 @@ class Biolumi {
               }
             }
 
-            const _applyPagePositions = (pages, pagePositions) => {
-              for (let i = 0; i < pages.length; i++) {
-                const page = pages[i];
-                const {x, y} = pagePositions[i];
-                page.x = x;
-                page.y = y;
-              }
-            };
-            const _validatePages = pages => {
-              for (let i = 0; i < pages.length; i++) {
-                const page = pages[i];
-                page.valid = true;
-              }
-            };
-            const _invalidatePages = pages => {
-              for (let i = 0; i < pages.length; i++) {
-                const page = pages[i];
-                page.valid = false;
-              }
-            };
-
             class Ui {
               constructor(width, height) {
                 this.width = width;
