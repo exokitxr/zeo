@@ -58,10 +58,11 @@ class Biolumi {
             const pages = [];
 
             class Page {
-              constructor(parent, spec, type) {
+              constructor(parent, spec, type, state) {
                 this.parent = parent;
                 this.spec = spec;
                 this.type = type;
+                this.state = state;
 
                 this.layers = [];
 
@@ -71,7 +72,8 @@ class Biolumi {
                 this._lastStateJson = '';
               }
 
-              update(state = null, cb = () => {}) {
+              update(cb = () => {}) {
+                const {state} = this;
                 const stateJson = JSON.stringify(state);
                 const {_lastStateJson: lastStateJson} = this;
 
@@ -376,15 +378,9 @@ class Biolumi {
                 this.height = height;
               }
 
-              pushPage(spec, {type = null, state = null} = {}, {preCb = () => {}, postCb = () => {}} = {}) {
-                const page = new Page(this, spec, type);
-                page.update(state, () => {
-                  preCb();
-
-                  pages.push(page);
-
-                  postCb();
-                });
+              pushPage(spec, {type = null, state = null} = {}) {
+                const page = new Page(this, spec, type, state);
+                page.update(state);
               }
             }
 
