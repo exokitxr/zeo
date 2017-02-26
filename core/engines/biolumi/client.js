@@ -187,6 +187,7 @@ class Biolumi {
                         '</svg>');
                         img.onload = () => {
                           layer.img = img;
+                          layer.img.needsUpdate = true;
 
                           pend();
                         };
@@ -219,6 +220,7 @@ class Biolumi {
 
                           const layer = new Layer(this);
                           layer.img = img;
+                          layer.img.needsUpdate = true;
                           layer.x = x;
                           layer.y = y;
                           layer.w = w;
@@ -432,11 +434,11 @@ class Biolumi {
             update(pages) {
               return new Promise((accept, reject) => {
                 if (pages.length > 0) {
-                  const {material} = this;
-                  const {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = material;
+                  const {atlasSize, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
                   
                   for (let i = 0; i < pages.length; i++) {
                     const page = pages[i]; // XXX optimize the case of atlasSize = 1: in that case we can skip drawing the texture atlas and feed through the image directly
+                    const {layers} = page;
 
                     for (let j = 0; j < MAX_NUM_TEXTURES; j++) {
                       const layer = j < layers.length ? layers[j] : null;
@@ -445,7 +447,7 @@ class Biolumi {
                         validTextures.value[i] = 1;
 
                         if (layer.img.needsUpdate) {
-                          const texture = textures[i];
+                          const texture = textures.value[i];
                           const {image} = texture;
 
                           // ensure the texture exists with the right size
@@ -460,17 +462,14 @@ class Biolumi {
                             canvas.ctx = ctx;
 
                             texture.image = canvas;
-                            texture.needsUpdate = true;
                           }
 
                           // draw the layer image into the texture atlas
-                          const textureAtlasUv = _getTextureAtlasUv(atlasSize, pageIndex);
-                          const {canvas} = image;
-                          const {ctx} = canvas;
-                          ctx.drawImage(layer.img, textureAtlasUv.x * layer.width, textureAtlasUv.y * layer.height);
+                          const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
+                          texture.image.ctx.drawImage(layer.img, textureAtlasUv.x * layer.width, textureAtlasUv.y * layer.height);
 
                           // set texture pixelation properties
-                          if (!layerPixelated) {
+                          if (!layer.pixelated) {
                             texture.minFilter = THREE.LinearFilter;
                             texture.magFilter = THREE.LinearFilter;
                             texture.anisotropy = 16;
@@ -555,10 +554,12 @@ class Biolumi {
             }
 
             update(next) {
+              const {pages, megaTexture} = this;
+
               Promise.all(
-                this.pages.map(page => page.update())
+                pages.map(page => page.update())
               )
-                .then(() => megaTexture.update(this.pages))
+                .then(() => megaTexture.update(pages))
                 .then(() => {
                   next();
                 })
