@@ -522,7 +522,7 @@ class Biolumi {
                 return planeMesh;
               }
 
-              update({uiTime = 0} = {}, next) {
+              update({uiTime = 0} = {}, next) { // XXX move uiTime tracking to the biolumi engine itself
                 Promise.all(
                   pages.map(page => page.update())
                 )
