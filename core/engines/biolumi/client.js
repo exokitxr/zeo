@@ -359,80 +359,90 @@ class Biolumi {
           const menuShader = menuShaders.getShader({
             maxNumTextures: MAX_NUM_TEXTURES,
           });
-          const _makeMenuMaterial = ({color = [1, 1, 1, 1]} = {}) => {
-            const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
-            shaderUniforms.textures.value = (() => {
-              const result = Array(MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                const texture = new THREE.Texture(
-                  transparentImg,
-                  THREE.UVMapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.LinearFilter,
-                  THREE.LinearFilter,
-                  THREE.RGBAFormat,
-                  THREE.UnsignedByteType,
-                  16
-                );
 
-                result[i] = texture;
-              }
-              return result;
-            })();
-            shaderUniforms.validTextures.value = (() => {
-              const result = Array(MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[i] = 0;
-              }
-              return result;
-            })();
-            shaderUniforms.texturePositions.value = (() => {
-              const result = Array(2 * MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[(i * 2) + 0] = 0;
-                result[(i * 2) + 1] = 0;
-              }
-              return result;
-            })();
-            shaderUniforms.textureLimits.value = (() => {
-              const result = Array(2 * MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[(i * 2) + 0] = 0;
-                result[(i * 2) + 1] = 0;
-              }
-              return result;
-            })();
-            shaderUniforms.textureOffsets.value = (() => {
-              const result = Array(MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[i] = 0;
-              }
-              return result;
-            })();
-            shaderUniforms.textureDimensions.value = (() => {
-              const result = Array(MAX_NUM_TEXTURES);
-              for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-                result[i] = 0;
-              }
-              return result;
-            })();
-            const shaderMaterial = new THREE.ShaderMaterial({
-              uniforms: shaderUniforms,
-              vertexShader: menuShader.vertexShader,
-              fragmentShader: menuShader.fragmentShader,
-              side: THREE.DoubleSide,
-              transparent: true,
-            });
-            shaderUniforms.backgroundColor.value = Float32Array.from(color);
-            // shaderMaterial.polygonOffset = true;
-            // shaderMaterial.polygonOffsetFactor = 1;
-            return shaderMaterial;
-          };
+          class MegaTexture {
+            constructor({width, height, atlasSize, color}) {
+              const material = (() => {
+                const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
+                shaderUniforms.textures.value = (() => {
+                  const result = Array(MAX_NUM_TEXTURES);
+                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                    const texture = new THREE.Texture(
+                      transparentImg,
+                      THREE.UVMapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.LinearFilter,
+                      THREE.LinearFilter,
+                      THREE.RGBAFormat,
+                      THREE.UnsignedByteType,
+                      16
+                    );
 
-          const _requestUi = ({width, height}) => new Promise((accept, reject) => {
+                    result[i] = texture;
+                  }
+                  return result;
+                })();
+                shaderUniforms.validTextures.value = (() => {
+                  const result = Array(MAX_NUM_TEXTURES);
+                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                    result[i] = 0;
+                  }
+                  return result;
+                })();
+                shaderUniforms.texturePositions.value = (() => {
+                  const result = Array(2 * MAX_NUM_TEXTURES);
+                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                    result[(i * 2) + 0] = 0;
+                    result[(i * 2) + 1] = 0;
+                  }
+                  return result;
+                })();
+                shaderUniforms.textureLimits.value = (() => {
+                  const result = Array(2 * MAX_NUM_TEXTURES);
+                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                    result[(i * 2) + 0] = 0;
+                    result[(i * 2) + 1] = 0;
+                  }
+                  return result;
+                })();
+                shaderUniforms.textureOffsets.value = (() => {
+                  const result = Array(MAX_NUM_TEXTURES);
+                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                    result[i] = 0;
+                  }
+                  return result;
+                })();
+                shaderUniforms.textureDimensions.value = (() => {
+                  const result = Array(MAX_NUM_TEXTURES);
+                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                    result[i] = 0;
+                  }
+                  return result;
+                })();
+                const shaderMaterial = new THREE.ShaderMaterial({
+                  uniforms: shaderUniforms,
+                  vertexShader: menuShader.vertexShader,
+                  fragmentShader: menuShader.fragmentShader,
+                  side: THREE.DoubleSide,
+                  transparent: true,
+                });
+                shaderUniforms.backgroundColor.value = Float32Array.from(color);
+                // shaderMaterial.polygonOffset = true;
+                // shaderMaterial.polygonOffsetFactor = 1;
+                return shaderMaterial;
+              };
+              this.material = material;
+            }
+
+            getMaterial() {
+              return this.material;
+            }
+          }
+
+          const _requestUi = ({width, height, atlasSize = 1, color = [1, 1, 1, 1]}) => new Promise((accept, reject) => {
             const pages = [];
-            // XXX add a megatexture here
+            const megaTexture = new MegaTexture({width, height, atlasSize, color});
 
             class Ui {
               constructor(width, height) {
@@ -452,18 +462,27 @@ class Biolumi {
                 return result;
               }
 
-              setDimensions(width, height) { // XXX get rid of this and make each size require itsa own Ui instance
+              setDimensions(width, height) { // XXX get rid of this and make each size require its own Ui instance
                 this.width = width;
                 this.height = height;
               }
 
-              pushPage(spec, {type = null, state = null} = {}) {
+              addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) { // XXX hook in this new API
                 const page = new Page(this, spec, type, state);
                 page.update(state);
+
+                const pageMesh = (() => {
+                   const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+                  const material = megaTexture.getMaterial();
+                  const mesh = new THREE.Mesh(geometry, material);
+
+                  return mesh;
+                })();
+                return pageMesh;
               }
 
               update(next) {
-                // XXX make this generate the menu megatexture
+                // XXX make this loop through all pages to generate the menu megatexture
               }
             }
 
