@@ -220,7 +220,7 @@ class Universe {
                   object.planeMesh = planeMesh;
 
                   const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
                     const material = transparentMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.castShadow = true;
