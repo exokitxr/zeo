@@ -97,40 +97,49 @@ class Login {
                 right: biolumi.makeMenuHoverState(),
               };
 
-              menuUi.pushPage(({login: {username, password, inputIndex, inputValue, loading, error}, focus: {type: focusType}}) => {
-                return [
-                  {
-                    type: 'html',
-                    src: menuRenderer.getLoginSrc({username, password, inputIndex, inputValue, loading, error, focusType}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                  },
-                ];
-              }, {
-                type: 'login',
-                state: {
-                  login: loginState,
-                  focus: focusState,
-                },
-              });
-
               const menuMesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.y = DEFAULT_USER_HEIGHT;
 
                 const planeMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
-
-                  const menuMaterial = biolumi.makeMenuMaterial();
-
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = menuUi.addPage(({
+                    login: {
+                      username,
+                      password,
+                      inputIndex,
+                      inputValue,
+                      loading,
+                      error,
+                    },
+                    focus: {
+                      type: focusType,
+                    }
+                  }) => {
+                    return [
+                      {
+                        type: 'html',
+                        src: menuRenderer.getLoginSrc({
+                          username,
+                          password,
+                          inputIndex,
+                          inputValue,
+                          loading,
+                          error,
+                          focusType,
+                        }),
+                        x: 0,
+                        y: 0,
+                        w: WIDTH,
+                        h: HEIGHT,
+                      },
+                    ];
+                  }, {
+                    type: 'login',
+                    state: {
+                      login: loginState,
+                      focus: focusState,
+                    },
+                  });
                   // mesh.position.y = 1.5;
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;

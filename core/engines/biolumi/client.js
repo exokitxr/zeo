@@ -513,12 +513,7 @@ class Biolumi {
                 return pages[index];
               }
 
-              setDimensions(width, height) { // XXX get rid of this and make each size require its own Ui instance
-                this.width = width;
-                this.height = height;
-              }
-
-              addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) { // XXX hook in this new API
+              addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
                 const page = new Page(this, spec, type, state);
 
                 const pageIndex = pages.length;

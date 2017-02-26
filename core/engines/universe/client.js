@@ -185,42 +185,40 @@ class Universe {
                 mapChunks: mapState.mapChunks.map(_renderMapChunk),
               };
 
-              backgroundUi.pushPage(({backgroundImage}) => ([
-                {
-                  type: 'html',
-                  src: universeRenderer.getBackgroundImageSrc(backgroundImage),
-                  x: 0,
-                  y: 0,
-                  w: WIDTH,
-                  h: HEIGHT,
-                  scroll: true,
-                  pixelated: true,
-                },
-              ]), {
-                type: 'background',
-                state: {
-                  backgroundImage: backgroundImageState,
-                },
-              });
-
               const menuMesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.z = -1.5;
                 object.visible = false;
 
                 const backgroundMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
+                  const object = new THREE.Object3D();
 
-                  const menuMaterial = biolumi.makeMenuMaterial();
+                  const planeMesh = (() => {
+                    const mesh = backgroundUi.addPage(({backgroundImage}) => ([
+                      {
+                        type: 'html',
+                        src: universeRenderer.getBackgroundImageSrc(backgroundImage),
+                        x: 0,
+                        y: 0,
+                        w: WIDTH,
+                        h: HEIGHT,
+                        scroll: true,
+                        pixelated: true,
+                      },
+                    ]), {
+                      type: 'background',
+                      state: {
+                        backgroundImage: backgroundImageState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
+                    mesh.receiveShadow = true;
 
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
                   const shadowMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
@@ -229,9 +227,9 @@ class Universe {
                     mesh.castShadow = true;
                     return mesh;
                   })();
-                  mesh.add(shadowMesh);
+                  object.add(shadowMesh);
 
-                  return mesh;
+                  return object;
                 })();
                 object.add(backgroundMesh);
                 object.backgroundMesh = backgroundMesh;
@@ -312,7 +310,9 @@ class Universe {
                   const _updateTextures = () => {
                     const {
                       backgroundMesh: {
-                        menuMaterial: backgroundMenuMaterial,
+                        planeMesh: {
+                          menuMaterial: backgroundMenuMaterial,
+                        },
                       },
                     } = menuMesh;
                     const uiTime = rend.getUiTime();

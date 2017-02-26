@@ -804,46 +804,53 @@ class World {
               scene.add(npmBoxMeshes.left);
               scene.add(npmBoxMeshes.right);
 
-              worldUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
-                const focus = type === 'npm';
-
-                return [
-                  {
-                    type: 'html',
-                    src: worldRenderer.getWorldPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                ];
-              }, {
-                type: 'world',
-                state: {
-                  npm: npmState,
-                  focus: focusState,
-                },
-              });
-
               const worldMesh = (() => {
                 const result = new THREE.Object3D();
                 result.visible = false;
 
                 const menuMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
+                  const object = new THREE.Object3D();
+                  object.position.z = -1.5;
 
-                  const menuMaterial = biolumi.makeMenuMaterial();
+                  const planeMesh = (() => {
+                    const mesh = worldUi.addPage(({
+                      npm: {
+                        inputText,
+                        inputPlaceholder,
+                        inputValue,
+                      },
+                      focus: {
+                        type,
+                      }
+                    }) => {
+                      const focus = type === 'npm';
 
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
+                      return [
+                        {
+                          type: 'html',
+                          src: worldRenderer.getWorldPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
+                          x: 0,
+                          y: 0,
+                          w: WIDTH,
+                          h: HEIGHT,
+                          scroll: true,
+                        },
+                      ];
+                    }, {
+                      type: 'world',
+                      state: {
+                        npm: npmState,
+                        focus: focusState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
+                    mesh.receiveShadow = true;
 
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.position.z = -1.5;
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
                   const shadowMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
@@ -852,9 +859,9 @@ class World {
                     mesh.castShadow = true;
                     return mesh;
                   })();
-                  mesh.add(shadowMesh);
+                  object.add(shadowMesh);
 
-                  return mesh;
+                  return object;
                 })();
                 result.add(menuMesh);
                 result.menuMesh = menuMesh;
@@ -953,7 +960,9 @@ class World {
                   if (tab === 'world') {
                     const {
                       menuMesh: {
-                        menuMaterial,
+                        planeMesh: {
+                          menuMaterial,
+                        },
                       },
                     } = worldMesh;
                     const uiTime = rend.getUiTime();

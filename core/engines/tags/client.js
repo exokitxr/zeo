@@ -218,7 +218,7 @@ class Tags {
                         const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
                         const {ui, planeMesh} = tagMesh;
-                        ui.setDimensions(OPEN_WIDTH, OPEN_HEIGHT);
+                        ui.setDimensions(OPEN_WIDTH, OPEN_HEIGHT); // XXX rewrite this in terms of multiple uis for the open/closed tag states
                         const scaleX = WORLD_OPEN_WIDTH / WORLD_WIDTH;
                         const scaleY = WORLD_OPEN_HEIGHT / WORLD_HEIGHT;
                         const offsetX = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
@@ -393,7 +393,8 @@ class Tags {
 
                           _ensureFilesLoaded(elementAttributeFilesState);
 
-                          menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                          // XXX needs to be rewritten to handle the new tags model
+                          menuUi.addPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                             {
                               type: 'html',
                               src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
@@ -731,7 +732,8 @@ class Tags {
                       .then(ui => {
                         const {item, highlight} = object;
 
-                        ui.pushPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type: focusType}}) => {
+                        // XXX rewrite this to handle multi-tag tenancy in a UI
+                        ui.addPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type: focusType}}) => {
                           const {type} = item;
                           const focusAttributeSpec = (() => {
                             const match = focusType.match(/^attribute:(.+?):(.+?)$/);

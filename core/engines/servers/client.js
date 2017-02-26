@@ -146,41 +146,44 @@ class Servers {
                 scene.add(boxMeshes.left);
                 scene.add(boxMeshes.right);
 
-                menuUi.pushPage(({servers, focus: {type}}) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: serversRenderer.getServersPageSrc(servers),
-                      x: 0,
-                      y: 0,
-                      w: WIDTH,
-                      h: HEIGHT,
-                      scroll: true,
-                    },
-                  ];
-                }, {
-                  type: 'main',
-                  state: {
-                    servers: serversState,
-                    focus: focusState,
-                  },
-                });
-
                 const menuMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
+                  const object = new THREE.Object3D();
+                  object.position.z = -1.5;
+                  object.visible = false;
 
-                  const menuMaterial = biolumi.makeMenuMaterial();
+                  const planeMesh = (() => {
+                    const mesh = menuUi.addPage(({
+                      servers,
+                      focus: {
+                        type,
+                      }
+                    }) => {
+                      return [
+                        {
+                          type: 'html',
+                          src: serversRenderer.getServersPageSrc(servers),
+                          x: 0,
+                          y: 0,
+                          w: WIDTH,
+                          h: HEIGHT,
+                          scroll: true,
+                        },
+                      ];
+                    }, {
+                      type: 'main',
+                      state: {
+                        servers: serversState,
+                        focus: focusState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
+                    mesh.receiveShadow = true;
 
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.position.z = -1.5;
-                  mesh.visible = false;
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
                   const shadowMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
@@ -189,9 +192,9 @@ class Servers {
                     mesh.castShadow = true;
                     return mesh;
                   })();
-                  mesh.add(shadowMesh);
+                  object.add(shadowMesh);
 
-                  return mesh;
+                  return object;
                 })();
                 rend.registerMenuMesh('serversMesh', menuMesh);
 
@@ -247,7 +250,9 @@ class Servers {
 
                     if (tab === 'servers') {
                       const {
-                        menuMaterial,
+                        planeMesh: {
+                          menuMaterial,
+                        },
                       } = menuMesh;
                       const uiTime = rend.getUiTime();
 

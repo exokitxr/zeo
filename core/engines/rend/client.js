@@ -217,60 +217,32 @@ class Rend {
                   window.removeEventListener('unload', unload);
                 });
 
-                menuUi.pushPage(({status}) => [
-                  {
-                    type: 'html',
-                    src: menuRenderer.getStatusSrc({status}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                ], {
-                  type: 'status',
-                  state: {
-                    status: statusState,
-                  },
-                });
-
-                navbarUi.pushPage(({navbar: {tab}}) => ([
-                  {
-                    type: 'html',
-                    src: menuRenderer.getNavbarSrc({tab}),
-                    x: 0,
-                    y: 0,
-                    w: NAVBAR_WIDTH,
-                    h: NAVBAR_HEIGHT,
-                    scroll: true,
-                  },
-                ]), {
-                  type: 'navbar',
-                  state: {
-                    navbar: navbarState,
-                  },
-                });
-
                 menuMesh = (() => {
                   const object = new THREE.Object3D();
                   object.position.y = DEFAULT_USER_HEIGHT;
                   object.visible = menuState.open;
 
                   const statusMesh = (() => {
-                    const width = WORLD_WIDTH;
-                    const height = WORLD_HEIGHT;
-                    const depth = WORLD_DEPTH;
-
-                    const menuMaterial = biolumi.makeMenuMaterial();
-
-                    const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, menuMaterial];
-
-                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                    // mesh.position.y = 1.5;
+                    const mesh = menuUi.addPage(({status}) => [
+                      {
+                        type: 'html',
+                        src: menuRenderer.getStatusSrc({status}),
+                        x: 0,
+                        y: 0,
+                        w: WIDTH,
+                        h: HEIGHT,
+                        scroll: true,
+                      },
+                    ], {
+                      type: 'status',
+                      state: {
+                        status: statusState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
                     mesh.position.z = -1.5;
                     mesh.receiveShadow = true;
-                    mesh.menuMaterial = menuMaterial;
 
                     return mesh;
                   })();
@@ -284,20 +256,27 @@ class Rend {
                   object.statsMesh = null;
 
                   const navbarMesh = (() => {
-                    const width = NAVBAR_WORLD_WIDTH;
-                    const height = NAVBAR_WORLD_HEIGHT;
-                    const depth = NAVBAR_WORLD_DEPTH;
-
-                    const menuMaterial = biolumi.makeMenuMaterial();
-
-                    const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const material = menuMaterial;
-
-                    const mesh = new THREE.Mesh(geometry, material);
+                    const mesh = navbarUi.addPage(({navbar: {tab}}) => ([
+                      {
+                        type: 'html',
+                        src: menuRenderer.getNavbarSrc({tab}),
+                        x: 0,
+                        y: 0,
+                        w: NAVBAR_WIDTH,
+                        h: NAVBAR_HEIGHT,
+                        scroll: true,
+                      },
+                    ]), {
+                      type: 'navbar',
+                      state: {
+                        navbar: navbarState,
+                      },
+                      worldWidth: NAVBAR_WORLD_WIDTH,
+                      worldHeight: NAVBAR_WORLD_HEIGHT,
+                    });
                     mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
                     mesh.position.z = -1.5;
                     mesh.receiveShadow = true;
-                    mesh.menuMaterial = menuMaterial;
 
                     return mesh;
                   })();
