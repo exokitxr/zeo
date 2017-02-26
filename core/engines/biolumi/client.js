@@ -59,7 +59,7 @@ class Biolumi {
         '/core/plugins/geometry-utils',
       ]),
       _requestTransparentImg(),
-      _requestUiTimer().
+      _requestUiTimer(),
     ])
       .then(([
         [
@@ -236,7 +236,6 @@ class Biolumi {
                   } else {
                     accept();
                   }
-                  });
                 } else {
                   accept();
                 }
