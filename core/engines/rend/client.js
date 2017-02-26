@@ -705,6 +705,8 @@ class Rend {
 
                       keyboardMesh.position.copy(newPosition);
                       keyboardMesh.quaternion.copy(newRotation);
+
+                      keyboardMesh.updateKeySpecAnchorBoxTargets();
                     }
                   }
                 };
