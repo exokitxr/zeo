@@ -195,34 +195,9 @@ class Servers {
                 })();
                 rend.registerMenuMesh('serversMesh', menuMesh);
 
-                const _updatePages = menuUtils.debounce(next => {
-                  const pages = menuUi.getPages();
-
-                  if (pages.length > 0) {
-                    let pending = pages.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        next();
-                      }
-                    };
-
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {type} = page;
-
-                      if (type === 'main') {
-                        page.update({
-                          servers: serversState,
-                          focus: focusState,
-                        }, pend);
-                      } else {
-                        pend();
-                      }
-                    }
-                  } else {
-                    next();
-                  }
-                });
+                const _updatePages = {
+                  menuUi.update();
+                };
 
                 const _trigger = e => {
                   const {side} = e;

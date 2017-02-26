@@ -300,39 +300,10 @@ class Universe {
               scene.add(foregroundDotMeshes.left);
               scene.add(foregroundDotMeshes.right);
 
-              const _updatePages = menuUtils.debounce(next => {
-                const backgroundPages = backgroundUi.getPages();
-                const foregroundPages = foregroundUi.getPages()
-                const pages = backgroundPages.concat(foregroundPages);
-
-                if (pages.length > 0) {
-                  let pending = pages.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      next();
-                    }
-                  };
-
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
-
-                    if (type === 'background') {
-                      page.update({
-                        backgroundImage: backgroundImageState,
-                      }, pend);
-                    } else if (type === 'foreground') {
-                      page.update({
-                        foregroundImage: foregroundImageState,
-                      }, pend);
-                    } else {
-                      pend();
-                    }
-                  }
-                } else {
-                  next();
-                }
-              });
+              const _updatePages = {
+                backgroundUi.update();
+                foregroundUi.update();
+              };
 
               const _update = () => {
                 const tab = rend.getTab();

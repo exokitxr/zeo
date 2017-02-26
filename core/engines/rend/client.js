@@ -488,39 +488,10 @@ class Rend {
                 scene.add(keyboardBoxMeshes.left);
                 scene.add(keyboardBoxMeshes.right);
 
-                const _updatePages = menuUtils.debounce(next => {
-                  const menuPages = menuUi.getPages();
-                  const navbarPages = navbarUi.getPages();
-                  const pages = menuPages.concat(navbarPages);
-
-                  if (pages.length > 0) {
-                    let pending = pages.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        next();
-                      }
-                    };
-
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {type} = page;
-
-                      if (type === 'status') {
-                        page.update({
-                          status: statusState,
-                        }, pend);
-                      } else if (type === 'navbar') {
-                        page.update({
-                          navbar: navbarState,
-                        }, pend);
-                      } else {
-                        pend();
-                      }
-                    }
-                  } else {
-                    next();
-                  }
-                });
+                const _updatePages = {
+                  menuUi.update();
+                  navbarUi.update();
+                };
                 const trigger = e => {
                   const {open} = menuState;
 

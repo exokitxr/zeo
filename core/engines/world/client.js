@@ -942,40 +942,9 @@ class World {
               scene.add(menuBoxMeshes.left);
               scene.add(menuBoxMeshes.right);
 
-              const _updatePages = menuUtils.debounce(next => {
-                const pages = (() => {
-                  const tab = rend.getTab();
-                  switch (tab) {
-                    case 'world': return worldUi.getPages();
-                    default: return [];
-                  }
-                })();
-
-                if (pages.length > 0) {
-                  let pending = pages.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      next();
-                    }
-                  };
-
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
-
-                    if (type === 'world') {
-                      page.update({
-                        npm: npmState,
-                        focus: focusState,
-                      }, pend);
-                    } else {
-                      pend();
-                    }
-                  }
-                } else {
-                  next();
-                }
-              });
+              const _updatePages = {
+                worldUi.update();
+              };
 
               const _update = e => {
                 const _updateTextures = () => {

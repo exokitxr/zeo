@@ -170,34 +170,9 @@ class Login {
               scene.add(menuBoxMeshes.left);
               scene.add(menuBoxMeshes.right);
 
-              const _updatePages = menuUtils.debounce(next => {
-                const pages = menuUi.getPages();
-
-                if (pages.length > 0) {
-                  let pending = pages.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      next();
-                    }
-                  };
-
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
-
-                    if (type === 'login') {
-                      page.update({
-                        login: loginState,
-                        focus: focusState,
-                      }, pend);
-                    } else {
-                      pend();
-                    }
-                  }
-                } else {
-                  next();
-                }
-              });
+              const _updatePages = {
+                menuUi.update();
+              };
 
               const login = () => {
                 loginState.open = false;

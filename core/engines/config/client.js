@@ -180,7 +180,7 @@ class Config {
                 state: {
                   config: configState,
                   focus: focusState,
-                }
+                },
               });
 
               statsUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
@@ -301,44 +301,10 @@ class Config {
                 }
               };
 
-              const _updatePages = configUtils.debounce(next => {
-                const configPages = configUi.getPages();
-                const statsPages = statsUi.getPages();
-                const pages = configPages.concat(statsPages);
-
-                if (pages.length > 0) {
-                  let pending = pages.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      next();
-                    }
-                  };
-
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
-
-                    let match;
-                    if (type === 'stats') {
-                      page.update({
-                        config: {
-                          statsCheckboxValue: configState.statsCheckboxValue,
-                        },
-                        stats: statsState,
-                      }, pend);
-                    } else if (type === 'config') {
-                      page.update({
-                        config: configState,
-                        focus: focusState,
-                      }, pend);
-                    } else {
-                      pend();
-                    }
-                  }
-                } else {
-                  next();
-                }
-              });
+              const _updatePages = {
+                configUi.update();
+                statsUi.update();
+              };
 
               const trigger = e => {
                 const isOpen = rend.isOpen();
