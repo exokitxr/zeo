@@ -98,7 +98,7 @@ class Biolumi {
 
                       if (type === 'html') {
                         const {parent: {width, height}} = this;
-                        const {src, x = 0, y = 0, w = width, h = height, scroll = false, pixelated = false} = layerSpec;
+                        const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
 
                         const innerSrc = (() => {
                           const el = document.createElement('div');
@@ -141,8 +141,6 @@ class Biolumi {
                         })();
                         document.body.appendChild(divEl);
 
-                        const {scrollHeight, scrollWidth} = divEl;
-
                         const anchors = (() => {
                           const as = divEl.querySelectorAll('a');
                           const numAs = as.length;
@@ -166,7 +164,7 @@ class Biolumi {
                         document.body.removeChild(divEl);
 
                         const img = new Image();
-                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + scrollWidth + '\' height=\'' + scrollHeight + '\'>' +
+                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
                           '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
                             innerSrc +
                           '</foreignObject>' +
@@ -188,9 +186,6 @@ class Biolumi {
                         layer.y = y;
                         layer.w = w;
                         layer.h = h;
-                        layer.scrollHeight = scrollHeight;
-                        layer.scrollWidth = scrollWidth;
-                        layer.scroll = scroll;
                         layer.pixelated = pixelated;
                         layers.push(layer);
                       } else if (type === 'image') {
@@ -212,8 +207,6 @@ class Biolumi {
                           layer.y = y;
                           layer.w = w;
                           layer.h = h;
-                          layer.scrollHeight = h;
-                          layer.scrollWidth = w;
                           layer.numFrames = imgs.length;
                           layer.frameIndex = j;
                           layer.frameTime = frameTime;
@@ -247,9 +240,6 @@ class Biolumi {
               this.y = 0;
               this.w = width;
               this.h = height;
-              this.scrollHeight = height;
-              this.scrollWidth = width;
-              this.scroll = false;
               this.numFrames = 1;
               this.frameIndex = 0;
               this.frameTime = 0;

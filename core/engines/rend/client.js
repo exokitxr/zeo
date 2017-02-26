@@ -233,7 +233,6 @@ class Rend {
                         y: 0,
                         w: WIDTH,
                         h: HEIGHT,
-                        scroll: true,
                       },
                     ], {
                       type: 'status',
@@ -270,7 +269,6 @@ class Rend {
                         y: 0,
                         w: NAVBAR_WIDTH,
                         h: NAVBAR_HEIGHT,
-                        scroll: true,
                       },
                     ]), {
                       type: 'navbar',

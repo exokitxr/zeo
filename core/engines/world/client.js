@@ -833,7 +833,6 @@ class World {
                           y: 0,
                           w: WIDTH,
                           h: HEIGHT,
-                          scroll: true,
                         },
                       ];
                     }, {
