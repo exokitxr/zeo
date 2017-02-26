@@ -86,7 +86,7 @@ class Tags {
             fontStyle: biolumi.getFontStyle(),
           };
 
-          const UiManager {
+          class UiManager {
             constructor() {
               this.uis = [];
             }
