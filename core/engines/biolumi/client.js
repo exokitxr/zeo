@@ -374,97 +374,6 @@ class Biolumi {
               }
             };
 
-            let transition = null;
-            const _transition = ({pages, direction}, cb = () => {}) => {
-              _cancelTransition();
-
-              _validatePages(pages);
-
-              let animationFrame = null;
-              const animation = anima.makeAnimation(TRANSITION_TIME);
-              const pageSchedule = (() => {
-                if (direction === 'right') {
-                  return [
-                    {
-                      start: 0,
-                      end: -1,
-                    },
-                    {
-                      start: 1,
-                      end: 0,
-                    },
-                  ];
-                } else if (direction === 'left') {
-                  return [
-                    {
-                      start: -1,
-                      end: 0,
-                    },
-                    {
-                      start: 0,
-                      end: 1,
-                    },
-                  ];
-                } else {
-                  return null;
-                }
-              })();
-              const _recurse = () => {
-                animationFrame = requestAnimationFrame(() => {
-                  animationFrame = null;
-
-                  const timeFactor = animation.getValue();
-                  const pagePositions = pageSchedule.map(pageScheduleSpec => {
-                    const {start, end} = pageScheduleSpec;
-
-                    return {
-                      x: start + (timeFactor * (end - start)),
-                      y: 0,
-                    };
-                  });
-
-                  _applyPagePositions(pages, pagePositions);
-
-                  if (timeFactor < 1) {
-                    _recurse();
-                  } else {
-                    _invalidatePages(pages.slice(0, -1));
-
-                    cb();
-                  }
-                });
-              };
-              _recurse();
-
-              const _cancel = () => {
-                if (animationFrame) {
-                  const endPagePositions = pageSchedule.map(pageScheduleSpec => {
-                    const {end} = pageScheduleSpec;
-                    return {
-                      x: end,
-                      y: 0,
-                    };
-                  });
-
-                  _applyPagePositions(pages, endPagePositions);
-
-                  cancelAnimationFrame(animationFrame);
-                  animationFrame = null;
-
-                  cb();
-                }
-              };
-              transition = {
-                cancel: _cancel,
-              };
-            };
-            const _cancelTransition = () => {
-              if (transition) {
-                transition.cancel();
-                transition = null;
-              }
-            };
-
             class Ui {
               constructor(width, height) {
                 this.width = width;
@@ -491,46 +400,22 @@ class Biolumi {
               }
 
               pushPage(spec, {type = null, state = null, immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) {
-                if (immediate) {
-                  this.cancelTransition();
-                }
-
                 const page = new Page(this, spec, type);
                 page.update(state, () => {
                   preCb();
 
                   pages.push(page);
 
-                  if (!immediate && pages.length > 1) {
-                    this.transition({
-                      pages: pages.slice(-2),
-                      direction: 'right',
-                    }, postCb);
-                  } else {
-                    postCb();
-                  }
+                  postCb();
                 });
               }
 
               popPage({immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) {
                 preCb();
 
-                if (!immediate && pages.length > 1) {
-                  this.transition({
-                    pages: pages.slice(-2),
-                    direction: 'left',
-                  }, () => {
-                    pages.pop();
+                pages.pop();
 
-                    postCb();
-                  });
-                } else {
-                  this.cancelTransition();
-
-                  pages.pop();
-
-                  postCb();
-                }
+                postCb();
               }
 
               replacePage(layersSpec) {
@@ -543,10 +428,6 @@ class Biolumi {
                     });
                   }
                 });
-              }
-
-              cancelTransition() {
-                _cancelTransition();
               }
             }
 

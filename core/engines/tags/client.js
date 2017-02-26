@@ -423,9 +423,7 @@ class Tags {
                       value: newValue,
                     });
                   } else if (action === 'choose') {
-                    /* menuUi.cancelTransition();
-
-                    elementsState.choosingName = attributeName;
+                    /* elementsState.choosingName = attributeName;
 
                     _ensureFilesLoaded(elementAttributeFilesState);
 
