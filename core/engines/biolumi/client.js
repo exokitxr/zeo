@@ -239,8 +239,8 @@ class Biolumi {
                 } else {
                   accept();
                 }
-              }
-            });
+              });
+            }
           }
 
           class Layer {
@@ -281,7 +281,7 @@ class Biolumi {
                 this.x / width,
                 this.y / height,
                 this.w / width,
-                this.h / height,
+                this.h / height
               );
             }
 
@@ -421,7 +421,7 @@ class Biolumi {
                 // shaderMaterial.polygonOffset = true;
                 // shaderMaterial.polygonOffsetFactor = 1;
                 return shaderMaterial;
-              };
+              })();
               this.material = material;
             }
 
@@ -498,8 +498,8 @@ class Biolumi {
                 } else {
                   accept();
                 }
-              }
-            });
+              });
+            }
           }
 
           class Ui {
