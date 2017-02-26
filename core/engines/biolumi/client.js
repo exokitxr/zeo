@@ -520,29 +520,39 @@ class Biolumi {
               return this.pages[index];
             }
 
+            hasFreePages() {
+              const {atlasSize, pages} = this;
+              const maxPages = atlasSize * atlasSize;
+              return pages.length < maxPages;
+            }
+
             addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
-              const {atlasSize, pages, megaTexture} = this;
+              if (this.hasFreePages()) {
+                const {atlasSize, pages, megaTexture} = this;
 
-              const page = new Page(this, spec, type, state);
+                const page = new Page(this, spec, type, state);
 
-              const pageIndex = pages.length;
-              pages.push(page);
+                const pageIndex = pages.length;
+                pages.push(page);
 
-              const planeMesh = (() => {
-                const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-                const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
-                const atlasUvs = Float32Array.from(textureAtlasUvs.toArray());
-                geometry.addAttribute('atlasUv', new THREE.BufferAttribute(atlasUvs, 2));
+                const planeMesh = (() => {
+                  const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+                  const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
+                  const atlasUvs = Float32Array.from(textureAtlasUvs.toArray());
+                  geometry.addAttribute('atlasUv', new THREE.BufferAttribute(atlasUvs, 2));
 
-                const material = megaTexture.getMaterial();
+                  const material = megaTexture.getMaterial();
 
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.pageIndex = pageIndex;
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.pageIndex = pageIndex;
 
-                return mesh;
-              })();
+                  return mesh;
+                })();
 
-              return planeMesh;
+                return planeMesh;
+              } else {
+                return null;
+              }
             }
 
             update(next) {
