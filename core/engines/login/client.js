@@ -178,7 +178,7 @@ class Login {
               scene.add(menuBoxMeshes.left);
               scene.add(menuBoxMeshes.right);
 
-              const _updatePages = {
+              const _updatePages = () => {
                 menuUi.update();
               };
               _updatePages();

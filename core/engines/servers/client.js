@@ -197,7 +197,7 @@ class Servers {
                 })();
                 rend.registerMenuMesh('serversMesh', menuMesh);
 
-                const _updatePages = {
+                const _updatePages = () => {
                   menuUi.update();
                 };
                 _updatePages();

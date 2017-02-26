@@ -211,7 +211,7 @@ class Tags {
             type: '',
           };
 
-          const _updatePages = {
+          const _updatePages = () => {
             uiManager.update();
           };
 

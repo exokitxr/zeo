@@ -310,7 +310,7 @@ class Config {
                 }
               };
 
-              const _updatePages = {
+              const _updatePages = () => {
                 configUi.update();
                 statsUi.update();
               };

@@ -436,7 +436,7 @@ class Rend {
                   scene.add(keyboardBoxMeshes.left);
                   scene.add(keyboardBoxMeshes.right);
 
-                  const _updatePages = {
+                  const _updatePages = () => {
                     menuUi.update();
                     navbarUi.update();
                   };

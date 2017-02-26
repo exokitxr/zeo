@@ -297,7 +297,7 @@ class Universe {
               scene.add(foregroundDotMeshes.left);
               scene.add(foregroundDotMeshes.right);
 
-              const _updatePages = {
+              const _updatePages = () => {
                 backgroundUi.update();
                 foregroundUi.update();
               };

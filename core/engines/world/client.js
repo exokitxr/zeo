@@ -948,7 +948,7 @@ class World {
               scene.add(menuBoxMeshes.left);
               scene.add(menuBoxMeshes.right);
 
-              const _updatePages = {
+              const _updatePages = () => {
                 worldUi.update();
               };
               _updatePages();
