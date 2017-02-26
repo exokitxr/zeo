@@ -347,6 +347,11 @@ class Biolumi {
           const menuShader = menuShaders.getShader({
             maxNumTextures: MAX_NUM_TEXTURES,
           });
+          const _getTextureAtlasUv = (atlasSize, pageIndex) => {
+            const x = pageIndex % atlasSize;
+            const y = Math.floor(pageIndex / atlasSize);
+            return new THREE.Vector2(x, y);
+          };
 
           class MegaTexture {
             constructor(width, height, atlasSize, color) {
@@ -454,11 +459,6 @@ class Biolumi {
                           }
 
                           // draw the layer image into the texture atlas
-                          const _getTextureAtlasUv = (atlasSize, pageIndex) => {
-                            const x = pageIndex % atlasSize;
-                            const y = Math.floor(pageIndex / atlasSize);
-                            return new THREE.Vector2(x, y);
-                          };
                           const textureAtlasUv = _getTextureAtlasUv(atlasSize, pageIndex);
                           const {canvas} = image;
                           const {ctx} = canvas;
@@ -521,13 +521,18 @@ class Biolumi {
 
                 const planeMesh = (() => {
                   const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-                  // XXX set the correnct atlas uvs here
+                  const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
+                  const atlasUvs = Float32Array.from(textureAtlasUvs.toArray());
+                  geometry.addAttribute('atlasUv', new THREE.BufferAttribute(atlasUvs, 2));
+
                   const material = megaTexture.getMaterial();
+
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.pageIndex = pageIndex;
 
                   return mesh;
                 })();
+                // XXX potentially trigger a page update on the next frame
                 return planeMesh;
               }
 
