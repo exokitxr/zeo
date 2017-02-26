@@ -449,7 +449,7 @@ class Rend {
                   object.keySpecs = keySpecs;
 
                   const _updateKeySpecAnchorBoxTargets = () => {
-                    const {position: keyboardPosition, rotation: keyboardRotation, scale: keyboardScale} = _decomposeObjectMatrixWorld(planeMesh);
+                    const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
 
                     for (let i = 0; i < keySpecs.length; i++) {
                       const keySpec = keySpecs[i];
@@ -458,7 +458,7 @@ class Rend {
                       const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
                         keyboardPosition,
                         keyboardRotation,
-                        keyboardScale,
+                        oneVector,
                         new THREE.Vector3(
                           -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
                           (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
@@ -474,7 +474,7 @@ class Rend {
                     }
                   };
                   _updateKeySpecAnchorBoxTargets();
-                  // XXX update this when the keyboard position changes
+                  object.updateKeySpecAnchorBoxTargets = _updateKeySpecAnchorBoxTargets;
 
                   return object;
                 })();
