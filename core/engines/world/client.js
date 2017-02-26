@@ -1810,24 +1810,6 @@ class World {
                     connection,
                     startTime,
                   ]) => {
-                    /* const _initializeMails = () => {
-                      const mailMesh = mail.makeMail({
-                        id: _makeId(),
-                        name: 'Explore with me.',
-                        author: 'avaer',
-                        created: Date.now() - (2 * 60 * 1000),
-                        matrix: [
-                          0, 1.5, -0.5,
-                          0, 0, 0, 1,
-                          1, 1, 1,
-                        ],
-                      });
-
-                      scene.add(mailMesh);
-                    }; */
-
-                    // _initializeMails();
-
                     worldTimer.setStartTime(startTime);
 
                     connecting = false;
