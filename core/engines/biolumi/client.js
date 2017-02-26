@@ -63,9 +63,6 @@ class Biolumi {
 
               this.layers = [];
 
-              this.x = 0;
-              this.y = 0;
-
               this._lastStateJson = '';
             }
 
@@ -259,12 +256,11 @@ class Biolumi {
             }
 
             getPosition() {
-              const {parent} = this;
-              const {parent: {width, height}} = parent;
+              const {parent: {parent: {width, height}}} = this;
 
               return new Position(
-                parent.x + (this.x / width),
-                parent.y + (this.y / height),
+                this.x / width,
+                this.y / height,
                 this.w / width,
                 this.h / height,
               );
@@ -320,8 +316,8 @@ class Biolumi {
             constructor(x, y, w, h) {
               this.x = x; // x position
               this.y = y; // y position
-              this.w = w; // texture data width
-              this.h = h; // texture data height
+              this.w = w; // texture width
+              this.h = h; // texture height
             }
           }
 
