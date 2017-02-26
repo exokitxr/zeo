@@ -232,7 +232,6 @@ class Rend {
                   state: {
                     status: statusState,
                   },
-                  immediate: true,
                 });
 
                 navbarUi.pushPage(({navbar: {tab}}) => ([

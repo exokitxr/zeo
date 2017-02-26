@@ -804,7 +804,6 @@ class Tags {
                       details: detailsState,
                       focus: focusState,
                     },
-                    immediate: true,
                   });
                   object.ui = ui;
 

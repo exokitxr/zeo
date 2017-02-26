@@ -164,7 +164,6 @@ class Servers {
                     servers: serversState,
                     focus: focusState,
                   },
-                  immediate: true,
                 });
 
                 const menuMesh = (() => {

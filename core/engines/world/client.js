@@ -824,7 +824,6 @@ class World {
                   npm: npmState,
                   focus: focusState,
                 },
-                immediate: true,
               });
 
               const worldMesh = (() => {

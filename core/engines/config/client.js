@@ -212,7 +212,6 @@ class Config {
                   },
                   stats: statsState,
                 },
-                immediate: true,
               });
 
               const configMesh = (() => {

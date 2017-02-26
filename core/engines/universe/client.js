@@ -201,7 +201,6 @@ class Universe {
                 state: {
                   backgroundImage: backgroundImageState,
                 },
-                immediate: true,
               });
 
               const menuMesh = (() => {

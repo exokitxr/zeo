@@ -114,7 +114,6 @@ class Login {
                   login: loginState,
                   focus: focusState,
                 },
-                immediate: true,
               });
 
               const menuMesh = (() => {

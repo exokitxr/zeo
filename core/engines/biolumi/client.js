@@ -399,7 +399,7 @@ class Biolumi {
                 this.height = height;
               }
 
-              pushPage(spec, {type = null, state = null, immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) {
+              pushPage(spec, {type = null, state = null} = {}, {preCb = () => {}, postCb = () => {}} = {}) {
                 const page = new Page(this, spec, type);
                 page.update(state, () => {
                   preCb();
@@ -407,26 +407,6 @@ class Biolumi {
                   pages.push(page);
 
                   postCb();
-                });
-              }
-
-              popPage({immediate = false} = {}, {preCb = () => {}, postCb = () => {}} = {}) {
-                preCb();
-
-                pages.pop();
-
-                postCb();
-              }
-
-              replacePage(layersSpec) {
-                this.pushPage(layersSpec, {
-                  immediate: true,
-                }, {
-                  preCb: () => {
-                    this.popPage({
-                      immediate: true,
-                    });
-                  }
                 });
               }
             }
