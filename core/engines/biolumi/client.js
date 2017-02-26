@@ -69,167 +69,170 @@ class Biolumi {
               this._lastStateJson = '';
             }
 
-            update(cb = () => {}) {
-              const {state} = this;
-              const stateJson = JSON.stringify(state);
-              const {_lastStateJson: lastStateJson} = this;
+            update() {
+              return new Promise((accept, reject) => {
+                const {state} = this;
+                const stateJson = JSON.stringify(state);
+                const {_lastStateJson: lastStateJson} = this;
 
-              if (stateJson !== lastStateJson) {
-                this._lastStateJson = stateJson;
+                if (stateJson !== lastStateJson) {
+                  this._lastStateJson = stateJson;
 
-                const {spec} = this;
-                const layers = [];
-                const layersSpec = typeof spec === 'function' ? spec(state) : spec;
-                if (layersSpec.length > 0) {
-                  let pending = layersSpec.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      this.layers = layers;
+                  const {spec} = this;
 
-                      cb();
-                    }
-                  };
+                  const layers = [];
+                  const layersSpec = typeof spec === 'function' ? spec(state) : spec;
+                  if (layersSpec.length > 0) {
+                    let pending = layersSpec.length;
+                    const pend = () => {
+                      if (--pending === 0) {
+                        this.layers = layers;
 
-                  for (let i = 0; i < layersSpec.length; i++) {
-                    const layerSpec = layersSpec[i];
-                    const {type = 'html'} = layerSpec;
-
-                    if (type === 'html') {
-                      const {parent: {width, height}} = this;
-                      const {src, x = 0, y = 0, w = width, h = height, scroll = false, pixelated = false} = layerSpec;
-
-                      const innerSrc = (() => {
-                        const el = document.createElement('div');
-                        el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-                        el.setAttribute('style', rootCss);
-                        el.innerHTML = src
-                          .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
-
-                        const imgs = el.querySelectorAll('img');
-
-                        // do not load images without an explicit width + height
-                        for (let i = 0; i < imgs.length; i++) {
-                          const img = imgs[i];
-                          if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
-                            img.parentNode.removeChild(img);
-                          }
-                        }
-
-                        // remove empty anchors
-                        const as = el.querySelectorAll('a');
-                        for (let i = 0; i < as.length; i++) {
-                          const a = as[i];
-                          if (a.childNodes.length > 0) {
-                            if (!a.style.textDecoration) {
-                              a.style.textDecoration = 'underline';
-                            }
-                          } else {
-                            a.parentNode.removeChild(a);
-                          }
-                        }
-
-                        return new XMLSerializer().serializeToString(el);
-                      })();
-                      const divEl = (() => {
-                        const el = document.createElement('div');
-                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                        el.innerHTML = innerSrc;
-
-                        return el;
-                      })();
-                      document.body.appendChild(divEl);
-
-                      const {scrollHeight, scrollWidth} = divEl;
-
-                      const anchors = (() => {
-                        const as = divEl.querySelectorAll('a');
-                        const numAs = as.length;
-
-                        const result = Array(numAs);
-                        for (let i = 0; i < numAs; i++) {
-                          const a = as[i];
-
-                          const rect = a.getBoundingClientRect();
-                          const onclick = a.getAttribute('onclick') || null;
-                          const onmousedown = a.getAttribute('onmousedown') || null;
-                          const onmouseup = a.getAttribute('onmouseup') || null;
-
-                          const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
-                          result[i] = anchor;
-                        }
-
-                        return result;
-                      })();
-
-                      document.body.removeChild(divEl);
-
-                      const img = new Image();
-                      img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + scrollWidth + '\' height=\'' + scrollHeight + '\'>' +
-                        '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                          innerSrc +
-                        '</foreignObject>' +
-                      '</svg>');
-                      img.onload = () => {
-                        layer.img = img;
-
-                        pend();
-                      };
-                      img.onerror = err => {
-                        console.warn('biolumi image load error', {src: img.src}, err);
-
-                        pend();
-                      };
-
-                      const layer = new Layer(this);
-                      layer.anchors = anchors;
-                      layer.x = x;
-                      layer.y = y;
-                      layer.w = w;
-                      layer.h = h;
-                      layer.scrollHeight = scrollHeight;
-                      layer.scrollWidth = scrollWidth;
-                      layer.scroll = scroll;
-                      layer.pixelated = pixelated;
-                      layers.push(layer);
-                    } else if (type === 'image') {
-                      let {img: imgs} = layerSpec;
-                      if (!Array.isArray(imgs)) {
-                        imgs = [imgs];
+                        accept();
                       }
-                      const {parent: {width, height}} = this;
-                      const {x = 0, y = 0, w = width, h = height, frameTime = 300, pixelated = false} = layerSpec;
+                    };
 
-                      setTimeout(pend);
+                    for (let i = 0; i < layersSpec.length; i++) {
+                      const layerSpec = layersSpec[i];
+                      const {type = 'html'} = layerSpec;
 
-                      for (let j = 0; j < imgs.length; j++) {
-                        const img = imgs[j];
+                      if (type === 'html') {
+                        const {parent: {width, height}} = this;
+                        const {src, x = 0, y = 0, w = width, h = height, scroll = false, pixelated = false} = layerSpec;
+
+                        const innerSrc = (() => {
+                          const el = document.createElement('div');
+                          el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+                          el.setAttribute('style', rootCss);
+                          el.innerHTML = src
+                            .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
+
+                          const imgs = el.querySelectorAll('img');
+
+                          // do not load images without an explicit width + height
+                          for (let i = 0; i < imgs.length; i++) {
+                            const img = imgs[i];
+                            if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
+                              img.parentNode.removeChild(img);
+                            }
+                          }
+
+                          // remove empty anchors
+                          const as = el.querySelectorAll('a');
+                          for (let i = 0; i < as.length; i++) {
+                            const a = as[i];
+                            if (a.childNodes.length > 0) {
+                              if (!a.style.textDecoration) {
+                                a.style.textDecoration = 'underline';
+                              }
+                            } else {
+                              a.parentNode.removeChild(a);
+                            }
+                          }
+
+                          return new XMLSerializer().serializeToString(el);
+                        })();
+                        const divEl = (() => {
+                          const el = document.createElement('div');
+                          el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                          el.innerHTML = innerSrc;
+
+                          return el;
+                        })();
+                        document.body.appendChild(divEl);
+
+                        const {scrollHeight, scrollWidth} = divEl;
+
+                        const anchors = (() => {
+                          const as = divEl.querySelectorAll('a');
+                          const numAs = as.length;
+
+                          const result = Array(numAs);
+                          for (let i = 0; i < numAs; i++) {
+                            const a = as[i];
+
+                            const rect = a.getBoundingClientRect();
+                            const onclick = a.getAttribute('onclick') || null;
+                            const onmousedown = a.getAttribute('onmousedown') || null;
+                            const onmouseup = a.getAttribute('onmouseup') || null;
+
+                            const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
+                            result[i] = anchor;
+                          }
+
+                          return result;
+                        })();
+
+                        document.body.removeChild(divEl);
+
+                        const img = new Image();
+                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + scrollWidth + '\' height=\'' + scrollHeight + '\'>' +
+                          '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                            innerSrc +
+                          '</foreignObject>' +
+                        '</svg>');
+                        img.onload = () => {
+                          layer.img = img;
+
+                          pend();
+                        };
+                        img.onerror = err => {
+                          console.warn('biolumi image load error', {src: img.src}, err);
+
+                          pend();
+                        };
 
                         const layer = new Layer(this);
-                        layer.img = img;
+                        layer.anchors = anchors;
                         layer.x = x;
                         layer.y = y;
                         layer.w = w;
                         layer.h = h;
-                        layer.scrollHeight = h;
-                        layer.scrollWidth = w;
-                        layer.numFrames = imgs.length;
-                        layer.frameIndex = j;
-                        layer.frameTime = frameTime;
+                        layer.scrollHeight = scrollHeight;
+                        layer.scrollWidth = scrollWidth;
+                        layer.scroll = scroll;
                         layer.pixelated = pixelated;
                         layers.push(layer);
+                      } else if (type === 'image') {
+                        let {img: imgs} = layerSpec;
+                        if (!Array.isArray(imgs)) {
+                          imgs = [imgs];
+                        }
+                        const {parent: {width, height}} = this;
+                        const {x = 0, y = 0, w = width, h = height, frameTime = 300, pixelated = false} = layerSpec;
+
+                        setTimeout(pend);
+
+                        for (let j = 0; j < imgs.length; j++) {
+                          const img = imgs[j];
+
+                          const layer = new Layer(this);
+                          layer.img = img;
+                          layer.x = x;
+                          layer.y = y;
+                          layer.w = w;
+                          layer.h = h;
+                          layer.scrollHeight = h;
+                          layer.scrollWidth = w;
+                          layer.numFrames = imgs.length;
+                          layer.frameIndex = j;
+                          layer.frameTime = frameTime;
+                          layer.pixelated = pixelated;
+                          layers.push(layer);
+                        }
+                      } else {
+                        throw new Error('unknown layer type: ' + type);
                       }
-                    } else {
-                      throw new Error('unknown layer type: ' + type);
                     }
+                  } else {
+                    accept();
                   }
+                  });
                 } else {
-                  cb();
+                  accept();
                 }
-                });
-              } else {
-                cb();
               }
-            }
+            });
           }
 
           class Layer {
@@ -361,7 +364,12 @@ class Biolumi {
           });
 
           class MegaTexture {
-            constructor({width, height, atlasSize, color}) {
+            constructor(width, height, atlasSize, color) {
+              this.width = width;
+              this.height = height;
+              this.atlasSize = atlasSize;
+              this.color = color;
+
               const material = (() => {
                 const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
                 shaderUniforms.textures.value = (() => {
@@ -438,11 +446,54 @@ class Biolumi {
             getMaterial() {
               return this.material;
             }
+
+            update(pages) {
+              return new Promise((accept, reject) => {
+                const {material} = this;
+                const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = material;
+
+                const layers = ui.getPageLayers(); // XXX rewrite this to loop over all layers, distributed over textures, and for each layer loop over pages, distributed over the texture atlas
+                for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                  const layer = i < layers.length ? layers[i] : null;
+
+                  if (layer && layer.getValid({uiTime})) {
+                    validTextures.value[i] = 1;
+
+                    const texture = textures.value[i];
+                    if (texture.image !== layer.img || layer.img.needsUpdate) {
+                      texture.image = layer.img;
+                      if (!layer.pixelated) {
+                        texture.minFilter = THREE.LinearFilter;
+                        texture.magFilter = THREE.LinearFilter;
+                        texture.anisotropy = 16;
+                      } else {
+                        texture.minFilter = THREE.NearestFilter;
+                        texture.magFilter = THREE.NearestFilter;
+                        texture.anisotropy = 1;
+                      }
+                      texture.needsUpdate = true;
+
+                      layer.img.needsUpdate = false;
+                    }
+
+                    const position = layer.getPosition();
+                    texturePositions.value[(i * 2) + 0] = position.x;
+                    texturePositions.value[(i * 2) + 1] = position.y;
+                    textureLimits.value[(i * 2) + 0] = position.w;
+                    textureLimits.value[(i * 2) + 1] = position.h;
+                    textureOffsets.value[i] = position.st;
+                    textureDimensions.value[i] = position.sh;
+                  } else {
+                    validTextures.value[i] = 0;
+                  }
+                }
+              }
+            });
           }
 
           const _requestUi = ({width, height, atlasSize = 1, color = [1, 1, 1, 1]}) => new Promise((accept, reject) => {
             const pages = [];
-            const megaTexture = new MegaTexture({width, height, atlasSize, color});
+            const megaTexture = new MegaTexture(width, height, atlasSize, color);
 
             class Ui {
               constructor(width, height) {
@@ -472,7 +523,8 @@ class Biolumi {
                 page.update(state);
 
                 const pageMesh = (() => {
-                   const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+                  const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+                  // XXX set the correnct atlas uvs here
                   const material = megaTexture.getMaterial();
                   const mesh = new THREE.Mesh(geometry, material);
 
@@ -482,7 +534,18 @@ class Biolumi {
               }
 
               update(next) {
-                // XXX make this loop through all pages to generate the menu megatexture
+                Promise.all(
+                  pages.map(page => page.update())
+                )
+                  .then(() => megaTexture.update(pages))
+                  .then(() => {
+                    next();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+
+                    next();
+                  });
               }
             }
 
@@ -770,7 +833,7 @@ class Biolumi {
                 worldDepth,
               });
 
-              const scrollLayerBoxTargets = ui.getPageLayers()
+              const scrollLayerBoxTargets = ui.getPageLayers() // XXX make this read page layers for the correct plane mesh index
                 .filter(layer => layer.scroll)
                 .map(layer => {
                   const rect = layer.getRect();
@@ -807,7 +870,7 @@ class Biolumi {
 
               const anchorBoxTargets = (() => {
                 const result = [];
-                const layers = ui.getPageLayers();
+                const layers = ui.getPageLayers(); // XXX make this read page layers for the correct plane mesh index
                 for (let i = 0; i < layers.length; i++) {
                   const layer = layers[i];
                   const anchors = layer.getAnchors();
@@ -910,45 +973,6 @@ class Biolumi {
               }
             }
           };
-          const _updateMenuMaterial = ({ui, menuMaterial, uiTime}) => {
-            const {uniforms: {texture, textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}} = menuMaterial;
-
-            const layers = ui.getPageLayers();
-            for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
-              const layer = i < layers.length ? layers[i] : null;
-
-              if (layer && layer.getValid({uiTime})) {
-                validTextures.value[i] = 1;
-
-                const texture = textures.value[i];
-                if (texture.image !== layer.img || layer.img.needsUpdate) {
-                  texture.image = layer.img;
-                  if (!layer.pixelated) {
-                    texture.minFilter = THREE.LinearFilter;
-                    texture.magFilter = THREE.LinearFilter;
-                    texture.anisotropy = 16;
-                  } else {
-                    texture.minFilter = THREE.NearestFilter;
-                    texture.magFilter = THREE.NearestFilter;
-                    texture.anisotropy = 1;
-                  }
-                  texture.needsUpdate = true;
-
-                  layer.img.needsUpdate = false;
-                }
-
-                const position = layer.getPosition();
-                texturePositions.value[(i * 2) + 0] = position.x;
-                texturePositions.value[(i * 2) + 1] = position.y;
-                textureLimits.value[(i * 2) + 0] = position.w;
-                textureLimits.value[(i * 2) + 1] = position.h;
-                textureOffsets.value[i] = position.st;
-                textureDimensions.value[i] = position.sh;
-              } else {
-                validTextures.value[i] = 0;
-              }
-            }
-          };
 
           return {
             requestUi: _requestUi,
@@ -975,7 +999,6 @@ class Biolumi {
             makeMeshCoordinateGetter: _makeMeshCoordinateGetter,
 
             updateAnchors: _updateAnchors,
-            updateMenuMaterial: _updateMenuMaterial,
           };
         }
       });
