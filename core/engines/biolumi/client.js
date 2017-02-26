@@ -361,10 +361,6 @@ class Biolumi {
                 this.height = height;
               }
 
-              getPages() {
-                return pages;
-              }
-
               getPageLayers() {
                 const result = [];
                 for (let i = 0; i < pages.length; i++) {
