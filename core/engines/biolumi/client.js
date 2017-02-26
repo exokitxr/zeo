@@ -432,11 +432,14 @@ class Biolumi {
 
           const _requestUi = ({width, height}) => new Promise((accept, reject) => {
             const pages = [];
+            // XXX add a megatexture here
 
             class Ui {
               constructor(width, height) {
                 this.width = width;
                 this.height = height;
+
+                this.update = debounce(this.update.bind(this));
               }
 
               getPageLayers() {
@@ -449,7 +452,7 @@ class Biolumi {
                 return result;
               }
 
-              setDimensions(width, height) {
+              setDimensions(width, height) { // XXX get rid of this and make each size require itsa own Ui instance
                 this.width = width;
                 this.height = height;
               }
@@ -457,6 +460,10 @@ class Biolumi {
               pushPage(spec, {type = null, state = null} = {}) {
                 const page = new Page(this, spec, type, state);
                 page.update(state);
+              }
+
+              update(next) {
+                // XXX make this generate the menu megatexture
               }
             }
 
@@ -967,6 +974,29 @@ const fontStyle = 'normal';
 const transparentImgUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-family: ${fonts}; font-weight: ${fontWeight}; overflow: visible; user-select: none;`;
 
+const debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
 module.exports = Biolumi;
