@@ -503,68 +503,71 @@ class Biolumi {
             });
           }
 
+          class Ui {
+            constructor(width, height, atlasSize, color) {
+              this.width = width;
+              this.height = height;
+              this.atlasSize = atlasSize;
+              this.color = color;
+
+              this.pages = [];
+              this.megaTexture = new MegaTexture(width, height, atlasSize, color);
+
+              this.update = debounce(this.update.bind(this));
+            }
+
+            getPage(index) {
+              return this.pages[index];
+            }
+
+            addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
+              const {atlasSize, pages, megaTexture} = this;
+
+              const page = new Page(this, spec, type, state);
+
+              const pageIndex = pages.length;
+              pages.push(page);
+
+              const planeMesh = (() => {
+                const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
+                const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
+                const atlasUvs = Float32Array.from(textureAtlasUvs.toArray());
+                geometry.addAttribute('atlasUv', new THREE.BufferAttribute(atlasUvs, 2));
+
+                const material = megaTexture.getMaterial();
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.pageIndex = pageIndex;
+
+                return mesh;
+              })();
+
+              return planeMesh;
+            }
+
+            update(next) {
+              Promise.all(
+                this.pages.map(page => page.update())
+              )
+                .then(() => megaTexture.update(this.pages))
+                .then(() => {
+                  next();
+                })
+                .catch(err => {
+                  console.warn(err);
+
+                  next();
+                });
+            }
+          }
+
+          const _makeUi = ({width, height, atlasSize = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, atlasSize, color); // XXX port everything to this instead of requestUi();
+          const _requestUi = (width, height, atlasSize, color) => Promise.resolve(_makeUi(width, height, atlasSize, color));
+
           const _updateUiTimer = () => {
             uiTimer.update();
           };
 
-          const _requestUi = ({width, height, atlasSize = 1, color = [1, 1, 1, 1]}) => new Promise((accept, reject) => {
-            const pages = [];
-            const megaTexture = new MegaTexture(width, height, atlasSize, color);
-
-            class Ui {
-              constructor(width, height) {
-                this.width = width;
-                this.height = height;
-
-                this.update = debounce(this.update.bind(this));
-              }
-
-              getPage(index) {
-                return pages[index];
-              }
-
-              addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
-                const page = new Page(this, spec, type, state);
-
-                const pageIndex = pages.length;
-                pages.push(page);
-
-                const planeMesh = (() => {
-                  const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-                  const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
-                  const atlasUvs = Float32Array.from(textureAtlasUvs.toArray());
-                  geometry.addAttribute('atlasUv', new THREE.BufferAttribute(atlasUvs, 2));
-
-                  const material = megaTexture.getMaterial();
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.pageIndex = pageIndex;
-
-                  return mesh;
-                })();
-
-                return planeMesh;
-              }
-
-              update(next) {
-                Promise.all(
-                  pages.map(page => page.update())
-                )
-                  .then(() => megaTexture.update(pages))
-                  .then(() => {
-                    next();
-                  })
-                  .catch(err => {
-                    console.warn(err);
-
-                    next();
-                  });
-              }
-            }
-
-            const ui = new Ui(width, height);
-            accept(ui);
-          });
           const _getFonts = () => fonts;
           const _getMonospaceFonts = () => monospaceFonts;
           const _getFontWeight = () => fontWeight;
@@ -951,9 +954,10 @@ class Biolumi {
           };
 
           return {
-            updateUiTimer: _updateUiTimer,
-
+            makeUi: _makeUi,
             requestUi: _requestUi,
+
+            updateUiTimer: _updateUiTimer,
 
             getFonts: _getFonts,
             getMonospaceFonts: _getMonospaceFonts,
