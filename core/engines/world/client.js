@@ -949,9 +949,7 @@ class World {
               scene.add(menuBoxMeshes.right);
 
               const _updatePages = {
-                const uiTime = rend.getUiTime();
-
-                worldUi.update({uiTime});
+                worldUi.update();
               };
               _updatePages();
 

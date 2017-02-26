@@ -298,10 +298,8 @@ class Universe {
               scene.add(foregroundDotMeshes.right);
 
               const _updatePages = {
-                const uiTime = rend.getUiTime();
-
-                backgroundUi.update({uiTime});
-                foregroundUi.update({uiTime});
+                backgroundUi.update();
+                foregroundUi.update();
               };
               _updatePages();
 

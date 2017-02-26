@@ -198,9 +198,7 @@ class Servers {
                 rend.registerMenuMesh('serversMesh', menuMesh);
 
                 const _updatePages = {
-                  const uiTime = rend.getUiTime();
-
-                  menuUi.update({uiTime});
+                  menuUi.update();
                 };
                 _updatePages();
 

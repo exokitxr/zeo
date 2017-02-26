@@ -198,9 +198,7 @@ class Tags {
                 };
 
                 const _updatePages = {
-                  const uiTime = rend.getUiTime();
-
-                  tagsUi.update({uiTime});
+                  tagsUi.update();
                 };
 
                 const _trigger = e => {

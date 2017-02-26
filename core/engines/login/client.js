@@ -179,9 +179,7 @@ class Login {
               scene.add(menuBoxMeshes.right);
 
               const _updatePages = {
-                const uiTime = rend.getUiTime();
-
-                menuUi.update({uiTime});
+                menuUi.update();
               };
               _updatePages();
 

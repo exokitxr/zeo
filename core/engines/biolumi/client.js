@@ -34,6 +34,23 @@ class Biolumi {
         reject(err);
       };
     });
+    const _requestUiTimer = () => new Promise((accept, reject) => {
+      const startTime = Date.now();
+      let uiTime = 0;
+
+      class UiTimer {
+        getUiTime() {
+          return uiTime;
+        }
+
+        update() {
+          const now = Date.now();
+          uiTime = now - startTime;
+        }
+      }
+
+      accept(new UiTimer());
+    });
 
     return Promise.all([
       archae.requestPlugins([
@@ -42,6 +59,7 @@ class Biolumi {
         '/core/plugins/geometry-utils',
       ]),
       _requestTransparentImg(),
+      _requestUiTimer().
     ])
       .then(([
         [
@@ -50,6 +68,7 @@ class Biolumi {
           geometryUtils,
         ],
         transparentImg,
+        uiTimer,
       ]) => {
         if (live) {
           const {THREE} = three;
@@ -243,11 +262,12 @@ class Biolumi {
               this.pixelated = false;
             }
 
-            getValid({uiTime}) {
+            getValid() {
               const {numFrames} = this;
 
               if (numFrames > 1) {
                 const {parent, frameIndex, frameTime} = this;
+                const uiTime = uiTimer.getUiTime();
                 const currentFrameIndex = Math.floor(uiTime / frameTime) % numFrames;
                 return currentFrameIndex === frameIndex;
               } else {
@@ -410,7 +430,7 @@ class Biolumi {
               return this.material;
             }
 
-            update(pages, {uiTime}) {
+            update(pages) {
               return new Promise((accept, reject) => {
                 if (pages.length > 0) {
                   const {material} = this;
@@ -422,7 +442,7 @@ class Biolumi {
                     for (let j = 0; j < MAX_NUM_TEXTURES; j++) {
                       const layer = j < layers.length ? layers[j] : null;
 
-                      if (layer && layer.getValid({uiTime})) {
+                      if (layer && layer.getValid()) {
                         validTextures.value[i] = 1;
 
                         if (layer.img.needsUpdate) {
@@ -483,6 +503,10 @@ class Biolumi {
             });
           }
 
+          const _updateUiTimer = () => {
+            uiTimer.update();
+          };
+
           const _requestUi = ({width, height, atlasSize = 1, color = [1, 1, 1, 1]}) => new Promise((accept, reject) => {
             const pages = [];
             const megaTexture = new MegaTexture(width, height, atlasSize, color);
@@ -522,11 +546,11 @@ class Biolumi {
                 return planeMesh;
               }
 
-              update({uiTime = 0} = {}, next) { // XXX move uiTime tracking to the biolumi engine itself
+              update(next) {
                 Promise.all(
                   pages.map(page => page.update())
                 )
-                  .then(() => megaTexture.update(pages, {uiTime}))
+                  .then(() => megaTexture.update(pages))
                   .then(() => {
                     next();
                   })
@@ -927,6 +951,8 @@ class Biolumi {
           };
 
           return {
+            updateUiTimer: _updateUiTimer,
+
             requestUi: _requestUi,
 
             getFonts: _getFonts,
@@ -970,22 +996,23 @@ const rootCss = `margin: 0px; padding: 0px; height: 100%; width: 100%; font-fami
 
 const debounce = fn => {
   let running = false;
-  let queue = [];
+  let queued = false;
 
-  const _go = arg => {
+  const _go = () => {
     if (!running) {
       running = true;
 
-      fn(arg, () => {
+      fn(() => {
         running = false;
 
-        if (queue.length > 0) {
-          const arg = queue.shift();
-          _go(arg);
+        if (queued) {
+          queued = false;
+
+          _go();
         }
       });
     } else {
-      queue.push(arg);
+      queued = true;
     }
   };
   return _go;

@@ -311,10 +311,8 @@ class Config {
               };
 
               const _updatePages = {
-                const uiTime = rend.getUiTime();
-
-                configUi.update({uiTime});
-                statsUi.update({uiTime});
+                configUi.update();
+                statsUi.update();
               };
               _updatePages();
 
