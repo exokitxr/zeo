@@ -468,27 +468,22 @@ class Tags {
                       biolumi.updateAnchors({
                         objects: tagMeshes.map(tagMesh => {
                           if (
-                            tagMesh &&
-                            ((tagMesh.parent === scene) || controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh))
+                            (tagMesh.parent === scene) ||
+                            controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh)
                           ) {
-                            const {ui, planeMesh} = tagMesh;
+                            const {planeMesh, item: {open}} = tagMesh;
+                            const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                            const {page} = planeMesh;
 
-                            if (ui && planeMesh) {
-                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                              const {item: {open}} = tagMesh;
-
-                              return {
-                                matrixObject: matrixObject,
-                                ui: ui,
-                                width: !open ? WIDTH : OPEN_WIDTH,
-                                height: !open ? HEIGHT : OPEN_HEIGHT,
-                                worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                                worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                                worldDepth: WORLD_DEPTH,
-                              };
-                            } else {
-                              return null;
-                            }
+                            return {
+                              matrixObject: matrixObject,
+                              page: page,
+                              width: !open ? WIDTH : OPEN_WIDTH,
+                              height: !open ? HEIGHT : OPEN_HEIGHT,
+                              worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                              worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                            };
                           } else {
                             return null;
                           }

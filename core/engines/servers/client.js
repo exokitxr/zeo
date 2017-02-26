@@ -250,7 +250,9 @@ class Servers {
 
                     if (tab === 'servers') {
                       const {gamepads} = webvr.getStatus();
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                      const {planeMesh} = menuMesh;
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const {page} = planeMesh;
 
                       SIDES.forEach(side => {
                         const gamepad = gamepads[side];
@@ -265,7 +267,7 @@ class Servers {
                           biolumi.updateAnchors({
                             objects: [{
                               matrixObject: menuMatrixObject,
-                              ui: menuUi,
+                              page: page,
                               width: WIDTH,
                               height: HEIGHT,
                               worldWidth: WORLD_WIDTH,

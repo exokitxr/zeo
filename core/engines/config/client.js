@@ -449,6 +449,7 @@ class Config {
                     const {gamepads} = webvr.getStatus();
 
                     const {planeMesh} = configMesh;
+                    const {page} = planeMesh;
                     const configMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
 
                     SIDES.forEach(side => {
@@ -464,7 +465,7 @@ class Config {
                         biolumi.updateAnchors({
                           objects: [{
                             matrixObject: configMatrixObject,
-                            ui: configUi,
+                            page: page,
                             width: WIDTH,
                             height: HEIGHT,
                             worldWidth: WORLD_WIDTH,

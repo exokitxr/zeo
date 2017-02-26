@@ -309,9 +309,11 @@ class Universe {
                 if (tab === 'worlds') {
                   const _updateAnchors = () => {
                     const _updateBackgroundAnchors = () => {
-                      const {backgroundMesh} = menuMesh;
-                      const backgroundMatrixObject = _decomposeObjectMatrixWorld(backgroundMesh);
                       const {gamepads} = webvr.getStatus();
+                      const {backgroundMesh} = menuMesh;
+                      const {planeMesh} = backgroundMesh;
+                      const backgroundMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const {page} = planeMesh;
 
                       SIDES.forEach(side => {
                         const gamepad = gamepads[side];
@@ -326,7 +328,7 @@ class Universe {
                           biolumi.updateAnchors({
                             objects: [{
                               matrixObject: backgroundMatrixObject,
-                              ui: backgroundUi,
+                              page: page,
                               width: WIDTH,
                               height: HEIGHT,
                               worldWidth: WORLD_WIDTH,

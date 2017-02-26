@@ -373,6 +373,7 @@ class Login {
                           const {gamepads} = webvr.getStatus();
 
                           const {planeMesh} = menuMesh;
+                          const {page} = planeMesh;
                           const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
 
                           SIDES.forEach(side => {
@@ -388,7 +389,7 @@ class Login {
                               biolumi.updateAnchors({
                                 objects: [{
                                   matrixObject: menuMatrixObject,
-                                  ui: menuUi,
+                                  page: page,
                                   width: WIDTH,
                                   height: HEIGHT,
                                   worldWidth: WORLD_WIDTH,

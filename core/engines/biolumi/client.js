@@ -554,6 +554,7 @@ class Biolumi {
                   const material = megaTexture.getMaterial();
 
                   const mesh = new THREE.Mesh(geometry, material);
+                  mesh.page = page;
                   mesh.pageIndex = pageIndex;
 
                   return mesh;
@@ -851,7 +852,7 @@ class Biolumi {
             const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.disance - b.distance)[0] : null;
 
             if (intersectionSpec) {
-              const {object: {matrixObject: {position, rotation, scale}, ui, width, height, worldWidth, worldHeight, worldDepth}, intersectionPoint, controllerLine} = intersectionSpec;
+              const {object: {matrixObject: {position, rotation, scale}, page, width, height, worldWidth, worldHeight, worldDepth}, intersectionPoint, controllerLine} = intersectionSpec;
 
               if (hoverState) {
                 hoverState.intersectionPoint = intersectionPoint;
@@ -870,7 +871,6 @@ class Biolumi {
               const anchorBoxTargets = (() => {
                 const result = [];
 
-                const page = ui.getPage(pageIndex);
                 const {layers} = page;
                 for (let i = 0; i < layers.length; i++) {
                   const layer = layers[i];

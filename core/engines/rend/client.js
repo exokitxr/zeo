@@ -669,7 +669,9 @@ class Rend {
 
                         const {statusMesh, navbarMesh} = menuMesh;
                         const menuMatrixObject = _decomposeObjectMatrixWorld(statusMesh);
+                        const {page: statusPage} = statusMesh;
                         const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
+                        const {page: navbarPage} = navbarMesh;
 
                         SIDES.forEach(side => {
                           const gamepad = gamepads[side];
@@ -695,7 +697,7 @@ class Rend {
                                 biolumi.updateAnchors({
                                   objects: [{
                                     matrixObject: menuMatrixObject,
-                                    ui: menuUi,
+                                    page: statusPage,
                                     width: WIDTH,
                                     height: HEIGHT,
                                     worldWidth: WORLD_WIDTH,
@@ -713,7 +715,7 @@ class Rend {
                               biolumi.updateAnchors({
                                 objects: [{
                                   matrixObject: navbarMatrixObject,
-                                  ui: navbarUi,
+                                  page: navbarPage,
                                   width: NAVBAR_WIDTH,
                                   height: NAVBAR_HEIGHT,
                                   worldWidth: NAVBAR_WORLD_WIDTH,

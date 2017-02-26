@@ -958,9 +958,11 @@ class World {
                   const tab = rend.getTab();
 
                   if (tab === 'world') {
-                    const {menuMesh} = worldMesh;
-                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
                     const {gamepads} = webvr.getStatus();
+                    const {menuMesh} = worldMesh;
+                    const {planeMesh} = menuMesh;
+                    const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                    const {page} = planeMesh;
 
                     SIDES.forEach(side => {
                       const gamepad = gamepads[side];
@@ -975,7 +977,7 @@ class World {
                         biolumi.updateAnchors({
                           objects: [{
                             matrixObject: menuMatrixObject,
-                            ui: worldUi,
+                            page: page,
                             width: WIDTH,
                             height: HEIGHT,
                             worldWidth: WORLD_WIDTH,
@@ -1085,24 +1087,21 @@ class World {
 
                         biolumi.updateAnchors({ // XXX optimize this by caching the anchor box tagets here
                           objects: npmManager.getTagMeshes().map(tagMesh => {
-                            const {ui, planeMesh, initialScale = oneVector} = tagMesh;
+                            const {initialScale = oneVector} = tagMesh;
 
-                            if (ui && planeMesh) {
-                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                            const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                            const {page} = planeMesh;
 
-                              return {
-                                matrixObject: matrixObject,
-                                ui: ui,
-                                width: TAGS_WIDTH,
-                                height: TAGS_HEIGHT,
-                                worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
-                                worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
-                                worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
-                              };
-                            } else {
-                              return null;
-                            }
-                          }).filter(object => object !== null),
+                            return {
+                              matrixObject: matrixObject,
+                              page: page,
+                              width: TAGS_WIDTH,
+                              height: TAGS_HEIGHT,
+                              worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
+                              worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
+                              worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
+                            };
+                          }),
                           hoverState: npmHoverState,
                           dotMesh: npmDotMesh,
                           boxMesh: npmBoxMesh,
