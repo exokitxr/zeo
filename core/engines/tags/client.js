@@ -542,10 +542,11 @@ class Tags {
                     positioningMesh.quaternion.copy(controllerRotation);
                     positioningMesh.scale.copy(controllerScale);
 
+                    // XXX figure out what to do with this live update; it needsa to get to the remote user but dopes not need to necessarily be saved here
                     const {attributes} = item;
                     const attribute = attributes[positioningName];
                     const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                    item.setAttribute(positioningName, newValue); // XXX figure out what to do with this live update
+                    item.setAttribute(positioningName, newValue);
                   }
 
                   if (!positioningMesh.visible) {
