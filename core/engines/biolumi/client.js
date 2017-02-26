@@ -520,7 +520,6 @@ class Biolumi {
 
               addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) { // XXX hook in this new API
                 const page = new Page(this, spec, type, state);
-                page.update(state);
 
                 const pageIndex = pages.length;
                 pages.push(page);
