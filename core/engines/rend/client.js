@@ -208,7 +208,7 @@ class Rend {
                         worldWidth: WORLD_WIDTH,
                         worldHeight: WORLD_HEIGHT,
                       });
-                      mesh.position.z = -1;
+                      mesh.position.z = -1.5;
                       mesh.receiveShadow = true;
 
                       return mesh;
@@ -245,7 +245,7 @@ class Rend {
                         worldHeight: NAVBAR_WORLD_HEIGHT,
                       });
                       mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
-                      mesh.position.z = -1;
+                      mesh.position.z = -1.5;
                       mesh.receiveShadow = true;
 
                       return mesh;
