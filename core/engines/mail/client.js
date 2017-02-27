@@ -112,84 +112,57 @@ class Mail {
                   type: '',
                 };
 
-                menuUi.pushPage(({mail, focus: {type}}) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: mailRenderer.getMailPageSrc(mail),
-                      x: 0,
-                      y: 0,
-                      w: WIDTH,
-                      h: HEIGHT,
-                      scroll: true,
-                    },
-                  ];
-                }, {
-                  type: 'main',
-                  state: {
-                    mail: mailState,
-                    focus: focusState,
-                  },
-                  immediate: true,
-                });
-
                 const menuMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
+                  const object = new THREE.Object3D();
+                  object.visible = false;
 
-                  const menuMaterial = biolumi.makeMenuMaterial();
+                  const planeMesh = (() => {
+                    const mesh = menuUi.addPage(({mail, focus: {type}}) => {
+                      return [
+                        {
+                          type: 'html',
+                          src: mailRenderer.getMailPageSrc(mail),
+                          x: 0,
+                          y: 0,
+                          w: WIDTH,
+                          h: HEIGHT,
+                          scroll: true,
+                        },
+                      ];
+                    }, {
+                      type: 'main',
+                      state: {
+                        mail: mailState,
+                        focus: focusState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
+                    mesh.position.z = -1.5;
+                    mesh.receiveShadow = true;
 
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.position.z = -1.5;
-                  mesh.visible = false;
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
                   const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
                     const material = transparentMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.castShadow = true;
                     return mesh;
                   })();
-                  mesh.add(shadowMesh);
+                  object.add(shadowMesh);
 
-                  return mesh;
+                  return object;
                 })();
                 rend.registerMenuMesh('mailMesh', menuMesh);
 
-                const _updatePages = menuUtils.debounce(next => {
-                  const pages = menuUi.getPages();
-
-                  if (pages.length > 0) {
-                    let pending = pages.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        next();
-                      }
-                    };
-
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {type} = page;
-
-                      if (type === 'main') {
-                        page.update({
-                          mail: mailState,
-                          focus: focusState,
-                        }, pend);
-                      } else {
-                        pend();
-                      }
-                    }
-                  } else {
-                    next();
-                  }
-                });
+                const _updatePages = () => {
+                  menuUi.update();
+                };
+                _updatePages();
 
                 const _trigger = e => {
                   const {side} = e;
@@ -225,28 +198,14 @@ class Mail {
                 };
                 input.on('trigger', _trigger);
                 const _update = () => {
-                  const _updateMenuTextures = () => {
-                    const tab = rend.getTab();
-
-                    if (tab === 'mail') {
-                      const {
-                        menuMaterial,
-                      } = menuMesh;
-                      const uiTime = rend.getUiTime();
-
-                      biolumi.updateMenuMaterial({
-                        ui: menuUi,
-                        menuMaterial,
-                        uiTime,
-                      });
-                    }
-                  };
                   const _updateMenuAnchors = () => {
                     const tab = rend.getTab();
 
                     if (tab === 'mail') {
                       const {gamepads} = webvr.getStatus();
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                      const {planeMesh} = menuMesh;
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const {page} = planeMesh;
 
                       SIDES.forEach(side => {
                         const gamepad = gamepads[side];
@@ -261,7 +220,7 @@ class Mail {
                           biolumi.updateAnchors({
                             objects: [{
                               matrixObject: menuMatrixObject,
-                              ui: menuUi,
+                              page: page,
                               width: WIDTH,
                               height: HEIGHT,
                               worldWidth: WORLD_WIDTH,
@@ -278,8 +237,6 @@ class Mail {
                       });
                     }
                   };
-
-                  _updateMenuTextures();
                   _updateMenuAnchors();
                 };
                 rend.on('update', _update);
