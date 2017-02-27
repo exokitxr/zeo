@@ -46,7 +46,6 @@ const getShader = ({maxNumTextures}) => ({
     "varying vec2 vAtlasUv;",
     "void main() {",
     "  vec3 diffuse = vec3(0.0, 0.0, 0.0);",
-    "  float alpha = 0.0;",
     "  int numValid = 0;",
     (() => {
       let result = '';
@@ -58,12 +57,12 @@ const getShader = ({maxNumTextures}) => ({
           "    1.0 - ((1.0 - vUv.y - texturePositions[" + i + "].y) / textureLimits[" + i + "].y)",
           "  );",
           "  if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
-          "    vec2 sampleUv = uv * (vAtlasUv / atlasSize);",
+          // "    vec2 sampleUv = uv * (vAtlasUv / atlasSize);",
+          "    vec2 sampleUv = uv;",
           "    vec4 sample = texture2D(textures[" + i + "], sampleUv);",
-          "    diffuse += sample.rgb;",
           "",
           "    if (sample.a > 0.0) {",
-          "      alpha += sample.a;",
+          "      diffuse += (sample.rgb * sample.a) + (backgroundColor.rgb * (1.0 - sample.a));",
           "      numValid++;",
           "    }",
           "  }",
@@ -73,7 +72,7 @@ const getShader = ({maxNumTextures}) => ({
       return result;
     })(),
     "  if (numValid == 0) { gl_FragColor = backgroundColor; }",
-    "  else { gl_FragColor = vec4(diffuse / float(numValid), alpha / float(numValid)); }",
+    "  else { gl_FragColor = vec4(diffuse / float(numValid), 1); }",
     "}"
   ].join("\n"),
 });
