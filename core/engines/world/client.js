@@ -840,7 +840,7 @@ class World {
                   const materials = [solidMaterial, menuMaterial];
 
                   const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.position.z = -1;
+                  mesh.position.z = -1.5;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
 
@@ -860,7 +860,7 @@ class World {
 
                 const npmMesh = (() => {
                   const object = new THREE.Object3D();
-                  object.position.z = -1 + 0.01;
+                  object.position.z = -1.5 + 0.01;
 
                   return object;
                 })();
