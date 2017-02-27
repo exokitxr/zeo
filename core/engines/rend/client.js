@@ -568,10 +568,7 @@ class Rend {
                   };
 
                   localUpdates.push(() => {
-                    const _updateRenderer = () => {
-                      renderer.shadowMap.needsUpdate = true;
-                    };
-                    const _updateMeshes = () => {
+                    const _updateMeshAnimations = () => {
                       const {animation} = menuState;
 
                       if (animation) {
@@ -657,8 +654,15 @@ class Rend {
                         }
                       }
                     };
+                    const _updateRenderer = () => {
+                      renderer.shadowMap.needsUpdate = true;
+                    };
+                    const _updateUiTimer = () => {
+                      biolumi.updateUiTimer();
+                    };
+                    _updateMeshAnimations();
                     _updateRenderer();
-                    _updateMeshes();
+                    _updateUiTimer();
 
                     const {open} = menuState;
 
