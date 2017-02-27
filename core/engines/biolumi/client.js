@@ -213,8 +213,6 @@ class Biolumi {
                         const {parent: {width, height}} = this;
                         const {x = 0, y = 0, w = width, h = height, frameTime = 300, pixelated = false} = layerSpec;
 
-                        setTimeout(pend);
-
                         for (let j = 0; j < imgs.length; j++) {
                           const img = imgs[j];
 
@@ -231,15 +229,17 @@ class Biolumi {
                           layer.pixelated = pixelated;
                           layers.push(layer);
                         }
+
+                        setTimeout(pend);
                       } else {
                         throw new Error('unknown layer type: ' + type);
                       }
                     }
                   } else {
-                    accept();
+                    setTimeout(accept);
                   }
                 } else {
-                  accept();
+                  setTimeout(accept);
                 }
               });
             }
@@ -418,6 +418,7 @@ class Biolumi {
                   vertexShader: menuShader.vertexShader,
                   fragmentShader: menuShader.fragmentShader,
                   side: THREE.DoubleSide,
+                  // transparent: true,
                 });
                 // shaderMaterial.polygonOffset = true;
                 // shaderMaterial.polygonOffsetFactor = 1;
@@ -442,16 +443,16 @@ class Biolumi {
                     const layer = j < layers.length ? layers[j] : null;
 
                     if (layer && layer.getValid()) {
-                      validTextures.value[i] = 1;
+                      validTextures.value[j] = 1;
 
                       if (layer.img.needsUpdate) {
-                        const texture = textures.value[i];
+                        const texture = textures.value[j];
 
                         // ensure the texture exists with the right size
                         // we are assuming that all page's layers have identical metrics
-                        const requiredWidth = layer.w * atlasSize;
-                        const requiredHeight = layer.h * atlasSize;
-                        if (texture.image.width !== requiredWidth || texture.image.height !== requiredHeight) {
+                        const requiredWidth = layer.img.width * atlasSize;
+                        const requiredHeight = layer.img.height * atlasSize;
+                        if (texture.image.tagName !== 'CANVAS' || texture.image.width !== requiredWidth || texture.image.height !== requiredHeight) {
                           const canvas = document.createElement('canvas');
                           canvas.width = requiredWidth;
                           canvas.height = requiredHeight;
@@ -463,8 +464,8 @@ class Biolumi {
 
                         // draw the layer image into the texture atlas
                         const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
-                        const x = textureAtlasUv.x * layer.w;
-                        const y = textureAtlasUv.y * layer.h;
+                        const x = textureAtlasUv.x * layer.img.width;
+                        const y = textureAtlasUv.y * layer.img.height;
                         const w = layer.img.width;
                         const h = layer.img.height;
                         texture.image.ctx.clearRect(x, y, w, h);
@@ -544,8 +545,8 @@ class Biolumi {
                     const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
                     for (let i = 0; i < numPositions; i++) {
                       const baseIndex = i * 2;
-                      array[baseIndex + 0] = textureAtlasUvs.x;
-                      array[baseIndex + 1] = textureAtlasUvs.y;
+                      array[baseIndex + 0] = 0;
+                      array[baseIndex + 1] = 0;
                     }
 
                     const float32Array = Float32Array.from(array);

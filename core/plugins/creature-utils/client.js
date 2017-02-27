@@ -230,7 +230,7 @@ const creatureUtils = archae => ({
 
                 mirror(ctx);
               }
-              function getFrame(canvas) {
+              function cloneCanvas(canvas) {
                 const result = document.createElement('canvas');
                 result.width = canvas.width;
                 result.height = canvas.height;
@@ -253,11 +253,11 @@ const creatureUtils = archae => ({
               const ctx = canvas.getContext('2d');
 
               renderMainFrame(ctx);
-              const mainFrame = getFrame(canvas);
+              const mainFrame = cloneCanvas(canvas);
 
               if (!single) {
                 renderAltFrame(ctx)
-                const altFrame = getFrame(canvas);
+                const altFrame = canvas;
 
                 return [mainFrame, altFrame];
               } else {
