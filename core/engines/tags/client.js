@@ -101,6 +101,7 @@ class Tags {
                 lastUi = biolumi.makeUi({
                   width: WIDTH,
                   height: HEIGHT,
+                  atlasSize: 4,
                 });
                 uis.push(lastUi);
               }

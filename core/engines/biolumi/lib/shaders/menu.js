@@ -57,7 +57,7 @@ const getShader = ({maxNumTextures}) => ({
           "    1.0 - ((1.0 - vUv.y - texturePositions[" + i + "].y) / textureLimits[" + i + "].y)",
           "  );",
           "  if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {",
-          "    vec2 sampleUv = (uv + vAtlasUv) / atlasSize;",
+          "    vec2 sampleUv = vec2((uv.x + vAtlasUv.x) / atlasSize, 1.0 - ((1.0 - uv.y + vAtlasUv.y) / atlasSize));",
           "    vec4 sample = texture2D(textures[" + i + "], sampleUv);",
           "",
           "    if (sample.a > 0.0) {",

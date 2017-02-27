@@ -545,8 +545,8 @@ class Biolumi {
                     const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
                     for (let i = 0; i < numPositions; i++) {
                       const baseIndex = i * 2;
-                      array[baseIndex + 0] = 0;
-                      array[baseIndex + 1] = 0;
+                      array[baseIndex + 0] = textureAtlasUvs.x;
+                      array[baseIndex + 1] = textureAtlasUvs.y;
                     }
 
                     const float32Array = Float32Array.from(array);
