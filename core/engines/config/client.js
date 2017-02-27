@@ -240,28 +240,16 @@ class Config {
                     stats: {
                       frame,
                     },
-                  }) => {
-                    const img = (() => {
-                      if (statsCheckboxValue) {
-                        const statsImg = statsDom;
-                        statsImg.needsUpdate = true;
-                        return statsImg;
-                      } else {
-                        return transparentImg;
-                      }
-                    })();
-
-                    return [
-                      {
-                        type: 'image',
-                        img,
-                        x: 0,
-                        y: 0,
-                        w: 500,
-                        h: 500 * (48 / 80),
-                      },
-                    ];
-                  }, {
+                  }) => ([
+                    {
+                      type: 'image',
+                      img: statsDom,
+                      x: 0,
+                      y: 0,
+                      w: 500,
+                      h: 500 * (48 / 80),
+                    },
+                  ]), {
                     type: 'stats',
                     state: {
                       config: {
