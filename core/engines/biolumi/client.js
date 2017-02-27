@@ -463,7 +463,12 @@ class Biolumi {
 
                         // draw the layer image into the texture atlas
                         const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
-                        texture.image.ctx.drawImage(layer.img, textureAtlasUv.x * layer.w, textureAtlasUv.y * layer.h);
+                        const x = textureAtlasUv.x * layer.w;
+                        const y = textureAtlasUv.y * layer.h;
+                        const w = layer.img.width;
+                        const h = layer.img.height;
+                        texture.image.ctx.clearRect(x, y, w, h);
+                        texture.image.ctx.drawImage(layer.img, x, y);
 
                         // set texture pixelation properties
                         if (!layer.pixelated) {
