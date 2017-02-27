@@ -11,6 +11,8 @@ import {
   WORLD_DEPTH,
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
+
+  FRAME_TIME,
 } from './lib/constants/tags';
 import tagsRenderer from './lib/render/tags';
 import menuUtils from './lib/utils/menu';
@@ -420,7 +422,7 @@ class Tags {
                         y: 0,
                         w: 150,
                         h: 150,
-                        frameTime: 300,
+                        frameTime: FRAME_TIME,
                         pixelated: true,
                       }
                     ]), {
@@ -542,6 +544,10 @@ class Tags {
           };
           rend.on('update', _update);
 
+          const frameInterval = setInterval(() => {
+            uiManager.update();
+          }, FRAME_TIME);
+
           this._cleanup = () => {
             for (let i = 0; i < tagMeshes.length; i++) {
               const tagMesh = tagMeshes[i];
@@ -559,6 +565,8 @@ class Tags {
 
             input.removeListener('trigger', _trigger);
             rend.removeListener('update', _update);
+
+            clearInterval(frameInterval);
           };
 
           class Item {
@@ -741,7 +749,7 @@ class Tags {
                       y: 0,
                       w: 100,
                       h: 100,
-                      frameTime: 300,
+                      frameTime: FRAME_TIME,
                       pixelated: true,
                     }
                   ];
