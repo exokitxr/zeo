@@ -431,71 +431,69 @@ class Biolumi {
             }
 
             update(pages) {
-              return new Promise((accept, reject) => {
-                if (pages.length > 0) {
-                  const {atlasSize, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
-                  
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i]; // XXX optimize the case of atlasSize = 1: in that case we can skip drawing the texture atlas and feed through the image directly
-                    const {layers} = page;
+              if (pages.length > 0) {
+                const {atlasSize, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
 
-                    for (let j = 0; j < MAX_NUM_TEXTURES; j++) {
-                      const layer = j < layers.length ? layers[j] : null;
+                for (let i = 0; i < pages.length; i++) {
+                  const page = pages[i]; // XXX optimize the case of atlasSize = 1: in that case we can skip drawing the texture atlas and feed through the image directly
+                  const {layers} = page;
 
-                      if (layer && layer.getValid()) {
-                        validTextures.value[i] = 1;
+                  for (let j = 0; j < MAX_NUM_TEXTURES; j++) {
+                    const layer = j < layers.length ? layers[j] : null;
 
-                        if (layer.img.needsUpdate) {
-                          const texture = textures.value[i];
+                    if (layer && layer.getValid()) {
+                      validTextures.value[i] = 1;
 
-                          // ensure the texture exists with the right size
-                          // we are assuming that all page's layers have identical metrics
-                          const requiredWidth = layer.w * atlasSize;
-                          const requiredHeight = layer.h * atlasSize;
-                          if (texture.image.width !== requiredWidth || texture.image.height !== requiredHeight) {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = requiredWidth;
-                            canvas.height = requiredHeight;
-                            const ctx = canvas.getContext('2d');
-                            canvas.ctx = ctx;
+                      if (layer.img.needsUpdate) {
+                        const texture = textures.value[i];
 
-                            texture.image = canvas;
-                          }
+                        // ensure the texture exists with the right size
+                        // we are assuming that all page's layers have identical metrics
+                        const requiredWidth = layer.w * atlasSize;
+                        const requiredHeight = layer.h * atlasSize;
+                        if (texture.image.width !== requiredWidth || texture.image.height !== requiredHeight) {
+                          const canvas = document.createElement('canvas');
+                          canvas.width = requiredWidth;
+                          canvas.height = requiredHeight;
+                          const ctx = canvas.getContext('2d');
+                          canvas.ctx = ctx;
 
-                          // draw the layer image into the texture atlas
-                          const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
-                          texture.image.ctx.drawImage(layer.img, textureAtlasUv.x * layer.w, textureAtlasUv.y * layer.h);
-
-                          // set texture pixelation properties
-                          if (!layer.pixelated) {
-                            texture.minFilter = THREE.LinearFilter;
-                            texture.magFilter = THREE.LinearFilter;
-                            texture.anisotropy = 16;
-                          } else {
-                            texture.minFilter = THREE.NearestFilter;
-                            texture.magFilter = THREE.NearestFilter;
-                            texture.anisotropy = 1;
-                          }
-
-                          texture.needsUpdate = true;
-                          layer.img.needsUpdate = false;
+                          texture.image = canvas;
                         }
 
-                        const position = layer.getPosition();
-                        const baseIndex = j * 2;
-                        texturePositions.value[baseIndex + 0] = position.x;
-                        texturePositions.value[baseIndex + 1] = position.y;
-                        textureLimits.value[baseIndex + 0] = position.w;
-                        textureLimits.value[baseIndex + 1] = position.h;
-                      } else {
-                        validTextures.value[j] = 0;
+                        // draw the layer image into the texture atlas
+                        const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
+                        texture.image.ctx.drawImage(layer.img, textureAtlasUv.x * layer.w, textureAtlasUv.y * layer.h);
+
+                        // set texture pixelation properties
+                        if (!layer.pixelated) {
+                          texture.minFilter = THREE.LinearFilter;
+                          texture.magFilter = THREE.LinearFilter;
+                          texture.anisotropy = 16;
+                        } else {
+                          texture.minFilter = THREE.NearestFilter;
+                          texture.magFilter = THREE.NearestFilter;
+                          texture.anisotropy = 1;
+                        }
+
+                        texture.needsUpdate = true;
+                        layer.img.needsUpdate = false;
                       }
+
+                      const position = layer.getPosition();
+                      const baseIndex = j * 2;
+                      texturePositions.value[baseIndex + 0] = position.x;
+                      texturePositions.value[baseIndex + 1] = position.y;
+                      textureLimits.value[baseIndex + 0] = position.w;
+                      textureLimits.value[baseIndex + 1] = position.h;
+                    } else {
+                      validTextures.value[j] = 0;
                     }
                   }
-                } else {
-                  accept();
                 }
-              });
+              }
+
+              return Promise.resolve();
             }
           }
 
