@@ -174,9 +174,8 @@ class World {
               scene.add(grabBoxMeshes.left);
               scene.add(grabBoxMeshes.right);
 
-              let connection = null;
               const _requestConnection = () => new Promise((accept, reject) => {
-                connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication());
+                const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication());
                 connection.onmessage = msg => {
                   const m = JSON.parse(msg.data);
                   const {type} = m;
@@ -231,10 +230,11 @@ class World {
                     console.log('unknown message', m);
                   }
                 };
-                connection.onclose = () => {
-                  connection = null;
-
-                  console.warn('world connection close');
+                connection.onopen = () => {
+                  accept(connection);
+                };
+                connection.onerror = err => {
+                  reject(err);
                 };
               });
               const _requestStartTime = () => fetch('https://' + hub.getCurrentServer().url + '/archae/world/start-time.json')
@@ -1794,88 +1794,113 @@ class World {
               };
               fs.on('upload', _upload);
 
+              let connection = null;
               let connecting = false;
               const _connect = () => {
-                connecting = true;
+                if (!connecting) {
+                  connecting = true;
 
-                Promise.all([
-                  _requestConnection(),
-                  _requestStartTime(),
-                ])
-                  .then(([
-                    connection,
-                    startTime,
-                  ]) => {
-                    worldTimer.setStartTime(startTime);
+                  Promise.all([
+                    _requestConnection(),
+                    _requestStartTime(),
+                  ])
+                    .then(([
+                      newConnection,
+                      startTime,
+                    ]) => {
+                      const shouldBeEnabled = servers.isConnected();
 
-                    connecting = false;
-                    connected = false;
-                  })
-                  .catch(err => {
-                    console.warn(err);
+                      if (shouldBeEnabled) {
+                        connection = newConnection;
+                        connection.onclose = () => {
+                          connection = null;
+                        };
 
-                    connecting = false;
-                  });
+                        worldTimer.setStartTime(startTime);
+                      } else {
+                        connection.close();
+                      }
+
+                      connecting = false;
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      connecting = false;
+                    });
+                }
               };
               const _disconnect = () => {
-                const _uninitializeElements = () => {
-                  const elementTagMeshes = elementManager.getTagMeshes().slice();
-
-                  for (let i = 0; i < elementTagMeshes.length; i++) {
-                    const tagMesh = elementTagMeshes[i];
-
-                    elementManager.remove(tagMesh);
-
-                    tags.destroyTag(tagMesh);
+                const _unintializeConnection = () => {
+                  if (connection) {
+                    connection.close();
                   }
                 };
-                const _uninitializeEquipment = () => {
-                  const equipmentTagMeshes = equipmentManager.getTagMeshes().slice();
-                  const bagMesh = bag.getBagMesh();
-                  const {equipmentBoxMeshes} = bagMesh;
+                const _uninitializeTags = () => {
+                  const _uninitializeElements = () => {
+                    const elementTagMeshes = elementManager.getTagMeshes().slice();
 
-                  for (let i = 0; i < equipmentTagMeshes.length; i++) {
-                    const tagMesh = equipmentTagMeshes[i];
+                    for (let i = 0; i < elementTagMeshes.length; i++) {
+                      const tagMesh = elementTagMeshes[i];
 
-                    if (tagMesh) {
-                      const equipmentBoxMesh = equipmentBoxMeshes[i];
-                      equipmentBoxMesh.remove(tagMesh);
-
-                      equipmentManager.unset(i);
+                      elementManager.remove(tagMesh);
 
                       tags.destroyTag(tagMesh);
                     }
-                  }
-                };
-                const _uninitializeInventory = () => {
-                  const inventoryTagMeshes = inventoryManager.getTagMeshes().slice();
-                  const backpackMesh = backpack.getBackpackMesh();
-                  const {itemBoxMeshes} = backpackMesh
+                  };
+                  const _uninitializeEquipment = () => {
+                    const equipmentTagMeshes = equipmentManager.getTagMeshes().slice();
+                    const bagMesh = bag.getBagMesh();
+                    const {equipmentBoxMeshes} = bagMesh;
 
-                  for (let i = 0; i < inventoryTagMeshes.length; i++) {
-                    const tagMesh = inventoryTagMeshes[i];
+                    for (let i = 0; i < equipmentTagMeshes.length; i++) {
+                      const tagMesh = equipmentTagMeshes[i];
 
-                    if (tagMesh) {
-                      const itemBoxMesh = itemBoxMeshes[i];
-                      itemBoxMesh.remove(tagMesh);
+                      if (tagMesh) {
+                        const equipmentBoxMesh = equipmentBoxMeshes[i];
+                        equipmentBoxMesh.remove(tagMesh);
 
-                      inventoryManager.unset(i);
+                        equipmentManager.unset(i);
 
-                      tags.destroyTag(tagMesh);
+                        tags.destroyTag(tagMesh);
+                      }
                     }
-                  }
+                  };
+                  const _uninitializeInventory = () => {
+                    const inventoryTagMeshes = inventoryManager.getTagMeshes().slice();
+                    const backpackMesh = backpack.getBackpackMesh();
+                    const {itemBoxMeshes} = backpackMesh
+
+                    for (let i = 0; i < inventoryTagMeshes.length; i++) {
+                      const tagMesh = inventoryTagMeshes[i];
+
+                      if (tagMesh) {
+                        const itemBoxMesh = itemBoxMeshes[i];
+                        itemBoxMesh.remove(tagMesh);
+
+                        inventoryManager.unset(i);
+
+                        tags.destroyTag(tagMesh);
+                      }
+                    }
+                  };
+
+                  _uninitializeElements();
+                  _uninitializeEquipment();
+                  // _uninitializeFiles();
+                  _uninitializeInventory();
+                };
+                const _uninitializeTimer = () => {
+                  worldTimer.setStartTime(0);
                 };
 
-                _uninitializeElements();
-                _uninitializeEquipment();
-                // _uninitializeFiles();
-                _uninitializeInventory();
-
-                worldTimer.setStartTime(0);
+                _unintializeConnection();
+                _uninitializeTags();
+                _uninitializeTimer();
               };
 
               const _updateEnabled = () => {
-                const enabled = Boolean(connection) || connecting;
+                const enabled = Boolean(connection);
                 const shouldBeEnabled = servers.isConnected();
 
                 if (shouldBeEnabled && !enabled) {
