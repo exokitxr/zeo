@@ -144,7 +144,7 @@ class Mail {
                   const materials = [solidMaterial, menuMaterial];
 
                   const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.position.z = -1;
+                  mesh.position.z = -1.5;
                   mesh.visible = false;
                   mesh.receiveShadow = true;
                   mesh.menuMaterial = menuMaterial;
