@@ -452,7 +452,7 @@ class Biolumi {
                         // we are assuming that all page's layers have identical metrics
                         const requiredWidth = layer.img.width * atlasSize;
                         const requiredHeight = layer.img.height * atlasSize;
-                        if (texture.image.tagName !== 'CANVAS' || texture.image.width !== requiredWidth || texture.image.height !== requiredHeight) {
+                        if (texture.image.width !== requiredWidth || texture.image.height !== requiredHeight) {
                           const canvas = document.createElement('canvas');
                           canvas.width = requiredWidth;
                           canvas.height = requiredHeight;
