@@ -432,7 +432,7 @@ class Tags {
                     }); */
                   }
 
-                   _updatePages();
+                  _updatePages();
 
                   return true;
                 } else {
