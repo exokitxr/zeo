@@ -2,8 +2,7 @@ import keycode from 'keycode';
 
 import menuShaders from './lib/shaders/menu';
 
-const MAX_NUM_TEXTURES = 16;
-const TRANSITION_TIME = 1000;
+const MAX_NUM_TEXTURES = 3;
 
 class Biolumi {
   constructor(archae) {
