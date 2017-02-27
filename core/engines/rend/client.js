@@ -700,7 +700,12 @@ class Rend {
                       menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
                       const newPosition = camera.position;
-                      const newRotation = camera.quaternion;
+                      const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                        0,
+                        camera.rotation.y,
+                        0,
+                        camera.rotation.order
+                      ));
 
                       menuMesh.position.copy(newPosition);
                       menuMesh.quaternion.copy(newRotation);
