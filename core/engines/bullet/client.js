@@ -288,28 +288,35 @@ class Bullet {
               })();
 
               const _requestUpdate = () => {
-                _request('requestUpdate', [this.id], (err, updates) => {
-                  if (!err) {
-                    for (let i = 0; i < updates.length; i++) {
-                      const update = updates[i];
-                      const {id} = update;
+                if (bulletInstance.isConnected()) {
+                  _request('requestUpdate', [this.id], (err, updates) => {
+                    if (!err) {
+                      for (let i = 0; i < updates.length; i++) {
+                        const update = updates[i];
+                        const {id} = update;
 
-                      const body = this.bodies.get(id);
-                      if (body) {
-                        const {position, rotation, linearVelocity, angularVelocity} = update;
-                        body.update({position, rotation, linearVelocity, angularVelocity});
-                      } else {
-                        console.warn('invalid body update:', JSON.stringify(id));
+                        const body = this.bodies.get(id);
+                        if (body) {
+                          const {position, rotation, linearVelocity, angularVelocity} = update;
+                          body.update({position, rotation, linearVelocity, angularVelocity});
+                        } else {
+                          console.warn('invalid body update:', JSON.stringify(id));
+                        }
                       }
+                    } else {
+                      console.warn(err);
                     }
-                  } else {
-                    console.warn(err);
-                  }
 
-                  lastUpdateTime = Date.now();
+                    _next();
+                  });
+                } else {
+                  _next();
+                }
+              };
+              const _next = () => {
+                lastUpdateTime = Date.now();
 
-                  _recurse();
-                });
+                _recurse();
               };
 
               if (timeUntilNextUpdate === 0) {
