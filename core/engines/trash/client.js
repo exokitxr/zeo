@@ -1,3 +1,5 @@
+const DEFAULT_USER_HEIGHT = 1.6;
+
 class Trash {
   constructor(archae) {
     this._archae = archae;
@@ -21,10 +23,12 @@ class Trash {
     return archae.requestPlugins([
       '/core/engines/input',
       '/core/engines/three',
+      '/core/engines/rend',
       '/core/plugins/geometry-utils',
     ]).then(([
       input,
       three,
+      rend,
       geometryUtils,
     ]) => {
       if (live) {
@@ -57,12 +61,16 @@ class Trash {
           side: THREE.DoubleSide,
         });
 
-        const geometry = trashGeometry;
-        const material = solidMaterial;
+        const trashMesh = (() => {
+          const geometry = trashGeometry;
+          const material = solidMaterial;
 
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 0.5;
-        scene.add(mesh);
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.y = -DEFAULT_USER_HEIGHT + 0.5;
+          mesh.position.z = -1;
+          return mesh;
+        })();
+        rend.registerMenuMesh('trashMesh', trashMesh);
 
         this._cleanup = () => {
           scene.remove(mesh);
