@@ -1,7 +1,0 @@
-{
-  "name": "trash",
-  "description": "Renders teh trash can interface.",
-  "version": "0.0.1",
-  "client": "client.js",
-  "dependencies": {}
-}
