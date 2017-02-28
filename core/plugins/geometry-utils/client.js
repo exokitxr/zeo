@@ -1,5 +1,8 @@
+const LRUMap = require('./lib/lru');
+
 const VOXEL_SIZE = 0.1;
 const NUM_PIXELS = 12;
+const BOX_TARGET_CACHE_SIZE = 128;
 
 const geometryUtils = archae => ({
   mount() {
@@ -791,7 +794,19 @@ const geometryUtils = archae => ({
           };
         })(); */
 
-        const makeBoxTarget = (position, rotation, scale, size) => new BoxTarget(position, rotation, scale, size);
+        const boxTargetCache = new LRUMap(BOX_TARGET_CACHE_SIZE);
+        const makeBoxTarget = (position, rotation, scale, size) => {
+          const key = String(position.x) + String(position.y) + String(position.z) +
+            String(rotation.x) + String(rotation.y) + String(rotation.z) + String(rotation.w) +
+            String(scale.x) + String(scale.y) + String(scale.z) +
+            String(size.x) + String(size.y) + String(size.z);
+          let entry = boxTargetCache.get(size);
+          if (!entry) {
+            entry = new BoxTarget(position, rotation, scale, size);
+            boxTargetCache.set(key, entry);
+          }
+          return entry;
+        };
         const makeBoxTargetOffset = (position, rotation, scale, start, end) => {
           const topLeft = position.clone().add(
             start.clone().applyQuaternion(rotation)

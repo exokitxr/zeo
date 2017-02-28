@@ -1085,7 +1085,7 @@ class World {
                         const npmDotMesh = npmDotMeshes[side];
                         const npmBoxMesh = npmBoxMeshes[side];
 
-                        biolumi.updateAnchors({ // XXX optimize this by caching the anchor box tagets here
+                        biolumi.updateAnchors({
                           objects: npmManager.getTagMeshes().map(tagMesh => {
                             const {planeMesh, initialScale = oneVector} = tagMesh;
                             const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
