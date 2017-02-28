@@ -183,9 +183,6 @@ module.exports = archae => ({
 
               const mesh = (() => {
                 const object = new THREE.Object3D();
-                object.position.set(1, 1, 1);
-                /* object.rotation.order = camera.rotation.order;
-                object.rotation.y = -Math.PI / 2; */
 
                 const rng = new alea('');
 
@@ -357,6 +354,7 @@ module.exports = archae => ({
                 return object;
               })();
               scene.add(mesh);
+              this.mesh = mesh;
 
               const _makeDotMesh = () => {
                 const geometry = new THREE.BufferGeometry();
@@ -375,7 +373,7 @@ module.exports = archae => ({
                 scene.add(dotMeshes[side]);
               });
 
-              const soundBody = (() => {
+              const soundBody = (() => { // XXX need one audio body per element
                 const result = new sound.Body();
                 result.setInputElement(audio);
                 result.setObject(mesh);
@@ -528,13 +526,25 @@ module.exports = archae => ({
 
                 zeo.removeListener('trigger', _trigger);
                 zeo.removeListener('update', _update);
-
-                updates.splice(updates.indexOf(update), 1);
               };
             }
 
             destructor() {
               this._cleanup();
+            }
+
+            attributeValueChangedCallback(name, oldValue, newValue) {
+              switch (name) {
+                case 'position': {
+                  const {mesh} = this;
+
+                  mesh.position.set(newValue[0], newValue[1], newValue[2]);
+                  mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
+                  mesh.scale.set(newValue[7], newValue[8], newValue[9]);
+
+                  break;
+                }
+              }
             }
           }
           zeo.registerElement(this, DemoAdElement); // register our element as available to the scene
