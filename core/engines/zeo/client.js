@@ -390,10 +390,6 @@ class Zeo {
                         this.emit('updateEye', camera);
                       }
 
-                      getUiTime() {
-                        return world.getWorldTime();
-                      }
-
                       getWorldTime() {
                         return world.getWorldTime();
                       }

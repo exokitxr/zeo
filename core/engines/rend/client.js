@@ -96,7 +96,6 @@ class Rend {
 
         // main state
         let api = null;
-        let uiTimer = null;
         let menu = null;
         let menuMesh = null;
         let keyboardMesh = null;
@@ -131,24 +130,6 @@ class Rend {
         };
 
         // api functions
-        const _requestUiTimer = () => new Promise((accept, reject) => {
-          const startTime = Date.now();
-          let uiTime = 0;
-
-          localUpdates.push(() => {
-            const now = Date.now();
-            uiTime = now - startTime;
-          });
-
-          class UiTimer {
-            getUiTime() {
-              return uiTime;
-            }
-          }
-
-          accept(new UiTimer());
-        });
-
         const _initializeMenu = () => {
           if (live) {
             const mainFontSpec = {
@@ -190,838 +171,643 @@ class Rend {
               navbarUi,
             }));
 
-            return Promise.all([
-              _requestUiTimer(),
-              _requestUis(),
-            ]).then(([
-              localUiTimer,
-              {
+            return _requestUis()
+              .then(({
                 menuUi,
                 navbarUi,
-              },
-            ]) => {
-              if (live) {
-                uiTimer = localUiTimer;
+              }) => {
+                if (live) {
+                  const {matrix: matrixArray} = hub.getUserState();
+                  if (matrixArray) {
+                    webvr.setStageMatrix(new THREE.Matrix4().fromArray(matrixArray));
+                    webvr.updateStatus();
+                  }
 
-                const {matrix: matrixArray} = hub.getUserState();
-                if (matrixArray) {
-                  webvr.setStageMatrix(new THREE.Matrix4().fromArray(matrixArray));
-                  webvr.updateStatus();
-                }
+                  menuMesh = (() => {
+                    const object = new THREE.Object3D();
+                    object.position.y = DEFAULT_USER_HEIGHT;
+                    object.visible = menuState.open;
 
-                const unload = e => {
-                  hub.saveUserStateAsync();
-                };
-                window.addEventListener('unload', unload);
-                cleanups.push(() => {
-                  window.removeEventListener('unload', unload);
-                });
-
-                menuUi.pushPage(({status}) => [
-                  {
-                    type: 'html',
-                    src: menuRenderer.getStatusSrc({status}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                ], {
-                  type: 'status',
-                  state: {
-                    status: statusState,
-                  },
-                  immediate: true,
-                });
-
-                navbarUi.pushPage(({navbar: {tab}}) => ([
-                  {
-                    type: 'html',
-                    src: menuRenderer.getNavbarSrc({tab}),
-                    x: 0,
-                    y: 0,
-                    w: NAVBAR_WIDTH,
-                    h: NAVBAR_HEIGHT,
-                    scroll: true,
-                  },
-                ]), {
-                  type: 'navbar',
-                  state: {
-                    navbar: navbarState,
-                  },
-                });
-
-                menuMesh = (() => {
-                  const object = new THREE.Object3D();
-                  object.position.y = DEFAULT_USER_HEIGHT;
-                  object.visible = menuState.open;
-
-                  const statusMesh = (() => {
-                    const width = WORLD_WIDTH;
-                    const height = WORLD_HEIGHT;
-                    const depth = WORLD_DEPTH;
-
-                    const menuMaterial = biolumi.makeMenuMaterial();
-
-                    const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const materials = [solidMaterial, menuMaterial];
-
-                    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                    // mesh.position.y = 1.5;
-                    mesh.position.z = -1.5;
-                    mesh.receiveShadow = true;
-                    mesh.menuMaterial = menuMaterial;
-
-                    return mesh;
-                  })();
-                  object.add(statusMesh);
-                  object.statusMesh = statusMesh;
-
-                  object.worldMesh = null;
-                  object.universeMesh = null;
-                  object.serversMesh = null;
-                  object.configMesh = null;
-                  object.statsMesh = null;
-
-                  const navbarMesh = (() => {
-                    const width = NAVBAR_WORLD_WIDTH;
-                    const height = NAVBAR_WORLD_HEIGHT;
-                    const depth = NAVBAR_WORLD_DEPTH;
-
-                    const menuMaterial = biolumi.makeMenuMaterial();
-
-                    const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const material = menuMaterial;
-
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
-                    mesh.position.z = -1.5;
-                    mesh.receiveShadow = true;
-                    mesh.menuMaterial = menuMaterial;
-
-                    return mesh;
-                  })();
-                  object.add(navbarMesh);
-                  object.navbarMesh = navbarMesh;
-
-                  const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
-                    const material = transparentMaterial.clone();
-                    material.depthWrite = false;
-
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
-                    mesh.castShadow = true;
-                    return mesh;
-                  })();
-                  object.add(shadowMesh);
-
-                  return object;
-                })();
-                scene.add(menuMesh);
-
-                const menuDotMeshes = {
-                  left: biolumi.makeMenuDotMesh(),
-                  right: biolumi.makeMenuDotMesh(),
-                };
-                scene.add(menuDotMeshes.left);
-                scene.add(menuDotMeshes.right);
-
-                const menuBoxMeshes = {
-                  left: biolumi.makeMenuBoxMesh(),
-                  right: biolumi.makeMenuBoxMesh(),
-                };
-                scene.add(menuBoxMeshes.left);
-                scene.add(menuBoxMeshes.right);
-
-                const navbarDotMeshes = {
-                  left: biolumi.makeMenuDotMesh(),
-                  right: biolumi.makeMenuDotMesh(),
-                };
-                scene.add(navbarDotMeshes.left);
-                scene.add(navbarDotMeshes.right);
-
-                const navbarBoxMeshes = {
-                  left: biolumi.makeMenuBoxMesh(),
-                  right: biolumi.makeMenuBoxMesh(),
-                };
-                scene.add(navbarBoxMeshes.left);
-                scene.add(navbarBoxMeshes.right);
-
-                keyboardMesh = (() => {
-                  const object = new THREE.Object3D();
-                  object.position.y = DEFAULT_USER_HEIGHT;
-                  object.visible = menuState.open;
-
-                  const planeMesh = (() => {
-                    const _requestKeyboardImage = () => new Promise((accept, reject) => {
-                      const img = new Image();
-                      img.src = keyboardImgSrc;
-                      img.onload = () => {
-                        accept(img);
-                      };
-                      img.onerror = err => {
-                        reject(err);
-                      };
-                    });
-
-                    const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
-                    const material = (() => {
-                      const texture = new THREE.Texture(
-                        transparentImg,
-                        THREE.UVMapping,
-                        THREE.ClampToEdgeWrapping,
-                        THREE.ClampToEdgeWrapping,
-                        THREE.LinearFilter,
-                        THREE.LinearFilter,
-                        THREE.RGBAFormat,
-                        THREE.UnsignedByteType,
-                        16
-                      );
-
-                      _requestKeyboardImage()
-                        .then(img => {
-                          texture.image = img;
-                          texture.needsUpdate = true;
-                        })
-                        .catch(err => {
-                          console.warn(err);
-                        });
-
-                      const material = new THREE.MeshBasicMaterial({
-                        map: texture,
-                        side: THREE.DoubleSide,
-                        transparent: true,
-                        alphaTest: 0.5,
+                    const statusMesh = (() => {
+                      const mesh = menuUi.addPage(({
+                        status,
+                      }) => [
+                        {
+                          type: 'html',
+                          src: menuRenderer.getStatusSrc({status}),
+                          x: 0,
+                          y: 0,
+                          w: WIDTH,
+                          h: HEIGHT,
+                        },
+                      ], {
+                        type: 'status',
+                        state: {
+                          status: statusState,
+                        },
+                        worldWidth: WORLD_WIDTH,
+                        worldHeight: WORLD_HEIGHT,
                       });
-                      return material;
+                      mesh.position.z = -1.5;
+                      mesh.receiveShadow = true;
+
+                      return mesh;
                     })();
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.y = 1 - DEFAULT_USER_HEIGHT;
-                    mesh.position.z = -0.4;
-                    mesh.rotation.x = -Math.PI * (3 / 8);
+                    object.add(statusMesh);
+                    object.statusMesh = statusMesh;
+
+                    object.worldMesh = null;
+                    object.universeMesh = null;
+                    object.serversMesh = null;
+                    object.configMesh = null;
+                    object.statsMesh = null;
+
+                    const navbarMesh = (() => {
+                      const mesh = navbarUi.addPage(({
+                        navbar: {
+                          tab,
+                        },
+                      }) => ([
+                        {
+                          type: 'html',
+                          src: menuRenderer.getNavbarSrc({tab}),
+                          x: 0,
+                          y: 0,
+                          w: NAVBAR_WIDTH,
+                          h: NAVBAR_HEIGHT,
+                        },
+                      ]), {
+                        type: 'navbar',
+                        state: {
+                          navbar: navbarState,
+                        },
+                        worldWidth: NAVBAR_WORLD_WIDTH,
+                        worldHeight: NAVBAR_WORLD_HEIGHT,
+                      });
+                      mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
+                      mesh.position.z = -1.5;
+                      mesh.receiveShadow = true;
+
+                      return mesh;
+                    })();
+                    object.add(navbarMesh);
+                    object.navbarMesh = navbarMesh;
 
                     const shadowMesh = (() => {
-                      const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
-                      const material = transparentMaterial;
+                      const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
+                      const material = transparentMaterial.clone();
+                      material.depthWrite = false;
+
                       const mesh = new THREE.Mesh(geometry, material);
+                      mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
                       mesh.castShadow = true;
                       return mesh;
                     })();
-                    mesh.add(shadowMesh);
+                    object.add(shadowMesh);
 
-                    return mesh;
+                    return object;
                   })();
-                  object.add(planeMesh);
-                  object.planeMesh = planeMesh;
+                  scene.add(menuMesh);
 
-                  const keySpecs = (() => {
-                    class KeySpec {
-                      constructor(key, rect) {
-                        this.key = key;
-                        this.rect = rect;
-
-                        this.anchorBoxTarget = null;
-                      }
-                    }
-
-                    const div = document.createElement('div');
-                    div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
-                    div.innerHTML = keyboardImg;
-
-                    document.body.appendChild(div);
-
-                    const keyEls = div.querySelectorAll(':scope > svg > g[key]');
-                    const result = Array(keyEls.length);
-                    for (let i = 0; i < keyEls.length; i++) {
-                      const keyEl = keyEls[i];
-                      const key = keyEl.getAttribute('key');
-                      const rect = keyEl.getBoundingClientRect();
-
-                      const keySpec = new KeySpec(key, rect);
-                      result[i] = keySpec;
-                    }
-
-                    document.body.removeChild(div);
-
-                    return result;
-                  })();
-                  object.keySpecs = keySpecs;
-
-                  const _updateKeySpecAnchorBoxTargets = () => {
-                    object.updateMatrixWorld();
-                    const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
-
-                    for (let i = 0; i < keySpecs.length; i++) {
-                      const keySpec = keySpecs[i];
-                      const {key, rect} = keySpec;
-
-                      const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                        keyboardPosition,
-                        keyboardRotation,
-                        oneVector,
-                        new THREE.Vector3(
-                          -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                          (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                          -WORLD_DEPTH
-                        ),
-                        new THREE.Vector3(
-                          -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
-                          (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
-                          WORLD_DEPTH
-                        )
-                      );
-                      keySpec.anchorBoxTarget = anchorBoxTarget;
-                    }
+                  const menuDotMeshes = {
+                    left: biolumi.makeMenuDotMesh(),
+                    right: biolumi.makeMenuDotMesh(),
                   };
-                  _updateKeySpecAnchorBoxTargets();
-                  object.updateKeySpecAnchorBoxTargets = _updateKeySpecAnchorBoxTargets;
+                  scene.add(menuDotMeshes.left);
+                  scene.add(menuDotMeshes.right);
 
-                  return object;
-                })();
-                scene.add(keyboardMesh);
+                  const menuBoxMeshes = {
+                    left: biolumi.makeMenuBoxMesh(),
+                    right: biolumi.makeMenuBoxMesh(),
+                  };
+                  scene.add(menuBoxMeshes.left);
+                  scene.add(menuBoxMeshes.right);
 
-                const keyboardBoxMeshes = {
-                  left: biolumi.makeMenuBoxMesh(),
-                  right: biolumi.makeMenuBoxMesh(),
-                };
-                scene.add(keyboardBoxMeshes.left);
-                scene.add(keyboardBoxMeshes.right);
+                  const navbarDotMeshes = {
+                    left: biolumi.makeMenuDotMesh(),
+                    right: biolumi.makeMenuDotMesh(),
+                  };
+                  scene.add(navbarDotMeshes.left);
+                  scene.add(navbarDotMeshes.right);
 
-                const _updatePages = menuUtils.debounce(next => {
-                  const menuPages = menuUi.getPages();
-                  const navbarPages = navbarUi.getPages();
-                  const pages = menuPages.concat(navbarPages);
+                  const navbarBoxMeshes = {
+                    left: biolumi.makeMenuBoxMesh(),
+                    right: biolumi.makeMenuBoxMesh(),
+                  };
+                  scene.add(navbarBoxMeshes.left);
+                  scene.add(navbarBoxMeshes.right);
 
-                  if (pages.length > 0) {
-                    let pending = pages.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        next();
-                      }
-                    };
+                  keyboardMesh = (() => {
+                    const object = new THREE.Object3D();
+                    object.position.y = DEFAULT_USER_HEIGHT;
+                    object.visible = menuState.open;
 
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {type} = page;
-
-                      if (type === 'status') {
-                        page.update({
-                          status: statusState,
-                        }, pend);
-                      } else if (type === 'navbar') {
-                        page.update({
-                          navbar: navbarState,
-                        }, pend);
-                      } else {
-                        pend();
-                      }
-                    }
-                  } else {
-                    next();
-                  }
-                });
-                const trigger = e => {
-                  const {open} = menuState;
-
-                  if (open) {
-                    const _doClickNavbar = e => {
-                      const {side} = e;
-                      const navbarHoverState = navbarHoverStates[side];
-                      const {anchor} = navbarHoverState;
-                      const onclick = (anchor && anchor.onclick) || '';
-
-                      let match;
-                      if (match = onclick.match(/^navbar:(status|world|mail|inventory|worlds|servers|options)$/)) {
-                        const newTab = match[1];
-
-                        const _getTabMesh = tab => {
-                          switch (tab) {
-                            case 'status': return menuMesh.statusMesh;
-                            case 'world': return menuMesh.worldMesh;
-                            case 'mail': return menuMesh.mailMesh;
-                            case 'worlds': return menuMesh.universeMesh;
-                            case 'servers': return menuMesh.serversMesh;
-                            case 'options': return menuMesh.configMesh;
-                            default: return null;
-                          }
+                    const planeMesh = (() => {
+                      const _requestKeyboardImage = () => new Promise((accept, reject) => {
+                        const img = new Image();
+                        img.src = keyboardImgSrc;
+                        img.onload = () => {
+                          accept(img);
                         };
+                        img.onerror = err => {
+                          reject(err);
+                        };
+                      });
 
-                        const {tab: oldTab} = navbarState;
-                        const oldMesh = _getTabMesh(oldTab);
-                        const newMesh = _getTabMesh(newTab);
+                      const geometry = new THREE.PlaneBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT);
+                      const material = (() => {
+                        const texture = new THREE.Texture(
+                          transparentImg,
+                          THREE.UVMapping,
+                          THREE.ClampToEdgeWrapping,
+                          THREE.ClampToEdgeWrapping,
+                          THREE.LinearFilter,
+                          THREE.LinearFilter,
+                          THREE.RGBAFormat,
+                          THREE.UnsignedByteType,
+                          16
+                        );
 
-                        oldMesh.visible = false;
-                        newMesh.visible = true;
+                        _requestKeyboardImage()
+                          .then(img => {
+                            texture.image = img;
+                            texture.needsUpdate = true;
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
 
-                        navbarState.tab = newTab;
+                        const material = new THREE.MeshBasicMaterial({
+                          map: texture,
+                          side: THREE.DoubleSide,
+                          transparent: true,
+                          alphaTest: 0.5,
+                        });
+                        return material;
+                      })();
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.position.y = 1 - DEFAULT_USER_HEIGHT;
+                      mesh.position.z = -0.4;
+                      mesh.rotation.x = -Math.PI * (3 / 8);
 
-                        _updatePages();
+                      const shadowMesh = (() => {
+                        const geometry = new THREE.BoxBufferGeometry(KEYBOARD_WORLD_WIDTH, KEYBOARD_WORLD_HEIGHT, 0.01);
+                        const material = transparentMaterial;
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.castShadow = true;
+                        return mesh;
+                      })();
+                      mesh.add(shadowMesh);
 
-                        api.emit('tabchange', newTab);
+                      return mesh;
+                    })();
+                    object.add(planeMesh);
+                    object.planeMesh = planeMesh;
 
-                        return true;
-                      } else {
-                        return false;
+                    const keySpecs = (() => {
+                      class KeySpec {
+                        constructor(key, rect) {
+                          this.key = key;
+                          this.rect = rect;
+
+                          this.anchorBoxTarget = null;
+                        }
+                      }
+
+                      const div = document.createElement('div');
+                      div.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + KEYBOARD_WIDTH + 'px; height: ' + KEYBOARD_HEIGHT + 'px;';
+                      div.innerHTML = keyboardImg;
+
+                      document.body.appendChild(div);
+
+                      const keyEls = div.querySelectorAll(':scope > svg > g[key]');
+                      const result = Array(keyEls.length);
+                      for (let i = 0; i < keyEls.length; i++) {
+                        const keyEl = keyEls[i];
+                        const key = keyEl.getAttribute('key');
+                        const rect = keyEl.getBoundingClientRect();
+
+                        const keySpec = new KeySpec(key, rect);
+                        result[i] = keySpec;
+                      }
+
+                      document.body.removeChild(div);
+
+                      return result;
+                    })();
+                    object.keySpecs = keySpecs;
+
+                    const _updateKeySpecAnchorBoxTargets = () => {
+                      object.updateMatrixWorld();
+                      const {position: keyboardPosition, rotation: keyboardRotation} = _decomposeObjectMatrixWorld(planeMesh);
+
+                      for (let i = 0; i < keySpecs.length; i++) {
+                        const keySpec = keySpecs[i];
+                        const {key, rect} = keySpec;
+
+                        const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                          keyboardPosition,
+                          keyboardRotation,
+                          oneVector,
+                          new THREE.Vector3(
+                            -(KEYBOARD_WORLD_WIDTH / 2) + (rect.left / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
+                            (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.top / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
+                            -WORLD_DEPTH
+                          ),
+                          new THREE.Vector3(
+                            -(KEYBOARD_WORLD_WIDTH / 2) + (rect.right / KEYBOARD_WIDTH) * KEYBOARD_WORLD_WIDTH,
+                            (KEYBOARD_WORLD_HEIGHT / 2) + (-rect.bottom / KEYBOARD_HEIGHT) * KEYBOARD_WORLD_HEIGHT,
+                            WORLD_DEPTH
+                          )
+                        );
+                        keySpec.anchorBoxTarget = anchorBoxTarget;
                       }
                     };
+                    _updateKeySpecAnchorBoxTargets();
+                    object.updateKeySpecAnchorBoxTargets = _updateKeySpecAnchorBoxTargets;
 
-                    _doClickNavbar(e);
-                  }
-                };
-                input.on('trigger', trigger);
-                const triggerdown = e => {
-                  const {open} = menuState;
+                    return object;
+                  })();
+                  scene.add(keyboardMesh);
 
-                  if (open) {
-                    const {side} = e;
-                    const menuHoverState = menuHoverStates[side];
+                  const keyboardBoxMeshes = {
+                    left: biolumi.makeMenuBoxMesh(),
+                    right: biolumi.makeMenuBoxMesh(),
+                  };
+                  scene.add(keyboardBoxMeshes.left);
+                  scene.add(keyboardBoxMeshes.right);
 
-                    const _doScroll = () => {
-                      const {tab} = navbarState;
+                  const _updatePages = () => {
+                    menuUi.update();
+                    navbarUi.update();
+                  };
+                  _updatePages();
 
-                      if (tab === 'status') {
-                        const {scrollLayer} = menuHoverState;
+                  const trigger = e => {
+                    const {open} = menuState;
 
-                        if (scrollLayer) {
-                          const {intersectionPoint} = menuHoverState;
+                    if (open) {
+                      const _doClickNavbar = e => {
+                        const {side} = e;
+                        const navbarHoverState = navbarHoverStates[side];
+                        const {anchor} = navbarHoverState;
+                        const onclick = (anchor && anchor.onclick) || '';
 
-                          const {statusMesh} = menuMesh;
-                          const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(statusMesh);
-                          const _getMenuMeshCoordinate = biolumi.makeMeshCoordinateGetter({
-                            position: menuPosition,
-                            rotation: menuRotation,
-                            width: WIDTH,
-                            height: HEIGHT,
-                            worldWidth: WORLD_WIDTH,
-                            worldHeight: WORLD_HEIGHT,
-                          });
-                          const mousedownStartCoord = _getMenuMeshCoordinate(intersectionPoint);
-                          menuHoverState.mousedownScrollLayer = scrollLayer;
-                          menuHoverState.mousedownStartCoord = mousedownStartCoord;
-                          menuHoverState.mousedownStartScrollTop = scrollLayer.scrollTop;
+                        let match;
+                        if (match = onclick.match(/^navbar:(status|world|mail|inventory|worlds|servers|options)$/)) {
+                          const newTab = match[1];
+
+                          const _getTabMesh = tab => {
+                            switch (tab) {
+                              case 'status': return menuMesh.statusMesh;
+                              case 'world': return menuMesh.worldMesh;
+                              case 'mail': return menuMesh.mailMesh;
+                              case 'worlds': return menuMesh.universeMesh;
+                              case 'servers': return menuMesh.serversMesh;
+                              case 'options': return menuMesh.configMesh;
+                              default: return null;
+                            }
+                          };
+
+                          const {tab: oldTab} = navbarState;
+                          const oldMesh = _getTabMesh(oldTab);
+                          const newMesh = _getTabMesh(newTab);
+
+                          oldMesh.visible = false;
+                          newMesh.visible = true;
+
+                          navbarState.tab = newTab;
+
+                          _updatePages();
+
+                          api.emit('tabchange', newTab);
 
                           return true;
                         } else {
                           return false;
                         }
-                      } else {
-                        return false;
-                      }
-                    };
+                      };
 
-                    _doScroll();
-                  }
-                };
-                input.on('triggerdown', triggerdown);
-
-                const _setLayerScroll = menuHoverState => {
-                  const {mousedownScrollLayer, mousedownStartCoord, mousedownStartScrollTop, intersectionPoint} = menuHoverState;
-
-                  const {statusMesh} = menuMesh;
-                  const {position: menuPosition, rotation: menuRotation} = _decomposeObjectMatrixWorld(statusMesh);
-                  const _getMenuMeshCoordinate = biolumi.makeMeshCoordinateGetter({
-                    position: menuPosition,
-                    rotation: menuRotation,
-                    width: WIDTH,
-                    height: HEIGHT,
-                    worldWidth: WORLD_WIDTH,
-                    worldHeight: WORLD_HEIGHT,
-                  });
-                  const mousedownCurCoord = _getMenuMeshCoordinate(intersectionPoint);
-                  const mousedownCoordDiff = mousedownCurCoord.clone()
-                    .sub(mousedownStartCoord)
-                    .multiply(new THREE.Vector2(WIDTH / WORLD_WIDTH, HEIGHT / WORLD_HEIGHT));
-                  const scrollLeft = 0;
-                  const scrollTop = Math.max(
-                    Math.min(
-                      mousedownStartScrollTop - mousedownCoordDiff.y,
-                      (mousedownScrollLayer.scrollHeight > mousedownScrollLayer.h) ?
-                        (mousedownScrollLayer.scrollHeight - mousedownScrollLayer.h)
-                      :
-                        0
-                    ),
-                    0
-                  );
-
-                  mousedownScrollLayer.scrollTo(scrollLeft, scrollTop);
-                };
-                const triggerup = e => {
-                  const {side} = e;
-
-                  const _doScroll = () => {
-                    const {tab} = navbarState;
-
-                    if (tab === 'status') {
-                      const menuHoverState = menuHoverStates[side ];
-                      const {mousedownStartCoord} = menuHoverState;
-
-                      if (mousedownStartCoord) {
-                        const {intersectionPoint} = menuHoverState;
-                        if (intersectionPoint) {
-                          _setLayerScroll(menuHoverState);
-                        }
-
-                        menuHoverState.mousedownScrollLayer = null;
-                        menuHoverState.mousedownStartCoord = null;
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
+                      _doClickNavbar(e);
                     }
                   };
+                  input.on('trigger', trigger);
+                  const menudown = () => {
+                    const {loggedIn} = menuState;
 
-                  _doScroll();
-                };
-                input.on('triggerup', triggerup);
-                const menudown = () => {
-                  const {loggedIn} = menuState;
+                    if (loggedIn) {
+                      const {open, animation} = menuState;
 
-                  if (loggedIn) {
-                    const {open, animation} = menuState;
+                      if (open) {
+                        menuState.open = false; // XXX need to cancel other menu states as well
+                        menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-                    if (open) {
-                      menuState.open = false; // XXX need to cancel other menu states as well
-                      menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+                        SIDES.forEach(side => {
+                          menuBoxMeshes[side].visible = false;
+                          menuDotMeshes[side].visible = false;
 
-                      SIDES.forEach(side => {
-                        menuBoxMeshes[side].visible = false;
-                        menuDotMeshes[side].visible = false;
+                          navbarBoxMeshes[side].visible = false;
+                          navbarDotMeshes[side].visible = false;
+                        });
+                      } else {
+                        menuState.open = true;
+                        menuState.animation = anima.makeAnimation(TRANSITION_TIME);
 
-                        navbarBoxMeshes[side].visible = false;
-                        navbarDotMeshes[side].visible = false;
-                      });
-                    } else {
-                      menuState.open = true;
-                      menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+                        const newPosition = camera.position;
+                        const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                          0,
+                          camera.rotation.y,
+                          0,
+                          camera.rotation.order
+                        ));
 
-                      const newPosition = camera.position;
-                      const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                        0,
-                        camera.rotation.y,
-                        0,
-                        camera.rotation.order
-                      ));
+                        menuMesh.position.copy(newPosition);
+                        menuMesh.quaternion.copy(newRotation);
 
-                      menuMesh.position.copy(newPosition);
-                      menuMesh.quaternion.copy(newRotation);
+                        keyboardMesh.position.copy(newPosition);
+                        keyboardMesh.quaternion.copy(newRotation);
 
-                      keyboardMesh.position.copy(newPosition);
-                      keyboardMesh.quaternion.copy(newRotation);
-
-                      keyboardMesh.updateKeySpecAnchorBoxTargets();
+                        keyboardMesh.updateKeySpecAnchorBoxTargets();
+                      }
                     }
-                  }
-                };
-                input.on('menudown', menudown);
+                  };
+                  input.on('menudown', menudown);
 
-                cleanups.push(() => {
-                  scene.remove(menuMesh);
-                  scene.remove(keyboardMesh);
+                  cleanups.push(() => {
+                    scene.remove(menuMesh);
+                    scene.remove(keyboardMesh);
 
-                  SIDES.forEach(side => {
-                    scene.remove(menuDotMeshes[side]);
-                    scene.remove(menuBoxMeshes[side]);
+                    SIDES.forEach(side => {
+                      scene.remove(menuDotMeshes[side]);
+                      scene.remove(menuBoxMeshes[side]);
 
-                    scene.remove(navbarDotMeshes[side]);
-                    scene.remove(navbarBoxMeshes[side]);
+                      scene.remove(navbarDotMeshes[side]);
+                      scene.remove(navbarBoxMeshes[side]);
 
-                    scene.remove(keyboardBoxMeshes[side]);
+                      scene.remove(keyboardBoxMeshes[side]);
+                    });
+
+                    input.removeListener('trigger', trigger);
+                    input.removeListener('menudown', menudown);
                   });
 
-                  input.removeListener('trigger', trigger);
-                  input.removeListener('triggerdown', triggerdown);
-                  input.removeListener('triggerup', triggerup);
-                  input.removeListener('menudown', menudown);
-                });
-
-                const menuHoverStates = {
-                  left: biolumi.makeMenuHoverState(),
-                  right: biolumi.makeMenuHoverState(),
-                };
-                const navbarHoverStates = {
-                  left: biolumi.makeMenuHoverState(),
-                  right: biolumi.makeMenuHoverState(),
-                };
-
-                const _makeKeyboardHoverState = () => ({
-                  key: null,
-                });
-                const keyboardHoverStates = {
-                  left: _makeKeyboardHoverState(),
-                  right: _makeKeyboardHoverState(),
-                };
-
-                localUpdates.push(() => {
-                  const _updateRenderer = () => {
-                    renderer.shadowMap.needsUpdate = true;
+                  const menuHoverStates = {
+                    left: biolumi.makeMenuHoverState(),
+                    right: biolumi.makeMenuHoverState(),
                   };
-                  const _updateMeshes = () => {
-                    const {animation} = menuState;
+                  const navbarHoverStates = {
+                    left: biolumi.makeMenuHoverState(),
+                    right: biolumi.makeMenuHoverState(),
+                  };
 
-                    if (animation) {
-                      const {open} = menuState;
+                  const _makeKeyboardHoverState = () => ({
+                    key: null,
+                  });
+                  const keyboardHoverStates = {
+                    left: _makeKeyboardHoverState(),
+                    right: _makeKeyboardHoverState(),
+                  };
 
-                      const startValue = open ? 0 : 1;
-                      const endValue = 1 - startValue;
-                      const factor = animation.getValue();
-                      const value = ((1 - factor) * startValue) + (factor * endValue);
+                  localUpdates.push(() => {
+                    const _updateMeshAnimations = () => {
+                      const {animation} = menuState;
 
-                      const {bagMesh: {headMesh, bodyMesh, armMeshes}, tagMeshes} = auxObjects;
-                      const animatedMeshSpecs = [
-                        {
-                          mesh: menuMesh,
-                          direction: 'y',
-                        },
-                        {
-                          mesh: keyboardMesh,
-                          direction: 'x',
-                        },
-                        {
-                          mesh: headMesh,
-                          direction: 'x',
-                        },
-                        {
-                          mesh: bodyMesh,
-                          direction: 'x',
-                        },
-                      ]
-                        .concat(armMeshes.map(armMesh => ({
-                          mesh: armMesh,
-                          direction: 'x',
-                        })))
-                        .concat(tagMeshes.map(tagMesh => ({
-                          mesh: tagMesh,
-                          direction: 'y',
-                        })));
+                      if (animation) {
+                        const {open} = menuState;
 
-                      if (factor < 1) {
-                        if (value > 0.001) {
-                          animatedMeshSpecs.forEach(meshSpec => {
-                            const {direction, mesh} = meshSpec;
-                            const {initialScale = oneVector} = mesh;
+                        const startValue = open ? 0 : 1;
+                        const endValue = 1 - startValue;
+                        const factor = animation.getValue();
+                        const value = ((1 - factor) * startValue) + (factor * endValue);
 
-                            switch (direction) {
-                              case 'x':
-                                mesh.scale.set(value * initialScale.x, initialScale.y, initialScale.z);
-                                break;
-                              case 'y':
-                                mesh.scale.set(initialScale.x, value * initialScale.y, initialScale.z);
-                                break;
-                              case 'z':
-                                mesh.scale.set(initialScale.x, initialScale.y, value * initialScale.z);
-                                break;
-                            }
+                        const {bagMesh: {headMesh, bodyMesh, armMeshes}, tagMeshes} = auxObjects;
+                        const animatedMeshSpecs = [
+                          {
+                            mesh: menuMesh,
+                            direction: 'y',
+                          },
+                          {
+                            mesh: keyboardMesh,
+                            direction: 'x',
+                          },
+                          {
+                            mesh: headMesh,
+                            direction: 'x',
+                          },
+                          {
+                            mesh: bodyMesh,
+                            direction: 'x',
+                          },
+                        ]
+                          .concat(armMeshes.map(armMesh => ({
+                            mesh: armMesh,
+                            direction: 'x',
+                          })))
+                          .concat(tagMeshes.map(tagMesh => ({
+                            mesh: tagMesh,
+                            direction: 'y',
+                          })));
 
-                            if (!mesh.visible) {
-                              mesh.visible = true;
-                            }
-                          });
+                        if (factor < 1) {
+                          if (value > 0.001) {
+                            animatedMeshSpecs.forEach(meshSpec => {
+                              const {direction, mesh} = meshSpec;
+                              const {initialScale = oneVector} = mesh;
+
+                              switch (direction) {
+                                case 'x':
+                                  mesh.scale.set(value * initialScale.x, initialScale.y, initialScale.z);
+                                  break;
+                                case 'y':
+                                  mesh.scale.set(initialScale.x, value * initialScale.y, initialScale.z);
+                                  break;
+                                case 'z':
+                                  mesh.scale.set(initialScale.x, initialScale.y, value * initialScale.z);
+                                  break;
+                              }
+
+                              if (!mesh.visible) {
+                                mesh.visible = true;
+                              }
+                            });
+                          } else {
+                            animatedMeshSpecs.forEach(meshSpec => {
+                              const {mesh} = meshSpec;
+
+                              mesh.visible = false;
+                            });
+                          }
                         } else {
                           animatedMeshSpecs.forEach(meshSpec => {
                             const {mesh} = meshSpec;
+                            const {initialScale = oneVector} = mesh;
 
-                            mesh.visible = false;
+                            mesh.scale.copy(initialScale);
+
+                            if (open && !mesh.visible) {
+                              mesh.visible = true;
+                            } else if (!open && mesh.visible) {
+                              mesh.visible = false;
+                            }
                           });
+
+                          menuState.animation = null;
                         }
-                      } else {
-                        animatedMeshSpecs.forEach(meshSpec => {
-                          const {mesh} = meshSpec;
-                          const {initialScale = oneVector} = mesh;
-
-                          mesh.scale.copy(initialScale);
-
-                          if (open && !mesh.visible) {
-                            mesh.visible = true;
-                          } else if (!open && mesh.visible) {
-                            mesh.visible = false;
-                          }
-                        });
-
-                        menuState.animation = null;
                       }
-                    }
-                  };
-                  _updateRenderer();
-                  _updateMeshes();
-
-                  const {open} = menuState;
-
-                  if (open) {
-                    const _updateTextures = () => {
-                      const {tab} = navbarState;
-                      const uiTime = uiTimer.getUiTime();
-
-                      if (tab === 'status') {
-                        const {
-                          statusMesh: {
-                            menuMaterial: statusMenuMaterial,
-                          },
-                        } = menuMesh;
-
-                        biolumi.updateMenuMaterial({
-                          ui: menuUi,
-                          menuMaterial: statusMenuMaterial,
-                          uiTime,
-                        });
-                      }
-
-                      const {
-                        navbarMesh: {
-                          menuMaterial: navbarMenuMaterial,
-                        },
-                      } = menuMesh;
-                      biolumi.updateMenuMaterial({
-                        ui: navbarUi,
-                        menuMaterial: navbarMenuMaterial,
-                        uiTime,
-                      });
-
-                      SIDES.forEach(side => {
-                        const menuHoverState = menuHoverStates[side];
-
-                        const {mousedownStartCoord, intersectionPoint} = menuHoverState;
-                        if (mousedownStartCoord && intersectionPoint) {
-                          _setLayerScroll(menuHoverState);
-                        }
-                      });
                     };
-                    const _updateAnchors = () => {
-                      const status = webvr.getStatus();
-                      const {gamepads} = status;
+                    const _updateRenderer = () => {
+                      renderer.shadowMap.needsUpdate = true;
+                    };
+                    const _updateUiTimer = () => {
+                      biolumi.updateUiTimer();
+                    };
+                    _updateMeshAnimations();
+                    _updateRenderer();
+                    _updateUiTimer();
 
-                      const {statusMesh, navbarMesh} = menuMesh;
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(statusMesh);
-                      const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
+                    const {open} = menuState;
 
-                      SIDES.forEach(side => {
-                        const gamepad = gamepads[side];
+                    if (open) {
+                      const _updateAnchors = () => {
+                        const status = webvr.getStatus();
+                        const {gamepads} = status;
 
-                        if (gamepad) {
-                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const {statusMesh, navbarMesh} = menuMesh;
+                        const menuMatrixObject = _decomposeObjectMatrixWorld(statusMesh);
+                        const {page: statusPage} = statusMesh;
+                        const navbarMatrixObject = _decomposeObjectMatrixWorld(navbarMesh);
+                        const {page: navbarPage} = navbarMesh;
 
-                          const menuHoverState = menuHoverStates[side];
-                          const menuDotMesh = menuDotMeshes[side];
-                          const menuBoxMesh = menuBoxMeshes[side];
+                        SIDES.forEach(side => {
+                          const gamepad = gamepads[side];
 
-                          const navbarHoverState = navbarHoverStates[side];
-                          const navbarDotMesh = navbarDotMeshes[side];
-                          const navbarBoxMesh = navbarBoxMeshes[side];
+                          if (gamepad) {
+                            const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                          const keyboardHoverState = keyboardHoverStates[side];
-                          const keyboardBoxMesh = keyboardBoxMeshes[side];
+                            const menuHoverState = menuHoverStates[side];
+                            const menuDotMesh = menuDotMeshes[side];
+                            const menuBoxMesh = menuBoxMeshes[side];
 
-                          const _updateMenuAnchors = () => {
-                            const {tab} = navbarState;
+                            const navbarHoverState = navbarHoverStates[side];
+                            const navbarDotMesh = navbarDotMeshes[side];
+                            const navbarBoxMesh = navbarBoxMeshes[side];
 
-                            if (tab === 'status') {
+                            const keyboardHoverState = keyboardHoverStates[side];
+                            const keyboardBoxMesh = keyboardBoxMeshes[side];
+
+                            const _updateMenuAnchors = () => {
+                              const {tab} = navbarState;
+
+                              if (tab === 'status') {
+                                biolumi.updateAnchors({
+                                  objects: [{
+                                    matrixObject: menuMatrixObject,
+                                    page: statusPage,
+                                    width: WIDTH,
+                                    height: HEIGHT,
+                                    worldWidth: WORLD_WIDTH,
+                                    worldHeight: WORLD_HEIGHT,
+                                    worldDepth: WORLD_DEPTH,
+                                  }],
+                                  hoverState: menuHoverState,
+                                  dotMesh: menuDotMesh,
+                                  boxMesh: menuBoxMesh,
+                                  controllerPosition,
+                                  controllerRotation,
+                                });
+                              }
+
                               biolumi.updateAnchors({
                                 objects: [{
-                                  matrixObject: menuMatrixObject,
-                                  ui: menuUi,
-                                  width: WIDTH,
-                                  height: HEIGHT,
-                                  worldWidth: WORLD_WIDTH,
-                                  worldHeight: WORLD_HEIGHT,
-                                  worldDepth: WORLD_DEPTH,
+                                  matrixObject: navbarMatrixObject,
+                                  page: navbarPage,
+                                  width: NAVBAR_WIDTH,
+                                  height: NAVBAR_HEIGHT,
+                                  worldWidth: NAVBAR_WORLD_WIDTH,
+                                  worldHeight: NAVBAR_WORLD_HEIGHT,
+                                  worldDepth: NAVBAR_WORLD_DEPTH,
                                 }],
-                                hoverState: menuHoverState,
-                                dotMesh: menuDotMesh,
-                                boxMesh: menuBoxMesh,
+                                hoverState: navbarHoverState,
+                                dotMesh: navbarDotMesh,
+                                boxMesh: navbarBoxMesh,
                                 controllerPosition,
                                 controllerRotation,
                               });
-                            }
+                            };
+                            const _updateKeyboardAnchors = () => {
+                              // NOTE: there should be at most one intersecting anchor box since keys do not overlap
+                              const {keySpecs} = keyboardMesh;
+                              const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
 
-                            biolumi.updateAnchors({
-                              objects: [{
-                                matrixObject: navbarMatrixObject,
-                                ui: navbarUi,
-                                width: NAVBAR_WIDTH,
-                                height: NAVBAR_HEIGHT,
-                                worldWidth: NAVBAR_WORLD_WIDTH,
-                                worldHeight: NAVBAR_WORLD_HEIGHT,
-                                worldDepth: NAVBAR_WORLD_DEPTH,
-                              }],
-                              hoverState: navbarHoverState,
-                              dotMesh: navbarDotMesh,
-                              boxMesh: navbarBoxMesh,
-                              controllerPosition,
-                              controllerRotation,
-                            });
-                          };
-                          const _updateKeyboardAnchors = () => {
-                            // NOTE: there should be at most one intersecting anchor box since keys do not overlap
-                            const {keySpecs} = keyboardMesh;
-                            const newKeySpec = keySpecs.find(keySpec => keySpec.anchorBoxTarget.containsPoint(controllerPosition));
+                              const {key: oldKey} = keyboardHoverState;
+                              const newKey = newKeySpec ? newKeySpec.key : null;
+                              keyboardHoverState.key = newKey;
 
-                            const {key: oldKey} = keyboardHoverState;
-                            const newKey = newKeySpec ? newKeySpec.key : null;
-                            keyboardHoverState.key = newKey;
+                              if (oldKey && newKey !== oldKey) {
+                                const key = oldKey;
+                                const keyCode = biolumi.getKeyCode(key);
 
-                            if (oldKey && newKey !== oldKey) {
-                              const key = oldKey;
-                              const keyCode = biolumi.getKeyCode(key);
-
-                              input.triggerEvent('keyboardup', {
-                                key,
-                                keyCode,
-                                side,
-                              });
-                            }
-                            if (newKey && newKey !== oldKey) {
-                              const key = newKey;
-                              const keyCode = biolumi.getKeyCode(key);
-
-                              input.triggerEvent('keyboarddown', {
-                                key,
-                                keyCode,
-                                side,
-                              });
-                              input.triggerEvent('keyboardpress', {
-                                key,
-                                keyCode,
-                                side,
-                              });
-                            }
-
-                            if (newKeySpec) {
-                              const {anchorBoxTarget} = newKeySpec;
-
-                              keyboardBoxMesh.position.copy(anchorBoxTarget.position);
-                              keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
-                              keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
-
-                              if (!keyboardBoxMesh.visible) {
-                                keyboardBoxMesh.visible = true;
+                                input.triggerEvent('keyboardup', {
+                                  key,
+                                  keyCode,
+                                  side,
+                                });
                               }
-                            } else {
-                              if (keyboardBoxMesh.visible) {
-                                keyboardBoxMesh.visible = false;
+                              if (newKey && newKey !== oldKey) {
+                                const key = newKey;
+                                const keyCode = biolumi.getKeyCode(key);
+
+                                input.triggerEvent('keyboarddown', {
+                                  key,
+                                  keyCode,
+                                  side,
+                                });
+                                input.triggerEvent('keyboardpress', {
+                                  key,
+                                  keyCode,
+                                  side,
+                                });
                               }
-                            }
-                          };
 
-                          _updateMenuAnchors();
-                          _updateKeyboardAnchors();
-                        }
-                      });
-                    };
+                              if (newKeySpec) {
+                                const {anchorBoxTarget} = newKeySpec;
 
-                    _updateTextures();
-                    _updateAnchors();
-                  }
-                });
+                                keyboardBoxMesh.position.copy(anchorBoxTarget.position);
+                                keyboardBoxMesh.quaternion.copy(anchorBoxTarget.quaternion);
+                                keyboardBoxMesh.scale.copy(anchorBoxTarget.size);
 
-                menu = {
-                  updatePages: _updatePages,
-                };
-              }
-            });
+                                if (!keyboardBoxMesh.visible) {
+                                  keyboardBoxMesh.visible = true;
+                                }
+                              } else {
+                                if (keyboardBoxMesh.visible) {
+                                  keyboardBoxMesh.visible = false;
+                                }
+                              }
+                            };
+
+                            _updateMenuAnchors();
+                            _updateKeyboardAnchors();
+                          }
+                        });
+                      };
+                      _updateAnchors();
+                    }
+                  });
+
+                  menu = {
+                    updatePages: _updatePages,
+                  };
+
+                  const unload = e => {
+                    hub.saveUserStateAsync();
+                  };
+                  window.addEventListener('unload', unload);
+                  cleanups.push(() => {
+                    window.removeEventListener('unload', unload);
+                  });
+                }
+              });
           }
         };
 
@@ -1034,16 +820,12 @@ class Rend {
                 this.setMaxListeners(100);
               }
 
-              isOpen() { // XXX hook this in
+              isOpen() {
                 return menuState.open;
               }
 
               getTab() {
                 return navbarState.tab;
-              }
-
-              getUiTime() {
-                return uiTimer.getUiTime();
               }
 
               getMenuMesh() {

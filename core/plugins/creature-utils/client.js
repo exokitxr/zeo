@@ -23,13 +23,31 @@ const creatureUtils = archae => ({
       if (live) {
         const {alea} = randomUtils;
 
+        function _cloneCanvas(canvas) {
+          const result = document.createElement('canvas');
+          result.width = canvas.width;
+          result.height = canvas.height;
+
+          const ctx = result.getContext('2d');
+          ctx.drawImage(canvas, 0, 0);
+
+          return result;
+        }
+        function _cloneEntry(entry) {
+          if (typeof entry === 'string') {
+            return entry;
+          } else {
+            return entry.map(_cloneCanvas);
+          }
+        }
+
         function makeCreature(seed, {single = false}) {
           seed = seed || String(Math.random());
 
           const key = seed + ':' + single;
           const entry = cache.get(key);
           if (entry) {
-            return entry;
+            return _cloneEntry(entry);
           } else {
             const entry = (() => {
               const rng = new alea(seed);
@@ -230,14 +248,6 @@ const creatureUtils = archae => ({
 
                 mirror(ctx);
               }
-              function getFrame(ctx) {
-                const w = SIZE;
-                const h = SIZE;
-                return ctx.getImageData(0, 0, w, h);
-              }
-              function getDataUrl(canvas) {
-                return canvas.toDataURL('image/png');
-              }
 
               const canvas = document.createElement('canvas');
               canvas.width = SIZE;
@@ -248,21 +258,21 @@ const creatureUtils = archae => ({
               const ctx = canvas.getContext('2d');
 
               renderMainFrame(ctx);
-              const mainFrame = getFrame(ctx);
+              const mainFrame = _cloneCanvas(canvas);
 
               if (!single) {
                 renderAltFrame(ctx)
-                const altFrame = getFrame(ctx);
+                const altFrame = canvas;
 
                 return [mainFrame, altFrame];
               } else {
-                return getDataUrl(canvas);
+                return canvas.toDataURL('image/png');
               }
             })();
 
             cache.set(key, entry);
 
-            return entry;
+            return _cloneEntry(entry);
           }
         }
         const makeAnimatedCreature = seed => makeCreature(seed, {single: false});

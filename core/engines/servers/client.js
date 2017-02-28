@@ -146,84 +146,61 @@ class Servers {
                 scene.add(boxMeshes.left);
                 scene.add(boxMeshes.right);
 
-                menuUi.pushPage(({servers, focus: {type}}) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: serversRenderer.getServersPageSrc(servers),
-                      x: 0,
-                      y: 0,
-                      w: WIDTH,
-                      h: HEIGHT,
-                      scroll: true,
-                    },
-                  ];
-                }, {
-                  type: 'main',
-                  state: {
-                    servers: serversState,
-                    focus: focusState,
-                  },
-                  immediate: true,
-                });
-
                 const menuMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
+                  const object = new THREE.Object3D();
+                  object.position.z = -1.5;
+                  object.visible = false;
 
-                  const menuMaterial = biolumi.makeMenuMaterial();
+                  const planeMesh = (() => {
+                    const mesh = menuUi.addPage(({
+                      servers,
+                      focus: {
+                        type,
+                      }
+                    }) => {
+                      return [
+                        {
+                          type: 'html',
+                          src: serversRenderer.getServersPageSrc(servers),
+                          x: 0,
+                          y: 0,
+                          w: WIDTH,
+                          h: HEIGHT,
+                        },
+                      ];
+                    }, {
+                      type: 'main',
+                      state: {
+                        servers: serversState,
+                        focus: focusState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
+                    mesh.receiveShadow = true;
 
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.position.z = -1.5;
-                  mesh.visible = false;
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
                   const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
                     const material = transparentMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.castShadow = true;
                     return mesh;
                   })();
-                  mesh.add(shadowMesh);
+                  object.add(shadowMesh);
 
-                  return mesh;
+                  return object;
                 })();
                 rend.registerMenuMesh('serversMesh', menuMesh);
 
-                const _updatePages = menuUtils.debounce(next => {
-                  const pages = menuUi.getPages();
-
-                  if (pages.length > 0) {
-                    let pending = pages.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        next();
-                      }
-                    };
-
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {type} = page;
-
-                      if (type === 'main') {
-                        page.update({
-                          servers: serversState,
-                          focus: focusState,
-                        }, pend);
-                      } else {
-                        pend();
-                      }
-                    }
-                  } else {
-                    next();
-                  }
-                });
+                const _updatePages = () => {
+                  menuUi.update();
+                };
+                _updatePages();
 
                 const _trigger = e => {
                   const {side} = e;
@@ -268,28 +245,14 @@ class Servers {
                 input.on('trigger', _trigger);
 
                 const _update = () => {
-                  const _updateTextures = () => {
-                    const tab = rend.getTab();
-
-                    if (tab === 'servers') {
-                      const {
-                        menuMaterial,
-                      } = menuMesh;
-                      const uiTime = rend.getUiTime();
-
-                      biolumi.updateMenuMaterial({
-                        ui: menuUi,
-                        menuMaterial,
-                        uiTime,
-                      });
-                    }
-                  };
-                  const _updateMenuAnchors = () => {
+                  const _updateAnchors = () => {
                     const tab = rend.getTab();
 
                     if (tab === 'servers') {
                       const {gamepads} = webvr.getStatus();
-                      const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
+                      const {planeMesh} = menuMesh;
+                      const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const {page} = planeMesh;
 
                       SIDES.forEach(side => {
                         const gamepad = gamepads[side];
@@ -304,7 +267,7 @@ class Servers {
                           biolumi.updateAnchors({
                             objects: [{
                               matrixObject: menuMatrixObject,
-                              ui: menuUi,
+                              page: page,
                               width: WIDTH,
                               height: HEIGHT,
                               worldWidth: WORLD_WIDTH,
@@ -321,9 +284,7 @@ class Servers {
                       });
                     }
                   };
-
-                  _updateTextures();
-                  _updateMenuAnchors();
+                  _updateAnchors();
                 };
                 rend.on('update', _update);
 

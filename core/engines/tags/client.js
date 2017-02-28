@@ -11,6 +11,8 @@ import {
   WORLD_DEPTH,
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
+
+  FRAME_TIME,
 } from './lib/constants/tags';
 import tagsRenderer from './lib/render/tags';
 import menuUtils from './lib/utils/menu';
@@ -85,6 +87,49 @@ class Tags {
             fontWeight: biolumi.getFontWeight(),
             fontStyle: biolumi.getFontStyle(),
           };
+
+          class UiManager {
+            constructor({width, height}) {
+              this.width = width;
+              this.height = height;
+
+              this.uis = [];
+            }
+
+            addPage(pageSpec, options) {
+              const {width, height, uis} = this;
+
+              let lastUi = uis.length > 0 ? uis[uis.length - 1] : null;
+              if (!lastUi || !lastUi.hasFreePages()) {
+                lastUi = biolumi.makeUi({
+                  width: width,
+                  height: height,
+                  atlasSize: 4,
+                  maxNumTextures: 3,
+                });
+                uis.push(lastUi);
+              }
+
+              return lastUi.addPage(pageSpec, options);
+            }
+
+            update() {
+              const {uis} = this;
+
+              for (let i = 0; i < uis.length; i++) {
+                const ui = uis[i];
+                ui.update();
+              }
+            }
+          }
+          const uiManager = new UiManager({
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          const uiOpenManager = new UiManager({
+            width: OPEN_WIDTH,
+            height: OPEN_HEIGHT,
+          });
 
           const hoverStates = {
             left: biolumi.makeMenuHoverState(),
@@ -180,60 +225,10 @@ class Tags {
             type: '',
           };
 
-          const _updatePages = menuUtils.debounce(next => {
-            const pageSpecs = (() => {
-              const result = [];
-
-              for (let i = 0; i < tagMeshes.length; i++) {
-                const tagMesh = tagMeshes[i];
-                const {ui, item} = tagMesh;
-
-                if (ui) {
-                  const pages = ui.getPages();
-
-                  for (let j = 0; j < pages.length; j++) {
-                    const page = pages[j];
-                    const pageSpec = {
-                      page,
-                      item,
-                    };
-                    result.push(pageSpec);
-                  }
-                }
-              }
-
-              return result;
-            })();
-
-            if (pageSpecs.length > 0) {
-              let pending = pageSpecs.length;
-              const pend = () => {
-                if (--pending === 0) {
-                  next();
-                }
-              };
-
-              for (let i = 0; i < pageSpecs.length; i++) {
-                const pageSpec = pageSpecs[i];
-                const {page} = pageSpec;
-                const {type} = page;
-
-                if (type === 'tag') {
-                  const {item} = pageSpec;
-
-                  page.update({
-                    item,
-                    details: detailsState,
-                    focus: focusState,
-                  }, pend);
-                } else {
-                  pend();
-                }
-              }
-            } else {
-              next();
-            }
-          });
+          const _updatePages = () => {
+            uiManager.update();
+            uiOpenManager.update();
+          };
 
           const _trigger = e => {
             const {side} = e;
@@ -251,18 +246,10 @@ class Tags {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
-                  const {ui, planeMesh} = tagMesh;
-                  ui.setDimensions(OPEN_WIDTH, OPEN_HEIGHT);
-                  const scaleX = WORLD_OPEN_WIDTH / WORLD_WIDTH;
-                  const scaleY = WORLD_OPEN_HEIGHT / WORLD_HEIGHT;
-                  const offsetX = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
-                  const offsetY = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
-                  planeMesh.position.x = offsetX;
-                  planeMesh.position.y = offsetY;
-                  planeMesh.scale.x = scaleX;
-                  planeMesh.scale.y = scaleY;
-                  const {item} = tagMesh;
+                  const {planeMesh, planeOpenMesh, item} = tagMesh;
                   item.open = true;
+                  planeMesh.visible = false;
+                  planeOpenMesh.visible = true;
                   _updatePages();
 
                   e.stopImmediatePropagation();
@@ -272,14 +259,10 @@ class Tags {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
-                  const {ui, planeMesh} = tagMesh;
-                  ui.setDimensions(WIDTH, HEIGHT);
-                  planeMesh.position.x = 0;
-                  planeMesh.position.y = 0;
-                  planeMesh.scale.x = 1;
-                  planeMesh.scale.y = 1;
-                  const {item} = tagMesh;
+                  const {planeMesh, planeOpenMesh, item} = tagMesh;
                   item.open = false;
+                  planeMesh.visible = true;
+                  planeOpenMesh.visible = false;
                   _updatePages();
 
                   e.stopImmediatePropagation();
@@ -423,13 +406,12 @@ class Tags {
                       value: newValue,
                     });
                   } else if (action === 'choose') {
-                    /* menuUi.cancelTransition();
-
-                    elementsState.choosingName = attributeName;
+                    /* elementsState.choosingName = attributeName;
 
                     _ensureFilesLoaded(elementAttributeFilesState);
 
-                    menuUi.pushPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
+                    // XXX needs to be rewritten to handle the new tags model
+                    menuUi.addPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
                       {
                         type: 'html',
                         src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
@@ -441,7 +423,7 @@ class Tags {
                         y: 0,
                         w: 150,
                         h: 150,
-                        frameTime: 300,
+                        frameTime: FRAME_TIME,
                         pixelated: true,
                       }
                     ]), {
@@ -453,7 +435,7 @@ class Tags {
                     }); */
                   }
 
-                   _updatePages();
+                  _updatePages();
 
                   return true;
                 } else {
@@ -489,26 +471,39 @@ class Tags {
                       biolumi.updateAnchors({
                         objects: tagMeshes.map(tagMesh => {
                           if (
-                            tagMesh &&
-                            ((tagMesh.parent === scene) || controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh))
+                            (tagMesh.parent === scene) ||
+                            controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh)
                           ) {
-                            const {ui, planeMesh} = tagMesh;
+                            const {item: {open}} = tagMesh;
 
-                            if (ui && planeMesh) {
+                            if (!open) {
+                              const {planeMesh} = tagMesh;
                               const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                              const {item: {open}} = tagMesh;
+                              const {page} = planeMesh;
 
                               return {
                                 matrixObject: matrixObject,
-                                ui: ui,
-                                width: !open ? WIDTH : OPEN_WIDTH,
-                                height: !open ? HEIGHT : OPEN_HEIGHT,
-                                worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                                worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                                page: page,
+                                width: WIDTH,
+                                height: HEIGHT,
+                                worldWidth: WORLD_WIDTH,
+                                worldHeight: WORLD_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
                               };
                             } else {
-                              return null;
+                              const {planeOpenMesh} = tagMesh;
+                              const matrixObject = _decomposeObjectMatrixWorld(planeOpenMesh);
+                              const {page} = planeOpenMesh;
+
+                              return {
+                                matrixObject: matrixObject,
+                                page: page,
+                                width: OPEN_WIDTH,
+                                height: OPEN_HEIGHT,
+                                worldWidth: WORLD_OPEN_WIDTH,
+                                worldHeight: WORLD_OPEN_HEIGHT,
+                                worldDepth: WORLD_DEPTH,
+                              };
                             }
                           } else {
                             return null;
@@ -539,11 +534,10 @@ class Tags {
                     positioningMesh.quaternion.copy(controllerRotation);
                     positioningMesh.scale.copy(controllerScale);
 
-                    // XXX figure out what to do with this live update; it needsa to get to the remote user but dopes not need to necessarily be saved here
                     const {attributes} = item;
                     const attribute = attributes[positioningName];
                     const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                    item.setAttribute(positioningName, newValue);
+                    item.setAttribute(positioningName, newValue); // XXX figure out what to do with this live update
                   }
 
                   if (!positioningMesh.visible) {
@@ -565,32 +559,14 @@ class Tags {
               _updateElementAnchors();
               _updatePositioningMesh();
             };
-            const _updateTextures = () => {
-              const uiTime = rend.getUiTime();
-
-              for (let i = 0; i < tagMeshes.length; i++) {
-                const tagMesh = tagMeshes[i];
-                const {
-                  ui,
-                  planeMesh,
-                } = tagMesh;
-
-                if (ui && planeMesh) {
-                  const {menuMaterial} = planeMesh;
-
-                  biolumi.updateMenuMaterial({
-                    ui,
-                    menuMaterial,
-                    uiTime,
-                  });
-                }
-              }
-            };
-
             _updateControllers();
-            _updateTextures();
           };
           rend.on('update', _update);
+
+          const frameInterval = setInterval(() => {
+            uiManager.update();
+            uiOpenManager.update();
+          }, FRAME_TIME);
 
           this._cleanup = () => {
             for (let i = 0; i < tagMeshes.length; i++) {
@@ -609,6 +585,8 @@ class Tags {
 
             input.removeListener('trigger', _trigger);
             rend.removeListener('update', _update);
+
+            clearInterval(frameInterval);
           };
 
           class Item {
@@ -744,93 +722,142 @@ class Tags {
                 itemSpec.matrix
               );
               object.item = item;
-              object.highlight = itemSpec.highlight;
+
+              const {highlight} = itemSpec;
+              object.highlight = highlight;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
               object.scale.set(item.matrix[7], item.matrix[8], item.matrix[9]);
 
-              object.ui = null;
-              object.planeMesh = null;
+              const planeMesh = (() => {
+                const mesh = uiManager.addPage(({
+                  item,
+                  details: {
+                    inputText,
+                    inputValue,
+                    positioningId,
+                    positioningName,
+                  },
+                  focus: {
+                    type: focusType,
+                  }
+                }) => {
+                  const {type} = item;
+                  const focusAttributeSpec = (() => {
+                    const match = focusType.match(/^attribute:(.+?):(.+?)$/);
+                    return match && {
+                      tagId: match[1],
+                      attributeName: match[2],
+                    };
+                  })();
 
-              this._requestDecorateTag(object);
+                  return [
+                    {
+                      type: 'html',
+                      src: type === 'element' ?
+                        tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
+                      :
+                        tagsRenderer.getFileSrc({item}),
+                      w: WIDTH,
+                      h: HEIGHT,
+                    },
+                    {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
+                      x: 10,
+                      y: 0,
+                      w: 100,
+                      h: 100,
+                      frameTime: FRAME_TIME,
+                      pixelated: true,
+                    }
+                  ];
+                }, {
+                  type: 'tag',
+                  state: {
+                    item: item,
+                    details: detailsState,
+                    focus: focusState,
+                  },
+                  worldWidth: WORLD_WIDTH,
+                  worldHeight: WORLD_HEIGHT,
+                });
+                mesh.receiveShadow = true;
+
+                return mesh;
+              })();
+              object.add(planeMesh);
+              object.planeMesh = planeMesh;
+
+              const planeOpenMesh = (() => {
+                const mesh = uiOpenManager.addPage(({
+                  item,
+                  details: {
+                    inputText,
+                    inputValue,
+                    positioningId,
+                    positioningName,
+                  },
+                  focus: {
+                    type: focusType,
+                  }
+                }) => {
+                  const {type} = item;
+                  const focusAttributeSpec = (() => {
+                    const match = focusType.match(/^attribute:(.+?):(.+?)$/);
+                    return match && {
+                      tagId: match[1],
+                      attributeName: match[2],
+                    };
+                  })();
+
+                  return [
+                    {
+                      type: 'html',
+                      src: type === 'element' ?
+                        tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
+                      :
+                        tagsRenderer.getFileSrc({item}),
+                      w: OPEN_WIDTH,
+                      h: OPEN_HEIGHT,
+                    },
+                    {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
+                      x: 10,
+                      y: 0,
+                      w: 100,
+                      h: 100,
+                      frameTime: FRAME_TIME,
+                      pixelated: true,
+                    }
+                  ];
+                }, {
+                  type: 'tag',
+                  state: {
+                    item: item,
+                    details: detailsState,
+                    focus: focusState,
+                  },
+                  worldWidth: WORLD_OPEN_WIDTH,
+                  worldHeight: WORLD_OPEN_HEIGHT,
+                });
+                mesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
+                mesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
+                // mesh.scale.x = WORLD_OPEN_WIDTH / WORLD_WIDTH;
+                // mesh.scale.y = WORLD_OPEN_HEIGHT / WORLD_HEIGHT;
+                mesh.visible = false;
+                mesh.receiveShadow = true;
+
+                return mesh;
+              })();
+              object.add(planeOpenMesh);
+              object.planeOpenMesh = planeOpenMesh;
 
               tagMeshes.push(object);
 
               return object;
-            }
-
-            _requestDecorateTag(object) {
-              return biolumi.requestUi({
-                width: WIDTH,
-                height: HEIGHT,
-              })
-                .then(ui => {
-                  const {item, highlight} = object;
-
-                  ui.pushPage(({item, details: {inputText, inputValue, positioningId, positioningName}, focus: {type: focusType}}) => {
-                    const {type} = item;
-                    const focusAttributeSpec = (() => {
-                      const match = focusType.match(/^attribute:(.+?):(.+?)$/);
-                      return match && {
-                        tagId: match[1],
-                        attributeName: match[2],
-                      };
-                    })();
-
-                    return [
-                      {
-                        type: 'html',
-                        src: type === 'element' ?
-                          tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
-                        :
-                          tagsRenderer.getFileSrc({item}),
-                        w: !item.open ? WIDTH : OPEN_WIDTH,
-                        h: !item.open ? HEIGHT : OPEN_HEIGHT,
-                      },
-                      {
-                        type: 'image',
-                        img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
-                        x: 10,
-                        y: 0,
-                        w: 100,
-                        h: 100,
-                        frameTime: 300,
-                        pixelated: true,
-                      }
-                    ];
-                  }, {
-                    type: 'tag',
-                    state: {
-                      item: item,
-                      details: detailsState,
-                      focus: focusState,
-                    },
-                    immediate: true,
-                  });
-                  object.ui = ui;
-
-                  _updatePages();
-
-                  const planeMesh = (() => {
-                    const width = WORLD_WIDTH;
-                    const height = WORLD_HEIGHT;
-                    const depth = WORLD_DEPTH;
-
-                    const menuMaterial = biolumi.makeMenuMaterial();
-
-                    const geometry = new THREE.PlaneBufferGeometry(width, height);
-                    const material = menuMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
-                    // mesh.position.y = 1.5;
-                    // mesh.receiveShadow = true;
-                    mesh.menuMaterial = menuMaterial;
-
-                    return mesh;
-                  })();
-                  object.add(planeMesh);
-                  object.planeMesh = planeMesh;
-                });
             }
 
             destroyTag(tagMesh) {

@@ -804,58 +804,63 @@ class World {
               scene.add(npmBoxMeshes.left);
               scene.add(npmBoxMeshes.right);
 
-              worldUi.pushPage(({npm: {inputText, inputPlaceholder, inputValue}, focus: {type}}) => {
-                const focus = type === 'npm';
-
-                return [
-                  {
-                    type: 'html',
-                    src: worldRenderer.getWorldPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                    scroll: true,
-                  },
-                ];
-              }, {
-                type: 'world',
-                state: {
-                  npm: npmState,
-                  focus: focusState,
-                },
-                immediate: true,
-              });
-
               const worldMesh = (() => {
                 const result = new THREE.Object3D();
                 result.visible = false;
 
                 const menuMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
+                  const object = new THREE.Object3D();
+                  object.position.z = -1.5;
 
-                  const menuMaterial = biolumi.makeMenuMaterial();
+                  const planeMesh = (() => {
+                    const mesh = worldUi.addPage(({
+                      npm: {
+                        inputText,
+                        inputPlaceholder,
+                        inputValue,
+                      },
+                      focus: {
+                        type,
+                      }
+                    }) => {
+                      const focus = type === 'npm';
 
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
+                      return [
+                        {
+                          type: 'html',
+                          src: worldRenderer.getWorldPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
+                          x: 0,
+                          y: 0,
+                          w: WIDTH,
+                          h: HEIGHT,
+                        },
+                      ];
+                    }, {
+                      type: 'world',
+                      state: {
+                        npm: npmState,
+                        focus: focusState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
+                    mesh.receiveShadow = true;
 
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.position.z = -1.5;
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
                   const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
                     const material = transparentMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.castShadow = true;
                     return mesh;
                   })();
-                  mesh.add(shadowMesh);
+                  object.add(shadowMesh);
 
-                  return mesh;
+                  return object;
                 })();
                 result.add(menuMesh);
                 result.menuMesh = menuMesh;
@@ -943,67 +948,21 @@ class World {
               scene.add(menuBoxMeshes.left);
               scene.add(menuBoxMeshes.right);
 
-              const _updatePages = menuUtils.debounce(next => {
-                const pages = (() => {
-                  const tab = rend.getTab();
-                  switch (tab) {
-                    case 'world': return worldUi.getPages();
-                    default: return [];
-                  }
-                })();
-
-                if (pages.length > 0) {
-                  let pending = pages.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      next();
-                    }
-                  };
-
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
-
-                    if (type === 'world') {
-                      page.update({
-                        npm: npmState,
-                        focus: focusState,
-                      }, pend);
-                    } else {
-                      pend();
-                    }
-                  }
-                } else {
-                  next();
-                }
-              });
+              const _updatePages = () => {
+                worldUi.update();
+              };
+              _updatePages();
 
               const _update = e => {
-                const _updateTextures = () => {
-                  const tab = rend.getTab();
-
-                  if (tab === 'world') {
-                    const {
-                      menuMesh: {
-                        menuMaterial,
-                      },
-                    } = worldMesh;
-                    const uiTime = rend.getUiTime();
-
-                    biolumi.updateMenuMaterial({
-                      ui: worldUi,
-                      menuMaterial,
-                      uiTime,
-                    });
-                  }
-                };
                 const _updateMenuAnchors = () => {
                   const tab = rend.getTab();
 
                   if (tab === 'world') {
-                    const {menuMesh} = worldMesh;
-                    const menuMatrixObject = _decomposeObjectMatrixWorld(menuMesh);
                     const {gamepads} = webvr.getStatus();
+                    const {menuMesh} = worldMesh;
+                    const {planeMesh} = menuMesh;
+                    const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                    const {page} = planeMesh;
 
                     SIDES.forEach(side => {
                       const gamepad = gamepads[side];
@@ -1018,7 +977,7 @@ class World {
                         biolumi.updateAnchors({
                           objects: [{
                             matrixObject: menuMatrixObject,
-                            ui: worldUi,
+                            page: page,
                             width: WIDTH,
                             height: HEIGHT,
                             worldWidth: WORLD_WIDTH,
@@ -1126,26 +1085,22 @@ class World {
                         const npmDotMesh = npmDotMeshes[side];
                         const npmBoxMesh = npmBoxMeshes[side];
 
-                        biolumi.updateAnchors({ // XXX optimize this by caching the anchor box tagets here
+                        biolumi.updateAnchors({
                           objects: npmManager.getTagMeshes().map(tagMesh => {
-                            const {ui, planeMesh, initialScale = oneVector} = tagMesh;
+                            const {planeMesh, initialScale = oneVector} = tagMesh;
+                            const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                            const {page} = planeMesh;
 
-                            if (ui && planeMesh) {
-                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-
-                              return {
-                                matrixObject: matrixObject,
-                                ui: ui,
-                                width: TAGS_WIDTH,
-                                height: TAGS_HEIGHT,
-                                worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
-                                worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
-                                worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
-                              };
-                            } else {
-                              return null;
-                            }
-                          }).filter(object => object !== null),
+                            return {
+                              matrixObject: matrixObject,
+                              page: page,
+                              width: TAGS_WIDTH,
+                              height: TAGS_HEIGHT,
+                              worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
+                              worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
+                              worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
+                            };
+                          }),
                           hoverState: npmHoverState,
                           dotMesh: npmDotMesh,
                           boxMesh: npmBoxMesh,
@@ -1296,7 +1251,6 @@ class World {
                   });
                 };
 
-                _updateTextures();
                 _updateMenuAnchors();
                 _updateGrabbers();
                 _updateNpmAnchors();

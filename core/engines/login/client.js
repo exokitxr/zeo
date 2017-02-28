@@ -97,45 +97,52 @@ class Login {
                 right: biolumi.makeMenuHoverState(),
               };
 
-              menuUi.pushPage(({login: {username, password, inputIndex, inputValue, loading, error}, focus: {type: focusType}}) => {
-                return [
-                  {
-                    type: 'html',
-                    src: menuRenderer.getLoginSrc({username, password, inputIndex, inputValue, loading, error, focusType}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                  },
-                ];
-              }, {
-                type: 'login',
-                state: {
-                  login: loginState,
-                  focus: focusState,
-                },
-                immediate: true,
-              });
-
               const menuMesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.y = DEFAULT_USER_HEIGHT;
 
                 const planeMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
-
-                  const menuMaterial = biolumi.makeMenuMaterial();
-
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = menuUi.addPage(({
+                    login: {
+                      username,
+                      password,
+                      inputIndex,
+                      inputValue,
+                      loading,
+                      error,
+                    },
+                    focus: {
+                      type: focusType,
+                    }
+                  }) => {
+                    return [
+                      {
+                        type: 'html',
+                        src: menuRenderer.getLoginSrc({
+                          username,
+                          password,
+                          inputIndex,
+                          inputValue,
+                          loading,
+                          error,
+                          focusType,
+                        }),
+                        x: 0,
+                        y: 0,
+                        w: WIDTH,
+                        h: HEIGHT,
+                      },
+                    ];
+                  }, {
+                    type: 'login',
+                    state: {
+                      login: loginState,
+                      focus: focusState,
+                    },
+                  });
                   // mesh.position.y = 1.5;
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
 
                   return mesh;
                 })();
@@ -171,34 +178,10 @@ class Login {
               scene.add(menuBoxMeshes.left);
               scene.add(menuBoxMeshes.right);
 
-              const _updatePages = menuUtils.debounce(next => {
-                const pages = menuUi.getPages();
-
-                if (pages.length > 0) {
-                  let pending = pages.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      next();
-                    }
-                  };
-
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
-
-                    if (type === 'login') {
-                      page.update({
-                        login: loginState,
-                        focus: focusState,
-                      }, pend);
-                    } else {
-                      pend();
-                    }
-                  }
-                } else {
-                  next();
-                }
-              });
+              const _updatePages = () => {
+                menuUi.update();
+              };
+              _updatePages();
 
               const login = () => {
                 loginState.open = false;
@@ -386,24 +369,11 @@ class Login {
                       const {open} = loginState;
 
                       if (open) {
-                        const _updateTextures = () => {
-                          const {
-                            planeMesh: {
-                              menuMaterial: statusMenuMaterial,
-                            },
-                          } = menuMesh;
-                          const uiTime = rend.getUiTime();
-
-                          biolumi.updateMenuMaterial({
-                            ui: menuUi,
-                            menuMaterial: statusMenuMaterial,
-                            uiTime,
-                          });
-                        };
                         const _updateAnchors = () => {
                           const {gamepads} = webvr.getStatus();
 
                           const {planeMesh} = menuMesh;
+                          const {page} = planeMesh;
                           const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
 
                           SIDES.forEach(side => {
@@ -419,7 +389,7 @@ class Login {
                               biolumi.updateAnchors({
                                 objects: [{
                                   matrixObject: menuMatrixObject,
-                                  ui: menuUi,
+                                  page: page,
                                   width: WIDTH,
                                   height: HEIGHT,
                                   worldWidth: WORLD_WIDTH,
@@ -435,8 +405,6 @@ class Login {
                             }
                           });
                         };
-
-                        _updateTextures();
                         _updateAnchors();
                       }
                     };

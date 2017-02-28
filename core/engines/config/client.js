@@ -166,75 +166,55 @@ class Config {
               configState.statsCheckboxValue = configSpec.stats;
               configState.physicsDebugCheckboxValue = configSpec.physicsDebug;
 
-              configUi.pushPage(({config: {inputText, inputValue, sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue, physicsDebugCheckboxValue}, focus: {type: focusType}}) => ([
-                {
-                  type: 'html',
-                  src: configRenderer.getConfigPageSrc({inputText, inputValue, focus: focusType === 'config', sliderValue, airlockCheckboxValue, voiceChatCheckboxValue, statsCheckboxValue, physicsDebugCheckboxValue}),
-                  x: 0,
-                  y: 0,
-                  w: WIDTH,
-                  h: HEIGHT,
-                }
-              ]), {
-                type: 'config',
-                state: {
-                  config: configState,
-                  focus: focusState,
-                }
-              });
-
-              statsUi.pushPage(({config: {statsCheckboxValue}, stats: {frame}}) => {
-                const img = (() => {
-                  if (statsCheckboxValue) {
-                    const statsImg = statsDom;
-                    statsImg.needsUpdate = true;
-                    return statsImg;
-                  } else {
-                    return transparentImg;
-                  }
-                })();
-
-                return [
-                  {
-                    type: 'image',
-                    img,
-                    x: 0,
-                    y: 0,
-                    w: 500,
-                    h: 500 * (48 / 80),
-                  },
-                ];
-              }, {
-                type: 'stats',
-                state: {
-                  config: {
-                    statsCheckboxValue: configState.statsCheckboxValue,
-                  },
-                  stats: statsState,
-                },
-                immediate: true,
-              });
-
               const configMesh = (() => {
                 const object = new THREE.Object3D();
                 // object.position.y = -0.25;
                 object.visible = false;
 
                 const planeMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
-
-                  const menuMaterial = biolumi.makeMenuMaterial();
-
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = configUi.addPage(({
+                    config: {
+                      inputText,
+                      inputValue,
+                      sliderValue,
+                      airlockCheckboxValue,
+                      voiceChatCheckboxValue,
+                      statsCheckboxValue,
+                      physicsDebugCheckboxValue,
+                    },
+                    focus: {
+                      type: focusType,
+                    }
+                  }) => ([
+                    {
+                      type: 'html',
+                      src: configRenderer.getConfigPageSrc({
+                        inputText,
+                        inputValue,
+                        focus: focusType === 'config',
+                        sliderValue,
+                        airlockCheckboxValue,
+                        voiceChatCheckboxValue, 
+                        statsCheckboxValue,
+                        physicsDebugCheckboxValue,
+                      }),
+                      x: 0,
+                      y: 0,
+                      w: WIDTH,
+                      h: HEIGHT,
+                    }
+                  ]), {
+                    type: 'config',
+                    state: {
+                      config: configState,
+                      focus: focusState,
+                    },
+                    worldWidth: WORLD_WIDTH,
+                    worldHeight: WORLD_HEIGHT,
+                  });
                   // mesh.position.y = 1.5;
                   mesh.position.z = -1.5;
                   mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
 
                   return mesh;
                 })();
@@ -253,20 +233,36 @@ class Config {
                 object.visible = configState.statsCheckboxValue;
 
                 const planeMesh = (() => {
-                  const width = STATS_WORLD_WIDTH;
-                  const height = STATS_WORLD_HEIGHT;
-                  const depth = STATS_WORLD_DEPTH;
-
-                  const menuMaterial = biolumi.makeMenuMaterial();
-
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                  const mesh = statsUi.addPage(({
+                    config: {
+                      statsCheckboxValue,
+                    },
+                    stats: {
+                      frame,
+                    },
+                  }) => ([
+                    {
+                      type: 'image',
+                      img: statsDom,
+                      x: 0,
+                      y: 0,
+                      w: 500,
+                      h: 500 * (48 / 80),
+                    },
+                  ]), {
+                    type: 'stats',
+                    state: {
+                      config: {
+                        statsCheckboxValue: configState.statsCheckboxValue,
+                      },
+                      stats: statsState,
+                    },
+                    worldWidth: STATS_WORLD_WIDTH,
+                    worldHeight: STATS_WORLD_HEIGHT,
+                  });
                   // mesh.position.y = 1.5;
                   mesh.position.z = 0.01;
                   mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
 
                   return mesh;
                 })();
@@ -302,44 +298,11 @@ class Config {
                 }
               };
 
-              const _updatePages = configUtils.debounce(next => {
-                const configPages = configUi.getPages();
-                const statsPages = statsUi.getPages();
-                const pages = configPages.concat(statsPages);
-
-                if (pages.length > 0) {
-                  let pending = pages.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      next();
-                    }
-                  };
-
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
-
-                    let match;
-                    if (type === 'stats') {
-                      page.update({
-                        config: {
-                          statsCheckboxValue: configState.statsCheckboxValue,
-                        },
-                        stats: statsState,
-                      }, pend);
-                    } else if (type === 'config') {
-                      page.update({
-                        config: configState,
-                        focus: focusState,
-                      }, pend);
-                    } else {
-                      pend();
-                    }
-                  }
-                } else {
-                  next();
-                }
-              });
+              const _updatePages = () => {
+                configUi.update();
+                statsUi.update();
+              };
+              _updatePages();
 
               const trigger = e => {
                 const isOpen = rend.isOpen();
@@ -466,36 +429,6 @@ class Config {
               });
 
               const _update = () => {
-                const _updateTextures = () => {
-                  const isOpen = rend.isOpen();
-                  const tab = rend.getTab();
-                  const uiTime = rend.getUiTime();
-
-                  if (isOpen && tab === 'options') {
-                    const {
-                      planeMesh: {
-                        menuMaterial: configMenuMaterial,
-                      },
-                    } = configMesh;
-
-                    biolumi.updateMenuMaterial({
-                      ui: configUi,
-                      menuMaterial: configMenuMaterial,
-                      uiTime,
-                    });
-                  }
-
-                  const {
-                    planeMesh: {
-                      menuMaterial: statsMenuMaterial,
-                    },
-                  } = statsMesh;
-                  biolumi.updateMenuMaterial({
-                    ui: statsUi,
-                    menuMaterial: statsMenuMaterial,
-                    uiTime,
-                  });
-                };
                 const _updateAnchors = () => {
                   const isOpen = rend.isOpen();
                   const tab = rend.getTab();
@@ -504,6 +437,7 @@ class Config {
                     const {gamepads} = webvr.getStatus();
 
                     const {planeMesh} = configMesh;
+                    const {page} = planeMesh;
                     const configMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
 
                     SIDES.forEach(side => {
@@ -519,7 +453,7 @@ class Config {
                         biolumi.updateAnchors({
                           objects: [{
                             matrixObject: configMatrixObject,
-                            ui: configUi,
+                            page: page,
                             width: WIDTH,
                             height: HEIGHT,
                             worldWidth: WORLD_WIDTH,
@@ -536,8 +470,6 @@ class Config {
                     });
                   }
                 };
-
-                _updateTextures();
                 _updateAnchors();
 
                 stats.render();

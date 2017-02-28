@@ -185,54 +185,50 @@ class Universe {
                 mapChunks: mapState.mapChunks.map(_renderMapChunk),
               };
 
-              backgroundUi.pushPage(({backgroundImage}) => ([
-                {
-                  type: 'html',
-                  src: universeRenderer.getBackgroundImageSrc(backgroundImage),
-                  x: 0,
-                  y: 0,
-                  w: WIDTH,
-                  h: HEIGHT,
-                  scroll: true,
-                  pixelated: true,
-                },
-              ]), {
-                type: 'background',
-                state: {
-                  backgroundImage: backgroundImageState,
-                },
-                immediate: true,
-              });
-
               const menuMesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.z = -1.5;
                 object.visible = false;
 
                 const backgroundMesh = (() => {
-                  const width = WORLD_WIDTH;
-                  const height = WORLD_HEIGHT;
-                  const depth = WORLD_DEPTH;
+                  const object = new THREE.Object3D();
 
-                  const menuMaterial = biolumi.makeMenuMaterial();
+                  const planeMesh = (() => {
+                    const mesh = backgroundUi.addPage(({backgroundImage}) => ([
+                      {
+                        type: 'html',
+                        src: universeRenderer.getBackgroundImageSrc(backgroundImage),
+                        x: 0,
+                        y: 0,
+                        w: WIDTH,
+                        h: HEIGHT,
+                        pixelated: true,
+                      },
+                    ]), {
+                      type: 'background',
+                      state: {
+                        backgroundImage: backgroundImageState,
+                      },
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                    });
+                    mesh.receiveShadow = true;
 
-                  const geometry = new THREE.PlaneBufferGeometry(width, height);
-                  const materials = [solidMaterial, menuMaterial];
-
-                  const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-                  mesh.receiveShadow = true;
-                  mesh.menuMaterial = menuMaterial;
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+                  object.planeMesh = planeMesh;
 
                   const shadowMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(width, height, 0.01);
+                    const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
                     const material = transparentMaterial;
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.castShadow = true;
                     return mesh;
                   })();
-                  mesh.add(shadowMesh);
+                  object.add(shadowMesh);
 
-                  return mesh;
+                  return object;
                 })();
                 object.add(backgroundMesh);
                 object.backgroundMesh = backgroundMesh;
@@ -301,63 +297,23 @@ class Universe {
               scene.add(foregroundDotMeshes.left);
               scene.add(foregroundDotMeshes.right);
 
-              const _updatePages = menuUtils.debounce(next => {
-                const backgroundPages = backgroundUi.getPages();
-                const foregroundPages = foregroundUi.getPages()
-                const pages = backgroundPages.concat(foregroundPages);
-
-                if (pages.length > 0) {
-                  let pending = pages.length;
-                  const pend = () => {
-                    if (--pending === 0) {
-                      next();
-                    }
-                  };
-
-                  for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const {type} = page;
-
-                    if (type === 'background') {
-                      page.update({
-                        backgroundImage: backgroundImageState,
-                      }, pend);
-                    } else if (type === 'foreground') {
-                      page.update({
-                        foregroundImage: foregroundImageState,
-                      }, pend);
-                    } else {
-                      pend();
-                    }
-                  }
-                } else {
-                  next();
-                }
-              });
+              const _updatePages = () => {
+                backgroundUi.update();
+                // foregroundUi.update();
+              };
+              _updatePages();
 
               const _update = () => {
                 const tab = rend.getTab();
 
                 if (tab === 'worlds') {
-                  const _updateTextures = () => {
-                    const {
-                      backgroundMesh: {
-                        menuMaterial: backgroundMenuMaterial,
-                      },
-                    } = menuMesh;
-                    const uiTime = rend.getUiTime();
-
-                    biolumi.updateMenuMaterial({
-                      ui: backgroundUi,
-                      menuMaterial: backgroundMenuMaterial,
-                      uiTime,
-                    });
-                  };
                   const _updateAnchors = () => {
                     const _updateBackgroundAnchors = () => {
-                      const {backgroundMesh} = menuMesh;
-                      const backgroundMatrixObject = _decomposeObjectMatrixWorld(backgroundMesh);
                       const {gamepads} = webvr.getStatus();
+                      const {backgroundMesh} = menuMesh;
+                      const {planeMesh} = backgroundMesh;
+                      const backgroundMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                      const {page} = planeMesh;
 
                       SIDES.forEach(side => {
                         const gamepad = gamepads[side];
@@ -372,7 +328,7 @@ class Universe {
                           biolumi.updateAnchors({
                             objects: [{
                               matrixObject: backgroundMatrixObject,
-                              ui: backgroundUi,
+                              page: page,
                               width: WIDTH,
                               height: HEIGHT,
                               worldWidth: WORLD_WIDTH,
@@ -472,8 +428,6 @@ class Universe {
                     _updateBackgroundAnchors();
                     _updateForegroundAnchors();
                   };
-
-                  _updateTextures();
                   _updateAnchors();
                 }
               };

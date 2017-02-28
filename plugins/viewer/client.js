@@ -90,6 +90,7 @@ class Viewer {
           biolumi.requestUi({
             width: SLOT_WIDTH,
             height: SLOT_HEIGHT,
+            color: [1, 1, 1, 0],
           }),
         ]).then(([
           mediaUi,
@@ -206,90 +207,41 @@ class Viewer {
                   scene.add(boxMeshes.left);
                   scene.add(boxMeshes.right);
 
-                  mediaUi.pushPage(({media: {mode, type, data, loading, paused}}) => {
-                    return [
-                      {
-                        type: 'html',
-                        src: viewerRenderer.getMediaSrc({mode, type, data, loading, paused}),
-                        x: 0,
-                        y: 0,
-                        w: WIDTH,
-                        h: HEIGHT,
-                      },
-                    ];
-                  }, {
-                    type: 'media',
-                    state: {
-                      media: mediaState,
-                    },
-                    immediate: true,
-                  });
-                  slotPlaceholderUi.pushPage([
-                    {
-                      type: 'html',
-                      src: viewerRenderer.getSlotPlaceholderSrc(),
-                      x: 0,
-                      y: 0,
-                      w: SLOT_WIDTH,
-                      h: SLOT_HEIGHT,
-                    },
-                  ], {
-                    type: 'slotPlaceholder',
-                    state: {},
-                    immediate: true,
-                  });
-
-                  const _updatePages = menuUtils.debounce(next => {
-                    const mediaPages = mediaUi.getPages();
-                    const slotPlaceholderPages = slotPlaceholderUi.getPages();
-                    const pages = mediaPages.concat(slotPlaceholderPages);
-
-                    if (pages.length > 0) {
-                      let pending = pages.length;
-                      const pend = () => {
-                        if (--pending === 0) {
-                          next();
-                        }
-                      };
-
-                      for (let i = 0; i < pages.length; i++) {
-                        const page = pages[i];
-                        const {type} = page;
-
-                        let match;
-                        if (type === 'media') {
-                          page.update({
-                            media: mediaState,
-                          }, pend);
-                        } else if (type === 'slotPlaceholder') {
-                          page.update({}, pend);
-                        } else {
-                          pend();
-                        }
-                      }
-                    } else {
-                      next();
-                    }
-                  });
-
                   const mesh = (() => {
                     const object = new THREE.Object3D();
                     object.position.y = 1.2;
                     object.position.z = 1;
 
                     const mediaMesh = (() => {
-                      const width = WORLD_WIDTH;
-                      const height = WORLD_HEIGHT;
-
-                      const menuMaterial = biolumi.makeMenuMaterial();
-
-                      const geometry = new THREE.PlaneBufferGeometry(width, height);
-                      const materials = [solidMaterial, menuMaterial];
-
-                      const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+                      const mesh = mediaUi.addPage(({
+                        media: {
+                          mode,
+                          type,
+                          data,
+                          loading,
+                          paused,
+                        }
+                      }) => {
+                        return [
+                          {
+                            type: 'html',
+                            src: viewerRenderer.getMediaSrc({mode, type, data, loading, paused}),
+                            x: 0,
+                            y: 0,
+                            w: WIDTH,
+                            h: HEIGHT,
+                          },
+                        ];
+                      }, {
+                        type: 'media',
+                        state: {
+                          media: mediaState,
+                        },
+                        worldWidth: WORLD_WIDTH,
+                        worldHeight: WORLD_HEIGHT,
+                      });
                       // mesh.position.y = 1.5;
                       mesh.receiveShadow = true;
-                      mesh.menuMaterial = menuMaterial;
 
                       return mesh;
                     })();
@@ -379,19 +331,22 @@ class Viewer {
                       object.add(notchMesh); */
 
                       const placeholderMesh = (() => {
-                        const width = SLOT_WORLD_WIDTH;
-                        const height = SLOT_WORLD_HEIGHT;
-
-                        const menuMaterial = biolumi.makeMenuMaterial({
-                          color: [1, 1, 1, 0],
+                        const mesh = slotPlaceholderUi.addPage([
+                          {
+                            type: 'html',
+                            src: viewerRenderer.getSlotPlaceholderSrc(),
+                            x: 0,
+                            y: 0,
+                            w: SLOT_WIDTH,
+                            h: SLOT_HEIGHT,
+                          },
+                        ], {
+                          type: 'slotPlaceholder',
+                          state: {},
+                          worldWidth: SLOT_WORLD_WIDTH,
+                          worldHeight: SLOT_WORLD_HEIGHT,
                         });
-
-                        const geometry = new THREE.PlaneBufferGeometry(width, height);
-                        const material = menuMaterial;
-
-                        const mesh = new THREE.Mesh(geometry, material);
                         mesh.receiveShadow = true;
-                        mesh.menuMaterial = menuMaterial;
 
                         return mesh;
                       })();
@@ -445,6 +400,12 @@ class Viewer {
                   })();
                   this.mesh = mesh;
                   scene.add(mesh);
+
+                  const _updatePages = {
+                    mediaUi.update();
+                    slotPlaceholderUi.update();
+                  };
+                  _updatePages();
 
                   const _makeHoverState = () => ({
                     hovered: false,
@@ -563,31 +524,6 @@ class Viewer {
                   });
 
                   const _update = () => {
-                    const _updateTextures = () => {
-                      const uiTime = zeo.getUiTime();
-
-                      const {
-                        mediaMesh: {
-                          menuMaterial: mediaMenuMaterial,
-                        },
-                        slotMesh: {
-                          placeholderMesh: {
-                            menuMaterial: slotPlaceholderMenuMaterial,
-                          },
-                        },
-                      } = mesh;
-
-                      biolumi.updateMenuMaterial({
-                        ui: mediaUi,
-                        menuMaterial: mediaMenuMaterial,
-                        uiTime,
-                      });
-                      biolumi.updateMenuMaterial({
-                        ui: slotPlaceholderUi,
-                        menuMaterial: slotPlaceholderMenuMaterial,
-                        uiTime,
-                      });
-                    };
                     const _updateControllers = () => {
                       const {gamepads} = zeo.getStatus();
 
@@ -642,8 +578,6 @@ class Viewer {
                         }
                       });
                     };
-
-                    _updateTextures();
                     _updateControllers();
                   };
                   zeo.on('update', _update);
