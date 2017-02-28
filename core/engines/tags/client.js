@@ -844,7 +844,7 @@ class Tags {
                 return mesh;
               })();
               object.add(planeOpenMesh);
-              object.planeMesh = planeOpenMesh;
+              object.planeOpenMesh = planeOpenMesh;
 
               tagMeshes.push(object);
 
