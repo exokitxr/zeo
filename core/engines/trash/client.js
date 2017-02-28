@@ -1,20 +1,3 @@
-import {
-  WIDTH,
-  HEIGHT,
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
-  WORLD_DEPTH,
-
-  NAVBAR_WIDTH,
-  NAVBAR_HEIGHT,
-  NAVBAR_WORLD_WIDTH,
-  NAVBAR_WORLD_HEIGHT,
-  NAVBAR_WORLD_DEPTH,
-
-  DEFAULT_USER_HEIGHT,
-  TRANSITION_TIME,
-} from './lib/constants/menu';
-
 class Trash {
   constructor(archae) {
     this._archae = archae;
