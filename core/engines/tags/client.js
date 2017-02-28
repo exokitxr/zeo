@@ -102,6 +102,7 @@ class Tags {
                   width: WIDTH,
                   height: HEIGHT,
                   atlasSize: 4,
+                  maxNumTextures: 3,
                 });
                 uis.push(lastUi);
               }

@@ -2,8 +2,6 @@ import keycode from 'keycode';
 
 import menuShaders from './lib/shaders/menu';
 
-const MAX_NUM_TEXTURES = 3;
-
 class Biolumi {
   constructor(archae) {
     this._archae = archae;
@@ -350,9 +348,22 @@ class Biolumi {
             }
           }
 
-          const menuShader = menuShaders.getShader({
-            maxNumTextures: MAX_NUM_TEXTURES,
-          });
+          const _getMenuShader = (() => {
+            const cache = {};
+
+            return ({
+              maxNumTextures,
+            }) => {
+              let entry = cache[maxNumTextures];
+              if (!entry) {
+                entry = menuShaders.getShader({
+                  maxNumTextures,
+                });
+                cache[maxNumTextures] = entry;
+              }
+              return entry;
+            };
+          })();
           const _getTextureAtlasUv = (atlasSize, pageIndex) => {
             const x = pageIndex % atlasSize;
             const y = Math.floor(pageIndex / atlasSize);
@@ -360,17 +371,21 @@ class Biolumi {
           };
 
           class MegaTexture {
-            constructor(width, height, atlasSize, color) {
+            constructor(width, height, atlasSize, maxNumTextures, color) {
               this.width = width;
               this.height = height;
               this.atlasSize = atlasSize;
+              this.maxNumTextures = maxNumTextures;
               this.color = color;
 
               const material = (() => {
+                const menuShader = _getMenuShader({
+                  maxNumTextures,
+                });
                 const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
                 shaderUniforms.textures.value = (() => {
-                  const result = Array(MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                  const result = Array(maxNumTextures);
+                  for (let i = 0; i < maxNumTextures; i++) {
                     const texture = new THREE.Texture(
                       transparentImg,
                       THREE.UVMapping,
@@ -388,23 +403,23 @@ class Biolumi {
                   return result;
                 })();
                 shaderUniforms.validTextures.value = (() => {
-                  const result = Array(MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                  const result = Array(maxNumTextures);
+                  for (let i = 0; i < maxNumTextures; i++) {
                     result[i] = 0;
                   }
                   return result;
                 })();
                 shaderUniforms.texturePositions.value = (() => {
-                  const result = Array(2 * MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                  const result = Array(2 * maxNumTextures);
+                  for (let i = 0; i < maxNumTextures; i++) {
                     result[(i * 2) + 0] = 0;
                     result[(i * 2) + 1] = 0;
                   }
                   return result;
                 })();
                 shaderUniforms.textureLimits.value = (() => {
-                  const result = Array(2 * MAX_NUM_TEXTURES);
-                  for (let i = 0; i < MAX_NUM_TEXTURES; i++) {
+                  const result = Array(2 * maxNumTextures);
+                  for (let i = 0; i < maxNumTextures; i++) {
                     result[(i * 2) + 0] = 0;
                     result[(i * 2) + 1] = 0;
                   }
@@ -432,13 +447,13 @@ class Biolumi {
 
             update(pages) {
               if (pages.length > 0) {
-                const {atlasSize, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
+                const {atlasSize, maxNumTextures, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
 
                 for (let i = 0; i < pages.length; i++) {
                   const page = pages[i]; // XXX optimize the case of atlasSize = 1: in that case we can skip drawing the texture atlas and feed through the image directly
                   const {layers} = page;
 
-                  for (let j = 0; j < MAX_NUM_TEXTURES; j++) {
+                  for (let j = 0; j < maxNumTextures; j++) {
                     const layer = j < layers.length ? layers[j] : null;
 
                     if (layer && layer.getValid()) {
@@ -501,14 +516,14 @@ class Biolumi {
           }
 
           class Ui {
-            constructor(width, height, atlasSize, color) {
+            constructor(width, height, atlasSize, maxNumTextures, color) {
               this.width = width;
               this.height = height;
               this.atlasSize = atlasSize;
               this.color = color;
 
               this.pages = [];
-              this.megaTexture = new MegaTexture(width, height, atlasSize, color);
+              this.megaTexture = new MegaTexture(width, height, atlasSize, maxNumTextures, color);
 
               this.update = debounce(this.update.bind(this));
             }
@@ -584,8 +599,8 @@ class Biolumi {
             }
           }
 
-          const _makeUi = ({width, height, atlasSize = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, atlasSize, color); // XXX port everything to this instead of requestUi();
-          const _requestUi = (width, height, atlasSize, color) => Promise.resolve(_makeUi(width, height, atlasSize, color));
+          const _makeUi = ({width, height, atlasSize = 1, maxNumTextures = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, atlasSize, maxNumTextures, color); // XXX port everything to this instead of requestUi();
+          const _requestUi = spec => Promise.resolve(_makeUi(spec));
 
           const _updateUiTimer = () => {
             uiTimer.update();
@@ -596,7 +611,6 @@ class Biolumi {
           const _getFontWeight = () => fontWeight;
           const _getFontStyle = () => fontStyle;
           const _getTransparentImg = () => transparentImg;
-          const _getMaxNumTextures = () => MAX_NUM_TEXTURES;
 
           const transparentMaterial = new THREE.MeshBasicMaterial({
             opacity: 0,
@@ -986,7 +1000,6 @@ class Biolumi {
             getFontWeight: _getFontWeight,
             getFontStyle: _getFontStyle,
             getTransparentImg: _getTransparentImg,
-            getMaxNumTextures: _getMaxNumTextures,
 
             getTransparentMaterial: _getTransparentMaterial,
             getSolidMaterial: _getSolidMaterial,
