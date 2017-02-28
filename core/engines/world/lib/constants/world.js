@@ -11,3 +11,5 @@ export const TAGS_ASPECT_RATIO = TAGS_WIDTH / TAGS_HEIGHT;
 export const TAGS_WORLD_WIDTH = 0.2;
 export const TAGS_WORLD_HEIGHT = TAGS_WORLD_WIDTH / TAGS_ASPECT_RATIO;
 export const TAGS_WORLD_DEPTH = 0.02;
+
+export default {};

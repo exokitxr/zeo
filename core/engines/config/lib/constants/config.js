@@ -13,3 +13,5 @@ export const STATS_WORLD_HEIGHT = STATS_WORLD_WIDTH / STATS_ASPECT_RATIO;
 export const STATS_WORLD_DEPTH = STATS_WORLD_WIDTH / 50;
 
 export const STATS_REFRESH_RATE = 1000;
+
+export default {};
