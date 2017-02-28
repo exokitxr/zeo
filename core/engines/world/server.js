@@ -357,6 +357,29 @@ class World {
                                   } else {
                                     cb(_makeInvalidArgsError());
                                   }
+                                } else if (method === 'removeTag') {
+                                  const [userId, src] = args;
+
+                                  cb = (cb => err => {
+                                    if (!err) {
+                                      _broadcast('removeTag', [userId, src]);
+                                    }
+
+                                    cb(err);
+                                  })(cb);
+
+                                  let match;
+                                  if (match = src.match(/^hand:(left|right)$/)) {
+                                    const side = match[1];
+
+                                    const user = usersJson[userId];
+                                    const {hands} = user;
+                                    delete hands[side];
+
+                                    cb();
+                                  } else {
+                                    cb(_makeInvalidArgsError());
+                                  }
                                 } else if (method === 'moveTag') {
                                   const [userId, src, dst] = args;
 

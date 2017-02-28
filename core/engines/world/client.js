@@ -244,6 +244,10 @@ class World {
                     const {args: [userId, itemSpec, dst]} = m;
 
                     _handleAddTag(userId, itemSpec, dst);
+                  } else if (type === 'removeTag') {
+                    const {args: [userId, src]} = m;
+
+                    _handleRemoveTag(userId, src);
                   } else if (type === 'moveTag') {
                     const {args: [userId, src, dst]} = m;
 
@@ -328,10 +332,10 @@ class World {
                   const {id} = item;
                   delete tagMeshes[id];
 
-                  scene.remove(tagMesh);
+                  tagMesh.parent.remove(tagMesh);
 
-                  const {type} = item;
-                  if (type === 'element') {
+                  const {instance} = item;
+                  if (instance) {
                     _unreifyTag(tagMesh);
                   }
                 }
@@ -541,6 +545,11 @@ class World {
 
                 _request('addTag', [localUserId, itemSpec, dst], _warnError);
               };
+              const _removeTag = src => {
+                _handleRemoveTag(localUserId, src);
+
+                _request('removeTag', [localUserId, src], _warnError);
+              };
               const _moveTag = (src, dst) => {
                 _handleMoveTag(localUserId, src, dst);
 
@@ -598,6 +607,25 @@ class World {
                     inventoryManager.set(inventoryIndex, tagMesh);
                   } else {
                     console.warn('invalid add tag arguments', {userId, itemSpec, dst});
+                  }
+                } else {
+                  // XXX add tag to remote user's controller mesh
+                }
+              };
+              const _handleRemoveTag = (userId, src) => {
+                if (userId === localUserId) {
+                  let match;
+                  if (match = src.match(/^hand:(left|right)$/)) {
+                    const side = match[1];
+
+                    const grabState = grabStates[side];
+                    const {mesh} = grabState;
+
+                    elementManager.remove(mesh);
+                    tags.destroyTag(mesh);
+                    grabState.mesh = null;
+                  } else {
+                    console.warn('invalid remove tag arguments', {userId, itemSpec, src});
                   }
                 } else {
                   // XXX add tag to remote user's controller mesh
@@ -1647,6 +1675,17 @@ class World {
                   const {mesh: grabMesh} = grabState;
 
                   if (grabMesh) {
+                    const _releaseTrashTag = () => {
+                      const hovered = SIDES.some(side => trashHoverStates[side].hovered);
+
+                      if (hovered) {
+                        _removeTag('hand:' + side);
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    };
                     const _releaseInventoryTag = () => {
                       const hoveredItemIndex = backpack.getHoveredItemIndex(side);
 
@@ -1705,7 +1744,7 @@ class World {
                       return true;
                     };
 
-                    _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
+                    _releaseTrashTag() || _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
                   }
                 } else {
                   const _releaseEquipmentMesh = () => {
