@@ -221,6 +221,7 @@ class Rend {
                     object.serversMesh = null;
                     object.configMesh = null;
                     object.statsMesh = null;
+                    object.trashMesh = null;
 
                     const navbarMesh = (() => {
                       const mesh = navbarUi.addPage(({

@@ -15,6 +15,7 @@ import worldRenderer from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
 const TAGS_PER_ROW = 4;
+const DEFAULT_USER_HEIGHT = 1.6;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -76,7 +77,32 @@ class World {
 
         // constants
         const transparentMaterial = biolumi.getTransparentMaterial();
-        const solidMaterial = biolumi.getSolidMaterial();
+        const trashGeometry = (() => {
+          const geometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(0.5, 1, 0.5));
+
+          const positionsAttrbiute = geometry.getAttribute('position');
+          const positions = positionsAttrbiute.array;
+          const numFaces = positions.length / 3 / 3;
+          for (let i = 0; i < numFaces; i++) {
+            const baseIndex = i * 3 * 3;
+            const points = [
+              positions.slice(baseIndex, baseIndex + 3),
+              positions.slice(baseIndex + 3, baseIndex + 6),
+              positions.slice(baseIndex + 6, baseIndex + 9),
+            ];
+            if (points[0][1] >= 0.5 && points[1][1] >= 0.5 && points[0][1] >= 0.5) {
+              for (let j = 0; j < 9; j++) {
+                positions[baseIndex + j] = 0;
+              }
+            }
+          }
+
+          return geometry;
+        })();
+        const solidMaterial = new THREE.MeshPhongMaterial({
+          color: 0x808080,
+          side: THREE.DoubleSide,
+        });
 
         const wireframeMaterial = new THREE.MeshBasicMaterial({
           color: 0x808080,
@@ -176,6 +202,14 @@ class World {
               scene.add(grabBoxMeshes.left);
               scene.add(grabBoxMeshes.right);
 
+              const _makeTrashHoverState = () => ({
+                hovered: false,
+              });
+              const trashHoverStates = {
+                left: _makeTrashHoverState(),
+                right: _makeTrashHoverState(),
+              };
+
               const _requestConnection = () => new Promise((accept, reject) => {
                 const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication());
                 connection.onmessage = msg => {
@@ -210,6 +244,10 @@ class World {
                     const {args: [userId, itemSpec, dst]} = m;
 
                     _handleAddTag(userId, itemSpec, dst);
+                  } else if (type === 'removeTag') {
+                    const {args: [userId, src]} = m;
+
+                    _handleRemoveTag(userId, src);
                   } else if (type === 'moveTag') {
                     const {args: [userId, src, dst]} = m;
 
@@ -294,10 +332,10 @@ class World {
                   const {id} = item;
                   delete tagMeshes[id];
 
-                  scene.remove(tagMesh);
+                  tagMesh.parent.remove(tagMesh);
 
-                  const {type} = item;
-                  if (type === 'element') {
+                  const {instance} = item;
+                  if (instance) {
                     _unreifyTag(tagMesh);
                   }
                 }
@@ -507,6 +545,11 @@ class World {
 
                 _request('addTag', [localUserId, itemSpec, dst], _warnError);
               };
+              const _removeTag = src => {
+                _handleRemoveTag(localUserId, src);
+
+                _request('removeTag', [localUserId, src], _warnError);
+              };
               const _moveTag = (src, dst) => {
                 _handleMoveTag(localUserId, src, dst);
 
@@ -564,6 +607,25 @@ class World {
                     inventoryManager.set(inventoryIndex, tagMesh);
                   } else {
                     console.warn('invalid add tag arguments', {userId, itemSpec, dst});
+                  }
+                } else {
+                  // XXX add tag to remote user's controller mesh
+                }
+              };
+              const _handleRemoveTag = (userId, src) => {
+                if (userId === localUserId) {
+                  let match;
+                  if (match = src.match(/^hand:(left|right)$/)) {
+                    const side = match[1];
+
+                    const grabState = grabStates[side];
+                    const {mesh} = grabState;
+
+                    elementManager.remove(mesh);
+                    tags.destroyTag(mesh);
+                    grabState.mesh = null;
+                  } else {
+                    console.warn('invalid remove tag arguments', {userId, itemSpec, src});
                   }
                 } else {
                   // XXX add tag to remote user's controller mesh
@@ -894,6 +956,30 @@ class World {
               scene.add(highlightBoxMeshes.left);
               scene.add(highlightBoxMeshes.right);
 
+              const trashMesh = (() => {
+                const geometry = trashGeometry;
+                const material = solidMaterial;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.y = -DEFAULT_USER_HEIGHT + 0.5;
+                mesh.position.z = -1;
+
+                const highlightMesh = (() => {
+                  const geometry = new THREE.BoxBufferGeometry(0.5, 1, 0.5);
+                  const material = wireframeHighlightMaterial;
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.rotation.order = camera.rotation.order;
+                  mesh.visible = false;
+                  return mesh;
+                })();
+                mesh.add(highlightMesh);
+                mesh.highlightMesh = highlightMesh;
+
+                return mesh;
+              })();
+              rend.registerMenuMesh('trashMesh', trashMesh);
+
               const _makePositioningMesh = ({opacity = 1} = {}) => {
                 const geometry = (() => {
                   const result = new THREE.BufferGeometry();
@@ -1111,6 +1197,29 @@ class World {
                     });
                   }
                 };
+                const _updateTrashAnchor = () => {
+                  const {gamepads} = webvr.getStatus();
+                  const {position: trashPosition, rotation: trashRotation, scale: trashScale} = _decomposeObjectMatrixWorld(trashMesh);
+                  const trashBoxTarget = geometryUtils.makeBoxTarget(trashPosition, trashRotation, trashScale, new THREE.Vector3(0.5, 1, 0.5));
+
+                  SIDES.forEach(side => {
+                    const trashHoverState = trashHoverStates[side];
+                    const hovered = (() => {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition} = gamepad;
+                        return trashBoxTarget.containsPoint(controllerPosition);
+                      } else {
+                        return false;
+                      }
+                    })();
+                    trashHoverState.hovered = hovered;
+                  });
+
+                  const {highlightMesh} = trashMesh;
+                  highlightMesh.visible = SIDES.some(side => trashHoverStates[side].hovered);
+                };
                 const _updateEquipmentPositions = () => {
                   const equipmentTagMeshes = equipmentManager.getTagMeshes();
 
@@ -1254,6 +1363,7 @@ class World {
                 _updateMenuAnchors();
                 _updateGrabbers();
                 _updateNpmAnchors();
+                _updateTrashAnchor();
                 _updateEquipmentPositions();
                 _updateHighlight();
               };
@@ -1565,6 +1675,17 @@ class World {
                   const {mesh: grabMesh} = grabState;
 
                   if (grabMesh) {
+                    const _releaseTrashTag = () => {
+                      const hovered = SIDES.some(side => trashHoverStates[side].hovered);
+
+                      if (hovered) {
+                        _removeTag('hand:' + side);
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    };
                     const _releaseInventoryTag = () => {
                       const hoveredItemIndex = backpack.getHoveredItemIndex(side);
 
@@ -1623,7 +1744,7 @@ class World {
                       return true;
                     };
 
-                    _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
+                    _releaseTrashTag() || _releaseInventoryTag() || _releaseEquipmentTag() || _releaseWorldTag();
                   }
                 } else {
                   const _releaseEquipmentMesh = () => {
