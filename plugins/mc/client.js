@@ -21,6 +21,8 @@ const INITIAL_ATLAS_SIZE = 128;
 const ITEM_SIZE = 16;
 const ITEM_PIXEL_SIZE = 1 / 32;
 
+const SIDES = ['left', 'right'];
+
 class Mc {
   constructor(archae) {
     this._archae = archae;
@@ -50,7 +52,7 @@ class Mc {
       if (live) {
         const {THREE, scene, camera} = zeo;
         const physicsWorld = zeo.getPhysicsWorld();
-        const controllers = cyborg.getControllers();
+        const controllerPhysicsBodies = cyborg.getControllerPhysicsBodies();
         const {alea} = randomUtils;
 
         const _requestTextureAtlas = () => _requestTextureImages()
@@ -394,8 +396,8 @@ class Mc {
                       if (zeo.canGrab(side, itemMesh, {radius: ITEM_SIZE * ITEM_PIXEL_SIZE})) {
                         const itemPhysicsBody = itemPhysicsBodies[itemMeshIndex];
 
-                        const controller = controllers[side];
-                        itemPhysicsBody.setIgnoreCollisionCheck(controller.physicsBody, true);
+                        const controllerPhysicsBody = controllerPhysicsBodies[side];
+                        itemPhysicsBody.setIgnoreCollisionCheck(controllerPhysicsBody, true);
                         itemPhysicsBody.setLinearFactor([0, 0, 0]);
                         itemPhysicsBody.setAngularFactor([0, 0, 0]);
                         itemPhysicsBody.setLinearVelocity([0, 0, 0]);
@@ -414,8 +416,9 @@ class Mc {
                           itemPhysicsBody.activate();
 
                           setTimeout(() => { // delay to prevent immediate collision
-                            controllers.forEach(controller => {
-                              itemPhysicsBody.setIgnoreCollisionCheck(controller.physicsBody, false);
+                            SIDES.forEach(side => {
+                              const controllerPhysicsBody = controllerPhysicsBodies[side];
+                              itemPhysicsBody.setIgnoreCollisionCheck(controllerPhysicsBody, false);
                             });
                           }, 500);
 

@@ -337,13 +337,14 @@ class Cyborg {
             scene.add(mesh);
           });
 
-          const controllerPhysicsBodies = {
+          const  controllerPhysicsBodies = {
             left: null,
             right: null,
           };
 
           const _getPlayer = () => player;
           const _getControllers = () => controllers;
+          const _getControllerPhysicsBodies = () => controllerPhysicsBodies;
           const _update = () => {
             // update camera
             const status = webvr.getStatus();
@@ -474,6 +475,7 @@ class Cyborg {
           return {
             getPlayer: _getPlayer,
             getControllers: _getControllers,
+            getControllerPhysicsBodies: _getControllerPhysicsBodies,
             update: _update,
           };
         }
