@@ -347,6 +347,7 @@ class Rend {
                       })();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.position.y = 1 - DEFAULT_USER_HEIGHT;
+                      mesh.position.z = -0.4;
                       mesh.rotation.x = -Math.PI * (3 / 8);
 
                       const shadowMesh = (() => {
