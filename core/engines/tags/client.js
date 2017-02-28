@@ -495,7 +495,7 @@ class Tags {
                                 worldHeight: WORLD_OPEN_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
                               };
-                            } *
+                            }
                           } else {
                             return null;
                           }
