@@ -120,6 +120,7 @@ class Tags {
             }
           }
           const uiManager = new UiManager();
+          const uiOpenManager = new UiManager();
 
           const hoverStates = {
             left: biolumi.makeMenuHoverState(),
@@ -217,6 +218,7 @@ class Tags {
 
           const _updatePages = () => {
             uiManager.update();
+            uiOpenManager.update();
           };
 
           const _trigger = e => {
@@ -235,18 +237,10 @@ class Tags {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
-                  const {ui, planeMesh} = tagMesh;
-                  ui.setDimensions(OPEN_WIDTH, OPEN_HEIGHT); // XXX rewrite this in terms of multiple uis for the open/closed tag states
-                  const scaleX = WORLD_OPEN_WIDTH / WORLD_WIDTH;
-                  const scaleY = WORLD_OPEN_HEIGHT / WORLD_HEIGHT;
-                  const offsetX = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
-                  const offsetY = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
-                  planeMesh.position.x = offsetX;
-                  planeMesh.position.y = offsetY;
-                  planeMesh.scale.x = scaleX;
-                  planeMesh.scale.y = scaleY;
-                  const {item} = tagMesh;
+                  const {planeMesh, planeOpenMesh, item} = tagMesh;
                   item.open = true;
+                  planeMesh.visible = false;
+                  planeOpenMesh.visible = true;
                   _updatePages();
 
                   e.stopImmediatePropagation();
@@ -256,14 +250,10 @@ class Tags {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
-                  const {ui, planeMesh} = tagMesh;
-                  ui.setDimensions(WIDTH, HEIGHT);
-                  planeMesh.position.x = 0;
-                  planeMesh.position.y = 0;
-                  planeMesh.scale.x = 1;
-                  planeMesh.scale.y = 1;
-                  const {item} = tagMesh;
+                  const {planeMesh, planeOpenMesh, item} = tagMesh;
                   item.open = false;
+                  planeMesh.visible = true;
+                  planeOpenMesh.visible = false;
                   _updatePages();
 
                   e.stopImmediatePropagation();
@@ -475,19 +465,37 @@ class Tags {
                             (tagMesh.parent === scene) ||
                             controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh)
                           ) {
-                            const {planeMesh, item: {open}} = tagMesh;
-                            const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                            const {page} = planeMesh;
+                            const {item: {open}} = tagMesh;
 
-                            return {
-                              matrixObject: matrixObject,
-                              page: page,
-                              width: !open ? WIDTH : OPEN_WIDTH,
-                              height: !open ? HEIGHT : OPEN_HEIGHT,
-                              worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                              worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
-                              worldDepth: WORLD_DEPTH,
-                            };
+                            if (!open) {
+                              const {planeMesh} = tagMesh;
+                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                              const {page} = planeMesh;
+
+                              return {
+                                matrixObject: matrixObject,
+                                page: page,
+                                width: WIDTH,
+                                height: HEIGHT,
+                                worldWidth: WORLD_WIDTH,
+                                worldHeight: WORLD_HEIGHT,
+                                worldDepth: WORLD_DEPTH,
+                              };
+                            } else {
+                              const {planeOpenMesh} = tagMesh;
+                              const matrixObject = _decomposeObjectMatrixWorld(planeOpenMesh);
+                              const {page} = planeOpenMesh;
+
+                              return {
+                                matrixObject: matrixObject,
+                                page: page,
+                                width: OPEN_WIDTH,
+                                height: OPEN_HEIGHT,
+                                worldWidth: WORLD_OPEN_WIDTH,
+                                worldHeight: WORLD_OPEN_HEIGHT,
+                                worldDepth: WORLD_DEPTH,
+                              };
+                            } *
                           } else {
                             return null;
                           }
@@ -548,6 +556,7 @@ class Tags {
 
           const frameInterval = setInterval(() => {
             uiManager.update();
+            uiOpenManager.update();
           }, FRAME_TIME);
 
           this._cleanup = () => {
@@ -741,8 +750,8 @@ class Tags {
                         tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
                       :
                         tagsRenderer.getFileSrc({item}),
-                      w: !item.open ? WIDTH : OPEN_WIDTH,
-                      h: !item.open ? HEIGHT : OPEN_HEIGHT,
+                      w: WIDTH,
+                      h: HEIGHT,
                     },
                     {
                       type: 'image',
@@ -765,13 +774,77 @@ class Tags {
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
                 });
-                // mesh.position.y = 1.5;
                 mesh.receiveShadow = true;
 
                 return mesh;
               })();
               object.add(planeMesh);
               object.planeMesh = planeMesh;
+
+              const planeOpenMesh = (() => {
+                const mesh = uiOpenManager.addPage(({
+                  item,
+                  details: {
+                    inputText,
+                    inputValue,
+                    positioningId,
+                    positioningName,
+                  },
+                  focus: {
+                    type: focusType,
+                  }
+                }) => {
+                  const {type} = item;
+                  const focusAttributeSpec = (() => {
+                    const match = focusType.match(/^attribute:(.+?):(.+?)$/);
+                    return match && {
+                      tagId: match[1],
+                      attributeName: match[2],
+                    };
+                  })();
+
+                  return [
+                    {
+                      type: 'html',
+                      src: type === 'element' ?
+                        tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
+                      :
+                        tagsRenderer.getFileSrc({item}),
+                      w: OPEN_WIDTH,
+                      h: OPEN_HEIGHT,
+                    },
+                    {
+                      type: 'image',
+                      img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
+                      x: 10,
+                      y: 0,
+                      w: 100,
+                      h: 100,
+                      frameTime: FRAME_TIME,
+                      pixelated: true,
+                    }
+                  ];
+                }, {
+                  type: 'tag',
+                  state: {
+                    item: item,
+                    details: detailsState,
+                    focus: focusState,
+                  },
+                  worldWidth: WORLD_OPEN_WIDTH,
+                  worldHeight: WORLD_OPEN_HEIGHT,
+                });
+                mesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
+                mesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
+                // mesh.scale.x = WORLD_OPEN_WIDTH / WORLD_WIDTH;
+                // mesh.scale.y = WORLD_OPEN_HEIGHT / WORLD_HEIGHT;
+                mesh.visible = false;
+                mesh.receiveShadow = true;
+
+                return mesh;
+              })();
+              object.add(planeOpenMesh);
+              object.planeMesh = planeOpenMesh;
 
               tagMeshes.push(object);
 
