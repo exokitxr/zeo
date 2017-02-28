@@ -189,7 +189,7 @@ class World {
                   }
                 });
                 const _requestEquipmentJson = ({authentication}) => {
-                  if (serverType === 'secure') {
+                  if (serverType === 'secure' && hubSpec) {
                     return _requestHub({
                       authentication,
                       method: 'GET',
@@ -200,7 +200,7 @@ class World {
                   }
                 };
                 const _requestInventoryJson = ({authentication}) => {
-                  if (serverType === 'secure') {
+                  if (serverType === 'secure' && hubSpec) {
                     return _requestHub({
                       authentication,
                       method: 'GET',
