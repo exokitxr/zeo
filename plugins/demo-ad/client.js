@@ -73,7 +73,6 @@ module.exports = archae => ({
       _requestYourThingHereImg(),
       _requestClickImg(),
       _requestSupportImg(),
-      _requestAudio(),
     ]).then(([
       iconImg,
       starImgs,
@@ -82,7 +81,6 @@ module.exports = archae => ({
       yourThingHereImg,
       clickImg,
       supportImg,
-      audio,
     ]) => ({
       iconImg,
       starImgs,
@@ -91,7 +89,6 @@ module.exports = archae => ({
       yourThingHereImg,
       clickImg,
       supportImg,
-      audio
     }));
 
     return Promise.all([
@@ -373,12 +370,24 @@ module.exports = archae => ({
                 scene.add(dotMeshes[side]);
               });
 
-              const soundBody = (() => { // XXX need one audio body per element
-                const result = new sound.Body();
-                result.setInputElement(audio);
-                result.setObject(mesh);
-                return result;
-              })();
+              let audio = null;
+              const _initializeSoundBody = () => {
+                _requestAudio()
+                  .then(newAudio => {
+                    audio = newAudio;
+
+                    const soundBody = (() => {
+                      const result = new sound.Body();
+                      result.setInputElement(audio);
+                      result.setObject(mesh);
+                      return result;
+                    })();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              };
+              _initializeSoundBody();
 
               const _trigger = e => {
                 const {side} = e;
@@ -418,20 +427,22 @@ module.exports = archae => ({
                   const {gamepads} = zeo.getStatus();
 
                   const _updateNyancatMesh = () => {
-                    const touchingNyancat = SIDES.some(side => {
-                      const gamepad = gamepads[side];
+                    if (audio) {
+                      const touchingNyancat = SIDES.some(side => {
+                        const gamepad = gamepads[side];
 
-                      if (gamepad) {
-                        const {position: controllerPosition} = gamepad;
-                        return controllerPosition.distanceTo(mesh.position) < 0.1;
-                      } else {
-                        return false;
+                        if (gamepad) {
+                          const {position: controllerPosition} = gamepad;
+                          return controllerPosition.distanceTo(mesh.position) < 0.1;
+                        } else {
+                          return false;
+                        }
+                      });
+                      if (touchingNyancat && audio.paused) {
+                        audio.play();
+                      } else if (!touchingNyancat && !audio.paused) {
+                        audio.pause();
                       }
-                    });
-                    if (touchingNyancat && audio.paused) {
-                      audio.play();
-                    } else if (!touchingNyancat && !audio.paused) {
-                      audio.pause();
                     }
                   };
                   const _updateCloseMesh = () => {
