@@ -537,6 +537,10 @@ module.exports = archae => ({
 
                 zeo.removeListener('trigger', _trigger);
                 zeo.removeListener('update', _update);
+
+                if (audio && !audio.paused) {
+                  audio.pause();
+                }
               };
             }
 
@@ -562,7 +566,6 @@ module.exports = archae => ({
 
           this._cleanup = () => {
             zeo.unregisterElement(this);
-
           };
         }
       });
