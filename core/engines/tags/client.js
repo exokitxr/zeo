@@ -89,18 +89,21 @@ class Tags {
           };
 
           class UiManager {
-            constructor() {
+            constructor({width, height}) {
+              this.width = width;
+              this.height = height;
+
               this.uis = [];
             }
 
             addPage(pageSpec, options) {
-              const {uis} = this;
+              const {width, height, uis} = this;
 
               let lastUi = uis.length > 0 ? uis[uis.length - 1] : null;
               if (!lastUi || !lastUi.hasFreePages()) {
                 lastUi = biolumi.makeUi({
-                  width: WIDTH,
-                  height: HEIGHT,
+                  width: width,
+                  height: height,
                   atlasSize: 4,
                   maxNumTextures: 3,
                 });
@@ -119,8 +122,14 @@ class Tags {
               }
             }
           }
-          const uiManager = new UiManager();
-          const uiOpenManager = new UiManager();
+          const uiManager = new UiManager({
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          const uiOpenManager = new UiManager({
+            width: OPEN_WIDTH,
+            height: OPEN_HEIGHT,
+          });
 
           const hoverStates = {
             left: biolumi.makeMenuHoverState(),
