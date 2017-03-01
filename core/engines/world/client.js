@@ -900,7 +900,7 @@ class World {
 
                     userEquipmentManager.set(equipmentIndex, tagMesh);
 
-                    userGrabManager.setMesh(null);
+                    userGrabManager.setMesh(side, null);
                   } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
                     const inventoryIndex = parseInt(match[1], 10);
 
@@ -924,7 +924,7 @@ class World {
 
                     userInventoryManager.set(inventoryIndex, tagMesh);
 
-                    userGrabManager.setMesh(null);
+                    userGrabManager.setMesh(side, null);
                   } else {
                     console.warn('invalid move tag arguments', {src, dst});
                   }
