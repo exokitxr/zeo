@@ -398,11 +398,14 @@ class World {
                 }
 
                 addManager(userId) {
-                  this.managers[userId] = new GrabManager();
+                  const manager = new GrabManager();
+                  manager.userId = userId;
+
+                  this.managers[userId] = manager;
                 }
 
                 removeManager(userId) {
-                  this.managers[userId] = new GrabManager();
+                  delete this.managers[userId];
                 }
 
                 destroy() {
@@ -456,6 +459,62 @@ class World {
                 }
               }
               const equipmentManager = new EquipmentManager();
+
+              class RemoteEquipmentManager {
+                constructor() {
+                  this.managers = {};
+
+                  multiplayer.getPlayerStatuses().forEach((status, userId) => {
+                    this.addManager(userId);
+                  });
+
+                  const _playerEnter = update => {
+                    const {id: userId} = update;
+
+                    this.addManager(userId);
+                  };
+                  multiplayer.on('playerEnter', _playerEnter);
+                  const _playerLeave = update => {
+                    const {id: userId} = update;
+
+                    this.removeManager(userId);
+                  };
+                  multiplayer.on('playerLeave', _playerLeave);
+
+                  this._cleanup = () => {
+                    multiplayer.removeListener('playerEnter', _playerEnter);
+                    multiplayer.removeListener('playerLeave', _playerLeave);
+                  };
+                }
+
+                getManagers() {
+                  const result = [];
+
+                  const {managers} = this;
+                  for (const userId in managers) {
+                    const manager = managers[userId];
+                    result.push(manager);
+                  }
+
+                  return result;
+                }
+
+                getManager(userId) {
+                  return this.managers[userId];
+                }
+
+                addManager(userId) {
+                  const manager = new EquipmentManager();
+                  manager.userId = userId;
+
+                  this.managers[userId] = manager;
+                }
+
+                removeManager(userId) {
+                  delete this.managers[userId];
+                }
+              }
+              const remoteEquipmentManager = new RemoteEquipmentManager();
 
               class InventoryManager {
                 constructor() {
@@ -1350,100 +1409,156 @@ class World {
                   highlightMesh.visible = SIDES.some(side => trashHoverStates[side].hovered);
                 };
                 const _updateEquipmentPositions = () => {
-                  const equipmentTagMeshes = equipmentManager.getTagMeshes();
+                  const _updateUserEquipmentPositions = ({
+                    equipmentTagMeshes,
+                    hmd,
+                    gamepads,
+                    bagMesh,
+                  }) => {
+                    bagMesh.updateMatrixWorld();
+                    const {equipmentBoxMeshes} = bagMesh;
 
-                  const {hmd, gamepads} = webvr.getStatus();
+                    // hmd
+                    for (let i = 0; i < 1 && i < equipmentTagMeshes.length; i++) {
+                      const equipmentTagMesh = equipmentTagMeshes[i];
 
-                  const bagMesh = bag.getBagMesh();
-                  bagMesh.updateMatrixWorld();
-                  const {equipmentBoxMeshes} = bagMesh;
+                      if (equipmentTagMesh) {
+                        const {item} = equipmentTagMesh;
+                        const {attributes} = item;
 
-                  // hmd
-                  for (let i = 0; i < 1 && i < equipmentTagMeshes.length; i++) {
-                    const equipmentTagMesh = equipmentTagMeshes[i];
-
-                    if (equipmentTagMesh) {
-                      const {item} = equipmentTagMesh;
-                      const {attributes} = item;
-
-                      if (attributes.position) {
-                        const {position, rotation, scale} = hmd;
-                        item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
-                      }
-                    }
-                  }
-
-                  // body
-                  for (let i = 1; i < 2 && i < equipmentTagMeshes.length; i++) {
-                    const equipmentTagMesh = equipmentTagMeshes[i];
-
-                    if (equipmentTagMesh) {
-                      const {item} = equipmentTagMesh;
-                      const {attributes} = item;
-
-                      if (attributes.position) {
-                        const equipmentBoxMesh = equipmentBoxMeshes[i];
-                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(equipmentBoxMesh);
-                        item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
-                      }
-                    }
-                  }
-
-                  // right gamepad
-                  for (let i = 2; i < 3 && i < equipmentTagMeshes.length; i++) {
-                    const equipmentTagMesh = equipmentTagMeshes[i];
-
-                    if (equipmentTagMesh) {
-                      const {item} = equipmentTagMesh;
-                      const {attributes} = item;
-
-                      if (attributes.position) {
-                        const gamepad = gamepads.right;
-
-                        if (gamepad) {
-                          const {position, rotation, scale} = gamepad;
-                          const newQuaternion = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0, camera.rotation.order)));
-                          item.setAttribute('position', position.toArray().concat(newQuaternion.toArray()).concat(scale.toArray()));
+                        if (attributes.position) {
+                          const {position, rotation, scale} = hmd;
+                          item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
                         }
                       }
                     }
-                  }
 
-                  // left gamepad
-                  for (let i = 3; i < 4 && i < equipmentTagMeshes.length; i++) {
-                    const equipmentTagMesh = equipmentTagMeshes[i];
+                    // body
+                    for (let i = 1; i < 2 && i < equipmentTagMeshes.length; i++) {
+                      const equipmentTagMesh = equipmentTagMeshes[i];
 
-                    if (equipmentTagMesh) {
-                      const {item} = equipmentTagMesh;
-                      const {attributes} = item;
+                      if (equipmentTagMesh) {
+                        const {item} = equipmentTagMesh;
+                        const {attributes} = item;
 
-                      if (attributes.position) {
-                        const gamepad = gamepads.left;
-
-                        if (gamepad) {
-                          const {position, rotation, scale} = gamepad;
-                          const newQuaternion = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0, camera.rotation.order)));
-                          item.setAttribute('position', position.toArray().concat(newQuaternion.toArray()).concat(scale.toArray()));
+                        if (attributes.position) {
+                          const equipmentBoxMesh = equipmentBoxMeshes[i];
+                          const {position, rotation, scale} = _decomposeObjectMatrixWorld(equipmentBoxMesh);
+                          item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
                         }
                       }
                     }
-                  }
 
-                  // right, left pockets
-                  for (let i = 4; i < 12 && i < equipmentTagMeshes.length; i++) {
-                    const equipmentTagMesh = equipmentTagMeshes[i];
+                    // right gamepad
+                    for (let i = 2; i < 3 && i < equipmentTagMeshes.length; i++) {
+                      const equipmentTagMesh = equipmentTagMeshes[i];
 
-                    if (equipmentTagMesh) {
-                      const {item} = equipmentTagMesh;
-                      const {attributes} = item;
+                      if (equipmentTagMesh) {
+                        const {item} = equipmentTagMesh;
+                        const {attributes} = item;
 
-                      if (attributes.position) {
-                        const equipmentBoxMesh = equipmentBoxMeshes[i];
-                        const {position, rotation, scale} = _decomposeObjectMatrixWorld(equipmentBoxMesh);
-                        item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                        if (attributes.position) {
+                          const gamepad = gamepads.right;
+
+                          if (gamepad) {
+                            const {position, rotation, scale} = gamepad;
+                            const newQuaternion = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0, camera.rotation.order)));
+                            item.setAttribute('position', position.toArray().concat(newQuaternion.toArray()).concat(scale.toArray()));
+                          }
+                        }
                       }
                     }
-                  }
+
+                    // left gamepad
+                    for (let i = 3; i < 4 && i < equipmentTagMeshes.length; i++) {
+                      const equipmentTagMesh = equipmentTagMeshes[i];
+
+                      if (equipmentTagMesh) {
+                        const {item} = equipmentTagMesh;
+                        const {attributes} = item;
+
+                        if (attributes.position) {
+                          const gamepad = gamepads.left;
+
+                          if (gamepad) {
+                            const {position, rotation, scale} = gamepad;
+                            const newQuaternion = rotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0, camera.rotation.order)));
+                            item.setAttribute('position', position.toArray().concat(newQuaternion.toArray()).concat(scale.toArray()));
+                          }
+                        }
+                      }
+                    }
+
+                    // right, left pockets
+                    for (let i = 4; i < 12 && i < equipmentTagMeshes.length; i++) {
+                      const equipmentTagMesh = equipmentTagMeshes[i];
+
+                      if (equipmentTagMesh) {
+                        const {item} = equipmentTagMesh;
+                        const {attributes} = item;
+
+                        if (attributes.position) {
+                          const equipmentBoxMesh = equipmentBoxMeshes[i];
+                          const {position, rotation, scale} = _decomposeObjectMatrixWorld(equipmentBoxMesh);
+                          item.setAttribute('position', position.toArray().concat(rotation.toArray()).concat(scale.toArray()));
+                        }
+                      }
+                    }
+                  };
+                  const _updateLocalEquipmentPositions = () => {
+                    const equipmentTagMeshes = equipmentManager.getTagMeshes();
+                    const {hmd, gamepads} = webvr.getStatus();
+                    const bagMesh = bag.getBagMesh();
+
+                    _updateUserEquipmentPositions({
+                      equipmentTagMeshes,
+                      hmd,
+                      gamepads,
+                      bagMesh,
+                    });
+                  };
+                  const _updateRemoteEquipmentPositions = () => {
+                    const managers = remoteEquipmentManager.getManagers();
+                    const equipmentTagMeshSpecs = (() => {
+                      const result = [];
+                      for (let i = 0; i < managers.length; i++) {
+                        const manager = managers[i];
+                        const {userId} = manager;
+
+                        const userEquipmentManager = remoteEquipmentManager.getManager(userId);
+                        const equipmentTagMeshes = userEquipmentManager.getTagMeshes();
+
+                        const remotePlayerStatus = multiplayer.getPlayerStatuses();
+                        const {hmd, gamepads} = remotePlayerStatus;
+
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                        const {bagMesh: userBagMesh} = remotePlayerMesh;
+
+                        result.push({
+                          equipmentTagMeshes,
+                          hmd,
+                          gamepads,
+                          userBagMesh,
+                        });
+                      }
+                      return result;
+                    })();
+
+                    for (let i = 0; i < equipmentTagMeshSpecs.length; i++) {
+                      const equipmentTagMeshSpec = equipmentTagMeshSpecs[i];
+                      const {equipmentTagMeshes, hmd, gamepads, bagMesh} = equipmentTagMeshSpec;
+
+                      _updateUserEquipmentPositions({
+                        equipmentTagMeshes,
+                        hmd,
+                        gamepads,
+                        bagMesh,
+                      });
+                    }
+                  };
+
+                  _updateLocalEquipmentPositions();
+                  _updateRemoteEquipmentPositions();
                 };
                 const _updateHighlight = () => {
                   const {gamepads} = webvr.getStatus();
@@ -2119,6 +2234,7 @@ class World {
 
               this._cleanup = () => {
                 remoteGrabManager.destroy();
+                remoteEquipmentManager.destroy();
 
                 SIDES.forEach(side => {
                   scene.remove(menuDotMeshes[side]);
