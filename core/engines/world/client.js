@@ -164,13 +164,6 @@ class World {
           }) => {
             if (live) {
               const localUserId = multiplayer.getId();
-              const _makeGrabState = () => ({
-                mesh: null,
-              });
-              const grabStates = {
-                left: _makeGrabState(),
-                right: _makeGrabState(),
-              };
               const _makeGrabbableState = () => ({
                 mesh: null,
               });
@@ -291,7 +284,7 @@ class World {
 
                 return newPosition.toArray().concat(newRotation.toArray()).concat(newScale.toArray());
               };
-
+ 
               class ElementManager {
                 constructor() {
                   this.tagMeshes = {};
@@ -356,6 +349,22 @@ class World {
                 }
               }
               const npmManager = new NpmManager();
+
+              class GrabManager {
+                constructor() {
+                  this.left = null;
+                  this.right = null;
+                }
+
+                getMesh(side) {
+                  return this[side];
+                }
+
+                setMesh(side, mesh) {
+                  this[side] = mesh;
+                }
+              }
+              const grabManager = new GrabManager();
 
               class EquipmentManager {
                 constructor() {
@@ -568,56 +577,74 @@ class World {
                 if (dst === 'world') {
                   const tagMesh = tags.makeTag(itemSpec);
 
-                  elementManager.add(tagMesh);
+                  const userElementManager = isMe ? elementManager : remoteElementManager.getManager(userId);
+
+                  userElementManager.add(tagMesh);
                 } else if (match = dst.match(/^hand:(left|right)$/)) {
                   const side = match[1];
 
                   const tagMesh = tags.makeTag(itemSpec);
+                  const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
+                  const userControllers = (() => {
+                    if (isMe) {
+                      return cyborg.getControllers();
+                    } else {
+                      const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                      const {controllers} = remotePlayerMesh;
+                      return controllers;
+                    }
+                  })();
 
-                  if (isMe) {
-                    const grabState = grabStates[side];
-                    grabState.mesh = tagMesh;
+                  userGrabManager.setMesh(side, tagMesh);
 
-                    const controllers = cyborg.getControllers();
-                    const controller = controllers[side];
-                    const {mesh: controllerMesh} = controller;
-                    tagMesh.position.copy(controllerMeshOffset);
-                    tagMesh.quaternion.copy(controllerMeshQuaternion);
-                    tagMesh.scale.copy(oneVector);
-                    controllerMesh.add(tagMesh);
-                  } else {
-                    // XXX need remoteGrabStates
-                  }
+                  const controller = userControllers[side];
+                  const {mesh: controllerMesh} = controller;
+                  tagMesh.position.copy(controllerMeshOffset);
+                  tagMesh.quaternion.copy(controllerMeshQuaternion);
+                  tagMesh.scale.copy(oneVector);
+                  controllerMesh.add(tagMesh);
                 } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
                   const equipmentIndex = parseInt(match[1], 10);
 
                   const tagMesh = tags.makeTag(itemSpec);
+                  
+                  const userBagMesh = (() => {
+                    if (isMe) {
+                      return bag.getBagMesh();
+                    } else {
+                      const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                      const {bagMesh} = remotePlayerMesh;
+                      return bagMesh;
+                    }
+                  })();
+                  const userEquipmentManager = isMe ? equipmentManager : remoteEquipmentManager.getManager(userId);
 
-                  if (isMe) {
-                    const bagMesh = bag.getBagMesh();
-                    const {equipmentBoxMeshes} = bagMesh;
-                    const equipmentBoxMesh = equipmentBoxMeshes[equipmentIndex];
-                    equipmentBoxMesh.add(tagMesh);
+                  const {equipmentBoxMeshes} = bagMesh;
+                  const equipmentBoxMesh = equipmentBoxMeshes[equipmentIndex];
+                  equipmentBoxMesh.add(tagMesh);
 
-                    equipmentManager.set(equipmentIndex, tagMesh);
-                  } else {
-                    // XXX need remoteBagMeshes and remoteEquipmentManager
-                  }
+                  userEquipmentManager.set(equipmentIndex, tagMesh);
                 } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
                   const inventoryIndex = parseInt(match[1], 10);
 
                   const tagMesh = tags.makeTag(itemSpec);
 
-                  if (isMe) {
-                    const backpackMesh = backpack.getBackpackMesh();
-                    const {itemBoxMeshes} = backpackMesh;
-                    const itemBoxMesh = itemBoxMeshes[inventoryIndex];
-                    itemBoxMesh.add(tagMesh);
+                  const userBackpackMesh = (() => {
+                    if (isMe) {
+                      return backpack.getBackpackMesh();
+                    } else {
+                      const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                      const {backpackMesh} = remotePlayerMesh; // XXX need to add this
+                      return backpackMesh;
+                    }
+                  })();
+                  const userInventoryManager = isMe ? inventoryManager : remoteInventoryManager.getManager(userId);
 
-                    inventoryManager.set(inventoryIndex, tagMesh)
-                  } else {
-                    // XXX need remoteInventoryManager
-                  }
+                  const {itemBoxMeshes} = userBackpackMesh;
+                  const itemBoxMesh = itemBoxMeshes[inventoryIndex];
+                  itemBoxMesh.add(tagMesh);
+
+                  userInventoryManager.set(inventoryIndex, tagMesh)
                 } else {
                   console.warn('invalid add tag arguments', {userId, itemSpec, dst});
                 }
@@ -629,16 +656,15 @@ class World {
                 if (match = src.match(/^hand:(left|right)$/)) {
                   const side = match[1];
 
-                  if (isMe) {
-                    const grabState = grabStates[side];
-                    const {mesh} = grabState;
+                  const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
+                  const userElementManager = isMe ? elementManager : remoteElementManager.getManager(userId);
 
-                    elementManager.remove(mesh);
-                    tags.destroyTag(mesh);
-                    grabState.mesh = null;
-                  } else {
-                    // XXX need remoteGrabStates
-                  }
+                  const tagMesh = userGrabManager.getMesh(side);
+
+                  userElementManager.remove(tagMesh);
+                  tags.destroyTag(tagMesh);
+
+                  userGrabManager.setMesh(side, null);
                 } else {
                   console.warn('invalid remove tag arguments', {userId, itemSpec, src});
                 }
@@ -653,22 +679,28 @@ class World {
                   if (match = dst.match(/^hand:(left|right)$/)) {
                     const side = match[1];
 
-                    const tagMesh = elementManager.getTagMesh(id);
+                    const userElementManager = isMe ? elementManager : remoteElementManager.getManager(userId);
+                    const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
+                    const userControllers = (() => {
+                      if (isMe) {
+                        return cyborg.getControllers();
+                      } else {
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                        const {controllers} = remotePlayerMesh;
+                        return controllers;
+                      }
+                    })();
 
-                    if (isMe) {
-                      const grabState = grabStates[side];
-                      grabState.mesh = tagMesh;
+                    const tagMesh = userElementManager.getTagMesh(id);
 
-                      const controllers = cyborg.getControllers();
-                      const controller = controllers[side];
-                      const {mesh: controllerMesh} = controller;
-                      controllerMesh.add(tagMesh);
-                      tagMesh.position.copy(controllerMeshOffset);
-                      tagMesh.quaternion.copy(controllerMeshQuaternion);
-                      tagMesh.scale.copy(oneVector)
-                    } else {
-                      // XXX need remoteGrabStates
-                    };
+                    userGrabManager.setMesh(side, tagMesh);
+
+                    const controller = userControllers[side];
+                    const {mesh: controllerMesh} = controller;
+                    controllerMesh.add(tagMesh);
+                    tagMesh.position.copy(controllerMeshOffset);
+                    tagMesh.quaternion.copy(controllerMeshQuaternion);
+                    tagMesh.scale.copy(oneVector)
 
                     _unreifyTag(tagMesh);
                   } else {
@@ -677,129 +709,161 @@ class World {
                 } else if (match = src.match(/^hand:(left|right)$/)) {
                   const side = match[1];
 
-                  const grabState = isMe ? grabStates[side] : remoteGrabStates[userId][side]; // XXX need remoteGrabStates
-                  const {mesh: tagMesh} = grabState;
+                  const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
+                  const tagMesh = userGrabManager.getMesh(side);
 
                   if (match = dst.match(/^world:(.+)$/)) {
                     const matrixArrayString = match[1];
                     const matrixArray = JSON.parse(matrixArrayString);
 
-                    if (isMe) {
-                      tagMesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
-                      tagMesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
-                      tagMesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
+                    const userElementManager = isMe ? elementManager : remoteElementManager.getManager(userId);
 
-                      elementManager.add(tagMesh);
-                      grabState.mesh = null;
-                    } else {
-                      // XXX need remoteElementManager
-                    }
+                    tagMesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
+                    tagMesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
+                    tagMesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
+
+                    userElementManager.add(tagMesh);
+
+                    userGrabManager.setMesh(side, null);
                   } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
                     const equipmentIndex = parseInt(match[1], 10);
 
-                    if (isMe) {
-                      const bagMesh = bag.getBagMesh();
-                      const {equipmentBoxMeshes} = bagMesh;
-                      const equipmentBoxMesh = equipmentBoxMeshes[equipmentIndex];
-                      equipmentBoxMesh.add(tagMesh);
-                      tagMesh.position.copy(zeroVector);
-                      tagMesh.quaternion.copy(zeroQuaternion);
-                      tagMesh.scale.copy(oneVector);
+                    const userBagMesh = (() => {
+                      if (isMe) {
+                        return bag.getBagMesh();
+                      } else {
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                        const {bagMesh} = remotePlayerMesh;
+                        return bagMesh;
+                      }
+                    })();
+                    const userEquipmentManager = isMe ? equipmentManager : remoteEquipmentManager.getManager(userId);
 
-                      equipmentManager.set(equipmentIndex, tagMesh);
-                      grabState.mesh = null;
-                    } else {
-                      // XXX need remoteBagMeshes and remoteEquipmentManager
-                    }
+                    const {equipmentBoxMeshes} = userBagMesh;
+                    const equipmentBoxMesh = equipmentBoxMeshes[equipmentIndex];
+                    equipmentBoxMesh.add(tagMesh);
+                    tagMesh.position.copy(zeroVector);
+                    tagMesh.quaternion.copy(zeroQuaternion);
+                    tagMesh.scale.copy(oneVector);
+
+                    userEquipmentManager.set(equipmentIndex, tagMesh);
+
+                    userGrabManager.setMesh(null);
                   } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
                     const inventoryIndex = parseInt(match[1], 10);
 
-                    if (isMe) {
-                      const backpackMesh = backpack.getBackpackMesh();
-                      const {itemBoxMeshes} = backpackMesh;
-                      const itemBoxMesh = itemBoxMeshes[inventoryIndex];
-                      itemBoxMesh.add(tagMesh);
-                      tagMesh.position.copy(zeroVector);
-                      tagMesh.quaternion.copy(zeroQuaternion);
-                      tagMesh.scale.copy(oneVector);
+                    const userBackpackMesh = (() => {
+                      if (isMe) {
+                        return backpack.getBackpackMesh();
+                      } else {
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                        const {backpackMesh} = remotePlayerMesh; // XXX need to add this
+                        return backpackMesh;
+                      }
+                    })();
+                    const userInventoryManager = isMe ? inventoryManager : remoteInventoryManager.getManager(userId);
 
-                      inventoryManager.set(inventoryIndex, tagMesh);
-                      grabState.mesh = null
-                    } else {
-                      // XXX need remoteInventoryManager
-                    };
+                    const {itemBoxMeshes} = userBackpackMesh;
+                    const itemBoxMesh = itemBoxMeshes[inventoryIndex];
+                    itemBoxMesh.add(tagMesh);
+                    tagMesh.position.copy(zeroVector);
+                    tagMesh.quaternion.copy(zeroQuaternion);
+                    tagMesh.scale.copy(oneVector);
+
+                    userInventoryManager.set(inventoryIndex, tagMesh);
+
+                    userGrabManager.setMesh(null);
                   } else {
                     console.warn('invalid move tag arguments', {itemSpec, src, dst});
                   }
                 } else if (match = src.match(/^equipment:([0-9]+)$/)) {
                   const srcEquipmentIndex = parseInt(match[1], 10);
 
-                  const equipmentTagMeshes = isMe ? equipmentManager.getTagMeshes() : remoteEquipmentManager.getTagMeshes(userId); // XXX need remoteEquipmentManager
+                  const userEquipmentManager = isMe ? equipmentManager : remoteEquipmentManager.getManager(userId);
+                  const equipmentTagMeshes = userEquipmentManager.getTagMeshes();
                   const tagMesh = equipmentTagMeshes[srcEquipmentIndex];
 
                   if (match = dst.match(/^hand:(left|right)$/)) {
                     const side = match[1];
 
-                    if (isMe) {
-                      const grabState = grabStates[side];
-                      grabState.mesh = tagMesh;
+                    const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
+                    const userControllers = (() => {
+                      if (isMe) {
+                        return cyborg.getControllers();
+                      } else {
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                        const {controllers} = remotePlayerMesh;
+                        return controllers;
+                      }
+                    })();
 
-                      const controllers = cyborg.getControllers();
-                      const controller = controllers[side];
-                      const {mesh: controllerMesh} = controller;
-                      controllerMesh.add(tagMesh);
-                      tagMesh.position.copy(controllerMeshOffset);
-                      tagMesh.quaternion.copy(controllerMeshQuaternion);
-                      tagMesh.scale.copy(oneVector);
+                    userGrabManager.setMesh(side, tagMesh);
 
-                      equipmentManager.unset(srcEquipmentIndex)
-                    } else {
-                      // XXX need remoteGrabStates and remoteEquipmentManager
-                    }
+                    const controller = userControllers[side];
+                    const {mesh: controllerMesh} = controller;
+                    controllerMesh.add(tagMesh);
+                    tagMesh.position.copy(controllerMeshOffset);
+                    tagMesh.quaternion.copy(controllerMeshQuaternion);
+                    tagMesh.scale.copy(oneVector);
+
+                    userEquipmentManager.unset(srcEquipmentIndex)
                   } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
                     const dstEquipmentIndex = parseInt(match[1], 10);
 
-                    if (isMe) {
-                      const bagMesh = bag.getBagMesh();
-                      const {equipmentBoxMeshes} = bagMesh;
-                      const equipmentBoxMesh = equipmentBoxMeshes[dstEquipmentIndex];
-                      equipmentBoxMesh.add(tagMesh);
-                      tagMesh.position.copy(zeroVector);
-                      tagMesh.quaternion.copy(zeroQuaternion);
-                      tagMesh.scale.copy(oneVector);
+                    const userBagMesh = (() => {
+                      if (isMe) {
+                        return bag.getBagMesh();
+                      } else {
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                        const {bagMesh} = remotePlayerMesh;
+                        return bagMesh;
+                      }
+                    })();
+                    const userEquipmentManager = isMe ? equipmentManager : remoteEquipmentManager.getManager(userId);
 
-                      equipmentManager.move(srcEquipmentIndex, dstEquipmentIndex);
-                    } else {
-                      // XXX need remoteBagMeshes and remoteEquipmentManager
-                    }
+                    const {equipmentBoxMeshes} = userBagMesh;
+                    const equipmentBoxMesh = equipmentBoxMeshes[dstEquipmentIndex];
+                    equipmentBoxMesh.add(tagMesh);
+                    tagMesh.position.copy(zeroVector);
+                    tagMesh.quaternion.copy(zeroQuaternion);
+                    tagMesh.scale.copy(oneVector);
+
+                    userEquipmentManager.move(srcEquipmentIndex, dstEquipmentIndex);
                   } else {
                     console.warn('invalid move tag arguments', {itemSpec, src, dst});
                   }
                 } else if (match = src.match(/^inventory:([0-9]+)$/)) {
                   const inventoryIndex = parseInt(match[1], 10);
 
-                  const inventoryTagMeshes = isMe ? inventoryManager.getTagMeshes() : remoteInventoryManager.getTagMeshes(userId); // XXX need remoteInventoryManager
+                  const userInventoryManager = isMe ? inventoryManager : remoteInventoryManager.getManager(userId);
+                  const inventoryTagMeshes = userInventoryManager.getTagMeshes();
                   const tagMesh = inventoryTagMeshes[inventoryIndex];
 
                   if (match = dst.match(/^hand:(left|right)$/)) {
                     const side = match[1];
 
-                    if (isMe) {
-                      const grabState = grabStates[side];
-                      grabState.mesh = tagMesh;
+                    const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
+                    const userControllers = (() => {
+                      if (isMe) {
+                        return cyborg.getControllers();
+                      } else {
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+                        const {controllers} = remotePlayerMesh;
+                        return controllers;
+                      }
+                    })();
+                    const userInventoryManager = isMe ? inventoryManager : remoteInventoryManager.getManager(userId);
 
-                      const controllers = cyborg.getControllers();
-                      const controller = controllers[side];
-                      const {mesh: controllerMesh} = controller;
-                      controllerMesh.add(tagMesh);
-                      tagMesh.position.copy(controllerMeshOffset);
-                      tagMesh.quaternion.copy(controllerMeshQuaternion);
-                      tagMesh.scale.copy(oneVector);
+                    userGrabManager.setMesh(side, tagMesh);
 
-                      inventoryManager.unset(inventoryIndex);
-                    } else {
-                      // XXX need remoteGrabStates and remoteInventoryManager
-                    }
+                    const controller = userControllers[side];
+                    const {mesh: controllerMesh} = controller;
+                    controllerMesh.add(tagMesh);
+                    tagMesh.position.copy(controllerMeshOffset);
+                    tagMesh.quaternion.copy(controllerMeshQuaternion);
+                    tagMesh.scale.copy(oneVector);
+
+                    userInventoryManager.unset(inventoryIndex);
                   } else {
                     console.warn('invalid move tag arguments', {itemSpec, src, dst});
                   }
@@ -1112,8 +1176,7 @@ class World {
 
                   if (isOpen) {
                     const _getBestGrabbable = (side, objects) => {
-                      const grabState = grabStates[side];
-                      const {mesh: grabMesh} = grabState;
+                      const grabMesh = grabManager.getMesh(side);
 
                       if (!grabMesh) {
                         const {gamepads} = webvr.getStatus();
@@ -1465,8 +1528,7 @@ class World {
                     if (gripPressed) {
                       const npmHoverState = npmHoverStates[side];
                       const {intersectionPoint} = npmHoverState;
-                      const grabState = grabStates[side];
-                      const {mesh: grabMesh} = grabState;
+                      const grabMesh = grabManager.getMesh(side);
 
                       if (intersectionPoint && !grabMesh) {
                         const {anchor} = npmHoverState;
@@ -1551,8 +1613,7 @@ class World {
                     if (hoveredItemIndex !== -1) {
                       const inventoryTagMeshes = inventoryManager.getTagMeshes();
                       const hoveredItemTagMesh = inventoryTagMeshes[hoveredItemIndex];
-                      const grabState = grabStates[side];
-                      const {mesh: grabMesh} = grabState;
+                      const grabMesh = grabManager.getMesh(side);
 
                       if (hoveredItemTagMesh && !grabMesh) {
                         _moveTag('inventory:' + hoveredItemIndex, 'hand:' + side);
@@ -1579,8 +1640,7 @@ class World {
                     if (hoveredEquipmentIndex !== -1) {
                       const equipmentTagMeshes = equipmentManager.getTagMeshes();
                       const hoveredEquipmentTagMesh = equipmentTagMeshes[hoveredEquipmentIndex];
-                      const grabState = grabStates[side];
-                      const {mesh: grabMesh} = grabState;
+                      const grabMesh = grabManager.getMesh(side);
 
                       if (hoveredEquipmentTagMesh && !grabMesh) {
                         _moveTag('equipment:' + hoveredEquipmentIndex, 'hand:' + side);
@@ -1698,8 +1758,7 @@ class World {
                 const isOpen = rend.isOpen();
 
                 if (isOpen) {
-                  const grabState = grabStates[side];
-                  const {mesh: grabMesh} = grabState;
+                  const grabMesh = grabManager.getMesh(side);
 
                   if (grabMesh) {
                     const _releaseTrashTag = () => {
@@ -1862,8 +1921,7 @@ class World {
 
                     for (let i = 0; i < SIDES.length; i++) {
                       const side = SIDES[i];
-                      const grabState = grabStates[side];
-                      const {mesh: grabMesh} = grabState;
+                      const grabMesh = grabManager.getMesh(side);
 
                       if (grabMesh && grabMesh.item.id === id) {
                         return 'hand:' + side;
