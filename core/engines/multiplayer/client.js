@@ -136,15 +136,13 @@ class Multiplayer {
               object.add(hmd);
               object.hmd = hmd;
 
-              const controllers = (() => {
-                const result = [controllerMesh.clone(), controllerMesh.clone()];
-                result.left = result[0];
-                result.right = result[1];
-                return result;
-              })();
-              controllers.forEach(controller => {
-                object.add(controller);
-              });
+              const _makeControllerMesh = () => controllerMesh.clone();
+              const controllers = {
+                left: _makeControllerMesh(),
+                right: _makeControllerMesh(),
+              };
+              object.add(controllers.left);
+              object.add(controllers.right);
               object.controllers = controllers;
 
               const bagMesh = bag.makeBagMesh();

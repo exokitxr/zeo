@@ -393,7 +393,7 @@ class World {
 
                                   cb = (cb => err => {
                                     if (!err) {
-                                      _broadcast('moveTag', [userId, id, src, dst]);
+                                      _broadcast('moveTag', [userId, src, dst]);
                                     }
 
                                     cb(err);
