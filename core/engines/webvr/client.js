@@ -461,10 +461,17 @@ class WebVR {
                             onExit();
                           }
                         };
-                        document.addEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
+                        window.addEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
+                        const keydown = e => {
+                          if (e.keyCode === 27) { // esc
+                            display.exitPresent();
+                          }
+                        };
+                        document.addEventListener('keydown', keydown);
 
                         cleanups.push(() => {
-                          document.removeEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
+                          window.removeEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
+                          document.removeEventListener('keydown', keydown);
                         });
                       }
                     };
