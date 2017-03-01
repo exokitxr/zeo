@@ -562,17 +562,19 @@ class World {
               };
 
               const _handleAddTag = (userId, itemSpec, dst) => {
-                if (userId === localUserId) {
-                  let match;
-                  if (dst === 'world') {
-                    const tagMesh = tags.makeTag(itemSpec);
+                const isMe = userId === localUserId;
 
-                    elementManager.add(tagMesh);
-                  } else if (match = dst.match(/^hand:(left|right)$/)) {
-                    const side = match[1];
+                let match;
+                if (dst === 'world') {
+                  const tagMesh = tags.makeTag(itemSpec);
 
-                    const tagMesh = tags.makeTag(itemSpec);
+                  elementManager.add(tagMesh);
+                } else if (match = dst.match(/^hand:(left|right)$/)) {
+                  const side = match[1];
 
+                  const tagMesh = tags.makeTag(itemSpec);
+
+                  if (isMe) {
                     const grabState = grabStates[side];
                     grabState.mesh = tagMesh;
 
@@ -583,41 +585,51 @@ class World {
                     tagMesh.quaternion.copy(controllerMeshQuaternion);
                     tagMesh.scale.copy(oneVector);
                     controllerMesh.add(tagMesh);
-                  } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
-                    const equipmentIndex = parseInt(match[1], 10);
+                  } else {
+                    // XXX need remoteGrabStates
+                  }
+                } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                  const equipmentIndex = parseInt(match[1], 10);
 
-                    const tagMesh = tags.makeTag(itemSpec);
+                  const tagMesh = tags.makeTag(itemSpec);
 
+                  if (isMe) {
                     const bagMesh = bag.getBagMesh();
                     const {equipmentBoxMeshes} = bagMesh;
                     const equipmentBoxMesh = equipmentBoxMeshes[equipmentIndex];
                     equipmentBoxMesh.add(tagMesh);
 
                     equipmentManager.set(equipmentIndex, tagMesh);
-                  } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
-                    const inventoryIndex = parseInt(match[1], 10);
+                  } else {
+                    // XXX need remoteBagMeshes and remoteEquipmentManager
+                  }
+                } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
+                  const inventoryIndex = parseInt(match[1], 10);
 
-                    const tagMesh = tags.makeTag(itemSpec);
+                  const tagMesh = tags.makeTag(itemSpec);
 
+                  if (isMe) {
                     const backpackMesh = backpack.getBackpackMesh();
                     const {itemBoxMeshes} = backpackMesh;
                     const itemBoxMesh = itemBoxMeshes[inventoryIndex];
                     itemBoxMesh.add(tagMesh);
 
-                    inventoryManager.set(inventoryIndex, tagMesh);
+                    inventoryManager.set(inventoryIndex, tagMesh)
                   } else {
-                    console.warn('invalid add tag arguments', {userId, itemSpec, dst});
+                    // XXX need remoteInventoryManager
                   }
                 } else {
-                  // XXX add tag to remote user's controller mesh
+                  console.warn('invalid add tag arguments', {userId, itemSpec, dst});
                 }
               };
               const _handleRemoveTag = (userId, src) => {
-                if (userId === localUserId) {
-                  let match;
-                  if (match = src.match(/^hand:(left|right)$/)) {
-                    const side = match[1];
+                const isMe = userId === localUserId;
 
+                let match;
+                if (match = src.match(/^hand:(left|right)$/)) {
+                  const side = match[1];
+
+                  if (isMe) {
                     const grabState = grabStates[side];
                     const {mesh} = grabState;
 
@@ -625,23 +637,25 @@ class World {
                     tags.destroyTag(mesh);
                     grabState.mesh = null;
                   } else {
-                    console.warn('invalid remove tag arguments', {userId, itemSpec, src});
+                    // XXX need remoteGrabStates
                   }
                 } else {
-                  // XXX add tag to remote user's controller mesh
+                  console.warn('invalid remove tag arguments', {userId, itemSpec, src});
                 }
               };
               const _handleMoveTag = (userId, src, dst) => {
-                if (userId === localUserId) {
-                  let match;
-                  if (match = src.match(/^world:(.+)$/)) {
-                    const id = match[1];
+                const isMe = userId === localUserId;
 
-                    if (match = dst.match(/^hand:(left|right)$/)) {
-                      const side = match[1];
+                let match;
+                if (match = src.match(/^world:(.+)$/)) {
+                  const id = match[1];
 
-                      const tagMesh = elementManager.getTagMesh(id);
+                  if (match = dst.match(/^hand:(left|right)$/)) {
+                    const side = match[1];
 
+                    const tagMesh = elementManager.getTagMesh(id);
+
+                    if (isMe) {
                       const grabState = grabStates[side];
                       grabState.mesh = tagMesh;
 
@@ -651,33 +665,39 @@ class World {
                       controllerMesh.add(tagMesh);
                       tagMesh.position.copy(controllerMeshOffset);
                       tagMesh.quaternion.copy(controllerMeshQuaternion);
-                      tagMesh.scale.copy(oneVector);
-
-                      _unreifyTag(tagMesh);
+                      tagMesh.scale.copy(oneVector)
                     } else {
-                      console.warn('invalid move tag arguments', {itemSpec, src, dst});
-                    }
-                  } else if (match = src.match(/^hand:(left|right)$/)) {
-                    const side = match[1];
+                      // XXX need remoteGrabStates
+                    };
 
-                    if (match = dst.match(/^world:(.+)$/)) {
-                      const matrixArrayString = match[1];
-                      const matrixArray = JSON.parse(matrixArrayString);
+                    _unreifyTag(tagMesh);
+                  } else {
+                    console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                  }
+                } else if (match = src.match(/^hand:(left|right)$/)) {
+                  const side = match[1];
 
-                      const grabState = grabStates[side];
-                      const {mesh} = grabState;
-                      mesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
-                      mesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
-                      mesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
+                  const grabState = isMe ? grabStates[side] : remoteGrabStates[userId][side]; // XXX need remoteGrabStates
+                  const {mesh: tagMesh} = grabState;
 
-                      elementManager.add(mesh);
+                  if (match = dst.match(/^world:(.+)$/)) {
+                    const matrixArrayString = match[1];
+                    const matrixArray = JSON.parse(matrixArrayString);
+
+                    if (isMe) {
+                      tagMesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
+                      tagMesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
+                      tagMesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
+
+                      elementManager.add(tagMesh);
                       grabState.mesh = null;
-                    } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
-                      const equipmentIndex = parseInt(match[1], 10);
+                    } else {
+                      // XXX need remoteElementManager
+                    }
+                  } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                    const equipmentIndex = parseInt(match[1], 10);
 
-                      const grabState = grabStates[side];
-                      const {mesh: tagMesh} = grabState;
-
+                    if (isMe) {
                       const bagMesh = bag.getBagMesh();
                       const {equipmentBoxMeshes} = bagMesh;
                       const equipmentBoxMesh = equipmentBoxMeshes[equipmentIndex];
@@ -688,12 +708,13 @@ class World {
 
                       equipmentManager.set(equipmentIndex, tagMesh);
                       grabState.mesh = null;
-                    } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
-                      const inventoryIndex = parseInt(match[1], 10);
+                    } else {
+                      // XXX need remoteBagMeshes and remoteEquipmentManager
+                    }
+                  } else if (match = dst.match(/^inventory:([0-9]+)$/)) {
+                    const inventoryIndex = parseInt(match[1], 10);
 
-                      const grabState = grabStates[side];
-                      const {mesh: tagMesh} = grabState;
-
+                    if (isMe) {
                       const backpackMesh = backpack.getBackpackMesh();
                       const {itemBoxMeshes} = backpackMesh;
                       const itemBoxMesh = itemBoxMeshes[inventoryIndex];
@@ -703,19 +724,23 @@ class World {
                       tagMesh.scale.copy(oneVector);
 
                       inventoryManager.set(inventoryIndex, tagMesh);
-                      grabState.mesh = null;
+                      grabState.mesh = null
                     } else {
-                      console.warn('invalid move tag arguments', {itemSpec, src, dst});
-                    }
-                  } else if (match = src.match(/^equipment:([0-9]+)$/)) {
-                    const srcEquipmentIndex = parseInt(match[1], 10);
+                      // XXX need remoteInventoryManager
+                    };
+                  } else {
+                    console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                  }
+                } else if (match = src.match(/^equipment:([0-9]+)$/)) {
+                  const srcEquipmentIndex = parseInt(match[1], 10);
 
-                    if (match = dst.match(/^hand:(left|right)$/)) {
-                      const side = match[1];
+                  const equipmentTagMeshes = isMe ? equipmentManager.getTagMeshes() : remoteEquipmentManager.getTagMeshes(userId); // XXX need remoteEquipmentManager
+                  const tagMesh = equipmentTagMeshes[srcEquipmentIndex];
 
-                      const equipmentTagMeshes = equipmentManager.getTagMeshes();
-                      const tagMesh = equipmentTagMeshes[srcEquipmentIndex];
+                  if (match = dst.match(/^hand:(left|right)$/)) {
+                    const side = match[1];
 
+                    if (isMe) {
                       const grabState = grabStates[side];
                       grabState.mesh = tagMesh;
 
@@ -727,13 +752,14 @@ class World {
                       tagMesh.quaternion.copy(controllerMeshQuaternion);
                       tagMesh.scale.copy(oneVector);
 
-                      equipmentManager.unset(srcEquipmentIndex);
-                    } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
-                      const dstEquipmentIndex = parseInt(match[1], 10);
+                      equipmentManager.unset(srcEquipmentIndex)
+                    } else {
+                      // XXX need remoteGrabStates and remoteEquipmentManager
+                    }
+                  } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+                    const dstEquipmentIndex = parseInt(match[1], 10);
 
-                      const equipmentTagMeshes = equipmentManager.getTagMeshes();
-                      const tagMesh = equipmentTagMeshes[srcEquipmentIndex];
-
+                    if (isMe) {
                       const bagMesh = bag.getBagMesh();
                       const {equipmentBoxMeshes} = bagMesh;
                       const equipmentBoxMesh = equipmentBoxMeshes[dstEquipmentIndex];
@@ -744,17 +770,21 @@ class World {
 
                       equipmentManager.move(srcEquipmentIndex, dstEquipmentIndex);
                     } else {
-                      console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                      // XXX need remoteBagMeshes and remoteEquipmentManager
                     }
-                  } else if (match = src.match(/^inventory:([0-9]+)$/)) {
-                    const inventoryIndex = parseInt(match[1], 10);
+                  } else {
+                    console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                  }
+                } else if (match = src.match(/^inventory:([0-9]+)$/)) {
+                  const inventoryIndex = parseInt(match[1], 10);
 
-                    if (match = dst.match(/^hand:(left|right)$/)) {
-                      const side = match[1];
+                  const inventoryTagMeshes = isMe ? inventoryManager.getTagMeshes() : remoteInventoryManager.getTagMeshes(userId); // XXX need remoteInventoryManager
+                  const tagMesh = inventoryTagMeshes[inventoryIndex];
 
-                      const inventoryTagMeshes = inventoryManager.getTagMeshes();
-                      const tagMesh = inventoryTagMeshes[inventoryIndex];
+                  if (match = dst.match(/^hand:(left|right)$/)) {
+                    const side = match[1];
 
+                    if (isMe) {
                       const grabState = grabStates[side];
                       grabState.mesh = tagMesh;
 
@@ -768,29 +798,26 @@ class World {
 
                       inventoryManager.unset(inventoryIndex);
                     } else {
-                      console.warn('invalid move tag arguments', {itemSpec, src, dst});
+                      // XXX need remoteGrabStates and remoteInventoryManager
                     }
                   } else {
                     console.warn('invalid move tag arguments', {itemSpec, src, dst});
                   }
                 } else {
-                  // XXX add tag to remote user's controller mesh
+                  console.warn('invalid move tag arguments', {itemSpec, src, dst});
                 }
               };
               const _handleSetTagAttribute = (userId, src, attribute, value) => {
-                if (userId === localUserId) {
-                  let match;
-                  if (match = src.match(/^world:(.+)$/)) {
-                    const id = match[1];
+                // same for local and remote user ids
+                let match;
+                if (match = src.match(/^world:(.+)$/)) {
+                  const id = match[1];
 
-                    const tagMesh = elementManager.getTagMesh(id);
-                    const {item} = tagMesh;
-                    item.setAttribute(attribute, value);
-                  } else {
-                    console.warn('invalid set tag attribute arguments', {src, attributeName, attributeValue});
-                  }
+                  const tagMesh = elementManager.getTagMesh(id);
+                  const {item} = tagMesh;
+                  item.setAttribute(attribute, value);
                 } else {
-                  // XXX set property on remote user's mesh
+                  console.warn('invalid set tag attribute arguments', {src, attributeName, attributeValue});
                 }
               };
 
