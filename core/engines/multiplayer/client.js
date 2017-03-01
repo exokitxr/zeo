@@ -24,6 +24,7 @@ class Multiplayer {
       '/core/engines/servers',
       '/core/engines/rend',
       '/core/engines/bag',
+      '/core/engines/backpack',
       '/core/plugins/js-utils',
     ]).then(([
       hub,
@@ -33,6 +34,7 @@ class Multiplayer {
       servers,
       rend,
       bag,
+      backpack,
       jsUtils,
     ]) => {
       if (live) {
@@ -148,6 +150,10 @@ class Multiplayer {
               const bagMesh = bag.makeBagMesh();
               object.add(bagMesh);
               object.bagMesh = bagMesh;
+
+              const backpackMesh = backpack.makeBackpackMesh();
+              object.add(backpackMesh);
+              object.backpackMesh = backpackMesh;
 
               _updateRemotePlayerMesh(object, status);
 

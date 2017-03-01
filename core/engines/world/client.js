@@ -784,7 +784,7 @@ class World {
                       return backpack.getBackpackMesh();
                     } else {
                       const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
-                      const {backpackMesh} = remotePlayerMesh; // XXX need to add this
+                      const {backpackMesh} = remotePlayerMesh;
                       return backpackMesh;
                     }
                   })();
@@ -903,7 +903,7 @@ class World {
                         return backpack.getBackpackMesh();
                       } else {
                         const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
-                        const {backpackMesh} = remotePlayerMesh; // XXX need to add this
+                        const {backpackMesh} = remotePlayerMesh;
                         return backpackMesh;
                       }
                     })();
