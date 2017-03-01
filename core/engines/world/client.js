@@ -366,6 +366,51 @@ class World {
               }
               const grabManager = new GrabManager();
 
+              class RemoteGrabManager {
+                constructor() {
+                  this.managers = {};
+
+                  multiplayer.getPlayerStatuses().forEach((status, userId) => {
+                    this.addManager(userId);
+                  });
+
+                  const _playerEnter = update => {
+                    const {id: userId} = update;
+
+                    this.addManager(userId);
+                  };
+                  multiplayer.on('playerEnter', _playerEnter);
+                  const _playerLeave = update => {
+                    const {id: userId} = update;
+
+                    this.removeManager(userId);
+                  };
+                  multiplayer.on('playerLeave', _playerLeave);
+
+                  this._cleanup = () => {
+                    multiplayer.removeListener('playerEnter', _playerEnter);
+                    multiplayer.removeListener('playerLeave', _playerLeave);
+                  };
+                }
+
+                getManager(userId) {
+                  return this.managers[userId];
+                }
+
+                addManager(userId) {
+                  this.managers[userId] = new GrabManager();
+                }
+
+                removeManager(userId) {
+                  this.managers[userId] = new GrabManager();
+                }
+
+                destroy() {
+                  this._cleanup();
+                }
+              }
+              const remoteGrabManager = new RemoteGrabManager();
+
               class EquipmentManager {
                 constructor() {
                   const tagMeshes = (() => {
@@ -2073,6 +2118,8 @@ class World {
               _updateEnabled();
 
               this._cleanup = () => {
+                remoteGrabManager.destroy();
+
                 SIDES.forEach(side => {
                   scene.remove(menuDotMeshes[side]);
                   scene.remove(menuBoxMeshes[side]);
