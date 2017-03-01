@@ -1580,13 +1580,13 @@ class World {
                         const {hmd, gamepads} = remotePlayerStatus;
 
                         const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
-                        const {bagMesh: userBagMesh} = remotePlayerMesh;
+                        const {bagMesh} = remotePlayerMesh;
 
                         result.push({
                           equipmentTagMeshes,
                           hmd,
                           gamepads,
-                          userBagMesh,
+                          bagMesh,
                         });
                       }
                       return result;
