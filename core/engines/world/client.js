@@ -544,6 +544,54 @@ class World {
               }
               const inventoryManager = new InventoryManager();
 
+              class RemoteInventoryManager {
+                constructor() {
+                  this.managers = {};
+
+                  multiplayer.getPlayerStatuses().forEach((status, userId) => {
+                    this.addManager(userId);
+                  });
+
+                  const _playerEnter = update => {
+                    const {id: userId} = update;
+
+                    this.addManager(userId);
+                  };
+                  multiplayer.on('playerEnter', _playerEnter);
+                  const _playerLeave = update => {
+                    const {id: userId} = update;
+
+                    this.removeManager(userId);
+                  };
+                  multiplayer.on('playerLeave', _playerLeave);
+
+                  this._cleanup = () => {
+                    multiplayer.removeListener('playerEnter', _playerEnter);
+                    multiplayer.removeListener('playerLeave', _playerLeave);
+                  };
+                }
+
+                getManager(userId) {
+                  return this.managers[userId];
+                }
+
+                addManager(userId) {
+                  const manager = new InventoryManager();
+                  manager.userId = userId;
+
+                  this.managers[userId] = manager;
+                }
+
+                removeManager(userId) {
+                  delete this.managers[userId];
+                }
+
+                destroy() {
+                  this._cleanup();
+                }
+              }
+              const remoteInventoryManager = new RemoteInventoryManager();
+
               class WorldTimer {
                 constructor(startTime = 0) {
                   this.startTime = startTime;
