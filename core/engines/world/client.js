@@ -577,9 +577,7 @@ class World {
                 if (dst === 'world') {
                   const tagMesh = tags.makeTag(itemSpec);
 
-                  const userElementManager = isMe ? elementManager : remoteElementManager.getManager(userId);
-
-                  userElementManager.add(tagMesh);
+                  elementManager.add(tagMesh);
                 } else if (match = dst.match(/^hand:(left|right)$/)) {
                   const side = match[1];
 
@@ -657,11 +655,10 @@ class World {
                   const side = match[1];
 
                   const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
-                  const userElementManager = isMe ? elementManager : remoteElementManager.getManager(userId);
 
                   const tagMesh = userGrabManager.getMesh(side);
 
-                  userElementManager.remove(tagMesh);
+                  elementManager.remove(tagMesh);
                   tags.destroyTag(tagMesh);
 
                   userGrabManager.setMesh(side, null);
@@ -679,7 +676,6 @@ class World {
                   if (match = dst.match(/^hand:(left|right)$/)) {
                     const side = match[1];
 
-                    const userElementManager = isMe ? elementManager : remoteElementManager.getManager(userId);
                     const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
                     const userControllers = (() => {
                       if (isMe) {
@@ -691,7 +687,7 @@ class World {
                       }
                     })();
 
-                    const tagMesh = userElementManager.getTagMesh(id);
+                    const tagMesh = elementManager.getTagMesh(id);
 
                     userGrabManager.setMesh(side, tagMesh);
 
@@ -716,13 +712,11 @@ class World {
                     const matrixArrayString = match[1];
                     const matrixArray = JSON.parse(matrixArrayString);
 
-                    const userElementManager = isMe ? elementManager : remoteElementManager.getManager(userId);
-
                     tagMesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
                     tagMesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
                     tagMesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
 
-                    userElementManager.add(tagMesh);
+                    elementManager.add(tagMesh);
 
                     userGrabManager.setMesh(side, null);
                   } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
