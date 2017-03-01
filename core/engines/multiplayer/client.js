@@ -155,7 +155,7 @@ class Multiplayer {
             };
             const _updateRemotePlayerMesh = (remotePlayerMesh, status) => {
               const _updateHmd = () => {
-                const {hmd} = remotePlayerMesh
+                const {hmd} = remotePlayerMesh;
 
                 const {hmd: hmdStatus} = status;
 
@@ -176,12 +176,12 @@ class Multiplayer {
                 rightController.quaternion.fromArray(rightControllerStatus.rotation);
               };
               const _updateBagMesh = () => {
-                const {hmd} = webvr.getStatus();
+                const {hmd: hmdStatus} = status;
 
                 const {bagMesh} = remotePlayerMesh;
 
-                bagMesh.position.copy(hmd.position);
-                const hmdRotation = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order);
+                bagMesh.position.fromArray(hmdStatus.position);
+                const hmdRotation = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdStatus.rotation), camera.rotation.order);
                 bagMesh.rotation.y = hmdRotation.y;
               };
 
