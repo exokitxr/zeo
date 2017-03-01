@@ -276,36 +276,44 @@ class World {
                               }
                             };
                             const _saveEquipment = _debounce(next => {
-                              _requestHub({
-                                authentication,
-                                method: 'PUT',
-                                url: '/hub/world/equipment.json',
-                                body: equipmentJson,
-                              })
-                                .then(() => {
-                                  next();
+                              if (hubSpec) {
+                                _requestHub({
+                                  authentication,
+                                  method: 'PUT',
+                                  url: '/hub/world/equipment.json',
+                                  body: equipmentJson,
                                 })
-                                .catch(err => {
-                                  console.warn(err);
+                                  .then(() => {
+                                    next();
+                                  })
+                                  .catch(err => {
+                                    console.warn(err);
 
-                                  next();
-                                });
+                                    next();
+                                  });
+                              } else {
+                                console.warn('not saving equipment due to invalid hub spec');
+                              }
                             });
                             const _saveInventory = _debounce(next => {
-                              _requestHub({
-                                authentication,
-                                method: 'PUT',
-                                url: '/hub/world/inventory.json',
-                                body: inventoryJson,
-                              })
-                                .then(() => {
-                                  next();
+                              if (hubSpec) {
+                                _requestHub({
+                                  authentication,
+                                  method: 'PUT',
+                                  url: '/hub/world/inventory.json',
+                                  body: inventoryJson,
                                 })
-                                .catch(err => {
-                                  console.warn(err);
+                                  .then(() => {
+                                    next();
+                                  })
+                                  .catch(err => {
+                                    console.warn(err);
 
-                                  next();
-                                });
+                                    next();
+                                  });
+                              } else {
+                                console.warn('not saving inventory due to invalid hub spec');
+                              }
                             });
 
                             c.on('message', s => {
