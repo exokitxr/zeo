@@ -531,31 +531,35 @@ class WebVR {
             const _getGamepadsStatus = ({stageMatrix}) => {
               const {display} = this;
               const gamepads = (() => {
-                if (display && display.getGamepads) {
-                  const gamepads = display.getGamepads();
-                  const [left, right] = gamepads;
+                if (display) {
+                  if (display.getGamepads) {
+                    const gamepads = display.getGamepads();
+                    const [left, right] = gamepads;
 
-                  return new GamepadsStatus(left, right);
-                } else {
-                  let left = null;
-                  let right = null;
+                    return new GamepadsStatus(left, right);
+                  } else {
+                    let left = null;
+                    let right = null;
 
-                  const gamepads = navigator.getGamepads();
-                  for (let i = 0; i < gamepads.length; i++) {
-                    const gamepad = gamepads[i];
+                    const gamepads = navigator.getGamepads();
+                    for (let i = 0; i < gamepads.length; i++) {
+                      const gamepad = gamepads[i];
 
-                    if (gamepad) {
-                      const {hand} = gamepad;
+                      if (gamepad) {
+                        const {hand} = gamepad;
 
-                      if (hand === 'left') {
-                        left = gamepad;
-                      } else if (hand === 'right') {
-                        right = gamepad;
+                        if (hand === 'left') {
+                          left = gamepad;
+                        } else if (hand === 'right') {
+                          right = gamepad;
+                        }
                       }
                     }
-                  }
 
-                  return new GamepadsStatus(left, right);
+                    return new GamepadsStatus(left, right);
+                  }
+                } else {
+                  return new GamepadsStatus(null, null);
                 }
               })();
 

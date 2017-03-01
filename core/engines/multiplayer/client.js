@@ -23,6 +23,8 @@ class Multiplayer {
       '/core/engines/login',
       '/core/engines/servers',
       '/core/engines/rend',
+      '/core/engines/bag',
+      '/core/engines/backpack',
       '/core/plugins/js-utils',
     ]).then(([
       hub,
@@ -31,6 +33,8 @@ class Multiplayer {
       login,
       servers,
       rend,
+      bag,
+      backpack,
       jsUtils,
     ]) => {
       if (live) {
@@ -132,36 +136,62 @@ class Multiplayer {
               object.add(hmd);
               object.hmd = hmd;
 
-              const controllers = (() => {
-                const result = [controllerMesh.clone(), controllerMesh.clone()];
-                result.left = result[0];
-                result.right = result[1];
-                return result;
-              })();
-              controllers.forEach(controller => {
-                object.add(controller);
-              });
+              const _makeControllerMesh = () => controllerMesh.clone();
+              const controllers = {
+                left: _makeControllerMesh(),
+                right: _makeControllerMesh(),
+              };
+              object.add(controllers.left);
+              object.add(controllers.right);
               object.controllers = controllers;
+
+              const bagMesh = bag.makeBagMesh();
+              object.add(bagMesh);
+              object.bagMesh = bagMesh;
+
+              const backpackMesh = backpack.makeBackpackMesh();
+              object.add(backpackMesh);
+              object.backpackMesh = backpackMesh;
 
               _updateRemotePlayerMesh(object, status);
 
               return object;
             };
             const _updateRemotePlayerMesh = (remotePlayerMesh, status) => {
-              const {hmd, controllers} = remotePlayerMesh;
-              const {left: leftController, right: rightController} = controllers;
+              const _updateHmd = () => {
+                const {hmd} = remotePlayerMesh;
 
-              const {hmd: hmdStatus, controllers: controllersStatus} = status;
-              const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
+                const {hmd: hmdStatus} = status;
 
-              hmd.position.fromArray(hmdStatus.position);
-              hmd.quaternion.fromArray(hmdStatus.rotation);
+                hmd.position.fromArray(hmdStatus.position);
+                hmd.quaternion.fromArray(hmdStatus.rotation);
+              };
+              const _updateControllers = () => {
+                const {controllers} = remotePlayerMesh;
+                const {left: leftController, right: rightController} = controllers;
 
-              leftController.position.fromArray(leftControllerStatus.position);
-              leftController.quaternion.fromArray(leftControllerStatus.rotation);
+                const {controllers: controllersStatus} = status;
+                const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
 
-              rightController.position.fromArray(rightControllerStatus.position);
-              rightController.quaternion.fromArray(rightControllerStatus.rotation);
+                leftController.position.fromArray(leftControllerStatus.position);
+                leftController.quaternion.fromArray(leftControllerStatus.rotation);
+
+                rightController.position.fromArray(rightControllerStatus.position);
+                rightController.quaternion.fromArray(rightControllerStatus.rotation);
+              };
+              const _updateBagMesh = () => {
+                const {hmd: hmdStatus} = status;
+
+                const {bagMesh} = remotePlayerMesh;
+
+                bagMesh.position.fromArray(hmdStatus.position);
+                const hmdRotation = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdStatus.rotation), camera.rotation.order);
+                bagMesh.rotation.y = hmdRotation.y;
+              };
+
+              _updateHmd();
+              _updateControllers();
+              _updateBagMesh();
             };
 
             const playerStatuses = multiplayerInterface.getPlayerStatuses();
