@@ -23,6 +23,7 @@ class Multiplayer {
       '/core/engines/login',
       '/core/engines/servers',
       '/core/engines/rend',
+      '/core/engines/bag',
       '/core/plugins/js-utils',
     ]).then(([
       hub,
@@ -31,6 +32,7 @@ class Multiplayer {
       login,
       servers,
       rend,
+      bag,
       jsUtils,
     ]) => {
       if (live) {
@@ -143,25 +145,49 @@ class Multiplayer {
               });
               object.controllers = controllers;
 
+              const bagMesh = bag.makeBagMesh();
+              object.add(bagMesh);
+              object.bagMesh = bagMesh;
+
               _updateRemotePlayerMesh(object, status);
 
               return object;
             };
             const _updateRemotePlayerMesh = (remotePlayerMesh, status) => {
-              const {hmd, controllers} = remotePlayerMesh;
-              const {left: leftController, right: rightController} = controllers;
+              const _updateHmd = () => {
+                const {hmd} = remotePlayerMesh
 
-              const {hmd: hmdStatus, controllers: controllersStatus} = status;
-              const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
+                const {hmd: hmdStatus} = status;
 
-              hmd.position.fromArray(hmdStatus.position);
-              hmd.quaternion.fromArray(hmdStatus.rotation);
+                hmd.position.fromArray(hmdStatus.position);
+                hmd.quaternion.fromArray(hmdStatus.rotation);
+              };
+              const _updateControllers = () => {
+                const {controllers} = remotePlayerMesh;
+                const {left: leftController, right: rightController} = controllers;
 
-              leftController.position.fromArray(leftControllerStatus.position);
-              leftController.quaternion.fromArray(leftControllerStatus.rotation);
+                const {controllers: controllersStatus} = status;
+                const {left: leftControllerStatus, right: rightControllerStatus} = controllersStatus;
 
-              rightController.position.fromArray(rightControllerStatus.position);
-              rightController.quaternion.fromArray(rightControllerStatus.rotation);
+                leftController.position.fromArray(leftControllerStatus.position);
+                leftController.quaternion.fromArray(leftControllerStatus.rotation);
+
+                rightController.position.fromArray(rightControllerStatus.position);
+                rightController.quaternion.fromArray(rightControllerStatus.rotation);
+              };
+              const _updateBagMesh = () => {
+                const {hmd} = webvr.getStatus();
+
+                const {bagMesh} = remotePlayerMesh;
+
+                bagMesh.position.copy(hmd.position);
+                const hmdRotation = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order);
+                bagMesh.rotation.y = hmdRotation.y;
+              };
+
+              _updateHmd();
+              _updateControllers();
+              _updateBagMesh();
             };
 
             const playerStatuses = multiplayerInterface.getPlayerStatuses();
