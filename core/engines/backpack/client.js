@@ -29,6 +29,7 @@ class Backpack {
       '/core/engines/rend',
       '/core/engines/hands',
       '/core/engines/tags',
+      '/core/plugins/geometry-utils',
     ]).then(([
       three,
       input,
@@ -36,6 +37,7 @@ class Backpack {
       rend,
       hands,
       tags,
+      geometryUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
@@ -52,6 +54,7 @@ class Backpack {
         const zeroVector = new THREE.Vector3(0, 0, 0);
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
+        const backVector = new THREE.Vector3(0.4, 0.5, 0.5);
 
         const _makeHoverState = () => ({
           hovered: false,
@@ -62,7 +65,7 @@ class Backpack {
           right: _makeHoverState(),
         };
 
-        const mesh = (() => {
+        const _makeBackpackMesh = () => {
           const object = new THREE.Mesh();
           object.visible = false;
 
@@ -98,45 +101,32 @@ class Backpack {
           object.itemBoxMeshes = itemBoxMeshes;
 
           return object;
-        })();
-        scene.add(mesh);
+        };
+        const backpackMesh = _makeBackpackMesh();
+        scene.add(backpackMesh);
 
         const _update = e => {
           const _updateHoverStates = () => {
             const status = webvr.getStatus();
             const {gamepads} = status;
 
+            const behindCameraBoxTarget = geometryUtils.makeBoxTarget(
+              camera.position.clone()
+                .add(new THREE.Vector3(0, (-0.5 / 2) + 0.15, (0.5 / 2) + 0.15).applyQuaternion(camera.quaternion)),
+              camera.quaternion,
+              oneVector,
+              backVector,
+              false
+            );
+
             SIDES.forEach(side => {
               const hoverState = hoverStates[side];
               const gamepad = gamepads[side];
 
               if (gamepad) {
-                const _isBehindCamera = position => {
-                  const nearPlaneDistance = 1;
-                  const farPlaneDistance = 15;
-
-                  const nearPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                    new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion),
-                    camera.position
-                  );
-                  const farPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-                    new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion),
-                    camera.position.clone().add(new THREE.Vector3(0, 0, farPlaneDistance).applyQuaternion(camera.quaternion))
-                  );
-
-                  const closestNearPoint = nearPlane.projectPoint(position);
-                  const closestFarPoint = farPlane.projectPoint(position);
-
-                  const nearLine = new THREE.Line3(position, closestNearPoint);
-                  const farLine = new THREE.Line3(position, closestFarPoint);
-
-                  const nearDistance = nearLine.distance();
-                  const farDistance = farLine.distance();
-
-                  return nearDistance < nearPlaneDistance && farDistance < farPlaneDistance;
-                };
+                const _isBehindCamera = position => behindCameraBoxTarget.containsPoint(position);
                 const _getClosestItemMeshIndex = position => {
-                  const {itemBoxMeshes} = mesh;
+                  const {itemBoxMeshes} = backpackMesh;
                   const itemBoxMeshSpecs = itemBoxMeshes.map((itemBoxMesh, index) => {
                     const {position: itemBoxMeshPosition} = _decomposeObjectMatrixWorld(itemBoxMesh);
                     const distance = position.distanceTo(itemBoxMeshPosition);
@@ -164,21 +154,21 @@ class Backpack {
               const {hmd} = webvr.getStatus();
               const {position, rotation} = hmd;
 
-              mesh.position.copy(position.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)));
-              mesh.quaternion.copy(rotation);
+              backpackMesh.position.copy(position.clone().add(new THREE.Vector3(0, 0, -0.5).applyQuaternion(rotation)));
+              backpackMesh.quaternion.copy(rotation);
 
-              const {itemBoxMeshes} = mesh;
+              const {itemBoxMeshes} = backpackMesh;
               for (let i = 0; i < NUM_ITEMS; i++) {
                 const hovered = SIDES.some(side => hoverStates[side].targetItemIndex === i);
                 itemBoxMeshes[i].material.color = new THREE.Color(hovered ? 0x0000FF : 0x808080);
               }
 
-              if (!mesh.visible) {
-                mesh.visible = true;
+              if (!backpackMesh.visible) {
+                backpackMesh.visible = true;
               }
             } else {
-              if (mesh.visible) {
-                mesh.visible = false;
+              if (backpackMesh.visible) {
+                backpackMesh.visible = false;
               }
             }
           };
@@ -189,12 +179,12 @@ class Backpack {
         rend.on('update', _update);
 
         this._cleanup = () => {
-          scene.remove(mesh);
+          scene.remove(backpackMesh);
 
           rend.removeListener('update', _update);
         };
 
-        const _getBackpackMesh = () => mesh;
+        const _getBackpackMesh = () => backpackMesh;
         const _getHoveredItemIndex = side => {
           const hoverState = hoverStates[side];
           const {targetItemIndex} = hoverState;
@@ -205,6 +195,7 @@ class Backpack {
         return {
           getBackpackMesh: _getBackpackMesh,
           getHoveredItemIndex: _getHoveredItemIndex,
+          makeBackpackMesh: _makeBackpackMesh,
         };
       }
     });
