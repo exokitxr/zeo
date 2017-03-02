@@ -27,14 +27,12 @@ class Backpack {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/rend',
-      '/core/engines/tags',
       '/core/plugins/geometry-utils',
     ]).then(([
       three,
       input,
       webvr,
       rend,
-      tags,
       geometryUtils,
     ]) => {
       if (live) {
