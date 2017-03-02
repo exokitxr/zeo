@@ -82,8 +82,12 @@ class Context {
       if (!engine.running && this.hasRunnableObjects()) {
         engine.start();
       }
+
+      return true;
     } else {
       console.warn('ignoring duplicate create: ', {id});
+
+      return false;
     }
   }
 
@@ -106,8 +110,12 @@ class Context {
       if (engine.running && !this.hasRunnableObjects()) {
         engine.stop();
       }
+
+      return true;
     } else {
       console.warn('ignoring duplicate destroy:', {id});
+
+      return false;
     }
   }
 
@@ -134,8 +142,12 @@ class Context {
         this.children.set(parentId, childIds);
       }
       childIds.push(childId);
+
+      return true;
     } else {
       console.warn('ignoring duplicate add:', {parentId, childId});
+
+      return false;
     }
   }
 
@@ -161,8 +173,12 @@ class Context {
       if (childIds.length === 0) {
         this.children.delete(parentId);
       }
+
+      return true;
     } else {
       console.warn('ignoring duplicate remove:', {parentId, childId});
+
+      return false;
     }
   }
 
@@ -350,47 +366,59 @@ class BulletServer {
 
             if (method === 'create') {
               const [type, id, opts] = args;
-              context.create(type, id, opts);
+              const created = context.create(type, id, opts);
 
               cb();
 
-              _broadcast('create', [type, id, opts]);
+              if (created) {
+                _broadcast('create', [type, id, opts]);
+              }
             } else if (method === 'destroy') {
               const [id] = args;
-              context.destroy(id);
+              const destroyed = context.destroy(id);
 
               cb();
 
-              _broadcast('destroy', [id]);
+              if (destroyed) {
+                _broadcast('destroy', [id]);
+              }
             } else if (method === 'add') {
               const [parentId, childId] = args;
-              context.add(parentId, childId);
+              const added = context.add(parentId, childId);
 
               cb();
 
-              _broadcast('add', [parentId, childId]);
+              if (added) {
+                _broadcast('add', [parentId, childId]);
+              }
             } else if (method === 'addConnectionBound') {
               const [parentId, childId] = args;
-              context.add(parentId, childId);
+              const added = context.add(parentId, childId);
 
-              c.on('close', () => {
-                context.remove(parentId, childId);
-                _broadcast('remove', [parentId, childId]);
+              if (added) {
+                c.on('close', () => {
+                  context.remove(parentId, childId);
+                  _broadcast('remove', [parentId, childId]);
 
-                context.destroy(childId);
-                _broadcast('destroy', [childId]);
-              });
+                  context.destroy(childId);
+                  _broadcast('destroy', [childId]);
+                });
+              }
 
               cb();
 
-              _broadcast('add', [parentId, childId]);
+              if (added) {
+                _broadcast('add', [parentId, childId]);
+              }
             } else if (method === 'remove') {
               const [parentId, childId] = args;
-              context.remove(parentId, childId);
+              const removed = context.remove(parentId, childId);
 
               cb();
 
-              _broadcast('remove', [parentId, childId]);
+              if (removed) {
+                _broadcast('remove', [parentId, childId]);
+              }
             } else if (method === 'setPosition') {
               const [id, position, activate] = args;
               context.setPosition(id, position, activate);
