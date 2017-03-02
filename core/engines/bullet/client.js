@@ -373,6 +373,8 @@ class Bullet {
             if (opts.init !== false) {
               _request('create', [type, id, _except(opts, ['id'])], _warnError);
             }
+
+            bodies.set(id, this);
           }
 
           update({position, rotation, linearVelocity, angularVelocity}) {
@@ -743,6 +745,7 @@ class Bullet {
           return world;
         };
         const world = _makeWorld();
+        const bodies = new Map();
 
         let connection = null;
         const requestHandlers = new Map();
@@ -784,7 +787,7 @@ class Bullet {
         };
 
         let enabled = false;
-        const _enable = () => { // XXX handle race conditions here
+        const _enable = () => {
           enabled = true;
           cleanups.push(() => {
             enabled = false;
@@ -826,24 +829,48 @@ class Bullet {
                 const {error, result} = m;
                 requestHandler(error, result);
               } else {
-                console.warn('unregistered handler:', id);
+                console.warn('unregistered response handler:', id);
               }
             } else if (type === 'create') {
               const {args} = m;
+              const [type, id, opts] = args;
+
+              opts.type = type;
+              opts.id = id;
+
+              world.makeBodyFromSpec(opts);
 
               console.log('handle bullet create', args); // XXX
             } else if (type === 'destroy') {
               const {args} = m;
 
-              console.log('handle bullet destroy', args); // XXX
+              console.log('handle bullet destroy', args);
+
+              throw new Error('not implemented'); // XXX
             } else if (type === 'add') {
               const {args} = m;
+              const [parentId, childId] = args;
 
-              console.log('handle bullet add', args); // XXX
+              if (parentId === world.id) {
+                const physicsBody = bodies.get(childId);
+                world.addBase(physicsBody);
+
+                console.log('handle bullet add', args); // XXX
+              } else {
+                console.warn('adding to non-world:', id);
+              }
             } else if (type === 'remove') {
               const {args} = m;
+              const [parentId, childId] = args;
 
-              console.log('handle bullet remove', args); // XXX
+              if (parentId === world.id) {
+                const physicsBody = bodies.get(childId);
+                world.removeBase(physicsBody);
+
+                console.log('handle bullet remove', args); // XXX
+              } else {
+                console.warn('removing from non-world:', id);
+              }
             } else {
               console.warn('invalid message type:', id);
             }
