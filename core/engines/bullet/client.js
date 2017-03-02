@@ -902,8 +902,6 @@ class Bullet {
               const {args} = m;
               const [type, id, opts] = args;
 
-              console.log('handle bullet create', args); // XXX
-
               opts.type = type;
               opts.id = id;
 
@@ -912,8 +910,6 @@ class Bullet {
               const {args} = m;
               const [id] = args;
 
-              console.log('handle bullet destroy', args);
-
               const physicsBody = bodies.get(id);
               physicsBody.destroy();
             } else if (type === 'add') {
@@ -921,8 +917,6 @@ class Bullet {
               const [parentId, childId] = args;
 
               if (parentId === world.id) {
-                console.log('handle bullet add', args); // XXX
-
                 const physicsBody = bodies.get(childId);
                 world.addBase(physicsBody);
               } else {
@@ -933,8 +927,6 @@ class Bullet {
               const [parentId, childId] = args;
 
               if (parentId === world.id) {
-                console.log('handle bullet remove', args); // XXX
-
                 const physicsBody = bodies.get(childId);
                 world.removeBase(physicsBody);
               } else {
