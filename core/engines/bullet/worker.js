@@ -10,6 +10,42 @@ const bodies = new Map(); // bodyId -> Body
 const worldBodyIndex = new Map(); // worldId -> [bodyId]
 const bodyWorldIndex = new Map(); // bodyId -> worldId
 
+const _requestInit = worldId => {
+  const bodyIds = worldBodyIndex.get(worldId);
+  const objects = bodyIds.map(bodyId => {
+    const body = bodies.get(bodyId);
+
+    const {objectType} = body;
+    if (objectType === physics.RigidBody.OBJECT_TYPE) { // only return bodies (as opposed to constraints)
+      const id = bodyId;
+      const {type, spec} = body;
+      const position = body.getPosition();
+      const rotation = body.getRotation();
+      const linearVelocity = body.getLinearVelocity();
+      const angularVelocity = body.getAngularVelocity();
+
+      const result = {
+        id,
+        type,
+        position,
+        rotation,
+        linearVelocity,
+        angularVelocity,
+      };
+      for (const k in spec) {
+        result[k] = spec[k];
+      }
+      return result;
+    } else {
+      return null;
+    }
+  }).filter(object => object !== null);
+
+  send('init', {
+    id: worldId,
+    objects,
+  });
+};
 const _requestUpdate = worldId => {
   const bodyIds = worldBodyIndex.get(worldId);
   const updates = bodyIds.map(bodyId => {
@@ -18,7 +54,7 @@ const _requestUpdate = worldId => {
     const {objectType, type} = body;
     if (
       objectType === physics.RigidBody.OBJECT_TYPE && // only update bodies (as opposed to constraints)
-      type !== physics.RigidBody.PLANE && type !== physics.RigidBody.TRIANGLE_MESH // only update non-static bodies
+      type !== 'plane' && type !== 'triangleMesh' // only update non-static bodies
     ) {
       const position = body.getPosition();
       const rotation = body.getRotation();
@@ -195,7 +231,7 @@ const _makeBody = bodySpec => {
       const {dimensions, scale, mass, position, rotation} = bodySpec;
 
       const plane = physics.RigidBody.make({
-        type: physics.RigidBody.PLANE,
+        type: 'plane',
         dimensions,
         scale,
         mass,
@@ -213,7 +249,7 @@ const _makeBody = bodySpec => {
       const {dimensions, scale, mass, position, rotation} = bodySpec;
 
       const box = physics.RigidBody.make({
-        type: physics.RigidBody.BOX,
+        type: 'box',
         dimensions,
         scale,
         mass,
@@ -231,7 +267,7 @@ const _makeBody = bodySpec => {
       const {size, mass, scale, position, rotation} = bodySpec;
 
       const sphere = physics.RigidBody.make({
-        type: physics.RigidBody.SPHERE,
+        type: 'sphere',
         size,
         scale,
         mass,
@@ -249,7 +285,7 @@ const _makeBody = bodySpec => {
       const {points, scale, mass, position, rotation} = bodySpec;
 
       const convexHull = physics.RigidBody.make({
-        type: physics.RigidBody.CONVEX_HULL,
+        type: 'convexHull',
         points,
         scale,
         mass,
@@ -267,7 +303,7 @@ const _makeBody = bodySpec => {
       const {points, scale, mass, position, rotation} = bodySpec;
 
       const triangleMesh = physics.RigidBody.make({
-        type: physics.RigidBody.TRIANGLE_MESH,
+        type: 'triangleMesh',
         points,
         scale,
         mass,
@@ -285,7 +321,7 @@ const _makeBody = bodySpec => {
       const {children, scale, mass, position, rotation} = bodySpec;
 
       const triangleMesh = physics.RigidBody.make({
-        type: physics.RigidBody.COMPOUND,
+        type: 'compound',
         children: children.map(child => {
           const {type, position, rotation} = child;
 
@@ -293,7 +329,7 @@ const _makeBody = bodySpec => {
             case 'plane': {
               const {dimensions} = child;
               return {
-                type: physics.RigidBody.PLANE,
+                type: 'plane',
                 dimensions,
                 position,
                 rotation,
@@ -302,7 +338,7 @@ const _makeBody = bodySpec => {
             case 'box': {
               const {dimensions} = child;
               return {
-                type: physics.RigidBody.BOX,
+                type: 'box',
                 dimensions,
                 position,
                 rotation,
@@ -311,7 +347,7 @@ const _makeBody = bodySpec => {
             case 'sphere': {
               const {size} = child;
               return {
-                type: physics.RigidBody.SPHERE,
+                type: 'sphere',
                 size,
                 position,
                 rotation,
@@ -350,15 +386,23 @@ process.on('message', m => {
   const {type} = m;
 
   switch (type) {
-    case 'requestUpdate':
+    case 'requestUpdate': {
       const {args: {id}} = m;
       _requestUpdate(id);
       break;
-    case 'start':
+    }
+    case 'requestInit': {
+      const {args: {id}} = m;
+      _requestInit(id);
+      break;
+    }
+    case 'start': {
       _start();
       break;
-    case 'stop':
+    }
+    case 'stop': {
       _stop();
+    }
     case 'addWorld': {
       const {args: {id}} = m;
       _addWorld({id});

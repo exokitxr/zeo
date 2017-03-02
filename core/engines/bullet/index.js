@@ -13,7 +13,14 @@ class Antikyth extends EventEmitter {
     workerProcess.on('message', m => {
       const {type} = m;
 
-      if (type === 'update') {
+      if (type === 'init') {
+        const {data: {id, objects}} = m;
+
+        const listener = this.initListeners.get(id);
+        if (listener) {
+          listener(objects);
+        }
+      } else if (type === 'update') {
         const {data: {id, updates}} = m;
 
         const listener = this.updateListeners.get(id);
@@ -49,6 +56,7 @@ class Antikyth extends EventEmitter {
 
     this.workerProcess = workerProcess;
     this.running = false;
+    this.initListeners = new Map();
     this.updateListeners = new Map();
   }
 
@@ -80,6 +88,11 @@ class Antikyth extends EventEmitter {
     world.setParent(this);
 
     let prevUpdate = [];
+    this.initListeners.set(world.id, objects => {
+      world.emit('init', objects);
+
+      prevUpdate = objects;
+    });
     this.updateListeners.set(world.id, nextUpdate => {
       const updateDiff = _getUpdateDiff(prevUpdate, nextUpdate);
       world.emit('update', updateDiff);
@@ -95,6 +108,7 @@ class Antikyth extends EventEmitter {
 
     world.setParent(null);
 
+    this.initListeners.delete(world.id);
     this.updateListeners.delete(world.id);
   }
 
@@ -273,6 +287,12 @@ class Antikyth extends EventEmitter {
       sourceBodyId: sourceBody.id,
       targetBodyId: targetBody.id,
       ignore: ignore,
+    });
+  }
+
+  requestWorldInit(world) {
+    this.send('requestInit', {
+      id: world.id,
     });
   }
 
@@ -556,6 +576,10 @@ class World extends EventEmitter {
       }
       this.queue = [];
     }
+  }
+
+  requestInit() {
+    this.parent.requestWorldInit(this);
   }
 
   requestUpdate() {

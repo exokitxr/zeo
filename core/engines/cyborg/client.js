@@ -29,6 +29,7 @@ class Cyborg {
       '/core/engines/webvr',
       '/core/engines/rend',
       '/core/engines/bullet',
+      '/core/engines/multiplayer',
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
     ])
@@ -37,6 +38,7 @@ class Cyborg {
         webvr,
         rend,
         bullet,
+        multiplayer,
         jsUtils,
         geometryUtils,
       ]) => {
@@ -189,7 +191,7 @@ class Cyborg {
               if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
                 const controllerPhysicsBody = controllerPhysicsBodies[side];
                 if (controllerPhysicsBody) {
-                  controllerPhysicsBody.sync();
+                  controllerPhysicsBody.syncUpstream();
                 }
 
                 this.emit('controllerUpdate', {
@@ -405,6 +407,7 @@ class Cyborg {
 
             SIDES.forEach(side => {
               const controllerPhysicsBody = new physicsWorld.Compound({
+                id: 'controller:' + multiplayer.getId() + ':' + side,
                 children: [
                   {
                     type: 'box',
@@ -425,7 +428,7 @@ class Cyborg {
               controllerPhysicsBody.setObject(mesh);
 
               physicsWorld.addConnectionBound(controllerPhysicsBody);
-              controllerPhysicsBody.sync();
+              controllerPhysicsBody.syncUpstream();
 
               controllerPhysicsBodies[side] = controllerPhysicsBody;
             });

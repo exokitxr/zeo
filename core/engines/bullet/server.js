@@ -8,7 +8,7 @@ class Context {
   constructor() {
     this.objects = new Map(); // clientId -> Object
     this.updateIndex = new Map(); // engineId -> clientId
-    this.childIndex = new Map(); // parentId -> [childId]
+    this.children = new Map(); // parentId -> [childId]
 
     const engine = new Bullet();
     this.setEngine(engine);
@@ -50,8 +50,6 @@ class Context {
   }
 
   create(type, id, opts) {
-console.log('create', {type, id});
-
     if (!this.objects.has(id)) {
       const object = (() => {
         switch (type) {
@@ -84,6 +82,12 @@ console.log('create', {type, id});
       if (!engine.running && this.hasRunnableObjects()) {
         engine.start();
       }
+
+      return true;
+    } else {
+      console.warn('ignoring duplicate create: ', {id});
+
+      return false;
     }
   }
 
@@ -92,53 +96,89 @@ console.log('create', {type, id});
     if (object) {
       this.objects.delete(id);
       this.updateIndex.delete(object.id);
-    }
 
-    const childIds = this.childIndex.get(id);
-    if (childIds) {
-      for (let i = 0; i < childIds.length; i++) {
-        const childId = childIds[i];
-        this.destroy(childId);
+      const childIds = this.children.get(id);
+      if (childIds) {
+        for (let i = 0; i < childIds.length; i++) {
+          const childId = childIds[i];
+          this.destroy(childId);
+        }
+        this.children.delete(id);
       }
-      this.childIndex.delete(id);
-    }
 
-    const engine = this.getEngine();
-    if (engine.running && !this.hasRunnableObjects()) {
-      engine.stop();
+      const engine = this.getEngine();
+      if (engine.running && !this.hasRunnableObjects()) {
+        engine.stop();
+      }
+
+      return true;
+    } else {
+      console.warn('ignoring duplicate destroy:', {id});
+
+      return false;
     }
   }
 
   add(parentId, childId) {
     const {objects} = this;
 
-console.log('add', {parentId, childId});
+    const parentHasChild = (() => {
+      const childIds = this.children.get(parentId);
 
-    const parent = objects.get(parentId);
-    const child = objects.get(childId);
-    parent.add(child);
+      if (childIds) {
+        return childIds.includes(childId);
+      } else {
+        return false;
+      }
+    })();
+    if (!parentHasChild) {
+      const parent = objects.get(parentId);
+      const child = objects.get(childId);
+      parent.add(child);
 
-    let childIds = this.childIndex.get(parentId);
-    if (!childIds) {
-      childIds = [];
-      this.childIndex.set(parentId, childIds);
+      let childIds = this.children.get(parentId);
+      if (!childIds) {
+        childIds = [];
+        this.children.set(parentId, childIds);
+      }
+      childIds.push(childId);
+
+      return true;
+    } else {
+      console.warn('ignoring duplicate add:', {parentId, childId});
+
+      return false;
     }
-    childIds.push(childId);
   }
 
   remove(parentId, childId) {
     const {objects} = this;
 
-    const parent = objects.get(parentId);
-    const child = objects.get(childId);
-    if (parent && child) {
+    const parentHasChild = (() => {
+      const childIds = this.children.get(parentId);
+
+      if (childIds) {
+        return childIds.includes(childId);
+      } else {
+        return false;
+      }
+    })();
+    if (parentHasChild) {
+      const parent = objects.get(parentId);
+      const child = objects.get(childId);
       parent.remove(child);
 
-      const childIds = this.childIndex.get(parentId);
+      const childIds = this.children.get(parentId);
       childIds.splice(childIds.indexOf(childId), 1);
       if (childIds.length === 0) {
-        this.childIndex.delete(parentId);
+        this.children.delete(parentId);
       }
+
+      return true;
+    } else {
+      console.warn('ignoring duplicate remove:', {parentId, childId});
+
+      return false;
     }
   }
 
@@ -219,6 +259,31 @@ console.log('add', {parentId, childId});
     sourceBody.setIgnoreCollisionCheck(targetBody, ignore);
   }
 
+  requestInit(id, cb) {
+    const {objects} = this;
+
+    const object = objects.get(id);
+    if (object) {
+      object.requestInit();
+      object.once('init', engineObjects => {
+        const clientObjects = engineObjects.map(engineObject => {
+          engineObject = _shallowClone(engineObject);
+
+          const {id: engineId} = engineObject;
+          const clientId = this.updateIndex.get(engineId);
+
+          engineObject.id = clientId;
+
+          return engineObject;
+        });
+
+        cb(null, clientObjects);
+      });
+    } else {
+      cb(null, []);
+    }
+  }
+
   requestUpdate(id, cb) {
     const {objects} = this;
 
@@ -226,17 +291,15 @@ console.log('add', {parentId, childId});
     if (object) {
       object.requestUpdate();
       object.once('update', engineUpdates => {
-        const clientUpdates = engineUpdates.map(update => {
-          const {id: engineId, position, rotation, linearVelocity, angularVelocity} = update;
+        const clientUpdates = engineUpdates.map(engineUpdate => {
+          engineUpdate = _shallowClone(engineUpdate);
+
+          const {id: engineId} = engineUpdate;
           const clientId = this.updateIndex.get(engineId);
 
-          return {
-            id: clientId,
-            position,
-            rotation,
-            linearVelocity,
-            angularVelocity,
-          };
+          engineUpdate.id = clientId;
+
+          return engineUpdate;
         });
 
         cb(null, clientUpdates);
@@ -264,6 +327,24 @@ class BulletServer {
       const {url} = c.upgradeReq;
 
       if (url === '/archae/bulletWs') {
+        const _broadcast = (type, args) => {
+          if (connections.some(connection => connection !== c)) {
+            const e = {
+              type,
+              args,
+            };
+            const es = JSON.stringify(e);
+
+            for (let i = 0; i < connections.length; i++) {
+              const connection = connections[i];
+
+              if (connection !== c) {
+                connection.send(es);
+              }
+            }
+          }
+        };
+
         c.on('message', s => {
           const m = _jsonParse(s);
 
@@ -273,6 +354,7 @@ class BulletServer {
             const cb = (err = null, result = null) => {
               if (c.readyState === OPEN) {
                 const e = {
+                  type: 'response',
                   id: id,
                   error: err,
                   result: result,
@@ -284,83 +366,138 @@ class BulletServer {
 
             if (method === 'create') {
               const [type, id, opts] = args;
-              context.create(type, id, opts);
+              const created = context.create(type, id, opts);
 
               cb();
+
+              if (created) {
+                _broadcast('create', [type, id, opts]);
+              }
             } else if (method === 'destroy') {
               const [id] = args;
-              context.destroy(id);
+              const destroyed = context.destroy(id);
 
               cb();
+
+              if (destroyed) {
+                _broadcast('destroy', [id]);
+              }
             } else if (method === 'add') {
               const [parentId, childId] = args;
-              context.add(parentId, childId);
+              const added = context.add(parentId, childId);
 
               cb();
+
+              if (added) {
+                _broadcast('add', [parentId, childId]);
+              }
             } else if (method === 'addConnectionBound') {
               const [parentId, childId] = args;
-              context.add(parentId, childId);
+              const added = context.add(parentId, childId);
 
-              c.on('close', () => {
-                context.remove(parentId, childId);
-              });
+              if (added) {
+                c.on('close', () => {
+                  context.remove(parentId, childId);
+                  _broadcast('remove', [parentId, childId]);
+
+                  context.destroy(childId);
+                  _broadcast('destroy', [childId]);
+                });
+              }
 
               cb();
+
+              if (added) {
+                _broadcast('add', [parentId, childId]);
+              }
             } else if (method === 'remove') {
               const [parentId, childId] = args;
-              context.remove(parentId, childId);
+              const removed = context.remove(parentId, childId);
 
               cb();
+
+              if (removed) {
+                _broadcast('remove', [parentId, childId]);
+              }
             } else if (method === 'setPosition') {
               const [id, position, activate] = args;
               context.setPosition(id, position, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setRotation') {
               const [id, rotation, activate] = args;
               context.setRotation(id, rotation, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setLinearVelocity') {
               const [id, linearVelocity, activate] = args;
               context.setLinearVelocity(id, linearVelocity, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setAngularVelocity') {
               const [id, angularVelocity, activate] = args;
               context.setAngularVelocity(id, angularVelocity, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setLinearFactor') {
               const [id, linearFactor, activate] = args;
               context.setLinearFactor(id, linearFactor, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setAngularFactor') {
               const [id, angularFactor, activate] = args;
               context.setAngularFactor(id, angularFactor, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'activate') {
               const [id] = args;
               context.activate(id);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'deactivate') {
               const [id] = args;
               context.deactivate(id);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'disableDeactivation') {
               const [id] = args;
               context.disableDeactivation(id);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setIgnoreCollisionCheck') {
               const [sourceId, targetId, ignore] = args;
               context.setIgnoreCollisionCheck(sourceId, targetId, ignore);
 
               cb();
+
+              // no need to broadcast
+            } else if (method === 'requestInit') {
+              const [id] = args;
+              context.requestInit(id, (err, objects) => {
+                if (live) {
+                  cb(err, objects);
+                }
+              });
+
+              // broadcast does not make sense
             } else if (method === 'requestUpdate') {
               const [id] = args;
               context.requestUpdate(id, (err, updates) => {
@@ -368,6 +505,8 @@ class BulletServer {
                   cb(err, updates);
                 }
               });
+
+              // broadcast does not make sense
             } else {
               const err = new Error('no such method:' + JSON.stringify(method));
               cb(err.stack);
@@ -413,6 +552,13 @@ const _jsonParse = s => {
   } else {
     return null;
   }
+};
+const _shallowClone = o => {
+  const result = {};
+  for (const k in o) {
+    result[k] = o[k];
+  }
+  return result;
 };
 
 module.exports = BulletServer;

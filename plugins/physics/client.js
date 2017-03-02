@@ -30,6 +30,7 @@ class Physics {
               const url = MODEL_SRC;
               const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
               loader.setTexturePath(texturePath);
+              loader.setCrossOrigin(true);
               loader.parse(modelJson, model => {
                 accept({
                   modelJson,
@@ -125,6 +126,7 @@ class Physics {
             scene.add(model);
 
             const modelPhysicsBody = new physicsWorld.TriangleMesh({
+              id: 'physics: model',
               position: modelPosition.toArray(),
               rotation: modelRotation.toArray(),
               scale: modelScale.toArray(),
@@ -167,15 +169,19 @@ class Physics {
             });
 
             const floorPhysicsBody = new physicsWorld.Plane({
+              id: 'physics:floor',
               position: [0, 0, 0],
               dimensions: [0, 1, 0],
               mass: 0,
             });
             physicsWorld.add(floorPhysicsBody);
 
-            const boxPhysicsBodies = boxMeshes.map(boxMesh => {
-              const physicsBody = physicsWorld.makeBody(boxMesh);
+            const boxPhysicsBodies = boxMeshes.map((boxMesh, index) => {
+              const physicsBody = physicsWorld.makeBodyFromMesh(boxMesh, {
+                id: 'physics:box:' + index,
+              });
               physicsBody.setObject(boxMesh);
+              physicsBody.syncDownstream();
               return physicsBody;
             });
             boxPhysicsBodies.forEach(physicsBody => {

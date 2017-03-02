@@ -210,67 +210,75 @@ class Bullet {
             this.timeout = null;
           }
 
+          requestInit() {
+            return new Promise((accept, reject) => {
+              _request('requestInit', [this.id], (err, objects) => {
+                if (!err) {
+                  accept(objects);
+                } else {
+                  reject(err);
+                }
+              });
+            });
+          }
+
           add(object) {
             Entity.prototype.add.call(this, object);
 
-            const {id: objectId} = object;
-            this.bodies.set(objectId, object);
-
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              object.addDebug();
-            }
-
-            if (!this.running) {
-              this.start();
-            }
+            this.addBase(object);
           }
 
           addConnectionBound(object) {
             Entity.prototype.addConnectionBound.call(this, object);
 
+            this.addBase(object);
+          }
+
+          addBase(object) {
+            const {bodies} = this;
             const {id: objectId} = object;
-            this.bodies.set(objectId, object);
 
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              object.addDebug();
-            }
+            if (!bodies.has(objectId)) {
+              bodies.set(objectId, object);
 
-            if (!this.running) {
-              this.start();
+              const {physicsDebug} = config.getConfig();
+              if (physicsDebug) {
+                object.addDebug();
+              }
+
+              if (!this.running) {
+                this.start();
+              }
             }
           }
 
           remove(object) {
             Entity.prototype.remove.call(this, object);
 
-            const {id: objectId} = object;
-            this.bodies.delete(objectId);
-
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              object.removeDebug();
-            }
-
-            if (this.bodies.size === 0) {
-              this.stop();
-            }
+            this.removeBase(object);
           }
 
           removeConnectionBound(object) {
             Entity.prototype.removeConnectionBound.call(this, object);
 
+            this.removeBase(object);
+          }
+
+          removeBase(object) {
+            const {bodies} = this;
             const {id: objectId} = object;
-            this.bodies.delete(objectId);
 
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              object.removeDebug();
-            }
+            if (bodies.has(objectId)) {
+              bodies.delete(objectId);
 
-            if (this.bodies.size === 0) {
-              this.stop();
+              const {physicsDebug} = config.getConfig();
+              if (physicsDebug) {
+                object.removeDebug();
+              }
+
+              if (this.bodies.size === 0) {
+                this.stop();
+              }
             }
           }
 
@@ -300,7 +308,7 @@ class Bullet {
                           const {position, rotation, linearVelocity, angularVelocity} = update;
                           body.update({position, rotation, linearVelocity, angularVelocity});
                         } else {
-                          console.warn('invalid body update:', JSON.stringify(id));
+                          console.warn('invalid body update:', id);
                         }
                       }
                     } else {
@@ -352,52 +360,39 @@ class Bullet {
 
         class Body extends Entity {
           constructor(type, opts = {}) {
-            super(type, opts.id);
+            const {id: optsId} = opts;
+            super(type, optsId);
 
-            const {id} = this;
+            const {id} = this; // the constructor might have generated it
 
-            const linearVelocity = new THREE.Vector3();
-            if (opts.linearVelocity) {
-              linearVelocity.fromArray(opts.linearVelocity);
-            }
-            this.linearVelocity = linearVelocity;
-
-            const angularVelocity = new THREE.Vector3();
-            if (opts.angularVelocity) {
-              angularVelocity.fromArray(opts.angularVelocity);
-            }
-            this.angularVelocity = angularVelocity;
+            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], linearVelocity = [0, 0, 0], angularVelocity = [0, 0, 0]} = opts;
+            this.position = new THREE.Vector3().fromArray(position);
+            this.rotation = new THREE.Quaternion().fromArray(rotation);
+            this.linearVelocity = new THREE.Vector3().fromArray(linearVelocity);
+            this.angularVelocity = new THREE.Vector3().fromArray(angularVelocity);
 
             this.object = null;
 
-            _request('create', [type, id, _except(opts, ['id'])], _warnError);
+            if (opts.init !== false) {
+              _request('create', [type, id, _except(opts, ['id'])], _warnError);
+            }
+
+            bodies.set(id, this);
           }
 
           update({position, rotation, linearVelocity, angularVelocity}) {
-            const {object} = this;
-            if (object) {
-              object.position.fromArray(position);
-              object.quaternion.fromArray(rotation);
-            }
-
+            this.position.fromArray(position);
+            this.rotation.fromArray(rotation);
             this.linearVelocity.fromArray(linearVelocity);
             this.angularVelocity.fromArray(angularVelocity);
 
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              const {debugMesh} = this;
-
-              if (debugMesh) {
-                debugMesh.position.fromArray(position);
-                debugMesh.quaternion.fromArray(rotation);
-              }
-            }
+            this.syncDownstream();
           }
 
           setObject(object) {
             this.object = object;
 
-            // this.sync();
+            // this.syncUpstream();
           }
 
           unsetObject() {
@@ -456,26 +451,59 @@ class Bullet {
             _request('setIgnoreCollisionCheck', [this.id, targetBody.id, ignore], _warnError);
           }
 
-          sync() {
+          syncUpstream() {
             const {object} = this;
 
-            this.setPosition(object.position.toArray());
-            this.setRotation(object.quaternion.toArray());
-            // this.setLinearVelocity([0, 0, 0]);
-            // this.setAngularVelocity([0, 0, 0]);
-            // this.activate();
+            if (object) {
+              this.setPosition(object.position.toArray());
+              this.setRotation(object.quaternion.toArray());
+              // this.setLinearVelocity([0, 0, 0]);
+              // this.setAngularVelocity([0, 0, 0]);
+              // this.activate()
+            };
+          }
+
+          syncDownstream() {
+            const {object} = this;
+            if (object) {
+              const {position, rotation} = this;
+
+              object.position.copy(position);
+              object.quaternion.copy(rotation);
+            }
+
+            const {physicsDebug} = config.getConfig();
+            if (physicsDebug) {
+              const {debugMesh} = this;
+
+              if (debugMesh) {
+                const {position, rotation} = this;
+
+                debugMesh.position.copy(position);
+                debugMesh.quaternion.copy(rotation);
+              }
+            }
+          }
+
+          destroy() {
+            const {id} = this;
+            bodies.delete(id);
           }
         }
 
         class Plane extends Body {
           constructor(opts = {}) {
-            super('plane', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], dimensions} = opts;
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
-            this.dimensions = dimensions;
+            if (body) {
+              return body;
+            } else {
+              super('plane', opts);
+
+              const {scale = [1, 1, 1], dimensions} = opts;
+              this.scale = scale;
+              this.dimensions = dimensions;
+            }
           }
 
           makeDebugMesh() {
@@ -486,10 +514,16 @@ class Bullet {
 
         class Box extends Body {
           constructor(opts = {}) {
-            super('box', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {dimensions} = opts;
-            this.dimensions = dimensions;
+            if (body) {
+              return body;
+            } else {
+              super('box', opts);
+
+              const {dimensions} = opts;
+              this.dimensions = dimensions;
+            }
           }
 
           makeDebugMesh() {
@@ -499,10 +533,16 @@ class Bullet {
 
         class Sphere extends Body {
           constructor(opts = {}) {
-            super('sphere', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {size} = opts;
-            this.size = size;
+            if (body) {
+              return body;
+            } else {
+              super('sphere', opts);
+
+              const {size} = opts;
+              this.size = size;
+            }
           }
 
           makeDebugMesh() {
@@ -512,10 +552,16 @@ class Bullet {
 
         class ConvexHull extends Body {
           constructor(opts = {}) {
-            super('convexHull', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {points} = opts;
-            this.points = points;
+            if (body) {
+              return body;
+            } else {
+              super('convexHull', opts);
+
+              const {points} = opts;
+              this.points = points;
+            }
           }
 
           makeDebugMesh() {
@@ -525,13 +571,17 @@ class Bullet {
 
         class TriangleMesh extends Body {
           constructor(opts = {}) {
-            super('triangleMesh', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], points} = opts;
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
-            this.points = points;
+            if (body) {
+              return body;
+            } else {
+              super('triangleMesh', opts);
+
+              const {scale = [1, 1, 1], points} = opts;
+              this.scale = scale;
+              this.points = points
+            };
           }
 
           makeDebugMesh() {
@@ -542,21 +592,25 @@ class Bullet {
 
         class Compound extends Body {
           constructor(opts = {}) {
-            super('compound', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], children} = opts;
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
-            this.children = children;
+            if (body) {
+              return body;
+            } else {
+              super('compound', opts);
+
+              const {scale = [1, 1, 1], children} = opts;
+              this.scale = scale;
+              this.children = children
+            };
           }
 
           makeDebugMesh() {
             const {position, rotation, scale, children} = this;
 
             const mesh = _makeCompoundDebugMesh(children);
-            mesh.position.fromArray(position);
-            mesh.quaternion.fromArray(rotation);
+            mesh.position.copy(position);
+            mesh.quaternion.copy(rotation);
             mesh.scale.fromArray(scale);
             return mesh;
           }
@@ -564,16 +618,22 @@ class Bullet {
 
         class Constraint extends Entity {
           constructor(opts = {}) {
-            super('constraint', opts.id);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {type, id} = this;
-            const {bodyA: {id: bodyAId}, bodyB: {id: bodyBId}, pivotA = [0, 0, 0], pivotB = [0, 0, 0]} = opts;
+            if (body) {
+              return body;
+            } else {
+              super('constraint', opts.id);
 
-            _request('create', [type, id, {bodyAId, bodyBId, pivotA, pivotB}], _warnError);
+              const {type, id} = this;
+              const {bodyA: {id: bodyAId}, bodyB: {id: bodyBId}, pivotA = [0, 0, 0], pivotB = [0, 0, 0]} = opts;
+
+              _request('create', [type, id, {bodyAId, bodyBId, pivotA, pivotB}], _warnError);
+            }
           }
         }
 
-        const _makeBody = mesh => {
+        const _makeBodyFromMesh = (mesh, {id = idUtils.makeId()} = {}) => {
           const {geometry} = mesh;
           const {type} = geometry;
 
@@ -584,6 +644,7 @@ class Bullet {
               const rotation = mesh.quaternion.toArray();
 
               return new Plane({
+                id,
                 position,
                 rotation,
                 dimensions: [0, 0, 1],
@@ -597,6 +658,7 @@ class Bullet {
               const {parameters: {width, height, depth}} = geometry;
 
               return new Box({
+                id,
                 position,
                 rotation,
                 dimensions: [width, height, depth],
@@ -610,10 +672,90 @@ class Bullet {
               const {parameters: {radius}} = geometry;
 
               return new Sphere({
+                id,
                 position,
                 rotation,
                 size: radius,
                 mass: 1,
+              });
+            }
+            default: throw new Error('unsupported mesh type: ' + JSON.stringify(type));
+          }
+        };
+        const _makeBodyFromSpec = spec => {
+          const {type} = spec;
+
+          switch (type) {
+            case 'plane': {
+              const {id, position, rotation, dimensions, mass} = spec;
+
+              return new Plane({
+                id,
+                position,
+                rotation,
+                dimensions,
+                mass,
+                init: false,
+              });
+            }
+            case 'box': {
+              const {id, position, rotation, dimensions, mass} = spec;
+
+              return new Box({
+                id,
+                position,
+                rotation,
+                dimensions,
+                mass,
+                init: false,
+              });
+            }
+            case 'sphere': {
+              const {id, position, rotation, size, mass} = spec;
+
+              return new Sphere({
+                id,
+                position,
+                rotation,
+                size,
+                mass,
+                init: false,
+              });
+            }
+            case 'convexHull': {
+              const {id, position, rotation, points, mass} = spec;
+
+              return new ConvexHull({
+                id,
+                position,
+                rotation,
+                points,
+                mass,
+                init: false,
+              });
+            }
+            case 'triangleMesh': {
+              const {id, position, rotation, points, mass} = spec;
+
+              return new TriangleMesh({
+                id,
+                position,
+                rotation,
+                points,
+                mass,
+                init: false,
+              });
+            }
+            case 'compound': {
+              const {id, position, rotation, children, mass} = spec;
+
+              return new Compound({
+                id,
+                position,
+                rotation,
+                children,
+                mass,
+                init: false,
               });
             }
             default: throw new Error('unsupported mesh type: ' + JSON.stringify(type));
@@ -655,12 +797,14 @@ class Bullet {
           world.TriangleMesh = TriangleMesh;
           world.Compound = Compound;
           world.Constraint = Constraint;
-          world.makeBody = _makeBody;
+          world.makeBodyFromMesh = _makeBodyFromMesh;
+          world.makeBodyFromSpec = _makeBodyFromSpec;
           world.makeConvexHullBody = _makeConvexHullBody;
           world.makeTriangleMeshBody = _makeTriangleMeshBody;
           return world;
         };
         const world = _makeWorld();
+        const bodies = new Map();
 
         let connection = null;
         const requestHandlers = new Map();
@@ -702,7 +846,7 @@ class Bullet {
         };
 
         let enabled = false;
-        const _enable = () => { // XXX handle race conditions here
+        const _enable = () => {
           enabled = true;
           cleanups.push(() => {
             enabled = false;
@@ -710,6 +854,28 @@ class Bullet {
 
           connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/bulletWs');
           connection.onopen = () => {
+            world.requestInit()
+              .then(objects => {
+                console.log('request init result', {objects});
+
+                for (let i = 0; i < objects.length; i++) {
+                  const object = objects[i];
+                  const {id} = object;
+                  const oldBody = world.bodies.get(id);
+
+                  if (oldBody) {
+                    const {position, rotation, linearVelocity, angularVelocity} = object;
+                    oldBody.update({position, rotation, linearVelocity, angularVelocity});
+                  } else {
+                    const newBody = world.makeBodyFromSpec(object);
+                    world.addBase(newBody);
+                  }
+                }
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+
             bulletInstance.emit('connectServer');
           };
           connection.onclose = () => {
@@ -720,14 +886,54 @@ class Bullet {
           };
           connection.onmessage = msg => {
             const m = JSON.parse(msg.data);
-            const {id} = m;
+            const {type} = m;
 
-            const requestHandler = requestHandlers.get(id);
-            if (requestHandler) {
-              const {error, result} = m;
-              requestHandler(error, result);
+            if (type === 'response') {
+              const {id} = m;
+
+              const requestHandler = requestHandlers.get(id);
+              if (requestHandler) {
+                const {error, result} = m;
+                requestHandler(error, result);
+              } else {
+                console.warn('unregistered response handler:', id);
+              }
+            } else if (type === 'create') {
+              const {args} = m;
+              const [type, id, opts] = args;
+
+              opts.type = type;
+              opts.id = id;
+
+              world.makeBodyFromSpec(opts);
+            } else if (type === 'destroy') {
+              const {args} = m;
+              const [id] = args;
+
+              const physicsBody = bodies.get(id);
+              physicsBody.destroy();
+            } else if (type === 'add') {
+              const {args} = m;
+              const [parentId, childId] = args;
+
+              if (parentId === world.id) {
+                const physicsBody = bodies.get(childId);
+                world.addBase(physicsBody);
+              } else {
+                console.warn('adding to non-world:', id);
+              }
+            } else if (type === 'remove') {
+              const {args} = m;
+              const [parentId, childId] = args;
+
+              if (parentId === world.id) {
+                const physicsBody = bodies.get(childId);
+                world.removeBase(physicsBody);
+              } else {
+                console.warn('removing from non-world:', id);
+              }
             } else {
-              console.warn('unregistered handler:', JSON.stringify(id));
+              console.warn('invalid message type:', id);
             }
           };
 
