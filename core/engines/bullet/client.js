@@ -354,19 +354,12 @@ class Bullet {
           constructor(type, opts = {}) {
             super(type, opts.id);
 
-            const {id} = this;
+            const {id, position = [0, 0, 0], rotation = [0, 0, 0, 1], linearVelocity = [0, 0, 0], angularVelocity = [0, 0, 0]} = this;
 
-            const linearVelocity = new THREE.Vector3();
-            if (opts.linearVelocity) {
-              linearVelocity.fromArray(opts.linearVelocity);
-            }
-            this.linearVelocity = linearVelocity;
-
-            const angularVelocity = new THREE.Vector3();
-            if (opts.angularVelocity) {
-              angularVelocity.fromArray(opts.angularVelocity);
-            }
-            this.angularVelocity = angularVelocity;
+            this.position = new THREE.Vector3().fromArray(position);
+            this.rotation = new THREE.Quaternion().fromArray(rotation);
+            this.linearVelocity = new THREE.Vector3().fromArray(linearVelocity);
+            this.angularVelocity = new THREE.Vector3().fromArray(angularVelocity);
 
             this.object = null;
 
@@ -378,30 +371,18 @@ class Bullet {
           }
 
           update({position, rotation, linearVelocity, angularVelocity}) {
-            const {object} = this;
-            if (object) {
-              object.position.fromArray(position);
-              object.quaternion.fromArray(rotation);
-            }
-
+            this.position.fromArray(position);
+            this.rotation.fromArray(rotation);
             this.linearVelocity.fromArray(linearVelocity);
             this.angularVelocity.fromArray(angularVelocity);
 
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              const {debugMesh} = this;
-
-              if (debugMesh) {
-                debugMesh.position.fromArray(position);
-                debugMesh.quaternion.fromArray(rotation);
-              }
-            }
+            this.syncDownstream();
           }
 
           setObject(object) {
             this.object = object;
 
-            // this.sync();
+            // this.syncUpstream();
           }
 
           unsetObject() {
@@ -460,14 +441,38 @@ class Bullet {
             _request('setIgnoreCollisionCheck', [this.id, targetBody.id, ignore], _warnError);
           }
 
-          sync() {
+          syncUpstream() {
             const {object} = this;
 
-            this.setPosition(object.position.toArray());
-            this.setRotation(object.quaternion.toArray());
-            // this.setLinearVelocity([0, 0, 0]);
-            // this.setAngularVelocity([0, 0, 0]);
-            // this.activate();
+            if (object) {
+              this.setPosition(object.position.toArray());
+              this.setRotation(object.quaternion.toArray());
+              // this.setLinearVelocity([0, 0, 0]);
+              // this.setAngularVelocity([0, 0, 0]);
+              // this.activate()
+            };
+          }
+
+          syncDownstream() {
+            const {object} = this;
+            if (object) {
+              const {position, rotation} = this;
+
+              object.position.copy(position);
+              object.quaternion.copy(rotation);
+            }
+
+            const {physicsDebug} = config.getConfig();
+            if (physicsDebug) {
+              const {debugMesh} = this;
+
+              if (debugMesh) {
+                const {position, rotation} = this;
+
+                debugMesh.position.copy(position);
+                debugMesh.quaternion.copy(rotation);
+              }
+            }
           }
 
           destroy() {
@@ -485,9 +490,7 @@ class Bullet {
             } else {
               super('plane', opts);
 
-              const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], dimensions} = opts;
-              this.position = position;
-              this.rotation = rotation;
+              const {scale = [1, 1, 1], dimensions} = opts;
               this.scale = scale;
               this.dimensions = dimensions;
             }
@@ -565,9 +568,7 @@ class Bullet {
             } else {
               super('triangleMesh', opts);
 
-              const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], points} = opts;
-              this.position = position;
-              this.rotation = rotation;
+              const {scale = [1, 1, 1], points} = opts;
               this.scale = scale;
               this.points = points
             };
@@ -588,9 +589,7 @@ class Bullet {
             } else {
               super('compound', opts);
 
-              const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], children} = opts;
-              this.position = position;
-              this.rotation = rotation;
+              const {scale = [1, 1, 1], children} = opts;
               this.scale = scale;
               this.children = children
             };
@@ -600,8 +599,8 @@ class Bullet {
             const {position, rotation, scale, children} = this;
 
             const mesh = _makeCompoundDebugMesh(children);
-            mesh.position.fromArray(position);
-            mesh.quaternion.fromArray(rotation);
+            mesh.position.copy(position);
+            mesh.quaternion.copy(rotation);
             mesh.scale.fromArray(scale);
             return mesh;
           }

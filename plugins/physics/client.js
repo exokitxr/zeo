@@ -181,6 +181,7 @@ class Physics {
                 id: 'physics:box:' + index,
               });
               physicsBody.setObject(boxMesh);
+              physicsBody.syncDownstream();
               return physicsBody;
             });
             boxPhysicsBodies.forEach(physicsBody => {

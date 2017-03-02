@@ -191,7 +191,7 @@ class Cyborg {
               if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
                 const controllerPhysicsBody = controllerPhysicsBodies[side];
                 if (controllerPhysicsBody) {
-                  controllerPhysicsBody.sync();
+                  controllerPhysicsBody.syncUpstream();
                 }
 
                 this.emit('controllerUpdate', {
@@ -428,7 +428,7 @@ class Cyborg {
               controllerPhysicsBody.setObject(mesh);
 
               physicsWorld.addConnectionBound(controllerPhysicsBody);
-              controllerPhysicsBody.sync();
+              controllerPhysicsBody.syncUpstream();
 
               controllerPhysicsBodies[side] = controllerPhysicsBody;
             });
