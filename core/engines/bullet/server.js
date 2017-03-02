@@ -8,7 +8,7 @@ class Context {
   constructor() {
     this.objects = new Map(); // clientId -> Object
     this.updateIndex = new Map(); // engineId -> clientId
-    this.childIndex = new Map(); // parentId -> [childId]
+    this.children = new Map(); // parentId -> [childId]
 
     const engine = new Bullet();
     this.setEngine(engine);
@@ -92,13 +92,13 @@ class Context {
       this.updateIndex.delete(object.id);
     }
 
-    const childIds = this.childIndex.get(id);
+    const childIds = this.children.get(id);
     if (childIds) {
       for (let i = 0; i < childIds.length; i++) {
         const childId = childIds[i];
         this.destroy(childId);
       }
-      this.childIndex.delete(id);
+      this.children.delete(id);
     }
 
     const engine = this.getEngine();
@@ -114,10 +114,10 @@ class Context {
     const child = objects.get(childId);
     parent.add(child);
 
-    let childIds = this.childIndex.get(parentId);
+    let childIds = this.children.get(parentId);
     if (!childIds) {
       childIds = [];
-      this.childIndex.set(parentId, childIds);
+      this.children.set(parentId, childIds);
     }
     childIds.push(childId);
   }
@@ -130,10 +130,10 @@ class Context {
     if (parent && child) {
       parent.remove(child);
 
-      const childIds = this.childIndex.get(parentId);
+      const childIds = this.children.get(parentId);
       childIds.splice(childIds.indexOf(childId), 1);
       if (childIds.length === 0) {
-        this.childIndex.delete(parentId);
+        this.children.delete(parentId);
       }
     }
   }
