@@ -478,13 +478,19 @@ class Bullet {
 
         class Plane extends Body {
           constructor(opts = {}) {
-            super('plane', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], dimensions} = opts;
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
-            this.dimensions = dimensions;
+            if (body) {
+              return body;
+            } else {
+              super('plane', opts);
+
+              const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], dimensions} = opts;
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
+              this.dimensions = dimensions;
+            }
           }
 
           makeDebugMesh() {
@@ -495,10 +501,16 @@ class Bullet {
 
         class Box extends Body {
           constructor(opts = {}) {
-            super('box', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {dimensions} = opts;
-            this.dimensions = dimensions;
+            if (body) {
+              return body;
+            } else {
+              super('box', opts);
+
+              const {dimensions} = opts;
+              this.dimensions = dimensions;
+            }
           }
 
           makeDebugMesh() {
@@ -508,10 +520,16 @@ class Bullet {
 
         class Sphere extends Body {
           constructor(opts = {}) {
-            super('sphere', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {size} = opts;
-            this.size = size;
+            if (body) {
+              return body;
+            } else {
+              super('sphere', opts);
+
+              const {size} = opts;
+              this.size = size;
+            }
           }
 
           makeDebugMesh() {
@@ -521,10 +539,16 @@ class Bullet {
 
         class ConvexHull extends Body {
           constructor(opts = {}) {
-            super('convexHull', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {points} = opts;
-            this.points = points;
+            if (body) {
+              return body;
+            } else {
+              super('convexHull', opts);
+
+              const {points} = opts;
+              this.points = points;
+            }
           }
 
           makeDebugMesh() {
@@ -534,13 +558,19 @@ class Bullet {
 
         class TriangleMesh extends Body {
           constructor(opts = {}) {
-            super('triangleMesh', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], points} = opts;
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
-            this.points = points;
+            if (body) {
+              return body;
+            } else {
+              super('triangleMesh', opts);
+
+              const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], points} = opts;
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
+              this.points = points
+            };
           }
 
           makeDebugMesh() {
@@ -551,13 +581,19 @@ class Bullet {
 
         class Compound extends Body {
           constructor(opts = {}) {
-            super('compound', opts);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], children} = opts;
-            this.position = position;
-            this.rotation = rotation;
-            this.scale = scale;
-            this.children = children;
+            if (body) {
+              return body;
+            } else {
+              super('compound', opts);
+
+              const {position = [0, 0, 0], rotation = [0, 0, 0, 1], scale = [1, 1, 1], children} = opts;
+              this.position = position;
+              this.rotation = rotation;
+              this.scale = scale;
+              this.children = children
+            };
           }
 
           makeDebugMesh() {
@@ -573,12 +609,18 @@ class Bullet {
 
         class Constraint extends Entity {
           constructor(opts = {}) {
-            super('constraint', opts.id);
+            const body = opts.id ? bodies.get(opts.id) : null;
 
-            const {type, id} = this;
-            const {bodyA: {id: bodyAId}, bodyB: {id: bodyBId}, pivotA = [0, 0, 0], pivotB = [0, 0, 0]} = opts;
+            if (body) {
+              return body;
+            } else {
+              super('constraint', opts.id);
 
-            _request('create', [type, id, {bodyAId, bodyBId, pivotA, pivotB}], _warnError);
+              const {type, id} = this;
+              const {bodyA: {id: bodyAId}, bodyB: {id: bodyBId}, pivotA = [0, 0, 0], pivotB = [0, 0, 0]} = opts;
+
+              _request('create', [type, id, {bodyAId, bodyBId, pivotA, pivotB}], _warnError);
+            }
           }
         }
 
