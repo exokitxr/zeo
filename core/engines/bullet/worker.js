@@ -42,6 +42,24 @@ const _requestUpdate = worldId => {
     updates,
   });
 };
+const _requestInit = worldId => {
+  const bodyIds = worldBodyIndex.get(worldId);
+  const objects = bodyIds.map(bodyId => {
+    const body = bodies.get(bodyId);
+
+    const {objectType} = body;
+    if (objectType === physics.RigidBody.OBJECT_TYPE) { // only init bodies (as opposed to constraints)
+      return body.toObject();
+    } else {
+      return null;
+    }
+  }).filter(update => update !== null);
+
+  send('init', {
+    id: worldId,
+    objects,
+  });
+};
 let interval = null;
 const _start = () => {
   _stop();
@@ -350,15 +368,23 @@ process.on('message', m => {
   const {type} = m;
 
   switch (type) {
-    case 'requestUpdate':
+    case 'requestUpdate': {
       const {args: {id}} = m;
       _requestUpdate(id);
       break;
-    case 'start':
+    }
+    case 'requestInit': {
+      const {args: {id}} = m;
+      _requestInit(id);
+      break;
+    }
+    case 'start': {
       _start();
       break;
-    case 'stop':
+    }
+    case 'stop': {
       _stop();
+    }
     case 'addWorld': {
       const {args: {id}} = m;
       _addWorld({id});

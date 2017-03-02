@@ -215,6 +215,20 @@ class Context {
     sourceBody.setIgnoreCollisionCheck(targetBody, ignore);
   }
 
+  requestInit(id, cb) {
+    const {objects} = this;
+
+    const object = objects.get(id);
+    if (object) {
+      object.requestInit();
+      object.once('init', objects => {
+        cb(null, objects);
+      });
+    } else {
+      cb(null, []);
+    }
+  }
+
   requestUpdate(id, cb) {
     const {objects} = this;
 
@@ -367,6 +381,13 @@ class BulletServer {
               context.setIgnoreCollisionCheck(sourceId, targetId, ignore);
 
               cb();
+            } else if (method === 'requestInit') {
+              const [id] = args;
+              context.requestInit(id, (err, objects) => {
+                if (live) {
+                  cb(err, objects);
+                }
+              });
             } else if (method === 'requestUpdate') {
               const [id] = args;
               context.requestUpdate(id, (err, updates) => {

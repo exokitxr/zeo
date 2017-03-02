@@ -210,6 +210,18 @@ class Bullet {
             this.timeout = null;
           }
 
+          requestInit() {
+            return new Promise((accept, reject) => {
+              _request('requestInit', [this.id], (err, objects) => {
+                if (!err) {
+                  accept(objects);
+                } else {
+                  reject(err);
+                }
+              });
+            });
+          }
+
           add(object) {
             Entity.prototype.add.call(this, object);
 
@@ -710,6 +722,14 @@ class Bullet {
 
           connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/bulletWs');
           connection.onopen = () => {
+            world.requestInit()
+              .then(objects => {
+                console.log('request init result', {objects});
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+
             bulletInstance.emit('connectServer');
           };
           connection.onclose = () => {
