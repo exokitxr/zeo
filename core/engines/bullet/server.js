@@ -82,6 +82,8 @@ class Context {
       if (!engine.running && this.hasRunnableObjects()) {
         engine.start();
       }
+    } else {
+      console.warn('ignoring duplicate create: ', {id});
     }
   }
 
@@ -90,44 +92,68 @@ class Context {
     if (object) {
       this.objects.delete(id);
       this.updateIndex.delete(object.id);
-    }
 
-    const childIds = this.children.get(id);
-    if (childIds) {
-      for (let i = 0; i < childIds.length; i++) {
-        const childId = childIds[i];
-        this.destroy(childId);
+      const childIds = this.children.get(id);
+      if (childIds) {
+        for (let i = 0; i < childIds.length; i++) {
+          const childId = childIds[i];
+          this.destroy(childId);
+        }
+        this.children.delete(id);
       }
-      this.children.delete(id);
-    }
 
-    const engine = this.getEngine();
-    if (engine.running && !this.hasRunnableObjects()) {
-      engine.stop();
+      const engine = this.getEngine();
+      if (engine.running && !this.hasRunnableObjects()) {
+        engine.stop();
+      }
+    } else {
+      console.warn('ignoring duplicate destroy:', {id});
     }
   }
 
   add(parentId, childId) {
     const {objects} = this;
 
-    const parent = objects.get(parentId);
-    const child = objects.get(childId);
-    parent.add(child);
+    const parentHasChild = (() => {
+      const childIds = this.children.get(parentId);
 
-    let childIds = this.children.get(parentId);
-    if (!childIds) {
-      childIds = [];
-      this.children.set(parentId, childIds);
+      if (childIds) {
+        return childIds.includes(childId);
+      } else {
+        return false;
+      }
+    })();
+    if (!parentHasChild) {
+      const parent = objects.get(parentId);
+      const child = objects.get(childId);
+      parent.add(child);
+
+      let childIds = this.children.get(parentId);
+      if (!childIds) {
+        childIds = [];
+        this.children.set(parentId, childIds);
+      }
+      childIds.push(childId);
+    } else {
+      console.warn('ignoring duplicate add:', {parentId, childId});
     }
-    childIds.push(childId);
   }
 
   remove(parentId, childId) {
     const {objects} = this;
 
-    const parent = objects.get(parentId);
-    const child = objects.get(childId);
-    if (parent && child) {
+    const parentHasChild = (() => {
+      const childIds = this.children.get(parentId);
+
+      if (childIds) {
+        return childIds.includes(childId);
+      } else {
+        return false;
+      }
+    })();
+    if (parentHasChild) {
+      const parent = objects.get(parentId);
+      const child = objects.get(childId);
       parent.remove(child);
 
       const childIds = this.children.get(parentId);
@@ -135,6 +161,8 @@ class Context {
       if (childIds.length === 0) {
         this.children.delete(parentId);
       }
+    } else {
+      console.warn('ignoring duplicate remove:', {parentId, childId});
     }
   }
 
