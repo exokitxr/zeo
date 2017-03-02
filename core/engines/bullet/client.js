@@ -638,9 +638,10 @@ class Bullet {
 
           switch (type) {
             case 'plane': {
-              const {position, rotation, dimensions} = spec;
+              const {id, position, rotation, dimensions} = spec;
 
               return new Plane({
+                id,
                 position,
                 rotation,
                 dimensions,
@@ -649,9 +650,10 @@ class Bullet {
               });
             }
             case 'box': {
-              const {position, rotation, dimensions} = spec;
+              const {id, position, rotation, dimensions} = spec;
 
               return new Box({
+                id,
                 position,
                 rotation,
                 dimensions,
@@ -660,9 +662,10 @@ class Bullet {
               });
             }
             case 'sphere': {
-              const {position, rotation, size} = spec;
+              const {id, position, rotation, size} = spec;
 
               return new Sphere({
+                id,
                 position,
                 rotation,
                 size,
@@ -671,9 +674,10 @@ class Bullet {
               });
             }
             case 'convexHull': {
-              const {position, rotation, points} = spec;
+              const {id, position, rotation, points} = spec;
 
               return new ConvexHull({
+                id,
                 position,
                 rotation,
                 points,
@@ -682,9 +686,10 @@ class Bullet {
               });
             }
             case 'triangleMesh': {
-              const {position, rotation, points} = spec;
+              const {id, position, rotation, points} = spec;
 
               return new TriangleMesh({
+                id,
                 position,
                 rotation,
                 points,
@@ -693,9 +698,10 @@ class Bullet {
               });
             }
             case 'compound': {
-              const {position, rotation, children} = spec;
+              const {id, position, rotation, children} = spec;
 
               return new Compound({
+                id,
                 position,
                 rotation,
                 children,
