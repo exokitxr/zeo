@@ -12,6 +12,7 @@
   "scripts": {
     "preinstall": "./scripts/preinstall.sh",
     "postinstall": "./scripts/postinstall.sh",
-    "test": "node test.js"
+    "test": "node test.js",
+    "clean": "rm -Rf build"
   }
 }
