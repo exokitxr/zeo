@@ -284,7 +284,7 @@ class BulletServer {
 
       if (url === '/archae/bulletWs') {
         const _broadcast = (type, args) => {
-          if (connections.length >= 2) {
+          if (connections.some(connection => connection !== c)) {
             const e = {
               type,
               args,
@@ -347,6 +347,8 @@ class BulletServer {
 
               c.on('close', () => {
                 context.remove(parentId, childId);
+
+                _broadcast('remove', [parentId, childId]);
               });
 
               cb();

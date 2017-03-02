@@ -155,7 +155,7 @@ class Bullet {
             _request('add', [parentId, childId], _warnError);
           }
 
-          addConnectionBound(child) {
+          addConnectionBound(child) { // XXX this should really also destroy the body after removing
             const {id: parentId} = this;
             const {id: childId} = child;
 

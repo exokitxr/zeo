@@ -260,7 +260,7 @@ class World {
                             _sendInit();
 
                             const _broadcast = (type, args) => {
-                              if (connections.length >= 2) {
+                              if (connections.some(connection => connection !== c)) {
                                 const e = {
                                   type,
                                   args,
