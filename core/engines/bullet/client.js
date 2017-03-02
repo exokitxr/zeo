@@ -626,74 +626,74 @@ class Bullet {
 
           switch (type) {
             case 'plane': {
-              const {id, position, rotation, dimensions} = spec;
+              const {id, position, rotation, dimensions, mass} = spec;
 
               return new Plane({
                 id,
                 position,
                 rotation,
                 dimensions,
-                mass: 1,
+                mass,
                 init: false,
               });
             }
             case 'box': {
-              const {id, position, rotation, dimensions} = spec;
+              const {id, position, rotation, dimensions, mass} = spec;
 
               return new Box({
                 id,
                 position,
                 rotation,
                 dimensions,
-                mass: 1,
+                mass,
                 init: false,
               });
             }
             case 'sphere': {
-              const {id, position, rotation, size} = spec;
+              const {id, position, rotation, size, mass} = spec;
 
               return new Sphere({
                 id,
                 position,
                 rotation,
                 size,
-                mass: 1,
+                mass,
                 init: false,
               });
             }
             case 'convexHull': {
-              const {id, position, rotation, points} = spec;
+              const {id, position, rotation, points, mass} = spec;
 
               return new ConvexHull({
                 id,
                 position,
                 rotation,
                 points,
-                mass: 1,
+                mass,
                 init: false,
               });
             }
             case 'triangleMesh': {
-              const {id, position, rotation, points} = spec;
+              const {id, position, rotation, points, mass} = spec;
 
               return new TriangleMesh({
                 id,
                 position,
                 rotation,
                 points,
-                mass: 1,
+                mass,
                 init: false,
               });
             }
             case 'compound': {
-              const {id, position, rotation, children} = spec;
+              const {id, position, rotation, children, mass} = spec;
 
               return new Compound({
                 id,
                 position,
                 rotation,
                 children,
-                mass: 1,
+                mass,
                 init: false,
               });
             }

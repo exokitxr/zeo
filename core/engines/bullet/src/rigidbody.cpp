@@ -99,6 +99,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
 
   v8::Local<v8::Object> spec = Nan::New<v8::Object>();
   instance->Set(keySpec, spec);
+  spec->Set(keyMass, Nan::New<v8::Number>(nativeInstance->m_mass));
 
   switch (type) {
   case BOX: {
