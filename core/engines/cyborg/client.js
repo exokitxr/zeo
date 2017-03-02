@@ -29,6 +29,7 @@ class Cyborg {
       '/core/engines/webvr',
       '/core/engines/rend',
       '/core/engines/bullet',
+      '/core/engines/multiplayer',
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
     ])
@@ -37,6 +38,7 @@ class Cyborg {
         webvr,
         rend,
         bullet,
+        multiplayer,
         jsUtils,
         geometryUtils,
       ]) => {
@@ -405,6 +407,7 @@ class Cyborg {
 
             SIDES.forEach(side => {
               const controllerPhysicsBody = new physicsWorld.Compound({
+                id: 'controller:' + multiplayer.getId() + ':' + side,
                 children: [
                   {
                     type: 'box',
