@@ -155,7 +155,7 @@ class Bullet {
             _request('add', [parentId, childId], _warnError);
           }
 
-          addConnectionBound(child) { // XXX this should really also destroy the body after removing
+          addConnectionBound(child) {
             const {id: parentId} = this;
             const {id: childId} = child;
 
@@ -235,16 +235,20 @@ class Bullet {
           }
 
           addBase(object) {
+            const {bodies} = this;
             const {id: objectId} = object;
-            this.bodies.set(objectId, object);
 
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              object.addDebug();
-            }
+            if (!bodies.has(objectId)) {
+              bodies.set(objectId, object);
 
-            if (!this.running) {
-              this.start();
+              const {physicsDebug} = config.getConfig();
+              if (physicsDebug) {
+                object.addDebug();
+              }
+
+              if (!this.running) {
+                this.start();
+              }
             }
           }
 
@@ -261,16 +265,20 @@ class Bullet {
           }
 
           removeBase(object) {
+            const {bodies} = this;
             const {id: objectId} = object;
-            this.bodies.delete(objectId);
 
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              object.removeDebug();
-            }
+            if (bodies.has(objectId)) {
+              bodies.delete(objectId);
 
-            if (this.bodies.size === 0) {
-              this.stop();
+              const {physicsDebug} = config.getConfig();
+              if (physicsDebug) {
+                object.removeDebug();
+              }
+
+              if (this.bodies.size === 0) {
+                this.stop();
+              }
             }
           }
 
