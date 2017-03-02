@@ -312,7 +312,7 @@ class Bullet {
                           const {position, rotation, linearVelocity, angularVelocity} = update;
                           body.update({position, rotation, linearVelocity, angularVelocity});
                         } else {
-                          console.warn('invalid body update:', JSON.stringify(id));
+                          console.warn('invalid body update:', id);
                         }
                       }
                     } else {

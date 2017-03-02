@@ -221,8 +221,17 @@ class Context {
     const object = objects.get(id);
     if (object) {
       object.requestInit();
-      object.once('init', objects => {
-        cb(null, objects);
+      object.once('init', engineObjects => {
+        const clientObjects = engineObjects.map(engineObject => {
+          const {id: engineId} = engineObject;
+          const clientId = this.updateIndex.get(engineId);
+
+          engineObject.id = clientId;
+
+          return engineObject;
+        });
+
+        cb(null, clientObjects);
       });
     } else {
       cb(null, []);
@@ -236,17 +245,13 @@ class Context {
     if (object) {
       object.requestUpdate();
       object.once('update', engineUpdates => {
-        const clientUpdates = engineUpdates.map(update => {
-          const {id: engineId, position, rotation, linearVelocity, angularVelocity} = update;
+        const clientUpdates = engineUpdates.map(engineUpdate => {
+          const {id: engineId} = engineUpdate;
           const clientId = this.updateIndex.get(engineId);
 
-          return {
-            id: clientId,
-            position,
-            rotation,
-            linearVelocity,
-            angularVelocity,
-          };
+          engineUpdate.id = clientId;
+
+          return engineUpdate;
         });
 
         cb(null, clientUpdates);
