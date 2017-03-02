@@ -30,6 +30,7 @@ class Physics {
               const url = MODEL_SRC;
               const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
               loader.setTexturePath(texturePath);
+              loader.setCrossOrigin(true);
               loader.parse(modelJson, model => {
                 accept({
                   modelJson,
