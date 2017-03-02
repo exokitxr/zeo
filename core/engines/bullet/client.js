@@ -811,7 +811,7 @@ class Bullet {
                 for (let i = 0; i < objects.length; i++) {
                   const object = objects[i];
                   const physicsBody = world.makeBodyFromSpec(object);
-                  // XXX
+                  world.add(physicsBody);
                 }
               })
               .catch(err => {
