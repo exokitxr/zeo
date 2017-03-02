@@ -125,6 +125,7 @@ class Physics {
             scene.add(model);
 
             const modelPhysicsBody = new physicsWorld.TriangleMesh({
+              id: 'physics: model',
               position: modelPosition.toArray(),
               rotation: modelRotation.toArray(),
               scale: modelScale.toArray(),
@@ -167,6 +168,7 @@ class Physics {
             });
 
             const floorPhysicsBody = new physicsWorld.Plane({
+              id: 'physics:floor',
               position: [0, 0, 0],
               dimensions: [0, 1, 0],
               mass: 0,
