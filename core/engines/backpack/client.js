@@ -27,7 +27,6 @@ class Backpack {
       '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/rend',
-      '/core/engines/hands',
       '/core/engines/tags',
       '/core/plugins/geometry-utils',
     ]).then(([
@@ -35,7 +34,6 @@ class Backpack {
       input,
       webvr,
       rend,
-      hands,
       tags,
       geometryUtils,
     ]) => {

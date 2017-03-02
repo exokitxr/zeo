@@ -35,7 +35,6 @@ class Mail {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/engines/hands',
       '/core/plugins/creature-utils',
     ])
       .then(([
@@ -44,7 +43,6 @@ class Mail {
         webvr,
         biolumi,
         rend,
-        hands,
         creatureUtils,
       ]) => {
         if (live) {

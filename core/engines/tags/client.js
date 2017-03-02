@@ -44,7 +44,6 @@ class Tags {
       '/core/engines/cyborg',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/engines/hands',
       '/core/plugins/js-utils',
       '/core/plugins/creature-utils',
     ])
@@ -55,7 +54,6 @@ class Tags {
         cyborg,
         biolumi,
         rend,
-        hands,
         jsUtils,
         creatureUtils,
       ]) => {

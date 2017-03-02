@@ -44,7 +44,6 @@ class Fs {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
-      '/core/engines/hands',
       '/core/plugins/js-utils',
       '/core/plugins/creature-utils',
     ]).then(([
@@ -53,7 +52,6 @@ class Fs {
       webvr,
       biolumi,
       rend,
-      hands,
       jsUtils,
       creatureUtils,
     ]) => {
