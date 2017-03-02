@@ -352,10 +352,12 @@ class Bullet {
 
         class Body extends Entity {
           constructor(type, opts = {}) {
-            super(type, opts.id);
+            const {id: optsId} = opts;
+            super(type, optsId);
 
-            const {id, position = [0, 0, 0], rotation = [0, 0, 0, 1], linearVelocity = [0, 0, 0], angularVelocity = [0, 0, 0]} = this;
+            const {id} = this; // the constructor might have generated it
 
+            const {position = [0, 0, 0], rotation = [0, 0, 0, 1], linearVelocity = [0, 0, 0], angularVelocity = [0, 0, 0]} = opts;
             this.position = new THREE.Vector3().fromArray(position);
             this.rotation = new THREE.Quaternion().fromArray(rotation);
             this.linearVelocity = new THREE.Vector3().fromArray(linearVelocity);
@@ -850,8 +852,16 @@ class Bullet {
 
                 for (let i = 0; i < objects.length; i++) {
                   const object = objects[i];
-                  const physicsBody = world.makeBodyFromSpec(object);
-                  world.addBase(physicsBody);
+                  const {id} = object;
+                  const oldBody = world.bodies.get(id);
+
+                  if (oldBody) {
+                    const {position, rotation, linearVelocity, angularVelocity} = object;
+                    oldBody.update({position, rotation, linearVelocity, angularVelocity});
+                  } else {
+                    const newBody = world.makeBodyFromSpec(object);
+                    world.addBase(newBody);
+                  }
                 }
               })
               .catch(err => {
