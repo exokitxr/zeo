@@ -225,22 +225,16 @@ class Bullet {
           add(object) {
             Entity.prototype.add.call(this, object);
 
-            const {id: objectId} = object;
-            this.bodies.set(objectId, object);
-
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              object.addDebug();
-            }
-
-            if (!this.running) {
-              this.start();
-            }
+            this.addBase(object);
           }
 
           addConnectionBound(object) {
             Entity.prototype.addConnectionBound.call(this, object);
 
+            this.addBase(object);
+          }
+
+          addBase(object) {
             const {id: objectId} = object;
             this.bodies.set(objectId, object);
 
@@ -811,7 +805,7 @@ class Bullet {
                 for (let i = 0; i < objects.length; i++) {
                   const object = objects[i];
                   const physicsBody = world.makeBodyFromSpec(object);
-                  world.add(physicsBody);
+                  world.addBase(physicsBody);
                 }
               })
               .catch(err => {
