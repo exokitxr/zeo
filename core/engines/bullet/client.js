@@ -382,7 +382,9 @@ class Bullet {
 
             this.object = null;
 
-            _request('create', [type, id, _except(opts, ['id'])], _warnError);
+            if (opts.init !== false) {
+              _request('create', [type, id, _except(opts, ['id'])], _warnError);
+            }
           }
 
           update({position, rotation, linearVelocity, angularVelocity}) {
@@ -631,6 +633,79 @@ class Bullet {
             default: throw new Error('unsupported mesh type: ' + JSON.stringify(type));
           }
         };
+        const _makeBodyFromSpec = spec => {
+          const {type} = spec;
+
+          switch (type) {
+            case 'plane': {
+              const {position, rotation, dimensions} = spec;
+
+              return new Plane({
+                position,
+                rotation,
+                dimensions,
+                mass: 1,
+                init: false,
+              });
+            }
+            case 'box': {
+              const {position, rotation, dimensions} = spec;
+
+              return new Box({
+                position,
+                rotation,
+                dimensions,
+                mass: 1,
+                init: false,
+              });
+            }
+            case 'sphere': {
+              const {position, rotation, size} = spec;
+
+              return new Sphere({
+                position,
+                rotation,
+                size,
+                mass: 1,
+                init: false,
+              });
+            }
+            case 'convexHull': {
+              const {position, rotation, points} = spec;
+
+              return new ConvexHull({
+                position,
+                rotation,
+                points,
+                mass: 1,
+                init: false,
+              });
+            }
+            case 'triangleMesh': {
+              const {position, rotation, points} = spec;
+
+              return new TriangleMesh({
+                position,
+                rotation,
+                points,
+                mass: 1,
+                init: false,
+              });
+            }
+            case 'compound': {
+              const {position, rotation, children} = spec;
+
+              return new Compound({
+                position,
+                rotation,
+                children,
+                mass: 1,
+                init: false,
+              });
+            }
+            default: throw new Error('unsupported mesh type: ' + JSON.stringify(type));
+          }
+        };
         const _makeConvexHullBody = mesh => {
           const position = mesh.position.toArray();
           const rotation = mesh.quaternion.toArray();
@@ -668,6 +743,7 @@ class Bullet {
           world.Compound = Compound;
           world.Constraint = Constraint;
           world.makeBodyFromMesh = _makeBodyFromMesh;
+          world.makeBodyFromSpec = _makeBodyFromSpec;
           world.makeConvexHullBody = _makeConvexHullBody;
           world.makeTriangleMeshBody = _makeTriangleMeshBody;
           return world;
@@ -724,10 +800,12 @@ class Bullet {
           connection.onopen = () => {
             world.requestInit()
               .then(objects => {
-                console.log('request init result', {objects});
+                console.log('request init result', {objects}); // XXX
 
                 for (let i = 0; i < objects.length; i++) {
                   const object = objects[i];
+                  const physicsBody = world.makeBodyFromSpec(object);
+                  // XXX
                 }
               })
               .catch(err => {

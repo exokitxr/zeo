@@ -225,10 +225,11 @@ NAN_METHOD(mox::physics::RigidBody::make)
       btCompoundShapePtr compoundShape = std::make_shared<btCompoundShape>();
 
       for (int i = 0; i < numChildren; i++) {
-        v8::Local<v8::Object> child = Nan::To<v8::Object>(Nan::Get(childrenArray, i)
-          .ToLocalChecked()).ToLocalChecked();
+        v8::Local<v8::Object> child = Nan::To<v8::Object>(Nan::Get(childrenArray, i).ToLocalChecked()).ToLocalChecked();
 
         btCollisionShapePtr childShape;
+        v8::Local<v8::Object> childSpec = Nan::New<v8::Object>();
+
         v8::Local<v8::Value> typeValue = Nan::Get(child, keyType).ToLocalChecked();
         uint32_t type = RigidBody::getRigidBodyTypeEnum(typeValue);
         switch (type) {
@@ -244,10 +245,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
               btVector3(btScalar(dx / 2), btScalar(dy / 2), btScalar(dz / 2))
             );
 
-            v8::Local<v8::Object> childSpec = Nan::New<v8::Object>();
             childSpec->Set(keyType, typeValue);
             childSpec->Set(keyDimensions, dimensionsValue);
-            childrenSpecArray->Set(i, childSpec);
             break;
           }
           case PLANE: {
@@ -263,10 +262,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
               btScalar(0)
             );
 
-            v8::Local<v8::Object> childSpec = Nan::New<v8::Object>();
             childSpec->Set(keyType, typeValue);
             childSpec->Set(keyDimensions, dimensionsValue);
-            childrenSpecArray->Set(i, childSpec);
             break;
           }
           case SPHERE: {
@@ -278,10 +275,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
               btScalar(size)
             );
 
-            v8::Local<v8::Object> childSpec = Nan::New<v8::Object>();
             childSpec->Set(keyType, typeValue);
             childSpec->Set(keySize, sizeValue);
-            childrenSpecArray->Set(i, childSpec);
             break;
           }
           default:
@@ -292,15 +287,15 @@ NAN_METHOD(mox::physics::RigidBody::make)
 
         btTransform xform;
         // position
-        v8::Local<v8::Object> position = Nan::To<v8::Object>(Nan::Get(child, keyPosition)
-          .ToLocalChecked()).ToLocalChecked();
+        v8::Local<v8::Value> positionValue = Nan::Get(child, keyPosition).ToLocalChecked();
+        v8::Local<v8::Object> position = Nan::To<v8::Object>(positionValue).ToLocalChecked();
         double px = Nan::To<double>(Nan::Get(position, 0).ToLocalChecked()).FromJust();
         double py = Nan::To<double>(Nan::Get(position, 1).ToLocalChecked()).FromJust();
         double pz = Nan::To<double>(Nan::Get(position, 2).ToLocalChecked()).FromJust();
         xform.setOrigin(btVector3(px, py, pz));
         // rotation
-        v8::Local<v8::Object> rotation = Nan::To<v8::Object>(Nan::Get(child, keyRotation)
-          .ToLocalChecked()).ToLocalChecked();
+        v8::Local<v8::Value> rotationValue = Nan::Get(child, keyRotation).ToLocalChecked();
+        v8::Local<v8::Object> rotation = Nan::To<v8::Object>(rotationValue).ToLocalChecked();
         double rx = Nan::To<double>(Nan::Get(rotation, 0).ToLocalChecked()).FromJust();
         double ry = Nan::To<double>(Nan::Get(rotation, 1).ToLocalChecked()).FromJust();
         double rz = Nan::To<double>(Nan::Get(rotation, 2).ToLocalChecked()).FromJust();
@@ -309,6 +304,10 @@ NAN_METHOD(mox::physics::RigidBody::make)
 
         compoundShape->addChildShape(xform, childShape.get());
         nativeInstance->m_collisionShapes.push_back(childShape);
+
+        childSpec->Set(keyPosition, positionValue);
+        childSpec->Set(keyRotation, rotationValue);
+        childrenSpecArray->Set(i, childSpec);
       }
 
       nativeInstance->m_collisionShape = compoundShape;
