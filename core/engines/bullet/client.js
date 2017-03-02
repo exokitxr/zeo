@@ -585,7 +585,7 @@ class Bullet {
           }
         }
 
-        const _makeBody = mesh => {
+        const _makeBodyFromMesh = mesh => {
           const {geometry} = mesh;
           const {type} = geometry;
 
@@ -667,7 +667,7 @@ class Bullet {
           world.TriangleMesh = TriangleMesh;
           world.Compound = Compound;
           world.Constraint = Constraint;
-          world.makeBody = _makeBody;
+          world.makeBodyFromMesh = _makeBodyFromMesh;
           world.makeConvexHullBody = _makeConvexHullBody;
           world.makeTriangleMeshBody = _makeTriangleMeshBody;
           return world;
@@ -725,6 +725,10 @@ class Bullet {
             world.requestInit()
               .then(objects => {
                 console.log('request init result', {objects});
+
+                for (let i = 0; i < objects.length; i++) {
+                  const object = objects[i];
+                }
               })
               .catch(err => {
                 console.warn(err);

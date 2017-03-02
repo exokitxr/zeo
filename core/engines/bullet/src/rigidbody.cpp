@@ -71,6 +71,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
   v8::Local<v8::String> keyLength = Nan::New("length").ToLocalChecked();
   v8::Local<v8::String> keyMass = Nan::New("mass").ToLocalChecked();
   v8::Local<v8::String> keyObjectType = Nan::New("objectType").ToLocalChecked();
+  v8::Local<v8::String> keySpec = Nan::New("spec").ToLocalChecked();
 
   v8::Local<v8::Object> def = Nan::To<v8::Object>(info[0]).ToLocalChecked();
 
@@ -92,13 +93,18 @@ NAN_METHOD(mox::physics::RigidBody::make)
   // type-specific construction of rigid body
   //
 
+
   instance->Set(keyObjectType, Nan::New(OBJECT_TYPE));
   instance->Set(keyType, Nan::Get(def, keyType).ToLocalChecked());
+
+  v8::Local<v8::Object> spec = Nan::New<v8::Object>();
+  instance->Set(keySpec, spec);
 
   switch (type) {
   case BOX: {
     MOXCHK(Nan::Has(def, keyDimensions).FromJust());
-    v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(Nan::Get(def, keyDimensions).ToLocalChecked()).ToLocalChecked();
+    v8::Local<v8::Value> dimensionsValue = Nan::Get(def, keyDimensions).ToLocalChecked();
+    v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(dimensionsValue).ToLocalChecked();
     double dx = Nan::To<double>(Nan::Get(dimensions, 0).ToLocalChecked()).FromJust();
     double dy = Nan::To<double>(Nan::Get(dimensions, 1).ToLocalChecked()).FromJust();
     double dz = Nan::To<double>(Nan::Get(dimensions, 2).ToLocalChecked()).FromJust();
@@ -106,11 +112,14 @@ NAN_METHOD(mox::physics::RigidBody::make)
       btVector3(btScalar(dx / 2), btScalar(dy / 2), btScalar(dz / 2))
     );
 
+    Nan::Set(spec, keyDimensions, dimensionsValue);
+
     break;
   }
   case PLANE: {
     MOXCHK(Nan::Has(def, keyDimensions).FromJust());
-    v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(Nan::Get(def, keyDimensions).ToLocalChecked()).ToLocalChecked();
+    v8::Local<v8::Value> dimensionsValue = Nan::Get(def, keyDimensions).ToLocalChecked();
+    v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(dimensionsValue).ToLocalChecked();
     double dx = Nan::To<double>(Nan::Get(dimensions, 0).ToLocalChecked()).FromJust();
     double dy = Nan::To<double>(Nan::Get(dimensions, 1).ToLocalChecked()).FromJust();
     double dz = Nan::To<double>(Nan::Get(dimensions, 2).ToLocalChecked()).FromJust();
@@ -118,6 +127,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
       btVector3(btScalar(dx), btScalar(dy), btScalar(dz)),
       btScalar(0)
     );
+
+    Nan::Set(spec, keyDimensions, dimensionsValue);
 
     break;
   }
@@ -128,6 +139,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
     nativeInstance->m_collisionShape = std::make_shared<btSphereShape>(
       btScalar(size)
     );
+
+    Nan::Set(spec, keySize, sizeValue);
 
     break;
   }
@@ -147,6 +160,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
         (btScalar *)points,
         numPoints
       );
+
+      Nan::Set(spec, keyPoints, pointsArray);
 
     } else {
       Nan::ThrowRangeError("points size is invalid");
@@ -190,6 +205,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
         nativeInstance->m_triangleMesh.get(),
         false
       );
+
+      Nan::Set(spec, keyPoints, pointsArray);
     } else {
       v8::Local<v8::String> errorString = Nan::New(std::string("points size is invalid: ") + std::to_string(numScalars)).ToLocalChecked();
       Nan::ThrowRangeError(errorString);
@@ -201,6 +218,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
   case COMPOUND: {
     MOXCHK(Nan::Has(def, keyChildren).FromJust());
     v8::Local<v8::Object> childrenArray = Nan::To<v8::Object>(Nan::Get(def, keyChildren).ToLocalChecked()).ToLocalChecked();
+    v8::Local<v8::Object> childrenSpecArray = Nan::New<v8::Array>();
 
     int numChildren = Nan::To<int>(Nan::Get(childrenArray, keyLength).ToLocalChecked()).FromJust();
     if (numChildren > 0) {
@@ -211,22 +229,32 @@ NAN_METHOD(mox::physics::RigidBody::make)
           .ToLocalChecked()).ToLocalChecked();
 
         btCollisionShapePtr childShape;
-        uint32_t type = RigidBody::getRigidBodyTypeEnum(Nan::Get(child, keyType).ToLocalChecked());
+        v8::Local<v8::Value> typeValue = Nan::Get(child, keyType).ToLocalChecked();
+        uint32_t type = RigidBody::getRigidBodyTypeEnum(typeValue);
         switch (type) {
           case BOX: {
             MOXCHK(Nan::Has(child, keyDimensions).FromJust());
-            v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(Nan::Get(child, keyDimensions).ToLocalChecked()).ToLocalChecked();
+
+            v8::Local<v8::Value> dimensionsValue = Nan::Get(child, keyDimensions).ToLocalChecked();
+            v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(dimensionsValue).ToLocalChecked();
             double dx = Nan::To<double>(Nan::Get(dimensions, 0).ToLocalChecked()).FromJust();
             double dy = Nan::To<double>(Nan::Get(dimensions, 1).ToLocalChecked()).FromJust();
             double dz = Nan::To<double>(Nan::Get(dimensions, 2).ToLocalChecked()).FromJust();
             childShape = std::make_shared<btBoxShape>(
               btVector3(btScalar(dx / 2), btScalar(dy / 2), btScalar(dz / 2))
             );
+
+            v8::Local<v8::Object> childSpec = Nan::New<v8::Object>();
+            childSpec->Set(keyType, typeValue);
+            childSpec->Set(keyDimensions, dimensionsValue);
+            childrenSpecArray->Set(i, childSpec);
             break;
           }
           case PLANE: {
             MOXCHK(Nan::Has(child, keyDimensions).FromJust());
-            v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(Nan::Get(child, keyDimensions).ToLocalChecked()).ToLocalChecked();
+
+            v8::Local<v8::Value> dimensionsValue = Nan::Get(child, keyDimensions).ToLocalChecked();
+            v8::Local<v8::Object> dimensions = Nan::To<v8::Object>(dimensionsValue).ToLocalChecked();
             double dx = Nan::To<double>(Nan::Get(dimensions, 0).ToLocalChecked()).FromJust();
             double dy = Nan::To<double>(Nan::Get(dimensions, 1).ToLocalChecked()).FromJust();
             double dz = Nan::To<double>(Nan::Get(dimensions, 2).ToLocalChecked()).FromJust();
@@ -234,15 +262,26 @@ NAN_METHOD(mox::physics::RigidBody::make)
               btVector3(btScalar(dx), btScalar(dy), btScalar(dz)),
               btScalar(0)
             );
+
+            v8::Local<v8::Object> childSpec = Nan::New<v8::Object>();
+            childSpec->Set(keyType, typeValue);
+            childSpec->Set(keyDimensions, dimensionsValue);
+            childrenSpecArray->Set(i, childSpec);
             break;
           }
           case SPHERE: {
             MOXCHK(Nan::Has(def, keySize).FromJust());
-            double size = Nan::To<double>(Nan::Get(def, keySize)
-              .ToLocalChecked()).FromJust();
+
+            v8::Local<v8::Number> sizeValue = Nan::To<v8::Number>(Nan::Get(def, keySize).ToLocalChecked()).ToLocalChecked();
+            double size = Nan::To<double>(sizeValue).FromJust();
             childShape = std::make_shared<btSphereShape>(
               btScalar(size)
             );
+
+            v8::Local<v8::Object> childSpec = Nan::New<v8::Object>();
+            childSpec->Set(keyType, typeValue);
+            childSpec->Set(keySize, sizeValue);
+            childrenSpecArray->Set(i, childSpec);
             break;
           }
           default:
@@ -273,6 +312,8 @@ NAN_METHOD(mox::physics::RigidBody::make)
       }
 
       nativeInstance->m_collisionShape = compoundShape;
+
+      Nan::Set(spec, keyChildren, childrenSpecArray);
     } else {
       v8::Local<v8::String> errorString = Nan::New(std::string("number of children is invalid: ") + std::to_string(numChildren)).ToLocalChecked();
       Nan::ThrowRangeError(errorString);

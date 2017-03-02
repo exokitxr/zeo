@@ -174,7 +174,7 @@ class Physics {
             physicsWorld.add(floorPhysicsBody);
 
             const boxPhysicsBodies = boxMeshes.map(boxMesh => {
-              const physicsBody = physicsWorld.makeBody(boxMesh);
+              const physicsBody = physicsWorld.makeBodyFromMesh(boxMesh);
               physicsBody.setObject(boxMesh);
               return physicsBody;
             });

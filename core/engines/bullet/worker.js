@@ -18,13 +18,13 @@ const _requestInit = worldId => {
     const {objectType} = body;
     if (objectType === physics.RigidBody.OBJECT_TYPE) { // only return bodies (as opposed to constraints)
       const id = bodyId;
-      const {type} = body;
+      const {type, spec} = body;
       const position = body.getPosition();
       const rotation = body.getRotation();
       const linearVelocity = body.getLinearVelocity();
       const angularVelocity = body.getAngularVelocity();
 
-      return {
+      const result = {
         id,
         type,
         position,
@@ -32,6 +32,10 @@ const _requestInit = worldId => {
         linearVelocity,
         angularVelocity,
       };
+      for (const k in spec) {
+        result[k] = spec[k];
+      }
+      return result;
     } else {
       return null;
     }
