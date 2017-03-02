@@ -283,15 +283,23 @@ class BulletServer {
       const {url} = c.upgradeReq;
 
       if (url === '/archae/bulletWs') {
-        const _sendInit = () => {
+        const _broadcast = (type, args) => {
+          if (connections.length >= 2) {
+            const e = {
+              type,
+              args,
+            };
+            const es = JSON.stringify(e);
 
-          const {objects} = this;
-          const e = {
-          };
-          const er = JSON.stringify(e);
-          // c.send(es);
+            for (let i = 0; i < connections.length; i++) {
+              const connection = connections[i];
+
+              if (connection !== c) {
+                connection.send(es);
+              }
+            }
+          }
         };
-        _sendInit();
 
         c.on('message', s => {
           const m = _jsonParse(s);
@@ -302,6 +310,7 @@ class BulletServer {
             const cb = (err = null, result = null) => {
               if (c.readyState === OPEN) {
                 const e = {
+                  type: 'response',
                   id: id,
                   error: err,
                   result: result,
@@ -316,16 +325,22 @@ class BulletServer {
               context.create(type, id, opts);
 
               cb();
+
+              _broadcast('create', [type, id, opts]);
             } else if (method === 'destroy') {
               const [id] = args;
               context.destroy(id);
 
               cb();
+
+              _broadcast('create', [id]);
             } else if (method === 'add') {
               const [parentId, childId] = args;
               context.add(parentId, childId);
 
               cb();
+
+              _broadcast('add', [parentId, childId]);
             } else if (method === 'addConnectionBound') {
               const [parentId, childId] = args;
               context.add(parentId, childId);
@@ -335,61 +350,85 @@ class BulletServer {
               });
 
               cb();
+
+              _broadcast('add', [parentId, childId]);
             } else if (method === 'remove') {
               const [parentId, childId] = args;
               context.remove(parentId, childId);
 
               cb();
+
+              _broadcast('remove', [parentId, childId]);
             } else if (method === 'setPosition') {
               const [id, position, activate] = args;
               context.setPosition(id, position, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setRotation') {
               const [id, rotation, activate] = args;
               context.setRotation(id, rotation, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setLinearVelocity') {
               const [id, linearVelocity, activate] = args;
               context.setLinearVelocity(id, linearVelocity, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setAngularVelocity') {
               const [id, angularVelocity, activate] = args;
               context.setAngularVelocity(id, angularVelocity, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setLinearFactor') {
               const [id, linearFactor, activate] = args;
               context.setLinearFactor(id, linearFactor, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setAngularFactor') {
               const [id, angularFactor, activate] = args;
               context.setAngularFactor(id, angularFactor, activate);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'activate') {
               const [id] = args;
               context.activate(id);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'deactivate') {
               const [id] = args;
               context.deactivate(id);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'disableDeactivation') {
               const [id] = args;
               context.disableDeactivation(id);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'setIgnoreCollisionCheck') {
               const [sourceId, targetId, ignore] = args;
               context.setIgnoreCollisionCheck(sourceId, targetId, ignore);
 
               cb();
+
+              // no need to broadcast
             } else if (method === 'requestInit') {
               const [id] = args;
               context.requestInit(id, (err, objects) => {
@@ -397,6 +436,8 @@ class BulletServer {
                   cb(err, objects);
                 }
               });
+
+              // broadcast does not make sense
             } else if (method === 'requestUpdate') {
               const [id] = args;
               context.requestUpdate(id, (err, updates) => {
@@ -404,6 +445,8 @@ class BulletServer {
                   cb(err, updates);
                 }
               });
+
+              // broadcast does not make sense
             } else {
               const err = new Error('no such method:' + JSON.stringify(method));
               cb(err.stack);

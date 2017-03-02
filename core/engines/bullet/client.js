@@ -816,14 +816,36 @@ class Bullet {
           };
           connection.onmessage = msg => {
             const m = JSON.parse(msg.data);
-            const {id} = m;
+            const {type} = m;
 
-            const requestHandler = requestHandlers.get(id);
-            if (requestHandler) {
-              const {error, result} = m;
-              requestHandler(error, result);
+            if (type === 'response') {
+              const {id} = m;
+
+              const requestHandler = requestHandlers.get(id);
+              if (requestHandler) {
+                const {error, result} = m;
+                requestHandler(error, result);
+              } else {
+                console.warn('unregistered handler:', id);
+              }
+            } else if (type === 'create') {
+              const {args} = m;
+
+              console.log('handle bullet create', args); // XXX
+            } else if (type === 'destroy') {
+              const {args} = m;
+
+              console.log('handle bullet destroy', args); // XXX
+            } else if (type === 'add') {
+              const {args} = m;
+
+              console.log('handle bullet add', args); // XXX
+            } else if (type === 'remove') {
+              const {args} = m;
+
+              console.log('handle bullet remove', args); // XXX
             } else {
-              console.warn('unregistered handler:', JSON.stringify(id));
+              console.warn('invalid message type:', id);
             }
           };
 
