@@ -347,8 +347,10 @@ class BulletServer {
 
               c.on('close', () => {
                 context.remove(parentId, childId);
-
                 _broadcast('remove', [parentId, childId]);
+
+                context.destroy(childId);
+                _broadcast('destroy', [childId]);
               });
 
               cb();

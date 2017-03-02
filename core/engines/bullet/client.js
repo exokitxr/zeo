@@ -469,6 +469,11 @@ class Bullet {
             // this.setAngularVelocity([0, 0, 0]);
             // this.activate();
           }
+
+          destroy() {
+            const {id} = this;
+            bodies.delete(id);
+          }
         }
 
         class Plane extends Body {
@@ -835,27 +840,29 @@ class Bullet {
               const {args} = m;
               const [type, id, opts] = args;
 
+              console.log('handle bullet create', args); // XXX
+
               opts.type = type;
               opts.id = id;
 
               world.makeBodyFromSpec(opts);
-
-              console.log('handle bullet create', args); // XXX
             } else if (type === 'destroy') {
               const {args} = m;
+              const [id] = args;
 
               console.log('handle bullet destroy', args);
 
-              throw new Error('not implemented'); // XXX
+              const physicsBody = bodies.get(id);
+              physicsBody.destroy();
             } else if (type === 'add') {
               const {args} = m;
               const [parentId, childId] = args;
 
               if (parentId === world.id) {
+                console.log('handle bullet add', args); // XXX
+
                 const physicsBody = bodies.get(childId);
                 world.addBase(physicsBody);
-
-                console.log('handle bullet add', args); // XXX
               } else {
                 console.warn('adding to non-world:', id);
               }
@@ -864,10 +871,10 @@ class Bullet {
               const [parentId, childId] = args;
 
               if (parentId === world.id) {
+                console.log('handle bullet remove', args); // XXX
+
                 const physicsBody = bodies.get(childId);
                 world.removeBase(physicsBody);
-
-                console.log('handle bullet remove', args); // XXX
               } else {
                 console.warn('removing from non-world:', id);
               }
