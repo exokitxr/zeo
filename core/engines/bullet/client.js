@@ -582,7 +582,7 @@ class Bullet {
           }
         }
 
-        const _makeBodyFromMesh = mesh => {
+        const _makeBodyFromMesh = (mesh, {id = idUtils.makeId()} = {}) => {
           const {geometry} = mesh;
           const {type} = geometry;
 
@@ -593,6 +593,7 @@ class Bullet {
               const rotation = mesh.quaternion.toArray();
 
               return new Plane({
+                id,
                 position,
                 rotation,
                 dimensions: [0, 0, 1],
@@ -606,6 +607,7 @@ class Bullet {
               const {parameters: {width, height, depth}} = geometry;
 
               return new Box({
+                id,
                 position,
                 rotation,
                 dimensions: [width, height, depth],
@@ -619,6 +621,7 @@ class Bullet {
               const {parameters: {radius}} = geometry;
 
               return new Sphere({
+                id,
                 position,
                 rotation,
                 size: radius,

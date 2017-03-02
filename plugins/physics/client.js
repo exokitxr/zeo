@@ -173,8 +173,10 @@ class Physics {
             });
             physicsWorld.add(floorPhysicsBody);
 
-            const boxPhysicsBodies = boxMeshes.map(boxMesh => {
-              const physicsBody = physicsWorld.makeBodyFromMesh(boxMesh);
+            const boxPhysicsBodies = boxMeshes.map((boxMesh, index) => {
+              const physicsBody = physicsWorld.makeBodyFromMesh(boxMesh, {
+                id: 'physics:box:' + index,
+              });
               physicsBody.setObject(boxMesh);
               return physicsBody;
             });
