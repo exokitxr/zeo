@@ -796,10 +796,12 @@ const geometryUtils = archae => ({
 
         const boxTargetCache = new LRUMap(BOX_TARGET_CACHE_SIZE);
         const makeBoxTarget = (position, rotation, scale, size) => {
-          const key = String(position.x) + String(position.y) + String(position.z) +
-            String(rotation.x) + String(rotation.y) + String(rotation.z) + String(rotation.w) +
-            String(scale.x) + String(scale.y) + String(scale.z) +
-            String(size.x) + String(size.y) + String(size.z);
+          const key = [
+            position.x, position.y, position.z,
+            rotation.x, rotation.y, rotation.z, rotation.w,
+            scale.x, scale.y, scale.z,
+            size.x, size.y, size.z,
+          ].join(':');
           let entry = boxTargetCache.get(size);
           if (!entry) {
             entry = new BoxTarget(position, rotation, scale, size);
