@@ -260,6 +260,16 @@ class BulletServer {
       const {url} = c.upgradeReq;
 
       if (url === '/archae/bulletWs') {
+        const _sendInit = () => {
+
+          const {objects} = this;
+          const e = {
+          };
+          const er = JSON.stringify(e);
+          // c.send(es);
+        };
+        _sendInit();
+
         c.on('message', s => {
           const m = _jsonParse(s);
 

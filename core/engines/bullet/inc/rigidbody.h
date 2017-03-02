@@ -56,6 +56,8 @@ namespace mox {
       static NAN_METHOD(disableDeactivation);
       static NAN_METHOD(setIgnoreCollisionCheck);
 
+      static uint32_t getRigidBodyTypeEnum(const v8::Local<v8::Value> &val);
+
       static Nan::Persistent<v8::Function> constructor;
     };
 

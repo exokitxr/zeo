@@ -18,7 +18,7 @@ const _requestUpdate = worldId => {
     const {objectType, type} = body;
     if (
       objectType === physics.RigidBody.OBJECT_TYPE && // only update bodies (as opposed to constraints)
-      type !== physics.RigidBody.PLANE && type !== physics.RigidBody.TRIANGLE_MESH // only update non-static bodies
+      type !== 'plane' && type !== 'triangleMesh' // only update non-static bodies
     ) {
       const position = body.getPosition();
       const rotation = body.getRotation();
@@ -195,7 +195,7 @@ const _makeBody = bodySpec => {
       const {dimensions, scale, mass, position, rotation} = bodySpec;
 
       const plane = physics.RigidBody.make({
-        type: physics.RigidBody.PLANE,
+        type: 'plane',
         dimensions,
         scale,
         mass,
@@ -213,7 +213,7 @@ const _makeBody = bodySpec => {
       const {dimensions, scale, mass, position, rotation} = bodySpec;
 
       const box = physics.RigidBody.make({
-        type: physics.RigidBody.BOX,
+        type: 'box',
         dimensions,
         scale,
         mass,
@@ -231,7 +231,7 @@ const _makeBody = bodySpec => {
       const {size, mass, scale, position, rotation} = bodySpec;
 
       const sphere = physics.RigidBody.make({
-        type: physics.RigidBody.SPHERE,
+        type: 'sphere',
         size,
         scale,
         mass,
@@ -249,7 +249,7 @@ const _makeBody = bodySpec => {
       const {points, scale, mass, position, rotation} = bodySpec;
 
       const convexHull = physics.RigidBody.make({
-        type: physics.RigidBody.CONVEX_HULL,
+        type: 'convexHull',
         points,
         scale,
         mass,
@@ -267,7 +267,7 @@ const _makeBody = bodySpec => {
       const {points, scale, mass, position, rotation} = bodySpec;
 
       const triangleMesh = physics.RigidBody.make({
-        type: physics.RigidBody.TRIANGLE_MESH,
+        type: 'triangleMesh',
         points,
         scale,
         mass,
@@ -285,7 +285,7 @@ const _makeBody = bodySpec => {
       const {children, scale, mass, position, rotation} = bodySpec;
 
       const triangleMesh = physics.RigidBody.make({
-        type: physics.RigidBody.COMPOUND,
+        type: 'compound',
         children: children.map(child => {
           const {type, position, rotation} = child;
 
@@ -293,7 +293,7 @@ const _makeBody = bodySpec => {
             case 'plane': {
               const {dimensions} = child;
               return {
-                type: physics.RigidBody.PLANE,
+                type: 'plane',
                 dimensions,
                 position,
                 rotation,
@@ -302,7 +302,7 @@ const _makeBody = bodySpec => {
             case 'box': {
               const {dimensions} = child;
               return {
-                type: physics.RigidBody.BOX,
+                type: 'box',
                 dimensions,
                 position,
                 rotation,
@@ -311,7 +311,7 @@ const _makeBody = bodySpec => {
             case 'sphere': {
               const {size} = child;
               return {
-                type: physics.RigidBody.SPHERE,
+                type: 'sphere',
                 size,
                 position,
                 rotation,

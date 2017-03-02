@@ -24,13 +24,6 @@ void mox::physics::RigidBody::Init(v8::Local<v8::Object> namespc)
 
   tpl->Set(Nan::New("OBJECT_TYPE").ToLocalChecked(), Nan::New(OBJECT_TYPE));
 
-  tpl->Set(Nan::New("BOX").ToLocalChecked(), Nan::New(BOX));
-  tpl->Set(Nan::New("PLANE").ToLocalChecked(), Nan::New(PLANE));
-  tpl->Set(Nan::New("SPHERE").ToLocalChecked(), Nan::New(SPHERE));
-  tpl->Set(Nan::New("CONVEX_HULL").ToLocalChecked(), Nan::New(CONVEX_HULL));
-  tpl->Set(Nan::New("TRIANGLE_MESH").ToLocalChecked(), Nan::New(TRIANGLE_MESH));
-  tpl->Set(Nan::New("COMPOUND").ToLocalChecked(), Nan::New(COMPOUND));
-
   Nan::SetPrototypeMethod(tpl, "getMass", getMass);
   Nan::SetPrototypeMethod(tpl, "getPosition", getPosition);
   Nan::SetPrototypeMethod(tpl, "setPosition", setPosition);
@@ -83,8 +76,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
 
   // type - decides which kind of collision shape this rigid body has
   MOXCHK(Nan::Has(def, keyType).FromJust());
-  nativeInstance->m_type = Nan::To<uint32_t>(
-    Nan::Get(def, keyType).ToLocalChecked()).FromJust();
+  nativeInstance->m_type = RigidBody::getRigidBodyTypeEnum(Nan::Get(def, keyType).ToLocalChecked());
 
   // mass
   if (Nan::Has(def, keyMass).FromJust()) {
@@ -218,7 +210,7 @@ NAN_METHOD(mox::physics::RigidBody::make)
           .ToLocalChecked()).ToLocalChecked();
 
         btCollisionShapePtr childShape;
-        uint32_t type = Nan::To<uint32_t>(Nan::Get(child, keyType).ToLocalChecked()).FromJust();
+        uint32_t type = RigidBody::getRigidBodyTypeEnum(Nan::Get(child, keyType).ToLocalChecked());
         switch (type) {
           case BOX: {
             MOXCHK(Nan::Has(child, keyDimensions).FromJust());
@@ -254,6 +246,9 @@ NAN_METHOD(mox::physics::RigidBody::make)
             );
             break;
           }
+          default:
+            std::cerr << "Bullet: invalid compound object type: " << type << std::endl;
+            break;
           // XXX add remaining types here
         }
 
@@ -287,6 +282,9 @@ NAN_METHOD(mox::physics::RigidBody::make)
     }
     break;
   }
+  default:
+    std::cerr << "Bullet: invalid object type: " << nativeInstance->m_type << std::endl;
+    break;
   }
 
   // scale
@@ -516,4 +514,25 @@ v8::Local<v8::Object> mox::physics::RigidBody::NewInstance()
   v8::Local<v8::Object> instance = cons->NewInstance(argc, argv);
 
   return scope.Escape(instance);
+}
+
+uint32_t mox::physics::RigidBody::getRigidBodyTypeEnum(const v8::Local<v8::Value> &val) {
+  v8::Local<v8::String> typeValue = Nan::To<v8::String>(val).ToLocalChecked();
+  v8::String::Utf8Value typeUtf8Value(typeValue);
+  std::string typeString(*typeUtf8Value);
+  uint32_t type = -1;
+  if (typeString == "box") {
+    type = BOX;
+  } else if (typeString == "plane") {
+    type = PLANE;
+  } else if (typeString == "sphere") {
+    type = SPHERE;
+  } else if (typeString == "convexHull") {
+    type = CONVEX_HULL;
+  } else if (typeString == "triangleMesh") {
+    type = TRIANGLE_MESH;
+  } else if (typeString == "compound") {
+    type = COMPOUND;
+  }
+  return type;
 }
