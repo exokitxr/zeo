@@ -36,7 +36,6 @@ namespace mox {
       btRigidBodyPtr m_rigidBody;
       bool m_isDynamic;
       double m_mass;
-      v8::Local<v8::Object> m_object;
 
       static NAN_METHOD(New);
       static NAN_METHOD(make);
@@ -56,7 +55,6 @@ namespace mox {
       static NAN_METHOD(deactivate);
       static NAN_METHOD(disableDeactivation);
       static NAN_METHOD(setIgnoreCollisionCheck);
-      static NAN_METHOD(toObject);
 
       static uint32_t getRigidBodyTypeEnum(const v8::Local<v8::Value> &val);
 

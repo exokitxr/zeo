@@ -48,12 +48,13 @@ const _requestInit = worldId => {
     const body = bodies.get(bodyId);
 
     const {objectType} = body;
-    if (objectType === physics.RigidBody.OBJECT_TYPE) { // only init bodies (as opposed to constraints)
-      return body.toObject();
+    if (objectType === physics.RigidBody.OBJECT_TYPE) { // only return bodies (as opposed to constraints)
+      const {spec} = body;
+      return spec;
     } else {
       return null;
     }
-  }).filter(update => update !== null);
+  }).filter(object => object !== null);
 
   send('init', {
     id: worldId,
