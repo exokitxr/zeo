@@ -333,7 +333,7 @@ class BulletServer {
 
               cb();
 
-              _broadcast('create', [id]);
+              _broadcast('destroy', [id]);
             } else if (method === 'add') {
               const [parentId, childId] = args;
               context.add(parentId, childId);
