@@ -251,22 +251,16 @@ class Bullet {
           remove(object) {
             Entity.prototype.remove.call(this, object);
 
-            const {id: objectId} = object;
-            this.bodies.delete(objectId);
-
-            const {physicsDebug} = config.getConfig();
-            if (physicsDebug) {
-              object.removeDebug();
-            }
-
-            if (this.bodies.size === 0) {
-              this.stop();
-            }
+            this.removeBase(object);
           }
 
           removeConnectionBound(object) {
             Entity.prototype.removeConnectionBound.call(this, object);
 
+            this.removeBase(object);
+          }
+
+          removeBase(object) {
             const {id: objectId} = object;
             this.bodies.delete(objectId);
 
@@ -800,7 +794,7 @@ class Bullet {
           connection.onopen = () => {
             world.requestInit()
               .then(objects => {
-                console.log('request init result', {objects}); // XXX
+                console.log('request init result', {objects});
 
                 for (let i = 0; i < objects.length; i++) {
                   const object = objects[i];
