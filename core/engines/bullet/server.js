@@ -223,6 +223,8 @@ class Context {
       object.requestInit();
       object.once('init', engineObjects => {
         const clientObjects = engineObjects.map(engineObject => {
+          engineObject = _shallowClone(engineObject);
+
           const {id: engineId} = engineObject;
           const clientId = this.updateIndex.get(engineId);
 
@@ -246,6 +248,8 @@ class Context {
       object.requestUpdate();
       object.once('update', engineUpdates => {
         const clientUpdates = engineUpdates.map(engineUpdate => {
+          engineUpdate = _shallowClone(engineUpdate);
+
           const {id: engineId} = engineUpdate;
           const clientId = this.updateIndex.get(engineId);
 
@@ -445,6 +449,13 @@ const _jsonParse = s => {
   } else {
     return null;
   }
+};
+const _shallowClone = o => {
+  const result = {};
+  for (const k in o) {
+    result[k] = o[k];
+  }
+  return result;
 };
 
 module.exports = BulletServer;
