@@ -71,13 +71,12 @@ NAN_METHOD(mox::physics::RigidBody::make)
   v8::Local<v8::String> keyLength = Nan::New("length").ToLocalChecked();
   v8::Local<v8::String> keyMass = Nan::New("mass").ToLocalChecked();
   v8::Local<v8::String> keyObjectType = Nan::New("objectType").ToLocalChecked();
-  v8::Local<v8::String> keySpec = Nan::New("spec").ToLocalChecked();
 
   v8::Local<v8::Object> def = Nan::To<v8::Object>(info[0]).ToLocalChecked();
 
   // type - decides which kind of collision shape this rigid body has
   MOXCHK(Nan::Has(def, keyType).FromJust());
-  const v8::Local<v8::Value> typeValue = Nan::Get(def, keyType).ToLocalChecked();
+  v8::Local<v8::Value> typeValue = Nan::Get(def, keyType).ToLocalChecked();
   const uint32_t type = RigidBody::getRigidBodyTypeEnum(typeValue);
   nativeInstance->m_type = type;
 
@@ -96,9 +95,6 @@ NAN_METHOD(mox::physics::RigidBody::make)
   instance->Set(keyObjectType, Nan::New(OBJECT_TYPE));
   instance->Set(keyType, Nan::Get(def, keyType).ToLocalChecked());
 
-  v8::Local<v8::Object> spec = Nan::New<v8::Object>();
-  instance->Set(keySpec, spec);
-
   switch (type) {
   case BOX: {
     MOXCHK(Nan::Has(def, keyDimensions).FromJust());
@@ -110,8 +106,6 @@ NAN_METHOD(mox::physics::RigidBody::make)
       btVector3(btScalar(dx / 2), btScalar(dy / 2), btScalar(dz / 2))
     );
 
-    Nan::Set(spec, keyType, typeValue);
-    Nan::Set(spec, keyDimensions, dimensions);
     break;
   }
   case PLANE: {
@@ -125,8 +119,6 @@ NAN_METHOD(mox::physics::RigidBody::make)
       btScalar(0)
     );
 
-    Nan::Set(spec, keyType, typeValue);
-    Nan::Set(spec, keyDimensions, dimensions);
     break;
   }
   case SPHERE: {
@@ -137,8 +129,6 @@ NAN_METHOD(mox::physics::RigidBody::make)
       btScalar(size)
     );
 
-    Nan::Set(spec, keyType, typeValue);
-    Nan::Set(spec, keySize, sizeValue);
     break;
   }
   case CONVEX_HULL: {
@@ -158,8 +148,6 @@ NAN_METHOD(mox::physics::RigidBody::make)
         numPoints
       );
 
-      Nan::Set(spec, keyType, typeValue);
-      Nan::Set(spec, keyPoints, pointsArray);
     } else {
       Nan::ThrowRangeError("points size is invalid");
     }
@@ -202,9 +190,6 @@ NAN_METHOD(mox::physics::RigidBody::make)
         nativeInstance->m_triangleMesh.get(),
         false
       );
-
-      Nan::Set(spec, keyType, typeValue);
-      Nan::Set(spec, keyPoints, pointsArray);
     } else {
       v8::Local<v8::String> errorString = Nan::New(std::string("points size is invalid: ") + std::to_string(numScalars)).ToLocalChecked();
       Nan::ThrowRangeError(errorString);
@@ -288,9 +273,6 @@ NAN_METHOD(mox::physics::RigidBody::make)
       }
 
       nativeInstance->m_collisionShape = compoundShape;
-
-      Nan::Set(spec, keyType, typeValue);
-      Nan::Set(spec, keyChildren, childrenArray);
     } else {
       v8::Local<v8::String> errorString = Nan::New(std::string("number of children is invalid: ") + std::to_string(numChildren)).ToLocalChecked();
       Nan::ThrowRangeError(errorString);

@@ -87,10 +87,12 @@ class Antikyth extends EventEmitter {
 
     world.setParent(this);
 
+    let prevUpdate = [];
     this.initListeners.set(world.id, objects => {
       world.emit('init', objects);
+
+      prevUpdate = objects;
     });
-    let prevUpdate = [];
     this.updateListeners.set(world.id, nextUpdate => {
       const updateDiff = _getUpdateDiff(prevUpdate, nextUpdate);
       world.emit('update', updateDiff);

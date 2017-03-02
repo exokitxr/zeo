@@ -10,6 +10,38 @@ const bodies = new Map(); // bodyId -> Body
 const worldBodyIndex = new Map(); // worldId -> [bodyId]
 const bodyWorldIndex = new Map(); // bodyId -> worldId
 
+const _requestInit = worldId => {
+  const bodyIds = worldBodyIndex.get(worldId);
+  const objects = bodyIds.map(bodyId => {
+    const body = bodies.get(bodyId);
+
+    const {objectType} = body;
+    if (objectType === physics.RigidBody.OBJECT_TYPE) { // only return bodies (as opposed to constraints)
+      const id = bodyId;
+      const {type} = body;
+      const position = body.getPosition();
+      const rotation = body.getRotation();
+      const linearVelocity = body.getLinearVelocity();
+      const angularVelocity = body.getAngularVelocity();
+
+      return {
+        id,
+        type,
+        position,
+        rotation,
+        linearVelocity,
+        angularVelocity,
+      };
+    } else {
+      return null;
+    }
+  }).filter(object => object !== null);
+
+  send('init', {
+    id: worldId,
+    objects,
+  });
+};
 const _requestUpdate = worldId => {
   const bodyIds = worldBodyIndex.get(worldId);
   const updates = bodyIds.map(bodyId => {
@@ -40,25 +72,6 @@ const _requestUpdate = worldId => {
   send('update', {
     id: worldId,
     updates,
-  });
-};
-const _requestInit = worldId => {
-  const bodyIds = worldBodyIndex.get(worldId);
-  const objects = bodyIds.map(bodyId => {
-    const body = bodies.get(bodyId);
-
-    const {objectType} = body;
-    if (objectType === physics.RigidBody.OBJECT_TYPE) { // only return bodies (as opposed to constraints)
-      const {spec} = body;
-      return spec;
-    } else {
-      return null;
-    }
-  }).filter(object => object !== null);
-
-  send('init', {
-    id: worldId,
-    objects,
   });
 };
 let interval = null;
