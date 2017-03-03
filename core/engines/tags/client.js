@@ -278,6 +278,7 @@ class Tags {
 
               const material = new THREE.MeshBasicMaterial({
                 map: texture,
+                side: THREE.DoubleSide,
               });
               return material;
             })();
