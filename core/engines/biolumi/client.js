@@ -828,10 +828,7 @@ class Biolumi {
             const intersectionSpecs = objects.map(object => {
               const {matrixObject, worldWidth, worldHeight, worldDepth, pageIndex} = object;
               const {position, rotation, scale} = matrixObject;
-              const controllerLine = geometryUtils.makeControllerLine({
-                position: controllerPosition,
-                rotation: controllerRotation,
-              });
+              const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
 
               const menuBoxTarget = geometryUtils.makeBoxTarget(
                 position,
