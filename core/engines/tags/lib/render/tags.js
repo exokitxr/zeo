@@ -277,7 +277,7 @@ const getFileSrc = ({item, mode}) => {
           }
         })();
         const barSrc = `\
-          <a style="display: flex; width: ${WIDTH}px; height: 100px;" onclick="media:seek:${id}">
+          <a style="display: flex; width: ${WIDTH}px; height: 100px; background-color: #FFF;" onclick="media:seek:${id}">
             <svg xmlns="http://www.w3.org/2000/svg" width="1" height="16" viewBox="0 0 0.26458333 4.2333333" style="position: absolute; height: 100px; width: ${100 * (1 / 16)}px; margin-left: ${-(100 * (1 / 16) / 2)}px; left: ${value * 100}%;">
               <path d="M0 0v4.233h.265V0H0" fill="#f44336"/>
             </svg>
@@ -288,7 +288,7 @@ const getFileSrc = ({item, mode}) => {
         `;
 
         return `\
-          <div style="display: flex; height: ${OPEN_HEIGHT - HEIGHT}px; background-color: #FFF; flex-direction: column;">
+          <div style="display: flex; height: ${OPEN_HEIGHT - HEIGHT}px; flex-direction: column;">
             ${mainSrc}
             ${barSrc}
           </div>

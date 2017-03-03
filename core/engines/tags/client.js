@@ -236,6 +236,8 @@ class Tags {
             type: '',
           };
 
+          const localUpdates = [];
+
           const _updatePages = () => {
             uiManager.update();
             uiOpenManager.update();
@@ -295,6 +297,70 @@ class Tags {
             const mesh = new THREE.Mesh(geometry, material);
             accept(mesh);
           });
+          const _requestFileItemVideoMesh = item => new Promise((accept, reject) => {
+            const geometry = new THREE.PlaneBufferGeometry(0.2, 0.2);
+            const material = (() => {
+              const texture = new THREE.Texture(
+                transparentImg,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.LinearFilter,
+                THREE.LinearFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                16
+              );
+
+              const video = document.createElement('video');
+              video.src = '/archae/fs/' + item.id;
+              video.oncanplay = () => {
+                texture.image = video;
+                texture.needsUpdate = true;
+
+                video.currentTime = item.value * video.duration;
+
+                if (!item.paused) {
+                  video.play();
+                }
+
+                localUpdates.push(localUpdate);
+
+                video.oncanplay = null;
+              };
+              video.onerror = err => {
+                console.warn(err);
+              };
+
+              const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                depthTest: false,
+              });
+              return material;
+            })();
+
+            const localUpdate = () => {
+              const {map: texture} = material;
+              const {image: video} = texture;
+
+              item.value = video.currentTime / video.duration;
+
+              texture.needsUpdate = true;
+            };
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.destroy = () => {
+              const index = localUpdates.indexOf(localUpdate);
+
+              if (index !== -1) {
+                localUpdates.splice(index, 1);
+              }
+            };
+
+            accept(mesh);
+          });
           const _requestFileItemModelMesh = item => fetch('/archae/fs/' + item.id)
             .then(res => res.text()
               .then(modelText => new Promise((accept, reject) => {
@@ -341,6 +407,16 @@ class Tags {
                               imageMesh.position.y = (-WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
 
                               object.add(imageMesh);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (mode === 'video') {
+                          _requestFileItemVideoMesh(item)
+                            .then(videoMesh => {
+                              videoMesh.position.y = (-WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
+
+                              object.add(videoMesh);
                             })
                             .catch(err => {
                               console.warn(err);
@@ -410,20 +486,23 @@ class Tags {
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
 
-                  // XXX actually play/pause the item here
+                  if (action === 'play') {
+                    item.play();
 
-                  const pause = match[1] === 'pause';
-                  item.paused = pause;
-                  _updatePages();
+                    _updatePages();
+                  } else if (action === 'pause') {
+                    item.pause();
+
+                    _updatePages();
+                  }
                 } else if (match = onclick.match(/^media:seek:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
 
-                  // XXX seek the item here
-
                   const {value} = hoverState;
-                  item.value = value;
+                  item.seek(value);
+
                    _updatePages();
                 } else {
                   return false;
@@ -708,7 +787,15 @@ class Tags {
               _updateElementAnchors();
               _updatePositioningMesh();
             };
+            const _updateLocal = () => {
+              for (let i = 0; i < localUpdates; i++) {
+                const update = localUpdates[i];
+                update();
+              }
+            };
+
             _updateControllers();
+            _updateLocal();
           };
           rend.on('update', _update);
 
@@ -881,6 +968,66 @@ class Tags {
               return this[itemMutexSymbol].lock(ITEM_LOCK_KEY);
             }
 
+            play() {
+              this.paused = false;
+
+              const {preview} = this;
+              if (preview) {
+                const {
+                  children: [
+                    {
+                      material: {
+                        map: {
+                          image: video,
+                        },
+                      },
+                    },
+                  ],
+                } = preview;
+                video.play();
+              }
+            }
+
+            pause() {
+              this.paused = true;
+
+              const {preview} = this;
+              if (preview) {
+                const {
+                  children: [
+                    {
+                      material: {
+                        map: {
+                          image: video,
+                        },
+                      },
+                    },
+                  ],
+                } = preview;
+                video.pause();
+              }
+            }
+
+            seek(value) {
+              this.value = value;
+
+              const {preview} = this;
+              if (preview) {
+                const {
+                  children: [
+                    {
+                      material: {
+                        map: {
+                          image: video,
+                        },
+                      },
+                    },
+                  ],
+                } = preview;
+                video.currentTime = value * video.duration;
+              }
+            }
+
             jsonStringify() { // used to let update checks see Symbol-hidden properties
               const result = {};
               for (const k in this) {
@@ -892,6 +1039,14 @@ class Tags {
               result.paused = paused;
               result.value = value;
               return result;
+            }
+
+            destroy() {
+              const {preview} = this;
+
+              if (preview && preview.destroy) {
+                preview.destroy();
+              }
             }
           }
 
@@ -1008,6 +1163,9 @@ class Tags {
               const index = tagMeshes.indexOf(tagMesh);
 
               if (index !== -1) {
+                const {item} = tagMesh;
+                item.destroy();
+
                 tagMeshes.splice(index, 1);
               }
             }
