@@ -2093,7 +2093,7 @@ class World {
                   const {type} = focusState;
 
                   if (type === 'npm') {
-                    const applySpec = biolum<F2>i.applyStateKeyEvent(npmState, mainFontSpec, e);
+                    const applySpec = biolumi.applyStateKeyEvent(npmState, mainFontSpec, e);
 
                     if (applySpec) {
                       const {commit} = applySpec;
