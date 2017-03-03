@@ -828,19 +828,10 @@ class Biolumi {
             const intersectionSpecs = objects.map(object => {
               const {matrixObject, worldWidth, worldHeight, worldDepth, pageIndex} = object;
               const {position, rotation, scale} = matrixObject;
-              const controllerLine = (() => {
-                if (controllerRotation) {
-                  return new THREE.Line3(
-                    controllerPosition.clone(),
-                    controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(controllerRotation).multiplyScalar(15))
-                  );
-                } else {
-                  return new THREE.Line3(
-                    controllerPosition.clone().add(new THREE.Vector3(0, 0, 1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2)),
-                    controllerPosition.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2))
-                  );
-                }
-              })();
+              const controllerLine = geometryUtils.makeControllerLine({
+                position: controllerPosition,
+                rotation: controllerRotation,
+              });
 
               const menuBoxTarget = geometryUtils.makeBoxTarget(
                 position,
