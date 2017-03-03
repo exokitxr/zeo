@@ -256,20 +256,20 @@ const getFileSrc = ({item, mode, paused}) => {
     if (open) {
       if (mode === 'image') {
         return _getFramePreviewSrc();
-      } else if (mode === 'audio') {
+      } else if (mode === 'audio' || mode === 'video') {
         const mainSrc = (() => {
           if (!paused) {
             return `\
-              <a onclick="media:pause">
-                <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 79.374997 79.374985">
+              <a style="display: flex; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:pause">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 79.374997 79.374985">
                   <path d="M13.23 0v79.375h18.52V0H13.23M47.625 0v79.375h18.52V0z"/>
                 </svg>
               </a>
             `;
           } else {
             return `\
-              <a onclick="media:play">
-                <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 79.374997 79.374985">
+              <a style="display: block; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:play">
+                <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 79.374997 79.374985">
                   <path d="M21.167 79.375l39.687-39.687L21.167 0v79.375"/>
                 </svg>
               </a>
@@ -277,17 +277,22 @@ const getFileSrc = ({item, mode, paused}) => {
           }
         })();
         const barSrc = `\
-          <div>
-            <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 79.374999 79.374999" style="${WIDTH}px;">
+          <a style="display: flex; width: ${WIDTH}px; height: 100px;" onclick="media:seek">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 79.374999 79.374999" style="position: absolute;">
               <path d="M34.396 79.375H44.98V0H34.395z" fill="#f44336"/>
             </svg>
-            <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" viewBox="0 0 264.58333 79.374999" style="position: absolute;">
-              <path d="M0 44.98h264.583V34.395H0z" fill="#ccc"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 4.2333333 4.2333333" preserveAspectRatio="none" style="width: ${OPEN_WIDTH}px; height:100px;">
+              <path d="M0 1.852v.53h4.233v-.53H0" fill="#ccc"/>
             </svg>
           </div>
         `;
 
-        return mainSrc + barSrc;
+        return `\
+          <div style="display: flex; height: ${OPEN_HEIGHT - HEIGHT}px; background-color: #FFF; flex-direction: column;">
+            ${mainSrc}
+            ${barSrc}
+          </div>
+        `;
       } else if (mode === 'model') {
         return _getFramePreviewSrc();
       } else {
