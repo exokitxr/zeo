@@ -1453,21 +1453,38 @@ class World {
 
                   SIDES.forEach(side => {
                     const trashState = trashStates[side];
-                    const hovered = (() => {
-                      const gamepad = gamepads[side];
+                    const gamepad = gamepads[side];
 
+                    const hovered = (() => {
                       if (gamepad) {
                         const {position: controllerPosition} = gamepad;
+
                         return trashBoxTarget.containsPoint(controllerPosition);
                       } else {
                         return false;
                       }
                     })();
                     trashState.hovered = hovered;
+
+                    const pointed = (() => {
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+
+                        return trashBoxTarget.intersectLine(controllerLine);
+                      } else {
+                        return false;
+                      }
+                    })();
+                    trashState.pointed = pointed;
                   });
 
                   const {highlightMesh} = trashMesh;
-                  highlightMesh.visible = SIDES.some(side => trashStates[side].hovered);
+                  highlightMesh.visible = SIDES.some(side => {
+                    const trashState = trashStates[side];
+                    const {hovered, pointed} = trashState;
+                    return hovered || pointed;
+                  });
                 };
                 const _updateEquipmentPositions = () => {
                   const _updateUserEquipmentPositions = ({
@@ -1733,9 +1750,7 @@ class World {
               const _trigger = e => {
                 const {side} = e;
 
-                const _clickTrash = e => {
-                  const {side} = e;
-
+                const _clickTrash = () => {
                   const grabMesh = grabManager.getMesh(side);
                   const trashState = trashStates[side];
                   const {pointed} = trashState;
