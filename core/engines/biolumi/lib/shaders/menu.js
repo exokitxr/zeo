@@ -72,8 +72,11 @@ const getShader = ({maxNumTextures}) => ({
       }
       return result;
     })(),
-    "  if (numValid == 0) { gl_FragColor = backgroundColor; }",
-    "  else { gl_FragColor = vec4(diffuse / float(numValid), (backgroundColor.a >= 0.5) ? 1.0 : alpha); }",
+    "  if (numValid == 0) {",
+    "    gl_FragColor = backgroundColor;",
+    "  } else {",
+    "    gl_FragColor = vec4(diffuse / float(numValid), (backgroundColor.a >= 0.5) ? 1.0 : alpha);",
+    "  }",
     "}"
   ].join("\n"),
 });

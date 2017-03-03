@@ -49,6 +49,7 @@ class Tags {
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/plugins/js-utils',
+      '/core/plugins/image-utils',
       '/core/plugins/creature-utils',
     ])
       .then(([
@@ -59,6 +60,7 @@ class Tags {
         biolumi,
         rend,
         jsUtils,
+        imageUtils,
         creatureUtils,
       ]) => {
         if (live) {
@@ -268,8 +270,9 @@ class Tags {
               const img = new Image();
               img.src = '/archae/fs/' + item.id;
               img.onload = () => {
-                // XXX boxize the texture via canvas
-                texture.image = img;
+                const boxImg = imageUtils.boxizeImage(img);
+
+                texture.image = boxImg;
                 texture.needsUpdate = true;
               };
               img.onerror = err => {
@@ -279,6 +282,8 @@ class Tags {
               const material = new THREE.MeshBasicMaterial({
                 map: texture,
                 side: THREE.DoubleSide,
+                transparent: true,
+                depthTest: false,
               });
               return material;
             })();
