@@ -223,8 +223,8 @@ const getAttributeInputSrc = (id, name, type, value, min, max, step, options, in
   }
 };
 
-const getFileSrc = ({item, mode, paused}) => {
-  const {id, name, mimeType, instancing, open} = item;
+const getFileSrc = ({item, mode}) => {
+  const {id, name, mimeType, instancing, open, paused} = item;
 
   const headerSrc = `\
     <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
@@ -278,8 +278,8 @@ const getFileSrc = ({item, mode, paused}) => {
         })();
         const barSrc = `\
           <a style="display: flex; width: ${WIDTH}px; height: 100px;" onclick="media:seek">
-            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 79.374999 79.374999" style="position: absolute;">
-              <path d="M34.396 79.375H44.98V0H34.395z" fill="#f44336"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="2" height="16" viewBox="0 0 0.52916666 4.2333333" style="position: absolute; height: 100px; width: ${100 * (2 / 16)}px; margin-left: ${-(100 * (2 / 16) / 2)}px;">
+              <path d="M0 0v4.233h.53V0H0" fill="#f44336"/>
             </svg>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 4.2333333 4.2333333" preserveAspectRatio="none" style="width: ${OPEN_WIDTH}px; height:100px;">
               <path d="M0 1.852v.53h4.233v-.53H0" fill="#ccc"/>

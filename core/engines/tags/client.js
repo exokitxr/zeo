@@ -24,6 +24,7 @@ const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemOpenSymbol = Symbol();
+const itemPausedSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemMutexSymbol = Symbol();
 const ITEM_LOCK_KEY = 'key';
@@ -822,6 +823,12 @@ class Tags {
             set open(open) {
               this[itemOpenSymbol] = open;
             }
+            get paused() {
+              return this[itemPausedSymbol];
+            }
+            set paused(paused) {
+              this[itemPausedSymbol] = paused;
+            }
             get preview() {
               return this[itemPreviewSymbol];
             }
@@ -849,8 +856,10 @@ class Tags {
               for (const k in this) {
                 result[k] = this[k];
               }
-              result.instancing = this.instancing;
-              result.open = this.open;
+              const {instancing, open, paused} = this;
+              result.instancing = instancing;
+              result.open = open;
+              result.paused = paused;
               return result;
             }
           }
@@ -905,7 +914,6 @@ class Tags {
                     };
                   })();
                   const mode = _getItemPreviewMode(item);
-                  const paused = false; // XXX actually track this via click events
 
                   return [
                     {
@@ -913,7 +921,7 @@ class Tags {
                       src: type === 'element' ?
                         tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
                       :
-                        tagsRenderer.getFileSrc({item, mode, paused}),
+                        tagsRenderer.getFileSrc({item, mode}),
                       w: !open ? WIDTH : OPEN_WIDTH,
                       h: !open ? HEIGHT : OPEN_HEIGHT,
                     },
