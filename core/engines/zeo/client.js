@@ -21,28 +21,63 @@ class Zeo {
     });
 
     const $ = s => document.querySelectorAll(s);
+    const $$ = (el, s) => el.querySelectorAll(s);
 
     const _requestLoader = () => new Promise((accept, reject) => {
       const loaderOverlay = $('#loader-overlay')[0];
       const loaderPlugin = $('#loader-plugin')[0];
 
-      const loadingPlugins = [];
+      const pendingPlugins = [];
+      let loadingPlugins = true;
+      let loadingMediaPermissions = true;
       const pluginloadstart = plugin => {
-        loadingPlugins.push(plugin);
-        loaderPlugin.innerText = loadingPlugins[0];
+        if (!pendingPlugins.includes(plugin)) {
+          pendingPlugins.push(plugin);
+
+          _updateText();
+        }
       };
       archae.on('pluginloadstart', pluginloadstart);
       const pluginload = plugin => {
-        loadingPlugins.splice(loadingPlugins.indexOf(plugin), 1);
-        loaderPlugin.innerText = loadingPlugins.length > 0 ? loadingPlugins[0] : '';
+        pendingPlugins.splice(pendingPlugins.indexOf(plugin), 1);
+
+        _updateText();
       }
       archae.on('pluginload', pluginload);
+      const pluginsload = () => {
+        loadingPlugins = false;
+
+        _updateText();
+      }
+      archae.on('pluginsload', pluginsload);
+      const mediapermissionsload = () => {
+        loadingMediaPermissions = false;
+
+        _updateText();
+      }
+      archae.on('mediapermissionsload', mediapermissionsload);
+
+      const _updateText = () => {
+        loaderPlugin.innerText = (() => {
+          if (pendingPlugins.length > 0) {
+            return pendingPlugins[0];
+          } else if (loadingPlugins) {
+             return 'Waiting for plugins...';
+          } else if (loadingMediaPermissions) {
+             return 'Waiting for media permissions...';
+          } else {
+            return '';
+          }
+        })();
+      };
 
       const cleanup = () => {
         loaderOverlay.style.display = 'none';
 
         archae.removeListener('pluginloadstart', pluginloadstart);
         archae.removeListener('pluginload', pluginload);
+        archae.removeListener('pluginsload', pluginsload);
+        archae.removeListener('mediapermissionsload', mediapermissionsload);
       };
       cleanups.push(cleanup);
 
@@ -59,7 +94,7 @@ class Zeo {
     return _requestLoader()
       .then(loader => {
         if (live) {
-          return archae.requestPlugins([
+          const _requestPlugins = () => archae.requestPlugins([
             '/core/engines/hub',
             '/core/engines/input',
             '/core/engines/webvr',
@@ -86,33 +121,75 @@ class Zeo {
             '/core/engines/somnifer',
             '/core/engines/bullet',
             '/core/plugins/js-utils',
+          ])
+            .then(pluginApis => {
+              archae.emit('pluginsload');
+
+              return pluginApis;
+            });
+          const _requestMediaPermissions = () => new Promise((accept, reject) => {
+            navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: true,
+            })
+              .then(mediaStream => {
+                const tracks = mediaStream.getTracks();
+                let video = false;
+                let audio = false;
+                for (let i = 0; i < tracks.length; i++) {
+                  const track = tracks[i];
+                  if (track.kind === 'video') {
+                    video = true;
+                  } else if (track.kind === 'audio') {
+                    audio = true;
+                  }
+                  track.stop();
+                }
+
+                archae.emit('mediapermissionsload');
+
+                accept(video && audio);
+              })
+              .catch(err => {
+                console.warn(err);
+
+                accept(false);
+              });
+          });
+
+          return Promise.all([
+            _requestPlugins(),
+            _requestMediaPermissions(),
           ]).then(([
-            hub,
-            input,
-            webvr,
-            three,
-            anima,
-            cyborg,
-            login,
-            rend,
-            biolumi,
-            airlock,
-            teleport,
-            hands,
-            tags,
-            world,
-            mail,
-            universe,
-            servers,
-            bag,
-            backpack,
-            multiplayer,
-            voicechat,
-            npm,
-            fs,
-            somnifer,
-            bullet,
-            jsUtils,
+            [
+              hub,
+              input,
+              webvr,
+              three,
+              anima,
+              cyborg,
+              login,
+              rend,
+              biolumi,
+              airlock,
+              teleport,
+              hands,
+              tags,
+              world,
+              mail,
+              universe,
+              servers,
+              bag,
+              backpack,
+              multiplayer,
+              voicechat,
+              npm,
+              fs,
+              somnifer,
+              bullet,
+              jsUtils,
+            ],
+            mediaPermissions,
           ]) => {
             if (live) {
               const {THREE, scene, camera, renderer} = three;
@@ -219,18 +296,46 @@ class Zeo {
                         <div style="display: flex; width: 100%; margin: auto 0; justify-content: center; color: #FFF;">
                           <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
                             <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
-                            <h1 style="width: 400px; margin: 0; margin-bottom: 20px; font-size: 30px; font-weight: 300;"><span id=username>Username</span> / <span id=worldname>Unknown world</span></h1>
-                            <div style="display: flex; width: 400px; margin-bottom: 20px;">
-                              <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="headset-button">Headset</button>
-                              <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" id="keyboard-button">Mouse + Keyboard</button>
-                            </div>
-                            <p style="width: 400px; margin: 0; font-size: 13px; color: #CCC; font-weight: 300;" id="error-message">WebVR is not supported by your browser so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
+                            <h1 style="width: 400px; margin: 0; margin-bottom: 20px; font-size: 30px; font-weight: 300;"><span class=username>Username</span> / <span class=worldname>Unknown world</span></h1>
+                            <div class=helper-content style="width: 400px;"></div>
                           </div>
                         </div>
                       `;
                       helper.addEventListener('dragover', fs.dragover);
                       helper.addEventListener('drop', fs.drop);
                       document.body.appendChild(helper);
+
+                      const helperConent = helper.querySelector('.helper-content');
+
+                      const enterHelperContent = document.createElement('div');
+                      enterHelperContent.innerHTML = `\
+                        <div>
+                          <div style="display: flex; margin-bottom: 20px;">
+                            <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" class="headset-button">Headset</button>
+                            <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
+                          </div>
+                          <p style="width: 400px; margin: 0; font-size: 13px; color: #CCC; font-weight: 300;" class="error-message">WebVR is not supported by your browser so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
+                        </div>
+                      `;
+
+                      const permissionsHelperContent = document.createElement('div');
+                      permissionsHelperContent.innerHTML = `\
+                        <div>
+                          <div style="margin-bottom: 18px; padding: 15px; background-color: #E91E63; color: #FFF; cursor: pointer;">
+                            <div style="display: flex; margin-bottom: 15px; font-size: 18px; line-height: 22px;">
+                              <div style="margin-right: auto; color: #FFF;">Media Permissions</div>
+                              <button style="display: inline-flex; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
+                                <div style="width: 12px; height: 12px; background-color: #FFF;"></div>
+                                <div style="width: 12px; height: 12px;"></div>
+                              </button>
+                            </div>
+                            <p style="margin: 0; font-size: 13px; font-weight: 300;" class="help-message">Media permissions enable camera + microphone support in VR. They will <i>not</i> be used until you enable them in the Options menu. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
+                          </div>
+                        </div>
+                      `;
+                      permissionsHelperContent.addEventListener('click', () => {
+                        _requestMediaPermissions();
+                      });
 
                       const _styleButton = button => {
                         button.addEventListener('mouseover', e => {
@@ -245,7 +350,7 @@ class Zeo {
                         });
                       };
 
-                      const headsetButton = $('#headset-button')[0];
+                      const headsetButton = $$(enterHelperContent, '.headset-button')[0];
                       if (supportsWebVR) {
                         _styleButton(headsetButton);
                         headsetButton.addEventListener('click', e => {
@@ -264,7 +369,7 @@ class Zeo {
                         headsetButton.style.display = 'none';
                       }
 
-                      const keyboardButton = $('#keyboard-button')[0];
+                      const keyboardButton = $$(enterHelperContent, '.keyboard-button')[0];
                       _styleButton(keyboardButton);
                       keyboardButton.addEventListener('click', e => {
                         if (!webvr.display) {
@@ -279,7 +384,7 @@ class Zeo {
                         }
                       });
 
-                      const errorMessage = $('#error-message')[0];
+                      const errorMessage = $$(enterHelperContent, '.error-message')[0];
                       if (supportsWebVR) {
                         errorMessage.style.display = 'none';
                       }
@@ -287,12 +392,18 @@ class Zeo {
                       const userState = hub.getUserState();
                       const {username, world} = userState;
                       if (username) {
-                        const usernameEl = $('#username')[0];
+                        const usernameEl = $$(helper, '.username')[0];
                         usernameEl.innerText = username;
                       }
                       if (world) {
-                        const worldnameEl = $('#worldname')[0];
+                        const worldnameEl = $$(helper, '.worldname')[0];
                         worldnameEl.innerText = world;
+                      }
+
+                      if (mediaPermissions) {
+                        helperConent.appendChild(enterHelperContent);
+                      } else {
+                        helperConent.appendChild(permissionsHelperContent);
                       }
                     };
                     _initHelper();
