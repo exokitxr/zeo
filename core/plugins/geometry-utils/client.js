@@ -794,6 +794,20 @@ const geometryUtils = archae => ({
           };
         })(); */
 
+        const makeControllerLine = (position, rotation) => {
+          if (rotation) {
+            return new THREE.Line3(
+              position.clone(),
+              position.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(rotation).multiplyScalar(15))
+            );
+          } else {
+            return new THREE.Line3(
+              position.clone().add(new THREE.Vector3(0, 0, 1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2)),
+              position.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(rotation).multiplyScalar(worldDepth / 2))
+            );
+          }
+        };
+
         const boxTargetCache = new LRUMap(BOX_TARGET_CACHE_SIZE);
         const makeBoxTarget = (position, rotation, scale, size) => {
           const key = [
@@ -828,6 +842,7 @@ const geometryUtils = archae => ({
           mergeBufferGeometry,
           concatBufferGeometry,
           // sliceBufferGeometry,
+          makeControllerLine,
           makeBoxTarget,
           makeBoxTargetOffset,
           makePlaneTarget,

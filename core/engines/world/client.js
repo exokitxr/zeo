@@ -165,7 +165,8 @@ class World {
             if (live) {
               const localUserId = multiplayer.getId();
               const _makeGrabbableState = () => ({
-                mesh: null,
+                hoverMesh: null,
+                pointMesh: null,
               });
               const grabbableStates = {
                 left: _makeGrabbableState(),
@@ -195,12 +196,13 @@ class World {
               scene.add(grabBoxMeshes.left);
               scene.add(grabBoxMeshes.right);
 
-              const _makeTrashHoverState = () => ({
+              const _makeTrashState = () => ({
                 hovered: false,
+                pointed: false,
               });
-              const trashHoverStates = {
-                left: _makeTrashHoverState(),
-                right: _makeTrashHoverState(),
+              const trashStates = {
+                left: _makeTrashState(),
+                right: _makeTrashState(),
               };
 
               const _requestConnection = () => new Promise((accept, reject) => {
@@ -1333,7 +1335,7 @@ class World {
                   const isOpen = rend.isOpen();
 
                   if (isOpen) {
-                    const _getBestGrabbable = (side, objects) => {
+                    const _getBestHoverGrabbable = (side, objects) => {
                       const grabMesh = grabManager.getMesh(side);
 
                       if (!grabMesh) {
@@ -1364,17 +1366,29 @@ class World {
                         return null;
                       }
                     };
+                    const _getPointerGrabbable = side => {
+                      const grabMesh = grabManager.getMesh(side);
+
+                      if (!grabMesh) {
+                        return tags.getPointedTagMesh(side);
+                      } else {
+                        return null;
+                      }
+                    };
 
                     const tagMeshes = elementManager.getTagMeshes().concat(npmManager.getTagMeshes());
                     SIDES.forEach(side => {
                       const grabbableState = grabbableStates[side];
                       const grabBoxMesh = grabBoxMeshes[side];
 
-                      const bestGrabbableTagMesh = _getBestGrabbable(side, tagMeshes);
-                      if (bestGrabbableTagMesh) {
-                        grabbableState.mesh = bestGrabbableTagMesh;
+                      const hoverMesh = _getBestHoverGrabbable(side, tagMeshes);
+                      const pointerMesh = _getPointerGrabbable(side);
 
-                        const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(bestGrabbableTagMesh);
+                      grabbableState.hoverMesh = hoverMesh;
+                      grabbableState.pointerMesh = pointerMesh;
+
+                      if (hoverMesh) {
+                        const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(hoverMesh);
                         grabBoxMesh.position.copy(tagMeshPosition);
                         grabBoxMesh.quaternion.copy(tagMeshRotation);
                         grabBoxMesh.scale.copy(tagMeshScale);
@@ -1383,7 +1397,7 @@ class World {
                           grabBoxMesh.visible = true;
                         }
                       } else {
-                        grabbableState.mesh = null;
+                        grabbableState.hoverMesh = null;
 
                         if (grabBoxMesh.visible) {
                           grabBoxMesh.visible = false;
@@ -1395,7 +1409,8 @@ class World {
                       const grabbableState = grabbableStates[side];
                       const grabBoxMesh = grabBoxMeshes[side];
 
-                      grabbableState.mesh = null;
+                      grabbableState.hoverMesh = null;
+                      grabbableState.pointMesh = null;
 
                       if (grabBoxMesh.visible) {
                         grabBoxMesh.visible = false;
@@ -1451,22 +1466,39 @@ class World {
                   const trashBoxTarget = geometryUtils.makeBoxTarget(trashPosition, trashRotation, trashScale, new THREE.Vector3(0.5, 1, 0.5));
 
                   SIDES.forEach(side => {
-                    const trashHoverState = trashHoverStates[side];
-                    const hovered = (() => {
-                      const gamepad = gamepads[side];
+                    const trashState = trashStates[side];
+                    const gamepad = gamepads[side];
 
+                    const hovered = (() => {
                       if (gamepad) {
                         const {position: controllerPosition} = gamepad;
+
                         return trashBoxTarget.containsPoint(controllerPosition);
                       } else {
                         return false;
                       }
                     })();
-                    trashHoverState.hovered = hovered;
+                    trashState.hovered = hovered;
+
+                    const pointed = (() => {
+                      if (gamepad) {
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+
+                        return trashBoxTarget.intersectLine(controllerLine);
+                      } else {
+                        return false;
+                      }
+                    })();
+                    trashState.pointed = pointed;
                   });
 
                   const {highlightMesh} = trashMesh;
-                  highlightMesh.visible = SIDES.some(side => trashHoverStates[side].hovered);
+                  highlightMesh.visible = SIDES.some(side => {
+                    const trashState = trashStates[side];
+                    const {hovered, pointed} = trashState;
+                    return hovered || pointed;
+                  });
                 };
                 const _updateEquipmentPositions = () => {
                   const _updateUserEquipmentPositions = ({
@@ -1732,7 +1764,20 @@ class World {
               const _trigger = e => {
                 const {side} = e;
 
-                const _clickNpm = () => {
+                const _clickTrash = () => {
+                  const grabMesh = grabManager.getMesh(side);
+                  const trashState = trashStates[side];
+                  const {pointed} = trashState;
+
+                  if (grabMesh && pointed) {
+                    _removeTag('hand:' + side);
+
+                    return true;
+                  } else {
+                    return false;
+                  }
+                };
+                const _clickGrabNpmTag = () => {
                   const {gamepads} = webvr.getStatus();
                   const gamepad = gamepads[side];
 
@@ -1775,6 +1820,23 @@ class World {
                     return false;
                   }
                 };
+                const _clickGrabWorldTag = () => {
+                  const grabMesh = grabManager.getMesh(side);
+                  const grabbableState = grabbableStates[side];
+                  const {pointerMesh: pointerGrabMesh} = grabbableState;
+
+                  if (!grabMesh && pointerGrabMesh) {
+                    const tagMesh = pointerGrabMesh;
+                    const {item} = tagMesh;
+                    const {id} = item;
+
+                    _moveTag('world:' + id, 'hand:' + side);
+
+                    return true;
+                  } else {
+                    return false;
+                  }
+                };
                 const _clickMenu = () => {
                   const tab = rend.getTab();
 
@@ -1810,7 +1872,7 @@ class World {
                   }
                 };
 
-                _clickNpm() || _clickMenu();
+                _clickTrash() || _clickGrabNpmTag() ||  _clickGrabWorldTag() || _clickMenu();
               };
               input.on('trigger', _trigger, {
                 priority: 1,
@@ -1905,7 +1967,8 @@ class World {
 
                   if (isOpen) {
                     const grabbableState = grabbableStates[side];
-                    const {mesh: grabMesh} = grabbableState;
+                    const {hoverMesh: hoverGrabMesh, pointMesh: pointGrabMesh} = grabbableState;
+                    const grabMesh = hoverGrabMesh || pointGrabMesh;
 
                     if (grabMesh) {
                       const equipmentTagMeshes = equipmentManager.getTagMeshes();
@@ -1976,7 +2039,7 @@ class World {
 
                   if (grabMesh) {
                     const _releaseTrashTag = () => {
-                      const hovered = SIDES.some(side => trashHoverStates[side].hovered);
+                      const hovered = SIDES.some(side => trashStates[side].hovered);
 
                       if (hovered) {
                         _removeTag('hand:' + side);
