@@ -856,8 +856,6 @@ class Bullet {
           connection.onopen = () => {
             world.requestInit()
               .then(objects => {
-                console.log('request init result', {objects});
-
                 for (let i = 0; i < objects.length; i++) {
                   const object = objects[i];
                   const {id} = object;
