@@ -2437,6 +2437,10 @@ class World {
 
                   const elementTagMeshes = elementManager.getTagMeshes();
                   const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  if (!rend.isOpen()) {
+                    tempTagMesh.visible = false;
+                  }
+
                   const {item} = tempTagMesh;
                   item.instancing = true;
 
@@ -2457,6 +2461,9 @@ class World {
 
                         const elementTagMeshes = elementManager.getTagMeshes();
                         const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                        if (!rend.isOpen()) {
+                          tagMesh.visible = false;
+                        }
 
                         accept(tagMesh);
                       })
