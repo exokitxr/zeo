@@ -1832,6 +1832,8 @@ class World {
 
                     _moveTag('world:' + id, 'hand:' + side);
 
+                    _endHighlight(side);
+
                     return true;
                   } else {
                     return false;
@@ -2029,6 +2031,15 @@ class World {
               input.on('gripdown', _gripdown, {
                 priority: 1,
               });
+
+              const _endHighlight = side => {
+                const highlightState = highlightStates[side];
+                highlightState.startPoint = null;
+
+                const highlightBoxMesh = highlightBoxMeshes[side];
+                highlightBoxMesh.visible = false;
+              };
+
               const _gripup = e => {
                 const {side} = e;
 
@@ -2136,14 +2147,7 @@ class World {
                   _releaseEquipmentMesh();
                 }
 
-                const _endHighlight = () => {
-                  const highlightState = highlightStates[side];
-                  highlightState.startPoint = null;
-
-                  const highlightBoxMesh = highlightBoxMeshes[side];
-                  highlightBoxMesh.visible = false;
-                };
-                _endHighlight();
+                _endHighlight(side);
               };
               input.on('gripup', _gripup, {
                 priority: 1,
