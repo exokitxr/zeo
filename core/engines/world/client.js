@@ -2441,7 +2441,19 @@ class World {
 
                 createFile(blob) {
                   const id = _makeFileId();
-                  const {name = _makeId(), type: mimeType} = blob;
+                  const {name = _makeId()} = blob;
+                  const mimeType = (() => {
+                    const {type: mimeType} = blob;
+
+                    if (mimeType) {
+                      return mimeType;
+                    } else {
+                      const match = name.match(/\.([^.]+)$/);
+                      const suffix = match ? match[1] : 'blank';
+
+                      return 'mime/' + suffix;
+                    }
+                  })();
                   const matrix = _getInFrontOfCameraMatrix();
                   const itemSpec = {
                     type: 'file',

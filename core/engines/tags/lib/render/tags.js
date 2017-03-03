@@ -218,7 +218,7 @@ const getAttributeInputSrc = (id, name, type, value, min, max, step, options, in
 };
 
 const getFileSrc = ({item}) => {
-  const {id, name, instancing, open} = item;
+  const {id, name, mimeType, instancing, open} = item;
 
   const headerSrc = `\
     <div style="position: relative; display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
@@ -227,7 +227,7 @@ const getFileSrc = ({item}) => {
       <div style="width: 190px; margin-right: 10px;">
         <div style="height: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
           <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
-          <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">File in /</p>
+          <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>
           <a style="display: inline-flex; padding: 4px 20px; border: 1px solid #333; border-radius: 100px; font-size: 28px; text-decoration: none; justify-content: center; align-items: center;" onclick="tag:download:${id}">Download</a>
         </div>
       </div>
