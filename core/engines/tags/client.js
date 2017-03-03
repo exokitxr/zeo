@@ -66,6 +66,8 @@ class Tags {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
+          const transparentImg = biolumi.getTransparentImg();
+
           const THREEOBJLoader = OBJLoader(THREE);
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -235,7 +237,55 @@ class Tags {
             uiOpenManager.update();
           };
 
-          const _requestFileItemModel = item => fetch('/archae/fs/' + item.id)
+          const _getItemPreviewMode = item => {
+            const {mimeType} = item;
+
+            if (mimeType && /^image\/(?:png|jpeg|gif|file)$/.test(mimeType)) {
+              return 'image';
+            } else if (/^audio\/(?:wav|mpeg|ogg|vorbis|webm|x-flac)$/.test(mimeType)) {
+              return 'audio';
+            } else if (/^mime\/(?:obj)$/.test(mimeType)) {
+              return 'model';
+            } else {
+              return null;
+            }
+          };
+          const _requestFileItemImageMesh = item => new Promise((accept, reject) => {
+            const geometry = new THREE.PlaneBufferGeometry(0.2, 0.2);
+            const material = (() => {
+              const texture = new THREE.Texture(
+                transparentImg,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.LinearFilter,
+                THREE.LinearFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                16
+              );
+
+              const img = new Image();
+              img.src = '/archae/fs/' + item.id;
+              img.onload = () => {
+                // XXX boxize the texture via canvas
+                texture.image = img;
+                texture.needsUpdate = true;
+              };
+              img.onerror = err => {
+                console.warn(err);
+              };
+
+              const material = new THREE.MeshBasicMaterial({
+                map: texture,
+              });
+              return material;
+            })();
+
+            const mesh = new THREE.Mesh(geometry, material);
+            accept(mesh);
+          });
+          const _requestFileItemModelMesh = item => fetch('/archae/fs/' + item.id)
             .then(res => res.text()
               .then(modelText => new Promise((accept, reject) => {
                 const loader = new THREEOBJLoader();
@@ -274,20 +324,34 @@ class Tags {
                       const previewMesh = (() => {
                         const object = new THREE.Object3D();
 
-                        _requestFileItemModel(item)
-                          .then(modelMesh => {
-                            const boundingBox = new THREE.Box3().setFromObject(modelMesh);
-                            const boundingBoxSize = boundingBox.getSize();
-                            const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
-                            const meshScaleFactor = (1 / meshCurrentScale) * 0.15;
-                            modelMesh.position.y = -0.2;
-                            modelMesh.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
+                        const mode = _getItemPreviewMode(item);
+                        if (mode === 'image') {
+                          _requestFileItemImageMesh(item)
+                            .then(imageMesh => {
+                              imageMesh.position.y = (-WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
 
-                            object.add(modelMesh);
-                          })
-                          .catch(err => {
-                            console.warn(err);
-                          });
+                              object.add(imageMesh);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (mode === 'model') {
+                          _requestFileItemModelMesh(item)
+                            .then(modelMesh => {
+                              const boundingBox = new THREE.Box3().setFromObject(modelMesh);
+                              const boundingBoxSize = boundingBox.getSize();
+                              const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
+                              const meshScaleFactor = (1 / meshCurrentScale) * 0.1125;
+                              modelMesh.position.y = (-WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
+                              // XXX offset the model to center it based on its bounding box
+                              modelMesh.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
+
+                              object.add(modelMesh);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        }
 
                         return object;
                       })();
@@ -832,19 +896,7 @@ class Tags {
                       attributeName: match[2],
                     };
                   })();
-                  const mode = (() => {
-                    const {mimeType} = item;
-
-                    if (mimeType && /^image\/(?:png|jpeg|gif|file)$/.test(mimeType)) {
-                      return 'image';
-                    } else if (/^audio\/(?:wav|mpeg|ogg|vorbis|webm|x-flac)$/.test(mimeType)) {
-                      return 'audio';
-                    } else if (/^mime\/(?:obj)$/.test(mimeType)) {
-                      return 'model';
-                    } else {
-                      return null;
-                    }
-                  })();
+                  const mode = _getItemPreviewMode(item);
                   const paused = false; // XXX actually track this via click events
 
                   return [

@@ -1,4 +1,10 @@
 const menuUtils = require('../utils/menu');
+const {
+  HEIGHT,
+  WIDTH,
+  OPEN_WIDTH,
+  OPEN_HEIGHT,
+} = require('../constants/tags');
 
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
@@ -15,7 +21,7 @@ const getElementSrc = ({item, inputText, inputValue, positioningId, positioningN
   const linkTagName = highlight ? 'div' : 'a';
 
   const headerSrc = `\
-    <div style="position: relative; display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
+    <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
       <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #2196F3; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Mod</div>
       <div style="width: 100px; height: 100px; margin: 0 10px;"></div>
       <div style="width: 190px; margin-right: 10px;">
@@ -36,7 +42,7 @@ const getElementSrc = ({item, inputText, inputValue, positioningId, positioningN
     </div>
   `;
   const bodySrc = open ? `\
-    <div style="position: relative; width: 400px; height: 450px; padding: 10px 0; background-color: #F0F0F0; overflow: hidden; box-sizing: border-box;">
+    <div style="position: relative; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT}px; padding: 10px 0; background-color: #F0F0F0; overflow: hidden; box-sizing: border-box;">
       ${getAttributesSrc(item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec)}
     </div>
   ` : '';
@@ -64,7 +70,7 @@ const getAttributesSrc = (item, inputText, inputValue, positioningId, positionin
       const positioning = id === positioningId && name === positioningName;
 
       acc += `\
-        <div style="display: flex; width: 400px; padding-left: 20px; margin-bottom: 4px; font-size: 20px; font-weight: 400; line-height: 1.4; align-items: center; box-sizing: border-box;">
+        <div style="display: flex; width: ${OPEN_WIDTH}px; padding-left: 20px; margin-bottom: 4px; font-size: 20px; font-weight: 400; line-height: 1.4; align-items: center; box-sizing: border-box;">
           <div style="width: 120px; padding-right: 20px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;">${name}</div>
           ${getAttributeInputSrc(id, name, type, value, min, max, step, options, inputText, inputValue, focus, positioning)}
         </div>
@@ -221,7 +227,7 @@ const getFileSrc = ({item, mode, paused}) => {
   const {id, name, mimeType, instancing, open} = item;
 
   const headerSrc = `\
-    <div style="position: relative; display: flex; width: 400px; height: 150px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
+    <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
       <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #E91E63; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">File</div>
       <div style="width: 100px; height: 100px; margin: 0 10px;"></div>
       <div style="width: 190px; margin-right: 10px;">
@@ -243,11 +249,15 @@ const getFileSrc = ({item, mode, paused}) => {
     </div>
   `;
   const bodySrc = (() => {
+    const _getFrameSrc = text => `\
+      <div style="position: relative; display: flex; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT - HEIGHT}px; padding: 20px; border: 1px solid #000; justify-content: center; overflow: hidden; box-sizing: border-box;">
+        <div style="display: flex; height: 30px; font-size: 28px; font-weight: 400; justify-content: center; align-items: center;">${text}</div>
+      </div>
+    `;
+
     if (open) {
       if (mode === 'image') {
-        return `\
-          <div style="position: relative; width: 400px; height: 400px; background-color: #000; overflow: hidden;"></div>
-        `;
+        return _getFrameSrc('Image preview');
       } else if (mode === 'audio') {
         const mainSrc = (() => {
           if (!paused) {
@@ -281,11 +291,7 @@ const getFileSrc = ({item, mode, paused}) => {
 
         return mainSrc + barSrc;
       } else if (mode === 'model') {
-        return `\
-          <div style="position: relative; display: flex; width: 400px; height: 400px; padding: 20px; border: 1px solid #000; justify-content: center; overflow: hidden; box-sizing: border-box;">
-            <div style="display: flex; height: 30px; font-size: 28px; font-weight: 400; justify-content: center; align-items: center;">Model preview</div>
-          </div>
-        `;
+        return _getFrameSrc('Model preview');
       } else {
         return '';
       }
