@@ -487,6 +487,7 @@ class Tags {
                                 worldWidth: WORLD_WIDTH,
                                 worldHeight: WORLD_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
+                                metadata: tagMesh,
                               };
                             } else {
                               const {planeOpenMesh} = tagMesh;
@@ -501,6 +502,7 @@ class Tags {
                                 worldWidth: WORLD_OPEN_WIDTH,
                                 worldHeight: WORLD_OPEN_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
+                                metadata: tagMesh,
                               };
                             }
                           } else {
@@ -864,6 +866,10 @@ class Tags {
               if (index !== -1) {
                 tagMeshes.splice(index, 1);
               }
+            }
+
+            getPointedTagMesh(side) {
+              return hoverStates[side].metadata;
             }
 
             updatePages() {
