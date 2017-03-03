@@ -104,6 +104,7 @@ class Tags {
                   height: height,
                   atlasSize: 4,
                   maxNumTextures: 3,
+                  color: [1, 1, 1, 0],
                 });
                 uis.push(lastUi);
               }
@@ -730,7 +731,7 @@ class Tags {
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
               object.scale.set(item.matrix[7], item.matrix[8], item.matrix[9]);
 
-              const planeMesh = (() => {
+              const _addUiManagerPage = ({uiManager, open}) => {
                 const mesh = uiManager.addPage(({
                   item,
                   details: {
@@ -751,6 +752,20 @@ class Tags {
                       attributeName: match[2],
                     };
                   })();
+                  const mode = (() => {
+                    const {mimeType} = item;
+
+                    if (mimeType && /^image\/(?:png|jpeg|gif|file)$/.test(mimeType)) {
+                      return 'image';
+                    } else if (/^audio\/(?:wav|mpeg|ogg|vorbis|webm|x-flac)$/.test(mimeType)) {
+                      return 'audio';
+                    } else if (/^mime\/(?:obj)$/.test(mimeType)) {
+                      return 'model';
+                    } else {
+                      return null;
+                    }
+                  })();
+                  const paused = false; // XXX actually track this via click events
 
                   return [
                     {
@@ -758,9 +773,9 @@ class Tags {
                       src: type === 'element' ?
                         tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
                       :
-                        tagsRenderer.getFileSrc({item}),
-                      w: WIDTH,
-                      h: HEIGHT,
+                        tagsRenderer.getFileSrc({item, mode, paused}),
+                      w: !open ? WIDTH : OPEN_WIDTH,
+                      h: !open ? HEIGHT : OPEN_HEIGHT,
                     },
                     {
                       type: 'image',
@@ -780,78 +795,28 @@ class Tags {
                     details: detailsState,
                     focus: focusState,
                   },
-                  worldWidth: WORLD_WIDTH,
-                  worldHeight: WORLD_HEIGHT,
+                  worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
+                  worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
                 });
                 mesh.receiveShadow = true;
 
                 return mesh;
-              })();
+              };
+
+              const planeMesh = _addUiManagerPage({
+                uiManager: uiManager,
+                open: false,
+              });
               object.add(planeMesh);
               object.planeMesh = planeMesh;
 
-              const planeOpenMesh = (() => {
-                const mesh = uiOpenManager.addPage(({
-                  item,
-                  details: {
-                    inputText,
-                    inputValue,
-                    positioningId,
-                    positioningName,
-                  },
-                  focus: {
-                    type: focusType,
-                  }
-                }) => {
-                  const {type} = item;
-                  const focusAttributeSpec = (() => {
-                    const match = focusType.match(/^attribute:(.+?):(.+?)$/);
-                    return match && {
-                      tagId: match[1],
-                      attributeName: match[2],
-                    };
-                  })();
-
-                  return [
-                    {
-                      type: 'html',
-                      src: type === 'element' ?
-                        tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
-                      :
-                        tagsRenderer.getFileSrc({item}),
-                      w: OPEN_WIDTH,
-                      h: OPEN_HEIGHT,
-                    },
-                    {
-                      type: 'image',
-                      img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
-                      x: 10,
-                      y: 0,
-                      w: 100,
-                      h: 100,
-                      frameTime: FRAME_TIME,
-                      pixelated: true,
-                    }
-                  ];
-                }, {
-                  type: 'tag',
-                  state: {
-                    item: item,
-                    details: detailsState,
-                    focus: focusState,
-                  },
-                  worldWidth: WORLD_OPEN_WIDTH,
-                  worldHeight: WORLD_OPEN_HEIGHT,
-                });
-                mesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
-                mesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
-                // mesh.scale.x = WORLD_OPEN_WIDTH / WORLD_WIDTH;
-                // mesh.scale.y = WORLD_OPEN_HEIGHT / WORLD_HEIGHT;
-                mesh.visible = false;
-                mesh.receiveShadow = true;
-
-                return mesh;
-              })();
+              const planeOpenMesh = _addUiManagerPage({
+                uiManager: uiOpenManager,
+                open: true,
+              });
+              planeOpenMesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
+              planeOpenMesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
+              planeOpenMesh.visible = false;
               object.add(planeOpenMesh);
               object.planeOpenMesh = planeOpenMesh;
 

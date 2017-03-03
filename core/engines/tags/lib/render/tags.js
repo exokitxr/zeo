@@ -217,7 +217,7 @@ const getAttributeInputSrc = (id, name, type, value, min, max, step, options, in
   }
 };
 
-const getFileSrc = ({item}) => {
+const getFileSrc = ({item, mode, paused}) => {
   const {id, name, mimeType, instancing, open} = item;
 
   const headerSrc = `\
@@ -242,9 +242,57 @@ const getFileSrc = ({item}) => {
       }
     </div>
   `;
-  const bodySrc = open ? `\
-    <div style="position: relative; width: 400px; height: 400px; background-color: #000; overflow: hidden;"></div>
-  ` : '';
+  const bodySrc = (() => {
+    if (open) {
+      if (mode === 'image') {
+        return `\
+          <div style="position: relative; width: 400px; height: 400px; background-color: #000; overflow: hidden;"></div>
+        `;
+      } else if (mode === 'audio') {
+        const mainSrc = (() => {
+          if (!paused) {
+            return `\
+              <a onclick="media:pause">
+                <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 79.374997 79.374985">
+                  <path d="M13.23 0v79.375h18.52V0H13.23M47.625 0v79.375h18.52V0z"/>
+                </svg>
+              </a>
+            `;
+          } else {
+            return `\
+              <a onclick="media:play">
+                <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 79.374997 79.374985">
+                  <path d="M21.167 79.375l39.687-39.687L21.167 0v79.375"/>
+                </svg>
+              </a>
+            `;
+          }
+        })();
+        const barSrc = `\
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 79.374999 79.374999" style="${WIDTH}px;">
+              <path d="M34.396 79.375H44.98V0H34.395z" fill="#f44336"/>
+            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" viewBox="0 0 264.58333 79.374999" style="position: absolute;">
+              <path d="M0 44.98h264.583V34.395H0z" fill="#ccc"/>
+            </svg>
+          </div>
+        `;
+
+        return mainSrc + barSrc;
+      } else if (mode === 'model') {
+        return `\
+          <div style="position: relative; display: flex; width: 400px; height: 400px; padding: 20px; border: 1px solid #000; justify-content: center; overflow: hidden; box-sizing: border-box;">
+            <div style="display: flex; height: 30px; font-size: 28px; font-weight: 400; justify-content: center; align-items: center;">Model preview</div>
+          </div>
+        `;
+      } else {
+        return '';
+      }
+    } else {
+      return '';
+    }
+  })();
 
   return `\
     <div>
