@@ -249,15 +249,13 @@ const getFileSrc = ({item, mode, paused}) => {
     </div>
   `;
   const bodySrc = (() => {
-    const _getFrameSrc = text => `\
-      <div style="position: relative; display: flex; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT - HEIGHT}px; padding: 20px; border: 1px solid #000; justify-content: center; overflow: hidden; box-sizing: border-box;">
-        <div style="display: flex; height: 30px; font-size: 28px; font-weight: 400; justify-content: center; align-items: center;">${text}</div>
-      </div>
+    const _getFramePreviewSrc = (text = '') => `\
+      <div style="position: relative; display: flex; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT - HEIGHT}px; padding: 20px; border: 1px solid #000; font-size: 28px; font-weight: 400; justify-content: center; align-items: center; overflow: hidden; box-sizing: border-box;">${text}</div>
     `;
 
     if (open) {
       if (mode === 'image') {
-        return _getFrameSrc('Image preview');
+        return _getFramePreviewSrc();
       } else if (mode === 'audio') {
         const mainSrc = (() => {
           if (!paused) {
@@ -291,9 +289,9 @@ const getFileSrc = ({item, mode, paused}) => {
 
         return mainSrc + barSrc;
       } else if (mode === 'model') {
-        return _getFrameSrc('Model preview');
+        return _getFramePreviewSrc();
       } else {
-        return '';
+        return _getFramePreviewSrc('Unknown file type');
       }
     } else {
       return '';
