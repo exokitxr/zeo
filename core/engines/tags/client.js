@@ -25,6 +25,7 @@ const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemOpenSymbol = Symbol();
 const itemPausedSymbol = Symbol();
+const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemMutexSymbol = Symbol();
 const ITEM_LOCK_KEY = 'key';
@@ -403,6 +404,26 @@ class Tags {
                     id,
                     name,
                   });
+                } else if (match = onclick.match(/^media:(play|pause):(.+)$/)) {
+                  const action = match[1];
+                  const id = match[2];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tagMesh;
+
+                  // XXX actually play/pause the item here
+
+                  const pause = match[1] === 'pause';
+                  item.paused = pause;
+                  _updatePages();
+                } else if (match = onclick.match(/^media:seek:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tagMesh;
+
+                  // XXX seek the item here
+
+                  item.value = Math.random();
+                  _updatePages();
                 } else {
                   return false;
                 }
@@ -800,6 +821,8 @@ class Tags {
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
               this[itemOpenSymbol] = false;
+              this[itemPausedSymbol] = true;
+              this[itemValueSymbol] = 0;
               this[itemPreviewSymbol] = false;
 
               this[itemMutexSymbol] = new MultiMutex();
@@ -829,6 +852,12 @@ class Tags {
             set paused(paused) {
               this[itemPausedSymbol] = paused;
             }
+            get value() {
+              return this[itemValueSymbol];
+            }
+            set value(value) {
+              this[itemValueSymbol] = value;
+            }
             get preview() {
               return this[itemPreviewSymbol];
             }
@@ -856,10 +885,11 @@ class Tags {
               for (const k in this) {
                 result[k] = this[k];
               }
-              const {instancing, open, paused} = this;
+              const {instancing, open, paused, value} = this;
               result.instancing = instancing;
               result.open = open;
               result.paused = paused;
+              result.value = value;
               return result;
             }
           }
