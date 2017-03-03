@@ -16,6 +16,7 @@ import {
 } from './lib/constants/tags';
 import tagsRenderer from './lib/render/tags';
 import menuUtils from './lib/utils/menu';
+import OBJLoader from './lib/three-extra/OBJLoader';
 
 const SIDES = ['left', 'right'];
 
@@ -23,6 +24,7 @@ const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemOpenSymbol = Symbol();
+const itemPreviewSymbol = Symbol();
 const itemMutexSymbol = Symbol();
 const ITEM_LOCK_KEY = 'key';
 
@@ -63,6 +65,8 @@ class Tags {
           const {THREE, scene, camera} = three;
           const {events} = jsUtils;
           const {EventEmitter} = events;
+
+          const THREEOBJLoader = OBJLoader(THREE);
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -231,6 +235,18 @@ class Tags {
             uiOpenManager.update();
           };
 
+          const _requestFileItemModel = item => fetch('/archae/fs/' + item.id)
+            .then(res => res.text()
+              .then(modelText => new Promise((accept, reject) => {
+                const loader = new THREEOBJLoader();
+
+                // XXX this texture path needs to actually be fetchable from /archae/fs/ by path, since that's what the model will be referencing
+                loader.setPath('/archae/fs/');
+                const modelMesh = loader.parse(modelText);
+                accept(modelMesh);
+              }))
+            );
+
           const _trigger = e => {
             const {side} = e;
 
@@ -253,6 +269,35 @@ class Tags {
                   planeOpenMesh.visible = true;
                   _updatePages();
 
+                  if (item.type === 'file') {
+                    if (!item.preview) {
+                      const previewMesh = (() => {
+                        const object = new THREE.Object3D();
+
+                        _requestFileItemModel(item)
+                          .then(modelMesh => {
+                            const boundingBox = new THREE.Box3().setFromObject(modelMesh);
+                            const boundingBoxSize = boundingBox.getSize();
+                            const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
+                            const meshScaleFactor = (1 / meshCurrentScale) * 0.15;
+                            modelMesh.position.y = -0.2;
+                            modelMesh.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
+
+                            object.add(modelMesh);
+                          })
+                          .catch(err => {
+                            console.warn(err);
+                          });
+
+                        return object;
+                      })();
+                      tagMesh.add(previewMesh);
+                      item.preview = previewMesh;
+                    } else {
+                      item.preview.visible = true;
+                    }
+                  }
+
                   e.stopImmediatePropagation();
 
                   return true;
@@ -265,6 +310,12 @@ class Tags {
                   planeMesh.visible = true;
                   planeOpenMesh.visible = false;
                   _updatePages();
+
+                  if (item.type === 'file') {
+                    if (item.preview && item.preview.visible) {
+                      item.preview.visible = false;
+                    }
+                  }
 
                   e.stopImmediatePropagation();
 
@@ -676,6 +727,7 @@ class Tags {
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
               this[itemOpenSymbol] = false;
+              this[itemPreviewSymbol] = false;
 
               this[itemMutexSymbol] = new MultiMutex();
             }
@@ -697,6 +749,12 @@ class Tags {
             }
             set open(open) {
               this[itemOpenSymbol] = open;
+            }
+            get preview() {
+              return this[itemPreviewSymbol];
+            }
+            set preview(preview) {
+              this[itemPreviewSymbol] = preview;
             }
 
             setAttribute(name, value) {
