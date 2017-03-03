@@ -111,7 +111,7 @@ const getListPageSrc = ({page, servers, currentServerUrl}) => {
   const rightSrc = getThreadSidebarSrc();
 
   return `\
-    <div style="display: flex; width: ${WIDTH}px; font-size: 30px; line-height: 1.4;">
+    <div style="display: flex; width: ${WIDTH}px; min-height: ${HEIGHT}px; font-size: 30px; line-height: 1.4;">
       ${leftSrc}
       ${rightSrc}
     </div>
@@ -120,7 +120,7 @@ const getListPageSrc = ({page, servers, currentServerUrl}) => {
 
 const getServerPageSrc = () => {
   const leftSrc = (() => `\
-    <div style="display: flex; padding: 20px 30px; margin-bottom: auto; flex-grow: 1; flex-direction: column;">
+    <div style="display: flex; padding: 20px 30px; margin-bottom: auto; flex-grow: 1; flex-direction: column; justify-content: stretch; align-items: stretch;">
       <div style="display: flex; margin-bottom: 20px; font-size: 16px; line-height: 1.4;">
         <a style="display: block; padding: 5px 15px; border: 1px solid #333; border-radius: 100px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="servers:list">< Back</a>
       </div>
@@ -209,7 +209,7 @@ const getThreadSidebarSrc = () => {
   })();
 
   return `\
-    <div style="width: 300px; min-height: ${HEIGHT}px; padding: 20px 30px; background-color: #000; color: #FFF; box-sizing: border-box;">
+    <div style="width: 300px; padding: 20px 30px; background-color: #000; color: #FFF; box-sizing: border-box;">
       ${searchSrc}
     </div>
   `;

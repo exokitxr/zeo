@@ -5,4 +5,11 @@ export const WORLD_WIDTH = 2;
 export const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 export const WORLD_DEPTH = 0.01;
 
-export default {};
+export default {
+  WIDTH,
+  HEIGHT,
+  ASPECT_RATIO,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+};
