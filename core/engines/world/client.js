@@ -1821,20 +1821,33 @@ class World {
                   }
                 };
                 const _clickGrabWorldTag = () => {
-                  const grabMesh = grabManager.getMesh(side);
-                  const grabbableState = grabbableStates[side];
-                  const {pointerMesh: pointerGrabMesh} = grabbableState;
+                  const {gamepads} = webvr.getStatus();
+                  const gamepad = gamepads[side];
 
-                  if (!grabMesh && pointerGrabMesh) {
-                    const tagMesh = pointerGrabMesh;
-                    const {item} = tagMesh;
-                    const {id} = item;
+                  if (gamepad) {
+                    const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
-                    _moveTag('world:' + id, 'hand:' + side);
+                    if (gripPressed) {
+                      const grabMesh = grabManager.getMesh(side);
+                      const grabbableState = grabbableStates[side];
+                      const {pointerMesh: pointerGrabMesh} = grabbableState;
 
-                    _endHighlight(side);
+                      if (!grabMesh && pointerGrabMesh) {
+                        const tagMesh = pointerGrabMesh;
+                        const {item} = tagMesh;
+                        const {id} = item;
 
-                    return true;
+                        _moveTag('world:' + id, 'hand:' + side);
+
+                        _endHighlight(side);
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
                   } else {
                     return false;
                   }
