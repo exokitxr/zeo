@@ -21,6 +21,8 @@ const SIDES = ['left', 'right'];
 
 const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
+const itemInstancingSymbol = Symbol();
+const itemOpenSymbol = Symbol();
 const itemMutexSymbol = Symbol();
 const ITEM_LOCK_KEY = 'key';
 
@@ -672,9 +674,8 @@ class Tags {
               this.matrix = matrix;
 
               this[itemInstanceSymbol] = null;
-              this.instancing = false;
-
-              this.open = false;
+              this[itemInstancingSymbol] = false;
+              this[itemOpenSymbol] = false;
 
               this[itemMutexSymbol] = new MultiMutex();
             }
@@ -682,9 +683,20 @@ class Tags {
             get instance() {
               return this[itemInstanceSymbol];
             }
-
             set instance(instance) {
               this[itemInstanceSymbol] = instance;
+            }
+            get instancing() {
+              return this[itemInstancingSymbol];
+            }
+            set instancing(instancing) {
+              this[itemInstancingSymbol] = instancing;
+            }
+            get open() {
+              return this[itemOpenSymbol];
+            }
+            set open(open) {
+              this[itemOpenSymbol] = open;
             }
 
             setAttribute(name, value) {
@@ -700,6 +712,16 @@ class Tags {
 
             lock() {
               return this[itemMutexSymbol].lock(ITEM_LOCK_KEY);
+            }
+
+            jsonStringify() { // used to let update checks see Symbol-hidden properties
+              const result = {};
+              for (const k in this) {
+                result[k] = this[k];
+              }
+              result.instancing = this.instancing;
+              result.open = this.open;
+              return result;
             }
           }
 

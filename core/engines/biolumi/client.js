@@ -85,7 +85,8 @@ class Biolumi {
             update() {
               return new Promise((accept, reject) => {
                 const {state} = this;
-                const stateJson = JSON.stringify(state);
+                // replacer used to account for Symbol-hidden properties
+                const stateJson = JSON.stringify(state, (k, v) => (v && v.jsonStringify) ? v.jsonStringify() : v);
                 const {_lastStateJson: lastStateJson} = this;
 
                 if (stateJson !== lastStateJson) {
