@@ -746,6 +746,7 @@ class Biolumi {
 
           const _makeMenuHoverState = () => ({
             intersectionPoint: null,
+            metadata: null,
             anchor: null,
             value: 0,
           });
@@ -826,7 +827,7 @@ class Biolumi {
             controllerRotation,
           }) => {
             const intersectionSpecs = objects.map(object => {
-              const {matrixObject, worldWidth, worldHeight, worldDepth, pageIndex} = object;
+              const {matrixObject, worldWidth, worldHeight, worldDepth} = object;
               const {position, rotation, scale} = matrixObject;
               const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
 
@@ -854,10 +855,28 @@ class Biolumi {
             const intersectionSpec = intersectionSpecs.length > 0 ? intersectionSpecs.sort((a, b) => a.disance - b.distance)[0] : null;
 
             if (intersectionSpec) {
-              const {object: {matrixObject: {position, rotation, scale}, page, width, height, worldWidth, worldHeight, worldDepth}, intersectionPoint, controllerLine} = intersectionSpec;
+              const {
+                object: {
+                  matrixObject: {
+                    position,
+                    rotation,
+                    scale
+                  },
+                  page,
+                  width,
+                  height,
+                  worldWidth,
+                  worldHeight,
+                  worldDepth,
+                  metadata
+                },
+                intersectionPoint,
+                controllerLine,
+              } = intersectionSpec;
 
               if (hoverState) {
                 hoverState.intersectionPoint = intersectionPoint;
+                hoverState.metadata = metadata || null;
               }
 
               const _getMenuMeshPoint = _makeMeshPointGetter({
@@ -960,6 +979,7 @@ class Biolumi {
             } else {
               if (hoverState) {
                 hoverState.intersectionPoint = null;
+                hoverState.metadata = null;
                 hoverState.anchor = null;
                 hoverState.value = 0;
               }
