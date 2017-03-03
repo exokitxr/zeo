@@ -422,8 +422,9 @@ class Tags {
 
                   // XXX seek the item here
 
-                  item.value = Math.random();
-                  _updatePages();
+                  const {value} = hoverState;
+                  item.value = value;
+                   _updatePages();
                 } else {
                   return false;
                 }
