@@ -261,7 +261,7 @@ const getFileSrc = ({item, mode}) => {
           if (mode === 'audio') {
             if (paused) {
               return `\
-                <a style="display: flex; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:play:${id}">
+                <a style="display: flex; background-color: #FFF; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:play:${id}">
                   <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 79.374997 79.374985">
                     <path d="M21.167 79.375l39.687-39.687L21.167 0v79.375"/>
                   </svg>
@@ -269,7 +269,7 @@ const getFileSrc = ({item, mode}) => {
               `;
             } else {
               return `\
-                <a style="display: flex; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:pause:${id}">
+                <a style="display: flex;  background-color: #FFF; flex-grow: 1; justify-content: center; align-items: center;" onclick="media:pause:${id}">
                   <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 79.374997 79.374985">
                     <path d="M13.23 0v79.375h18.52V0H13.23M47.625 0v79.375h18.52V0z"/>
                   </svg>

@@ -248,7 +248,7 @@ class Tags {
 
             if (mimeType && /^image\/(?:png|jpeg|gif|file)$/.test(mimeType)) {
               return 'image';
-            } else if (/^audio\/(?:wav|mpeg|ogg|vorbis|webm|x-flac)$/.test(mimeType)) {
+            } else if (/^audio\/(?:wav|mp3|mpeg|ogg|vorbis|webm|x-flac)$/.test(mimeType)) {
               return 'audio';
             } else if (/^video\/(?:mp4|webm|ogg)$/.test(mimeType)) {
               return 'video';
