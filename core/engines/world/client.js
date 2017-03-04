@@ -15,6 +15,8 @@ import worldRenderer from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
 const TAGS_PER_ROW = 4;
+const TAGS_ROWS_PER_PAGE = 6;
+const TAGS_PER_PAGE = TAGS_PER_ROW * TAGS_ROWS_PER_PAGE;
 const DEFAULT_USER_HEIGHT = 1.6;
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -1081,9 +1083,14 @@ class World {
                 inputPlaceholder: 'Search npm modules',
                 inputIndex: 0,
                 inputValue: 0,
+                numTags: 0,
+                page: 0,
                 cancelLocalRequest: null,
                 cancelRemoteRequest: null,
                 cancelModRequest: null,
+              };
+              const npmCacheState = {
+                tagMeshes: [],
               };
               const _makeHighlightState = () => ({
                 startPoint: null,
@@ -1132,6 +1139,8 @@ class World {
                         inputText,
                         inputPlaceholder,
                         inputValue,
+                        numTags,
+                        page,
                       },
                       focus: {
                         type,
@@ -1142,7 +1151,7 @@ class World {
                       return [
                         {
                           type: 'html',
-                          src: worldRenderer.getWorldPageSrc({inputText, inputPlaceholder, inputValue, focus, onclick: 'npm:focus'}),
+                          src: worldRenderer.getWorldPageSrc({inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick: 'npm:focus'}),
                           x: 0,
                           y: 0,
                           w: WIDTH,
@@ -1707,6 +1716,51 @@ class World {
               };
               rend.on('update', _update);
 
+              const _updateNpmTagMeshContainer = () => {
+                // remove old
+                const oldTagMeshes = npmManager.getTagMeshes();
+                for (let i = 0; i < oldTagMeshes.length; i++) {
+                  const oldTagMesh = oldTagMeshes[i];
+                  oldTagMesh.parent.remove(oldTagMesh);
+
+                  tags.destroyTag(oldTagMesh);
+                }
+
+                // add new
+                const {npmMesh} = worldMesh;
+                const {page} = npmState;
+                const {tagMeshes} = npmCacheState;
+                const aspectRatio = 400 / 150;
+                const scale = 1.5;
+                const width = 0.2 * scale;
+                const height = width / aspectRatio;
+                const leftClip = ((30 / WIDTH) * WORLD_WIDTH);
+                const rightClip = (((250 + 30) / WIDTH) * WORLD_WIDTH);
+                const padding = (WORLD_WIDTH - (leftClip + rightClip) - (TAGS_PER_ROW * width)) / (TAGS_PER_ROW - 1);
+                const newTagMeshes = [];
+                const startIndex = page * TAGS_PER_PAGE;
+                const endIndex = (page + 1) * TAGS_PER_PAGE;
+                for (let i = startIndex; i < endIndex && i < tagMeshes.length; i++) {
+                  const newTagMesh = tagMeshes[i];
+
+                  const baseI = i - startIndex;
+                  const x = baseI % TAGS_PER_ROW;
+                  const y = Math.floor(baseI / TAGS_PER_ROW);
+                  newTagMesh.position.set(
+                    -(WORLD_WIDTH / 2) + (leftClip + (width / 2)) + (x * (width + padding)),
+                    (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.2,
+                    0
+                  );
+                  newTagMesh.scale.set(scale, scale, 1);
+                  newTagMesh.initialScale = newTagMesh.scale.clone();
+
+                  npmMesh.add(newTagMesh);
+
+                  newTagMeshes.push(newTagMesh);
+                }
+                npmManager.setTagMeshes(newTagMeshes);
+              };
+
               const _tabchange = tab => {
                 if (tab === 'world') {
                   npmState.inputText = '';
@@ -1720,43 +1774,12 @@ class World {
                       return tags.makeTag(tagSpec);
                     }))
                     .then(tagMeshes => {
-                      // remove old
-                      const oldTagMeshes = npmManager.getTagMeshes();
-                      for (let i = 0; i < oldTagMeshes.length; i++) {
-                        const oldTagMesh = oldTagMeshes[i];
-                        oldTagMesh.parent.remove(oldTagMesh);
+                      npmState.page = 0;
+                      npmState.numTags = tagMeshes.length;
+                      npmCacheState.tagMeshes = tagMeshes;
 
-                        tags.destroyTag(oldTagMesh);
-                      }
-
-                      // add new
-                      const {npmMesh} = worldMesh;
-                      const aspectRatio = 400 / 150;
-                      const scale = 1.5;
-                      const width = 0.2 * scale;
-                      const height = width / aspectRatio;
-                      const leftClip = ((30 / WIDTH) * WORLD_WIDTH);
-                      const rightClip = (((250 + 30) / WIDTH) * WORLD_WIDTH);
-                      const padding = (WORLD_WIDTH - (leftClip + rightClip) - (TAGS_PER_ROW * width)) / (TAGS_PER_ROW - 1);
-                      const newTagMeshes = [];
-                      for (let i = 0; i < tagMeshes.length; i++) {
-                        const newTagMesh = tagMeshes[i];
-
-                        const x = i % TAGS_PER_ROW;
-                        const y = Math.floor(i / TAGS_PER_ROW);
-                        newTagMesh.position.set(
-                          -(WORLD_WIDTH / 2) + (leftClip + (width / 2)) + (x * (width + padding)),
-                          (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.2,
-                          0
-                        );
-                        newTagMesh.scale.set(scale, scale, 1);
-                        newTagMesh.initialScale = newTagMesh.scale.clone();
-
-                        npmMesh.add(newTagMesh);
-
-                        newTagMeshes.push(newTagMesh);
-                      }
-                      npmManager.setTagMeshes(newTagMeshes);
+                      _updateNpmTagMeshContainer();
+                      _updatePages();
                     })
                     .catch(err => {
                       console.warn(err);
@@ -1867,6 +1890,7 @@ class World {
                       const {anchor} = menuHoverState;
                       const onclick = (anchor && anchor.onclick) || '';
 
+                      let match;
                       if (onclick === 'npm:focus') {
                         const {value} = menuHoverState;
                         const valuePx = value * (WIDTH - (500 + 40));
@@ -1877,6 +1901,16 @@ class World {
                         npmState.inputValue = px;
                         focusState.type = 'npm';
 
+                        _updatePages();
+
+                        return true;
+
+                      } else if (match = onclick.match(/^npm:(up|down)$/)) {
+                        const direction = match[1];
+
+                        npmState.page += (direction === 'up' ? -1 : 1);
+
+                        _updateNpmTagMeshContainer();
                         _updatePages();
 
                         return true;

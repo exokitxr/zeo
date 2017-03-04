@@ -156,7 +156,18 @@ class Biolumi {
                         document.body.appendChild(divEl);
 
                         const anchors = (() => {
-                          const as = divEl.querySelectorAll('a');
+                          const as = (() => {
+                            const as = divEl.querySelectorAll('a');
+
+                            const result = [];
+                            for (let i = 0; i < as.length; i++) {
+                              const a = as[i];
+                              if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
+                                result.push(a);
+                              }
+                            }
+                            return result;
+                          })();
                           const numAs = as.length;
 
                           const result = Array(numAs);
