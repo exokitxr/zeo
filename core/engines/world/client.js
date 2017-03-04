@@ -78,7 +78,8 @@ class World {
         // constants
         const transparentMaterial = biolumi.getTransparentMaterial();
         const trashGeometry = (() => {
-          const geometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(0.5, 1, 0.5));
+          const size = 0.2;
+          const geometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(size, size * 2, size));
 
           const positionsAttrbiute = geometry.getAttribute('position');
           const positions = positionsAttrbiute.array;
@@ -90,7 +91,7 @@ class World {
               positions.slice(baseIndex + 3, baseIndex + 6),
               positions.slice(baseIndex + 6, baseIndex + 9),
             ];
-            if (points[0][1] >= 0.5 && points[1][1] >= 0.5 && points[0][1] >= 0.5) {
+            if (points[0][1] >= size && points[1][1] >= size && points[0][1] >= size) {
               for (let j = 0; j < 9; j++) {
                 positions[baseIndex + j] = 0;
               }
@@ -1212,11 +1213,12 @@ class World {
                 const material = solidMaterial;
 
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.y = -DEFAULT_USER_HEIGHT + 0.5;
-                mesh.position.z = -1;
+                mesh.position.x = (WORLD_WIDTH / 2) - (((250 / WIDTH) * WORLD_WIDTH) / 2);
+                mesh.position.y = -DEFAULT_USER_HEIGHT + 1.2;
+                mesh.position.z = -1.5 + (0.2 / 2) + 0.02;
 
                 const highlightMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(0.5, 1, 0.5);
+                  const geometry = new THREE.BoxBufferGeometry(0.2, 0.4, 0.2);
                   const material = wireframeHighlightMaterial;
 
                   const mesh = new THREE.Mesh(geometry, material);
@@ -1463,7 +1465,7 @@ class World {
                 const _updateTrashAnchor = () => {
                   const {gamepads} = webvr.getStatus();
                   const {position: trashPosition, rotation: trashRotation, scale: trashScale} = _decomposeObjectMatrixWorld(trashMesh);
-                  const trashBoxTarget = geometryUtils.makeBoxTarget(trashPosition, trashRotation, trashScale, new THREE.Vector3(0.5, 1, 0.5));
+                  const trashBoxTarget = geometryUtils.makeBoxTarget(trashPosition, trashRotation, trashScale, new THREE.Vector3(0.2, 0.4, 0.2));
 
                   SIDES.forEach(side => {
                     const trashState = trashStates[side];
@@ -1730,10 +1732,12 @@ class World {
                       // add new
                       const {npmMesh} = worldMesh;
                       const aspectRatio = 400 / 150;
-                      const scale = 2;
+                      const scale = 1.5;
                       const width = 0.2 * scale;
                       const height = width / aspectRatio;
-                      const padding = (WORLD_WIDTH - (TAGS_PER_ROW * width)) / (TAGS_PER_ROW + 1);
+                      const leftClip = ((30 / WIDTH) * WORLD_WIDTH);
+                      const rightClip = (((250 + 30) / WIDTH) * WORLD_WIDTH);
+                      const padding = (WORLD_WIDTH - (leftClip + rightClip) - (TAGS_PER_ROW * width)) / (TAGS_PER_ROW - 1);
                       const newTagMeshes = [];
                       for (let i = 0; i < tagMeshes.length; i++) {
                         const newTagMesh = tagMeshes[i];
@@ -1741,8 +1745,8 @@ class World {
                         const x = i % TAGS_PER_ROW;
                         const y = Math.floor(i / TAGS_PER_ROW);
                         newTagMesh.position.set(
-                          -(WORLD_WIDTH / 2) + (padding + (width / 2)) + (x * (width + padding)),
-                          (WORLD_HEIGHT / 2) - (padding + height) - (padding / 2) - (y * (height + padding)),
+                          -(WORLD_WIDTH / 2) + (leftClip + (width / 2)) + (x * (width + padding)),
+                          (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.2,
                           0
                         );
                         newTagMesh.scale.set(scale, scale, 1);
