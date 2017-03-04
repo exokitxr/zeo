@@ -314,6 +314,8 @@ class Tags {
 
               const video = document.createElement('video');
               video.src = '/archae/fs/' + item.id;
+              video.width = OPEN_WIDTH;
+              video.height = (OPEN_HEIGHT - HEIGHT) - 100;
               video.oncanplay = () => {
                 texture.image = video;
                 texture.needsUpdate = true;
@@ -345,13 +347,23 @@ class Tags {
               const {map: texture} = material;
               const {image: video} = texture;
 
-              item.value = video.currentTime / video.duration;
+              const {value: prevValue} = item;
+              const nextValue = video.currentTime / video.duration;
+              if (Math.abs(nextValue - prevValue) >= (1 / 1000)) {
+                item.value = nextValue;
+
+                _updatePages();
+              }
 
               texture.needsUpdate = true;
             };
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.destroy = () => {
+              if (!video.paused) {
+                video.pause();
+              }
+
               const index = localUpdates.indexOf(localUpdate);
 
               if (index !== -1) {
@@ -788,7 +800,7 @@ class Tags {
               _updatePositioningMesh();
             };
             const _updateLocal = () => {
-              for (let i = 0; i < localUpdates; i++) {
+              for (let i = 0; i < localUpdates.length; i++) {
                 const update = localUpdates[i];
                 update();
               }
