@@ -298,7 +298,7 @@ class Tags {
             accept(mesh);
           });
           const _requestFileItemVideoMesh = item => new Promise((accept, reject) => {
-            const geometry = new THREE.PlaneBufferGeometry(0.2, 0.2);
+            const geometry = new THREE.PlaneBufferGeometry(WORLD_OPEN_WIDTH, (OPEN_HEIGHT - HEIGHT - 100) / OPEN_HEIGHT * WORLD_OPEN_HEIGHT);
             const material = (() => {
               const texture = new THREE.Texture(
                 transparentImg,
@@ -416,7 +416,7 @@ class Tags {
                         if (mode === 'image') {
                           _requestFileItemImageMesh(item)
                             .then(imageMesh => {
-                              imageMesh.position.y = (-WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
+                              imageMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
 
                               object.add(imageMesh);
                             })
@@ -426,7 +426,7 @@ class Tags {
                         } else if (mode === 'video') {
                           _requestFileItemVideoMesh(item)
                             .then(videoMesh => {
-                              videoMesh.position.y = (-WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
+                              videoMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) + ((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 2);
 
                               object.add(videoMesh);
                             })
@@ -440,7 +440,7 @@ class Tags {
                               const boundingBoxSize = boundingBox.getSize();
                               const meshCurrentScale = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z);
                               const meshScaleFactor = (1 / meshCurrentScale) * 0.1125;
-                              modelMesh.position.y = (-WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
+                              modelMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
                               // XXX offset the model to center it based on its bounding box
                               modelMesh.scale.set(meshScaleFactor, meshScaleFactor, meshScaleFactor);
 
