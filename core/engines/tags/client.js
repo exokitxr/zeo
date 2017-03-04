@@ -49,6 +49,7 @@ class Tags {
       '/core/engines/webvr',
       '/core/engines/cyborg',
       '/core/engines/biolumi',
+      '/core/engines/somnifer',
       '/core/engines/rend',
       '/core/plugins/js-utils',
       '/core/plugins/image-utils',
@@ -60,6 +61,7 @@ class Tags {
         webvr,
         cyborg,
         biolumi,
+        somnifer,
         rend,
         jsUtils,
         imageUtils,
@@ -71,6 +73,7 @@ class Tags {
           const {EventEmitter} = events;
 
           const transparentImg = biolumi.getTransparentImg();
+          const {sound} = somnifer;
 
           const THREEOBJLoader = OBJLoader(THREE);
 
@@ -298,9 +301,13 @@ class Tags {
             accept(mesh);
           });
           const _requestFileItemAudioMesh = item => new Promise((accept, reject) => {
+            const mesh = new THREE.Object3D();
+
             const audio = document.createElement('audio');
             audio.src = '/archae/fs/' + item.id;
             audio.oncanplay = () => {
+              soundBody.setInputElement(audio);
+
               audio.currentTime = item.value * audio.duration;
 
               if (!item.paused) {
@@ -314,6 +321,10 @@ class Tags {
             audio.onerror = err => {
               console.warn(err);
             };
+            mesh.audio = audio;
+
+            const soundBody = new sound.Body();
+            soundBody.setObject(mesh);
 
             const localUpdate = () => {
               const {value: prevValue} = item;
@@ -325,8 +336,6 @@ class Tags {
               }
             };
 
-            const mesh = new THREE.Object3D();
-            mesh.audio = audio;
             mesh.destroy = () => {
               if (!audio.paused) {
                 audio.pause();
