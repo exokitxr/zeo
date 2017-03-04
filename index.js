@@ -11,6 +11,8 @@ const flags = {
   site: args.includes('site'),
   hub: args.includes('hub'),
   install: args.includes('install'),
+  makeToken: args.includes('makeToken'),
+  parseToken: args.includes('parseToken'),
   host: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
@@ -111,6 +113,16 @@ const flags = {
     }
     return null;
   })(),
+  token: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^token=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -176,13 +188,22 @@ const _install = () => {
   }
 };
 
-const _ensureSign = () => new Promise((accept, reject) => {
-  if (flags.hub || flags.server) {
+const _loadSign = () => new Promise((accept, reject) => {
+  if (flags.hub || flags.server || flags.makeToken || flags.parseToken) {
     const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
     const publicKeyPath = path.join(signDirectory, 'public.pem');
     const privateKeyPath = path.join(signDirectory, 'private.pem');
 
-    const _setFile = (p, d) => {
+    const _getFile = p => new Promise((accept, reject) => {
+      fs.readFile(p, 'utf8', (err, s) => {
+        if (!err) {
+          accept(s);
+        } else {
+          reject(err);
+        }
+      });
+    });
+    const _setFile = (p, d) => new Promise((accept, reject) => {
       fs.writeFile(p, d, err => {
         if (!err) {
           accept();
@@ -190,48 +211,67 @@ const _ensureSign = () => new Promise((accept, reject) => {
           reject(err);
         }
       });
-    };
+    });
 
-    fs.lstat(publicKeyPath, (err, stats) => {
-      if (!err) {
-        if (stats.isFile()) {
-          accept();
+    Promise.all([
+      _getFile(publicKeyPath),
+      _getFile(privateKeyPath),
+    ])
+      .then(([
+        publicKey,
+        privateKey,
+      ]) => {
+        accept({
+          publicKey,
+          privateKey,
+        });
+      })
+      .catch(err => {
+        if (err.code === 'ENOENT') {
+          mkdirp(signDirectory, err => {
+            if (!err) {
+              const {publicKey, privateKey} = cryptoutils.generateKeys();
+
+              Promise.all([
+                _setFile(publicKeyPath, publicKey),
+                _setFile(privateKeyPath, privateKey),
+              ])
+                .then(() => {
+                  accept({
+                    publicKey,
+                    privateKey,
+                  });
+                })
+                .catch(err => {
+                  reject(err);
+                });
+            } else {
+              reject(err);
+            }
+          });
         } else {
-          const err = new Error('Public signing key is not a file: ' + publicKeyPath + '. Remove or replace it with a proper signing key file.');
           reject(err);
         }
-      } else if (err.code === 'ENOENT') {
-        mkdirp(signDirectory, err => {
-          if (!err) {
-            const {publicKey, privateKey} = cryptoutils.generateKeys();
-
-            Promise.all([
-              _setFile(publicKeyPath, publicKey),
-              _setFile(privateKeyPath, privateKey),
-            ])
-              .then(() => {
-                accept();
-              })
-              .catch(err => {
-                reject(err);
-              });
-          } else {
-            reject(err);
-          }
-        });
-      } else {
-        reject(err);
-      }
-    });
+      })
   } else {
     accept();
   }
 });
 
-const _ensure = () => Promise.all([
+const _load = () => Promise.all([
   _install(),
-  _ensureSign(),
-]);
+  _loadSign(),
+])
+  .then(([
+    installResult,
+    {
+      publicKey,
+      privateKey,
+    },
+  ]) => ({
+    publicKey,
+    privateKey,
+  }));
 
 const _getAllPlugins = () => {
   const _flatten = a => {
@@ -313,36 +353,74 @@ const _listen = () => {
     });
 };
 
-const _boot = () => {
+const _boot = ({
+  privateKey,
+  publicKey,
+}) => {
+  const bootPromises = [];
+
   if (flags.hub || flags.server) {
-    return _getAllPlugins()
-     .then(plugins => a.requestPlugins(plugins));
-  } else {
-    return Promise.resolve();
+    bootPromises.push(
+      _getAllPlugins()
+        .then(plugins => a.requestPlugins(plugins))
+    );
   }
+  if (flags.makeToken) {
+    const auth = require('./lib/auth');
+    bootPromises.push(new Promise((accept, reject) => {
+      const token = auth.makeToken({
+        privateKey,
+      });
+      console.log(token);
+
+      accept();
+    }));
+  }
+  if (flags.parseToken) {
+    const auth = require('./lib/auth');
+    bootPromises.push(new Promise((accept, reject) => {
+      const token = auth.parseToken({
+        publicKey,
+        token: flags.token,
+      });
+      console.log(token);
+
+      accept();
+    }));
+  }
+
+  return Promise.all(bootPromises);
 };
 
-_ensure()
-  .then(() => _listen())
-  .then(() => _boot())
-  .then(() => {
-    if (flags.site) {
-      console.log('https://' + config.metadata.site.url + '/');
-    }
-    if (flags.hub) {
-      console.log('https://' + config.metadata.hub.url + '/');
-    }
-    if (flags.server) {
-      const prefix = 'https://' + config.metadata.server.url + '/';
-      const suffix = (() => {
-        if (/^.+\..+?(?::[0-9]*?)?$/.test(hubUrl)) {
-          return '';
-        } else {
-          return '?username=' + encodeURIComponent(config.metadata.server.username) + '&password=' + encodeURIComponent(config.metadata.server.password);
+_load()
+  .then(({
+    publicKey,
+    privateKey,
+  }) => {
+    return _listen()
+      .then(() => _boot({
+        publicKey,
+        privateKey,
+      }))
+      .then(() => {
+        if (flags.site) {
+          console.log('https://' + config.metadata.site.url + '/');
         }
-      })();
-      console.log(prefix + suffix);
-    }
+        if (flags.hub) {
+          console.log('https://' + config.metadata.hub.url + '/');
+        }
+        if (flags.server) {
+          const prefix = 'https://' + config.metadata.server.url + '/';
+          const suffix = (() => {
+            if (/^.+\..+?(?::[0-9]*?)?$/.test(hubUrl)) {
+              return '';
+            } else {
+              return '?username=' + encodeURIComponent(config.metadata.server.username) + '&password=' + encodeURIComponent(config.metadata.server.password);
+            }
+          })();
+          console.log(prefix + suffix);
+        }
+      });
   })
   .catch(err => {
     console.warn(err);
