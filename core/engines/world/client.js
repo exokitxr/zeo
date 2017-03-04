@@ -1225,6 +1225,7 @@ class World {
                 mesh.position.x = (WORLD_WIDTH / 2) - (((250 / WIDTH) * WORLD_WIDTH) / 2);
                 mesh.position.y = -DEFAULT_USER_HEIGHT + 1.2;
                 mesh.position.z = -1.5 + (0.2 / 2) + 0.02;
+                mesh.visible = false;
 
                 const highlightMesh = (() => {
                   const geometry = new THREE.BoxBufferGeometry(0.2, 0.4, 0.2);
@@ -1784,6 +1785,10 @@ class World {
                     .catch(err => {
                       console.warn(err);
                     });
+
+                  trashMesh.visible = true;
+                } else {
+                  trashMesh.visible = false;
                 }
               };
               rend.on('tabchange', _tabchange);
