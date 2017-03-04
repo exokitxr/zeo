@@ -1,7 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 
+const mkdirp = require('mkdirp');
 const archae = require('archae');
+const cryptoutils = require('cryptoutils');
 
 const args = process.argv.slice(2);
 const flags = {
@@ -174,6 +176,63 @@ const _install = () => {
   }
 };
 
+const _ensureSign = () => new Promise((accept, reject) => {
+  if (flags.hub || flags.server) {
+    const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
+    const publicKeyPath = path.join(signDirectory, 'public.pem');
+    const privateKeyPath = path.join(signDirectory, 'private.pem');
+
+    const _setFile = (p, d) => {
+      fs.writeFile(p, d, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    };
+
+    fs.lstat(publicKeyPath, (err, stats) => {
+      if (!err) {
+        if (stats.isFile()) {
+          accept();
+        } else {
+          const err = new Error('Public signing key is not a file: ' + publicKeyPath + '. Remove or replace it with a proper signing key file.');
+          reject(err);
+        }
+      } else if (err.code === 'ENOENT') {
+        mkdirp(signDirectory, err => {
+          if (!err) {
+            const {publicKey, privateKey} = cryptoutils.generateKeys();
+
+            Promise.all([
+              _setFile(publicKeyPath, publicKey),
+              _setFile(privateKeyPath, privateKey),
+            ])
+              .then(() => {
+                accept();
+              })
+              .catch(err => {
+                reject(err);
+              });
+          } else {
+            reject(err);
+          }
+        });
+      } else {
+        reject(err);
+      }
+    });
+  } else {
+    accept();
+  }
+});
+
+const _ensure = () => Promise.all([
+  _install(),
+  _ensureSign(),
+]);
+
 const _getAllPlugins = () => {
   const _flatten = a => {
     const result = [];
@@ -263,7 +322,7 @@ const _boot = () => {
   }
 };
 
-_install()
+_ensure()
   .then(() => _listen())
   .then(() => _boot())
   .then(() => {
