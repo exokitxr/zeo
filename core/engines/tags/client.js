@@ -364,28 +364,6 @@ class Tags {
                 16
               );
 
-              const video = document.createElement('video');
-              video.src = '/archae/fs/' + item.id;
-              video.width = OPEN_WIDTH;
-              video.height = (OPEN_HEIGHT - HEIGHT) - 100;
-              video.oncanplay = () => {
-                texture.image = video;
-                texture.needsUpdate = true;
-
-                video.currentTime = item.value * video.duration;
-
-                if (!item.paused) {
-                  video.play();
-                }
-
-                localUpdates.push(localUpdate);
-
-                video.oncanplay = null;
-              };
-              video.onerror = err => {
-                console.warn(err);
-              };
-
               const material = new THREE.MeshBasicMaterial({
                 map: texture,
                 side: THREE.DoubleSide,
@@ -394,6 +372,36 @@ class Tags {
               });
               return material;
             })();
+            const mesh = new THREE.Mesh(geometry, material);
+
+            const video = document.createElement('video');
+            video.src = '/archae/fs/' + item.id;
+            video.width = OPEN_WIDTH;
+            video.height = (OPEN_HEIGHT - HEIGHT) - 100;
+            video.oncanplay = () => {
+              const {map: texture} = material;
+
+              texture.image = video;
+              texture.needsUpdate = true;
+
+              soundBody.setInputElement(video);
+
+              video.currentTime = item.value * video.duration;
+
+              if (!item.paused) {
+                video.play();
+              }
+
+              localUpdates.push(localUpdate);
+
+              video.oncanplay = null;
+            };
+            video.onerror = err => {
+              console.warn(err);
+            };
+
+            const soundBody = new sound.Body();
+            soundBody.setObject(mesh);
 
             const localUpdate = () => {
               const {map: texture} = material;
@@ -410,7 +418,6 @@ class Tags {
               texture.needsUpdate = true;
             };
 
-            const mesh = new THREE.Mesh(geometry, material);
             mesh.destroy = () => {
               if (!video.paused) {
                 video.pause();
