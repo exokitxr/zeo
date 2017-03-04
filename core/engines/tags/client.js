@@ -297,6 +297,49 @@ class Tags {
             const mesh = new THREE.Mesh(geometry, material);
             accept(mesh);
           });
+          const _requestFileItemAudioMesh = item => new Promise((accept, reject) => {
+            const audio = document.createElement('audio');
+            audio.src = '/archae/fs/' + item.id;
+            audio.oncanplay = () => {
+              audio.currentTime = item.value * audio.duration;
+
+              if (!item.paused) {
+                audio.play();
+              }
+
+              localUpdates.push(localUpdate);
+
+              audio.oncanplay = null;
+            };
+            audio.onerror = err => {
+              console.warn(err);
+            };
+
+            const localUpdate = () => {
+              const {value: prevValue} = item;
+              const nextValue = audio.currentTime / audio.duration;
+              if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
+                item.value = nextValue;
+
+                _updatePages();
+              }
+            };
+
+            const mesh = new THREE.Object3D();
+            mesh.audio = audio;
+            mesh.destroy = () => {
+              if (!audio.paused) {
+                audio.pause();
+              }
+
+              const index = localUpdates.indexOf(localUpdate);
+              if (index !== -1) {
+                localUpdates.splice(index, 1);
+              }
+            };
+
+            accept(mesh);
+          });
           const _requestFileItemVideoMesh = item => new Promise((accept, reject) => {
             const geometry = new THREE.PlaneBufferGeometry(WORLD_OPEN_WIDTH, (OPEN_HEIGHT - HEIGHT - 100) / OPEN_HEIGHT * WORLD_OPEN_HEIGHT);
             const material = (() => {
@@ -349,7 +392,7 @@ class Tags {
 
               const {value: prevValue} = item;
               const nextValue = video.currentTime / video.duration;
-              if (Math.abs(nextValue - prevValue) >= (1 / 1000)) {
+              if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
                 item.value = nextValue;
 
                 _updatePages();
@@ -365,7 +408,6 @@ class Tags {
               }
 
               const index = localUpdates.indexOf(localUpdate);
-
               if (index !== -1) {
                 localUpdates.splice(index, 1);
               }
@@ -419,6 +461,14 @@ class Tags {
                               imageMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
 
                               object.add(imageMesh);
+                            })
+                            .catch(err => {
+                              console.warn(err);
+                            });
+                        } else if (mode === 'audio') {
+                          _requestFileItemAudioMesh(item)
+                            .then(audioMesh => {
+                              object.add(audioMesh);
                             })
                             .catch(err => {
                               console.warn(err);
@@ -985,18 +1035,31 @@ class Tags {
 
               const {preview} = this;
               if (preview) {
-                const {
-                  children: [
-                    {
-                      material: {
-                        map: {
-                          image: video,
+                const mode = _getItemPreviewMode(this);
+
+                if (mode === 'audio') {
+                  const {
+                    children: [
+                      {
+                        audio,
+                      },
+                    ],
+                  } = preview;
+                  audio.play();
+                } else if (mode === 'video') {
+                  const {
+                    children: [
+                      {
+                        material: {
+                          map: {
+                            image: video,
+                          },
                         },
                       },
-                    },
-                  ],
-                } = preview;
-                video.play();
+                    ],
+                  } = preview;
+                  video.play();
+                }
               }
             }
 
@@ -1005,18 +1068,31 @@ class Tags {
 
               const {preview} = this;
               if (preview) {
-                const {
-                  children: [
-                    {
-                      material: {
-                        map: {
-                          image: video,
+                const mode = _getItemPreviewMode(this);
+
+                if (mode === 'audio') {
+                  const {
+                    children: [
+                      {
+                        audio,
+                      },
+                    ],
+                  } = preview;
+                  audio.pause();
+                } else if (mode === 'video') {
+                  const {
+                    children: [
+                      {
+                        material: {
+                          map: {
+                            image: video,
+                          },
                         },
                       },
-                    },
-                  ],
-                } = preview;
-                video.pause();
+                    ],
+                  } = preview;
+                  video.pause();
+                }
               }
             }
 
@@ -1025,18 +1101,31 @@ class Tags {
 
               const {preview} = this;
               if (preview) {
-                const {
-                  children: [
-                    {
-                      material: {
-                        map: {
-                          image: video,
+                const mode = _getItemPreviewMode(this);
+
+                if (mode === 'audio') {
+                  const {
+                    children: [
+                      {
+                        audio,
+                      },
+                    ],
+                  } = preview;
+                  audio.currentTime = value * audio.duration;
+                } else if (mode === 'video') {
+                  const {
+                    children: [
+                      {
+                        material: {
+                          map: {
+                            image: video,
+                          },
                         },
                       },
-                    },
-                  ],
-                } = preview;
-                video.currentTime = value * video.duration;
+                    ],
+                  } = preview;
+                  video.currentTime = value * video.duration;
+                }
               }
             }
 
