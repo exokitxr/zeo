@@ -103,7 +103,7 @@ class Multiplayer {
                 const result = Array(playerStatuses.size);
                 let i = 0;
                 playerStatuses.forEach(playerStatus => {
-                  result[i++] = playerStatus.username; // XXX get the actual username here
+                  result[i++] = playerStatus.username;
                 });
                 return result;
               }
@@ -319,7 +319,7 @@ class Multiplayer {
                 enabled = false;
               });
 
-              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayerWs?id=' + multiplayerApi.getId());
+              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername()));
               const queue = [];
               connection.onopen = () => {
                 if (queue.length > 0) {
@@ -362,13 +362,25 @@ class Multiplayer {
 
                 const playerStatuses = multiplayerApi.getPlayerStatuses();
                 if (status) {
-                  if (!playerStatuses.has(id)) {
+                  const playerStatus = playerStatuses.get(id);
+
+                  if (!playerStatus) {
                     multiplayerApi.emit('playerEnter', {id, status});
+
+                    playerStatuses.set(id, status);
                   } else {
                     multiplayerApi.emit('playerStatusUpdate', {id, status});
-                  }
 
-                  playerStatuses.set(id, status);
+                    if ('username' in status) {
+                      playerStatus.username = status.username;
+                    }
+                    if ('hmd' in status) {
+                      playerStatus.hmd = status.hmd;
+                    }
+                    if ('controllers' in status) {
+                      playerStatus.controllers = status.controllers;
+                    }
+                  }
                 } else {
                   multiplayerApi.emit('playerLeave', {id});
 

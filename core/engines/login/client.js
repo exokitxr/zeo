@@ -270,7 +270,7 @@ class Login {
                       }
                     };
 
-                    const trigger = e => {
+                    const _trigger = e => {
                       const {side} = e;
                       const menuHoverState = menuHoverStates[side];
                       const {intersectionPoint} = menuHoverState;
@@ -302,9 +302,9 @@ class Login {
                         }
                       }
                     };
-                    input.on('trigger', trigger);
+                    input.on('trigger', _trigger);
 
-                    const keydown = e => {
+                    const _keydown = e => {
                       const {type} = focusState;
 
                       if (type === 'token') {
@@ -324,15 +324,15 @@ class Login {
                         }
                       }
                     };
-                    input.on('keydown', keydown, {
+                    input.on('keydown', _keydown, {
                       priority: 1,
                     });
-                    const keyboarddown = keydown;
-                    input.on('keyboarddown', keyboarddown, {
+                    const _keyboarddown = _keydown;
+                    input.on('keyboarddown', _keyboarddown, {
                       priority: 1,
                     });
-                    const paste = keydown;
-                    input.on('paste', paste, {
+                    const _paste = _keydown;
+                    input.on('paste', _paste, {
                       priority: 1,
                     });
 
@@ -402,10 +402,10 @@ class Login {
                         scene.remove(menuBoxMeshes[side]);
                       });
 
-                      input.removeListener('trigger', trigger);
-                      input.removeListener('keydown', keydown);
-                      input.removeListener('keyboarddown', keyboarddown);
-                      input.removeListener('paste', paste);
+                      input.removeListener('trigger', _trigger);
+                      input.removeListener('keydown', _keydown);
+                      input.removeListener('keyboarddown', _keyboarddown);
+                      input.removeListener('paste', _paste);
 
                       rend.removeListener('update', _update);
                       rend.removeListener('login', _login);
@@ -415,9 +415,11 @@ class Login {
                     };
 
                     const _isOpen = () => loginState.open;
+                    const _getUsername = () => loginState.username;
 
                     const loginApi = {
                       isOpen: _isOpen,
+                      getUsername: _getUsername,
                     };
                     return loginApi;
                   }

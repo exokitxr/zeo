@@ -36,15 +36,24 @@ class Multiplayer {
       return result;
     };
 
+    class Status {
+      constructor(username, hmd, controllers) {
+        this.username = username;
+        this.hmd = hmd;
+        this.controllers = controllers;
+      }
+    }
+
     wss.on('connection', c => {
       const {url} = c.upgradeReq;
 
       let match;
-      if (match = url.match(/^\/archae\/multiplayerWs\?id=(.+)$/)) {
-        const id = match[1];
+      if (match = url.match(/^\/archae\/multiplayerWs\?id=(.+?)&username=(.+?)$/)) {
+        const id = decodeURIComponent(match[1]);
+        const username = decodeURIComponent(match[2]);
 
         const remoteAddress = c.upgradeReq.connection.remoteAddress.replace(/^::ffff:/, '');
-        console.log('multiplayer connection', {id, remoteAddress});
+        console.log('multiplayer connection', {id, username, remoteAddress});
 
         const _sendInit = () => {
           const e = {
@@ -60,13 +69,30 @@ class Multiplayer {
           const m = JSON.parse(s);
           if (typeof m === 'object' && m && m.type === 'status' && ('status' in m)) {
             const {status} = m;
+            const {hmd, controllers} = status;
 
-            statuses.set(id, status);
+            let newStatus = statuses.get(id);
+            const hadStatus = Boolean(newStatus);
+            if (hadStatus) {
+              newStatus.hmd = hmd;
+              newStatus.controllers = controllers;
+            } else {
+              newStatus = new Status(username, hmd, controllers);
+              statuses.set(id, newStatus);
+            }
 
+            const statusUpdate = hadStatus ? {
+              hmd: newStatus.hmd,
+              controllers: newStatus.controllers,
+            } : {
+              hmd: newStatus.hmd,
+              controllers: newStatus.controllers,
+              username: newStatus.username,
+            };
             const e = {
               type: 'status',
               id,
-              status,
+              status: statusUpdate,
             };
             const es = JSON.stringify(e);
             for (let i = 0; i < connections.length; i++) {
