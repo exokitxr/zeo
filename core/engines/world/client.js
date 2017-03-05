@@ -1048,7 +1048,7 @@ class World {
                 }
               };
 
-              const _requestLocalModSpecs = () => new Promise((accept, reject) => {
+              const _searchNpm = (q = '') => new Promise((accept, reject) => {
                 if (npmState.cancelLocalRequest) {
                   npmState.cancelLocalRequest();
                   npmState.cancelLocalRequest = null;
@@ -1059,7 +1059,7 @@ class World {
                   live = false;
                 };
 
-                fetch('https://' + hub.getCurrentServer().url + '/archae/rend/mods/local')
+                fetch('https://' + hub.getCurrentServer().url + '/archae/rend/mods/search?q=' + encodeURIComponent(q))
                   .then(res => res.json()
                     .then(modSpecs => {
                       if (live) {
@@ -1077,6 +1077,31 @@ class World {
                     }
                   });
               });
+              const _updateNpm = menuUtils.debounce(next => {
+                const {inputText} = npmState;
+
+                _searchNpm(inputText)
+                  .then(tagSpecs => tagSpecs.map(tagSpec => {
+                    tagSpec.isStatic = true;
+
+                    return tags.makeTag(tagSpec);
+                  }))
+                  .then(tagMeshes => {
+                    npmState.page = 0;
+                    npmState.numTags = tagMeshes.length;
+                    npmCacheState.tagMeshes = tagMeshes;
+
+                    _updateNpmTagMeshContainer();
+                    _updatePages();
+
+                    next();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+
+                    next();
+                  });
+              });
 
               const npmState = {
                 inputText: '',
@@ -1091,6 +1116,7 @@ class World {
               };
               const npmCacheState = {
                 tagMeshes: [],
+                loaded: false,
               };
               const _makeHighlightState = () => ({
                 startPoint: null,
@@ -1768,23 +1794,12 @@ class World {
                   npmState.inputIndex = 0;
                   npmState.inputValue = 0;
 
-                  _requestLocalModSpecs()
-                    .then(tagSpecs => tagSpecs.map(tagSpec => {
-                      tagSpec.isStatic = true;
+                  const {loaded} = npmCacheState;
+                  if (!loaded) {
+                    _updateNpm();
 
-                      return tags.makeTag(tagSpec);
-                    }))
-                    .then(tagMeshes => {
-                      npmState.page = 0;
-                      npmState.numTags = tagMeshes.length;
-                      npmCacheState.tagMeshes = tagMeshes;
-
-                      _updateNpmTagMeshContainer();
-                      _updatePages();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                    npmCacheState.loaded = true;
+                  }
 
                   trashMesh.visible = true;
                 } else {
@@ -2219,14 +2234,11 @@ class World {
                     const applySpec = biolumi.applyStateKeyEvent(npmState, mainFontSpec, e);
 
                     if (applySpec) {
+                      _updateNpm();
+
                       const {commit} = applySpec;
-
                       if (commit) {
-                        const {inputText} = npmState;
-
                         focusState.type = '';
-
-                        console.log('commit', {inputText}); // XXX actually search here
                       }
 
                       _updatePages();
