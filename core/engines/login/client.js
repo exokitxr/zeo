@@ -231,7 +231,9 @@ class Login {
                   .catch(err => {
                     console.warn(err);
 
-                    accept();
+                    accept({
+                      error: err,
+                    });
                   });
               });
 
@@ -408,10 +410,13 @@ class Login {
                     };
 
                     const _isOpen = () => loginState.open;
+                    const _getToken = () => loginState.token;
 
-                    return {
+                    const loginApi = {
                       isOpen: _isOpen,
+                      getToken: _getToken,
                     };
+                    return loginApi;
                   }
                 });
             }

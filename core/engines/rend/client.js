@@ -112,7 +112,6 @@ class Rend {
         const statusState = {
           username: 'avaer',
           accountType: 'admin',
-          karma: 1875,
           incomingMails: 7,
           outgoingMails: 3,
           worldname: 'Aldous Huxley',
@@ -448,8 +447,9 @@ class Rend {
                     const {open} = menuState;
 
                     if (open) {
-                      const _doClickNavbar = e => {
-                        const {side} = e;
+                      const {side} = e;
+
+                      const _doClickNavbar = () => {
                         const navbarHoverState = navbarHoverStates[side];
                         const {anchor} = navbarHoverState;
                         const onclick = (anchor && anchor.onclick) || '';
@@ -488,8 +488,28 @@ class Rend {
                           return false;
                         }
                       };
+                      const _doClickMenu = () => {
+                        const menuHoverState = menuHoverStates[side];
+                        const {anchor} = menuHoverState;
+                        const onclick = (anchor && anchor.onclick) || '';
 
-                      _doClickNavbar(e);
+                        if (onclick === 'status:downloadLoginToken') {
+                          const a = document.createElement('a');
+                          a.href = '/server/token';
+                          a.download = 'token.txt';
+                          a.style.display = 'none';
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+
+                          return true;
+                        } else {
+                          return false;
+                        }
+                      };
+
+                      _doClickNavbar();
+                      _doClickMenu();
                     }
                   };
                   input.on('trigger', trigger);
