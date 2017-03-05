@@ -15,10 +15,10 @@ const playBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(playBlackImg);
 const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
 
-const getElementSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight}) => {
+const getElementSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, isStatic}) => {
   const {id, displayName, description, version, instancing, open} = item;
-  const tagName = highlight ? 'a' : 'div';
-  const linkTagName = highlight ? 'div' : 'a';
+  const tagName = isStatic ? 'a' : 'div';
+  const linkTagName = isStatic ? 'div' : 'a';
 
   const headerSrc = `\
     <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">

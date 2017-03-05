@@ -1770,7 +1770,7 @@ class World {
 
                   _requestLocalModSpecs()
                     .then(tagSpecs => tagSpecs.map(tagSpec => {
-                      tagSpec.highlight = true;
+                      tagSpec.isStatic = true;
 
                       return tags.makeTag(tagSpec);
                     }))

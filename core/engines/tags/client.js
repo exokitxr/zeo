@@ -102,15 +102,16 @@ class Tags {
           };
 
           class UiManager {
-            constructor({width, height}) {
+            constructor({width, height, color}) {
               this.width = width;
               this.height = height;
+              this.color = color;
 
               this.uis = [];
             }
 
             addPage(pageSpec, options) {
-              const {width, height, uis} = this;
+              const {width, height, color, uis} = this;
 
               let lastUi = uis.length > 0 ? uis[uis.length - 1] : null;
               if (!lastUi || !lastUi.hasFreePages()) {
@@ -119,7 +120,7 @@ class Tags {
                   height: height,
                   atlasSize: 4,
                   maxNumTextures: 3,
-                  color: [1, 1, 1, 0],
+                  color,
                 });
                 uis.push(lastUi);
               }
@@ -139,10 +140,17 @@ class Tags {
           const uiManager = new UiManager({
             width: WIDTH,
             height: HEIGHT,
+            color: [1, 1, 1, 0]
           });
           const uiOpenManager = new UiManager({
             width: OPEN_WIDTH,
             height: OPEN_HEIGHT,
+            color: [1, 1, 1, 0]
+          });
+          const uiStaticManager = new UiManager({
+            width: WIDTH,
+            height: HEIGHT,
+            color: [1, 1, 1, 1]
           });
 
           const hoverStates = {
@@ -244,6 +252,7 @@ class Tags {
           const _updatePages = () => {
             uiManager.update();
             uiOpenManager.update();
+            uiStaticManager.update();
           };
 
           const _getItemPreviewMode = item => {
@@ -880,6 +889,7 @@ class Tags {
           const frameInterval = setInterval(() => {
             uiManager.update();
             uiOpenManager.update();
+            uiStaticManager.update();
           }, FRAME_TIME);
 
           this._cleanup = () => {
@@ -1188,8 +1198,7 @@ class Tags {
               );
               object.item = item;
 
-              const {highlight} = itemSpec;
-              object.highlight = highlight;
+              const {isStatic} = itemSpec;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
@@ -1222,7 +1231,7 @@ class Tags {
                     {
                       type: 'html',
                       src: type === 'element' ?
-                        tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, highlight})
+                        tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, isStatic})
                       :
                         tagsRenderer.getFileSrc({item, mode}),
                       w: !open ? WIDTH : OPEN_WIDTH,
@@ -1254,22 +1263,31 @@ class Tags {
                 return mesh;
               };
 
-              const planeMesh = _addUiManagerPage({
-                uiManager: uiManager,
-                open: false,
-              });
-              object.add(planeMesh);
-              object.planeMesh = planeMesh;
+              if (!isStatic) { 
+                const planeMesh = _addUiManagerPage({
+                  uiManager: uiManager,
+                  open: false,
+                });
+                object.add(planeMesh);
+                object.planeMesh = planeMesh;
 
-              const planeOpenMesh = _addUiManagerPage({
-                uiManager: uiOpenManager,
-                open: true,
-              });
-              planeOpenMesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
-              planeOpenMesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
-              planeOpenMesh.visible = false;
-              object.add(planeOpenMesh);
-              object.planeOpenMesh = planeOpenMesh;
+                const planeOpenMesh = _addUiManagerPage({
+                  uiManager: uiOpenManager,
+                  open: true,
+                });
+                planeOpenMesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
+                planeOpenMesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
+                planeOpenMesh.visible = false;
+                object.add(planeOpenMesh);
+                object.planeOpenMesh = planeOpenMesh;
+              } else {
+                const planeMesh = _addUiManagerPage({
+                  uiManager: uiStaticManager,
+                  open: false,
+                });
+                object.add(planeMesh);
+                object.planeMesh = planeMesh;
+              }
 
               tagMeshes.push(object);
 
