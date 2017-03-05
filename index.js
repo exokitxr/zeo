@@ -191,13 +191,12 @@ const _install = () => {
 const _loadSign = () => new Promise((accept, reject) => {
   if (flags.hub || flags.server || flags.makeToken || flags.parseToken) {
     const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
-    const publicKeyPath = path.join(signDirectory, 'public.pem');
-    const privateKeyPath = path.join(signDirectory, 'private.pem');
+    const keyPath = path.join(signDirectory, 'key.pem');
 
     const _getFile = p => new Promise((accept, reject) => {
-      fs.readFile(p, 'utf8', (err, s) => {
+      fs.readFile(p, (err, d) => {
         if (!err) {
-          accept(s);
+          accept(d);
         } else {
           reject(err);
         }
@@ -213,33 +212,23 @@ const _loadSign = () => new Promise((accept, reject) => {
       });
     });
 
-    Promise.all([
-      _getFile(publicKeyPath),
-      _getFile(privateKeyPath),
-    ])
-      .then(([
-        publicKey,
-        privateKey,
-      ]) => {
+    _getFile(keyPath)
+      .then(key => {
         accept({
-          publicKey,
-          privateKey,
+          key,
         });
       })
       .catch(err => {
         if (err.code === 'ENOENT') {
           mkdirp(signDirectory, err => {
             if (!err) {
-              const {publicKey, privateKey} = cryptoutils.generateKeys();
+              const auth = require('./lib/auth');
+              const key = auth.makeKey();
 
-              Promise.all([
-                _setFile(publicKeyPath, publicKey),
-                _setFile(privateKeyPath, privateKey),
-              ])
+              _setFile(keyPath, key)
                 .then(() => {
                   accept({
-                    publicKey,
-                    privateKey,
+                    key,
                   });
                 })
                 .catch(err => {
@@ -265,12 +254,10 @@ const _load = () => Promise.all([
   .then(([
     installResult,
     {
-      publicKey,
-      privateKey,
+      key,
     },
   ]) => ({
-    publicKey,
-    privateKey,
+    key,
   }));
 
 const _getAllPlugins = () => {
@@ -354,8 +341,7 @@ const _listen = () => {
 };
 
 const _boot = ({
-  privateKey,
-  publicKey,
+  key,
 }) => {
   const bootPromises = [];
 
@@ -369,7 +355,7 @@ const _boot = ({
     const auth = require('./lib/auth');
     bootPromises.push(new Promise((accept, reject) => {
       const token = auth.makeToken({
-        privateKey,
+        key,
       });
       console.log(token);
 
@@ -380,7 +366,7 @@ const _boot = ({
     const auth = require('./lib/auth');
     bootPromises.push(new Promise((accept, reject) => {
       const token = auth.parseToken({
-        publicKey,
+        key,
         token: flags.token,
       });
       console.log(token);
@@ -394,13 +380,11 @@ const _boot = ({
 
 _load()
   .then(({
-    publicKey,
-    privateKey,
+    key,
   }) => {
     return _listen()
       .then(() => _boot({
-        publicKey,
-        privateKey,
+        key,
       }))
       .then(() => {
         if (flags.site) {

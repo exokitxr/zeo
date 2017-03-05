@@ -30,8 +30,8 @@
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
     "archae": "0.0.37",
+    "base128": "^0.2.1",
     "body-parser": "^1.16.1",
-    "cryptoutils": "0.0.3",
     "fs-extra": "^2.0.0",
     "http-proxy": "^1.16.2",
     "lru-cache": "^4.0.2",
