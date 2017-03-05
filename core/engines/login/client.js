@@ -32,6 +32,7 @@ class Login {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
+      '/core/engines/fs',
     ]).then(([
       hub,
       input,
@@ -39,6 +40,7 @@ class Login {
       webvr,
       biolumi,
       rend,
+      fs,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -182,16 +184,16 @@ class Login {
               };
               _updatePages();
 
-              const login = () => {
+              const _login = () => {
                 loginState.open = false;
 
                 _updatePages();
 
                 menuMesh.visible = false;
               };
-              rend.on('login', login);
-              const logout = () => {
-                const token = localStorage.removeItem('token');
+              rend.on('login', _login);
+              const _logout = () => {
+                // XXX should POST to unset the cookie here
 
                 loginState.open = true;
                 loginState.authentication = null;
@@ -200,7 +202,7 @@ class Login {
 
                 menuMesh.visible = true;
               };
-              rend.on('logout', logout);
+              rend.on('logout', _logout);
 
               const _requestInitialLogin = () => {
                 const token = _getQueryVariable('t');
@@ -238,6 +240,31 @@ class Login {
               return _requestInitialLogin()
                 .then(() => {
                   if (live) {
+                    const _submit = () => {
+                      const {token} = loginState;
+
+                      if (token) {
+                        loginState.loading = true;
+                        loginState.error = null;
+
+                        _updatePages();
+
+                        _requestLogin({
+                          token,
+                        })
+                          .then(({error = null} = {}) => {
+                            loginState.loading = false;
+                            loginState.error = error;
+
+                            _updatePages();
+                          });
+                      } else {
+                        loginState.error = 'EINPUT';
+
+                        _updatePages();
+                      }
+                    };
+
                     const trigger = e => {
                       const {side} = e;
                       const menuHoverState = menuHoverStates[side];
@@ -263,28 +290,7 @@ class Login {
 
                           _updatePages();
                         } else if (onclick === 'login:submit') {
-                          const {token} = loginState;
-
-                          if (token) {
-                            loginState.loading = true;
-                            loginState.error = null;
-
-                            _updatePages();
-
-                            _requestLogin({
-                              token,
-                            })
-                              .then(({error = null} = {}) => {
-                                loginState.loading = false;
-                                loginState.error = error;
-
-                                _updatePages();
-                              });
-                          } else {
-                            loginState.error = 'EINPUT';
-
-                            _updatePages();
-                          }
+                          _submit();
                         } else if (onclick === 'error:close') {
                           loginState.error = null;
                           _updatePages();
@@ -370,6 +376,19 @@ class Login {
                     };
                     rend.on('update', _update);
 
+                    const _upload = file => {
+                      if (_isOpen()) {
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                          loginState.token = e.target.result;
+
+                          _submit();
+                        };
+                        reader.readAsText(file);
+                      }
+                    };
+                    fs.on('upload', _upload);
+
                     this._cleanup = () => {
                       scene.remove(menuMesh);
 
@@ -384,8 +403,10 @@ class Login {
                       input.removeListener('paste', paste);
 
                       rend.removeListener('update', _update);
-                      rend.removeListener('login', login);
-                      rend.removeListener('logout', logout);
+                      rend.removeListener('login', _login);
+                      rend.removeListener('logout', _logout);
+
+                      fs.removeListener('upload', _upload);
                     };
 
                     const _isOpen = () => loginState.open;
