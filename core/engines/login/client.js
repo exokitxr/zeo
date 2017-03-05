@@ -320,6 +320,10 @@ class Login {
                     input.on('keyboarddown', keyboarddown, {
                       priority: 1,
                     });
+                    const paste = keydown;
+                    input.on('paste', paste, {
+                      priority: 1,
+                    });
 
                     const _update = () => {
                       const {open} = loginState;
@@ -377,6 +381,7 @@ class Login {
                       input.removeListener('trigger', trigger);
                       input.removeListener('keydown', keydown);
                       input.removeListener('keyboarddown', keyboarddown);
+                      input.removeListener('paste', paste);
 
                       rend.removeListener('update', _update);
                       rend.removeListener('login', login);

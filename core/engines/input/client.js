@@ -7,6 +7,7 @@ const EVENTS = [
   'keypress',
   'keydown',
   'keyup',
+  'paste',
   'trigger',
   'triggerdown',
   'triggerup',
@@ -113,6 +114,7 @@ class Input {
     window.addEventListener('keypress', eventRouters.keypress.handle);
     window.addEventListener('keydown', eventRouters.keydown.handle);
     window.addEventListener('keyup', eventRouters.keyup.handle);
+    document.addEventListener('paste', eventRouters.paste.handle);
 
     this._cleanup = () => {
       window.removeEventListener('click', eventRouters.click.handle);
@@ -122,6 +124,7 @@ class Input {
       window.removeEventListener('keypress', eventRouters.keypress.handle);
       window.removeEventListener('keydown', eventRouters.keydown.handle);
       window.removeEventListener('keyup', eventRouters.keyup.handle);
+      document.removeEventListener('paste', eventRouters.paste.handle);
     };
 
     const _on = (event, handler, {priority = 0} = {}) => {
