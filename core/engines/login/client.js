@@ -87,7 +87,6 @@ class Login {
                 inputValue: 0,
                 loading: false,
                 error: null,
-                authentication: null,
               };
               const focusState = {
                 type: '',
@@ -193,14 +192,12 @@ class Login {
               };
               rend.on('login', _login);
               const _logout = () => {
-                // XXX should POST to unset the cookie here
+                _requestLogout()
+                  .then(() => {
+                    loginState.open = true;
 
-                loginState.open = true;
-                loginState.authentication = null;
-
-                _updatePages();
-
-                menuMesh.visible = true;
+                    menuMesh.visible = true;
+                  });
               };
               rend.on('logout', _logout);
 
@@ -229,6 +226,17 @@ class Login {
                         error: 'EAUTH',
                       });
                     }
+                  })
+                  .catch(err => {
+                    console.warn(err);
+
+                    accept();
+                  });
+              });
+              const _requestLogout = () => new Promise((accept, reject) => {
+                hub.requestLogout()
+                  .then(() => {
+                    accept();
                   })
                   .catch(err => {
                     console.warn(err);
@@ -410,11 +418,9 @@ class Login {
                     };
 
                     const _isOpen = () => loginState.open;
-                    const _getAuthentication = () => loginState.authentication;
 
                     return {
                       isOpen: _isOpen,
-                      getAuthentication: _getAuthentication,
                     };
                   }
                 });

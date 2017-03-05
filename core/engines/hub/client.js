@@ -63,6 +63,20 @@ class Hub {
                 return null;
               }
             });
+          const _requestLogout = () => fetch('https://' + serverUrl + '/server/logout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+          })
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.json();
+              } else {
+                return null;
+              }
+            });
           const hubEnabled = false;
           const worldName = (() => {
             if (hubEnabled) {
@@ -138,6 +152,7 @@ class Hub {
             getCurrentServer: _getCurrentServer,
             changeServer: _changeServer,
             requestLogin: _requestLogin,
+            requestLogout: _requestLogout,
             getUserState: _getUserState,
             setUserStateMatrix: _setUserStateMatrix,
             getUserStateInventoryItem: _getUserStateInventoryItem,
