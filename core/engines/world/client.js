@@ -2286,10 +2286,12 @@ class World {
               tags.on('download', _download);
 
               const _upload = file => {
-                worldApi.createFile(file)
-                  .then(tagMesh => {
-                    console.log('upoaded file', tagMesh);
-                  });
+                if (!login.isOpen()) {
+                  worldApi.createFile(file)
+                    .then(tagMesh => {
+                      console.log('upoaded file', tagMesh);
+                    });
+                }
               };
               fs.on('upload', _upload);
 
