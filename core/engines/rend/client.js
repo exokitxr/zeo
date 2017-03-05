@@ -502,6 +502,29 @@ class Rend {
                           document.body.removeChild(a);
 
                           return true;
+                        } else if (onclick === 'status:logOut') {
+                          const _requestLogout = () => new Promise((accept, reject) => {
+                              hub.requestLogout()
+                                .then(() => {
+                                  accept();
+                                })
+                                .catch(err => {
+                                  console.warn(err);
+
+                                  accept();
+                                });
+                            });
+
+                          _requestLogout()
+                            .then(() => {
+                              api.logout();
+                            });
+
+                          return true;
+                        } else if (onclick === 'status:snapshotWorld') {
+                          // XXX implement this
+
+                          return true;
                         } else {
                           return false;
                         }
