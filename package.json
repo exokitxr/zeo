@@ -39,6 +39,7 @@
     "mkdirp": "^0.5.1",
     "nedb": "^1.8.0",
     "password-hash-and-salt": "^0.1.4",
+    "rnd": "^1.0.7",
     "stripe": "^4.15.0"
   }
 }
