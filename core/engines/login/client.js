@@ -190,16 +190,17 @@ class Login {
 
                 menuMesh.visible = false;
               };
-              rend.on('login', _login);
+              rend.on('login', _login, {
+                priority: 1,
+              });
               const _logout = () => {
-                _requestLogout()
-                  .then(() => {
-                    loginState.open = true;
+                loginState.open = true;
 
-                    menuMesh.visible = true;
-                  });
+                menuMesh.visible = true;
               };
-              rend.on('logout', _logout);
+              rend.on('logout', _logout, {
+                priority: 1,
+              });
 
               const _requestInitialLogin = () => {
                 const token = _getQueryVariable('t');
@@ -226,17 +227,6 @@ class Login {
                         error: 'EAUTH',
                       });
                     }
-                  })
-                  .catch(err => {
-                    console.warn(err);
-
-                    accept();
-                  });
-              });
-              const _requestLogout = () => new Promise((accept, reject) => {
-                hub.requestLogout()
-                  .then(() => {
-                    accept();
                   })
                   .catch(err => {
                     console.warn(err);

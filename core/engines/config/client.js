@@ -36,6 +36,7 @@ class Config {
     };
 
     return archae.requestPlugins([
+      '/core/engines/hub',
       '/core/engines/input',
       '/core/engines/three',
       '/core/engines/webvr',
@@ -43,6 +44,7 @@ class Config {
       '/core/engines/rend',
       '/core/plugins/js-utils',
     ]).then(([
+      hub,
       input,
       three,
       webvr,
@@ -304,6 +306,18 @@ class Config {
               };
               _updatePages();
 
+             const _requestLogout = () => new Promise((accept, reject) => {
+                hub.requestLogout()
+                  .then(() => {
+                    accept();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+
+                    accept();
+                  });
+              });
+
               const trigger = e => {
                 const isOpen = rend.isOpen();
                 const tab = rend.getTab();
@@ -383,12 +397,15 @@ class Config {
 
                       _updatePages();
                     } else if (onclick === 'config:logOut') {
-                      rend.logout();
+                      _requestLogout()
+                        .then(() => {
+                          rend.logout();
 
-                      SIDES.forEach(side => {
-                        configDotMeshes[side].visible = false;
-                        configBoxMeshes[side].visible = false;
-                      });
+                          SIDES.forEach(side => {
+                            configDotMeshes[side].visible = false;
+                            configBoxMeshes[side].visible = false;
+                          });
+                        });
                     } else {
                       _updatePages();
                     }
