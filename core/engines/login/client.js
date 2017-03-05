@@ -139,6 +139,8 @@ class Login {
                       login: loginState,
                       focus: focusState,
                     },
+                    worldWidth: WORLD_WIDTH,
+                    worldHeight: WORLD_HEIGHT,
                   });
                   // mesh.position.y = 1.5;
                   mesh.position.z = -1;
