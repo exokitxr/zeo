@@ -12,7 +12,6 @@ const flags = {
   hub: args.includes('hub'),
   install: args.includes('install'),
   makeToken: args.includes('makeToken'),
-  parseToken: args.includes('parseToken'),
   host: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
@@ -93,16 +92,6 @@ const flags = {
     }
     return null;
   })(),
-  token: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^token=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -167,7 +156,7 @@ const _install = () => {
 };
 
 const _loadSign = () => new Promise((accept, reject) => {
-  if (flags.hub || flags.server || flags.makeToken || flags.parseToken) {
+  if (flags.hub || flags.server || flags.makeToken) {
     const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
     const keyPath = path.join(signDirectory, 'key.pem');
 
@@ -332,18 +321,6 @@ const _boot = ({key}) => {
     bootPromises.push(new Promise((accept, reject) => {
       const token = auth.makeToken({
         key,
-      });
-      console.log(token);
-
-      accept();
-    }));
-  }
-  if (flags.parseToken) {
-    const auth = require('./lib/auth');
-    bootPromises.push(new Promise((accept, reject) => {
-      const token = auth.parseToken({
-        key,
-        token: flags.token,
       });
       console.log(token);
 
