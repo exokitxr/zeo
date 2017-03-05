@@ -7,4 +7,12 @@ export const WORLD_DEPTH = WORLD_WIDTH / 50;
 
 export const DEFAULT_USER_HEIGHT = 1.6;
 
-export default {};
+export default {
+  WIDTH,
+  HEIGHT,
+  ASPECT_RATIO,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  WORLD_DEPTH,
+  DEFAULT_USER_HEIGHT,
+};
