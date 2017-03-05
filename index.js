@@ -306,20 +306,20 @@ const _getAllPlugins = () => {
     );
 };
 
-const _listen = () => {
+const _listen = ({key}) => {
   const listenPromises = [];
 
   if (flags.site) {
     const site = require('./lib/site');
-    listenPromises.push(site.listen(a, config));
+    listenPromises.push(site.listen(a, config, {key}));
   }
   if (flags.hub) {
     const hub = require('./lib/hub');
-    listenPromises.push(hub.listen(a, config));
+    listenPromises.push(hub.listen(a, config, {key}));
   }
   if (flags.server) {
     const server = require('./lib/server');
-    listenPromises.push(server.listen(a, config));
+    listenPromises.push(server.listen(a, config, {key}));
   }
 
   return Promise.all(listenPromises)
@@ -340,9 +340,7 @@ const _listen = () => {
     });
 };
 
-const _boot = ({
-  key,
-}) => {
+const _boot = ({key}) => {
   const bootPromises = [];
 
   if (flags.hub || flags.server) {
@@ -382,10 +380,8 @@ _load()
   .then(({
     key,
   }) => {
-    return _listen()
-      .then(() => _boot({
-        key,
-      }))
+    return _listen({key})
+      .then(() => _boot({key}))
       .then(() => {
         if (flags.site) {
           console.log('https://' + config.metadata.site.url + '/');
