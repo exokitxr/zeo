@@ -82,6 +82,7 @@ class Login {
               const loginState = {
                 open: true,
                 token: '',
+                username: '',
                 inputText: '',
                 inputIndex: 0,
                 inputValue: 0,
@@ -202,6 +203,14 @@ class Login {
                 priority: 1,
               });
 
+              const _isOpen = () => loginState.open;
+              const _getUsername = () => loginState.username;
+              const loginApi = {
+                isOpen: _isOpen,
+                getUsername: _getUsername,
+              };
+              rend.registerAuxObject('login', loginApi);
+
               const _requestInitialLogin = () => {
                 const token = _getQueryVariable('t');
 
@@ -219,6 +228,9 @@ class Login {
                 })
                   .then(loginSpec => {
                     if (loginSpec) {
+                      const {username} = loginSpec;
+                      loginState.username = username;
+
                       rend.login();
 
                       accept();
@@ -409,13 +421,6 @@ class Login {
                       fs.removeListener('upload', _upload);
                     };
 
-                    const _isOpen = () => loginState.open;
-                    const _getToken = () => loginState.token;
-
-                    const loginApi = {
-                      isOpen: _isOpen,
-                      getToken: _getToken,
-                    };
                     return loginApi;
                   }
                 });

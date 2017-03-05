@@ -110,8 +110,7 @@ class Rend {
           animation: null,
         };
         const statusState = {
-          username: 'avaer',
-          accountType: 'admin',
+          username: 'username',
           incomingMails: 7,
           outgoingMails: 3,
           worldname: 'Aldous Huxley',
@@ -893,6 +892,8 @@ class Rend {
               login() {
                 menuState.open = true;
                 menuState.loggedIn = true;
+
+                statusState.username = auxObjects.login.getUsername();
 
                 menu.updatePages();
 
