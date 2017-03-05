@@ -32,7 +32,7 @@ const getLoginSrc = ({token, inputIndex, inputValue, loading, error, focusType})
                 </div>
               </div>
             ` : ''}
-            <a style="position: relative; display: block; margin-bottom: 30px; background-color: #EEE; font-size: 40px; text-decoration: none;" onclick="login:focus:token">
+            <a style="position: relative; display: block; margin-bottom: 30px; background-color: #EEE; font-size: 40px; text-decoration: none; overflow: hidden;" onclick="login:focus:token">
               ${focusType === 'token' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${token}</div>
               ${!token ? `<div style="color: #AAA;">Token</div>` : ''}
