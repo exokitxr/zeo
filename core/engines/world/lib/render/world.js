@@ -7,14 +7,15 @@ const upWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(upWhiteImg);
 const downWhiteImg = require('../img/down-white');
 const downWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(downWhiteImg);
 
-const getWorldPageSrc = ({inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick}) => {
+const getWorldPageSrc = ({loading, inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick}) => {
   const leftSrc = `\
-    <div style="padding: 20px 30px; font-size: 36px; line-height: 1.4; flex-grow: 1;">
+    <div style="display: flex; padding: 20px 30px; font-size: 36px; line-height: 1.4; flex-grow: 1; flex-direction: column;">
       <a style="position: relative; display: block; background-color: #EEE; border-radius; 5px; text-decoration: none;" onclick="${onclick}">
         ${focus ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
         <div>${inputText}</div>
         ${!inputText ? `<div style="color: #AAA;">${inputPlaceholder}</div>` : ''}
       </a>
+      ${loading ? `<div style="display: flex; margin-bottom: 100px; font-size: 30px; align-items: center; justify-content: center; flex-grow: 1;">Loading...</div>` : ''}
     </div>
   `;
   const rightSrc = (() => {

@@ -1048,35 +1048,8 @@ class World {
                 }
               };
 
-              const _searchNpm = (q = '') => new Promise((accept, reject) => {
-                if (npmState.cancelLocalRequest) {
-                  npmState.cancelLocalRequest();
-                  npmState.cancelLocalRequest = null;
-                }
-
-                let live = true;
-                npmState.cancelLocalRequest = () => {
-                  live = false;
-                };
-
-                fetch('https://' + hub.getCurrentServer().url + '/archae/rend/mods/search?q=' + encodeURIComponent(q))
-                  .then(res => res.json()
-                    .then(modSpecs => {
-                      if (live) {
-                        accept(modSpecs);
-
-                        npmState.cancelLocalRequest = null;
-                      }
-                    })
-                  )
-                  .catch(err => {
-                    if (live) {
-                      reject(err);
-
-                      npmState.cancelLocalRequest = null;
-                    }
-                  });
-              });
+              const _searchNpm = (q = '') => fetch('https://' + hub.getCurrentServer().url + '/archae/rend/mods/search?q=' + encodeURIComponent(q))
+                .then(res => res.json());
               const _updateNpm = menuUtils.debounce(next => {
                 const {inputText} = npmState;
 
@@ -1087,6 +1060,7 @@ class World {
                     return tags.makeTag(tagSpec);
                   }))
                   .then(tagMeshes => {
+                    npmState.loading = false;
                     npmState.page = 0;
                     npmState.numTags = tagMeshes.length;
                     npmCacheState.tagMeshes = tagMeshes;
@@ -1101,18 +1075,21 @@ class World {
 
                     next();
                   });
+
+                const {numTags} = npmState;
+                npmState.loading = numTags === 0;
+
+                _updatePages();
               });
 
               const npmState = {
+                loading: false,
                 inputText: '',
                 inputPlaceholder: 'Search npm modules',
                 inputIndex: 0,
                 inputValue: 0,
                 numTags: 0,
                 page: 0,
-                cancelLocalRequest: null,
-                cancelRemoteRequest: null,
-                cancelModRequest: null,
               };
               const npmCacheState = {
                 tagMeshes: [],
@@ -1162,6 +1139,7 @@ class World {
                   const planeMesh = (() => {
                     const mesh = worldUi.addPage(({
                       npm: {
+                        loading,
                         inputText,
                         inputPlaceholder,
                         inputValue,
@@ -1177,7 +1155,7 @@ class World {
                       return [
                         {
                           type: 'html',
-                          src: worldRenderer.getWorldPageSrc({inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick: 'npm:focus'}),
+                          src: worldRenderer.getWorldPageSrc({loading, inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick: 'npm:focus'}),
                           x: 0,
                           y: 0,
                           w: WIDTH,
