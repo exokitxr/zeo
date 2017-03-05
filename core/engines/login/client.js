@@ -285,6 +285,9 @@ class Login {
 
                             _updatePages();
                           }
+                        } else if (onclick === 'error:close') {
+                          loginState.error = null;
+                          _updatePages();
                         }
                       }
                     };
