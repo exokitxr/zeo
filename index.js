@@ -93,26 +93,6 @@ const flags = {
     }
     return null;
   })(),
-  username: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^username=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
-  password: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^password=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
   token: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
@@ -167,8 +147,6 @@ const config = {
       url: serverHost + ':' + port,
       enabled: flags.server,
       type: flags.serverType || 'secure',
-      username: flags.username || 'username',
-      password: flags.password || 'password',
     },
   },
 };
@@ -390,15 +368,7 @@ _load()
           console.log('https://' + config.metadata.hub.url + '/');
         }
         if (flags.server) {
-          const prefix = 'https://' + config.metadata.server.url + '/';
-          const suffix = (() => {
-            if (/^.+\..+?(?::[0-9]*?)?$/.test(hubUrl)) {
-              return '';
-            } else {
-              return '?username=' + encodeURIComponent(config.metadata.server.username) + '&password=' + encodeURIComponent(config.metadata.server.password);
-            }
-          })();
-          console.log(prefix + suffix);
+          console.log('https://' + config.metadata.server.url + '/');
         }
       });
   })
