@@ -45,7 +45,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}, server: {type: serverType}}} = archae;
+    const {metadata: {hub: {url: hubUrl}}} = archae;
     const {app, wss, dirname, dataDirectory} = archae.getCore();
 
     const hubSpec = (() => {
@@ -177,7 +177,7 @@ class World {
                   }
                 });
                 const _requestEquipmentJson = ({token}) => {
-                  if (serverType === 'secure' && hubSpec) {
+                  if (hubSpec) {
                     return _requestHub({
                       token,
                       method: 'GET',
@@ -188,7 +188,7 @@ class World {
                   }
                 };
                 const _requestInventoryJson = ({token}) => {
-                  if (serverType === 'secure' && hubSpec) {
+                  if (hubSpec) {
                     return _requestHub({
                       token,
                       method: 'GET',

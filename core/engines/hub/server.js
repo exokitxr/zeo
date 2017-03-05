@@ -12,7 +12,7 @@ class Hub {
   mount() {
     const {_archae: archae} = this;
     const {app, dirname, dataDirectory} = archae.getCore();
-    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, type: serverType, username: serverUsername, password: serverPassword}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, username: serverUsername, password: serverPassword}}} = archae;
 
     const hubSpec = (() => {
       const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
@@ -35,7 +35,6 @@ class Hub {
       'fay',
       'khromix',
     ];
-    const secure = serverType === 'secure';
 
     const _initialAnnounce = () => {
       if (hubSpec) {
@@ -79,7 +78,6 @@ class Hub {
         worldname: worldname,
         url: serverUrl,
         users: users,
-        secure: secure,
       }));
 
       req.on('response', res => {
