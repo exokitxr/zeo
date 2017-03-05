@@ -287,7 +287,7 @@ class World {
                                     next();
                                   })
                                   .catch(err => {
-                                    console.warn(err);
+                                    console.warn('failed to save equipment', err);
 
                                     next();
                                   });
@@ -307,7 +307,7 @@ class World {
                                     next();
                                   })
                                   .catch(err => {
-                                    console.warn(err);
+                                    console.warn('failed to save inventory', err);
 
                                     next();
                                   });
@@ -569,7 +569,7 @@ class World {
                           })
                       )
                       .catch(err => {
-                        console.warn(err);
+                        console.warn('failed to authenticate connection', err);
 
                         c.close();
                       });
