@@ -48,7 +48,7 @@ class Hub {
               return Promise.resolve();
             }
           };
-          const _requestLogin = ({token = null}) => fetch('https://' + serverUrl + '/server/login', {
+          const _requestLogin = ({token = null} = {}) => fetch('https://' + serverUrl + '/server/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

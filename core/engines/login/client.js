@@ -213,7 +213,7 @@ class Login {
                   return _requestLogin();
                 }
               };
-              const _requestLogin = ({token}) => new Promise((accept, reject) => {
+              const _requestLogin = ({token = null} = {}) => new Promise((accept, reject) => {
                 hub.requestLogin({
                   token,
                 })
