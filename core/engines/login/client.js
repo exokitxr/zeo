@@ -79,8 +79,7 @@ class Login {
               };
               const loginState = {
                 open: true,
-                username: '',
-                password: '',
+                token: '',
                 inputText: '',
                 inputIndex: 0,
                 inputValue: 0,
@@ -104,8 +103,7 @@ class Login {
                 const planeMesh = (() => {
                   const mesh = menuUi.addPage(({
                     login: {
-                      username,
-                      password,
+                      token,
                       inputIndex,
                       inputValue,
                       loading,
@@ -119,8 +117,7 @@ class Login {
                       {
                         type: 'html',
                         src: menuRenderer.getLoginSrc({
-                          username,
-                          password,
+                          token,
                           inputIndex,
                           inputValue,
                           loading,
@@ -206,39 +203,22 @@ class Login {
               rend.on('logout', logout);
 
               const _requestInitialLogin = () => {
-                const username = _getQueryVariable('username');
-                const password = _getQueryVariable('password');
+                const token = _getQueryVariable('t');
 
-                if (username !== null && password !== null) {
+                if (token !== null) {
                   return _requestLogin({
-                    username,
-                    password,
+                    token,
                   });
                 } else {
-                  const token = localStorage.getItem('token');
-
-                  if (token) {
-                    return _requestLogin({
-                      token,
-                    });
-                  } else {
-                    return Promise.resolve();
-                  }
+                  return _requestLogin();
                 }
               };
-              const _requestLogin = ({username, password, token}) => new Promise((accept, reject) => {
+              const _requestLogin = ({token}) => new Promise((accept, reject) => {
                 hub.requestLogin({
-                  username,
-                  password,
                   token,
                 })
                   .then(loginSpec => {
                     if (loginSpec) {
-                      const {token, authentication} = loginSpec;
-                      localStorage.setItem('token', token);
-
-                      loginState.authentication = authentication;
-
                       rend.login();
 
                       accept();
@@ -269,44 +249,30 @@ class Login {
 
                         focusState.type = '';
 
-                        if (onclick === 'login:focus:username') {
+                        if (onclick === 'login:focus:token') {
                           const {value} = menuHoverState;
                           const valuePx = value * 640;
 
-                          loginState.inputText = loginState.username;
+                          loginState.inputText = loginState.token;
 
                           const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
 
                           loginState.inputIndex = index;
                           loginState.inputValue = px;
-                          focusState.type = 'username';
-
-                          _updatePages();
-                        } else if (onclick === 'login:focus:password') {
-                          const {value} = menuHoverState;
-                          const valuePx = value * 640;
-
-                          loginState.inputText = loginState.password;
-
-                          const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
-
-                          loginState.inputIndex = index;
-                          loginState.inputValue = px;
-                          focusState.type = 'password';
+                          focusState.type = 'token';
 
                           _updatePages();
                         } else if (onclick === 'login:submit') {
-                          const {username, password} = loginState;
+                          const {token} = loginState;
 
-                          if (username && password) {
+                          if (token) {
                             loginState.loading = true;
                             loginState.error = null;
 
                             _updatePages();
 
                             _requestLogin({
-                              username,
-                              password,
+                              token,
                             })
                               .then(({error = null} = {}) => {
                                 loginState.loading = false;
@@ -327,26 +293,11 @@ class Login {
                     const keydown = e => {
                       const {type} = focusState;
 
-                      if (type === 'username') {
+                      if (type === 'token') {
                         const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
 
                         if (applySpec) {
-                          loginState.username = loginState.inputText;
-
-                          const {commit} = applySpec;
-                          if (commit) {
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
-                      } else if (type === 'password') {
-                        const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
-
-                        if (applySpec) {
-                          loginState.password = loginState.inputText;
+                          loginState.token = loginState.inputText;
 
                           const {commit} = applySpec;
                           if (commit) {
