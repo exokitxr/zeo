@@ -4,12 +4,6 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-
-  MAIL_WIDTH,
-  MAIL_HEIGHT,
-  MAIL_WORLD_WIDTH,
-  MAIL_WORLD_HEIGHT,
-  MAIL_WORLD_DEPTH,
 } from './lib/constants/mail';
 import mailRender from './lib/render/mail';
 import menuUtils from './lib/utils/menu';
