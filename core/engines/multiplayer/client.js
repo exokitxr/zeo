@@ -97,6 +97,17 @@ class Multiplayer {
                 return this.playerStatuses;
               }
 
+              getUsers() {
+                const {playerStatuses} = this;
+
+                const result = Array(playerStatuses.size);
+                let i = 0;
+                playerStatuses.forEach(playerStatus => {
+                  result[i++] = playerStatus.username; // XXX get the actual username here
+                });
+                return result;
+              }
+
               updateStatus(status) {
                 this.emit('status', status);
               }
@@ -125,9 +136,11 @@ class Multiplayer {
                 oldRemotePlayerMeshes.forEach(mesh => {
                   scene.remove(mesh);
                 });
+
+                rend.setStatus('users', multiplayerApi.getUsers());
               }
             }
-            const multiplayerInterface = new MutiplayerInterface(_makeId());
+            const multiplayerApi = new MutiplayerInterface(_makeId());
 
             const _makeRemotePlayerMesh = status => {
               const object = new THREE.Object3D();
@@ -194,33 +207,33 @@ class Multiplayer {
               _updateBagMesh();
             };
 
-            const playerStatuses = multiplayerInterface.getPlayerStatuses();
+            const playerStatuses = multiplayerApi.getPlayerStatuses();
             playerStatuses.forEach((status, id) => {
               const remotePlayerMesh = _makeRemotePlayerMesh(status);
               scene.add(remotePlayerMesh);
-              multiplayerInterface.addRemotePlayerMesh(id, remotePlayerMesh);
+              multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
             });
 
             const playerStatusUpdate = update => {
               const {id, status} = update;
-              const remotePlayerMesh = multiplayerInterface.getRemotePlayerMesh(id);
+              const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
               _updateRemotePlayerMesh(remotePlayerMesh, status);
             };
             const playerEnter = update => {
               const {id, status} = update;
               const remotePlayerMesh = _makeRemotePlayerMesh(status);
               scene.add(remotePlayerMesh);
-              multiplayerInterface.addRemotePlayerMesh(id, remotePlayerMesh);
+              multiplayerApi.addRemotePlayerMesh(id, remotePlayerMesh);
             };
             const playerLeave = update => {
               const {id} = update;
-              const remotePlayerMesh = multiplayerInterface.getRemotePlayerMesh(id);
+              const remotePlayerMesh = multiplayerApi.getRemotePlayerMesh(id);
               scene.remove(remotePlayerMesh);
-              multiplayerInterface.removeRemotePlayerMesh(id);
+              multiplayerApi.removeRemotePlayerMesh(id);
             };
-            multiplayerInterface.on('playerStatusUpdate', playerStatusUpdate);
-            multiplayerInterface.on('playerEnter', playerEnter);
-            multiplayerInterface.on('playerLeave', playerLeave);
+            multiplayerApi.on('playerStatusUpdate', playerStatusUpdate);
+            multiplayerApi.on('playerEnter', playerEnter);
+            multiplayerApi.on('playerLeave', playerLeave);
 
             const localStatus = {
               hmd: {
@@ -251,7 +264,7 @@ class Multiplayer {
                   localStatus.hmd.position = position.toArray();
                   localStatus.hmd.rotation = rotation.toArray();
 
-                  multiplayerInterface.updateStatus(localStatus);
+                  multiplayerApi.updateStatus(localStatus);
                 }
               };
               const _updateControllers = () => {
@@ -267,7 +280,7 @@ class Multiplayer {
                       localStatus.controllers[side].position = position.toArray();
                       localStatus.controllers[side].rotation = rotation.toArray();
 
-                      multiplayerInterface.updateStatus(localStatus);
+                      multiplayerApi.updateStatus(localStatus);
                     };
 
                     if (!lastStatus) {
@@ -306,7 +319,7 @@ class Multiplayer {
                 enabled = false;
               });
 
-              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayerWs?id=' + multiplayerInterface.getId());
+              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayerWs?id=' + multiplayerApi.getId());
               const queue = [];
               connection.onopen = () => {
                 if (queue.length > 0) {
@@ -332,9 +345,13 @@ class Multiplayer {
                     const statusEntry = statuses[i];
                     _handleStatusEntry(statusEntry);
                   }
+
+                  rend.setStatus('users', multiplayerApi.getUsers());
                 } else if (type === 'status') {
                   const statusEntry = m;
                   _handleStatusEntry(statusEntry);
+
+                  rend.setStatus('users', multiplayerApi.getUsers());
                 } else {
                   console.log('unknown message type', JSON.stringify(type));
                 }
@@ -343,17 +360,17 @@ class Multiplayer {
               const _handleStatusEntry = statusEntry => {
                 const {id, status} = statusEntry;
 
-                const playerStatuses = multiplayerInterface.getPlayerStatuses();
+                const playerStatuses = multiplayerApi.getPlayerStatuses();
                 if (status) {
                   if (!playerStatuses.has(id)) {
-                    multiplayerInterface.emit('playerEnter', {id, status});
+                    multiplayerApi.emit('playerEnter', {id, status});
                   } else {
-                    multiplayerInterface.emit('playerStatusUpdate', {id, status});
+                    multiplayerApi.emit('playerStatusUpdate', {id, status});
                   }
 
                   playerStatuses.set(id, status);
                 } else {
-                  multiplayerInterface.emit('playerLeave', {id});
+                  multiplayerApi.emit('playerLeave', {id});
 
                   playerStatuses.delete(id);
                 }
@@ -371,13 +388,13 @@ class Multiplayer {
                   queue.push(e);
                 }
               };
-              multiplayerInterface.on('status', _status);
+              multiplayerApi.on('status', _status);
               connection.onclose = () => {
-                multiplayerInterface.removeListener('status', _status);
+                multiplayerApi.removeListener('status', _status);
               };
 
               cleanups.push(() => {
-                multiplayerInterface.reset();
+                multiplayerApi.reset();
 
                 connection.close();
               });
@@ -411,9 +428,9 @@ class Multiplayer {
             this._cleanup = () => {
               cleanup();
 
-              multiplayerInterface.removeListener('playerStatusUpdate', playerStatusUpdate);
-              multiplayerInterface.removeListener('playerEnter', playerEnter);
-              multiplayerInterface.removeListener('playerLeave', playerLeave);
+              multiplayerApi.removeListener('playerStatusUpdate', playerStatusUpdate);
+              multiplayerApi.removeListener('playerEnter', playerEnter);
+              multiplayerApi.removeListener('playerLeave', playerLeave);
 
               rend.removeListener('update', _update);
               rend.on('connectServer', _connectServer);
@@ -422,7 +439,7 @@ class Multiplayer {
               rend.on('logout', _logout);
             };
 
-            return multiplayerInterface;
+            return multiplayerApi;
           }
         });
       }

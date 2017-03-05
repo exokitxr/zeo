@@ -203,14 +203,6 @@ class Login {
                 priority: 1,
               });
 
-              const _isOpen = () => loginState.open;
-              const _getUsername = () => loginState.username;
-              const loginApi = {
-                isOpen: _isOpen,
-                getUsername: _getUsername,
-              };
-              rend.registerAuxObject('login', loginApi);
-
               const _requestInitialLogin = () => {
                 const token = _getQueryVariable('t');
 
@@ -232,6 +224,7 @@ class Login {
                       loginState.username = username;
 
                       rend.login();
+                      rend.setStatus('username', username);
 
                       accept();
                     } else {
@@ -421,6 +414,11 @@ class Login {
                       fs.removeListener('upload', _upload);
                     };
 
+                    const _isOpen = () => loginState.open;
+
+                    const loginApi = {
+                      isOpen: _isOpen,
+                    };
                     return loginApi;
                   }
                 });

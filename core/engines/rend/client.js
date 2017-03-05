@@ -110,18 +110,10 @@ class Rend {
           animation: null,
         };
         const statusState = {
-          username: 'username',
-          incomingMails: 7,
-          outgoingMails: 3,
+          username: null,
           worldname: 'Aldous Huxley',
-          users: [
-            'allie',
-            'reede',
-            'fay',
-            'khromix',
-          ],
-          numTags: 8,
-          numFiles: 2,
+          users: null,
+          loading: true,
         };
         const navbarState = {
           tab: 'status',
@@ -884,6 +876,17 @@ class Rend {
                 auxObjects[name] = object;
               }
 
+              setStatus(name, value) {
+                statusState[name] = value;
+
+                const {loading, username, users} = statusState;
+                if (loading && username !== null && users !== null) {
+                  statusState.loading = false;
+                }
+
+                menu.updatePages();
+              }
+
               update() { // XXX move this
                 this.emit('update');
               }
@@ -915,8 +918,6 @@ class Rend {
               login() {
                 menuState.open = true;
                 menuState.loggedIn = true;
-
-                statusState.username = auxObjects.login.getUsername();
 
                 menu.updatePages();
 

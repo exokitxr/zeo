@@ -20,11 +20,13 @@ const {
   HEIGHT,
 } = require('../constants/menu');
 
-const getStatusSrc = ({status: {username, worldname, users}}) => {
+const getStatusSrc = ({status: {username, worldname, users, loading}}) => {
+  const allUsers = !loading ? [username].concat(users).sort((a, b) => a.localeCompare(b)) : null;
+
   return `\
     <div style="padding: 30px;">
       <div style="display: flex; margin-bottom: 20px; font-size: 30px; line-height: 1; justify-content: center; align-items: center;">
-        <div style="display: inline-flex; margin-right: auto; padding: 5px 20px; background-color: #EEE; border-radius: 100px; justify-content: center; align-items: center;">
+        <div style="display: inline-flex; margin-right: auto; padding: 5px 20px; background-color: #EEE; border-radius: 100px; justify-content: center; align-items: center; ${!loading ? '' : 'visibility: hidden;'}">
           <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="40" height="40" style="margin-right: 10px; image-rendering: pixelated;" />
           <span>${username}</span>
         </div>
@@ -35,15 +37,15 @@ const getStatusSrc = ({status: {username, worldname, users}}) => {
         <div style="margin-right: 20px; width: 100px; height: 100px; background-color: #FFF;"></div>
         <div style="margin-right: 30px;">
           <div style="font-size: 24px;">${worldname}</div>
-          <div style="font-size: 24px;">${users.length} Users</div>
+          ${!loading ? `<div style="font-size: 24px;">${allUsers.length} User${allUsers.length !== 1 ? 's' : ''}</div>` : ''}
         </div>
         <div style="margin-right: auto;">
-          ${users.map(user => `\
+          ${!loading ? allUsers.map(user => `\
             <div style="display: flex; margin-bottom: 2px; padding: 2px 10px; background-color: #222; border-radius: 100px; font-size: 13px; line-height: 1; align-items: center;">
               <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="18" height="18" style="margin-right: 10px; image-rendering: pixelated;" />
               <div>${user}</div>
             </div>
-          `).join('\n')}
+          `).join('\n') : ''}
         </div>
         <div>
           <a style="display: flex; height: 46px; padding: 0 20px; border: 2px solid; border-radius: 10px; color: #66BB6A; font-size: 24px; font-weight: 400; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:snapshotWorld">Snapshot world</a>
