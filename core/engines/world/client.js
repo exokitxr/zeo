@@ -209,7 +209,7 @@ class World {
               };
 
               const _requestConnection = () => new Promise((accept, reject) => {
-                const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId + '&authentication=' + login.getAuthentication());
+                const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId);
                 connection.onmessage = msg => {
                   const m = JSON.parse(msg.data);
                   const {type} = m;
@@ -2286,10 +2286,12 @@ class World {
               tags.on('download', _download);
 
               const _upload = file => {
-                worldApi.createFile(file)
-                  .then(tagMesh => {
-                    console.log('upoaded file', tagMesh);
-                  });
+                if (!login.isOpen()) {
+                  worldApi.createFile(file)
+                    .then(tagMesh => {
+                      console.log('upoaded file', tagMesh);
+                    });
+                }
               };
               fs.on('upload', _upload);
 

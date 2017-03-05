@@ -106,6 +106,12 @@ class Servers {
 
               rend.connectServer();
             });
+          const _disconnectServer = () => hub.changeServer(null)
+            .then(() => {
+              serversState.currentServerUrl = null;
+
+              rend.disconnectServer();
+            });
           const _requestUis = () => Promise.all([
             biolumi.requestUi({
               width: WIDTH,
@@ -229,13 +235,9 @@ class Servers {
                         console.warn(err);
                       });
                   } else if (onclick === 'servers:disconnect') {
-                    hub.changeServer(null)
+                    _disconnectServer()
                       .then(() => {
-                        serversState.currentServerUrl = null;
-
                         _updatePages();
-
-                        rend.disconnectServer();
                       })
                       .catch(err => {
                         console.warn(err);
@@ -244,6 +246,36 @@ class Servers {
                 };
                 input.on('trigger', _trigger);
 
+                const _updateEnabled = () => {
+                  const enabled = serversApi.isConnected();
+                  const loggedIn = !login.isOpen();
+                  const currentServer = hub.getCurrentServer()
+                  const shouldBeEnabled = loggedIn && currentServer.type === 'server';
+
+                  if (!enabled && shouldBeEnabled) {
+                    const {url: currentServerUrl} = currentServer;
+
+                    _connectServer(currentServerUrl)
+                      .then(() => {
+                        _updatePages();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+                  } else if (enabled && !shouldBeEnabled) {
+                    _disconnectServer()
+                      .then(() => {
+                        _updatePages();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+                  }
+                };
+                const _login = _updateEnabled;
+                rend.on('login', _login);
+                const _logout = _updateEnabled;
+                rend.on('logout', _logout);
                 const _update = () => {
                   const _updateAnchors = () => {
                     const tab = rend.getTab();
@@ -297,6 +329,7 @@ class Servers {
                   input.removeListener('trigger', _trigger);
 
                   rend.removeListener('login', _login);
+                  rend.removeListener('logout', _logout);
                   rend.removeListener('update', _update);
                 };
 

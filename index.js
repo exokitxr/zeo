@@ -1,7 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 
+const mkdirp = require('mkdirp');
 const archae = require('archae');
+const cryptoutils = require('cryptoutils');
 
 const args = process.argv.slice(2);
 const flags = {
@@ -9,6 +11,7 @@ const flags = {
   site: args.includes('site'),
   hub: args.includes('hub'),
   install: args.includes('install'),
+  makeToken: args.includes('makeToken'),
   host: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
@@ -89,26 +92,6 @@ const flags = {
     }
     return null;
   })(),
-  username: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^username=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
-  password: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const match = arg.match(/^password=(.+)$/);
-      if (match) {
-        return match[1];
-      }
-    }
-    return null;
-  })(),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -153,8 +136,6 @@ const config = {
       url: serverHost + ':' + port,
       enabled: flags.server,
       type: flags.serverType || 'secure',
-      username: flags.username || 'username',
-      password: flags.password || 'password',
     },
   },
 };
@@ -173,6 +154,78 @@ const _install = () => {
     return Promise.resolve();
   }
 };
+
+const _loadSign = () => new Promise((accept, reject) => {
+  if (flags.hub || flags.server || flags.makeToken) {
+    const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
+    const keyPath = path.join(signDirectory, 'key.pem');
+
+    const _getFile = p => new Promise((accept, reject) => {
+      fs.readFile(p, (err, d) => {
+        if (!err) {
+          accept(d);
+        } else {
+          reject(err);
+        }
+      });
+    });
+    const _setFile = (p, d) => new Promise((accept, reject) => {
+      fs.writeFile(p, d, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    });
+
+    _getFile(keyPath)
+      .then(key => {
+        accept({
+          key,
+        });
+      })
+      .catch(err => {
+        if (err.code === 'ENOENT') {
+          mkdirp(signDirectory, err => {
+            if (!err) {
+              const auth = require('./lib/auth');
+              const key = auth.makeKey();
+
+              _setFile(keyPath, key)
+                .then(() => {
+                  accept({
+                    key,
+                  });
+                })
+                .catch(err => {
+                  reject(err);
+                });
+            } else {
+              reject(err);
+            }
+          });
+        } else {
+          reject(err);
+        }
+      })
+  } else {
+    accept();
+  }
+});
+
+const _load = () => Promise.all([
+  _install(),
+  _loadSign(),
+])
+  .then(([
+    installResult,
+    {
+      key,
+    },
+  ]) => ({
+    key,
+  }));
 
 const _getAllPlugins = () => {
   const _flatten = a => {
@@ -220,20 +273,20 @@ const _getAllPlugins = () => {
     );
 };
 
-const _listen = () => {
+const _listen = ({key}) => {
   const listenPromises = [];
 
   if (flags.site) {
     const site = require('./lib/site');
-    listenPromises.push(site.listen(a, config));
+    listenPromises.push(site.listen(a, config, {key}));
   }
   if (flags.hub) {
     const hub = require('./lib/hub');
-    listenPromises.push(hub.listen(a, config));
+    listenPromises.push(hub.listen(a, config, {key}));
   }
   if (flags.server) {
     const server = require('./lib/server');
-    listenPromises.push(server.listen(a, config));
+    listenPromises.push(server.listen(a, config, {key}));
   }
 
   return Promise.all(listenPromises)
@@ -254,36 +307,47 @@ const _listen = () => {
     });
 };
 
-const _boot = () => {
+const _boot = ({key}) => {
+  const bootPromises = [];
+
   if (flags.hub || flags.server) {
-    return _getAllPlugins()
-     .then(plugins => a.requestPlugins(plugins));
-  } else {
-    return Promise.resolve();
+    bootPromises.push(
+      _getAllPlugins()
+        .then(plugins => a.requestPlugins(plugins))
+    );
   }
+  if (flags.makeToken) {
+    const auth = require('./lib/auth');
+    bootPromises.push(new Promise((accept, reject) => {
+      const token = auth.makeToken({
+        key,
+      });
+      console.log('https://' + config.metadata.server.url + '?t=' + token);
+
+      accept();
+    }));
+  }
+
+  return Promise.all(bootPromises);
 };
 
-_install()
-  .then(() => _listen())
-  .then(() => _boot())
-  .then(() => {
-    if (flags.site) {
-      console.log('https://' + config.metadata.site.url + '/');
-    }
-    if (flags.hub) {
-      console.log('https://' + config.metadata.hub.url + '/');
-    }
-    if (flags.server) {
-      const prefix = 'https://' + config.metadata.server.url + '/';
-      const suffix = (() => {
-        if (/^.+\..+?(?::[0-9]*?)?$/.test(hubUrl)) {
-          return '';
-        } else {
-          return '?username=' + encodeURIComponent(config.metadata.server.username) + '&password=' + encodeURIComponent(config.metadata.server.password);
+_load()
+  .then(({
+    key,
+  }) => {
+    return _listen({key})
+      .then(() => _boot({key}))
+      .then(() => {
+        if (flags.site) {
+          console.log('https://' + config.metadata.site.url + '/');
         }
-      })();
-      console.log(prefix + suffix);
-    }
+        if (flags.hub) {
+          console.log('https://' + config.metadata.hub.url + '/');
+        }
+        if (flags.server) {
+          console.log('https://' + config.metadata.server.url + '/');
+        }
+      });
   })
   .catch(err => {
     console.warn(err);

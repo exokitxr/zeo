@@ -32,6 +32,7 @@ class Login {
       '/core/engines/webvr',
       '/core/engines/biolumi',
       '/core/engines/rend',
+      '/core/engines/fs',
     ]).then(([
       hub,
       input,
@@ -39,6 +40,7 @@ class Login {
       webvr,
       biolumi,
       rend,
+      fs,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -79,14 +81,12 @@ class Login {
               };
               const loginState = {
                 open: true,
-                username: '',
-                password: '',
+                token: '',
                 inputText: '',
                 inputIndex: 0,
                 inputValue: 0,
                 loading: false,
                 error: null,
-                authentication: null,
               };
               const focusState = {
                 type: '',
@@ -104,8 +104,7 @@ class Login {
                 const planeMesh = (() => {
                   const mesh = menuUi.addPage(({
                     login: {
-                      username,
-                      password,
+                      token,
                       inputIndex,
                       inputValue,
                       loading,
@@ -119,8 +118,7 @@ class Login {
                       {
                         type: 'html',
                         src: menuRenderer.getLoginSrc({
-                          username,
-                          password,
+                          token,
                           inputIndex,
                           inputValue,
                           loading,
@@ -185,60 +183,42 @@ class Login {
               };
               _updatePages();
 
-              const login = () => {
+              const _login = () => {
                 loginState.open = false;
 
                 _updatePages();
 
                 menuMesh.visible = false;
               };
-              rend.on('login', login);
-              const logout = () => {
-                const token = localStorage.removeItem('token');
-
+              rend.on('login', _login, {
+                priority: 1,
+              });
+              const _logout = () => {
                 loginState.open = true;
-                loginState.authentication = null;
-
-                _updatePages();
 
                 menuMesh.visible = true;
               };
-              rend.on('logout', logout);
+              rend.on('logout', _logout, {
+                priority: 1,
+              });
 
               const _requestInitialLogin = () => {
-                const username = _getQueryVariable('username');
-                const password = _getQueryVariable('password');
+                const token = _getQueryVariable('t');
 
-                if (username !== null && password !== null) {
+                if (token !== null) {
                   return _requestLogin({
-                    username,
-                    password,
+                    token,
                   });
                 } else {
-                  const token = localStorage.getItem('token');
-
-                  if (token) {
-                    return _requestLogin({
-                      token,
-                    });
-                  } else {
-                    return Promise.resolve();
-                  }
+                  return _requestLogin();
                 }
               };
-              const _requestLogin = ({username, password, token}) => new Promise((accept, reject) => {
+              const _requestLogin = ({token = null} = {}) => new Promise((accept, reject) => {
                 hub.requestLogin({
-                  username,
-                  password,
                   token,
                 })
                   .then(loginSpec => {
                     if (loginSpec) {
-                      const {token, authentication} = loginSpec;
-                      localStorage.setItem('token', token);
-
-                      loginState.authentication = authentication;
-
                       rend.login();
 
                       accept();
@@ -258,6 +238,31 @@ class Login {
               return _requestInitialLogin()
                 .then(() => {
                   if (live) {
+                    const _submit = () => {
+                      const {token} = loginState;
+
+                      if (token) {
+                        loginState.loading = true;
+                        loginState.error = null;
+
+                        _updatePages();
+
+                        _requestLogin({
+                          token,
+                        })
+                          .then(({error = null} = {}) => {
+                            loginState.loading = false;
+                            loginState.error = error;
+
+                            _updatePages();
+                          });
+                      } else {
+                        loginState.error = 'EINPUT';
+
+                        _updatePages();
+                      }
+                    };
+
                     const trigger = e => {
                       const {side} = e;
                       const menuHoverState = menuHoverStates[side];
@@ -269,56 +274,24 @@ class Login {
 
                         focusState.type = '';
 
-                        if (onclick === 'login:focus:username') {
+                        if (onclick === 'login:focus:token') {
                           const {value} = menuHoverState;
                           const valuePx = value * 640;
 
-                          loginState.inputText = loginState.username;
+                          loginState.inputText = loginState.token;
 
                           const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
 
                           loginState.inputIndex = index;
                           loginState.inputValue = px;
-                          focusState.type = 'username';
-
-                          _updatePages();
-                        } else if (onclick === 'login:focus:password') {
-                          const {value} = menuHoverState;
-                          const valuePx = value * 640;
-
-                          loginState.inputText = loginState.password;
-
-                          const {index, px} = biolumi.getTextPropertiesFromCoord(loginState.inputText, mainFontSpec, valuePx);
-
-                          loginState.inputIndex = index;
-                          loginState.inputValue = px;
-                          focusState.type = 'password';
+                          focusState.type = 'token';
 
                           _updatePages();
                         } else if (onclick === 'login:submit') {
-                          const {username, password} = loginState;
-
-                          if (username && password) {
-                            loginState.loading = true;
-                            loginState.error = null;
-
-                            _updatePages();
-
-                            _requestLogin({
-                              username,
-                              password,
-                            })
-                              .then(({error = null} = {}) => {
-                                loginState.loading = false;
-                                loginState.error = error;
-
-                                _updatePages();
-                              });
-                          } else {
-                            loginState.error = 'EINPUT';
-
-                            _updatePages();
-                          }
+                          _submit();
+                        } else if (onclick === 'error:close') {
+                          loginState.error = null;
+                          _updatePages();
                         }
                       }
                     };
@@ -327,26 +300,11 @@ class Login {
                     const keydown = e => {
                       const {type} = focusState;
 
-                      if (type === 'username') {
+                      if (type === 'token') {
                         const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
 
                         if (applySpec) {
-                          loginState.username = loginState.inputText;
-
-                          const {commit} = applySpec;
-                          if (commit) {
-                            focusState.type = '';
-                          }
-
-                          _updatePages();
-
-                          e.stopImmediatePropagation();
-                        }
-                      } else if (type === 'password') {
-                        const applySpec = biolumi.applyStateKeyEvent(loginState, mainFontSpec, e);
-
-                        if (applySpec) {
-                          loginState.password = loginState.inputText;
+                          loginState.token = loginState.inputText;
 
                           const {commit} = applySpec;
                           if (commit) {
@@ -364,6 +322,10 @@ class Login {
                     });
                     const keyboarddown = keydown;
                     input.on('keyboarddown', keyboarddown, {
+                      priority: 1,
+                    });
+                    const paste = keydown;
+                    input.on('paste', paste, {
                       priority: 1,
                     });
 
@@ -412,6 +374,19 @@ class Login {
                     };
                     rend.on('update', _update);
 
+                    const _upload = file => {
+                      if (_isOpen()) {
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                          loginState.token = e.target.result;
+
+                          _submit();
+                        };
+                        reader.readAsText(file);
+                      }
+                    };
+                    fs.on('upload', _upload);
+
                     this._cleanup = () => {
                       scene.remove(menuMesh);
 
@@ -423,18 +398,19 @@ class Login {
                       input.removeListener('trigger', trigger);
                       input.removeListener('keydown', keydown);
                       input.removeListener('keyboarddown', keyboarddown);
+                      input.removeListener('paste', paste);
 
                       rend.removeListener('update', _update);
-                      rend.removeListener('login', login);
-                      rend.removeListener('logout', logout);
+                      rend.removeListener('login', _login);
+                      rend.removeListener('logout', _logout);
+
+                      fs.removeListener('upload', _upload);
                     };
 
                     const _isOpen = () => loginState.open;
-                    const _getAuthentication = () => loginState.authentication;
 
                     return {
                       isOpen: _isOpen,
-                      getAuthentication: _getAuthentication,
                     };
                   }
                 });
