@@ -322,7 +322,7 @@ const _boot = ({key}) => {
       const token = auth.makeToken({
         key,
       });
-      console.log(token);
+      console.log('https://' + config.metadata.server.url + '?t=' + token);
 
       accept();
     }));
