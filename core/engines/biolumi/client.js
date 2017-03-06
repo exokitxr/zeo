@@ -788,7 +788,9 @@ class Biolumi {
               size: size,
             });
 
-            return new THREE.Points(geometry, material);
+            const mesh = new THREE.Points(geometry, material);
+            mesh.visible = false;
+            return mesh;
           };
 
           const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
