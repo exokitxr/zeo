@@ -17,9 +17,9 @@ class Hub {
       live = false;
     };
 
-    const _requestServers = hubUrl => fetch('https://' + serverUrl + '/server/servers.json')
+    const _requestServers = hubUrl => fetch('https://' + serverUrl + '/servers/servers.json')
       .then(res => res.json());
-    const _requestServer = serverUrl => fetch('https://' + serverUrl + '/server/server.json')
+    const _requestServer = serverUrl => fetch('https://' + serverUrl + '/servers/server.json')
       .then(res => res.json());
 
     return Promise.all([
