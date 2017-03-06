@@ -19,6 +19,7 @@ class Login {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -80,7 +81,7 @@ class Login {
                 fontStyle: biolumi.getFontStyle(),
               };
               const loginState = {
-                open: true,
+                open: serverEnabled,
                 token: '',
                 username: '',
                 inputText: '',
@@ -141,7 +142,7 @@ class Login {
                     worldWidth: WORLD_WIDTH,
                     worldHeight: WORLD_HEIGHT,
                   });
-                  // mesh.position.y = 1.5;
+                  mesh.visible = loginState.open;
                   mesh.position.z = -1;
                   mesh.receiveShadow = true;
 
@@ -204,14 +205,18 @@ class Login {
               });
 
               const _requestInitialLogin = () => {
-                const token = _getQueryVariable('t');
+                if (serverEnabled) {
+                  const token = _getQueryVariable('t');
 
-                if (token !== null) {
-                  return _requestLogin({
-                    token,
-                  });
+                  if (token !== null) {
+                    return _requestLogin({
+                      token,
+                    });
+                  } else {
+                    return _requestLogin();
+                  }
                 } else {
-                  return _requestLogin();
+                  return Promise.resolve();
                 }
               };
               const _requestLogin = ({token = null} = {}) => new Promise((accept, reject) => {
