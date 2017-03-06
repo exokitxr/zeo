@@ -634,7 +634,7 @@ class Biolumi {
             side: THREE.DoubleSide,
             transparent: true,
             // alphaTest: 0.5,
-            depthWrite: false,
+            // depthWrite: false,
           });
           const _getSolidMaterial = () => solidMaterial;
 
