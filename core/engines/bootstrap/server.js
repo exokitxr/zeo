@@ -12,7 +12,7 @@ class Bootstrap {
   mount() {
     const {_archae: archae} = this;
     const {app, dirname, dataDirectory} = archae.getCore();
-    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, username: serverUsername, password: serverPassword}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, worldname: serverWorldname, enabled: serverEnabled}}} = archae;
 
     const hubSpec = (() => {
       const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
@@ -27,9 +27,7 @@ class Bootstrap {
       live = false;
     };
 
-    const username = 'avaer'; // XXX source this from hub login
-    const worldname = 'proteus';
-    const users = [
+    const users = [ // XXX send the actual multiplayer server users list
       'allie',
       'reede',
       'fay',
@@ -74,8 +72,7 @@ class Bootstrap {
       };
       const req = https.request(options);
       req.end(JSON.stringify({
-        username: username,
-        worldname: worldname,
+        worldname: serverWorldname,
         url: serverUrl,
         users: users,
       }));
@@ -110,17 +107,25 @@ class Bootstrap {
     return _initialAnnounce()
       .then(() => {
         if (live) {
-          if (hubSpec) {
+          const cleanups = [];
+          this._cleanup = () => {
+            for (let i = 0; i < cleanups.length; i++) {
+              const cleanup = cleanups[i];
+              cleanup();
+            }
+          };
+
+          if (serverEnabled && hubSpec) {
             const serverRefreshInterval = setInterval(() => {
               _queueRefreshServer();
             }, SERVER_REFRESH_INTERVAL);
 
-            this._cleanup = () => {
+            cleanups.push(() => {
               clearInterval(serverRefreshInterval);
-            };
+            });
           }
 
-          const _proxyHub = (req, res, url) => {
+          /* const _proxyHub = (req, res, url) => { // XXX this authentication no longer works and needs to be rethought
             const proxyReq = https.request({
               method: req.method,
               hostname: hubSpec.host,
@@ -219,7 +224,7 @@ class Bootstrap {
             proxyHub: _proxyHub,
             authHub: _authHub,
             authHubRequest: _authHubRequest,
-          };
+          }; */
         }
       });
   }

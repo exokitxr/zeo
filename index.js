@@ -4,6 +4,7 @@ const fs = require('fs');
 const mkdirp = require('mkdirp');
 const archae = require('archae');
 const cryptoutils = require('cryptoutils');
+const rnd = require('rnd');
 
 const args = process.argv.slice(2);
 const flags = {
@@ -72,6 +73,16 @@ const flags = {
     }
     return null;
   })(),
+  worldname: (() => {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const match = arg.match(/^worldname=(.+)$/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  })(),
   hubUrl: (() => {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
@@ -95,6 +106,10 @@ if (!hasSomeFlag) {
   flags.server = true;
 }
 
+const _capitalize = s => {
+  return s.slice(0, 1).toUpperCase() + s.slice(1);
+};
+
 const hostname = flags.host || 'zeovr.io';
 const port = flags.port || 8000;
 const dataDirectory = flags.dataDirectory || 'data';
@@ -102,6 +117,7 @@ const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
 const staticSite = flags.site && !(flags.hub || flags.server);
 const serverHost = flags.serverHost || ('server.' + hostname);
+const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
 const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
   dirname: __dirname,
@@ -124,6 +140,7 @@ const config = {
     },
     server: {
       url: serverHost + ':' + port,
+      worldname: worldname,
       enabled: flags.server,
     },
   },
