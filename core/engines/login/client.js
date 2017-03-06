@@ -7,7 +7,6 @@ import {
 
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/menu';
-import menuUtils from './lib/utils/menu';
 import menuRenderer from './lib/render/menu';
 
 const SIDES = ['left', 'right'];
