@@ -59,7 +59,7 @@ const getServerSrc = ({worldname, description}) => {
     <div style="display: flex; width: ${SERVER_WIDTH}px; height: ${SERVER_HEIGHT}px; padding: 50px; background-color: #EEE; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
       <div style="margin: auto 0;">
         <div style="margin-bottom: 30px; font-size: 100px; font-weight: 400;">${worldname}</div>
-        <div style="min-height: 150px; font-size: 40px;">${description}</div>
+        <div style="min-height: 150px; font-size: 50px;">${description}</div>
       </div>
     </div>
   `;

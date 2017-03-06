@@ -34,6 +34,7 @@ class Hub {
 
     return Promise.all([
       archae.requestPlugins([
+        '/core/engines/bootstrap',
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/biolumi',
@@ -43,6 +44,7 @@ class Hub {
     ])
       .then(([
         [
+          bootstrap,
           three,
           webvr,
           biolumi,
@@ -149,11 +151,11 @@ class Hub {
           })();
           scene.add(menuMesh);
 
-          const _getServerMeshes = () => {
-            const result = [];
+          const _getServerMeshes = servers => {
+            const result = Array(servers.length);
 
-            const _makeServerEnvMesh = i => {
-              const geometry = new THREE.SphereBufferGeometry(0.5, 32, 32);
+            const _makeServerEnvMesh = server => {
+              const geometry = new THREE.SphereBufferGeometry(0.25, 32, 32);
               const material = (() => {
                 const texture = new THREE.CubeTexture(
                   transparentImg,
@@ -168,7 +170,7 @@ class Hub {
                 );
 
                 const img = new Image();
-                img.src = creatureUtils.makeStaticCreature('server:' + ('server' + _padNumber(i, 2)));
+                img.src = creatureUtils.makeStaticCreature('server:' + server.worldname);
                 img.onload = () => {
                   const images = (() => {
                     const result = [];
@@ -194,7 +196,7 @@ class Hub {
               const mesh = new THREE.Mesh(geometry, material);
               return mesh;
             };
-            const _makeServerMenuMesh = i => {
+            const _makeServerMenuMesh = server => {
               const object = new THREE.Object3D();
 
               const planeMesh = (() => {
@@ -225,15 +227,15 @@ class Hub {
                 }, {
                   type: 'hub',
                   state: {
-                    server: { // XXX use actual server state here
-                      worldname: 'Server name',
-                      description: 'This is a 3d world. Click it to enter it.',
+                    server: {
+                      worldname: server.worldname,
+                      description: server.url,
                     },
                   },
                   worldWidth: SERVER_WORLD_WIDTH,
                   worldHeight: SERVER_WORLD_HEIGHT,
                 });
-                mesh.position.y = 0.8;
+                mesh.position.y = 0.5;
                 mesh.receiveShadow = true;
                 mesh.ui = serverUi;
 
@@ -258,28 +260,30 @@ class Hub {
               return object;
             };
 
-            for (let i = 0; i < 1; i++) {
+            for (let i = 0; i < servers.length; i++) {
+              const server = servers[i];
+
               const mesh = (() => {
                 const object = new THREE.Object3D();
-                object.position.x = -2;
+                object.position.x = -2 + (i * 1);
                 object.position.y = 1;
 
-                const envMesh = _makeServerEnvMesh(i);
+                const envMesh = _makeServerEnvMesh(server);
                 object.add(envMesh);
                 object.envMesh = envMesh;
 
-                const menuMesh = _makeServerMenuMesh(i);
+                const menuMesh = _makeServerMenuMesh(server);
                 object.add(menuMesh);
                 object.menuMesh = menuMesh;
 
                 return object;
               })();
-              result.push(mesh);
-
-              return result;
+              result[i] = mesh;
             }
+
+            return result;
           };
-          const serverMeshes = _getServerMeshes();
+          const serverMeshes = _getServerMeshes(bootstrap.getServers());
           for (let i = 0; i < serverMeshes.length; i++) {
             const serverMesh = serverMeshes[i];
             scene.add(serverMesh);
