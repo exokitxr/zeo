@@ -5,7 +5,7 @@ const mkdirp = require('mkdirp');
 const archae = require('archae');
 const cryptoutils = require('cryptoutils');
 const rnd = require('rnd');
-rnd.setSeed(process.cwd());
+rnd.setSeed(process.env.USER + ';' + process.cwd());
 
 const args = process.argv.slice(2);
 const flags = {
