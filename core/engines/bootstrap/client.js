@@ -12,6 +12,8 @@ import menuRenderer from './lib/render/menu';
 const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const NUM_INVENTORY_ITEMS = 4;
 
+const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
+
 class Bootstrap {
   constructor(archae) {
     this._archae = archae;
@@ -43,7 +45,16 @@ class Bootstrap {
       );
     const _requestIconImg = hostUrl => _requestImageFile(hostUrl, '/servers/img/icon.png');
     const _requestSkyboxImg = hostUrl => _requestImageFile(hostUrl, '/servers/img/skybox.png');
-    const _requestCubeMapImgs = hostUrl => Promise.all(['top', 'bottom', 'left', 'right', 'front', 'back'].map(face => _requestImageFile(hostUrl, '/servers/img/cubemap-' + face + '.png'));
+    const _requestCubeMapImgs = hostUrl => Promise.all(FACES.map(face => _requestImageFile(hostUrl, '/servers/img/cubemap-' + face + '.png')))
+      .then(cubeMapImgs => {
+        const result = {};
+        for (let i = 0; i < cubeMapImgs.length; i++) {
+          const cubeMapImg = cubeMapImgs[i];
+          const face = FACES[i];
+          result[face] = cubeMapImg;
+        }
+        return result;
+      });
 
     return Promise.all([
       _requestServers(hostUrl),
@@ -172,6 +183,7 @@ class Bootstrap {
             getCurrentServer: _getCurrentServer,
             getIconImg: _getIconImg,
             getSkyboxImg: _getSkyboxImg,
+            getCubeMapImgs: _getCubeMapImgs,
             changeServer: _changeServer,
             requestLogin: _requestLogin,
             requestLogout: _requestLogout,
