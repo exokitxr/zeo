@@ -40,7 +40,7 @@ class World {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
@@ -57,7 +57,7 @@ class World {
       '/core/engines/backpack',
       '/core/plugins/geometry-utils',
     ]).then(([
-      hub,
+      bootstrap,
       three,
       input,
       webvr,
@@ -185,7 +185,7 @@ class World {
         };
 
         const _requestConnection = () => new Promise((accept, reject) => {
-          const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/worldWs?id=' + localUserId);
+          const connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/worldWs?id=' + localUserId);
           connection.onmessage = msg => {
             const m = JSON.parse(msg.data);
             const {type} = m;
@@ -251,7 +251,7 @@ class World {
             reject(err);
           };
         });
-        const _requestStartTime = () => fetch('https://' + hub.getCurrentServer().url + '/archae/world/start-time.json')
+        const _requestStartTime = () => fetch('https://' + bootstrap.getCurrentServer().url + '/archae/world/start-time.json')
           .then(res => res.json()
             .then(({startTime}) => startTime)
           );
@@ -1024,7 +1024,7 @@ class World {
           }
         };
 
-        const _searchNpm = (q = '') => fetch('https://' + hub.getCurrentServer().url + '/archae/rend/mods/search?q=' + encodeURIComponent(q))
+        const _searchNpm = (q = '') => fetch('https://' + bootstrap.getCurrentServer().url + '/archae/rend/mods/search?q=' + encodeURIComponent(q))
           .then(res => res.json());
         const _updateNpm = menuUtils.debounce(next => {
           const {inputText} = npmState;

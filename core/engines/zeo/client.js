@@ -95,12 +95,13 @@ class Zeo {
       .then(loader => {
         if (live) {
           const _requestPlugins = () => archae.requestPlugins([
-            '/core/engines/hub',
+            '/core/engines/bootstrap',
             '/core/engines/input',
             '/core/engines/webvr',
             '/core/engines/three',
             '/core/engines/anima',
             '/core/engines/cyborg',
+            '/core/engines/hub',
             '/core/engines/login',
             '/core/engines/rend',
             '/core/engines/biolumi',
@@ -162,12 +163,13 @@ class Zeo {
             _requestMediaPermissions(),
           ]).then(([
             [
-              hub,
+              bootstrap,
               input,
               webvr,
               three,
               anima,
               cyborg,
+              hub,
               login,
               rend,
               biolumi,
@@ -389,7 +391,7 @@ class Zeo {
                         errorMessage.style.display = 'none';
                       }
 
-                      const userState = hub.getUserState();
+                      const userState = bootstrap.getUserState();
                       const {username, world} = userState;
                       if (username) {
                         const usernameEl = $$(helper, '.username')[0];

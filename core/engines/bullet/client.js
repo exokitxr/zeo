@@ -17,7 +17,7 @@ class Bullet {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/login',
       '/core/engines/servers',
@@ -25,7 +25,7 @@ class Bullet {
       '/core/engines/config',
       '/core/plugins/js-utils',
     ]).then(([
-      hub,
+      bootstrap,
       three,
       login,
       servers,
@@ -852,7 +852,7 @@ class Bullet {
             enabled = false;
           });
 
-          connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/bulletWs');
+          connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/bulletWs');
           connection.onopen = () => {
             world.requestInit()
               .then(objects => {

@@ -17,7 +17,7 @@ class Multiplayer {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/login',
@@ -27,7 +27,7 @@ class Multiplayer {
       '/core/engines/backpack',
       '/core/plugins/js-utils',
     ]).then(([
-      hub,
+      bootstrap,
       three,
       webvr,
       login,
@@ -319,7 +319,7 @@ class Multiplayer {
                 enabled = false;
               });
 
-              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername()));
+              const connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/multiplayerWs?id=' + encodeURIComponent(multiplayerApi.getId()) + '&username=' + encodeURIComponent(login.getUsername()));
               const queue = [];
               connection.onopen = () => {
                 if (queue.length > 0) {

@@ -49,7 +49,7 @@ class Rend {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
       '/core/engines/input',
       '/core/engines/three',
       '/core/engines/webvr',
@@ -59,7 +59,7 @@ class Rend {
       '/core/plugins/geometry-utils',
       '/core/plugins/creature-utils',
     ]).then(([
-      hub,
+      bootstrap,
       input,
       three,
       webvr,
@@ -138,7 +138,7 @@ class Rend {
           fontStyle: biolumi.getFontStyle(),
         };
 
-        const {matrix: matrixArray} = hub.getUserState();
+        const {matrix: matrixArray} = bootstrap.getUserState();
         if (matrixArray) {
           webvr.setStageMatrix(new THREE.Matrix4().fromArray(matrixArray));
           webvr.updateStatus();
@@ -476,16 +476,16 @@ class Rend {
                 return true;
               } else if (onclick === 'status:logOut') {
                 const _requestLogout = () => new Promise((accept, reject) => {
-                    hub.requestLogout()
-                      .then(() => {
-                        accept();
-                      })
-                      .catch(err => {
-                        console.warn(err);
+                  bootstrap.requestLogout()
+                    .then(() => {
+                      accept();
+                    })
+                    .catch(err => {
+                      console.warn(err);
 
-                        accept();
-                      });
-                  });
+                      accept();
+                    });
+                });
 
                 _requestLogout()
                   .then(() => {
@@ -811,7 +811,7 @@ class Rend {
         });
 
         const unload = e => {
-          hub.saveUserStateAsync();
+          bootstrap.saveUserStateAsync();
         };
         window.addEventListener('unload', unload);
         cleanups.push(() => {

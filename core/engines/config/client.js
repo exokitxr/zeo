@@ -36,7 +36,7 @@ class Config {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
       '/core/engines/input',
       '/core/engines/three',
       '/core/engines/webvr',
@@ -44,7 +44,7 @@ class Config {
       '/core/engines/rend',
       '/core/plugins/js-utils',
     ]).then(([
-      hub,
+      bootstrap,
       input,
       three,
       webvr,
@@ -290,7 +290,7 @@ class Config {
               _updatePages();
 
              const _requestLogout = () => new Promise((accept, reject) => {
-                hub.requestLogout()
+                bootstrap.requestLogout()
                   .then(() => {
                     accept();
                   })
