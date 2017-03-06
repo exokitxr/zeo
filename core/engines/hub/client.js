@@ -5,6 +5,12 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
+  SERVER_WIDTH,
+  SERVER_HEIGHT,
+  SERVER_WORLD_WIDTH,
+  SERVER_WORLD_HEIGHT,
+  SERVER_WORLD_DEPTH,
+
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/menu';
 import menuRenderer from './lib/render/menu';
@@ -29,6 +35,7 @@ class Hub {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/three',
+        '/core/engines/webvr',
         '/core/engines/biolumi',
         '/core/engines/rend',
         '/core/plugins/creature-utils',
@@ -37,13 +44,14 @@ class Hub {
       .then(([
         [
           three,
+          webvr,
           biolumi,
           rend,
           creatureUtils,
         ],
       ]) => {
         if (live) {
-          const {THREE, scene} = three;
+          const {THREE, scene, camera} = three;
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const transparentImg = biolumi.getTransparentImg();
@@ -144,50 +152,127 @@ class Hub {
           const _getServerMeshes = () => {
             const result = [];
 
-            for (let i = 0; i < 1; i++) {
-              const mesh = (() => {
-                const geometry = new THREE.SphereBufferGeometry(0.5, 32, 32);
-                const material = (() => {
-                  const texture = new THREE.CubeTexture(
-                    transparentImg,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.LinearFilter,
-                    THREE.LinearFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    16
-                  );
+            const _makeServerEnvMesh = i => {
+              const geometry = new THREE.SphereBufferGeometry(0.5, 32, 32);
+              const material = (() => {
+                const texture = new THREE.CubeTexture(
+                  transparentImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.LinearFilter,
+                  THREE.LinearFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  16
+                );
 
-                  const img = new Image();
-                  img.src = creatureUtils.makeStaticCreature('server:' + ('server' + _padNumber(i, 2)));
-                  img.onload = () => {
-                    const images = (() => {
-                      const result = [];
-                      for (let i = 0; i < 6; i++) {
-                        result[i] = img;
-                      }
-                      return result;
-                    })();
-                    texture.images = images;
-                    texture.needsUpdate = true;
-                  };
-                  img.onerror = err => {
-                    console.warn(err);
-                  };
+                const img = new Image();
+                img.src = creatureUtils.makeStaticCreature('server:' + ('server' + _padNumber(i, 2)));
+                img.onload = () => {
+                  const images = (() => {
+                    const result = [];
+                    for (let i = 0; i < 6; i++) {
+                      result[i] = img;
+                    }
+                    return result;
+                  })();
+                  texture.images = images;
+                  texture.needsUpdate = true;
+                };
+                img.onerror = err => {
+                  console.warn(err);
+                };
 
-                  const material = new THREE.MeshPhongMaterial({
-                    color: 0xffffff,
-                    envMap: texture,
-                  });
-                  return material;
-                })();
+                const material = new THREE.MeshPhongMaterial({
+                  color: 0xffffff,
+                  envMap: texture,
+                });
+                return material;
+              })();
+
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            };
+            const _makeServerMenuMesh = i => {
+              const object = new THREE.Object3D();
+
+              const planeMesh = (() => {
+                const serverUi = biolumi.makeUi({
+                  width: SERVER_WIDTH,
+                  height: SERVER_HEIGHT,
+                });
+
+                const mesh = serverUi.addPage(({
+                  server: {
+                    worldname,
+                    description,
+                  },
+                }) => {
+                  return [
+                    {
+                      type: 'html',
+                      src: menuRenderer.getServerSrc({
+                        worldname,
+                        description,
+                      }),
+                      x: 0,
+                      y: 0,
+                      w: SERVER_WIDTH,
+                      h: SERVER_HEIGHT,
+                    },
+                  ];
+                }, {
+                  type: 'hub',
+                  state: {
+                    server: { // XXX use actual server state here
+                      worldname: 'Server name',
+                      description: 'This is a 3d world. Click it to enter it.',
+                    },
+                  },
+                  worldWidth: SERVER_WORLD_WIDTH,
+                  worldHeight: SERVER_WORLD_HEIGHT,
+                });
+                mesh.position.y = 0.8;
+                mesh.receiveShadow = true;
+                mesh.ui = serverUi;
+
+                serverUi.update();
+
+                return mesh;
+              })();
+              object.add(planeMesh);
+              object.planeMesh = planeMesh;
+
+              const shadowMesh = (() => {
+                const geometry = new THREE.BoxBufferGeometry(SERVER_WORLD_WIDTH, SERVER_WORLD_HEIGHT, 0.01);
+                const material = transparentMaterial.clone();
+                material.depthWrite = false;
 
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.x = -2;
-                mesh.position.y = 1;
+                mesh.castShadow = true;
                 return mesh;
+              })();
+              object.add(shadowMesh);
+
+              return object;
+            };
+
+            for (let i = 0; i < 1; i++) {
+              const mesh = (() => {
+                const object = new THREE.Object3D();
+                object.position.x = -2;
+                object.position.y = 1;
+
+                const envMesh = _makeServerEnvMesh(i);
+                object.add(envMesh);
+                object.envMesh = envMesh;
+
+                const menuMesh = _makeServerMenuMesh(i);
+                object.add(menuMesh);
+                object.menuMesh = menuMesh;
+
+                return object;
               })();
               result.push(mesh);
 
@@ -195,9 +280,10 @@ class Hub {
             }
           };
           const serverMeshes = _getServerMeshes();
-          serverMeshes.forEach(serverMesh => {
+          for (let i = 0; i < serverMeshes.length; i++) {
+            const serverMesh = serverMeshes[i];
             scene.add(serverMesh);
-          });
+          }
 
           const _updatePages = () => {
             menuUi.update();
@@ -205,7 +291,12 @@ class Hub {
           _updatePages();
 
           const _update = () => {
-            // XXX
+            const {hmd} = webvr.getStatus();
+
+            for (let i = 0; i < serverMeshes.length; i++) {
+              const serverMesh = serverMeshes[i];
+              serverMesh.rotation.y = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order).y;
+            }
           };
           rend.on('update', _update);
 
