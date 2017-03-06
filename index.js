@@ -101,7 +101,7 @@ const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
 const staticSite = flags.site && !(flags.hub || flags.server);
-const serverHost = flags.serverHost || ('server.' + hostname);
+const serverHost = flags.serverHost || ((flags.server ? 'server' : 'hub') + '.' + hostname);
 const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
 const config = {
   dirname: __dirname,
