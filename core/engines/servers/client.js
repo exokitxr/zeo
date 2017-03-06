@@ -112,28 +112,9 @@ class Servers {
 
               rend.disconnectServer();
             });
-          const _requestUis = () => Promise.all([
-            biolumi.requestUi({
-              width: WIDTH,
-              height: HEIGHT,
-            }),
-          ])
-            .then(([
-              menuUi,
-            ]) => ({
-              menuUi,
-            }));
 
-          return Promise.all([
-            _requestInitialConnect(),
-            _requestUis(),
-          ])
-            .then(([
-              initialConnectResult,
-              {
-                menuUi,
-              }
-            ]) => {
+          return _requestInitialConnect()
+            .then(() => {
               if (live) {
                 const menuHoverStates = {
                   left: biolumi.makeMenuHoverState(),
@@ -151,6 +132,11 @@ class Servers {
                 };
                 scene.add(boxMeshes.left);
                 scene.add(boxMeshes.right);
+
+                const menuUi = biolumi.makeUi({
+                  width: WIDTH,
+                  height: HEIGHT,
+                });
 
                 const menuMesh = (() => {
                   const object = new THREE.Object3D();

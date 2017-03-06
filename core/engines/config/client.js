@@ -101,23 +101,6 @@ class Config {
           right: biolumi.makeMenuHoverState(),
         };
 
-        const _requestUis = () =>
-          Promise.all([
-            biolumi.requestUi({
-              width: WIDTH,
-              height: HEIGHT,
-            }),
-            biolumi.requestUi({
-              width: STATS_WIDTH,
-              height: STATS_HEIGHT,
-            }),
-          ]).then(([
-            configUi,
-            statsUi,
-          ]) => ({
-            configUi,
-            statsUi,
-          }));
         const _requestGetConfig = world => fetch('/archae/config/config.json')
           .then(res => res.json());
         const _requestSetConfig = config => fetch('/archae/config/config.json', {
@@ -151,18 +134,18 @@ class Config {
         stats.render = () => {}; // overridden below
         const statsDom = stats.dom.childNodes[0];
 
-        return Promise.all([
-          _requestUis(),
-          _requestGetConfig(),
-        ])
-          .then(([
-            {
-              configUi,
-              statsUi,
-            },
-            configSpec,
-          ]) => {
+        return _requestGetConfig()
+          .then(configSpec => {
             if (live) {
+              const configUi = biolumi.makeUi({
+                width: WIDTH,
+                height: HEIGHT,
+              });
+              const statsUi = biolumi.makeUi({
+                width: STATS_WIDTH,
+                height: STATS_HEIGHT,
+              });
+
               configState.airlockCheckboxValue = configSpec.airlock;
               configState.voiceChatCheckboxValue = configSpec.voiceChat;
               configState.statsCheckboxValue = configSpec.stats;

@@ -611,8 +611,7 @@ class Biolumi {
             }
           }
 
-          const _makeUi = ({width, height, atlasSize = 1, maxNumTextures = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, atlasSize, maxNumTextures, color); // XXX port everything to this instead of requestUi();
-          const _requestUi = spec => Promise.resolve(_makeUi(spec));
+          const _makeUi = ({width, height, atlasSize = 1, maxNumTextures = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, atlasSize, maxNumTextures, color);
 
           const _updateUiTimer = () => {
             uiTimer.update();
@@ -1025,7 +1024,6 @@ class Biolumi {
 
           return {
             makeUi: _makeUi,
-            requestUi: _requestUi,
 
             updateUiTimer: _updateUiTimer,
 
