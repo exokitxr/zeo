@@ -78,7 +78,7 @@ class WebVR {
 
     return Promise.all([
       archae.requestPlugins([
-        '/core/engines/hub',
+        '/core/engines/bootstrap',
         '/core/engines/input',
         '/core/engines/three',
         '/core/plugins/js-utils',
@@ -86,7 +86,7 @@ class WebVR {
       navigator.getVRDisplays(),
     ]).then(([
       [
-        hub,
+        bootstrap,
         input,
         three,
         jsUtils,
@@ -287,7 +287,7 @@ class WebVR {
                   }
 
                   const {stageMatrix} = this;
-                  const userStageMatrix = new THREE.Matrix4().fromArray(hub.getUserState().matrix);
+                  const userStageMatrix = new THREE.Matrix4().fromArray(bootstrap.getUserState().matrix);
                   const displayStageMatrix = (display && display.stageParameters) ?
                     new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform)
                   :
@@ -678,7 +678,7 @@ class WebVR {
                 userScale
               );
 
-              hub.setUserStateMatrix(newUserStageMatrix.toArray());
+              bootstrap.setUserStateMatrix(newUserStageMatrix.toArray());
             }
           }
         }

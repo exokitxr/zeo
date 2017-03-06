@@ -62,10 +62,10 @@ class World {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
     ])
       .then(([
-        hub,
+        bootstrap,
       ]) => {
         if (live) {
           const worldPath = path.join(dirname, dataDirectory, 'world');
@@ -628,10 +628,10 @@ class World {
                 }
                 app.put('/archae/world/files.json', serveFilesSet);
                 function serveEquipmentGet(req, res, next) {
-                  hub.authHub(req, (err, username) => {
+                  bootstrap.authHub(req, (err, username) => {
                     if (!err) {
                       if (serverType === 'secure') {
-                        hub.proxyHub(req, res, '/hub/world/equipment.json');
+                        bootstrap.proxyHub(req, res, '/hub/world/equipment.json');
                       } else {
                         res.json(equipmentJson); // XXX make this per-user
                       }
@@ -644,10 +644,10 @@ class World {
                 app.get('/archae/world/equipment.json', serveEquipmentGet);
                 function serveEquipmentSet(req, res, next) {
                   bodyParserJson(req, res, () => {
-                    hub.authHub(req, (err, username) => {
+                    bootstrap.authHub(req, (err, username) => {
                       if (!err) {
                         if (serverType === 'secure') {
-                          hub.proxyHub(req, res, '/hub/world/equipment.json');
+                          bootstrap.proxyHub(req, res, '/hub/world/equipment.json');
                         } else {
                           const {body: data} = req;
 
@@ -683,10 +683,10 @@ class World {
                 }
                 app.put('/archae/world/equipment.json', serveEquipmentSet);
                 function serveInventoryGet(req, res, next) {
-                  hub.authHub(req, (err, username) => {
+                  bootstrap.authHub(req, (err, username) => {
                     if (!err) {
                       if (serverType === 'secure') {
-                        hub.proxyHub(req, res, '/hub/world/inventory.json');
+                        bootstrap.proxyHub(req, res, '/hub/world/inventory.json');
                       } else {
                         res.json(inventoryJson);
                       }
@@ -699,10 +699,10 @@ class World {
                 app.get('/archae/world/inventory.json', serveInventoryGet);
                 function serveInventorySet(req, res, next) {
                   bodyParserJson(req, res, () => {
-                    hub.authHub(req, (err, username) => {
+                    bootstrap.authHub(req, (err, username) => {
                       if (!err) {
                         if (serverType === 'secure') {
-                          hub.proxyHub(req, res, '/hub/world/inventory.json');
+                          bootstrap.proxyHub(req, res, '/hub/world/inventory.json');
                         } else {
                           const {body: data} = req;
 

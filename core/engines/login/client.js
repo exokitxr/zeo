@@ -26,7 +26,7 @@ class Login {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
       '/core/engines/input',
       '/core/engines/three',
       '/core/engines/webvr',
@@ -34,7 +34,7 @@ class Login {
       '/core/engines/rend',
       '/core/engines/fs',
     ]).then(([
-      hub,
+      bootstrap,
       input,
       three,
       webvr,
@@ -208,7 +208,7 @@ class Login {
           }
         };
         const _requestLogin = ({token = null} = {}) => new Promise((accept, reject) => {
-          hub.requestLogin({
+          bootstrap.requestLogin({
             token,
           })
             .then(loginSpec => {

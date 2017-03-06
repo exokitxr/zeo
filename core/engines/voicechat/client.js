@@ -16,7 +16,7 @@ export default class VoiceChat {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/somnifer',
       '/core/engines/login',
@@ -27,7 +27,7 @@ export default class VoiceChat {
       '/core/plugins/js-utils',
     ])
       .then(([
-        hub,
+        bootstrap,
         three,
         somnifer,
         login,
@@ -62,7 +62,7 @@ export default class VoiceChat {
             const _requestCallInterface = () => new Promise((accept, reject) => {
               let remotePeerId = null;
 
-              const connection = new WebSocket('wss://' + hub.getCurrentServer().url + '/archae/voicechatWs?id=' + multiplayer.getId());
+              const connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/voicechatWs?id=' + multiplayer.getId());
               connection.binaryType = 'arraybuffer';
               connection.onopen = () => {
                 accept(callInterface);

@@ -24,7 +24,7 @@ class Servers {
     };
 
     return archae.requestPlugins([
-      '/core/engines/hub',
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
@@ -34,7 +34,7 @@ class Servers {
       '/core/plugins/creature-utils',
     ])
       .then(([
-        hub,
+        bootstrap,
         three,
         input,
         webvr,
@@ -71,7 +71,7 @@ class Servers {
           // states
           const serversState = {
             page: 'list',
-            servers: hub.getServers(),
+            servers: bootstrap.getServers(),
             currentServerUrl: null,
           };
           const focusState = {
@@ -81,7 +81,7 @@ class Servers {
           // helper functions
           const _requestInitialConnect = () => new Promise((accept, reject) => {
             const loggedIn = !login.isOpen();
-            const currentServer = hub.getCurrentServer()
+            const currentServer = bootstrap.getCurrentServer()
             const shouldConnect = loggedIn && currentServer.type === 'server';
 
             if (shouldConnect) {
@@ -100,13 +100,13 @@ class Servers {
               accept();
             }
           });
-          const _connectServer = serverUrl => hub.changeServer(serverUrl)
+          const _connectServer = serverUrl => bootstrap.changeServer(serverUrl)
             .then(() => {
               serversState.currentServerUrl = serverUrl;
 
               rend.connectServer();
             });
-          const _disconnectServer = () => hub.changeServer(null)
+          const _disconnectServer = () => bootstrap.changeServer(null)
             .then(() => {
               serversState.currentServerUrl = null;
 
@@ -235,7 +235,7 @@ class Servers {
                 const _updateEnabled = () => {
                   const enabled = serversApi.isConnected();
                   const loggedIn = !login.isOpen();
-                  const currentServer = hub.getCurrentServer()
+                  const currentServer = bootstrap.getCurrentServer()
                   const shouldBeEnabled = loggedIn && currentServer.type === 'server';
 
                   if (!enabled && shouldBeEnabled) {

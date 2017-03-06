@@ -4,7 +4,7 @@ const https = require('https');
 
 const SERVER_REFRESH_INTERVAL = 30 * 1000;
 
-class Hub {
+class Bootstrap {
   constructor(archae) {
     this._archae = archae;
   }
@@ -267,4 +267,4 @@ const _debounce = fn => {
   return _go;
 };
 
-module.exports = Hub;
+module.exports = Bootstrap;
