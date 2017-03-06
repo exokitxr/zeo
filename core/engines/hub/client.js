@@ -8,23 +8,22 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl}}} = archae;
-
-    const localUrl = window.location.host;
+    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    const _requestServers = hubUrl => fetch('https://' + serverUrl + '/servers/servers.json')
+    const hostUrl = serverEnabled ? serverUrl : hubUrl;
+    const _requestServers = hostUrl => fetch('https://' + hostUrl + '/servers/servers.json')
       .then(res => res.json());
-    const _requestServer = serverUrl => fetch('https://' + serverUrl + '/servers/server.json')
+    const _requestServer = hostUrl => fetch('https://' + hostUrl + '/servers/server.json')
       .then(res => res.json());
 
     return Promise.all([
-      _requestServers(hubUrl),
-      _requestServer(localUrl),
+      _requestServers(hostUrl),
+      _requestServer(hostUrl),
     ])
       .then(([
         serversJson,
