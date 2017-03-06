@@ -161,10 +161,11 @@ class Rend {
           const statusMesh = (() => {
             const mesh = menuUi.addPage(({
               status,
+              iconImg,
             }) => [
               {
                 type: 'html',
-                src: menuRenderer.getStatusSrc({status}),
+                src: menuRenderer.getStatusSrc({status, iconImg}),
                 x: 0,
                 y: 0,
                 w: WIDTH,
@@ -174,6 +175,7 @@ class Rend {
               type: 'status',
               state: {
                 status: statusState,
+                iconImg: bootstrap.getIconImg(),
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,

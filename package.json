@@ -39,6 +39,7 @@
     "lru-cache": "^4.0.2",
     "mkdirp": "^0.5.1",
     "nedb": "^1.8.0",
+    "node-equirect-cubemap-faces": "^1.0.3",
     "password-hash-and-salt": "^0.1.4",
     "proceduralart": "0.0.4",
     "rnd": "^1.0.10",

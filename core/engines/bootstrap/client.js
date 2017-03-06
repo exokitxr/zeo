@@ -31,18 +31,40 @@ class Bootstrap {
       .then(res => res.json());
     const _requestServer = hostUrl => fetch('https://' + hostUrl + '/servers/server.json')
       .then(res => res.json());
+    const _requestImageFile = (hostUrl, p) => fetch('https://' + hostUrl + p)
+      .then(res => res.blob()
+        .then(blob => new Promise((accept, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            accept(reader.result);
+          };
+        }))
+      );
+    const _requestIconImg = hostUrl => _requestImageFile(hostUrl, '/servers/img/icon.png');
+    const _requestSkyboxImg = hostUrl => _requestImageFile(hostUrl, '/servers/img/skybox.png');
+    const _requestCubeMapImgs = hostUrl => Promise.all(['top', 'bottom', 'left', 'right', 'front', 'back'].map(face => _requestImageFile(hostUrl, '/servers/img/cubemap-' + face + '.png'));
 
     return Promise.all([
       _requestServers(hostUrl),
       _requestServer(hostUrl),
+      _requestIconImg(hostUrl),
+      _requestSkyboxImg(hostUrl),
+      _requestCubeMapImgs(hostUrl),
     ])
       .then(([
         serversJson,
         serverJson,
+        iconImg,
+        skyboxImg,
+        cubeMapImgs,
       ]) => {
         if (live) {
           const _getServers = () => serversJson.servers;
           const _getCurrentServer = () => serverJson;
+          const _getIconImg = () => iconImg;
+          const _getSkyboxImg = () => skyboxImg;
+          const _getCubeMapImgs = () => cubeMapImgs;
           const _changeServer = serverUrl => {
             if (serverUrl !== null) {
               return _requestServer(serverUrl)
@@ -148,6 +170,8 @@ class Bootstrap {
           return {
             getServers: _getServers,
             getCurrentServer: _getCurrentServer,
+            getIconImg: _getIconImg,
+            getSkyboxImg: _getSkyboxImg,
             changeServer: _changeServer,
             requestLogin: _requestLogin,
             requestLogout: _requestLogout,

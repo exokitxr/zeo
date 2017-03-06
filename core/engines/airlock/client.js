@@ -21,10 +21,12 @@ class Airlock {
     };
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/config',
       '/core/plugins/geometry-utils',
     ]).then(([
+      bootstrap,
       three,
       config,
       geometryUtils,
@@ -166,16 +168,41 @@ class Airlock {
           })();
           object.add(targetMesh);
 
-          /* const skyboxMesh = (() => {
-            const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000);
-            const material = new THREE.MeshBasicMaterial({
-              color: 0xFFFFFF,
-              side: THREE.BackSide,
-            });
+          const skyboxMesh = (() => {
+            const object = new THREE.Object3D();
 
-            return new THREE.Mesh(geometry, material);
+            const cubeMapImgs = bootstrap.getCubeMapImgs();
+            Promise.all([
+              'left',
+              'right',
+              'top',
+              'bottom',
+              'front',
+              'back',
+            ].map(face => {
+              const cubeMapImg = cubeMapImgs[face];
+
+              const img = new Image();
+              img.src = cubeMapImg;
+              img.onload = () => {
+                accept(img);
+              };
+            })
+              .then(skyboxImgs => {
+                const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000);
+                const materials = skyboxImgs.map(skyboxImg => new THREE.MeshBasicMaterial({
+                  color: 0xFFFFFF,
+                  map: skyboxImg,
+                }));
+                const material = new THREE.MultiMaterial(materials);
+
+                const mesh = new THREE.Mesh(geometry, material);
+                object.add(mesh);
+              });
+
+            return object;
           })();
-          object.add(skyboxMesh); */
+          object.add(skyboxMesh);
 
           const starsMesh = (() => {
             const numStars = 128;
