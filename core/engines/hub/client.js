@@ -87,6 +87,7 @@ class Hub {
           const menuMesh = (() => {
             const object = new THREE.Object3D();
             object.position.y = DEFAULT_USER_HEIGHT;
+            object.visible = hubState.open;
 
             const planeMesh = (() => {
               const mesh = menuUi.addPage(({
@@ -127,7 +128,6 @@ class Hub {
                 worldWidth: WORLD_WIDTH,
                 worldHeight: WORLD_HEIGHT,
               });
-              mesh.visible = hubState.open;
               mesh.position.z = -1;
               mesh.receiveShadow = true;
 
@@ -283,11 +283,20 @@ class Hub {
 
             return result;
           };
-          const serverMeshes = _getServerMeshes(bootstrap.getServers());
-          for (let i = 0; i < serverMeshes.length; i++) {
-            const serverMesh = serverMeshes[i];
-            scene.add(serverMesh);
-          }
+          const serversMesh = (() => {
+            const object = new THREE.Object3D();
+            object.visible = hubState.open;
+
+            const serverMeshes = _getServerMeshes(bootstrap.getServers());
+            for (let i = 0; i < serverMeshes.length; i++) {
+              const serverMesh = serverMeshes[i];
+              object.add(serverMesh);
+            }
+            object.serverMeshes = serverMeshes;
+
+            return object;
+          })();
+          scene.add(serversMesh);
 
           const _updatePages = () => {
             menuUi.update();
@@ -296,6 +305,7 @@ class Hub {
 
           const _update = () => {
             const {hmd} = webvr.getStatus();
+            const {serverMeshes} = serversMesh;
 
             for (let i = 0; i < serverMeshes.length; i++) {
               const serverMesh = serverMeshes[i];
