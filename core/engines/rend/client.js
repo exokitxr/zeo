@@ -107,7 +107,7 @@ class Rend {
         };
         const statusState = {
           username: null,
-          worldname: 'Aldous Huxley',
+          worldname: bootstrap.getCurrentServer().worldname,
           users: null,
           loading: true,
         };
