@@ -30,12 +30,14 @@ class Hub {
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/biolumi',
+        '/core/engines/rend',
       ]),
     ])
       .then(([
         [
           three,
           biolumi,
+          rend,
         ],
       ]) => {
         if (live) {
@@ -136,8 +138,20 @@ class Hub {
           })();
           scene.add(menuMesh);
 
+          const _updatePages = () => {
+            menuUi.update();
+          };
+          _updatePages();
+
+          const _update = () => {
+            // XXX
+          };
+          rend.on('update', _update);
+
           this._cleanup = () => {
             scene.remove(menuMesh);
+
+            rend.removeListener('update', _update);
           };
         }
       });

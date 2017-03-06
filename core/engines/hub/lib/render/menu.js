@@ -3,19 +3,24 @@ const {
   HEIGHT,
 } = require('../constants/menu');
 
+const leftWhiteImg = require('../img/left-white');
+const leftWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(leftWhiteImg);
+const rightWhiteImg = require('../img/right-white');
+const rightWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(rightWhiteImg);
+
 const getHubSrc = ({searchText, inputIndex, inputValue, loading, error, focusType}) => {
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
       <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">Zeo VR</div>
-      <div style="display: flex; height: 200px; background-color: #2196F3; color: #FFF; font-size: 16px; font-weight: 400; flex-direction: column; justify-content: center; align-items: center;">
+      <div style="display: flex; height: 200px; background-color: #673AB7; color: #FFF; font-size: 16px; justify-content: center; align-items: center;">
+        <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
+          <img src="${leftWhiteImgSrc}" width="80" height="80" />
+        </div>
         <div style="width: 640px;">
-          <h3>You're not logged in to this server!</h3>
-          <p>To log in:</p>
-          <ul style="list-style-type: none; padding: 0;">
-            <li>- Enter your login token in the URL and reload the page, or</li>
-            <li>- Drag-and-drop a file containing your login token, or</li>
-            <li>- Enter or paste your login token below</li>
-          </ul>
+          <div style="font-size: 50px;">Choose a server</div>
+        </div>
+        <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
+          <img src="${rightWhiteImgSrc}" width="80" height="80" />
         </div>
       </div>
       <div style="position: relative; display: flex; padding-top: 50px; justify-content: center; align-items: center; flex-direction: column;">
@@ -35,7 +40,7 @@ const getHubSrc = ({searchText, inputIndex, inputValue, loading, error, focusTyp
             <a style="position: relative; display: block; margin-bottom: 30px; background-color: #EEE; font-size: 40px; text-decoration: none; overflow: hidden;" onclick="hub:focus:search">
               ${focusType === 'search' ? `<div style="position: absolute; width: 2px; top: 2px; bottom: 2px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${searchText}</div>
-              ${!searchText ? `<div style="color: #AAA;">Search for a server</div>` : ''}
+              ${!searchText ? `<div style="color: #AAA;">Search servers</div>` : ''}
             </a>
           ` : `\
             <div style="font-size: 40px;">Loading...</div>
