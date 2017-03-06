@@ -35,7 +35,7 @@ class Bootstrap {
     ];
 
     const _initialAnnounce = () => {
-      if (hubSpec) {
+      if (serverEnabled && hubSpec) {
         return _tryRefreshServer();
       } else {
         return Promise.resolve();
