@@ -57,9 +57,12 @@ const getHubSrc = ({searchText, inputIndex, inputValue, loading, error, focusTyp
 const getServerSrc = ({worldname, description}) => {
   return `\
     <div style="display: flex; width: ${SERVER_WIDTH}px; height: ${SERVER_HEIGHT}px; padding: 50px; background-color: #EEE; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
-      <div style="margin: auto 0;">
-        <div style="margin-bottom: 20px; font-size: 80px; font-weight: 400;">${worldname}</div>
-        <div style="min-height: 150px; font-size: 50px;">${description}</div>
+      <div style="display: flex; width: 100%;">
+        <div style="width: ${SERVER_HEIGHT}px; height: ${SERVER_HEIGHT}px; margin: -50px; margin-right: 50px; background-color: #FFF;"></div>
+        <div style="flex-grow: 1;">
+          <div style="font-size: 60px; font-weight: 400;">${worldname}</div>
+          <div style="min-height: 150px; font-size: 40px;">${description}</div>
+        </div>
       </div>
     </div>
   `;
