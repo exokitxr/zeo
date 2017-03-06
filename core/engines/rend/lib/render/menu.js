@@ -41,8 +41,8 @@ const getStatusSrc = ({status: {username, worldname, users, loading}, iconImg}) 
         </div>
         <div style="margin-right: auto;">
           ${!loading ? allUsers.map(user => `\
-            <div style="display: flex; margin-bottom: 2px; padding: 2px 10px; background-color: #222; border-radius: 100px; font-size: 13px; line-height: 1; align-items: center;">
-              <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="18" height="18" style="margin-right: 10px; image-rendering: pixelated;" />
+            <div style="display: flex; margin-bottom: 2px; padding: 5px 15px; background-color: #222; border-radius: 100px; font-size: 16px; line-height: 1; align-items: center;">
+              <img src="${creatureUtils.makeStaticCreature('user:' + user)}" width="26" height="26" style="margin-right: 5px; image-rendering: pixelated;" />
               <div>${user}</div>
             </div>
           `).join('\n') : ''}
