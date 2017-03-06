@@ -31,6 +31,7 @@ class Hub {
         '/core/engines/three',
         '/core/engines/biolumi',
         '/core/engines/rend',
+        '/core/plugins/creature-utils',
       ]),
     ])
       .then(([
@@ -38,12 +39,14 @@ class Hub {
           three,
           biolumi,
           rend,
+          creatureUtils,
         ],
       ]) => {
         if (live) {
           const {THREE, scene} = three;
 
           const transparentMaterial = biolumi.getTransparentMaterial();
+          const transparentImg = biolumi.getTransparentImg();
 
           const menuUi = biolumi.makeUi({
             width: WIDTH,
@@ -138,6 +141,64 @@ class Hub {
           })();
           scene.add(menuMesh);
 
+          const _getServerMeshes = () => {
+            const result = [];
+
+            for (let i = 0; i < 1; i++) {
+              const mesh = (() => {
+                const geometry = new THREE.SphereBufferGeometry(0.5, 32, 32);
+                const material = (() => {
+                  const texture = new THREE.CubeTexture(
+                    transparentImg,
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.LinearFilter,
+                    THREE.LinearFilter,
+                    THREE.RGBAFormat,
+                    THREE.UnsignedByteType,
+                    16
+                  );
+
+                  const img = new Image();
+                  img.src = creatureUtils.makeStaticCreature('server:' + ('server' + _padNumber(i, 2)));
+                  img.onload = () => {
+                    const images = (() => {
+                      const result = [];
+                      for (let i = 0; i < 6; i++) {
+                        result[i] = img;
+                      }
+                      return result;
+                    })();
+                    texture.images = images;
+                    texture.needsUpdate = true;
+                  };
+                  img.onerror = err => {
+                    console.warn(err);
+                  };
+
+                  const material = new THREE.MeshPhongMaterial({
+                    color: 0xffffff,
+                    envMap: texture,
+                  });
+                  return material;
+                })();
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.x = -2;
+                mesh.position.y = 1;
+                return mesh;
+              })();
+              result.push(mesh);
+
+              return result;
+            }
+          };
+          const serverMeshes = _getServerMeshes();
+          serverMeshes.forEach(serverMesh => {
+            scene.add(serverMesh);
+          });
+
           const _updatePages = () => {
             menuUi.update();
           };
@@ -150,6 +211,9 @@ class Hub {
 
           this._cleanup = () => {
             scene.remove(menuMesh);
+            serverMeshes.forEach(serverMesh => {
+              scene.remove(serverMesh);
+            });
 
             rend.removeListener('update', _update);
           };
@@ -161,5 +225,10 @@ class Hub {
     this._cleanup();
   }
 }
+
+const _padNumber = (n, width) => {
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+};
 
 module.exports = Hub;
