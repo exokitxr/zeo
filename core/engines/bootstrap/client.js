@@ -12,6 +12,8 @@ import menuRenderer from './lib/render/menu';
 const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const NUM_INVENTORY_ITEMS = 4;
 
+const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
+
 class Bootstrap {
   constructor(archae) {
     this._archae = archae;
@@ -31,18 +33,49 @@ class Bootstrap {
       .then(res => res.json());
     const _requestServer = hostUrl => fetch('https://' + hostUrl + '/servers/server.json')
       .then(res => res.json());
+    const _requestImageFileDataUrl = (hostUrl, p) => fetch('https://' + hostUrl + p)
+      .then(res => res.blob()
+        .then(blob => new Promise((accept, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            accept(reader.result);
+          };
+        }))
+      );
+    const _requestIconImg = hostUrl => _requestImageFileDataUrl(hostUrl, '/servers/img/icon.png');
+    const _requestSkyboxImg = hostUrl => _requestImageFileDataUrl(hostUrl, '/servers/img/skybox.png');
+    const _requestCubeMapImgs = hostUrl => Promise.all(FACES.map(face => _requestImageFileDataUrl(hostUrl, '/servers/img/cubemap-' + face + '.png')))
+      .then(cubeMapImgs => {
+        const result = {};
+        for (let i = 0; i < cubeMapImgs.length; i++) {
+          const cubeMapImg = cubeMapImgs[i];
+          const face = FACES[i];
+          result[face] = cubeMapImg;
+        }
+        return result;
+      });
 
     return Promise.all([
       _requestServers(hostUrl),
       _requestServer(hostUrl),
+      _requestIconImg(hostUrl),
+      _requestSkyboxImg(hostUrl),
+      _requestCubeMapImgs(hostUrl),
     ])
       .then(([
         serversJson,
         serverJson,
+        iconImg,
+        skyboxImg,
+        cubeMapImgs,
       ]) => {
         if (live) {
           const _getServers = () => serversJson.servers;
           const _getCurrentServer = () => serverJson;
+          const _getIconImg = () => iconImg;
+          const _getSkyboxImg = () => skyboxImg;
+          const _getCubeMapImgs = () => cubeMapImgs;
           const _changeServer = serverUrl => {
             if (serverUrl !== null) {
               return _requestServer(serverUrl)
@@ -148,6 +181,9 @@ class Bootstrap {
           return {
             getServers: _getServers,
             getCurrentServer: _getCurrentServer,
+            getIconImg: _getIconImg,
+            getSkyboxImg: _getSkyboxImg,
+            getCubeMapImgs: _getCubeMapImgs,
             changeServer: _changeServer,
             requestLogin: _requestLogin,
             requestLogout: _requestLogout,

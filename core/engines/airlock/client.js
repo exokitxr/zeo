@@ -1,9 +1,11 @@
+const FLOOR_SIZE = 1024;
 const GRID_SIZE = 128;
 const GRID_RESOLUTION = 4;
 const TARGET_RADII = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 
+const FLOOR_COLOR = 0xAAAAAA;
 const LINE_COLOR = 0xCCCCCC;
-const DOT_COLOR = 0xAAAAAA;
+const DOT_COLOR = 0x808080;
 
 const SHADOW_MAP_SIZE = 2048;
 
@@ -21,10 +23,12 @@ class Airlock {
     };
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/config',
       '/core/plugins/geometry-utils',
     ]).then(([
+      bootstrap,
       three,
       config,
       geometryUtils,
@@ -90,7 +94,7 @@ class Airlock {
               for (let i = 0; i < (width * resolution); i++) {
                 for (let j = 0; j < (depth * resolution); j++) {
                   const x = -(width / 2) + (i / resolution);
-                  const y = 0.04;
+                  const y = 0.01;
                   const z = -(depth / 2) + (j / resolution);
 
                   positions[baseIndex + 0] = x;
@@ -107,7 +111,7 @@ class Airlock {
 
             const material = new THREE.PointsMaterial({
               color: DOT_COLOR,
-              size: 0.02,
+              size: 0.015,
             });
 
             const mesh = new THREE.Points(geometry, material);
@@ -116,12 +120,12 @@ class Airlock {
           object.add(gridMesh);
 
           const floorMesh = (() => {
-            const geometry = new THREE.PlaneBufferGeometry(GRID_SIZE, GRID_SIZE);
+            const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE);
             geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-            geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.03, 0));
+            geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1, 0));
 
             const material = new THREE.MeshPhongMaterial({
-              color: 0xFFFFFF,
+              color: FLOOR_COLOR,
               shininess: 10,
             });
 
@@ -158,7 +162,7 @@ class Airlock {
               depthWrite: false,
               // opacity: 0.5,
               // transparent: true,
-              // depthTest: flase,
+              // depthTest: false,
             });
 
             const mesh = new THREE.LineSegments(geometry, material);
@@ -166,18 +170,74 @@ class Airlock {
           })();
           object.add(targetMesh);
 
-          /* const skyboxMesh = (() => {
-            const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000);
+          const domeMesh = (() => {
+            const geometry = new THREE.SphereBufferGeometry(10 * 1024, 8, 3, 0, Math.PI * 2, 0, Math.PI / 2);
             const material = new THREE.MeshBasicMaterial({
-              color: 0xFFFFFF,
-              side: THREE.BackSide,
+              color: 0x808080,
+              wireframe: true,
+              transparent: true,
             });
 
-            return new THREE.Mesh(geometry, material);
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
           })();
-          object.add(skyboxMesh); */
+          object.add(domeMesh);
 
-          const starsMesh = (() => {
+          const skyboxMesh = (() => {
+            const object = new THREE.Object3D();
+
+            const cubeMapImgs = bootstrap.getCubeMapImgs();
+            Promise.all([
+              'right',
+              'left',
+              'top',
+              'bottom',
+              'front',
+              'back',
+            ].map(face => new Promise((accept, reject) => {
+              const cubeMapImg = cubeMapImgs[face];
+
+              const img = new Image();
+              img.src = cubeMapImg;
+              img.onload = () => {
+                accept(img);
+              };
+            })))
+              .then(skyboxImgs => {
+                const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
+                geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
+                const materials = skyboxImgs.map(skyboxImg => {
+                  const texture = new THREE.Texture(
+                    skyboxImg,
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.NearestFilter,
+                    THREE.NearestFilter,
+                    THREE.RGBAFormat,
+                    THREE.UnsignedByteType,
+                    1
+                  );
+                  texture.needsUpdate = true;
+
+                  const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    color: 0xFFFFFF,
+                    side: THREE.BackSide,
+                  });
+                  return  material;
+                });
+                const material = new THREE.MultiMaterial(materials);
+
+                const mesh = new THREE.Mesh(geometry, material);
+                object.add(mesh);
+              });
+
+            return object;
+          })();
+          object.add(skyboxMesh);
+
+          /* const starsMesh = (() => {
             const numStars = 128;
 
             const geometry = (() => {
@@ -213,7 +273,7 @@ class Airlock {
             // mesh.renderOrder = 1;
             return mesh;
           })();
-          object.add(starsMesh);
+          object.add(starsMesh); */
 
           return object;
         })();

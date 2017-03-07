@@ -26,7 +26,6 @@ class Three {
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true,
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);

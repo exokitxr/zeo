@@ -3,10 +3,13 @@ const {
   HEIGHT,
 } = require('../constants/menu');
 
-const getLoginSrc = ({token, inputIndex, inputValue, loading, error, focusType}) => {
+const getLoginSrc = ({hasHub, token, inputIndex, inputValue, loading, error, focusType}) => {
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
-      <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">Zeo VR</div>
+      <div style="display: flex; height: 100px; padding: 20px; background-color: #000; color: #FFF; box-sizing: border-box; align-items: center;">
+        <div style="font-size: 40px; flex-grow: 1;">Zeo VR</div>
+        ${hasHub ? `<a style="display: flex; padding: 5px 20px; border: 1px solid; border-radius: 5px; color: #9575CD; font-size: 30px; font-weight: 400; text-decoration: none; justify-content: center; align-items: center;" onclick="login:back">Back to Hub</a>` : ''}
+      </div>
       <div style="display: flex; height: 200px; background-color: #2196F3; color: #FFF; font-size: 16px; font-weight: 400; flex-direction: column; justify-content: center; align-items: center;">
         <div style="width: 640px;">
           <h3>You're not logged in to this server!</h3>

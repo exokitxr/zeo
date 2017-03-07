@@ -33,13 +33,16 @@
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cookie": "^0.3.1",
+    "etag": "^1.8.0",
     "fs-extra": "^2.0.0",
     "http-proxy": "^1.16.2",
     "lru-cache": "^4.0.2",
     "mkdirp": "^0.5.1",
     "nedb": "^1.8.0",
+    "node-equirect-cubemap-faces": "^1.0.3",
     "password-hash-and-salt": "^0.1.4",
-    "rnd": "^1.0.7",
+    "proceduralart": "0.0.5",
+    "rnd": "^1.0.10",
     "stripe": "^4.15.0"
   }
 }
