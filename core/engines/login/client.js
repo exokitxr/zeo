@@ -18,7 +18,7 @@ class Login {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
    let live = true;
     this._cleanup = () => {
@@ -228,33 +228,43 @@ class Login {
               return Promise.resolve();
             }
           };
-          const _requestLogin = ({token = null} = {}) => new Promise((accept, reject) => {
-            bootstrap.requestLogin({
-              token,
+          const _requestLogin = ({token = null} = {}) => fetch('https://' + serverUrl + '/server/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({token}),
+            credentials: 'same-origin',
+          })
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.json();
+              } else {
+                return null;
+              }
             })
-              .then(loginSpec => {
-                if (loginSpec) {
-                  const {username} = loginSpec;
-                  loginState.username = username;
+            .then(loginSpec => new Promise((accept, reject) => {
+              if (loginSpec) {
+                const {username} = loginSpec;
+                loginState.username = username;
 
-                  rend.login();
-                  rend.setStatus('username', username);
+                rend.login();
+                rend.setStatus('username', username);
 
-                  accept();
-                } else {
-                  accept({
-                    error: 'EAUTH',
-                  });
-                }
-              })
-              .catch(err => {
-                console.warn(err);
-
+                accept();
+              } else {
                 accept({
-                  error: err,
+                  error: 'EAUTH',
                 });
+              }
+            }))
+            .catch(err => {
+              console.warn(err);
+
+              accept({
+                error: err,
               });
-          });
+            });
 
           return _requestInitialLogin()
             .then(() => {

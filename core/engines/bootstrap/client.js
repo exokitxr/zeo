@@ -60,21 +60,6 @@ class Bootstrap {
               return Promise.resolve();
             }
           };
-          const _requestLogin = ({token = null} = {}) => fetch('https://' + serverUrl + '/server/login', { // XXX these can be moved to the callsites instead
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({token}),
-            credentials: 'same-origin',
-          })
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.json();
-              } else {
-                return null;
-              }
-            });
           const _requestLogout = () => fetch('https://' + serverUrl + '/server/logout', {
             method: 'POST',
             headers: {
@@ -151,7 +136,6 @@ class Bootstrap {
             getServers: _getServers,
             getCurrentServer: _getCurrentServer,
             changeServer: _changeServer,
-            requestLogin: _requestLogin,
             requestLogout: _requestLogout,
             getUserState: _getUserState,
             setUserStateMatrix: _setUserStateMatrix,
