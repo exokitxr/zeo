@@ -9,6 +9,8 @@ const DOT_COLOR = 0x808080;
 
 const SHADOW_MAP_SIZE = 2048;
 
+const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
+
 class Airlock {
   constructor(archae) {
     this._archae = archae;
@@ -16,22 +18,56 @@ class Airlock {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/bootstrap',
-      '/core/engines/three',
-      '/core/engines/config',
-      '/core/plugins/geometry-utils',
+    const _requestImage = p => new Promise((accept, reject) => {
+      const img = new Image();
+      img.src = 'https://' + serverUrl + p;
+      img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(err);
+      };
+    });
+    const _requestCubeMapImgs = () => {
+      if (serverEnabled) {
+        return Promise.all(FACES.map(face => _requestImage('/servers/img/cubemap-' + face + '.png')))
+          .then(cubeMapImgs => {
+            const result = {};
+            for (let i = 0; i < cubeMapImgs.length; i++) {
+              const cubeMapImg = cubeMapImgs[i];
+              const face = FACES[i];
+              result[face] = cubeMapImg;
+            }
+            return result;
+          });
+      } else {
+        return Promise.resolve();
+      }
+    };
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/bootstrap',
+        '/core/engines/three',
+        '/core/engines/config',
+        '/core/plugins/geometry-utils',
+      ]),
+      _requestCubeMapImgs(),
     ]).then(([
-      bootstrap,
-      three,
-      config,
-      geometryUtils,
+      [
+        bootstrap,
+        three,
+        config,
+        geometryUtils,
+      ],
+      cubeMapImgs,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -183,59 +219,47 @@ class Airlock {
           })();
           object.add(domeMesh);
 
-          const skyboxMesh = (() => {
-            const object = new THREE.Object3D();
+          if (serverEnabled) { // XXX figure out the hub skybox
+            const skyboxMesh = (() => {
+              const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
+              geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
 
-            const cubeMapImgs = bootstrap.getCubeMapImgs();
-            Promise.all([
-              'right',
-              'left',
-              'top',
-              'bottom',
-              'front',
-              'back',
-            ].map(face => new Promise((accept, reject) => {
-              const cubeMapImg = cubeMapImgs[face];
+              const skyboxImgs = [
+                'right',
+                'left',
+                'top',
+                'bottom',
+                'front',
+                'back',
+              ].map(face => cubeMapImgs[face]);
+              const materials = skyboxImgs.map(skyboxImg => {
+                const texture = new THREE.Texture(
+                  skyboxImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.NearestFilter,
+                  THREE.NearestFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  1
+                );
+                texture.needsUpdate = true;
 
-              const img = new Image();
-              img.src = cubeMapImg;
-              img.onload = () => {
-                accept(img);
-              };
-            })))
-              .then(skyboxImgs => {
-                const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
-                geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
-                const materials = skyboxImgs.map(skyboxImg => {
-                  const texture = new THREE.Texture(
-                    skyboxImg,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.NearestFilter,
-                    THREE.NearestFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    1
-                  );
-                  texture.needsUpdate = true;
-
-                  const material = new THREE.MeshBasicMaterial({
-                    map: texture,
-                    color: 0xFFFFFF,
-                    side: THREE.BackSide,
-                  });
-                  return  material;
+                const material = new THREE.MeshBasicMaterial({
+                  map: texture,
+                  color: 0xFFFFFF,
+                  side: THREE.BackSide,
                 });
-                const material = new THREE.MultiMaterial(materials);
-
-                const mesh = new THREE.Mesh(geometry, material);
-                object.add(mesh);
+                return  material;
               });
+              const material = new THREE.MultiMaterial(materials);
 
-            return object;
-          })();
-          object.add(skyboxMesh);
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(skyboxMesh);
+          }
 
           /* const starsMesh = (() => {
             const numStars = 128;
