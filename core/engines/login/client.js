@@ -18,7 +18,7 @@ class Login {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl}, server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -274,7 +274,9 @@ class Login {
 
                   focusState.type = '';
 
-                  if (onclick === 'login:focus:token') {
+                  if (onclick === 'login:back') {
+                    document.location = 'https://' + hubUrl;
+                  } else if (onclick === 'login:focus:token') {
                     const {value} = menuHoverState;
                     const valuePx = value * 640;
 
