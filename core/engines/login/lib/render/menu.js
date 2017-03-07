@@ -14,7 +14,7 @@ const getLoginSrc = ({token, inputIndex, inputValue, loading, error, focusType})
           <ul style="list-style-type: none; padding: 0;">
             <li>- Enter your login token in the URL and reload the page, or</li>
             <li>- Drag-and-drop a file containing your login token, or</li>
-            <li>- Enter or paste your login token below</li>
+            <li>- Enter (paste) your login token below</li>
           </ul>
         </div>
       </div>
