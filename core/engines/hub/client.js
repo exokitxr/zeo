@@ -449,9 +449,9 @@ class Hub {
             if (hoveredServerMesh) {
               const {server} = hoveredServerMesh;
               const {url} = server;
-console.log('navigate to url', url);
+              document.location = 'https://' + server.url;
 
-              e.stopImmediatePropagation();
+              e.stopImmediatePropagation(); // can't happen
             }
           };
           input.on('trigger', _trigger, {
