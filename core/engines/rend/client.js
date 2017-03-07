@@ -35,6 +35,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {hub: {url: hubUrl}}} = archae;
 
     let live = true;
     const cleanups = [];
@@ -78,6 +79,14 @@ class Rend {
         const transparentMaterial = biolumi.getTransparentMaterial();
         const solidMaterial = biolumi.getSolidMaterial();
 
+        const hubSpec = (() => {
+          const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
+          return match && {
+            host: match[1],
+            port: match[2] ? parseInt(match[2], 10) : 443,
+          };
+        })();
+
         const oneVector = new THREE.Vector3(1, 1, 1);
 
         const menuRenderer = menuRender.makeRenderer({
@@ -109,6 +118,7 @@ class Rend {
           username: null,
           worldname: bootstrap.getCurrentServer().worldname,
           users: null,
+          hasHub: Boolean(hubSpec),
           loading: true,
         };
         const navbarState = {
