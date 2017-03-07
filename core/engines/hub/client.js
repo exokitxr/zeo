@@ -40,6 +40,7 @@ class Hub {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/bootstrap',
+        '/core/engines/input',
         '/core/engines/three',
         '/core/engines/webvr',
         '/core/engines/biolumi',
@@ -50,6 +51,7 @@ class Hub {
       .then(([
         [
           bootstrap,
+          input,
           three,
           webvr,
           biolumi,
@@ -304,7 +306,6 @@ class Hub {
 
               setTimeout(() => {
                 const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(mesh); // the mesh is in the scene at this point
-console.log('env mesh position', envMeshPosition.toArray().join(','));
                 const boxTarget = geometryUtils.makeBoxTarget(envMeshPosition, envMeshRotation, envMeshScale, sphereDiameterVector);
                 mesh.boxTarget = boxTarget;
               });
@@ -401,6 +402,7 @@ console.log('env mesh position', envMeshPosition.toArray().join(','));
                 const object = new THREE.Object3D();
                 object.position.x = -2 + (i * 1);
                 object.position.y = 1.2;
+                object.server = server;
 
                 const envMesh = _makeServerEnvMesh(server, i);
                 object.add(envMesh);
@@ -433,13 +435,28 @@ console.log('env mesh position', envMeshPosition.toArray().join(','));
           })();
           scene.add(serversMesh);
           serversMesh.updateMatrixWorld();
-console.log('scene added servers mesh');
 
           const _updatePages = () => {
             menuUi.update();
           };
           _updatePages();
 
+          const _trigger = e => {
+            const {side} = e;
+            const envHoverState = envHoverStates[side];
+            const {hoveredServerMesh} = envHoverState;
+
+            if (hoveredServerMesh) {
+              const {server} = hoveredServerMesh;
+              const {url} = server;
+console.log('navigate to url', url);
+
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('trigger', _trigger, {
+            priority: 1,
+          });
           const _update = () => {
             const _updateMenuAnchors = () => {
               const {gamepads} = webvr.getStatus();
@@ -497,7 +514,6 @@ console.log('scene added servers mesh');
 
                     if (boxTarget) { // we add the box target asynchronously on next tick
                       const intersectionPoint = boxTarget.intersectLine(controllerLine);
-// console.log('try intersection spec', boxTarget, intersectionPoint);
 
                       if (intersectionPoint) {
                         const distance = intersectionPoint.distanceTo(controllerPosition);
@@ -566,11 +582,11 @@ console.log('scene added servers mesh');
               scene.remove(envDotMeshes[side]);
               scene.remove(envBoxMeshes[side]);
             });
-
             serverMeshes.forEach(serverMesh => {
               scene.remove(serverMesh);
             });
 
+            input.removeListener('trigger', _trigger);
             rend.removeListener('update', _update);
           };
         }
