@@ -28,8 +28,6 @@ class Zeo {
       const loaderPlugin = $('#loader-plugin')[0];
 
       const pendingPlugins = [];
-      let loadingPlugins = true;
-      let loadingMediaPermissions = true;
       const pluginloadstart = plugin => {
         if (!pendingPlugins.includes(plugin)) {
           pendingPlugins.push(plugin);
@@ -44,29 +42,13 @@ class Zeo {
         _updateText();
       }
       archae.on('pluginload', pluginload);
-      const pluginsload = () => {
-        loadingPlugins = false;
-
-        _updateText();
-      }
-      archae.on('pluginsload', pluginsload);
-      const mediapermissionsload = () => {
-        loadingMediaPermissions = false;
-
-        _updateText();
-      }
-      archae.on('mediapermissionsload', mediapermissionsload);
 
       const _updateText = () => {
         loaderPlugin.innerText = (() => {
           if (pendingPlugins.length > 0) {
             return pendingPlugins[0];
-          } else if (loadingPlugins) {
-             return 'Waiting for plugins...';
-          } else if (loadingMediaPermissions) {
-             return 'Waiting for media permissions...';
           } else {
-            return '';
+             return 'Waiting for plugins...';
           }
         })();
       };
@@ -76,8 +58,6 @@ class Zeo {
 
         archae.removeListener('pluginloadstart', pluginloadstart);
         archae.removeListener('pluginload', pluginload);
-        archae.removeListener('pluginsload', pluginsload);
-        archae.removeListener('mediapermissionsload', mediapermissionsload);
       };
       cleanups.push(cleanup);
 
@@ -122,12 +102,10 @@ class Zeo {
             '/core/engines/somnifer',
             '/core/engines/bullet',
             '/core/plugins/js-utils',
-          ])
-            .then(pluginApis => {
-              archae.emit('pluginsload');
+          ]);
 
-              return pluginApis;
-            });
+          let mediaPermissions = false;
+          let mediaPermissionsLoaded = false;
           const _requestMediaPermissions = () => new Promise((accept, reject) => {
             navigator.mediaDevices.getUserMedia({
               video: true,
@@ -147,8 +125,6 @@ class Zeo {
                   track.stop();
                 }
 
-                archae.emit('mediapermissionsload');
-
                 accept(video && audio);
               })
               .catch(err => {
@@ -157,41 +133,41 @@ class Zeo {
                 accept(false);
               });
           });
+          const _initMediaPermissions = () => _requestMediaPermissions()
+            .then(newMediaPermissions => {
+              mediaPermissions = newMediaPermissions;
+              mediaPermissionsLoaded = true;
+            });
+          _initMediaPermissions();
 
-          return Promise.all([
-            _requestPlugins(),
-            _requestMediaPermissions(),
-          ]).then(([
-            [
-              bootstrap,
-              input,
-              webvr,
-              three,
-              anima,
-              cyborg,
-              hub,
-              login,
-              rend,
-              biolumi,
-              airlock,
-              teleport,
-              hands,
-              tags,
-              world,
-              mail,
-              universe,
-              servers,
-              bag,
-              backpack,
-              multiplayer,
-              voicechat,
-              npm,
-              fs,
-              somnifer,
-              bullet,
-              jsUtils,
-            ],
-            mediaPermissions,
+          return _requestPlugins().then(([
+            bootstrap,
+            input,
+            webvr,
+            three,
+            anima,
+            cyborg,
+            hub,
+            login,
+            rend,
+            biolumi,
+            airlock,
+            teleport,
+            hands,
+            tags,
+            world,
+            mail,
+            universe,
+            servers,
+            bag,
+            backpack,
+            multiplayer,
+            voicechat,
+            npm,
+            fs,
+            somnifer,
+            bullet,
+            jsUtils,
           ]) => {
             if (live) {
               const {THREE, scene, camera, renderer} = three;
@@ -279,110 +255,90 @@ class Zeo {
               return _startRenderLoop()
                 .then(() => {
                   if (live) {
-                    const _initHelper = () => {
-                      const filterText = 'blur(5px) opacity(0.75)';
+                    const filterText = 'blur(5px) opacity(0.75)';
+                    renderer.domElement.style.display = 'block';
+                    renderer.domElement.style.filter = filterText;
 
-                      renderer.domElement.style.display = 'block';
-                      renderer.domElement.style.filter = filterText;
-
-                      const helper = document.createElement('div');
-                      helper.id = 'helper';
-                      helper.style.cssText = `\
-                        display: flex;
-                        position: absolute;
-                        top: 0;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        align-items: center;
-                        font-family: ${biolumi.getFonts()};
-                      `;
-                      const fonts = biolumi.getFonts().replace(/"/g, "'");
-                      helper.innerHTML = `\
-                        <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; justify-content: center;">
-                          <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
-                            <h1 style="display: flex; width: 400px; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
-                            <div class=helper-content style="width: 400px;"></div>
-                          </div>
+                    // begin helper content
+                    const helper = document.createElement('div');
+                    helper.id = 'helper';
+                    helper.style.cssText = `\
+                      display: flex;
+                      position: absolute;
+                      top: 0;
+                      bottom: 0;
+                      left: 0;
+                      right: 0;
+                      align-items: center;
+                      font-family: ${biolumi.getFonts()};
+                    `;
+                    const fonts = biolumi.getFonts().replace(/"/g, "'");
+                    helper.innerHTML = `\
+                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; justify-content: center;">
+                        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                          <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
+                          <h1 style="display: flex; width: 400px; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
+                          <div class=helper-content style="width: 400px;"></div>
                         </div>
-                      `;
-                      helper.addEventListener('dragover', fs.dragover);
-                      helper.addEventListener('drop', fs.drop);
-                      document.body.appendChild(helper);
+                      </div>
+                    `;
+                    helper.addEventListener('dragover', fs.dragover);
+                    helper.addEventListener('drop', fs.drop);
+                    document.body.appendChild(helper);
 
-                      const helperConent = helper.querySelector('.helper-content');
+                    const helperConent = helper.querySelector('.helper-content');
 
-                      const enterHelperContent = document.createElement('div');
-                      enterHelperContent.innerHTML = `\
-                        <div>
-                          <div style="display: flex; margin-bottom: 20px;">
-                            <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class="headset-button">Headset</button>
-                            <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
-                          </div>
-                          <p style="width: 400px; margin: 0; font-size: 13px; color: #CCC; font-weight: 300;" class="error-message">WebVR is not supported by your browser so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
+                    const enterHelperContent = document.createElement('div');
+                    enterHelperContent.innerHTML = `\
+                      <div>
+                        <div style="display: flex; margin-bottom: 20px;">
+                          <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class="headset-button">Headset</button>
+                          <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
                         </div>
-                      `;
-
-                      const permissionsHelperContent = document.createElement('div');
-                      permissionsHelperContent.innerHTML = `\
-                        <div>
-                          <div style="margin-bottom: 18px; padding: 15px; background-color: #E91E63; color: #FFF; cursor: pointer;">
-                            <div style="display: flex; margin-bottom: 15px; font-size: 18px; line-height: 22px;">
-                              <div style="margin-right: auto; color: #FFF;">Media Permissions</div>
-                              <button style="display: inline-flex; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
-                                <div style="width: 12px; height: 12px; background-color: #FFF;"></div>
-                                <div style="width: 12px; height: 12px;"></div>
-                              </button>
-                            </div>
-                            <p style="margin: 0; font-size: 13px; font-weight: 300;" class="help-message">Media permissions enable camera + microphone support in VR. They will <i>not</i> be used until you enable them in the Options menu. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
-                          </div>
+                        <div style="padding: 15px; background-color: #000; color: #FFF;" id="error-message">
+                          <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
+                          <div style="font-size: 13px; font-weight: 400;" class="error-message">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
                         </div>
-                      `;
-                      permissionsHelperContent.addEventListener('click', () => {
-                        _requestMediaPermissions();
+                      </div>
+                    `;
+
+                    const permissionsHelperContent = document.createElement('div');
+                    permissionsHelperContent.innerHTML = `\
+                      <div style="margin-top: 10px; margin-bottom: 18px; padding: 15px; background-color: #4CAF50; color: #FFF; cursor: pointer;">
+                        <div style="display: flex; margin-bottom: 10px; font-size: 18px; line-height: 1;">
+                          <div style="margin-right: auto; color: #FFF;">Media Permissions</div>
+                          <button style="display: inline-flex; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
+                            <div style="width: 10px; height: 10px; background-color: #FFF;"></div>
+                            <div style="width: 10px; height: 10px;"></div>
+                          </button>
+                        </div>
+                        <p style="margin: 0; font-size: 13px; font-weight: 400;" class="help-message">Media permissions enable avatar chat in VR. Click to grant permission.</p>
+                      </div>
+                    `;
+                    permissionsHelperContent.addEventListener('click', () => {
+                      _reinitMediaPermissions();
+                    });
+
+                    const _styleButton = button => {
+                      button.addEventListener('mouseover', e => {
+                        button.style.backgroundColor = '#000';
+                        button.style.borderColor = 'transparent';
+                        button.style.color = '#FFF';
                       });
+                      button.addEventListener('mouseout', e => {
+                        button.style.backgroundColor = 'transparent';
+                        button.style.borderColor = 'currentColor';
+                        button.style.color = '#000';
+                      });
+                    };
 
-                      const _styleButton = button => {
-                        button.addEventListener('mouseover', e => {
-                          button.style.backgroundColor = '#000';
-                          button.style.borderColor = 'transparent';
-                          button.style.color = '#FFF';
-                        });
-                        button.addEventListener('mouseout', e => {
-                          button.style.backgroundColor = 'transparent';
-                          button.style.borderColor = 'currentColor';
-                          button.style.color = '#000';
-                        });
-                      };
-
-                      const headsetButton = $$(enterHelperContent, '.headset-button')[0];
-                      if (supportsWebVR) {
-                        _styleButton(headsetButton);
-                        headsetButton.addEventListener('click', e => {
-                          if (!webvr.display) {
-                            _enterVR({
-                              stereoscopic: true,
-                              onExit: () => {
-                                helper.style.display = 'flex';
-                                renderer.domElement.style.filter = filterText;
-                              },
-                            });
-
-                            helper.style.display = 'none';
-                            renderer.domElement.style.filter = 'none';
-                          }
-                        });
-                      } else {
-                        headsetButton.style.display = 'none';
-                      }
-
-                      const keyboardButton = $$(enterHelperContent, '.keyboard-button')[0];
-                      _styleButton(keyboardButton);
-                      keyboardButton.addEventListener('click', e => {
+                    const headsetButton = $$(enterHelperContent, '.headset-button')[0];
+                    if (supportsWebVR) {
+                      _styleButton(headsetButton);
+                      headsetButton.addEventListener('click', e => {
                         if (!webvr.display) {
                           _enterVR({
-                            stereoscopic: false,
+                            stereoscopic: true,
                             onExit: () => {
                               helper.style.display = 'flex';
                               renderer.domElement.style.filter = filterText;
@@ -393,30 +349,68 @@ class Zeo {
                           renderer.domElement.style.filter = 'none';
                         }
                       });
+                    } else {
+                      headsetButton.style.display = 'none';
+                    }
 
-                      const errorMessage = $$(enterHelperContent, '.error-message')[0];
-                      if (supportsWebVR) {
-                        errorMessage.style.display = 'none';
-                      }
+                    const keyboardButton = $$(enterHelperContent, '.keyboard-button')[0];
+                    _styleButton(keyboardButton);
+                    keyboardButton.addEventListener('click', e => {
+                      if (!webvr.display) {
+                        _enterVR({
+                          stereoscopic: false,
+                          onExit: () => {
+                            helper.style.display = 'flex';
+                            renderer.domElement.style.filter = filterText;
+                          },
+                        });
 
-                      const userState = bootstrap.getUserState();
-                      const {username, world} = userState;
-                      if (username) {
-                        const usernameEl = $$(helper, '.username')[0];
-                        usernameEl.innerText = username;
+                        helper.style.display = 'none';
+                        renderer.domElement.style.filter = 'none';
                       }
-                      if (world) {
-                        const worldnameEl = $$(helper, '.worldname')[0];
-                        worldnameEl.innerText = world;
-                      }
+                    });
 
+                    const errorMessage = $$(enterHelperContent, '.error-message')[0];
+                    if (supportsWebVR) {
+                      errorMessage.style.display = 'none';
+                    }
+
+                    const userState = bootstrap.getUserState();
+                    const {username, world} = userState;
+                    if (username) {
+                      const usernameEl = $$(helper, '.username')[0];
+                      usernameEl.innerText = username;
+                    }
+                    if (world) {
+                      const worldnameEl = $$(helper, '.worldname')[0];
+                      worldnameEl.innerText = world;
+                    }
+
+                    const _updateHelperContent = () => {
                       if (mediaPermissions) {
-                        helperConent.appendChild(enterHelperContent);
+                        permissionsHelperContent.style.display = 'none';
                       } else {
-                        helperConent.appendChild(permissionsHelperContent);
+                        permissionsHelperContent.style.display = 'block';
                       }
                     };
-                    _initHelper();
+                    _updateHelperContent();
+
+                    helperConent.appendChild(enterHelperContent);
+                    helperConent.appendChild(permissionsHelperContent);
+
+                    const _reinitMediaPermissions = () => {
+                      _requestMediaPermissions()
+                        .then(newMediaPermissions => {
+                          mediaPermissions = newMediaPermissions;
+
+                          _updateHelperContent();
+                        });
+                    };
+                    if (!mediaPermissionsLoaded) {
+                      _reinitMediaPermissions();
+                    }
+
+                    // end helper content
 
                     class Listener {
                       constructor(handler, priority) {
