@@ -43,7 +43,6 @@ class Bootstrap {
           };
         }))
       );
-    const _requestIconImg = hostUrl => _requestImageFileDataUrl(hostUrl, '/servers/img/icon.png');
     const _requestCubeMapImgs = hostUrl => Promise.all(FACES.map(face => _requestImageFileDataUrl(hostUrl, '/servers/img/cubemap-' + face + '.png')))
       .then(cubeMapImgs => {
         const result = {};
@@ -58,19 +57,16 @@ class Bootstrap {
     return Promise.all([
       _requestServers(hostUrl),
       _requestServer(hostUrl),
-      _requestIconImg(hostUrl),
       _requestCubeMapImgs(hostUrl),
     ])
       .then(([
         serversJson,
         serverJson,
-        iconImg,
         cubeMapImgs,
       ]) => {
         if (live) {
           const _getServers = () => serversJson.servers;
           const _getCurrentServer = () => serverJson;
-          const _getIconImg = () => iconImg;
           const _getCubeMapImgs = () => cubeMapImgs;
           const _changeServer = serverUrl => {
             if (serverUrl !== null) {
@@ -177,7 +173,6 @@ class Bootstrap {
           return {
             getServers: _getServers,
             getCurrentServer: _getCurrentServer,
-            getIconImg: _getIconImg,
             getCubeMapImgs: _getCubeMapImgs,
             changeServer: _changeServer,
             requestLogin: _requestLogin,

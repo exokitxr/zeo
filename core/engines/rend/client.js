@@ -35,7 +35,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl}}} = archae;
+    const {metadata: {server: {url: serverUrl}, hub: {url: hubUrl}}} = archae;
 
     let live = true;
     const cleanups = [];
@@ -49,26 +49,44 @@ class Rend {
       }
     };
 
-    return archae.requestPlugins([
-      '/core/engines/bootstrap',
-      '/core/engines/input',
-      '/core/engines/three',
-      '/core/engines/webvr',
-      '/core/engines/biolumi',
-      '/core/engines/anima',
-      '/core/plugins/js-utils',
-      '/core/plugins/geometry-utils',
-      '/core/plugins/creature-utils',
+    const _requestImageFileDataUrl = p => fetch('https://' + serverUrl + p)
+      .then(res => res.blob()
+        .then(blob => new Promise((accept, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            accept(reader.result);
+          };
+        }))
+      );
+    const _requestIconImg = () => _requestImageFileDataUrl('/servers/img/icon.png');
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/bootstrap',
+        '/core/engines/input',
+        '/core/engines/three',
+        '/core/engines/webvr',
+        '/core/engines/biolumi',
+        '/core/engines/anima',
+        '/core/plugins/js-utils',
+        '/core/plugins/geometry-utils',
+        '/core/plugins/creature-utils',
+      ]),
+      _requestIconImg(),
     ]).then(([
-      bootstrap,
-      input,
-      three,
-      webvr,
-      biolumi,
-      anima,
-      jsUtils,
-      geometryUtils,
-      creatureUtils,
+      [
+        bootstrap,
+        input,
+        three,
+        webvr,
+        biolumi,
+        anima,
+        jsUtils,
+        geometryUtils,
+        creatureUtils,
+      ],
+      iconImg,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
@@ -185,7 +203,7 @@ class Rend {
               type: 'status',
               state: {
                 status: statusState,
-                iconImg: bootstrap.getIconImg(),
+                iconImg: iconImg,
               },
               worldWidth: WORLD_WIDTH,
               worldHeight: WORLD_HEIGHT,
