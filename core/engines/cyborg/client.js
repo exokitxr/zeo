@@ -18,6 +18,7 @@ class Cyborg {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -44,7 +45,6 @@ class Cyborg {
       ]) => {
         if (live) {
           const {THREE, scene, camera} = three;
-          const physicsWorld = bullet.getPhysicsWorld();
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
@@ -397,68 +397,72 @@ class Cyborg {
             cleanups.length = 0;
           };
 
-          let enabled = false;
-          const _enable = () => {
-            enabled = true;
+          if (serverEnabled) {
+            const physicsWorld = bullet.getPhysicsWorld();
 
-            cleanups.push(() => {
-              enabled = false;
-            });
+            let physicsEnabled = false;
+            const _enablePhysics = () => {
+              physicsEnabled = true;
 
-            SIDES.forEach(side => {
-              const controllerPhysicsBody = new physicsWorld.Compound({
-                id: 'controller:' + multiplayer.getId() + ':' + side,
-                children: [
-                  {
-                    type: 'box',
-                    dimensions: [0.115, 0.075, 0.215],
-                    position: [0, -(0.075 / 2), (0.215 / 2) - 0.045],
-                  },
-                ],
-                mass: 1,
+              cleanups.push(() => {
+                physicsEnabled = false;
               });
-              controllerPhysicsBody.setLinearFactor([0, 0, 0]);
-              controllerPhysicsBody.setAngularFactor([0, 0, 0]);
-              controllerPhysicsBody.setLinearVelocity([0, 0, 0]);
-              controllerPhysicsBody.setAngularVelocity([0, 0, 0]);
-              controllerPhysicsBody.disableDeactivation();
 
-              const controller = controllers[side];
-              const {mesh} = controller;
-              controllerPhysicsBody.setObject(mesh);
-
-              physicsWorld.addConnectionBound(controllerPhysicsBody);
-              controllerPhysicsBody.syncUpstream();
-
-              controllerPhysicsBodies[side] = controllerPhysicsBody;
-            });
-
-            cleanups.push(() => {
               SIDES.forEach(side => {
-                const controllerPhysicsBody = controllerPhysicsBodies[side];
-                physicsWorld.removeConnectionBound(controllerPhysicsBody);
-                controllerPhysicsBodies[side] = null;
+                const controllerPhysicsBody = new physicsWorld.Compound({
+                  id: 'controller:' + multiplayer.getId() + ':' + side,
+                  children: [
+                    {
+                      type: 'box',
+                      dimensions: [0.115, 0.075, 0.215],
+                      position: [0, -(0.075 / 2), (0.215 / 2) - 0.045],
+                    },
+                  ],
+                  mass: 1,
+                });
+                controllerPhysicsBody.setLinearFactor([0, 0, 0]);
+                controllerPhysicsBody.setAngularFactor([0, 0, 0]);
+                controllerPhysicsBody.setLinearVelocity([0, 0, 0]);
+                controllerPhysicsBody.setAngularVelocity([0, 0, 0]);
+                controllerPhysicsBody.disableDeactivation();
+
+                const controller = controllers[side];
+                const {mesh} = controller;
+                controllerPhysicsBody.setObject(mesh);
+
+                physicsWorld.addConnectionBound(controllerPhysicsBody);
+                controllerPhysicsBody.syncUpstream();
+
+                controllerPhysicsBodies[side] = controllerPhysicsBody;
               });
-            });
-          };
-          const _disable = () => {
-            cleanup();
-          };
-          const _updateEnabled = () => {
-            const connected = bullet.isConnected();
 
-            if (connected && !enabled) {
-              _enable();
-            } else if (!connected && enabled) {
-              _disable();
+              cleanups.push(() => {
+                SIDES.forEach(side => {
+                  const controllerPhysicsBody = controllerPhysicsBodies[side];
+                  physicsWorld.removeConnectionBound(controllerPhysicsBody);
+                  controllerPhysicsBodies[side] = null;
+                });
+              });
             };
-          };
-          const _connectServer = _updateEnabled;
-          bullet.on('connectServer', _connectServer);
-          const _disconnectServer = _updateEnabled;
-          bullet.on('disconnectServer', _disconnectServer);
+            const _disablePhysics = () => {
+              cleanup();
+            };
+            const _updateEnabled = () => {
+              const physicsConnected = bullet.isConnected();
 
-          _updateEnabled();
+              if (physicsConnected && !physicsEnabled) {
+                _enablePhysics();
+              } else if (!physicsConnected && physicsEnabled) {
+                _disablePhysics();
+              };
+            };
+            const _connectServer = _updateEnabled;
+            bullet.on('connectServer', _connectServer);
+            const _disconnectServer = _updateEnabled;
+            bullet.on('disconnectServer', _disconnectServer);
+
+            _updateEnabled();
+          }
 
           this._cleanup = () => {
             cleanup();
@@ -471,8 +475,10 @@ class Cyborg {
 
             rend.removeListener('update', _update);
 
-            bullet.removeListener('connectServer', _connectServer);
-            bullet.removeListener('disconnectServer', _disconnectServer);
+            if (serverEnabled) {
+              bullet.removeListener('connectServer', _connectServer);
+              bullet.removeListener('disconnectServer', _disconnectServer);
+            }
           };
 
           return {

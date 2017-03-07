@@ -178,133 +178,295 @@ class Rend {
           webvr.updateStatus();
         }
 
-        if (serverEnabled) {
-          const menuUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-          });
-          const navbarUi = biolumi.makeUi({
-            width: NAVBAR_WIDTH,
-            height: NAVBAR_HEIGHT,
-          });
+        const menuMesh = (() => {
+          if (serverEnabled) {
+            const menuUi = biolumi.makeUi({
+              width: WIDTH,
+              height: HEIGHT,
+            });
+            const navbarUi = biolumi.makeUi({
+              width: NAVBAR_WIDTH,
+              height: NAVBAR_HEIGHT,
+            });
 
-          const menuMesh = (() => {
-            const object = new THREE.Object3D();
-            object.position.y = DEFAULT_USER_HEIGHT;
-            object.visible = menuState.open;
+            const menuMesh = (() => {
+              const object = new THREE.Object3D();
+              object.position.y = DEFAULT_USER_HEIGHT;
+              object.visible = menuState.open;
 
-            const statusMesh = (() => {
-              const mesh = menuUi.addPage(({
-                status,
-                iconImg,
-              }) => [
-                {
-                  type: 'html',
-                  src: menuRenderer.getStatusSrc({status, iconImg}),
-                  x: 0,
-                  y: 0,
-                  w: WIDTH,
-                  h: HEIGHT,
-                },
-              ], {
-                type: 'status',
-                state: {
-                  status: statusState,
-                  iconImg: iconImg,
-                },
-                worldWidth: WORLD_WIDTH,
-                worldHeight: WORLD_HEIGHT,
+              const statusMesh = (() => {
+                const mesh = menuUi.addPage(({
+                  status,
+                  iconImg,
+                }) => [
+                  {
+                    type: 'html',
+                    src: menuRenderer.getStatusSrc({status, iconImg}),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                  },
+                ], {
+                  type: 'status',
+                  state: {
+                    status: statusState,
+                    iconImg: iconImg,
+                  },
+                  worldWidth: WORLD_WIDTH,
+                  worldHeight: WORLD_HEIGHT,
+                });
+                mesh.position.z = -1.5;
+                mesh.receiveShadow = true;
+
+                return mesh;
+              })();
+              object.add(statusMesh);
+              object.statusMesh = statusMesh;
+
+              object.worldMesh = null;
+              object.universeMesh = null;
+              object.serversMesh = null;
+              object.configMesh = null;
+              object.statsMesh = null;
+              object.trashMesh = null;
+
+              const navbarMesh = (() => {
+                const mesh = navbarUi.addPage(({
+                  navbar: {
+                    tab,
+                  },
+                }) => ([
+                  {
+                    type: 'html',
+                    src: menuRenderer.getNavbarSrc({tab}),
+                    x: 0,
+                    y: 0,
+                    w: NAVBAR_WIDTH,
+                    h: NAVBAR_HEIGHT,
+                  },
+                ]), {
+                  type: 'navbar',
+                  state: {
+                    navbar: navbarState,
+                  },
+                  worldWidth: NAVBAR_WORLD_WIDTH,
+                  worldHeight: NAVBAR_WORLD_HEIGHT,
+                });
+                mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
+                mesh.position.z = -1.5;
+                mesh.receiveShadow = true;
+
+                return mesh;
+              })();
+              object.add(navbarMesh);
+              object.navbarMesh = navbarMesh;
+
+              const shadowMesh = (() => {
+                const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
+                const material = transparentMaterial.clone();
+                material.depthWrite = false;
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
+                mesh.castShadow = true;
+                return mesh;
+              })();
+              object.add(shadowMesh);
+
+              return object;
+            })();
+            scene.add(menuMesh);
+
+            const menuDotMeshes = {
+              left: biolumi.makeMenuDotMesh(),
+              right: biolumi.makeMenuDotMesh(),
+            };
+            scene.add(menuDotMeshes.left);
+            scene.add(menuDotMeshes.right);
+
+            const menuBoxMeshes = {
+              left: biolumi.makeMenuBoxMesh(),
+              right: biolumi.makeMenuBoxMesh(),
+            };
+            scene.add(menuBoxMeshes.left);
+            scene.add(menuBoxMeshes.right);
+
+            const navbarDotMeshes = {
+              left: biolumi.makeMenuDotMesh(),
+              right: biolumi.makeMenuDotMesh(),
+            };
+            scene.add(navbarDotMeshes.left);
+            scene.add(navbarDotMeshes.right);
+
+            const navbarBoxMeshes = {
+              left: biolumi.makeMenuBoxMesh(),
+              right: biolumi.makeMenuBoxMesh(),
+            };
+            scene.add(navbarBoxMeshes.left);
+            scene.add(navbarBoxMeshes.right);
+
+            const _updatePages = () => {
+              menuUi.update();
+              navbarUi.update();
+            };
+            _updatePages();
+
+            const trigger = e => {
+              const {open} = menuState;
+
+              if (open) {
+                const {side} = e;
+
+                const _doClickNavbar = () => {
+                  const navbarHoverState = navbarHoverStates[side];
+                  const {anchor} = navbarHoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
+
+                  let match;
+                  if (match = onclick.match(/^navbar:(status|world|mail|inventory|worlds|servers|options)$/)) {
+                    const newTab = match[1];
+
+                    const _getTabMesh = tab => {
+                      switch (tab) {
+                        case 'status': return menuMesh.statusMesh;
+                        case 'world': return menuMesh.worldMesh;
+                        case 'mail': return menuMesh.mailMesh;
+                        case 'worlds': return menuMesh.universeMesh;
+                        case 'servers': return menuMesh.serversMesh;
+                        case 'options': return menuMesh.configMesh;
+                        default: return null;
+                      }
+                    };
+
+                    const {tab: oldTab} = navbarState;
+                    const oldMesh = _getTabMesh(oldTab);
+                    const newMesh = _getTabMesh(newTab);
+
+                    oldMesh.visible = false;
+                    newMesh.visible = true;
+
+                    navbarState.tab = newTab;
+
+                    _updatePages();
+
+                    rendApi.emit('tabchange', newTab);
+
+                    return true;
+                  } else {
+                    return false;
+                  }
+                };
+                const _doClickMenu = () => {
+                  const menuHoverState = menuHoverStates[side];
+                  const {anchor} = menuHoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
+
+                  if (onclick === 'status:downloadLoginToken') {
+                    const a = document.createElement('a');
+                    a.href = '/server/token';
+                    a.download = 'token.txt';
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    return true;
+                  } else if (onclick === 'status:logOut') {
+                    const _requestLogout = () => new Promise((accept, reject) => {
+                      bootstrap.requestLogout()
+                        .then(() => {
+                          accept();
+                        })
+                        .catch(err => {
+                          console.warn(err);
+
+                          accept();
+                        });
+                    });
+
+                    _requestLogout()
+                      .then(() => {
+                        rendApi.logout();
+                      });
+
+                    return true;
+                  } else if (onclick === 'status:snapshotWorld') {
+                    // XXX implement this
+
+                    return true;
+                  } else if (onclick === 'status:backToHub') {
+                    document.location = 'https://' + hubUrl;
+
+                    return true; // can't happen
+                  } else {
+                    return false;
+                  }
+                };
+
+                _doClickNavbar();
+                _doClickMenu();
+              }
+            };
+            input.on('trigger', trigger);
+            const menudown = () => {
+              const {loggedIn} = menuState;
+
+              if (loggedIn) {
+                const {open, animation} = menuState;
+
+                if (open) {
+                  menuState.open = false; // XXX need to cancel other menu states as well
+                  menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+
+                  SIDES.forEach(side => {
+                    menuBoxMeshes[side].visible = false;
+                    menuDotMeshes[side].visible = false;
+
+                    navbarBoxMeshes[side].visible = false;
+                    navbarDotMeshes[side].visible = false;
+                  });
+                } else {
+                  menuState.open = true;
+                  menuState.animation = anima.makeAnimation(TRANSITION_TIME);
+
+                  const newPosition = camera.position;
+                  const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                    0,
+                    camera.rotation.y,
+                    0,
+                    camera.rotation.order
+                  ));
+
+                  menuMesh.position.copy(newPosition);
+                  menuMesh.quaternion.copy(newRotation);
+
+                  keyboardMesh.position.copy(newPosition);
+                  keyboardMesh.quaternion.copy(newRotation);
+
+                  keyboardMesh.updateKeySpecAnchorBoxTargets();
+                }
+              }
+            };
+            input.on('menudown', menudown);
+
+            cleanups.push(() => {
+              scene.remove(menuMesh);
+              SIDES.forEach(side => {
+                scene.remove(menuDotMeshes[side]);
+                scene.remove(menuBoxMeshes[side]);
+                scene.remove(navbarDotMeshes[side]);
+                scene.remove(navbarBoxMeshes[side]);
               });
-              mesh.position.z = -1.5;
-              mesh.receiveShadow = true;
+              input.removeListener('trigger', trigger);
+              input.removeListener('menudown', menudown);
+            });
 
-              return mesh;
-            })();
-            object.add(statusMesh);
-            object.statusMesh = statusMesh;
-
-            object.worldMesh = null;
-            object.universeMesh = null;
-            object.serversMesh = null;
-            object.configMesh = null;
-            object.statsMesh = null;
-            object.trashMesh = null;
-
-            const navbarMesh = (() => {
-              const mesh = navbarUi.addPage(({
-                navbar: {
-                  tab,
-                },
-              }) => ([
-                {
-                  type: 'html',
-                  src: menuRenderer.getNavbarSrc({tab}),
-                  x: 0,
-                  y: 0,
-                  w: NAVBAR_WIDTH,
-                  h: NAVBAR_HEIGHT,
-                },
-              ]), {
-                type: 'navbar',
-                state: {
-                  navbar: navbarState,
-                },
-                worldWidth: NAVBAR_WORLD_WIDTH,
-                worldHeight: NAVBAR_WORLD_HEIGHT,
-              });
-              mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
-              mesh.position.z = -1.5;
-              mesh.receiveShadow = true;
-
-              return mesh;
-            })();
-            object.add(navbarMesh);
-            object.navbarMesh = navbarMesh;
-
-            const shadowMesh = (() => {
-              const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
-              const material = transparentMaterial.clone();
-              material.depthWrite = false;
-
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
-              mesh.castShadow = true;
-              return mesh;
-            })();
-            object.add(shadowMesh);
-
-            return object;
-          })();
-          scene.add(menuMesh);
-
-          const menuDotMeshes = {
-            left: biolumi.makeMenuDotMesh(),
-            right: biolumi.makeMenuDotMesh(),
-          };
-          scene.add(menuDotMeshes.left);
-          scene.add(menuDotMeshes.right);
-
-          const menuBoxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
-          };
-          scene.add(menuBoxMeshes.left);
-          scene.add(menuBoxMeshes.right);
-
-          const navbarDotMeshes = {
-            left: biolumi.makeMenuDotMesh(),
-            right: biolumi.makeMenuDotMesh(),
-          };
-          scene.add(navbarDotMeshes.left);
-          scene.add(navbarDotMeshes.right);
-
-          const navbarBoxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
-          };
-          scene.add(navbarBoxMeshes.left);
-          scene.add(navbarBoxMeshes.right);
-        }
+            return menuMesh;
+          } else {
+            return null;
+          }
+        })();
 
         const keyboardMesh = (() => {
           const object = new THREE.Object3D();
@@ -446,170 +608,11 @@ class Rend {
         scene.add(keyboardBoxMeshes.left);
         scene.add(keyboardBoxMeshes.right);
 
-        const _updatePages = () => {
-          if (serverEnabled) {
-            menuUi.update();
-            navbarUi.update();
-          }
-        };
-        _updatePages();
-
-        const trigger = e => {
-          const {open} = menuState;
-
-          if (open) {
-            const {side} = e;
-
-            const _doClickNavbar = () => {
-              const navbarHoverState = navbarHoverStates[side];
-              const {anchor} = navbarHoverState;
-              const onclick = (anchor && anchor.onclick) || '';
-
-              let match;
-              if (match = onclick.match(/^navbar:(status|world|mail|inventory|worlds|servers|options)$/)) {
-                const newTab = match[1];
-
-                const _getTabMesh = tab => {
-                  switch (tab) {
-                    case 'status': return menuMesh.statusMesh;
-                    case 'world': return menuMesh.worldMesh;
-                    case 'mail': return menuMesh.mailMesh;
-                    case 'worlds': return menuMesh.universeMesh;
-                    case 'servers': return menuMesh.serversMesh;
-                    case 'options': return menuMesh.configMesh;
-                    default: return null;
-                  }
-                };
-
-                const {tab: oldTab} = navbarState;
-                const oldMesh = _getTabMesh(oldTab);
-                const newMesh = _getTabMesh(newTab);
-
-                oldMesh.visible = false;
-                newMesh.visible = true;
-
-                navbarState.tab = newTab;
-
-                _updatePages();
-
-                rendApi.emit('tabchange', newTab);
-
-                return true;
-              } else {
-                return false;
-              }
-            };
-            const _doClickMenu = () => {
-              const menuHoverState = menuHoverStates[side];
-              const {anchor} = menuHoverState;
-              const onclick = (anchor && anchor.onclick) || '';
-
-              if (onclick === 'status:downloadLoginToken') {
-                const a = document.createElement('a');
-                a.href = '/server/token';
-                a.download = 'token.txt';
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                return true;
-              } else if (onclick === 'status:logOut') {
-                const _requestLogout = () => new Promise((accept, reject) => {
-                  bootstrap.requestLogout()
-                    .then(() => {
-                      accept();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      accept();
-                    });
-                });
-
-                _requestLogout()
-                  .then(() => {
-                    rendApi.logout();
-                  });
-
-                return true;
-              } else if (onclick === 'status:snapshotWorld') {
-                // XXX implement this
-
-                return true;
-              } else if (onclick === 'status:backToHub') {
-                document.location = 'https://' + hubUrl;
-
-                return true; // can't happen
-              } else {
-                return false;
-              }
-            };
-
-            _doClickNavbar();
-            _doClickMenu();
-          }
-        };
-        input.on('trigger', trigger);
-        const menudown = () => {
-          const {loggedIn} = menuState;
-
-          if (loggedIn) {
-            const {open, animation} = menuState;
-
-            if (open) {
-              menuState.open = false; // XXX need to cancel other menu states as well
-              menuState.animation = anima.makeAnimation(TRANSITION_TIME);
-
-              SIDES.forEach(side => {
-                menuBoxMeshes[side].visible = false;
-                menuDotMeshes[side].visible = false;
-
-                navbarBoxMeshes[side].visible = false;
-                navbarDotMeshes[side].visible = false;
-              });
-            } else {
-              menuState.open = true;
-              menuState.animation = anima.makeAnimation(TRANSITION_TIME);
-
-              const newPosition = camera.position;
-              const newRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                0,
-                camera.rotation.y,
-                0,
-                camera.rotation.order
-              ));
-
-              menuMesh.position.copy(newPosition);
-              menuMesh.quaternion.copy(newRotation);
-
-              keyboardMesh.position.copy(newPosition);
-              keyboardMesh.quaternion.copy(newRotation);
-
-              keyboardMesh.updateKeySpecAnchorBoxTargets();
-            }
-          }
-        };
-        input.on('menudown', menudown);
-
         cleanups.push(() => {
-          if (serverEnabled) {
-            scene.remove(menuMesh);
-            SIDES.forEach(side => {
-              scene.remove(menuDotMeshes[side]);
-              scene.remove(menuBoxMeshes[side]);
-              scene.remove(navbarDotMeshes[side]);
-              scene.remove(navbarBoxMeshes[side]);
-            });
-          }
-
           scene.remove(keyboardMesh);
           SIDES.forEach(side => {
             scene.remove(keyboardBoxMeshes[side]);
           });
-
-          input.removeListener('trigger', trigger);
-          input.removeListener('menudown', menudown);
         });
 
         const menuHoverStates = {
