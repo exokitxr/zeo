@@ -218,17 +218,6 @@ class Airlock {
                     THREE.UnsignedByteType,
                     1
                   );
-                  /* const texture = new THREE.Texture(
-                    skyboxImg,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.LinearFilter,
-                    THREE.LinearFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    16
-                  ); */
                   texture.needsUpdate = true;
 
                   const material = new THREE.MeshBasicMaterial({

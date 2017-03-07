@@ -33,7 +33,7 @@ class Bootstrap {
       .then(res => res.json());
     const _requestServer = hostUrl => fetch('https://' + hostUrl + '/servers/server.json')
       .then(res => res.json());
-    const _requestImageFile = (hostUrl, p) => fetch('https://' + hostUrl + p)
+    const _requestImageFileDataUrl = (hostUrl, p) => fetch('https://' + hostUrl + p)
       .then(res => res.blob()
         .then(blob => new Promise((accept, reject) => {
           const reader = new FileReader();
@@ -43,9 +43,9 @@ class Bootstrap {
           };
         }))
       );
-    const _requestIconImg = hostUrl => _requestImageFile(hostUrl, '/servers/img/icon.png');
-    const _requestSkyboxImg = hostUrl => _requestImageFile(hostUrl, '/servers/img/skybox.png');
-    const _requestCubeMapImgs = hostUrl => Promise.all(FACES.map(face => _requestImageFile(hostUrl, '/servers/img/cubemap-' + face + '.png')))
+    const _requestIconImg = hostUrl => _requestImageFileDataUrl(hostUrl, '/servers/img/icon.png');
+    const _requestSkyboxImg = hostUrl => _requestImageFileDataUrl(hostUrl, '/servers/img/skybox.png');
+    const _requestCubeMapImgs = hostUrl => Promise.all(FACES.map(face => _requestImageFileDataUrl(hostUrl, '/servers/img/cubemap-' + face + '.png')))
       .then(cubeMapImgs => {
         const result = {};
         for (let i = 0; i < cubeMapImgs.length; i++) {

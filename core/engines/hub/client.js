@@ -18,6 +18,8 @@ import menuRenderer from './lib/render/menu';
 const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const NUM_INVENTORY_ITEMS = 4;
 
+const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
+
 class Hub {
   constructor(archae) {
     this._archae = archae;
@@ -25,7 +27,7 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {enabled: hubEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -39,7 +41,6 @@ class Hub {
         '/core/engines/webvr',
         '/core/engines/biolumi',
         '/core/engines/rend',
-        '/core/plugins/creature-utils',
       ]),
     ])
       .then(([
@@ -49,7 +50,6 @@ class Hub {
           webvr,
           biolumi,
           rend,
-          creatureUtils,
         ],
       ]) => {
         if (live) {
@@ -155,96 +155,140 @@ class Hub {
             const result = Array(servers.length);
 
             const _makeServerEnvMesh = server => {
-              const geometry = new THREE.SphereBufferGeometry(0.25, 32, 32);
-              const material = (() => {
-                const texture = new THREE.CubeTexture(
-                  transparentImg,
-                  THREE.UVMapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.LinearFilter,
-                  THREE.LinearFilter,
-                  THREE.RGBAFormat,
-                  THREE.UnsignedByteType,
-                  16
-                );
+              const object = new THREE.Object3D();
 
+              const _requestImageFile = p => new Promise((accept, reject) => {
                 const img = new Image();
-                img.src = creatureUtils.makeStaticCreature('server:' + server.worldname);
+                img.src = 'https://' + hubUrl + p;
                 img.onload = () => {
-                  const images = (() => {
-                    const result = [];
-                    for (let i = 0; i < 6; i++) {
-                      result[i] = img;
-                    }
-                    return result;
-                  })();
-                  texture.images = images;
-                  texture.needsUpdate = true;
+                  accept(img);
                 };
                 img.onerror = err => {
-                  console.warn(err);
+                  reject(err);
                 };
-
-                const material = new THREE.MeshPhongMaterial({
-                  color: 0xffffff,
-                  envMap: texture,
+              });
+              const _requestCubeMapImgs = server => Promise.all(FACES.map(face => _requestImageFile('/servers/img/cubemap/' + encodeURIComponent(server.url) + '/'+ face + '.png')))
+                .then(cubeMapImgs => {
+                  const result = {};
+                  for (let i = 0; i < cubeMapImgs.length; i++) {
+                    const cubeMapImg = cubeMapImgs[i];
+                    const face = FACES[i];
+                    result[face] = cubeMapImg;
+                  }
+                  return result;
                 });
-                return material;
-              })();
 
-              const mesh = new THREE.Mesh(geometry, material);
-              return mesh;
+              _requestCubeMapImgs(server)
+                .then(faceImgs => {
+                  // const geometry = new THREE.SphereBufferGeometry(0.25, 32, 32);
+                  const geometry = new THREE.SphereBufferGeometry(0.2, 15, 8);
+                  const material = (() => {
+                    const images = [
+                      'right',
+                      'left',
+                      'top',
+                      'bottom',
+                      'front',
+                      'back',
+                    ].map(face => faceImgs[face]);
+                    const texture = new THREE.CubeTexture(
+                      images,
+                      THREE.UVMapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.NearestFilter,
+                      THREE.NearestFilter,
+                      THREE.RGBAFormat,
+                      THREE.UnsignedByteType,
+                      1
+                    );
+                    texture.needsUpdate = true;
+
+                    const material = new THREE.MeshLambertMaterial({
+                      envMap: texture,
+                      // shininess: 10,
+                    });
+                    return material;
+                  })();
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.castShadow = true;
+                  object.add(mesh);
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+
+              return object;
             };
             const _makeServerMenuMesh = server => {
               const object = new THREE.Object3D();
 
-              const planeMesh = (() => {
-                const serverUi = biolumi.makeUi({
-                  width: SERVER_WIDTH,
-                  height: SERVER_HEIGHT,
-                });
+              const _requestServerIcon = server => fetch('https://' + hubUrl + '/servers/img/icon/' + encodeURIComponent(server.url))
+                .then(res => res.blob()
+                   .then(blob => new Promise((accept, reject) => {
+                      const reader = new FileReader();
+                      reader.onload = e => {
+                        accept(e.target.result);
+                      };
+                      reader.readAsDataURL(blob);
+                   }))
+                );
+              _requestServerIcon(server)
+                 .then(serverIcon => {
+                    const planeMesh = (() => {
+                      const serverUi = biolumi.makeUi({
+                        width: SERVER_WIDTH,
+                        height: SERVER_HEIGHT,
+                      });
 
-                const mesh = serverUi.addPage(({
-                  server: {
-                    worldname,
-                    description,
-                  },
-                }) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: menuRenderer.getServerSrc({
-                        worldname,
-                        description,
-                      }),
-                      x: 0,
-                      y: 0,
-                      w: SERVER_WIDTH,
-                      h: SERVER_HEIGHT,
-                    },
-                  ];
-                }, {
-                  type: 'hub',
-                  state: {
-                    server: {
-                      worldname: server.worldname,
-                      description: server.url,
-                    },
-                  },
-                  worldWidth: SERVER_WORLD_WIDTH,
-                  worldHeight: SERVER_WORLD_HEIGHT,
-                });
-                mesh.position.y = 0.5;
-                mesh.receiveShadow = true;
-                mesh.ui = serverUi;
+                      const mesh = serverUi.addPage(({
+                        server: {
+                          worldname,
+                          description,
+                        },
+                        serverIcon,
+                      }) => {
+                        return [
+                          {
+                            type: 'html',
+                            src: menuRenderer.getServerSrc({
+                              worldname,
+                              description,
+                              serverIcon,
+                            }),
+                            x: 0,
+                            y: 0,
+                            w: SERVER_WIDTH,
+                            h: SERVER_HEIGHT,
+                          },
+                        ];
+                      }, {
+                        type: 'hub',
+                        state: {
+                          server: {
+                            worldname: server.worldname,
+                            description: server.url,
+                          },
+                          serverIcon,
+                        },
+                        worldWidth: SERVER_WORLD_WIDTH,
+                        worldHeight: SERVER_WORLD_HEIGHT,
+                      });
+                      mesh.position.y = 0.45;
+                      mesh.receiveShadow = true;
+                      mesh.ui = serverUi;
 
-                serverUi.update();
+                      serverUi.update();
 
-                return mesh;
-              })();
-              object.add(planeMesh);
-              object.planeMesh = planeMesh;
+                      return mesh;
+                    })();
+                    object.add(planeMesh);
+                    object.planeMesh = planeMesh;
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
 
               const shadowMesh = (() => {
                 const geometry = new THREE.BoxBufferGeometry(SERVER_WORLD_WIDTH, SERVER_WORLD_HEIGHT, 0.01);
@@ -266,7 +310,7 @@ class Hub {
               const mesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.x = -2 + (i * 1);
-                object.position.y = 1;
+                object.position.y = 1.2;
 
                 const envMesh = _makeServerEnvMesh(server);
                 object.add(envMesh);
