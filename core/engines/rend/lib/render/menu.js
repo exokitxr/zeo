@@ -30,7 +30,7 @@ const getStatusSrc = ({status: {username, worldname, users, hasHub, loading}, ic
           <img src="${creatureUtils.makeStaticCreature('user:' + username)}" width="40" height="40" style="margin-right: 10px; image-rendering: pixelated;" />
           <span>${username}</span>
         </div>
-        <a style="display: flex; height: 46px; margin-right: 20px; padding: 0 20px; border: 1px solid; border-radius: 10px; color: #9575CD; font-size: 24px; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:downloadLoginToken">Download token</a>
+        <a style="display: flex; height: 46px; margin-right: 20px; padding: 0 20px; border: 1px solid; border-radius: 10px; color: #F44336; font-size: 24px; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:downloadLoginToken">Download token</a>
         <a style="display: flex; height: 46px; padding: 0 20px; border: 1px solid; border-radius: 10px; color: #2196F3; font-size: 24px; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="status:logOut">Log out</a>
       </div>
       <div style="display: flex; margin: 0 -30px; margin-bottom: 20px; padding: 30px; background-color: #000; color: #FFF;">
