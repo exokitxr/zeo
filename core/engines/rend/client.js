@@ -509,6 +509,10 @@ class Rend {
                 // XXX implement this
 
                 return true;
+              } else if (onclick === 'status:backToHub') {
+                document.location = 'https://' + hubUrl;
+
+                return true; // can't happen
               } else {
                 return false;
               }
