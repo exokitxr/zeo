@@ -456,123 +456,119 @@ class Hub {
               priority: 1,
             });
             const _update = () => {
-              const {open: isOpen} = hubState;
+              const _updateMenuAnchors = () => {
+                const {gamepads} = webvr.getStatus();
 
-              if (isOpen) {
-                const _updateMenuAnchors = () => {
-                  const {gamepads} = webvr.getStatus();
+                const {planeMesh} = menuMesh;
+                const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                const {page} = planeMesh;
 
-                  const {planeMesh} = menuMesh;
-                  const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                  const {page} = planeMesh;
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
 
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const menuHoverState = menuHoverStates[side];
+                    const menuDotMesh = menuDotMeshes[side];
+                    const menuBoxMesh = menuBoxMeshes[side];
 
-                      const menuHoverState = menuHoverStates[side];
-                      const menuDotMesh = menuDotMeshes[side];
-                      const menuBoxMesh = menuBoxMeshes[side];
+                    biolumi.updateAnchors({
+                      objects: [{
+                        matrixObject: menuMatrixObject,
+                        page: page,
+                        width: WIDTH,
+                        height: HEIGHT,
+                        worldWidth: WORLD_WIDTH,
+                        worldHeight: WORLD_HEIGHT,
+                        worldDepth: WORLD_DEPTH,
+                      }],
+                      hoverState: menuHoverState,
+                      dotMesh: menuDotMesh,
+                      boxMesh: menuBoxMesh,
+                      controllerPosition,
+                      controllerRotation,
+                    });
+                  }
+                });
+              };
+              const _updateEnvAnchors = () => {
+                const {gamepads} = webvr.getStatus();
+                const {serverMeshes} = serversMesh;
 
-                      biolumi.updateAnchors({
-                        objects: [{
-                          matrixObject: menuMatrixObject,
-                          page: page,
-                          width: WIDTH,
-                          height: HEIGHT,
-                          worldWidth: WORLD_WIDTH,
-                          worldHeight: WORLD_HEIGHT,
-                          worldDepth: WORLD_DEPTH,
-                        }],
-                        hoverState: menuHoverState,
-                        dotMesh: menuDotMesh,
-                        boxMesh: menuBoxMesh,
-                        controllerPosition,
-                        controllerRotation,
-                      });
-                    }
-                  });
-                };
-                const _updateEnvAnchors = () => {
-                  const {gamepads} = webvr.getStatus();
-                  const {serverMeshes} = serversMesh;
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+                  const envHoverState = envHoverStates[side];
+                  const envDotMesh = envDotMeshes[side];
+                  const envBoxMesh = envBoxMeshes[side];
 
-                  SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
-                    const envHoverState = envHoverStates[side];
-                    const envDotMesh = envDotMeshes[side];
-                    const envBoxMesh = envBoxMeshes[side];
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
 
-                    if (gamepad) {
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                      const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+                    const intersectionSpecs = serverMeshes.map(serverMesh => {
+                      const {envMesh} = serverMesh;
+                      const {boxTarget} = envMesh;
 
-                      const intersectionSpecs = serverMeshes.map(serverMesh => {
-                        const {envMesh} = serverMesh;
-                        const {boxTarget} = envMesh;
+                      if (boxTarget) { // we add the box target asynchronously on next tick
+                        const intersectionPoint = boxTarget.intersectLine(controllerLine);
 
-                        if (boxTarget) { // we add the box target asynchronously on next tick
-                          const intersectionPoint = boxTarget.intersectLine(controllerLine);
+                        if (intersectionPoint) {
+                          const distance = intersectionPoint.distanceTo(controllerPosition);
 
-                          if (intersectionPoint) {
-                            const distance = intersectionPoint.distanceTo(controllerPosition);
-
-                            return {
-                              intersectionPoint,
-                              distance,
-                              serverMesh,
-                            };
-                          } else {
-                            return null;
-                          }
+                          return {
+                            intersectionPoint,
+                            distance,
+                            serverMesh,
+                          };
                         } else {
                           return null;
                         }
-                      }).filter(intersectionSpec => intersectionSpec !== null);
-
-                      if (intersectionSpecs.length > 0) {
-                        const intersectionSpec = intersectionSpecs.sort((a, b) => a.distance - b.distance)[0];
-                        const {intersectionPoint, serverMesh} = intersectionSpec;
-                        const {envMesh} = serverMesh;
-                        const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(envMesh);
-
-                        envDotMesh.position.copy(intersectionPoint);
-                        envBoxMesh.position.copy(envMeshPosition);
-                        envBoxMesh.quaternion.copy(envMeshRotation);
-                        envBoxMesh.scale.copy(envMeshScale);
-
-                        envHoverState.hoveredServerMesh = serverMesh;
-                        envDotMesh.visible = true;
-                        envBoxMesh.visible = true;
                       } else {
-                        envHoverState.hoveredServerMesh = null;
-                        envDotMesh.visible = false;
-                        envBoxMesh.visible = false;
+                        return null;
                       }
+                    }).filter(intersectionSpec => intersectionSpec !== null);
+
+                    if (intersectionSpecs.length > 0) {
+                      const intersectionSpec = intersectionSpecs.sort((a, b) => a.distance - b.distance)[0];
+                      const {intersectionPoint, serverMesh} = intersectionSpec;
+                      const {envMesh} = serverMesh;
+                      const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(envMesh);
+
+                      envDotMesh.position.copy(intersectionPoint);
+                      envBoxMesh.position.copy(envMeshPosition);
+                      envBoxMesh.quaternion.copy(envMeshRotation);
+                      envBoxMesh.scale.copy(envMeshScale);
+
+                      envHoverState.hoveredServerMesh = serverMesh;
+                      envDotMesh.visible = true;
+                      envBoxMesh.visible = true;
                     } else {
                       envHoverState.hoveredServerMesh = null;
                       envDotMesh.visible = false;
                       envBoxMesh.visible = false;
                     }
-                  });
-                };
-                const _updateServerMeshes = () => {
-                  const {hmd} = webvr.getStatus();
-                  const {serverMeshes} = serversMesh;
-
-                  for (let i = 0; i < serverMeshes.length; i++) {
-                    const serverMesh = serverMeshes[i];
-                    const {menuMesh} = serverMesh;
-                    menuMesh.rotation.y = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order).y;
+                  } else {
+                    envHoverState.hoveredServerMesh = null;
+                    envDotMesh.visible = false;
+                    envBoxMesh.visible = false;
                   }
-                };
+                });
+              };
+              const _updateServerMeshes = () => {
+                const {hmd} = webvr.getStatus();
+                const {serverMeshes} = serversMesh;
 
-                _updateMenuAnchors();
-                _updateEnvAnchors();
-                _updateServerMeshes();
-              }
+                for (let i = 0; i < serverMeshes.length; i++) {
+                  const serverMesh = serverMeshes[i];
+                  const {menuMesh} = serverMesh;
+                  menuMesh.rotation.y = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order).y;
+                }
+              };
+
+              _updateMenuAnchors();
+              _updateEnvAnchors();
+              _updateServerMeshes();
             };
             rend.on('update', _update);
 
