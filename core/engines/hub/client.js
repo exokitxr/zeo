@@ -11,6 +11,8 @@ import {
   SERVER_WORLD_HEIGHT,
   SERVER_WORLD_DEPTH,
 
+  SPHERE_RADIUS,
+
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/menu';
 import menuRenderer from './lib/render/menu';
@@ -42,6 +44,7 @@ class Hub {
         '/core/engines/webvr',
         '/core/engines/biolumi',
         '/core/engines/rend',
+        '/core/plugins/geometry-utils',
       ]),
     ])
       .then(([
@@ -51,6 +54,7 @@ class Hub {
           webvr,
           biolumi,
           rend,
+          geometryUtils,
         ],
       ]) => {
         if (live) {
@@ -66,6 +70,15 @@ class Hub {
             object.matrixWorld.decompose(position, rotation, scale);
             return {position, rotation, scale};
           };
+
+          const wireframeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0000FF,
+            wireframe: true,
+            opacity: 0.5,
+            transparent: true,
+          });
+
+          const sphereDiameterVector = new THREE.Vector3(SPHERE_RADIUS * 2, SPHERE_RADIUS * 2, SPHERE_RADIUS * 2);
 
           const menuUi = biolumi.makeUi({
             width: WIDTH,
@@ -165,12 +178,21 @@ class Hub {
             right: biolumi.makeMenuHoverState(),
           };
 
+          const _makeEnvHoverState = () => ({
+            hoveredServerMesh: null,
+          });
+          const envHoverStates = {
+            left: _makeEnvHoverState(),
+            right: _makeEnvHoverState(),
+          };
+
           const menuDotMeshes = {
             left: biolumi.makeMenuDotMesh(),
             right: biolumi.makeMenuDotMesh(),
           };
           scene.add(menuDotMeshes.left);
           scene.add(menuDotMeshes.right);
+
           const menuBoxMeshes = {
             left: biolumi.makeMenuBoxMesh(),
             right: biolumi.makeMenuBoxMesh(),
@@ -178,12 +200,32 @@ class Hub {
           scene.add(menuBoxMeshes.left);
           scene.add(menuBoxMeshes.right);
 
+          const envDotMeshes = {
+            left: biolumi.makeMenuDotMesh(),
+            right: biolumi.makeMenuDotMesh(),
+          };
+          scene.add(envDotMeshes.left);
+          scene.add(envDotMeshes.right);
+
+          const _makeEnvBoxMesh = () => {
+            const size = SPHERE_RADIUS * 2;
+
+            const mesh = biolumi.makeMenuBoxMesh();
+            const {geometry} = mesh;
+            geometry.applyMatrix(new THREE.Matrix4().makeScale(size, size, size));
+            return mesh;
+          };
+          const envBoxMeshes = {
+            left: _makeEnvBoxMesh(),
+            right: _makeEnvBoxMesh(),
+          };
+          scene.add(envBoxMeshes.left);
+          scene.add(envBoxMeshes.right);
+
           const _getServerMeshes = servers => {
             const result = Array(servers.length);
 
             const _makeServerEnvMesh = server => {
-              const object = new THREE.Object3D();
-
               const _requestImageFile = p => new Promise((accept, reject) => {
                 const img = new Image();
                 img.src = 'https://' + hubUrl + p;
@@ -205,48 +247,69 @@ class Hub {
                   return result;
                 });
 
-              _requestCubeMapImgs(server)
+              const mesh = (() => {
+                const geometry = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 15, 8);
+                const material = (() => {
+                  const texture = new THREE.CubeTexture(
+                    [
+                      transparentImg,
+                      transparentImg,
+                      transparentImg,
+                      transparentImg,
+                      transparentImg,
+                      transparentImg,
+                    ],
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.NearestFilter,
+                    THREE.NearestFilter,
+                    THREE.RGBAFormat,
+                    THREE.UnsignedByteType,
+                    1
+                  );
+                  texture.needsUpdate = true;
+
+                  const material = new THREE.MeshLambertMaterial({
+                    envMap: texture,
+                    // shininess: 10,
+                  });
+                  return material;
+                })();
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+
+                return mesh;
+              })();
+
+              _requestCubeMapImgs(server) // load the actual cube map asynchronously
                 .then(faceImgs => {
-                  // const geometry = new THREE.SphereBufferGeometry(0.25, 32, 32);
-                  const geometry = new THREE.SphereBufferGeometry(0.2, 15, 8);
-                  const material = (() => {
-                    const images = [
-                      'right',
-                      'left',
-                      'top',
-                      'bottom',
-                      'front',
-                      'back',
-                    ].map(face => faceImgs[face]);
-                    const texture = new THREE.CubeTexture(
-                      images,
-                      THREE.UVMapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.NearestFilter,
-                      THREE.NearestFilter,
-                      THREE.RGBAFormat,
-                      THREE.UnsignedByteType,
-                      1
-                    );
-                    texture.needsUpdate = true;
+                  const images = [
+                    'right',
+                    'left',
+                    'top',
+                    'bottom',
+                    'front',
+                    'back',
+                  ].map(face => faceImgs[face]);
 
-                    const material = new THREE.MeshLambertMaterial({
-                      envMap: texture,
-                      // shininess: 10,
-                    });
-                    return material;
-                  })();
-
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.castShadow = true;
-                  object.add(mesh);
+                  const {material: {envMap: texture}} = mesh;
+                  texture.images = images;
+                  texture.needsUpdate = true;
                 })
                 .catch(err => {
                   console.warn(err);
                 });
 
-              return object;
+              setTimeout(() => {
+                const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(mesh); // the mesh is in the scene at this point
+console.log('env mesh position', envMeshPosition.toArray().join(','));
+                const boxTarget = geometryUtils.makeBoxTarget(envMeshPosition, envMeshRotation, envMeshScale, sphereDiameterVector);
+                mesh.boxTarget = boxTarget;
+              });
+
+              return mesh;
             };
             const _makeServerMenuMesh = server => {
               const object = new THREE.Object3D();
@@ -339,7 +402,7 @@ class Hub {
                 object.position.x = -2 + (i * 1);
                 object.position.y = 1.2;
 
-                const envMesh = _makeServerEnvMesh(server);
+                const envMesh = _makeServerEnvMesh(server, i);
                 object.add(envMesh);
                 object.envMesh = envMesh;
 
@@ -358,7 +421,8 @@ class Hub {
             const object = new THREE.Object3D();
             object.visible = hubState.open;
 
-            const serverMeshes = _getServerMeshes(bootstrap.getServers());
+            const servers = bootstrap.getServers();
+            const serverMeshes = _getServerMeshes(servers);
             for (let i = 0; i < serverMeshes.length; i++) {
               const serverMesh = serverMeshes[i];
               object.add(serverMesh);
@@ -368,6 +432,8 @@ class Hub {
             return object;
           })();
           scene.add(serversMesh);
+          serversMesh.updateMatrixWorld();
+console.log('scene added servers mesh');
 
           const _updatePages = () => {
             menuUi.update();
@@ -411,17 +477,83 @@ class Hub {
                 }
               });
             };
+            const _updateEnvAnchors = () => {
+              const {gamepads} = webvr.getStatus();
+              const {serverMeshes} = serversMesh;
+
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+                const envHoverState = envHoverStates[side];
+                const envDotMesh = envDotMeshes[side];
+                const envBoxMesh = envBoxMeshes[side];
+
+                if (gamepad) {
+                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                  const controllerLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+
+                  const intersectionSpecs = serverMeshes.map(serverMesh => {
+                    const {envMesh} = serverMesh;
+                    const {boxTarget} = envMesh;
+
+                    if (boxTarget) { // we add the box target asynchronously on next tick
+                      const intersectionPoint = boxTarget.intersectLine(controllerLine);
+// console.log('try intersection spec', boxTarget, intersectionPoint);
+
+                      if (intersectionPoint) {
+                        const distance = intersectionPoint.distanceTo(controllerPosition);
+
+                        return {
+                          intersectionPoint,
+                          distance,
+                          serverMesh,
+                        };
+                      } else {
+                        return null;
+                      }
+                    } else {
+                      return null;
+                    }
+                  }).filter(intersectionSpec => intersectionSpec !== null);
+
+                  if (intersectionSpecs.length > 0) {
+                    const intersectionSpec = intersectionSpecs.sort((a, b) => a.distance - b.distance)[0];
+                    const {intersectionPoint, serverMesh} = intersectionSpec;
+                    const {envMesh} = serverMesh;
+                    const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(envMesh);
+
+                    envDotMesh.position.copy(intersectionPoint);
+                    envBoxMesh.position.copy(envMeshPosition);
+                    envBoxMesh.quaternion.copy(envMeshRotation);
+                    envBoxMesh.scale.copy(envMeshScale);
+
+                    envHoverState.hoveredServerMesh = serverMesh;
+                    envDotMesh.visible = true;
+                    envBoxMesh.visible = true;
+                  } else {
+                    envHoverState.hoveredServerMesh = null;
+                    envDotMesh.visible = false;
+                    envBoxMesh.visible = false;
+                  }
+                } else {
+                  envHoverState.hoveredServerMesh = null;
+                  envDotMesh.visible = false;
+                  envBoxMesh.visible = false;
+                }
+              });
+            };
             const _updateServerMeshes = () => {
               const {hmd} = webvr.getStatus();
               const {serverMeshes} = serversMesh;
 
               for (let i = 0; i < serverMeshes.length; i++) {
                 const serverMesh = serverMeshes[i];
-                serverMesh.rotation.y = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order).y;
+                const {menuMesh} = serverMesh;
+                menuMesh.rotation.y = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order).y;
               }
             };
 
             _updateMenuAnchors();
+            _updateEnvAnchors();
             _updateServerMeshes();
           };
           rend.on('update', _update);
@@ -431,6 +563,8 @@ class Hub {
             SIDES.forEach(side => {
               scene.remove(menuDotMeshes[side]);
               scene.remove(menuBoxMeshes[side]);
+              scene.remove(envDotMeshes[side]);
+              scene.remove(envBoxMeshes[side]);
             });
 
             serverMeshes.forEach(serverMesh => {

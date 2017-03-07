@@ -12,6 +12,8 @@ export const SERVER_WORLD_WIDTH = 0.7;
 export const SERVER_WORLD_HEIGHT = SERVER_WORLD_WIDTH / SERVER_ASPECT_RATIO;
 export const SERVER_WORLD_DEPTH = SERVER_WORLD_WIDTH / 50;
 
+export const SPHERE_RADIUS = 0.2;
+
 export const DEFAULT_USER_HEIGHT = 1.6;
 
 export default {
@@ -28,6 +30,8 @@ export default {
   SERVER_WORLD_WIDTH,
   SERVER_WORLD_HEIGHT,
   SERVER_WORLD_DEPTH,
+
+  SPHERE_RADIUS,
 
   DEFAULT_USER_HEIGHT,
 };
