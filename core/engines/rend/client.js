@@ -686,8 +686,7 @@ class Rend {
 
           if (open) {
             const _updateAnchors = () => {
-              const status = webvr.getStatus();
-              const {gamepads} = status;
+              const {gamepads} = webvr.getStatus();
 
               const {statusMesh, navbarMesh} = menuMesh;
               const menuMatrixObject = _decomposeObjectMatrixWorld(statusMesh);

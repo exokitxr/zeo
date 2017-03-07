@@ -18,6 +18,7 @@ import menuRenderer from './lib/render/menu';
 const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const NUM_INVENTORY_ITEMS = 4;
 
+const SIDES = ['left', 'right'];
 const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
 
 class Hub {
@@ -57,6 +58,14 @@ class Hub {
 
           const transparentMaterial = biolumi.getTransparentMaterial();
           const transparentImg = biolumi.getTransparentImg();
+
+          const _decomposeObjectMatrixWorld = object => {
+            const position = new THREE.Vector3();
+            const rotation = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            object.matrixWorld.decompose(position, rotation, scale);
+            return {position, rotation, scale};
+          };
 
           const menuUi = biolumi.makeUi({
             width: WIDTH,
@@ -150,6 +159,24 @@ class Hub {
             return object;
           })();
           scene.add(menuMesh);
+
+          const menuHoverStates = {
+            left: biolumi.makeMenuHoverState(),
+            right: biolumi.makeMenuHoverState(),
+          };
+
+          const menuDotMeshes = {
+            left: biolumi.makeMenuDotMesh(),
+            right: biolumi.makeMenuDotMesh(),
+          };
+          scene.add(menuDotMeshes.left);
+          scene.add(menuDotMeshes.right);
+          const menuBoxMeshes = {
+            left: biolumi.makeMenuBoxMesh(),
+            right: biolumi.makeMenuBoxMesh(),
+          };
+          scene.add(menuBoxMeshes.left);
+          scene.add(menuBoxMeshes.right);
 
           const _getServerMeshes = servers => {
             const result = Array(servers.length);
@@ -348,18 +375,64 @@ class Hub {
           _updatePages();
 
           const _update = () => {
-            const {hmd} = webvr.getStatus();
-            const {serverMeshes} = serversMesh;
+            const _updateMenuAnchors = () => {
+              const {gamepads} = webvr.getStatus();
 
-            for (let i = 0; i < serverMeshes.length; i++) {
-              const serverMesh = serverMeshes[i];
-              serverMesh.rotation.y = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order).y;
-            }
+              const {planeMesh} = menuMesh;
+              const menuMatrixObject = _decomposeObjectMatrixWorld(planeMesh);
+              const {page} = planeMesh;
+
+              SIDES.forEach(side => {
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                  const menuHoverState = menuHoverStates[side];
+                  const menuDotMesh = menuDotMeshes[side];
+                  const menuBoxMesh = menuBoxMeshes[side];
+
+                  biolumi.updateAnchors({
+                    objects: [{
+                      matrixObject: menuMatrixObject,
+                      page: page,
+                      width: WIDTH,
+                      height: HEIGHT,
+                      worldWidth: WORLD_WIDTH,
+                      worldHeight: WORLD_HEIGHT,
+                      worldDepth: WORLD_DEPTH,
+                    }],
+                    hoverState: menuHoverState,
+                    dotMesh: menuDotMesh,
+                    boxMesh: menuBoxMesh,
+                    controllerPosition,
+                    controllerRotation,
+                  });
+                }
+              });
+            };
+            const _updateServerMeshes = () => {
+              const {hmd} = webvr.getStatus();
+              const {serverMeshes} = serversMesh;
+
+              for (let i = 0; i < serverMeshes.length; i++) {
+                const serverMesh = serverMeshes[i];
+                serverMesh.rotation.y = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order).y;
+              }
+            };
+
+            _updateMenuAnchors();
+            _updateServerMeshes();
           };
           rend.on('update', _update);
 
           this._cleanup = () => {
             scene.remove(menuMesh);
+            SIDES.forEach(side => {
+              scene.remove(menuDotMeshes[side]);
+              scene.remove(menuBoxMeshes[side]);
+            });
+
             serverMeshes.forEach(serverMesh => {
               scene.remove(serverMesh);
             });
