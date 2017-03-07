@@ -25,6 +25,34 @@ class Login {
       live = false;
     };
 
+    const hubSpec = (() => {
+      const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
+      return match && {
+        host: match[1],
+        port: match[2] ? parseInt(match[2], 10) : 443,
+      };
+    })();
+
+    const loginState = {
+      open: true,
+      hasHub: Boolean(hubSpec),
+      token: '',
+      username: '',
+      inputText: '',
+      inputIndex: 0,
+      inputValue: 0,
+      loading: false,
+      error: null,
+    };
+
+    const _isOpen = () => loginState.open;
+    const _getUsername = () => loginState.username;
+
+    const loginApi = {
+      isOpen: _isOpen,
+      getUsername: _getUsername,
+    };
+
     if (serverEnabled) {
       return archae.requestPlugins([
         '/core/engines/bootstrap',
@@ -49,14 +77,6 @@ class Login {
           const transparentMaterial = biolumi.getTransparentMaterial();
           const solidMaterial = biolumi.getSolidMaterial();
 
-          const hubSpec = (() => {
-            const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
-            return match && {
-              host: match[1],
-              port: match[2] ? parseInt(match[2], 10) : 443,
-            };
-          })();
-
           const _decomposeObjectMatrixWorld = object => {
             const position = new THREE.Vector3();
             const rotation = new THREE.Quaternion();
@@ -71,17 +91,6 @@ class Login {
             lineHeight: 1.4,
             fontWeight: biolumi.getFontWeight(),
             fontStyle: biolumi.getFontStyle(),
-          };
-          const loginState = {
-            open: true,
-            hasHub: Boolean(hubSpec),
-            token: '',
-            username: '',
-            inputText: '',
-            inputIndex: 0,
-            inputValue: 0,
-            loading: false,
-            error: null,
           };
           const focusState = {
             type: '',
@@ -389,7 +398,7 @@ class Login {
                 rend.on('update', _update);
 
                 const _upload = file => {
-                  if (_isOpen()) {
+                  if (loginApi.isOpen()) {
                     const reader = new FileReader();
                     reader.onload = e => {
                       loginState.token = e.target.result;
@@ -421,18 +430,13 @@ class Login {
                   fs.removeListener('upload', _upload);
                 };
 
-                const _isOpen = () => loginState.open;
-                const _getUsername = () => loginState.username;
-
-                const loginApi = {
-                  isOpen: _isOpen,
-                  getUsername: _getUsername,
-                };
                 return loginApi;
               }
             });
         }
       });
+    } else {
+      return loginApi;
     }
   }
 
