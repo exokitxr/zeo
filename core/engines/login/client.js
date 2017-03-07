@@ -20,6 +20,14 @@ class Login {
     const {_archae: archae} = this;
     const {metadata: {hub: {url: hubUrl}, server: {enabled: serverEnabled}}} = archae;
 
+    const hubSpec = (() => {
+      const match = hubUrl.match(/^(.+\..+?)(?::([0-9]*?))?$/);
+      return match && {
+        host: match[1],
+        port: match[2] ? parseInt(match[2], 10) : 443,
+      };
+    })();
+
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -65,6 +73,7 @@ class Login {
         };
         const loginState = {
           open: serverEnabled,
+          hasHub: Boolean(hubSpec),
           token: '',
           username: '',
           inputText: '',
@@ -94,6 +103,7 @@ class Login {
           const planeMesh = (() => {
             const mesh = menuUi.addPage(({
               login: {
+                hasHub,
                 token,
                 inputIndex,
                 inputValue,
@@ -108,6 +118,7 @@ class Login {
                 {
                   type: 'html',
                   src: menuRenderer.getLoginSrc({
+                    hasHub,
                     token,
                     inputIndex,
                     inputValue,
