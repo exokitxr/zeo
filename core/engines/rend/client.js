@@ -35,7 +35,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl}, hub: {url: hubUrl}}} = archae;
+    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
 
     let live = true;
     const cleanups = [];
@@ -59,7 +59,13 @@ class Rend {
           };
         }))
       );
-    const _requestIconImg = () => _requestImageFileDataUrl('/servers/img/icon.png');
+    const _requestIconImg = () => {
+      if (serverEnabled) {
+        return _requestImageFileDataUrl('/servers/img/icon.png');
+      } else {
+        return Promise.resolve();
+      }
+    };
 
     return Promise.all([
       archae.requestPlugins([
@@ -172,131 +178,133 @@ class Rend {
           webvr.updateStatus();
         }
 
-        const menuUi = biolumi.makeUi({
-          width: WIDTH,
-          height: HEIGHT,
-        });
-        const navbarUi = biolumi.makeUi({
-          width: NAVBAR_WIDTH,
-          height: NAVBAR_HEIGHT,
-        });
+        if (serverEnabled) {
+          const menuUi = biolumi.makeUi({
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          const navbarUi = biolumi.makeUi({
+            width: NAVBAR_WIDTH,
+            height: NAVBAR_HEIGHT,
+          });
 
-        const menuMesh = (() => {
-          const object = new THREE.Object3D();
-          object.position.y = DEFAULT_USER_HEIGHT;
-          object.visible = menuState.open;
+          const menuMesh = (() => {
+            const object = new THREE.Object3D();
+            object.position.y = DEFAULT_USER_HEIGHT;
+            object.visible = menuState.open;
 
-          const statusMesh = (() => {
-            const mesh = menuUi.addPage(({
-              status,
-              iconImg,
-            }) => [
-              {
-                type: 'html',
-                src: menuRenderer.getStatusSrc({status, iconImg}),
-                x: 0,
-                y: 0,
-                w: WIDTH,
-                h: HEIGHT,
-              },
-            ], {
-              type: 'status',
-              state: {
-                status: statusState,
-                iconImg: iconImg,
-              },
-              worldWidth: WORLD_WIDTH,
-              worldHeight: WORLD_HEIGHT,
-            });
-            mesh.position.z = -1.5;
-            mesh.receiveShadow = true;
+            const statusMesh = (() => {
+              const mesh = menuUi.addPage(({
+                status,
+                iconImg,
+              }) => [
+                {
+                  type: 'html',
+                  src: menuRenderer.getStatusSrc({status, iconImg}),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                },
+              ], {
+                type: 'status',
+                state: {
+                  status: statusState,
+                  iconImg: iconImg,
+                },
+                worldWidth: WORLD_WIDTH,
+                worldHeight: WORLD_HEIGHT,
+              });
+              mesh.position.z = -1.5;
+              mesh.receiveShadow = true;
 
-            return mesh;
+              return mesh;
+            })();
+            object.add(statusMesh);
+            object.statusMesh = statusMesh;
+
+            object.worldMesh = null;
+            object.universeMesh = null;
+            object.serversMesh = null;
+            object.configMesh = null;
+            object.statsMesh = null;
+            object.trashMesh = null;
+
+            const navbarMesh = (() => {
+              const mesh = navbarUi.addPage(({
+                navbar: {
+                  tab,
+                },
+              }) => ([
+                {
+                  type: 'html',
+                  src: menuRenderer.getNavbarSrc({tab}),
+                  x: 0,
+                  y: 0,
+                  w: NAVBAR_WIDTH,
+                  h: NAVBAR_HEIGHT,
+                },
+              ]), {
+                type: 'navbar',
+                state: {
+                  navbar: navbarState,
+                },
+                worldWidth: NAVBAR_WORLD_WIDTH,
+                worldHeight: NAVBAR_WORLD_HEIGHT,
+              });
+              mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
+              mesh.position.z = -1.5;
+              mesh.receiveShadow = true;
+
+              return mesh;
+            })();
+            object.add(navbarMesh);
+            object.navbarMesh = navbarMesh;
+
+            const shadowMesh = (() => {
+              const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
+              const material = transparentMaterial.clone();
+              material.depthWrite = false;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
+              mesh.castShadow = true;
+              return mesh;
+            })();
+            object.add(shadowMesh);
+
+            return object;
           })();
-          object.add(statusMesh);
-          object.statusMesh = statusMesh;
+          scene.add(menuMesh);
 
-          object.worldMesh = null;
-          object.universeMesh = null;
-          object.serversMesh = null;
-          object.configMesh = null;
-          object.statsMesh = null;
-          object.trashMesh = null;
+          const menuDotMeshes = {
+            left: biolumi.makeMenuDotMesh(),
+            right: biolumi.makeMenuDotMesh(),
+          };
+          scene.add(menuDotMeshes.left);
+          scene.add(menuDotMeshes.right);
 
-          const navbarMesh = (() => {
-            const mesh = navbarUi.addPage(({
-              navbar: {
-                tab,
-              },
-            }) => ([
-              {
-                type: 'html',
-                src: menuRenderer.getNavbarSrc({tab}),
-                x: 0,
-                y: 0,
-                w: NAVBAR_WIDTH,
-                h: NAVBAR_HEIGHT,
-              },
-            ]), {
-              type: 'navbar',
-              state: {
-                navbar: navbarState,
-              },
-              worldWidth: NAVBAR_WORLD_WIDTH,
-              worldHeight: NAVBAR_WORLD_HEIGHT,
-            });
-            mesh.position.y = (WORLD_HEIGHT / 2) + (NAVBAR_WORLD_HEIGHT / 2);
-            mesh.position.z = -1.5;
-            mesh.receiveShadow = true;
+          const menuBoxMeshes = {
+            left: biolumi.makeMenuBoxMesh(),
+            right: biolumi.makeMenuBoxMesh(),
+          };
+          scene.add(menuBoxMeshes.left);
+          scene.add(menuBoxMeshes.right);
 
-            return mesh;
-          })();
-          object.add(navbarMesh);
-          object.navbarMesh = navbarMesh;
+          const navbarDotMeshes = {
+            left: biolumi.makeMenuDotMesh(),
+            right: biolumi.makeMenuDotMesh(),
+          };
+          scene.add(navbarDotMeshes.left);
+          scene.add(navbarDotMeshes.right);
 
-          const shadowMesh = (() => {
-            const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT + NAVBAR_WORLD_HEIGHT, 0.01);
-            const material = transparentMaterial.clone();
-            material.depthWrite = false;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.y = NAVBAR_WORLD_HEIGHT / 2;
-            mesh.castShadow = true;
-            return mesh;
-          })();
-          object.add(shadowMesh);
-
-          return object;
-        })();
-        scene.add(menuMesh);
-
-        const menuDotMeshes = {
-          left: biolumi.makeMenuDotMesh(),
-          right: biolumi.makeMenuDotMesh(),
-        };
-        scene.add(menuDotMeshes.left);
-        scene.add(menuDotMeshes.right);
-
-        const menuBoxMeshes = {
-          left: biolumi.makeMenuBoxMesh(),
-          right: biolumi.makeMenuBoxMesh(),
-        };
-        scene.add(menuBoxMeshes.left);
-        scene.add(menuBoxMeshes.right);
-
-        const navbarDotMeshes = {
-          left: biolumi.makeMenuDotMesh(),
-          right: biolumi.makeMenuDotMesh(),
-        };
-        scene.add(navbarDotMeshes.left);
-        scene.add(navbarDotMeshes.right);
-
-        const navbarBoxMeshes = {
-          left: biolumi.makeMenuBoxMesh(),
-          right: biolumi.makeMenuBoxMesh(),
-        };
-        scene.add(navbarBoxMeshes.left);
-        scene.add(navbarBoxMeshes.right);
+          const navbarBoxMeshes = {
+            left: biolumi.makeMenuBoxMesh(),
+            right: biolumi.makeMenuBoxMesh(),
+          };
+          scene.add(navbarBoxMeshes.left);
+          scene.add(navbarBoxMeshes.right);
+        }
 
         const keyboardMesh = (() => {
           const object = new THREE.Object3D();
@@ -439,8 +447,10 @@ class Rend {
         scene.add(keyboardBoxMeshes.right);
 
         const _updatePages = () => {
-          menuUi.update();
-          navbarUi.update();
+          if (serverEnabled) {
+            menuUi.update();
+            navbarUi.update();
+          }
         };
         _updatePages();
 
@@ -583,16 +593,18 @@ class Rend {
         input.on('menudown', menudown);
 
         cleanups.push(() => {
-          scene.remove(menuMesh);
+          if (serverEnabled) {
+            scene.remove(menuMesh);
+            SIDES.forEach(side => {
+              scene.remove(menuDotMeshes[side]);
+              scene.remove(menuBoxMeshes[side]);
+              scene.remove(navbarDotMeshes[side]);
+              scene.remove(navbarBoxMeshes[side]);
+            });
+          }
+
           scene.remove(keyboardMesh);
-
           SIDES.forEach(side => {
-            scene.remove(menuDotMeshes[side]);
-            scene.remove(menuBoxMeshes[side]);
-
-            scene.remove(navbarDotMeshes[side]);
-            scene.remove(navbarBoxMeshes[side]);
-
             scene.remove(keyboardBoxMeshes[side]);
           });
 
