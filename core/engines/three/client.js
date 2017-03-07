@@ -32,6 +32,7 @@ class Three {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.autoUpdate = false;
     // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.domElement.style.display = 'none';
     window.document.body.appendChild(renderer.domElement);
 
     window.addEventListener('resize', () => {

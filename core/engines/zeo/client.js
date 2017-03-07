@@ -280,6 +280,11 @@ class Zeo {
                 .then(() => {
                   if (live) {
                     const _initHelper = () => {
+                      const filterText = 'blur(5px) opacity(0.75)';
+
+                      renderer.domElement.style.display = 'block';
+                      renderer.domElement.style.filter = filterText;
+
                       const helper = document.createElement('div');
                       helper.id = 'helper';
                       helper.style.cssText = `\
@@ -290,15 +295,14 @@ class Zeo {
                         left: 0;
                         right: 0;
                         align-items: center;
-                        background-color: rgba(0, 0, 0, 0.5);
                         font-family: ${biolumi.getFonts()};
                       `;
                       const fonts = biolumi.getFonts().replace(/"/g, "'");
                       helper.innerHTML = `\
-                        <div style="display: flex; width: 100%; margin: auto 0; justify-content: center; color: #FFF;">
+                        <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; justify-content: center;">
                           <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
                             <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
-                            <h1 style="width: 400px; margin: 0; margin-bottom: 20px; font-size: 30px; font-weight: 300;"><span class=username>Username</span> / <span class=worldname>Unknown world</span></h1>
+                            <h1 style="display: flex; width: 400px; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
                             <div class=helper-content style="width: 400px;"></div>
                           </div>
                         </div>
@@ -313,8 +317,8 @@ class Zeo {
                       enterHelperContent.innerHTML = `\
                         <div>
                           <div style="display: flex; margin-bottom: 20px;">
-                            <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" class="headset-button">Headset</button>
-                            <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
+                            <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class="headset-button">Headset</button>
+                            <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
                           </div>
                           <p style="width: 400px; margin: 0; font-size: 13px; color: #CCC; font-weight: 300;" class="error-message">WebVR is not supported by your browser so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a></p>
                         </div>
@@ -326,7 +330,7 @@ class Zeo {
                           <div style="margin-bottom: 18px; padding: 15px; background-color: #E91E63; color: #FFF; cursor: pointer;">
                             <div style="display: flex; margin-bottom: 15px; font-size: 18px; line-height: 22px;">
                               <div style="margin-right: auto; color: #FFF;">Media Permissions</div>
-                              <button style="display: inline-flex; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 300; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
+                              <button style="display: inline-flex; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
                                 <div style="width: 12px; height: 12px; background-color: #FFF;"></div>
                                 <div style="width: 12px; height: 12px;"></div>
                               </button>
@@ -341,14 +345,14 @@ class Zeo {
 
                       const _styleButton = button => {
                         button.addEventListener('mouseover', e => {
-                          button.style.backgroundColor = '#FFF';
+                          button.style.backgroundColor = '#000';
                           button.style.borderColor = 'transparent';
-                          button.style.color = '#000';
+                          button.style.color = '#FFF';
                         });
                         button.addEventListener('mouseout', e => {
                           button.style.backgroundColor = 'transparent';
                           button.style.borderColor = 'currentColor';
-                          button.style.color = '#FFF';
+                          button.style.color = '#000';
                         });
                       };
 
@@ -361,10 +365,12 @@ class Zeo {
                               stereoscopic: true,
                               onExit: () => {
                                 helper.style.display = 'flex';
+                                renderer.domElement.style.filter = filterText;
                               },
                             });
 
                             helper.style.display = 'none';
+                            renderer.domElement.style.filter = 'none';
                           }
                         });
                       } else {
@@ -379,10 +385,12 @@ class Zeo {
                             stereoscopic: false,
                             onExit: () => {
                               helper.style.display = 'flex';
+                              renderer.domElement.style.filter = filterText;
                             },
                           });
 
                           helper.style.display = 'none';
+                          renderer.domElement.style.filter = 'none';
                         }
                       });
 

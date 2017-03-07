@@ -13,7 +13,6 @@
       margin: 0;
       width: 100vw;
       height: 100vh;
-      background-color: #000;
       overflow: hidden;
     }
   </style>
@@ -24,7 +23,7 @@
       border-radius: 50%;
     }
     .loader {
-      color: #ffffff;
+      color: #000;
       font-size: 11px;
       text-indent: -99999em;
       position: relative;
@@ -43,7 +42,7 @@
     .loader:before {
       width: 5.2em;
       height: 10.2em;
-      background: #000;
+      background: #fff;
       border-radius: 10.2em 0 0 10.2em;
       top: -0.1em;
       left: -0.1em;
@@ -55,7 +54,7 @@
     .loader:after {
       width: 5.2em;
       height: 10.2em;
-      background: #000;
+      background: #fff;
       border-radius: 0 10.2em 10.2em 0;
       top: -0.1em;
       left: 5.1em;
@@ -89,12 +88,12 @@
     }
     .loader-wrap > h1 {
       margin-bottom: 10px;
-      font-size: 30px;
-      color: #FFF;
+      font-size: 40px;
+      color: #000;
     }
     .loader-wrap > p {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+      font-weight: 400;
     }
     @-webkit-keyframes load2 {
       0% {
