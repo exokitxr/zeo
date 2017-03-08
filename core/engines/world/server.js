@@ -118,7 +118,7 @@ class World {
                 };
                 const usersJson = {};
 
-                const _requestHub = ({token, method, url, body}) => new Promise((accept, reject) => {
+                /* const _requestHub = ({token, method, url, body}) => new Promise((accept, reject) => {
                   const proxyReq = https.request({
                     method,
                     hostname: hubSpec.host,
@@ -175,28 +175,28 @@ class World {
                   } else {
                     proxyReq.end();
                   }
-                });
+                }); */
                 const _requestEquipmentJson = ({token}) => {
-                  if (hubSpec) {
+                  /* if (hubSpec) { // XXX re-enable hub equipment storage for these
                     return _requestHub({
                       token,
                       method: 'GET',
                       url: '/hub/world/equipment.json',
                     });
-                  } else {
-                    return Promise.resolve(equipmentJson); // XXX figure out how to handle insecure server hub requests
-                  }
+                  } else { */
+                    return Promise.resolve(equipmentJson);
+                  // }
                 };
                 const _requestInventoryJson = ({token}) => {
-                  if (hubSpec) {
+                  /* if (hubSpec) {
                     return _requestHub({
                       token,
                       method: 'GET',
                       url: '/hub/world/inventory.json',
                     });
-                  } else {
+                  } else { */
                     return Promise.resolve(inventoryJson);
-                  }
+                  // }
                 };
 
                 const connections = [];
@@ -260,7 +260,7 @@ class World {
                           }
                         };
                         const _saveEquipment = _debounce(next => {
-                          if (hubSpec) {
+                          /* if (hubSpec) {
                             _requestHub({
                               token,
                               method: 'PUT',
@@ -275,12 +275,12 @@ class World {
 
                                 next();
                               });
-                          } else {
+                          } else { */
                             console.warn('not saving equipment due to invalid hub spec');
-                          }
+                          // }
                         });
                         const _saveInventory = _debounce(next => {
-                          if (hubSpec) {
+                          /* if (hubSpec) {
                             _requestHub({
                               token,
                               method: 'PUT',
@@ -295,9 +295,9 @@ class World {
 
                                 next();
                               });
-                          } else {
+                          } else { */
                             console.warn('not saving inventory due to invalid hub spec');
-                          }
+                          // }
                         });
 
                         c.on('message', s => {
