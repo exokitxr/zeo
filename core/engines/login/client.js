@@ -215,7 +215,7 @@ class Login {
 
           const _requestInitialLogin = () => {
             if (serverEnabled) {
-              const token = _getQueryVariable('t');
+              const token = _getQueryVariable(document.location.href, 't');
 
               if (token !== null) {
                 return _requestLogin({
@@ -459,8 +459,9 @@ class Login {
   }
 }
 
-const _getQueryVariable = variable => {
-  const query = window.location.search.substring(1);
+const _getQueryVariable = (url, variable) => {
+  const match = url.match(/\?(.+)$/);
+  const query = match ? match[1] : '';
   const vars = query.split('&');
 
   for (let i = 0; i < vars.length; i++) {
@@ -471,6 +472,6 @@ const _getQueryVariable = variable => {
     }
   }
   return null;
-}
+};
 
 module.exports = Login;

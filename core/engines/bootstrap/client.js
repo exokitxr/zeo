@@ -28,6 +28,7 @@ class Bootstrap {
       live = false;
     };
 
+    const initialUrl = document.location.href;
     const hostUrl = serverEnabled ? serverUrl : hubUrl;
     const _requestServers = hostUrl => fetch('https://' + hostUrl + '/servers/servers.json')
       .then(res => res.json());
@@ -43,6 +44,7 @@ class Bootstrap {
         serverJson,
       ]) => {
         if (live) {
+          const _getInitialUrl = () => initialUrl;
           const _getServers = () => serversJson.servers;
           const _getCurrentServer = () => serverJson;
           const _changeServer = serverUrl => {
@@ -133,6 +135,7 @@ class Bootstrap {
           };
 
           return {
+            getInitialUrl: _getInitialUrl,
             getServers: _getServers,
             getCurrentServer: _getCurrentServer,
             changeServer: _changeServer,

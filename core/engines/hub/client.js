@@ -448,7 +448,7 @@ class Hub {
                 const {server} = hoveredServerMesh;
 
                 const {url} = server;
-                const t = _getQueryVariable('t');
+                const t = _getQueryVariable(window.location.href, 't');
                 document.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
 
                 e.stopImmediatePropagation(); // can't happen
@@ -599,8 +599,9 @@ class Hub {
   }
 }
 
-const _getQueryVariable = variable => {
-  const query = window.location.search.substring(1);
+const _getQueryVariable = (url, variable) => {
+  const match = url.match(/\?(.+)$/);
+  const query = match ? match[1] : '';
   const vars = query.split('&');
 
   for (let i = 0; i < vars.length; i++) {
@@ -611,6 +612,6 @@ const _getQueryVariable = variable => {
     }
   }
   return null;
-}
+};
 
 module.exports = Hub;

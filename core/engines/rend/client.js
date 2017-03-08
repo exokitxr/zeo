@@ -401,7 +401,8 @@ class Rend {
 
                     return true;
                   } else if (onclick === 'status:backToHub') {
-                    document.location = 'https://' + hubUrl;
+                    const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
+                    document.location = 'https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : '');
 
                     return true; // can't happen
                   } else {
@@ -1007,5 +1008,20 @@ class Rend {
     this._cleanup();
   }
 }
+
+const _getQueryVariable = (url, variable) => {
+  const match = url.match(/\?(.+)$/);
+  const query = match ? match[1] : '';
+  const vars = query.split('&');
+
+  for (let i = 0; i < vars.length; i++) {
+    const pair = vars[i].split('=');
+
+    if (decodeURIComponent(pair[0]) === variable) {
+      return decodeURIComponent(pair[1]);
+    }
+  }
+  return null;
+};
 
 module.exports = Rend;
