@@ -355,7 +355,7 @@ class Config {
                         configState.airlockCheckboxValue = !airlockCheckboxValue;
 
                         _saveConfig();
-                        _updateConfig();
+                        configApi.updateConfig();
 
                         _updatePages();
                       } else if (onclick === 'config:voiceChat') {
@@ -364,7 +364,7 @@ class Config {
                         configState.voiceChatCheckboxValue = !voiceChatCheckboxValue;
 
                         _saveConfig();
-                        _updateConfig();
+                        configApi.updateConfig();
 
                         _updatePages();
                       } else if (onclick === 'config:stats') {
@@ -379,7 +379,7 @@ class Config {
                         }
 
                         _saveConfig();
-                        _updateConfig();
+                        configApi.updateConfig();
 
                         _updatePages();
                       } else if (onclick === 'config:physicsDebug') {
@@ -392,7 +392,7 @@ class Config {
                         }
 
                         _saveConfig();
-                        _updateConfig();
+                        configApi.updateConfig();
 
                         _updatePages();
                       } else if (onclick === 'config:logOut') {
