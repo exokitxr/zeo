@@ -200,9 +200,7 @@ const _loadSign = () => new Promise((accept, reject) => {
 
     _getFile(keyPath)
       .then(key => {
-        accept({
-          key,
-        });
+        accept(key);
       })
       .catch(err => {
         if (err.code === 'ENOENT') {
@@ -213,9 +211,7 @@ const _loadSign = () => new Promise((accept, reject) => {
 
               _setFile(keyPath, key)
                 .then(() => {
-                  accept({
-                    key,
-                  });
+                  accept(key);
                 })
                 .catch(err => {
                   reject(err);
@@ -233,17 +229,27 @@ const _loadSign = () => new Promise((accept, reject) => {
   }
 });
 
+const _loadUserDb = () => {
+  if (flags.hub || flags.server) {
+    const db = require('./lib/db');
+    return db.requestUserDb(path.join(__dirname, dataDirectory, 'db', 'users.db'));
+  } else {
+    return Promise.resolve();
+  }
+};
+
 const _load = () => Promise.all([
   _install(),
   _loadSign(),
+  _loadUserDb(),
 ])
   .then(([
     installResult,
-    {
-      key,
-    },
+    key,
+    userDb,
   ]) => ({
     key,
+    userDb,
   }));
 
 const _getAllPlugins = () => {
@@ -292,20 +298,20 @@ const _getAllPlugins = () => {
     );
 };
 
-const _listen = ({key}) => {
+const _listen = ({key, userDb}) => {
   const listenPromises = [];
 
   if (flags.site) {
     const site = require('./lib/site');
-    listenPromises.push(site.listen(a, config, {key}));
+    listenPromises.push(site.listen(a, config, {key, userDb}));
   }
   if (flags.hub) {
     const hub = require('./lib/hub');
-    listenPromises.push(hub.listen(a, config, {key}));
+    listenPromises.push(hub.listen(a, config, {key, userDb}));
   }
   if (flags.server) {
     const server = require('./lib/server');
-    listenPromises.push(server.listen(a, config, {key}));
+    listenPromises.push(server.listen(a, config, {key, userDb}));
   }
 
   return Promise.all(listenPromises)
@@ -353,8 +359,9 @@ const _boot = ({key}) => {
 _load()
   .then(({
     key,
+    userDb,
   }) => {
-    return _listen({key})
+    return _listen({key, userDb})
       .then(() => _boot({key}))
       .then(() => {
         if (flags.site) {
