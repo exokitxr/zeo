@@ -174,6 +174,15 @@ const _install = () => {
   }
 };
 
+const _checkArgs = () => new Promise((accept, reject) => {
+  if (flags.hub && flags.server) {
+    const err = new Error('hub and server flags are mutually exclusive');
+    reject(err);
+  } else {
+    accept();
+  }
+});
+
 const _loadSign = () => new Promise((accept, reject) => {
   if (flags.hub || flags.server || flags.makeToken) {
     const signDirectory = path.join(__dirname, cryptoDirectory, 'sign');
@@ -356,7 +365,8 @@ const _boot = ({key}) => {
   return Promise.all(bootPromises);
 };
 
-_load()
+_checkArgs()
+  .then(() => _load())
   .then(({
     key,
     userDb,
