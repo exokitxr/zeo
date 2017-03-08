@@ -295,9 +295,9 @@ class Zeo {
                           <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class="headset-button">Headset</button>
                           <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
                         </div>
-                        <div style="padding: 15px; background-color: #000; color: #FFF;" id="error-message">
+                        <div style="padding: 15px; background-color: #000; color: #FFF;" class="error-message">
                           <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
-                          <div style="font-size: 13px; font-weight: 400;" class="error-message">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
+                          <div style="font-size: 13px; font-weight: 400;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
                         </div>
                       </div>
                     `;
