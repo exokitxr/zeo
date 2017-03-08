@@ -99,6 +99,9 @@ class WebVR {
         const {events} = jsUtils;
         const EventEmitter = events;
 
+        const zeroVector = new THREE.Vector3();
+        const zeroQuaternion = new THREE.Quaternion();
+
         const THREEVREffect = VREffect(THREE);
 
         const bestDisplay = displays.sort((a, b) => {
@@ -668,8 +671,8 @@ class WebVR {
 
               const {_frameData: frameData} = this;
               display.getFrameData(frameData);
-              const displayPosition = new THREE.Vector3().fromArray(frameData.pose.position);
-              const displayQuaternion = new THREE.Quaternion().fromArray(frameData.pose.orientation);
+              const displayPosition = frameData.pose.position ? new THREE.Vector3().fromArray(frameData.pose.position) : zeroVector;
+              const displayQuaternion = frameData.pose.orientation ? new THREE.Quaternion().fromArray(frameData.pose.orientation) : zeroQuaternion;
               const displayRotationY = new THREE.Euler().setFromQuaternion(displayQuaternion, camera.rotation.order).y;
 
               const newUserStageMatrix = new THREE.Matrix4().compose(
