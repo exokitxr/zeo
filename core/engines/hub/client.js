@@ -446,8 +446,10 @@ class Hub {
 
               if (hoveredServerMesh) {
                 const {server} = hoveredServerMesh;
+
                 const {url} = server;
-                document.location = 'https://' + server.url;
+                const t = _getQueryVariable('t');
+                document.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
 
                 e.stopImmediatePropagation(); // can't happen
               }
@@ -597,9 +599,18 @@ class Hub {
   }
 }
 
-const _padNumber = (n, width) => {
-  n = n + '';
-  return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
-};
+const _getQueryVariable = variable => {
+  const query = window.location.search.substring(1);
+  const vars = query.split('&');
+
+  for (let i = 0; i < vars.length; i++) {
+    const pair = vars[i].split('=');
+
+    if (decodeURIComponent(pair[0]) === variable) {
+      return decodeURIComponent(pair[1]);
+    }
+  }
+  return null;
+}
 
 module.exports = Hub;
