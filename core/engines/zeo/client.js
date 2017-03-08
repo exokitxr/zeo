@@ -375,17 +375,6 @@ class Zeo {
                       errorMessage.style.display = 'none';
                     }
 
-                    const userState = bootstrap.getUserState();
-                    const {username, world} = userState;
-                    if (username) {
-                      const usernameEl = $$(helper, '.username')[0];
-                      usernameEl.innerText = username;
-                    }
-                    if (world) {
-                      const worldnameEl = $$(helper, '.worldname')[0];
-                      worldnameEl.innerText = world;
-                    }
-
                     const _updateHelperContent = () => {
                       if (mediaPermissions) {
                         permissionsHelperContent.style.display = 'none';
