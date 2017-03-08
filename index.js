@@ -129,6 +129,7 @@ const config = {
   cryptoDirectory: cryptoDirectory,
   installDirectory: installDirectory,
   cors: !staticSite,
+  corsOrigin: hubUrl,
   staticSite: staticSite,
   metadata: {
     site: {
