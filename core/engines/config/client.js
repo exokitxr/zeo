@@ -58,7 +58,8 @@ class Config {
         }
 
         updateConfig() {
-          this.emit('config', _getConfig());
+          const config = this.getConfig();
+          this.emit('config', config);
         }
       }
       return new ConfigApi();
@@ -86,6 +87,8 @@ class Config {
           const {THREE, scene} = three;
           const {events} = jsUtils;
           const {EventEmitter} = events;
+
+          const configApi = _makeConfigApi({EventEmitter});
 
           const _decomposeObjectMatrixWorld = object => {
             const position = new THREE.Vector3();
@@ -131,7 +134,8 @@ class Config {
             .then(res => res.blob())
             .then(() => {})
           const _saveConfig = configUtils.debounce(next => {
-            _requestSetConfig(_getConfig())
+            const config = configApi.getConfig();
+            _requestSetConfig(config)
               .then(() => {
                 next();
               })
@@ -510,7 +514,6 @@ class Config {
                   rend.removeListener('updateEnd', _updateEnd);
                 };
 
-                const configApi = _makeConfigApi({EventEmitter});
                 return configApi;
               }
             });
