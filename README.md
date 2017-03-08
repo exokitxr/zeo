@@ -32,10 +32,10 @@ Runs in your browser, using either headset or mouse + keyboard. The goal is to _
 npm install git+https://github.com/modulesio/zeo.git # requires node 6+
 ```
 
-:point_right: The _required dependencies_ are `build-essential cmake python ffmpeg`. These are needed to build some native node modules ([Bullet physics engine](https://github.com/bulletphysics/bullet3)) and for voice audio processing on the server. On Debian/Ubuntu you can get these dependencies with:
+:point_right: The _required dependencies_ are `build-essential cmake python ffmpeg libcairo2-dev`. These are needed to build some native node modules ([Bullet physics engine](https://github.com/bulletphysics/bullet3)), voice audio, and image processing. On Debian/Ubuntu you can get these dependencies with:
 
 ```bash
-sudo apt-get install build-essential cmake python ffmpeg
+sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
 ```
 
 If you're using a different package manager it almost certainly has these, under slightly different names.
