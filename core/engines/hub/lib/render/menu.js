@@ -31,7 +31,7 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
         <img src="${logoImg}" width="${100 * 0.75}" height="{158 * 0.75}" style="margin: 10px 0;" />
         <div style="width: 540px; margin-bottom: auto; font-size: 16px; font-weight: 400; flex-grow: 1">
           <p>Zeo lets you build multiplayer virtual worlds in your browser!</p>
-          <p>Looks like you're using a keyboard and mouse, but don't worry: you can still do everything you could with a headset! Here are the controls:</p>
+          <p>Looks like you're using a keyboard and mouse, but you can still do everything you could with a headset! Here are the controls:</p>
           <p>
             <b>WASD</b>: Move around<br/>
             <b>Z or C</b>: Focus left or right controller (<i>required</i> to use the buttons below)<br/>
@@ -39,9 +39,10 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
             <b>Mousewheel</b> Move controller x/y axis</br>
             <b>Ctrl + Mousewheel</b> Move controller x/z axis</br>
             <b>Shift + mousewheel</b> Rotate controller</br>
+            The <b>red dots</b> show where your controllers are pointing
           </p>
           <p style="font-size: 20px;">
-            <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
+            <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>.</i>
           </p>
         </div>
         <div style="display: flex; width: 100%; justify-content: flex-end;">
