@@ -1,0 +1,20 @@
+{
+  "name": "z-cake",
+  "description": "Virtual cake that you can eat. Made with Zeo VR.",
+  "version": "0.0.4",
+  "keywords": [
+    "zeo-mod"
+  ],
+  "client": "client.js",
+  "attributes": {
+    "position": {
+      "type": "matrix",
+      "value": [
+        0, 0, 0,
+        0, 0, 0, 1,
+        1, 1, 1
+      ]
+    }
+  },
+  "dependencies": {}
+}
