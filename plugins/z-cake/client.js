@@ -49,13 +49,11 @@ class ZCake {
         class CakeElement extends HTMLElement {
           createdCallback() {
             this.position = null;
+            this.slices = 0;
 
-            this.slices = 8;
             this.mesh = null;
             this.sliceSide = null;
             this.sliceMesh = null;
-
-            this._render();
 
             const _gripdown = e => {
               const {side} = e;
@@ -75,9 +73,7 @@ class ZCake {
                 this.sliceSide = side;
                 this.sliceMesh = sliceMesh;
 
-                this.slices = Math.max(this.slices - 1, 0);
-
-                this._render();
+                this.setAttribute('slices', this.slices - 1);
 
                 e.stopImmediatePropagation();
               }
@@ -110,7 +106,6 @@ class ZCake {
                 zeo.release(sliceSide, sliceMesh);
               }
 
-              updates.slice(updates.indexOf(update), 1);
               zeo.removeListener('gripdown', _gripdown);
               zeo.removeListener('release', _release);
             };
@@ -126,6 +121,13 @@ class ZCake {
                 this.position = newValue;
 
                 this._updateMesh();
+
+                break;
+              }
+              case 'slices': {
+                this.slices = newValue;
+
+                this._render();
 
                 break;
               }
@@ -152,7 +154,7 @@ class ZCake {
           _updateMesh() {
             const {mesh, position} = this;
 
-            if (position) {
+            if (mesh && position) {
               mesh.position.set(position[0], position[1], position[2]);
               mesh.quaternion.set(position[3], position[4], position[5], position[6]);
               mesh.scale.set(position[7], position[8], position[9]);

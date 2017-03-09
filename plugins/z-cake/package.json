@@ -15,6 +15,13 @@
         0, 0, 0, 1,
         1, 1, 1
       ]
+    },
+    "slices": {
+      "type": "number",
+      "value": 8,
+      "min": 0,
+      "max": 8,
+      "step": 1
     }
   },
   "dependencies": {}
