@@ -403,7 +403,7 @@ class Mc {
                         itemPhysicsBody.setLinearVelocity([0, 0, 0]);
                         itemPhysicsBody.setAngularVelocity([0, 0, 0]);
 
-                        const grabber = zeo.grab(side, itemMesh);
+                        const grabber = zeo.grab(side, itemMesh); // XXX needs to be rewritten for the new hands API
                         grabber.on('update', ({position, rotation}) => {
                           itemPhysicsBody.setPosition(position.toArray());
                           itemPhysicsBody.setRotation(rotation.toArray());
