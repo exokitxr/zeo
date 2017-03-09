@@ -14,6 +14,10 @@ const chipImg = require('../img/chip');
 const chipImgSrc = 'data:image/svg+xml;base64,' + btoa(chipImg);
 const cakeImg = require('../img/cake');
 const cakeImgSrc = 'data:image/svg+xml;base64,' + btoa(cakeImg);
+const earthImg = require('../img/earth');
+const earthImgSrc = 'data:image/svg+xml;base64,' + btoa(earthImg);
+const swordImg = require('../img/sword');
+const swordImgSrc = 'data:image/svg+xml;base64,' + btoa(swordImg);
 
 const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg}) => {
   return `\
@@ -30,10 +34,10 @@ const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, fo
 const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg) => {
   switch (page) {
     case 0: return `\
-      <div style="display: flex; padding: 20px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
-        <div style="font-size: 30px; font-weight: 400;">Welcome to Zeo!</div>
-        <img src="${logoImg}" width="${100 * 0.75}" height="{158 * 0.75}" style="margin: 10px 0;" />
-        <div style="width: 540px; margin-bottom: auto; font-size: 16px; font-weight: 400; flex-grow: 1">
+      <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
+        <div style="margin-bottom: 10px; font-size: 30px; font-weight: 400;">Welcome to Zeo!</div>
+        <img src="${logoImg}" width="${100 * 0.75}" height="{158 * 0.75}" />
+        <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
           <p>Zeo lets you build multiplayer virtual worlds in your browser!</p>
           <p>Looks like you're using a keyboard and mouse, but you can still do everything you could with a headset! Here are the controls:</p>
           <p>
@@ -45,48 +49,61 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
             <b>Shift + mousewheel</b> Rotate controller<br/>
             The <b>red dots</b> show where your controllers are pointing<br/>
           </p>
-          <p style="margin-bottom: 0; font-size: 20px;">
+          <p style="margin: 0; font-size: 18px;">
             <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
           </p>
         </div>
-        <div style="display: flex; width: 100%; justify-content: flex-end;">
-          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Modules &gt;</a>
+        <div style="display: flex; width: 100%;">
+          <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Modules &gt;</a>
         </div>
       </div>
     `;
     case 1: return `\
-      <div style="display: flex; padding: 20px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
-        <div style="font-size: 30px; font-weight: 400;">Time for cake!</div>
+      <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
+        <div style="font-size: 30px; font-weight: 400;">The cake is real!</div>
         <img src="${cakeImgSrc}" width="100" height="100" style="margin: 10px 0;" />
-        <div style="width: 540px; margin-bottom: auto; font-size: 16px; font-weight: 400; flex-grow: 1">
-          <p>In Zeo VR, your world is made out of <i>modules</i>. Modules are self-contained objects you can add to the world.</p>
+        <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
+          <p>In Zeo VR, your world is made up of <i>modules</i>. Modules are objects you can add to the world.</p>
           <p>For example, here is a <b>CAKE MODULE</b>:</p>
           <div style="width: 100px; height: 100px;"></div>
-          <p style="margin-bottom: 0; font-size: 20px;">
+          <p style="margin-bottom: 0; font-size: 18px;">
             <i>
               To continue, <b>ADD</b> the cake to the world and <b>EAT</b> it.<br/>
               Grab a slice by holding the <b>GRIP (F key)</b> and move it to your mouth.<br/>
             </i>
           </p>
         </div>
-        <div style="display: flex; width: 100%; justify-content: flex-end;">
-          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Servers &gt;</a>
+        <div style="display: flex; width: 100%;">
+          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:back">&lt; Back</a>
+          <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Servers &gt;</a>
         </div>
       </div>
     `;
     case 2: return `\
-      <div style="display: flex; height: 200px; background-color: #673AB7; color: #FFF; font-size: 16px; justify-content: center; align-items: center;">
-        <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
-          <img src="${leftWhiteImgSrc}" width="80" height="80" />
+      <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
+        <div style="font-size: 30px; font-weight: 400;">It's dangerous to go alone!</div>
+        <img src="${swordImgSrc}" width="100" height="100" style="margin: 10px 0;" />
+        <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
+          <p>There's a world of multiplayer servers for you to explore!<p>
+          <p>Look at the <b>LINK ORBS</b> around you. Each Link Orb is a live server you can join. To connect to a server, <b>POINT</b> at it and click your <b>TRIGGER</b>.</p>
+          <p>Some servers are <b>locked</b> until you get permission from the owner. Contact info for each server is written above the server, but you can <i>sneak a peek</i> through the orb.</p>
+          <p style="margin-bottom: 0; font-size: 18px;">
+            <i>
+              That's it for this <b>TUTORIAL</b>. Click the <b>NEXT BUTTON</b> to <b>HIDE</b> the tutorial next time.<br/>
+            </i>
+          </p>
         </div>
-        <div style="width: 640px;">
-          <div style="font-size: 50px;">Choose a server</div>
-        </div>
-        <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
-          <img src="${rightWhiteImgSrc}" width="80" height="80" />
+        <div style="display: flex; width: 100%;">
+          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:back">&lt; Back</a>
+          <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Finish Tutorial &gt;</a>
         </div>
       </div>
-      <div style="position: relative; display: flex; padding-top: 50px; justify-content: center; align-items: center; flex-direction: column;">
+    `;
+    case 3: return `\
+      <div style="display: flex; height: 200px; justify-content: center; align-items: center;">
+        <div style="font-size: 50px;">Choose a server</div>
+      </div>
+      <div style="position: relative; display: flex; justify-content: center; align-items: center; flex-direction: column;">
         <div style="width: 640px;">
           ${!loading ? `\
             ${error ? `\
@@ -109,6 +126,9 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
             <div style="font-size: 40px;">Loading...</div>
           `}
         </div>
+      </div>
+      <div style="display: flex; margin-top: auto; padding: 100px; justify-content: center; align-items: center;">
+        <a style="display: inline-block; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:tutorial">Start tutorial</a>
       </div>
     `;
     default: return '';

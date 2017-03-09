@@ -467,6 +467,18 @@ class Hub {
                   _updatePages();
 
                   return true;
+                } else if (onclick === 'hub:back') {
+                  hubState.page--;
+
+                  _updatePages();
+
+                  return true;
+                } else if (onclick === 'hub:tutorial') {
+                  hubState.page = 0;
+
+                  _updatePages();
+
+                  return true;
                 } else {
                   return false;
                 }
