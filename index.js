@@ -166,7 +166,7 @@ a.app.getHostname = req => {
 };
 
 const _install = () => {
-  if (flags.install) {
+  if (flags.install || flags.server || flags.hub) {
     return _getAllPlugins()
      .then(plugins => a.installPlugins(plugins));
   } else {
