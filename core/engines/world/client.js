@@ -611,7 +611,7 @@ class World {
                       if (!HTMLElement.isPrototypeOf(elementApi)) {
                         elementApi = HTMLElement;
                       }
-                      const {attributes} = item;
+                      const {id, attributes} = item;
                       const baseClass = elementApi;
 
                       const element = menuUtils.makeZeoElement({
@@ -619,6 +619,9 @@ class World {
                         attributes,
                         baseClass,
                       });
+                      element.onsetattribute = (name, value) => {
+                        _setAttribute(id, name, value);
+                      };
                       item.instance = element;
                       item.instancing = false;
                       item.attributes = _clone(attributes);

@@ -9,6 +9,14 @@ const _makeZeoElementClass = ({tag, attributes, baseClass}) => {
       return attributeNames;
     }
 
+    setAttribute(name, value) {
+      this.onsetattribute(name, value);
+    }
+
+    setAttributeRaw(name, value) {
+      super.setAttribute(name, value);
+    }
+
     attributeChangedCallback(name, oldValue, newValue) {
       if (typeof super.attributeChangedCallback === 'function') {
         super.attributeChangedCallback(name, oldValue, newValue);
@@ -46,7 +54,7 @@ const makeZeoElement = ({tag, attributes, baseClass}) => {
   for (const attributeName in attributes) {
     const attribute = attributes[attributeName];
     const {value: attributeValue} = attribute;
-    zeoElement.setAttribute(attributeName, JSON.stringify(attributeValue));
+    zeoElement.setAttributeRaw(attributeName, JSON.stringify(attributeValue));
   }
 
   return zeoElement;

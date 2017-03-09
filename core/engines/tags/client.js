@@ -1048,7 +1048,7 @@ class Tags {
 
               const instance = this.instance;
               if (instance) {
-                instance.setAttribute(name, JSON.stringify(value));
+                instance.setAttributeRaw(name, JSON.stringify(value));
               }
             }
 
