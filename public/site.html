@@ -27,15 +27,11 @@
     .link {
       text-decoration: underline;
     }
-    .link:hover {
-      color: #2196F3;
-    }
     code {
       display: inline-block;
       padding: 0 5px;
       font-family: var(--monospace-fonts);
-      color: #CCC;
-      background-color: #000;
+      background-color: rgba(255, 255, 255, 0.15);
       border-radius: 3px;
     }
     header {
@@ -129,17 +125,60 @@
 
     .hero .slides {
       display: flex;
+      position: relative;
       width: 100%;
       margin-top: 70px;
       justify-content: center;
     }
+    .hero .slides-navbar {
+      display: flex;
+      position: absolute;
+      top: 0;
+      width: 540px;
+    }
+    .hero .slides-navbar .slides-nav {
+      width: 200px;
+      padding: 5px 0;
+      border: 2px solid;
+      border-top: 0;
+      color: #FFF;
+      font-family: var(--monospace-fonts);
+      text-align: center;
+    }
+    .hero .slides-navbar .slides-nav.green {
+      background-color: #4CAF50;
+    }
+    .hero .slides-navbar .slides-nav.green.selected {
+      color: #4CAF50;
+    }
+    .hero .slides-navbar .slides-nav.blue {
+      background-color: #2196F3;
+    }
+    .hero .slides-navbar .slides-nav.blue.selected {
+      color: #2196F3;
+    }
+    .hero .slides-navbar .slides-nav.purple {
+      background-color: #673AB7;
+    }
+    .hero .slides-navbar .slides-nav.purple.selected {
+      color: #673AB7;
+    }
+    .hero .slides-navbar .slides-nav.selected {
+      background-color: #FFF;
+      border-color: transparent;
+    }
+    .hero .slides-navbar .slides-nav + .slides-nav {
+      border-left: 0;
+    }
     .hero .slide {
       display: flex;
       width: 100%;
+      height: 350px;
       padding: 30px;
       color: #FFF;
       justify-content: center;
       align-items: center;
+      box-sizing: border-box;
     }
     .hero .slide.green {
       background-color: #4CAF50;
@@ -150,28 +189,44 @@
     .hero .slide.purple {
       background-color: #673AB7;
     }
-    .hero .slide-icon {
+    .hero .slide-arrow-icon {
+      visibility: hidden; // XXX
       width: 50px;
       height: 50px;
     }
     .hero .slide-wrap {
+      width: 540px;
+      padding: 0 30px;
+    }
+    .hero .slide-wrap .icons {
       display: flex;
-      width: 500px;
-      flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
     }
     .hero .slide-wrap .icon {
-      width: 200px;
-      font-size: 100px;
       text-align: center;
+    }
+    .hero .slide-wrap .icon:not(.octicon) {
+      width: 200px;
+      font-size: 40px;
+      font-family: var(--monospace-fonts);
+    }
+    .hero .slide-wrap .icon.octicon {
+      height: 120px;
+      padding-top: 20px;
+      font-size: 80px;
+      box-sizing: border-box;
+    }
+    .hero .slide-wrap h3, .hero .slide-wrap p {
+      width: 100%;
     }
     .hero .slide-wrap h3 {
       margin-bottom: 10px;
-      font-size: 24px;
+      font-size: 22px;
     }
     .hero .slide-wrap p {
       margin-bottom: 30px;
+      font-size: 13px;
     }
 
     .logged-in header {
@@ -360,7 +415,7 @@
     }
     .header-login-bar > .plan-nagger {
       margin-right: 10px;
-      padding: 5px 10px;
+      pad<F4>ding: 5px 10px;
       background-color: #E91E63;
       border-radius: 5px;
       font-size: 10px;
@@ -413,16 +468,6 @@
       background-color: #000;
       transform: rotateZ(-10deg);
     }
-    /* section.demographics {
-      display: flex;
-      position: sticky;
-      top: 0;
-      background-color: #000;
-      justify-content: center;
-      align-items: center;
-      z-index: 10;
-      box-sizing: border-box;
-    } */
     .demographics > navbar {
       display: flex;
       width: 640px;
@@ -1124,26 +1169,36 @@
         <button class="button secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button>
       </div>
       <div class=slides>
-        <div class="slide green">
-          <div class=slide-icon>
+        <div class=slides-navbar>
+          <nav class="slides-nav green selected" id=slides-nav-1>Javscript</nav>
+          <nav class="slides-nav blue" id=slides-nav-2>Multiplayer</nav>
+          <nav class="slides-nav purple" id=slides-nav-3>Servers</nav>
+        </div>
+        <div class="slide green" id=slide-1>
+          <div class=slide-arrow-icon>
             <img src="/img/chevron-left.svg" />
           </div>
           <div class=slide-wrap>
-            <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
-            <h3>Powered by npm.</h3>
+            <div class=icons>
+              <img src="/img/npm-logo.png" width=200 height=120 class=icon style="margin-left: -40px;" />
+              <div class=icon>three.js</div>
+              <div class=icon>WebVR</div>
+            </div>
+            <h3>Download your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
             <p>
-              You know Javascript. Now meet Javascript face-to-face.<br/>
-              Publish to NPM and experience your creations in your headset.<br/>
-              The API is plain THREE.js.
+              Drag-and-drop NPM modules into the world. Clients sync automagically.<br/>
+              The frontend API is <a href="https://threejs.org" class=link>THREE.js</a> bundled by <a href="http://rollupjs.org" class=link>rollup</a>, so you can use any NPM module.<br/>
+              Modules also run on the server. Voice chat and multiplayer physics come in the box.<br/>
+              Open source <a href="https://github.com/modulesio/zeo">on Github</a>.<br/>
             </p>
             <a href="https://github.com/modulesio/zeo" class="button small">Read API docs</a>
           </div>
-          <div class=slide-icon>
+          <div class=slide-arrow-icon>
             <img src="/img/chevron-right.svg" />
           </div>
         </div>
-        <!-- <div class="slide blue">
-          <div class=slide-icon>
+        <div class="slide blue" id=slide-2 style="display: none;">
+          <div class=slide-arrow-icon>
             <img src="/img/chevron-left.svg" />
           </div>
           <div class=slide-wrap>
@@ -1155,12 +1210,12 @@
             </p>
             <a href="https://github.com/modulesio/zeo" class="button small">See all features</a>
           </div>
-          <div class=slide-icon>
+          <div class=slide-arrow-icon>
             <img src="/img/chevron-right.svg" />
           </div>
-        </div> -->
-        <!-- <div class="slide purple">
-          <div class=slide-icon>
+        </div>
+        <div class="slide purple" id=slide-3 style="display: none;">
+          <div class=slide-arrow-icon>
             <img src="/img/chevron-left.svg" />
           </div>
           <div class=slide-wrap>
@@ -1173,10 +1228,10 @@
             </p>
             <a href="https://github.com/modulesio/zeo" class="button small">See pricing</a>
           </div>
-          <div class=slide-icon>
+          <div class=slide-arrow-icon>
             <img src="/img/chevron-right.svg" />
           </div>
-        </div> -->
+        </div>
       </div>
     </div>
   </section>
@@ -1555,16 +1610,14 @@
 const $ = s => document.querySelectorAll(s);
 
 const demographicsButtons = [
-  $('#demographics-button-1')[0],
-  $('#demographics-button-2')[0],
-  $('#demographics-button-3')[0],
-  // $('#sign-up-button')[0],
+  $('#slides-nav-1')[0],
+  $('#slides-nav-2')[0],
+  $('#slides-nav-3')[0],
 ];
 const demographicsDetails = [
-  $('#demographics-details-1')[0],
-  $('#demographics-details-2')[0],
-  $('#demographics-details-3')[0],
-  // $('#sign-up-details')[0],
+  $('#slide-1')[0],
+  $('#slide-2')[0],
+  $('#slide-3')[0],
 ];
 demographicsButtons.forEach((demographicsButton, index) => {
   demographicsButton.addEventListener('click', () => {
@@ -1579,8 +1632,6 @@ demographicsButtons.forEach((demographicsButton, index) => {
     demographicsDetails.forEach((demographicsDetail, index2) => {
       demographicsDetail.style.display = index2 === index ? null : 'none';
     });
-
-    window.scrollTo(0, 0);
   });
 });
 
