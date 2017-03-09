@@ -1,7 +1,10 @@
-function CakeModel({THREE}) {
+function CakeModel({
+  THREE,
+  slices = 0,
+}) {
   const object = new THREE.Object3D();
 
-  const eatenSlices = 5;
+  const numSlices = 8;
 
   const layerSpecs = [
     {
@@ -30,7 +33,7 @@ function CakeModel({THREE}) {
       const layerSpec = layerSpecs[i];
       const {color} = layerSpec;
       
-      const geometry = new THREE.CylinderBufferGeometry(layerSize, layerSize, layerHeight, 8, 1, false, 0, (Math.PI * 2) * ((8 - eatenSlices) / 8));
+      const geometry = new THREE.CylinderBufferGeometry(layerSize, layerSize, layerHeight, numSlices, 1, false, 0, (Math.PI * 2) * (slices / numSlices));
       geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (layerHeight * ((layerSpecs.length - 1) / 2)) - (i * layerHeight), 0));
       const material = new THREE.MeshPhongMaterial({
         color: color,
@@ -45,7 +48,6 @@ function CakeModel({THREE}) {
   })();
   object.add(layersMesh);
 
-  const numCherries = 8;
   const cherrySize = 0.02;
   const cherryRaidus = 0.125;
 
@@ -58,19 +60,19 @@ function CakeModel({THREE}) {
       shading: THREE.FlatShading,
     });
 
-    for (let i = 0; i < numCherries; i++) {
-      if (i >= (numCherries - eatenSlices)) {
+    for (let i = 0; i < numSlices; i++) {
+      if (i >= slices) {
         continue;
       }
 
       const geometry = new THREE.SphereBufferGeometry(cherrySize, 5, 5);
-      const angle = ((i) / numCherries) * (Math.PI * 2);
+      const angle = (i / numSlices) * (Math.PI * 2);
       geometry.applyMatrix(new THREE.Matrix4().makeTranslation(
         Math.sin(angle) * cherryRaidus,
         (((layerSpecs.length - 1) / 2) * layerHeight) + (cherrySize * 1.5),
         Math.cos(angle) * cherryRaidus
       ));
-      geometry.applyMatrix(new THREE.Matrix4().makeRotationY(((1 / numCherries) * 0.5) * (Math.PI * 2)));
+      geometry.applyMatrix(new THREE.Matrix4().makeRotationY(((1 / numSlices) * 0.5) * (Math.PI * 2)));
       const material = cherryMaterial;
 
       const cherryMesh = new THREE.Mesh(geometry, material);
