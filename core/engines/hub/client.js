@@ -479,6 +479,10 @@ class Hub {
                   _updatePages();
 
                   return true;
+                } else if (onclick === 'hub:apiDocs') {
+                  document.location.href = 'https://zeovr.io/docs';
+
+                  return true; // can't happen
                 } else {
                   return false;
                 }

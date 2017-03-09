@@ -89,7 +89,8 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
           <p>Some servers are <b>locked</b> until you get permission from the owner. Contact info for each server is written above the server, but you can <i>sneak a peek</i> through the orb.</p>
           <p style="margin-bottom: 0; font-size: 18px;">
             <i>
-              That's it for this <b>TUTORIAL</b>. Click the <b>NEXT BUTTON</b> to <b>HIDE</b> the tutorial next time.<br/>
+              To <b>LEARN</b> how to make modules, read the <a onclick="hub:apiDocs"><b>API docs</b></a>.<br/>
+              To <b>HIDE</b> the tutorial, click the <b>NEXT BUTTON</b>.<br/>
             </i>
           </p>
         </div>
