@@ -619,8 +619,8 @@ class World {
                         attributes,
                         baseClass,
                       });
-                      element.onsetattribute = (name, value) => {
-                        _setAttribute(id, name, value);
+                      element.onsetattribute = (attribute, value) => {
+                        _setAttribute({id, attribute, value});
                       };
                       item.instance = element;
                       item.instancing = false;
