@@ -5,6 +5,13 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
+  TAGS_WIDTH,
+  TAGS_HEIGHT,
+  TAGS_ASPECT_RATIO,
+  TAGS_WORLD_WIDTH,
+  TAGS_WORLD_HEIGHT,
+  TAGS_WORLD_DEPTH,
+
   SERVER_WIDTH,
   SERVER_HEIGHT,
   SERVER_WORLD_WIDTH,
@@ -50,7 +57,13 @@ class Hub {
           .then(blob => _requestBlobDataUrl(blob))
         );
       const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
-        .then(res => res.json());
+        .then(res => res.json()
+          .then(itemSpec => {
+            itemSpec.isStatic = true;
+
+            return itemSpec;
+          })
+        );
 
       return Promise.all([
         archae.requestPlugins([
@@ -59,6 +72,7 @@ class Hub {
           '/core/engines/three',
           '/core/engines/webvr',
           '/core/engines/biolumi',
+          '/core/engines/cyborg',
           '/core/engines/rend',
           '/core/engines/tags',
           '/core/plugins/geometry-utils',
@@ -73,6 +87,7 @@ class Hub {
             three,
             webvr,
             biolumi,
+            cyborg,
             rend,
             tags,
             geometryUtils,
@@ -94,7 +109,7 @@ class Hub {
               return {position, rotation, scale};
             };
 
-            const wireframeMaterial = new THREE.MeshBasicMaterial({
+            const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
               color: 0x0000FF,
               wireframe: true,
               opacity: 0.5,
@@ -215,6 +230,72 @@ class Hub {
               left: biolumi.makeMenuHoverState(),
               right: biolumi.makeMenuHoverState(),
             };
+
+            class GrabManager {
+              constructor() {
+                this.left = null;
+                this.right = null;
+              }
+
+              getMesh(side) {
+                return this[side];
+              }
+
+              setMesh(side, mesh) {
+                this[side] = mesh;
+
+                // XXX needs to add tag mesh to the cyborg controller mesh
+              }
+            }
+            const grabManager = new GrabManager();
+
+            const _makeGrabbableState = () => ({
+              hoverMesh: null,
+            });
+            const grabbableStates = {
+              left: _makeGrabbableState(),
+              right: _makeGrabbableState(),
+            };
+
+            const _makeGrabBoxMesh = () => {
+              const width = TAGS_WORLD_WIDTH;
+              const height = TAGS_WORLD_HEIGHT;
+              const depth = TAGS_WORLD_DEPTH;
+
+              const geometry = new THREE.BoxBufferGeometry(width, height, depth);
+              const material = wireframeHighlightMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.y = 1.2;
+              mesh.rotation.order = camera.rotation.order;
+              mesh.rotation.y = Math.PI / 2;
+              mesh.depthWrite = false;
+              mesh.visible = false;
+              return mesh;
+            };
+            const grabBoxMeshes = {
+              left: _makeGrabBoxMesh(),
+              right: _makeGrabBoxMesh(),
+            };
+            scene.add(grabBoxMeshes.left);
+            scene.add(grabBoxMeshes.right);
+
+            const tagHoverStates = {
+              left: biolumi.makeMenuHoverState(),
+              right: biolumi.makeMenuHoverState(),
+            };
+            const tagDotMeshes = {
+              left: biolumi.makeMenuDotMesh(),
+              right: biolumi.makeMenuDotMesh(),
+            };
+            scene.add(tagDotMeshes.left);
+            scene.add(tagDotMeshes.right);
+            const tagBoxMeshes = {
+              left: biolumi.makeMenuBoxMesh(),
+              right: biolumi.makeMenuBoxMesh(),
+            };
+            scene.add(tagBoxMeshes.left);
+            scene.add(tagBoxMeshes.right);
 
             const _makeEnvHoverState = () => ({
               hoveredServerMesh: null,
@@ -510,6 +591,35 @@ class Hub {
                   return false;
                 }
               };
+              const _doTagMeshClick = () => {
+                const {side} = e;
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                  if (gripPressed) {
+                    const tagHoverState = tagHoverStates[side];
+                    const {intersectionPoint} = tagHoverState;
+                    const grabMesh = grabManager.getMesh(side);
+
+                    if (intersectionPoint && !grabMesh) {
+                      const {metadata: pointMesh} = tagHoverState;
+
+console.log('click ok', {pointMesh}); // XXX
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              };
               const _doServerMeshClick = () => {
                 const envHoverState = envHoverStates[side];
                 const {hoveredServerMesh} = envHoverState;
@@ -530,9 +640,23 @@ class Hub {
                 }
               };
 
-              _doMenuMeshClick() || _doServerMeshClick();
+              _doMenuMeshClick() || _doTagMeshClick() ||  _doServerMeshClick();
             };
             input.on('trigger', _trigger, {
+              priority: 1,
+            });
+            const _gripdown = e => {
+              const {side} = e;
+              const grabbableState = grabbableStates[side];
+              const {hoverMesh} = grabbableState;
+
+              if (hoverMesh) {
+console.log('grab ok', {hoverMesh}); // XXX
+
+                e.stopImmediatePropagation();
+              }
+            };
+            input.on('gripdown', _gripdown, {
               priority: 1,
             });
             const _update = () => {
@@ -566,6 +690,110 @@ class Hub {
                       hoverState: menuHoverState,
                       dotMesh: menuDotMesh,
                       boxMesh: menuBoxMesh,
+                      controllerPosition,
+                      controllerRotation,
+                    });
+                  }
+                });
+              };
+              const _updateTagGrabAnchors = () => {
+                const {cakeTagMesh} = menuMesh;
+                const {visible} = menuMesh;
+
+                if (visible) {
+                  const _getHoverGrabbable = (side) => {
+                    const grabMesh = grabManager.getMesh(side);
+
+                    if (!grabMesh) {
+                      const {gamepads} = webvr.getStatus();
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {position: controllerPosition} = gamepad;
+                        const {position: cakeTagMeshPosition} = _decomposeObjectMatrixWorld(cakeTagMesh);
+
+                        if (controllerPosition.distanceTo(cakeTagMeshPosition) <= 0.2) {
+                          return cakeTagMesh;
+                        } else {
+                          return null;
+                        }
+                      } else {
+                        return null;
+                      }
+                    } else {
+                      return null;
+                    }
+                  };
+
+                  SIDES.forEach(side => {
+                    const grabbableState = grabbableStates[side];
+                    const grabBoxMesh = grabBoxMeshes[side];
+
+                    const hoverMesh = _getHoverGrabbable(side);
+
+                    grabbableState.hoverMesh = hoverMesh;
+
+                    if (hoverMesh) {
+                      const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(hoverMesh);
+                      grabBoxMesh.position.copy(tagMeshPosition);
+                      grabBoxMesh.quaternion.copy(tagMeshRotation);
+                      grabBoxMesh.scale.copy(tagMeshScale);
+
+                      if (!grabBoxMesh.visible) {
+                        grabBoxMesh.visible = true;
+                      }
+                    } else {
+                      grabbableState.hoverMesh = null;
+
+                      if (grabBoxMesh.visible) {
+                        grabBoxMesh.visible = false;
+                      }
+                    }
+                  });
+                } else {
+                  SIDES.forEach(side => {
+                    const grabbableState = grabbableStates[side];
+                    const grabBoxMesh = grabBoxMeshes[side];
+
+                    grabbableState.hoverMesh = null;
+
+                    if (grabBoxMesh.visible) {
+                      grabBoxMesh.visible = false;
+                    }
+                  });
+                }
+              };
+              const _updateTagPointerAnchors = () => {
+                const {gamepads} = webvr.getStatus();
+                const {cakeTagMesh} = menuMesh;
+
+                SIDES.forEach(side => {
+                  const gamepad = gamepads[side];
+
+                  if (gamepad) {
+                    const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                    const tagHoverState = tagHoverStates[side];
+                    const tagDotMesh = tagDotMeshes[side];
+                    const tagBoxMesh = tagBoxMeshes[side];
+
+                    const {planeMesh, initialScale} = cakeTagMesh;
+                    const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                    const {page} = planeMesh;
+
+                    biolumi.updateAnchors({
+                      objects: [{
+                        matrixObject: matrixObject,
+                        page: page,
+                        width: TAGS_WIDTH,
+                        height: TAGS_HEIGHT,
+                        worldWidth: TAGS_WORLD_WIDTH * initialScale.x,
+                        worldHeight: TAGS_WORLD_HEIGHT * initialScale.y,
+                        worldDepth: TAGS_WORLD_DEPTH * initialScale.z,
+                        metadata: cakeTagMesh,
+                      }],
+                      hoverState: tagHoverState,
+                      dotMesh: tagDotMesh,
+                      boxMesh: tagBoxMesh,
                       controllerPosition,
                       controllerRotation,
                     });
@@ -654,6 +882,8 @@ class Hub {
               };
 
               _updateMenuAnchors();
+              _updateTagGrabAnchors();
+              _updateTagPointerAnchors();
               _updateEnvAnchors();
               _updateServerMeshes();
             };
@@ -664,6 +894,11 @@ class Hub {
               SIDES.forEach(side => {
                 scene.remove(menuDotMeshes[side]);
                 scene.remove(menuBoxMeshes[side]);
+
+                scene.remove(grabBoxMeshes[side]);
+                scene.remove(tagDotMeshes[side]);
+                scene.remove(tagBoxMeshes[side]);
+
                 scene.remove(envDotMeshes[side]);
                 scene.remove(envBoxMeshes[side]);
               });
@@ -672,6 +907,7 @@ class Hub {
               });
 
               input.removeListener('trigger', _trigger);
+              input.removeListener('gripdown', _gripdown);
               rend.removeListener('update', _update);
             };
           }

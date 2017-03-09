@@ -37,6 +37,7 @@ class Tags {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {hub: {enabled: hubEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -765,9 +766,7 @@ class Tags {
           const _update = () => {
             const _updateControllers = () => {
               const _updateElementAnchors = () => {
-                const isOpen = rend.isOpen();
-
-                if (isOpen) {
+                if (rend.isOpen() || hubEnabled) {
                   const {gamepads} = webvr.getStatus();
                   const controllers = cyborg.getControllers();
                   const controllerMeshes = SIDES.map(side => controllers[side].mesh);
