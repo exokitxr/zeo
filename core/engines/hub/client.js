@@ -110,6 +110,7 @@ class Hub {
               fontStyle: biolumi.getFontStyle(),
             };
             const hubState = {
+              page: 0,
               searchText: '',
               username: '',
               inputText: '',
@@ -128,7 +129,8 @@ class Hub {
 
               const planeMesh = (() => {
                 const mesh = menuUi.addPage(({
-                  login: {
+                  hub: {
+                    page,
                     searchText,
                     inputIndex,
                     inputValue,
@@ -144,6 +146,7 @@ class Hub {
                     {
                       type: 'html',
                       src: menuRenderer.getHubSrc({
+                        page,
                         searchText,
                         inputIndex,
                         inputValue,
@@ -161,7 +164,7 @@ class Hub {
                 }, {
                   type: 'hub',
                   state: {
-                    login: hubState,
+                    hub: hubState,
                     focus: focusState,
                     logoImg: logoImg,
                   },

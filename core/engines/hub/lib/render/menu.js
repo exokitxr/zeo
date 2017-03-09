@@ -11,13 +11,47 @@ const leftWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(leftWhiteImg);
 const rightWhiteImg = require('../img/right-white');
 const rightWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(rightWhiteImg);
 
-const getHubSrc = ({searchText, inputIndex, inputValue, loading, error, focusType, logoImg}) => {
+const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg}) => {
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
       <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
         <img src="${logoImg}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
         <div>zeo vr</div>
       </div>
+      ${getPageSrc(page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg)}
+    </div>
+  `;
+};
+
+const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg) => {
+  switch (page) {
+    case 0: return `\
+      <div style="display: flex; padding: 20px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
+        <div style="font-size: 30px; font-weight: 400;">Welcome to Zeo!</div>
+        <img src="${logoImg}" width="${100 * 0.75}" height="{158 * 0.75}" style="margin: 10px 0;" />
+        <div style="width: 540px; margin-bottom: auto; font-size: 16px; font-weight: 400; flex-grow: 1">
+          <p>Zeo lets you build multiplayer virtual worlds in your browser!</p>
+          <p>Looks like you're using a keyboard and mouse, but don't worry: you can still do everything you could with a headset! Here are the controls:</p>
+          <p>
+            <b>WASD</b>: Move around<br/>
+            <b>Z or C</b>: Focus left or right controller (<i>required</i> to use the buttons below)<br/>
+            <b>Click, E, F, Q</b>: Trigger, menu, grip, touchpad buttons<br/>
+            <b>Mousewheel</b> Move controller x/y axis</br>
+            <b>Ctrl + Mousewheel</b> Move controller x/z axis</br>
+            <b>Shift + mousewheel</b> Rotate controller</br>
+          </p>
+          <p style="font-size: 20px;">
+            <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
+          </p>
+        </div>
+        <div style="display: flex; width: 100%; justify-content: flex-end;">
+          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: modules &gt;</a>
+        </div>
+      </div>
+    `;
+    case 1: return `\
+    `;
+    case 2: return `\
       <div style="display: flex; height: 200px; background-color: #673AB7; color: #FFF; font-size: 16px; justify-content: center; align-items: center;">
         <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
           <img src="${leftWhiteImgSrc}" width="80" height="80" />
@@ -53,8 +87,9 @@ const getHubSrc = ({searchText, inputIndex, inputValue, loading, error, focusTyp
           `}
         </div>
       </div>
-    </div>
-  `;
+    `;
+    default: return '';
+  }
 };
 
 const getServerSrc = ({worldname, description, serverIcon}) => {
