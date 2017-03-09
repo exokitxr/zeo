@@ -329,9 +329,14 @@ const _listenLibs = ({key, userDb}) => {
 const _lockArchae = () => {
   if (flags.hub) {
     a.lock();
-  }
 
-  return Promise.resolve();
+    return _getAllPlugins()
+      .then(plugins => {
+        a.setWhitelist(plugins);
+      });
+  } else {
+    return Promise.resolve();
+  }
 };
 
 const _listenArchae = () => {
