@@ -6,8 +6,6 @@ Runs in your browser, using either headset or mouse + keyboard. The goal is to _
 
 :warning: Alpha software, not documented yet. If you want updates, [add your email here](http://eepurl.com/cDEnID). :warning:
 
-<img src="https://cdn.rawgit.com/modulesio/zeo-data/defb101e115250f6512ab6f6c29e69ce9e75a80b/video/demo.gif" width="512px">
-
 ## Features
 
 - One command `npm install`
