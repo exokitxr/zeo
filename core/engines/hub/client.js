@@ -101,6 +101,7 @@ class Hub {
               transparent: true,
             });
 
+            const backVector = new THREE.Vector3(0, 0, 1);
             const sphereDiameterVector = new THREE.Vector3(SPHERE_RADIUS * 2, SPHERE_RADIUS * 2, SPHERE_RADIUS * 2);
 
             const menuUi = biolumi.makeUi({
@@ -641,7 +642,14 @@ class Hub {
                 for (let i = 0; i < serverMeshes.length; i++) {
                   const serverMesh = serverMeshes[i];
                   const {menuMesh} = serverMesh;
-                  menuMesh.rotation.y = new THREE.Euler().setFromQuaternion(hmd.rotation, camera.rotation.order).y;
+                  const {position: menuMeshPosition} = _decomposeObjectMatrixWorld(menuMesh);
+                  const serverMeshNormal = hmd.position.clone().sub(menuMeshPosition);
+                  serverMeshNormal.y = 0;
+                  serverMeshNormal.normalize();
+                  menuMesh.quaternion.setFromUnitVectors(
+                    backVector,
+                    serverMeshNormal
+                  );
                 }
               };
 
