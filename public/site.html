@@ -41,7 +41,6 @@
       height: 80px;
       padding: 0 30px;
       background-color: #000;
-      /* border-bottom: 1px solid #222; */
       align-items: center;
       z-index: 2;
     }
@@ -75,12 +74,20 @@
       animation-iteration-count: infinite;
     }
 
+    .grid-canvas {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      // z-index: -1;
+    }
+
     .hero {
       display: flex;
       width: 100vw;
       height: 100vh;
       margin-top: -80px;
-      background-color: #FFF;
       color: #000;
       justify-content: center;
       align-items: center;
@@ -96,6 +103,10 @@
     }
 
     .hero .hero-heading {
+      position: relative;
+      padding: 0 30px;
+      background-color: #000;
+      color: #FFF;
     }
     .hero h1 {
       margin-bottom: 30px;
@@ -182,6 +193,7 @@
       color: #FFF;
       font-family: var(--monospace-fonts);
       text-align: center;
+      cursor: pointer;
     }
     .hero .slides-navbar .slides-nav.green {
       background-color: #4CAF50;
@@ -204,6 +216,7 @@
     .hero .slides-navbar .slides-nav.selected {
       background-color: #FFF;
       border-color: transparent;
+      cursor: default;
     }
     .hero .slides-navbar .slides-nav + .slides-nav {
       border-left: 0;
@@ -1212,6 +1225,7 @@
   </header>
   <div class=signing-up-overlay id=signing-up-overlay></div>
   <section class=hero>
+    <canvas class=grid-canvas></canvas>
     <div class=hero-wrap>
       <div class=hero-heading>
         <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
@@ -1655,7 +1669,7 @@
     <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:hello@zeovr.io">Contact</a></aside>
     <aside class=footer-right>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></aside>
   </footer>
-  <script src="https://js.stripe.com/v2/"></script>
+  <script src="/js/lib/three.min.js"></script>
   <script>
 const $ = s => document.querySelectorAll(s);
 
@@ -1685,7 +1699,6 @@ demographicsButtons.forEach((demographicsButton, index) => {
   });
 });
 
-const arrowCanvas = $('.arrow-canvas')[0];
 
 const _drawCanvasArrow = canvas => {
   const ctx = canvas.getContext('2d');
@@ -1708,7 +1721,86 @@ const _drawCanvasArrow = canvas => {
 
   ctx.stroke();
 };
+const arrowCanvas = $('.arrow-canvas')[0];
 _drawCanvasArrow(arrowCanvas);
+
+const _drawCanvasGrid = canvas => {
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+  });
+
+  const _resize = () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+  _resize();
+
+  renderer.domElement.className = canvas.className;
+  canvas.parentNode.replaceChild(renderer.domElement, canvas);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xFFFFFF);
+  const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.001, 100000);
+  camera.position.set(0, 30, 60);
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  const planeMesh = (() => {
+    const img = new Image();
+    img.src = '/img/grid.svg';
+    img.onload = () => {
+      texture.needsUpdate = true;
+
+      _render();
+    };
+    img.onerror = err => {
+      console.warn(err);
+    };
+
+    const texture = new THREE.Texture(
+      img,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.LinearFilter,
+      THREE.LinearFilter,
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType,
+      16
+    );
+
+    const geometry = new THREE.PlaneBufferGeometry(100, 100);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      // color: 0x333333,
+      transparent: true,
+      opacity: 0.8,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    // mesh.position.z = -5;
+    // mesh.position.y = -10;
+    mesh.rotation.x = -Math.PI / 2;
+
+    return mesh;
+  })();
+  scene.add(planeMesh);
+
+  const light = new THREE.DirectionalLight(0x808080, 2);
+  light.position.set(10, 10, 10);
+  light.lookAt(new THREE.Vector3(0, 0, 0));
+  scene.add(light);
+
+  const _render = () => {
+    renderer.render(scene, camera);
+  };
+  _render();
+
+  window.addEventListener('resize', () => {
+    _resize();
+    _render();
+  });
+};
+const gridCanvas = $('.grid-canvas')[0];
+_drawCanvasGrid(gridCanvas);
 
 const _jsonParse = s => {
   let err = null;
