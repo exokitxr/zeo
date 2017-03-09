@@ -262,7 +262,7 @@ class Config {
                       worldHeight: STATS_WORLD_HEIGHT,
                     });
                     // mesh.position.y = 1.5;
-                    mesh.position.z = 0.01;
+                    mesh.position.z = 0.02;
                     mesh.receiveShadow = true;
 
                     return mesh;
