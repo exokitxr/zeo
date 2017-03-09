@@ -38,6 +38,18 @@ class Hub {
     };
 
     if (hubEnabled) {
+      const _requestBlobDataUrl = blob => new Promise((accept, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          accept(e.target.result);
+        };
+        reader.readAsDataURL(blob);
+     });
+      const _requestLogoImg = () => fetch('/img/logo-large.png')
+        .then(res => res.blob()
+          .then(blob => _requestBlobDataUrl(blob))
+        );
+
       return Promise.all([
         archae.requestPlugins([
           '/core/engines/bootstrap',
@@ -48,6 +60,7 @@ class Hub {
           '/core/engines/rend',
           '/core/plugins/geometry-utils',
         ]),
+        _requestLogoImg(),
       ])
         .then(([
           [
@@ -59,6 +72,7 @@ class Hub {
             rend,
             geometryUtils,
           ],
+          logoImg,
         ]) => {
           if (live) {
             const {THREE, scene, camera} = three;
@@ -123,7 +137,8 @@ class Hub {
                   },
                   focus: {
                     type: focusType,
-                  }
+                  },
+                  logoImg,
                 }) => {
                   return [
                     {
@@ -135,6 +150,7 @@ class Hub {
                         loading,
                         error,
                         focusType,
+                        logoImg,
                       }),
                       x: 0,
                       y: 0,
@@ -147,6 +163,7 @@ class Hub {
                   state: {
                     login: hubState,
                     focus: focusState,
+                    logoImg: logoImg,
                   },
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
@@ -316,13 +333,7 @@ class Hub {
 
                 const _requestServerIcon = server => fetch('https://' + hubUrl + '/servers/img/icon/' + encodeURIComponent(server.url))
                   .then(res => res.blob()
-                     .then(blob => new Promise((accept, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = e => {
-                          accept(e.target.result);
-                        };
-                        reader.readAsDataURL(blob);
-                     }))
+                    .then(blob => _requestBlobDataUrl(blob))
                   );
                 _requestServerIcon(server)
                    .then(serverIcon => {

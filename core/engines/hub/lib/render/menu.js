@@ -11,10 +11,13 @@ const leftWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(leftWhiteImg);
 const rightWhiteImg = require('../img/right-white');
 const rightWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(rightWhiteImg);
 
-const getHubSrc = ({searchText, inputIndex, inputValue, loading, error, focusType}) => {
+const getHubSrc = ({searchText, inputIndex, inputValue, loading, error, focusType, logoImg}) => {
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
-      <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">Zeo VR</div>
+      <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
+        <img src="${logoImg}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
+        <div>zeo vr</div>
+      </div>
       <div style="display: flex; height: 200px; background-color: #673AB7; color: #FFF; font-size: 16px; justify-content: center; align-items: center;">
         <div style="display: flex; flex-grow: 1; justify-content: center; align-items: center;">
           <img src="${leftWhiteImgSrc}" width="80" height="80" />
