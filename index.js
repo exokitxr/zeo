@@ -307,7 +307,7 @@ const _getAllPlugins = () => {
     );
 };
 
-const _listen = ({key, userDb}) => {
+const _listenLibs = ({key, userDb}) => {
   const listenPromises = [];
 
   if (flags.site) {
@@ -323,22 +323,31 @@ const _listen = ({key, userDb}) => {
     listenPromises.push(server.listen(a, config, {key, userDb}));
   }
 
-  return Promise.all(listenPromises)
-    .then(() => {
-      if (flags.site || flags.hub || flags.server) {
-        return new Promise((accept, reject) => {
-          a.listen(err => {
-            if (!err) {
-              accept();
-            } else {
-              reject(err);
-            }
-          });
-        });
-      } else {
-        return Promise.resolve();
-      }
+  return Promise.all(listenPromises);
+};
+
+const _lockArchae = () => {
+  if (flags.hub) {
+    a.lock();
+  }
+
+  return Promise.resolve();
+};
+
+const _listenArchae = () => {
+  if (flags.site || flags.hub || flags.server) {
+    return new Promise((accept, reject) => {
+      a.listen(err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
     });
+  } else {
+    return Promise.resolve();
+  }
 };
 
 const _boot = ({key}) => {
@@ -370,21 +379,22 @@ _checkArgs()
   .then(({
     key,
     userDb,
-  }) => {
-    return _listen({key, userDb})
-      .then(() => _boot({key}))
-      .then(() => {
-        if (flags.site) {
-          console.log('https://' + config.metadata.site.url + '/');
-        }
-        if (flags.hub) {
-          console.log('https://' + config.metadata.hub.url + '/');
-        }
-        if (flags.server) {
-          console.log('https://' + config.metadata.server.url + '/');
-        }
-      });
-  })
+  }) => _listenLibs({key, userDb})
+    .then(() => _lockArchae())
+    .then(() => _listenArchae())
+    .then(() => _boot({key}))
+    .then(() => {
+      if (flags.site) {
+        console.log('https://' + config.metadata.site.url + '/');
+      }
+      if (flags.hub) {
+        console.log('https://' + config.metadata.hub.url + '/');
+      }
+      if (flags.server) {
+        console.log('https://' + config.metadata.server.url + '/');
+      }
+    })
+  )
   .catch(err => {
     console.warn(err);
 
