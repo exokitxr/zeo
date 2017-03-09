@@ -455,18 +455,43 @@ class Hub {
 
             const _trigger = e => {
               const {side} = e;
-              const envHoverState = envHoverStates[side];
-              const {hoveredServerMesh} = envHoverState;
 
-              if (hoveredServerMesh) {
-                const {server} = hoveredServerMesh;
+              const _doMenuMeshClick = () => {
+                const menuHoverState = menuHoverStates[side];
+                const {anchor} = menuHoverState;
+                const onclick = (anchor && anchor.onclick) || '';
 
-                const {url} = server;
-                const t = _getQueryVariable(window.location.href, 't');
-                document.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
+                if (onclick === 'hub:next') {
+                  hubState.page++;
 
-                e.stopImmediatePropagation(); // can't happen
-              }
+                  _updatePages();
+
+                  return true;
+                } else {
+                  return false;
+                }
+              };
+              const _doServerMeshClick = () => {
+                const envHoverState = envHoverStates[side];
+                const {hoveredServerMesh} = envHoverState;
+
+                if (hoveredServerMesh) {
+                  const {server} = hoveredServerMesh;
+
+                  const {url} = server;
+                  const t = _getQueryVariable(window.location.href, 't');
+                  document.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
+
+                  // can't happen
+                  e.stopImmediatePropagation();
+
+                  return true;
+                } else {
+                  return false;
+                }
+              };
+
+              _doMenuMeshClick() || _doServerMeshClick();
             };
             input.on('trigger', _trigger, {
               priority: 1,

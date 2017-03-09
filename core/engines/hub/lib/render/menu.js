@@ -10,6 +10,10 @@ const leftWhiteImg = require('../img/left-white');
 const leftWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(leftWhiteImg);
 const rightWhiteImg = require('../img/right-white');
 const rightWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(rightWhiteImg);
+const chipImg = require('../img/chip');
+const chipImgSrc = 'data:image/svg+xml;base64,' + btoa(chipImg);
+const cakeImg = require('../img/cake');
+const cakeImgSrc = 'data:image/svg+xml;base64,' + btoa(cakeImg);
 
 const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg}) => {
   return `\
@@ -36,21 +40,39 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
             <b>WASD</b>: Move around<br/>
             <b>Z or C</b>: Focus left or right controller (<i>required</i> to use the buttons below)<br/>
             <b>Click, E, F, Q</b>: Trigger, menu, grip, touchpad buttons<br/>
-            <b>Mousewheel</b> Move controller x/y axis</br>
-            <b>Ctrl + Mousewheel</b> Move controller x/z axis</br>
-            <b>Shift + mousewheel</b> Rotate controller</br>
-            The <b>red dots</b> show where your controllers are pointing
+            <b>Mousewheel</b> Move controller x/y axis<br/>
+            <b>Ctrl + Mousewheel</b> Move controller x/z axis<br/>
+            <b>Shift + mousewheel</b> Rotate controller<br/>
+            The <b>red dots</b> show where your controllers are pointing<br/>
           </p>
-          <p style="font-size: 20px;">
-            <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>.</i>
+          <p style="margin-bottom: 0; font-size: 20px;">
+            <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
           </p>
         </div>
         <div style="display: flex; width: 100%; justify-content: flex-end;">
-          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: modules &gt;</a>
+          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Modules &gt;</a>
         </div>
       </div>
     `;
     case 1: return `\
+      <div style="display: flex; padding: 20px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
+        <div style="font-size: 30px; font-weight: 400;">Time for cake!</div>
+        <img src="${cakeImgSrc}" width="100" height="100" style="margin: 10px 0;" />
+        <div style="width: 540px; margin-bottom: auto; font-size: 16px; font-weight: 400; flex-grow: 1">
+          <p>In Zeo VR, your world is made out of <i>modules</i>. Modules are self-contained objects you can add to the world.</p>
+          <p>For example, here is a <b>CAKE MODULE</b>:</p>
+          <div style="width: 100px; height: 100px;"></div>
+          <p style="margin-bottom: 0; font-size: 20px;">
+            <i>
+              To continue, <b>ADD</b> the cake to the world and <b>EAT</b> it.<br/>
+              Grab a slice by holding the <b>GRIP (F key)</b> and move it to your mouth.<br/>
+            </i>
+          </p>
+        </div>
+        <div style="display: flex; width: 100%; justify-content: flex-end;">
+          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Servers &gt;</a>
+        </div>
+      </div>
     `;
     case 2: return `\
       <div style="display: flex; height: 200px; background-color: #673AB7; color: #FFF; font-size: 16px; justify-content: center; align-items: center;">
