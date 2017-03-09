@@ -958,7 +958,7 @@ class World {
             }
           };
 
-          const _searchNpm = (q = '') => fetch('https://' + bootstrap.getCurrentServer().url + '/archae/rend/mods/search?q=' + encodeURIComponent(q))
+          const _searchNpm = (q = '') => fetch('https://' + bootstrap.getCurrentServer().url + '/archae/rend/search?q=' + encodeURIComponent(q))
             .then(res => res.json());
           const _updateNpm = menuUtils.debounce(next => {
             const {inputText} = npmState;
@@ -1652,7 +1652,7 @@ class World {
             const {tagMeshes} = npmCacheState;
             const aspectRatio = 400 / 150;
             const scale = 1.5;
-            const width = 0.2 * scale;
+            const width = TAGS_WORLD_WIDTH * scale;
             const height = width / aspectRatio;
             const leftClip = ((30 / WIDTH) * WORLD_WIDTH);
             const rightClip = (((250 + 30) / WIDTH) * WORLD_WIDTH);

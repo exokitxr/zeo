@@ -49,6 +49,8 @@ class Hub {
         .then(res => res.blob()
           .then(blob => _requestBlobDataUrl(blob))
         );
+      const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
+        .then(res => res.json());
 
       return Promise.all([
         archae.requestPlugins([
@@ -58,9 +60,11 @@ class Hub {
           '/core/engines/webvr',
           '/core/engines/biolumi',
           '/core/engines/rend',
+          '/core/engines/tags',
           '/core/plugins/geometry-utils',
         ]),
         _requestLogoImg(),
+        _requestZCakeModSpec(),
       ])
         .then(([
           [
@@ -70,9 +74,11 @@ class Hub {
             webvr,
             biolumi,
             rend,
+            tags,
             geometryUtils,
           ],
           logoImg,
+          zCakeItemSpec,
         ]) => {
           if (live) {
             const {THREE, scene, camera} = three;
@@ -178,6 +184,16 @@ class Hub {
               })();
               object.add(planeMesh);
               object.planeMesh = planeMesh;
+
+              const scale = 2;
+              const cakeTagMesh = tags.makeTag(zCakeItemSpec);
+              cakeTagMesh.position.y = -0.2;
+              cakeTagMesh.position.z = -1 + 0.01;
+              cakeTagMesh.scale.set(scale, scale, 1);
+              cakeTagMesh.initialScale = cakeTagMesh.scale.clone();
+              cakeTagMesh.visible = false;
+              object.add(cakeTagMesh);
+              object.cakeTagMesh = cakeTagMesh;
 
               const shadowMesh = (() => {
                 const geometry = new THREE.BoxBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, 0.01);
@@ -461,22 +477,28 @@ class Hub {
                 const {anchor} = menuHoverState;
                 const onclick = (anchor && anchor.onclick) || '';
 
-                if (onclick === 'hub:next') {
-                  hubState.page++;
+                const _setPage = page => {
+                  hubState.page = page;;
 
                   _updatePages();
+
+                  const {cakeTagMesh} = menuMesh;
+                  cakeTagMesh.visible = page === 1;
+                };
+
+                if (onclick === 'hub:next') {
+                  const {page} = hubState;
+                  _setPage(page + 1);
 
                   return true;
                 } else if (onclick === 'hub:back') {
-                  hubState.page--;
-
-                  _updatePages();
+                  const {page} = hubState;
+                  _setPage(page - 1);
 
                   return true;
                 } else if (onclick === 'hub:tutorial') {
-                  hubState.page = 0;
-
-                  _updatePages();
+                  const {page} = hubState;
+                  _setPage(0);
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {

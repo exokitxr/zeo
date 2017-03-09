@@ -135,23 +135,22 @@ class Rend {
               attributes: packageJson.attributes || {},
               matrix: DEFAULT_TAG_MATRIX,
             })); */
-          const _getModSpecs = mods => Promise.all(mods.map(mod =>
-            _getPluginPackageJson(mod)
-              .then(packageJson => ({
-                type: 'element',
-                id: mod,
-                name: mod,
-                displayName: _cleanName(mod),
-                version: packageJson.version,
-                description: packageJson.description || null,
-                hasClient: Boolean(packageJson.client),
-                hasServer: Boolean(packageJson.server),
-                hasWorker: Boolean(packageJson.worker),
-                local: path.isAbsolute(mod),
-                attributes: packageJson.attributes || {},
-                matrix: DEFAULT_TAG_MATRIX,
-              }))
-          ));
+          const _getModSpec = mod => _getPluginPackageJson(mod)
+            .then(packageJson => ({
+              type: 'element',
+              id: mod,
+              name: mod,
+              displayName: _cleanName(mod),
+              version: packageJson.version,
+              description: packageJson.description || null,
+              hasClient: Boolean(packageJson.client),
+              hasServer: Boolean(packageJson.server),
+              hasWorker: Boolean(packageJson.worker),
+              local: path.isAbsolute(mod),
+              attributes: packageJson.attributes || {},
+              matrix: DEFAULT_TAG_MATRIX,
+            }));
+          const _getModSpecs = mods => Promise.all(mods.map(mod => _getModSpec(mod)));
 
           /* function serveReadme(req, res, next) {
             fs.readFile(path.join(dirname, 'README.md'), 'utf8', (err, s) => {
@@ -184,7 +183,7 @@ class Rend {
 
               return _getModSpecs(mods);
             });
-          function serveModsSearch(req, res, next) {
+          function serveSearch(req, res, next) {
             const {q = ''} = req.query;
 
             Promise.all([
@@ -203,13 +202,27 @@ class Rend {
                 res.send(err.stack);
               });
           }
-          app.get('/archae/rend/mods/search', serveModsSearch);
+          app.get('/archae/rend/search', serveSearch);
+          function serveMods(req, res, next) {
+            const {q = ''} = req.query;
+
+            _getModSpec(q)
+              .then(modSpec => {
+                res.json(modSpec);
+              })
+              .catch(err => {
+                res.status(500);
+                res.send(err.stack);
+              });
+          }
+          app.get('/archae/rend/mods', serveMods);
 
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
               if (
                 // route.handle.name === 'serveReadme' ||
-                route.handle.name === 'serveModsSearch'
+                route.handle.name === 'serveSearch' ||
+                route.handle.name === 'serveMods'
               ) {
                 routes.splice(i, 1);
               }
