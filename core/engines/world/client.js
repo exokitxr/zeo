@@ -298,7 +298,7 @@ class World {
 
               const {type} = item;
               if (type === 'element') {
-                _reifyTag(tagMesh);
+                tags.reifyTag(tagMesh);
               }
             }
 
@@ -312,7 +312,7 @@ class World {
 
               const {instance} = item;
               if (instance) {
-                _unreifyTag(tagMesh);
+                tags.unreifyTag(tagMesh);
               }
             }
           }
@@ -421,7 +421,7 @@ class World {
               const {item} = tagMesh;
               const {type} = item;
               if (type === 'element') {
-                _reifyTag(tagMesh);
+                tags.reifyTag(tagMesh);
               }
             }
 
@@ -432,7 +432,7 @@ class World {
               const {item} = tagMesh;
               const {type} = item;
               if (type === 'element') {
-                _unreifyTag(tagMesh);
+                tags.unreifyTag(tagMesh);
               }
             }
 
@@ -592,77 +592,6 @@ class World {
             }
           }
           const worldTimer = new WorldTimer();
-
-          const _reifyTag = tagMesh => {
-            const {item} = tagMesh;
-            const {instance, instancing} = item;
-
-            if (!instance && !instancing) {
-              const {name} = item;
-
-              item.lock()
-                .then(unlock => {
-                  archae.requestPlugin(name)
-                    .then(pluginInstance => {
-                      const name = archae.getName(pluginInstance);
-
-                      const tag = name;
-                      let elementApi = modElementApis[tag];
-                      if (!HTMLElement.isPrototypeOf(elementApi)) {
-                        elementApi = HTMLElement;
-                      }
-                      const {id, attributes} = item;
-                      const baseClass = elementApi;
-
-                      const element = menuUtils.makeZeoElement({
-                        tag,
-                        attributes,
-                        baseClass,
-                      });
-                      element.onsetattribute = (attribute, value) => {
-                        _setAttribute({id, attribute, value});
-                      };
-                      item.instance = element;
-                      item.instancing = false;
-                      item.attributes = _clone(attributes);
-
-                      _updatePages();
-                      tags.updatePages();
-
-                      unlock();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      unlock();
-                    });
-                });
-
-              item.instancing = true;
-
-              _updatePages();
-              tags.updatePages();
-            }
-          };
-          const _unreifyTag = tagMesh => {
-            const {item} = tagMesh;
-
-            item.lock()
-              .then(unlock => {
-                const {instance} = item;
-
-                if (instance) {
-                  if (typeof instance.destructor === 'function') {
-                    instance.destructor();
-                  }
-                  item.instance = null;
-
-                  _updatePages();
-                }
-
-                unlock();
-              });
-          };
 
           const requestHandlers = new Map();
           const _request = (method, args, cb) => {
@@ -842,7 +771,7 @@ class World {
                 tagMesh.quaternion.copy(controllerMeshQuaternion);
                 tagMesh.scale.copy(oneVector)
 
-                _unreifyTag(tagMesh);
+                tags.unreifyTag(tagMesh);
               } else {
                 console.warn('invalid move tag arguments', {src, dst});
               }
@@ -2424,22 +2353,9 @@ class World {
             rend.removeListener('disconnectServer', _disconnectServer);
           };
 
-          const modElementApis = {};
           class WorldApi {
             getWorldTime() {
               return worldTimer.getWorldTime();
-            }
-
-            registerElement(pluginInstance, elementApi) {
-              const tag = archae.getName(pluginInstance);
-
-              modElementApis[tag] = elementApi;
-            }
-
-            unregisterElement(pluginInstance) {
-              const tag = archae.getName(pluginInstance);
-
-              delete modElementApis[tag];
             }
 
             getGrabElement(side) {

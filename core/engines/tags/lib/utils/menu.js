@@ -1,25 +1,61 @@
-const debounce = fn => {
-  let running = false;
-  let queued = false;
+const zeoElementClasses = new Map();
+const _makeZeoElementClass = ({tag, attributes, baseClass}) => {
+  const attributeNames = Object.keys(attributes);
 
-  const _go = () => {
-    if (!running) {
-      running = true;
-
-      fn(() => {
-        running = false;
-
-        if (queued) {
-          queued = false;
-
-          _go();
-        }
-      });
-    } else {
-      queued = true;
+  class ZeoElement extends baseClass {
+    get observedAttributes() {
+      return attributeNames;
     }
-  };
-  return _go;
+
+    setAttribute(name, value) {
+      this.onsetattribute(name, value);
+    }
+
+    setAttributeRaw(name, value) {
+      super.setAttribute(name, value);
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+      if (typeof super.attributeChangedCallback === 'function') {
+        super.attributeChangedCallback(name, oldValue, newValue);
+      }
+
+      if (typeof super.attributeValueChangedCallback === 'function') {
+        const attribute = attributes[name];
+        const {type, min, max, step, options} = attribute;
+
+        const _castValue = s => {
+          if (s !== null) {
+            return castValueStringToCallbackValue(s.replace(/^"([\s\S]*)"$/, '$1'), type, min, max, step, options);
+          } else {
+            return null;
+          }
+        }
+
+        super.attributeValueChangedCallback(name, _castValue(oldValue), _castValue(newValue));
+      }
+    }
+  }
+
+  const ZeoElementConstructor = document.registerElement('z-' + tag, ZeoElement);
+  return ZeoElementConstructor;
+};
+const makeZeoElement = ({tag, attributes, baseClass}) => {
+  let zeoElementClass = zeoElementClasses.get(tag);
+  if (!zeoElementClass) {
+    zeoElementClass = _makeZeoElementClass({tag, attributes, baseClass});
+    zeoElementClasses.set(tag, zeoElementClass);
+  }
+
+  const zeoElement = new zeoElementClass();
+
+  for (const attributeName in attributes) {
+    const attribute = attributes[attributeName];
+    const {value: attributeValue} = attribute;
+    zeoElement.setAttributeRaw(attributeName, JSON.stringify(attributeValue));
+  }
+
+  return zeoElement;
 };
 
 const castValueStringToValue = (s, type, min, max, step, options) => {
@@ -75,7 +111,16 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
     }
   }
 };
-
+const castValueStringToCallbackValue = (s, type, min, max, step, options) => {
+  switch (type) {
+    case 'file': {
+      const url = /^\//.test(s) ? ('/archae/fs' + s) : s;
+      return new FakeFile(url);
+    }
+    default:
+      return castValueStringToValue(s, type, min, max, step, options);
+  }
+};
 const castValueValueToString = (s, type) => {
   if (typeof s === 'string') {
     return s;
@@ -84,8 +129,70 @@ const castValueValueToString = (s, type) => {
   }
 };
 
+class FakeFile {
+  constructor(url) {
+    this.url = url;
+  }
+
+  fetch({type} = {}) {
+    const {url} = this;
+
+    return fetch(url)
+      .then(res => {
+        switch (type) {
+          case 'text': return res.text();
+          case 'json': return res.json();
+          case 'arrayBuffer': return res.arrayBuffer();
+          case 'blob': return res.blob();
+          default: return res.blob();
+        }
+      });
+  }
+}
+
+const debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
+
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return null;
+  }
+};
+
 module.exports = {
-  debounce,
+  makeZeoElement,
   castValueStringToValue,
+  castValueStringToCallbackValue,
   castValueValueToString,
+  debounce,
 };

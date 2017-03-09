@@ -1180,7 +1180,20 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
+          const modElementApis = {};
           class TagsApi extends EventEmitter {
+            registerElement(pluginInstance, elementApi) {
+              const tag = archae.getName(pluginInstance);
+
+              modElementApis[tag] = elementApi;
+            }
+
+            unregisterElement(pluginInstance) {
+              const tag = archae.getName(pluginInstance);
+
+              delete modElementApis[tag];
+            }
+
             makeTag(itemSpec) {
               const object = new THREE.Object3D();
               object[tagFlagSymbol] = true;
@@ -1303,6 +1316,74 @@ class Tags {
 
                 tagMeshes.splice(index, 1);
               }
+            }
+
+            reifyTag(tagMesh) {
+              const {item} = tagMesh;
+              const {instance, instancing} = item;
+
+              if (!instance && !instancing) {
+                const {name} = item;
+
+                item.lock()
+                  .then(unlock => {
+                    archae.requestPlugin(name)
+                      .then(pluginInstance => {
+                        const name = archae.getName(pluginInstance);
+
+                        const tag = name;
+                        let elementApi = modElementApis[tag];
+                        if (!HTMLElement.isPrototypeOf(elementApi)) {
+                          elementApi = HTMLElement;
+                        }
+                        const {id, attributes} = item;
+                        const baseClass = elementApi;
+
+                        const element = menuUtils.makeZeoElement({
+                          tag,
+                          attributes,
+                          baseClass,
+                        });
+                        element.onsetattribute = (attribute, value) => {
+                          _setAttribute({id, attribute, value});
+                        };
+                        item.instance = element;
+                        item.instancing = false;
+                        item.attributes = _clone(attributes);
+
+                        _updatePages();
+
+                        unlock();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+
+                        unlock();
+                      });
+                  });
+
+                item.instancing = true;
+
+                _updatePages();
+              }
+            }
+
+            unreifyTag(tagMesh) {
+              const {item} = tagMesh;
+
+              item.lock()
+                .then(unlock => {
+                  const {instance} = item;
+
+                  if (instance) {
+                    if (typeof instance.destructor === 'function') {
+                      instance.destructor();
+                    }
+                    item.instance = null;
+                  }
+
+                  unlock();
+                });
             }
 
             getPointedTagMesh(side) {

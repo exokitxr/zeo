@@ -528,10 +528,10 @@ class Zeo {
                       }
 
                       registerElement(pluginInstance, elementApi) {
-                        world.registerElement(pluginInstance, elementApi);
+                        tags.registerElement(pluginInstance, elementApi);
                       }
                       unregisterElement(pluginInstance) {
-                        world.unregisterElement(pluginInstance);
+                        tags.unregisterElement(pluginInstance);
                       }
                     }
 
