@@ -1,6 +1,8 @@
 function CakeModel({THREE}) {
   const object = new THREE.Object3D();
 
+  const eatenSlices = 5;
+
   const layerSpecs = [
     {
       color: 0x333333,
@@ -28,7 +30,7 @@ function CakeModel({THREE}) {
       const layerSpec = layerSpecs[i];
       const {color} = layerSpec;
       
-      const geometry = new THREE.CylinderBufferGeometry(layerSize, layerSize, layerHeight, 8, 1, false, 0, (Math.PI * 2) * (7 / 8));
+      const geometry = new THREE.CylinderBufferGeometry(layerSize, layerSize, layerHeight, 8, 1, false, 0, (Math.PI * 2) * ((8 - eatenSlices) / 8));
       geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (layerHeight * ((layerSpecs.length - 1) / 2)) - (i * layerHeight), 0));
       const material = new THREE.MeshPhongMaterial({
         color: color,
@@ -57,18 +59,18 @@ function CakeModel({THREE}) {
     });
 
     for (let i = 0; i < numCherries; i++) {
-      if (i === 0) {
+      if (i >= (numCherries - eatenSlices)) {
         continue;
       }
 
       const geometry = new THREE.SphereBufferGeometry(cherrySize, 5, 5);
-      const angle = (i / numCherries) * (Math.PI * 2);
+      const angle = ((i) / numCherries) * (Math.PI * 2);
       geometry.applyMatrix(new THREE.Matrix4().makeTranslation(
         Math.sin(angle) * cherryRaidus,
         (((layerSpecs.length - 1) / 2) * layerHeight) + (cherrySize * 1.5),
         Math.cos(angle) * cherryRaidus
       ));
-      geometry.applyMatrix(new THREE.Matrix4().makeRotationY(-((1 / numCherries) * 0.5) * (Math.PI * 2)));
+      geometry.applyMatrix(new THREE.Matrix4().makeRotationY(((1 / numCherries) * 0.5) * (Math.PI * 2)));
       const material = cherryMaterial;
 
       const cherryMesh = new THREE.Mesh(geometry, material);
