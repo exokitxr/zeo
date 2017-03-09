@@ -147,7 +147,7 @@ class World {
           const localUserId = multiplayer.getId();
           const _makeGrabbableState = () => ({
             hoverMesh: null,
-            pointMesh: null,
+            pointerMesh: null,
           });
           const grabbableStates = {
             left: _makeGrabbableState(),
@@ -1341,7 +1341,7 @@ class World {
                   const grabBoxMesh = grabBoxMeshes[side];
 
                   grabbableState.hoverMesh = null;
-                  grabbableState.pointMesh = null;
+                  grabbableState.pointerMesh = null;
 
                   if (grabBoxMesh.visible) {
                     grabBoxMesh.visible = false;
@@ -1933,8 +1933,7 @@ class World {
 
               if (isOpen) {
                 const grabbableState = grabbableStates[side];
-                const {hoverMesh: hoverGrabMesh, pointMesh: pointGrabMesh} = grabbableState;
-                const grabMesh = hoverGrabMesh || pointGrabMesh;
+                const {hoverMesh: grabMesh} = grabbableState;
 
                 if (grabMesh) {
                   const equipmentTagMeshes = equipmentManager.getTagMeshes();
