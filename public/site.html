@@ -1740,8 +1740,16 @@ const _drawCanvasGrid = canvas => {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xFFFFFF);
   const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.001, 100000);
-  camera.position.set(0, 30, 60);
+  camera.position.set(0, 20, 50);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  window.addEventListener('mousemove', e => {
+    const xFactor = -0.5 + (e.clientX / window.innerWidth);
+    const yFactor = -0.5 + (e.clientY / window.innerHeight);
+
+    camera.lookAt(new THREE.Vector3(xFactor * 50, -yFactor * 50, 0));
+    _render();
+  });
 
   const planeMesh = (() => {
     const img = new Image();
