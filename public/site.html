@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>zeo vr</title>
+  <link href="/css/octicons.css" rel="stylesheet">
+  <style>
+    body {
+      --fonts: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      --monospace-fonts: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
+    body {
+      position: relative;
+      min-width: 1024px;
+      min-height: 720px;
+      margin: 0;
+      background-color: #000;
+      font-family: var(--fonts);
+      color: #FFF;
+      overflow-x: hidden;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+      outline: none;
+      cursor: pointer;
+    }
+    .link {
+      text-decoration: underline;
+    }
+    code {
+      display: inline-block;
+      padding: 0 5px;
+      font-family: var(--monospace-fonts);
+      background-color: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+    header {
+      display: flex;
+      position: sticky;
+      top: 0;
+      height: 80px;
+      padding: 0 30px;
+      background-color: #000;
+      /* border-bottom: 1px solid #222; */
+      align-items: center;
+      z-index: 2;
+    }
+    .header-left, .header-right {
+      display: flex;
+      width: 100px;
+      align-items: center;
+    }
+    .header-left {
+      margin-right: auto;
+    }
+    .header-right {
+      margin-left: auto;
+      justify-content: flex-end;
+    }
+
+    .hero {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      margin-top: -80px;
+      background-color: #FFF;
+      color: #000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .hero .hero-wrap {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hero .hero-heading {
+    }
+    .hero h1 {
+      margin-bottom: 30px;
+      font-size: 60px;
+      font-weight: 300;
+    }
+    .button {
+      display: inline-flex;
+      height: 38px;
+      padding: 0 15px;
+      background-color: transparent;
+      border: 2px solid;
+      font-family: var(--fonts);
+      font-size: 16px;
+      font-weight: 400;
+      white-space: nowrap;
+      justify-content: center;
+      align-items: center;
+      outline: none;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #000;
+      border-color: transparent;
+      color: #FFF;
+    }
+    .button.invert {
+      color: #FFF;
+    }
+    .button.invert:hover {
+      background-color: #FFF;
+      color: #000;
+    }
+    .button.invert:hover img {
+      filter: invert(100%);
+    }
+    /* .button.primary {
+      background-color: #4CAF50;
+      border-color: transparent;
+    }
+    .button.primary:hover {
+      background-color: #388E3C;
+      border-color: transparent;
+    } */
+    .button.secondary {
+      background-color: #E91E63;
+      border-color: transparent;
+    }
+    .button.secondary:hover {
+      background-color: #C2185B;
+    }
+    .button.small {
+      border-width: 2px;
+      padding: 7px 12px;
+      font-size: 16px;
+    }
+    .button + .button {
+      margin-left: 10px;
+    }
+    .button .icon {
+      margin-right: 5px;
+    }
+
+    .hero .slides {
+      display: flex;
+      position: relative;
+      width: 100%;
+      margin-top: 70px;
+      justify-content: center;
+    }
+    .hero .slides-navbar {
+      display: flex;
+      position: absolute;
+      top: 0;
+      width: 540px;
+    }
+    .hero .slides-navbar .slides-nav {
+      width: 200px;
+      padding: 5px 0;
+      border: 2px solid;
+      border-top: 0;
+      color: #FFF;
+      font-family: var(--monospace-fonts);
+      text-align: center;
+    }
+    .hero .slides-navbar .slides-nav.green {
+      background-color: #4CAF50;
+    }
+    .hero .slides-navbar .slides-nav.green.selected {
+      color: #4CAF50;
+    }
+    .hero .slides-navbar .slides-nav.blue {
+      background-color: #2196F3;
+    }
+    .hero .slides-navbar .slides-nav.blue.selected {
+      color: #2196F3;
+    }
+    .hero .slides-navbar .slides-nav.purple {
+      background-color: #673AB7;
+    }
+    .hero .slides-navbar .slides-nav.purple.selected {
+      color: #673AB7;
+    }
+    .hero .slides-navbar .slides-nav.selected {
+      background-color: #FFF;
+      border-color: transparent;
+    }
+    .hero .slides-navbar .slides-nav + .slides-nav {
+      border-left: 0;
+    }
+    .hero .slide {
+      display: flex;
+      width: 100%;
+      height: 350px;
+      padding: 30px;
+      color: #FFF;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .hero .slide.green {
+      background-color: #4CAF50;
+    }
+    .hero .slide.blue {
+      background-color: #2196F3;
+    }
+    .hero .slide.purple {
+      background-color: #673AB7;
+    }
+    .hero .slide-arrow-icon {
+      visibility: hidden; // XXX
+      width: 50px;
+      height: 50px;
+    }
+    .hero .slide-wrap {
+      width: 540px;
+      padding: 0 30px;
+    }
+    .hero .slide-wrap .icons {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    .hero .slide-wrap .icon {
+      text-align: center;
+    }
+    .hero .slide-wrap .icon:not(.octicon) {
+      width: 200px;
+      font-size: 40px;
+      font-family: var(--monospace-fonts);
+    }
+    .hero .slide-wrap .icon.octicon {
+      height: 120px;
+      padding-top: 20px;
+      font-size: 80px;
+      box-sizing: border-box;
+    }
+    .hero .slide-wrap h3, .hero .slide-wrap p {
+      width: 100%;
+    }
+    .hero .slide-wrap h3 {
+      margin-bottom: 10px;
+      font-size: 22px;
+    }
+    .hero .slide-wrap p {
+      margin-bottom: 30px;
+      font-size: 13px;
+    }
+
+    header .header-github-anchor {
+      margin-left: 100px;
+    }
+    header .header-github-anchor::before {
+      position: absolute;
+      top: 0;
+      right: 0;
+      border-width: 0 150px 150px 0;
+      border-style: solid;
+      border-color: transparent #333 transparent transparent;
+      z-index: -1;
+      content: '';
+    }
+
+    .logged-in header {
+      background-color: #333;
+    }
+    .logged-in header > .header-github-anchor {
+      display: none;
+    }
+    body:not(.logged-in) header > .header-login-bar {
+      display: none;
+    }
+    .signing-up .header-details {
+      display: flex;
+      padding: 30px 0;
+      background-color: #333;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .header-details {
+      display: none;
+      position: absolute;
+      top: 80px;
+      left: 0;
+      right: 0;
+      justify-content: center;
+      z-index: 3;
+    }
+    .signing-up .signing-up-overlay {
+      display: block;
+    }
+    .signing-up-overlay {
+      display: none;
+      background-color: rgba(0, 0, 0, 0.9);
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 2;
+    }
+    .details-wrap {}
+    .details-wrap h4 {
+      margin-left: 115px;
+      margin-bottom: 20px;
+    }
+    .details-wrap input[type=text], .details-wrap input[type=email], .details-wrap input[type=month] {
+      width: 300px;
+      margin-bottom: 10px;
+      background-color: #DDD;
+    }
+    .details-wrap input[type=text]::-webkit-input-placeholder, .details-wrap input[type=email]::-webkit-input-placeholder, .details-wrap input[type=password]::-webkit-input-placeholder {
+      color: #AAA;
+    }
+    .details-wrap .header-button {
+      margin-left: 115px;
+      margin-top: 10px;
+      color: #FFF;
+    }
+    .details-wrap .header-button:hover, .details-wrap .header-button:focus {
+      background-color: #2196F3;
+      color: #FFF;
+    }
+    .details-wrap label {
+      display: flex;
+    }
+    .details-wrap .left {
+      display: flex;
+      margin-right: 10px;
+      width: 105px;
+      font-size: 13px;
+      line-height: 37px;
+      justify-content: flex-end;
+    }
+    .details-wrap input[type=text].ccn {
+      margin-right: 10px;
+      width: 240px;
+    }
+    .details-wrap input[type=text].cvc {
+      width: 50px;
+    }
+    .header-button {
+      margin-right: 10px;
+      padding: 8px 20px;
+      background-color: transparent;
+      border: 1px solid;
+      border-radius: 100px;
+      font-family: var(--fonts);
+      font-size: 15px;
+      font-weight: 300;
+      color: #4CAF50;
+      cursor: pointer;
+    }
+    .header-button:hover, .header-button:focus {
+      background-color: #4CAF50;
+      border-color: transparent;
+      color: #333;
+      outline: none;
+    }
+    .header-icon {
+      margin-right: 10px;
+    }
+    .header-logo-anchor {
+      display: flex;
+      margin-right: auto;
+      font-size: 20px;
+      font-weight: 300;
+      align-items: center;
+    }
+    .header-logo-anchor:hover {
+      color: #66BB6A;
+    }
+    .header-log-in-input, .header-log-in-button {
+      padding: 7px;
+      border: 1px solid #808080;
+      border-radius: 3px;
+    }
+    .header-log-in-input {
+      background: none;
+      border-right: 0;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      font-family: var(--fonts);
+      font-weight: 300;
+      color: #FFF;
+      outline: none;
+    }
+    .header-log-in-input:focus {
+      border-color: #FFF;
+    }
+    .header-log-in-input::-webkit-input-placeholder {
+      color: #444;
+    }
+    .header-log-in-button {
+      border: 1px solid #FFF;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      color: #FFF;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .header-log-in-button:hover {
+      background-color: #03A9F4;
+      border-color: transparent;
+      color: #FFF;
+    }
+    .header-log-in-button, .header-sign-up-button {
+      margin-right: 15px;
+    }
+    .header-sign-up-button {
+      height: auto;
+      padding: 7px 15px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      margin-left: auto;
+      background-color: #4CAF50;
+      border-bottom: 0;
+      border-radius: 3px;
+      color: #FFF;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .header-sign-up-button:hover {
+      background-color: #388E3C;
+    }
+    .header-github-anchor {
+      display: flex;
+      width: 50px;
+      height: 50px;
+      color: #FFF;
+      justify-content: center;
+      align-items: center;
+    }
+    .header-github-anchor:hover {
+      color: #03A9F4;
+    }
+    .header-github-anchor > i {
+      display: block;
+      font-size: 30px !important;
+    }
+    .header-login-bar {
+      display: flex;
+      align-items: center;
+    }
+    .header-login-bar > h2 {
+      margin-right: 15px;
+      color: #4CAF50;
+    }
+    .header-login-bar > .plan-nagger {
+      margin-right: 10px;
+      pad<F4>ding: 5px 10px;
+      background-color: #E91E63;
+      border-radius: 5px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .header-login-bar > .plan-nagger:hover {
+      background-color: #AD1457;
+    }
+    .logged-in .canvas-login-arrow, .logged-in .canvas-login-arrow-tail {
+      display: none;
+    }
+    .canvas-login-arrow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      filter: brightness(1000000%);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .logged-in .container {
+      height: 300px;
+    }
+    section.container {
+      display: flex;
+      width: 100%;
+      margin-top: -80px;
+      padding-top: 80px;
+      justify-content: flex-start;
+      align-items: center;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .container-wrapper {
+      display: flex;
+      width: 640px;
+      color: #FFF;
+      align-items: center;
+      flex-direction: column;
+    }
+    .container-wrapper > h1 {
+      margin: 30px 0;
+      text-align: center;
+    }
+    .container-footer {
+      width: 200%;
+      height: 400px;
+      margin-left: -50%;
+      margin-top: -200px;
+      position: absolute;
+      background-color: #000;
+      transform: rotateZ(-10deg);
+    }
+    .demographics > navbar {
+      display: flex;
+      width: 640px;
+      height: 80px;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 400;a
+    }
+    .demographics > navbar > nav {
+      display: flex;
+      position: relative;
+      height: 100%;
+      padding: 0 20px;
+      padding-top: 15px;
+      border-bottom: 5px solid transparent;
+      align-items: center;
+      box-sizing: border-box;
+      cursor: pointer;
+    }
+    .demographics > navbar > nav.selected::after {
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      margin-left: -11px;
+      border-style: solid;
+      border-width: 12px 12px 0 12px;
+      /* content: ''; */
+    }
+    .demographics > navbar > nav.red.selected {
+      color: #E91E63;
+      border-bottom-color: #E91E63;
+    }
+    .demographics > navbar > nav.red.selected::after {
+      border-color: #E91E63 transparent transparent transparent;
+    }
+    .demographics > navbar > nav.green.selected {
+      color: #4CAF50;
+      border-bottom-color: #4CAF50;
+    }
+    .demographics > navbar > nav.green.selected::after {
+      border-color: #4CAF50 transparent transparent transparent;
+    }
+    .demographics > navbar > nav.purple.selected {
+      color: #7E57C2;
+      border-bottom-color: #7E57C2;
+    }
+    .demographics > navbar > nav.purple.selected::after {
+      border-color: #7E57C2 transparent transparent transparent;
+    }
+    .demographics > navbar > nav > i {
+      margin-right: 10px;
+    }
+    section.details {
+      display: flex;
+      width: 100%;
+      justify-content: flex-start;
+      align-items: center;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .details-wrapper {
+      width: 100%;
+    }
+    .details-wrapper > h1 {
+      width: 640px;
+      margin: 30px auto;
+      text-align: center;
+    }
+    .details-card {
+      display: flex;
+      width: 100%;
+    }
+    .details-text {
+      display: flex;
+      width: 370px;
+      padding: 20px 0;
+      margin-right: 30px;
+      align-items: center;
+      flex-direction: column;
+    }
+    .details-text > i {
+      display: flex;
+      font-size: 50px;
+      text-align: center;
+    }
+    .details-text > i.red {
+      color: #E91E63;
+    }
+    .details-text > i.green {
+      color: #66BB6A;
+    }
+    .details-text > i.purple {
+      color: #7E57C2;
+    }
+    .details-text > p {
+      padding: 20px;
+      color: #FFF;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .sign-up-form {
+      display: flex;
+      width: 640px;
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #222;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    .sign-up-form input[type=email], .sign-up-form input[type=password] {
+      width: 230px;
+      margin-bottom: 15px;
+      padding: 7px;
+      background-color: transparent;
+      border: 1px solid #808080;
+      border-radius: 3px;
+      font-family: var(--fonts);
+      font-weight: 300;
+      color: #FFF;
+      outline: none;
+    }
+    .sign-up-form input[type=email]:focus, .sign-up-form input[type=password]:focus {
+      border-color: #FFF;
+    }
+    .form-left, .form-right {
+      display: flex;
+      width: 50%;
+      flex-direction: column;
+      flex-grow: 1;
+      align-items: flex-start;
+    }
+    .sign-up-form .buttons {
+      position: relative;
+      width: 100%;
+    }
+    .sign-up-form .buttons > .button {
+      position: relative;
+      width: 50%;
+      height: 32px;
+      color: #808080;
+      background-color: #333;
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 400;
+      border: 0;
+      border-radius: 0;
+      box-sizing: border-box;
+    }
+    .sign-up-form .buttons > .button.left {
+      border-top-left-radius: 5px;
+    }
+    .sign-up-form .buttons > .button.right {
+      position: absolute;
+      top: -32px;
+      right: 0;
+      border-top-right-radius: 5px;
+    }
+    .sign-up-form .buttons > .button.blue:hover, .sign-up-form .buttons > .button.blue.selected {
+      background-color: #03A9F4;
+    }
+    .admin-account-button {
+      cursor: pointer;
+    }
+    .admin-account-button:hover .button, .admin-account-button:hover .price, .admin-account-button:hover .sub,
+    .admin-account-button.selected .button, .admin-account-button.selected .price, .admin-account-button.selected .sub {
+      background-color: #673AB7;
+      color: #FFF;
+    }
+    .sign-up-form .sub {
+      margin-top: 10px;
+      margin-bottom: 15px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
+      font-style: italic;
+    }
+    .account-details {
+      width: 100%;
+      font-size: 12px;
+      font-weight: 400;
+      box-sizing: border-box;
+    }
+    .price {
+      padding: 0 20px;
+      background-color: #333;
+      font-size: 24px;
+      line-height: 2;
+      text-align: center;
+    }
+    .price > .sub {
+      margin-left: 5px;
+      font-size: 12px;
+    }
+    .account-details > .account-details-content {
+      background-color: #222;
+      padding: 10px 20px;
+    }
+    .account-details > .account-details-content .buttons {
+      background-color: #222;
+      padding: 0 20px;
+      padding-top: 10px;
+    }
+    .account-details ul {
+      list-style-type: none;
+      margin: 10px 0;
+      padding: 0;
+    }
+    .account-details ul > li {
+      display: inline-block;
+      margin-bottom: 1px;
+      padding: 0 10px;
+      background-color: #333;
+      color: #CCC;
+      border-radius: 100px;
+      line-height: 1.8;
+      font-weight: 600;
+    }
+    .account-details .icon {
+      position: relative;
+      top: 2px;
+      margin-right: 3px;
+    }
+    /* .account-details ul > li:nth-child(odd) {
+      background-color: #333;
+    }
+    .account-details ul > li:nth-child(even) {
+      background-color: #000;
+    } */
+    .faq {
+      width: 640px;
+      margin: 0 auto;
+      margin-top: 20px;
+    }
+    .toc {
+      position: sticky;
+      top: 101px;
+      width: 160px;
+      height: 120px;
+    }
+    .toc-item {
+      display: block;
+      padding-left: 10px;
+      border-left: 3px solid transparent;
+      font-size: 12px;
+      line-height: 2;
+      font-weight: 400;
+    }
+    .toc-item.selected {
+      border-left-color: #673AB7;
+      font-weight: 700;
+    }
+    .faq-content {
+      width: 640px;
+      margin-top: -120px;
+      padding-left: 160px;
+      box-sizing: border-box;
+    }
+    .faq-header {
+      margin: 0 -20px;
+      padding: 0 20px;
+      margin-bottom: 1px;
+      background-color: #111;
+      border-left: 3px solid #673AB7;
+      font-size: 20px;
+      line-height: 2;
+      font-weight: 400;
+    }
+    .faq-card {
+      margin-bottom: 30px;
+    }
+    .faq-card-item {
+      margin: 0 -20px;
+      margin-bottom: 1px;
+      padding: 10px 20px;
+      background-color: #111;
+      border-left: 3px solid #673AB7;
+      font-size: 12px;
+      line-height: 1.6;
+      box-sizing: border-box;
+    }
+    .faq-card-item > .q {
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    .faq-card-item > .a {
+      font-weight: 400;
+    }
+    .videos-wrapper {
+      width: 270px;
+    }
+    .main-video {
+      width: 100%;
+    }
+    .videos-list {
+      display: flex;
+    }
+    .video {
+      width: 80px;
+      margin: 15px 0;
+    }
+    .video + .video {
+      margin-left: 15px;
+    }
+    section.list {
+      display: flex;
+      width: 100%;
+      padding-top: 350px;
+      background-color: #222;
+      justify-content: center;
+    }
+    .grid {
+      width: 100%;
+    }
+    .grid-item-wrap {
+      display: flex;
+      position: relative;
+      width: 100%;
+      justify-content: center;
+      background-image: linear-gradient(to left, #000000 , #222);
+    }
+    .grid-item-wrap:nth-child(even) {
+       background-image: linear-gradient(to right, #000000 , #222);
+    }
+    .grid-item {
+      display: flex;
+      width: 640px;
+      padding: 30px 0;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .grid-item .screenshot {
+      width: 640px;
+      height: 150px;
+    }
+    .grid-item .icons {
+      display: flex;
+      align-items: center;
+    }
+    .grid-item .icon {
+      display: flex;
+      width: 200px;
+      height: 120px;
+      font-size: 100px;
+      justify-content: center;
+      align-items: center;
+    }
+    .grid-item-1 .icon {
+    }
+    .grid-item-2 {
+      padding-bottom: 0;
+    }
+    .grid-item-2 .icon {
+      color: #2196F3;
+    }
+    .grid-item-3 .icon {
+      color: #4CAF50;
+    }
+    .grid-item h4 {
+      width: 100%;
+      margin: 15px 0;
+    }
+    .grid-item p {
+      width: 100%;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .grid-item .grid-button {
+      display: inline-block;
+      margin: 20px 0;
+      margin-right: auto;
+      padding: 5px 20px;
+      border: 1px solid #FFF;
+      border-radius: 100px;
+      font-size: 14px;
+      line-height: 2;
+    }
+    section.pricing {
+      display: flex;
+      background-color: #03A9F4;
+      justify-content: center;
+    }
+    .adventures {
+      display: flex;
+      position: absolute;
+      top: 300px;
+      width: 100%;
+      padding: 20px 0;
+      background-color: #FFF;
+      // background-image: linear-gradient(to top, #EEE 0%, #111 0%, #FFF 20%, #FFF 100%);
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .adventures .adventures-wrapper {
+      display: flex;
+      width: 100vw;
+      overflow: hidden;
+    }
+    .adventures .adventures-center-wrapper {
+      display: flex;
+      width: 640px;
+    }
+    .adventures .adventure {
+      position: relative;
+      display: flex;
+      width: 150px;
+      padding-bottom: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      flex-direction: column;
+    }
+    .adventures .adventure:first-child {
+      margin-left: -50px;
+    }
+    .adventures .adventure + .adventure {
+      margin-left: 10px;
+    }
+    .adventure-background {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #DDD;
+      transform: skewX(45deg) scaleY(0.5);
+      transform-origin: 50% 100%;
+    }
+    .adventures .adventure > .adventure-header {
+      padding: 10px;
+      background-color: #000;
+      flex-grow: 1;
+      z-index: 1;
+    }
+    .adventures .adventure > img {
+      width: 150px;
+      height: 50px;
+      z-index: 1;
+    }
+    .adventures-placeholder {
+      width: 100%;
+      height: 250px;
+    }
+    .adventures .adventures-center-wrapper > .grid-button {
+      color: #000;
+      border: 2px solid;
+      font-weight: 600;
+    }
+    .pricing {
+      padding: 40px 0;
+    }
+    .pricing-wrap {
+      width: 520px;
+    }
+    .pricing-details {}
+    .pricing-details > img {
+      width: 200px;
+      height: 200px;
+      border-radius: 100px;
+    }
+    .pricing-grid {
+      display: flex;
+      margin: 20px auto;
+    }
+    .pricing-item {
+      display: flex;
+      width: 50%;
+      padding-top: 10px;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .pricing-item:not(.highlight) {
+      background-color: #01579B;
+    }
+    .pricing-item.highlight {
+      background-color: #4CAF50;
+    }
+    .pricing-heading {
+      display: flex;
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      line-height: 2;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .pricing-footer {
+      display: flex;
+      padding: 10px 20px;
+      justify-content: center;
+      align-items: flex-end;
+      flex-grow: 1;
+    }
+    .pricing-button {
+      display: flex;
+      margin: 20px;
+      padding: 10px;
+      border: 1px solid;
+      border-radius: 5px;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.8);
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    .pricing-button:hover {
+      background-color: #FFF;
+      border-color: transparent;
+      color: #01579B;
+    }
+    .pricing-button.highlight {
+      background-color: #F44336;
+      border-color: transparent;
+      font-weight: 400;
+      color: #FFF;
+    }
+    .pricing-button.highlight:hover {
+      background-color: #C62828;
+    }
+    .pricing-point {
+      display: flex;
+      padding-right: 20px;
+      padding-left: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 13px;
+      line-height: 3;
+      align-items: center;
+    }
+    .pricing-point.dim {
+      opacity: 0.5;
+    }
+    .pricing-point > i {
+      width: 50px;
+      font-size: 18px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .plan, .dollars, .per-month {
+      line-height: 1;
+    }
+    .plan {
+      font-size: 30px;
+    }
+    .dollars {
+      font-size: 30px;
+    }
+    h1, h2, h3, h4, p {
+      margin: 0;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+    /* h1 {
+      font-size: 32px;
+    }
+    h2 {
+      font-size: 18px;
+    }
+    h3 {
+      margin-bottom: 20px;
+      font-size: 40px;
+    }
+    h4 {
+      margin-bottom: 15px;
+      font-size: 20px;
+    } */
+    .login-loader {
+      display: flex;
+      width: 350px;
+      height: 230px;
+      flex-direction: column;
+    }
+    form {
+      margin-bottom: 20px;
+      padding: 20px;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    footer {
+      display: flex;
+      height: 100px;
+      padding: 0 30px;
+      border-top: 1px solid #222;
+      font-size: 13px;
+      justify-content: center;
+      align-items: center;
+    }
+    .footer-left {
+      margin-right: auto;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <style>
+    .loader,
+    .loader:before,
+    .loader:after {
+      border-radius: 50%;
+    }
+    .loader {
+      color: #ffffff;
+      font-size: 11px;
+      text-indent: -99999em;
+      margin: 40px auto;
+      position: relative;
+      width: 10em;
+      height: 10em;
+      box-shadow: inset 0 0 0 2px;
+      -webkit-transform: scale(0.5) translateZ(0);
+      -ms-transform: scale(0.5) translateZ(0);
+      transform: scale(0.5) translateZ(0);
+    }
+    .loader:before,
+    .loader:after {
+      position: absolute;
+      content: '';
+    }
+    .loader:before {
+      width: 5.2em;
+      height: 10.2em;
+      background: #000;
+      border-radius: 10.2em 0 0 10.2em;
+      top: -0.1em;
+      left: -0.1em;
+      -webkit-transform-origin: 5.2em 5.1em;
+      transform-origin: 5.2em 5.1em;
+      -webkit-animation: load2 1s infinite ease 0.75s;
+      animation: load2 1s infinite ease 0.75s;
+    }
+    .loader:after {
+      width: 5.2em;
+      height: 10.2em;
+      background: #000;
+      border-radius: 0 10.2em 10.2em 0;
+      top: -0.1em;
+      left: 5.1em;
+      -webkit-transform-origin: 0px 5.1em;
+      transform-origin: 0px 5.1em;
+      -webkit-animation: load2 1s infinite ease;
+      animation: load2 1s infinite ease;
+    }
+    @-webkit-keyframes load2 {
+      0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+    @keyframes load2 {
+      0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header id=header>
+    <div class=header-left>
+      <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
+    </div>
+    <div class=demographics>
+      <navbar>
+        <nav class="green selected" id=demographics-button-1>
+          <div class=title>Wat?</div>
+        </nav>
+        <nav class=green id=demographics-button-2>
+          <div class=title>API Docs</div>
+        </nav>
+        <nav class=purple id=demographics-button-3>
+          <div class=title>FAQ</div>
+        </nav>
+      </navbar>
+    </div>
+    <div class=header-right>
+      <!-- <input type=text class=header-log-in-input placeholder="your@email.com" />
+      <a class=header-log-in-button>Log in</a>
+      <a class=header-sign-up-button id=sign-up-button>
+        <div class=title>Sign up</div>
+      </a> -->
+      <a href="https://hub.zeovr.io">
+        <button class="button invert primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
+      </a>
+      <!-- <button class="button invert secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
+      <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
+    </div>
+  </header>
+  <div class=signing-up-overlay id=signing-up-overlay></div>
+  <section class=hero>
+    <div class=hero-wrap>
+      <div class=hero-heading>
+        <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
+        <!-- <button class="button primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
+        <button class="button secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
+      </div>
+      <div class=slides>
+        <div class=slides-navbar>
+          <nav class="slides-nav green selected" id=slides-nav-1>Javscript</nav>
+          <nav class="slides-nav blue" id=slides-nav-2>Multiplayer</nav>
+          <nav class="slides-nav purple" id=slides-nav-3>Servers</nav>
+        </div>
+        <div class="slide green" id=slide-1>
+          <div class=slide-arrow-icon>
+            <img src="/img/chevron-left.svg" />
+          </div>
+          <div class=slide-wrap>
+            <div class=icons>
+              <img src="/img/npm-logo.png" width=200 height=120 class=icon style="margin-left: -40px;" />
+              <div class=icon>three.js</div>
+              <div class=icon>WebVR</div>
+            </div>
+            <h3>Download your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
+            <p>
+              Drag-and-drop NPM modules into the world. Clients sync automagically.<br/>
+              The frontend API is <a href="https://threejs.org" class=link>THREE.js</a> bundled by <a href="http://rollupjs.org" class=link>rollup</a>, so you can use any NPM module.<br/>
+              Modules also run on the server. Voice chat and multiplayer physics come in the box.<br/>
+              Open source <a href="https://github.com/modulesio/zeo">on Github</a>.<br/>
+            </p>
+            <a href="https://github.com/modulesio/zeo" class="button small">Read API docs</a>
+          </div>
+          <div class=slide-arrow-icon>
+            <img src="/img/chevron-right.svg" />
+          </div>
+        </div>
+        <div class="slide blue" id=slide-2 style="display: none;">
+          <div class=slide-arrow-icon>
+            <img src="/img/chevron-left.svg" />
+          </div>
+          <div class=slide-wrap>
+            <i class="icon octicon octicon-circuit-board"></i>
+            <h3>Persistent multiverse tech.</h3>
+            <p>
+              World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
+              We did the hard work so you don't have to.<br/>
+            </p>
+            <a href="https://github.com/modulesio/zeo" class="button small">See all features</a>
+          </div>
+          <div class=slide-arrow-icon>
+            <img src="/img/chevron-right.svg" />
+          </div>
+        </div>
+        <div class="slide purple" id=slide-3 style="display: none;">
+          <div class=slide-arrow-icon>
+            <img src="/img/chevron-left.svg" />
+          </div>
+          <div class=slide-wrap>
+            <i class="icon octicon octicon-mark-github"></i>
+            <h3>Open source. Or hosted.</h3>
+            <p>
+              Run your own server or join us on the public Zeo Hub.<br/>
+              Test it out with just your browser.<br/>
+              And if you want us to host your world, we have a plan for that.<br/>
+            </p>
+            <a href="https://github.com/modulesio/zeo" class="button small">See pricing</a>
+          </div>
+          <div class=slide-arrow-icon>
+            <img src="/img/chevron-right.svg" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class=details>
+    <div class=details-wrapper id=demographics-details-1>
+      <div class=details-card>
+        <div class=grid>
+          <div class=grid-item-wrap>
+            <!-- -<div class="grid-item grid-item-1">
+              <img src="https://placehold.it/1280x300" class=screenshot />
+              <h4>In-browser VR worlds.</h4>
+              <p>
+                Build a whole new world by dragging and dropping plugins -- literally.<br/>
+                Conjure planets, paint a picture, or DJ your favorite track; there's a plugin for that.<br/>
+                Do it together: multiplayer comes in the box. And it all runs in your browser, headset or not.<br/>
+              </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>More about Zeo VR tech</a>
+            </div> -->
+          </div>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-2">
+              <i class="icon octicon octicon-telescope"></i>
+              <h4>Looking for adventure? We need adventurers!</h4>
+              <p>
+                Zeo Adventures are bite-sized experiences posted by your fellow VRnauts.<br>
+                Complete Adventures to earn Karma, which you can use to create your own adventures!<br>
+                Here are some adventures you missed out on:<br>
+              </p>
+              <div class=adventures>
+                <div class=adventures-wrapper>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>Scavenger hunt around the city</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>Build a log cabin</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>3D paint charades</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>DJ booth dance party</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>Phychoanalyse my picture</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>Scavenger hunt around the city</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>Build a log cabin</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>3D paint charades</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>DJ booth dance party</div>
+                    <div class=adventure-background></div>
+                  </div>
+                  <div class=adventure>
+                    <img src="https://placehold.it/300x100" />
+                    <div class=adventure-header>Phychoanalyse my picture</div>
+                    <div class=adventure-background></div>
+                  </div>
+                </div>
+                <div class=adventures-center-wrapper>
+                  <a href="https://github.com/modulesio/zeo" class=grid-button>Learn about Zeo Adventures</a>
+                </div>
+              </div>
+              <div class=adventures-placeholder></div>
+            </div>
+          </div>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-3">
+              <div class=icons>
+                <i class="icon octicon octicon-cloud-upload"></i>
+                <i class="icon octicon octicon-device-desktop"></i>
+                <img src="/assets/icons/google-cardboard-green.svg" class="icon" />
+              </div>
+              <h4>We'll hold the fort. Virtually.</h4>
+              <p>
+                Join us on Zeo Hub, the hosted version of Zeo.<br/>
+                Jack in with any WebVR-enabled web browser, headset or not. Do it now. It's free.<br/>
+                When you're ready to keep your stuff, upgrade to an <a href="#" class=link>Admin account</a>.<br/>
+              </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>Sign up for Zeo Hub</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class=details-wrapper style="display: none;" id=demographics-details-2>
+      <h1>WebVR made easy. Everything is an NPM module. Multiplayer, server-side physics, controllers, and more.</h1>
+      <div class=details-card>
+        <div class=grid>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-1">
+              <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
+              <h4>Powered by npm.</h4>
+              <p>
+                You know Javascript. Now meet Javascript face-to-face.<br/>
+                Publish to NPM and experience your creations in your headset.<br/>
+                The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
+              </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
+            </div>
+          </div>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-2">
+              <i class="icon octicon octicon-circuit-board"></i>
+              <h4>Persistent multiverse tech.</h4>
+              <p>
+                World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
+                We did the hard work so you don't have to.<br/>
+              </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
+            </div>
+          </div>
+          <div class=grid-item-wrap>
+            <div class="grid-item grid-item-3">
+              <i class="icon octicon octicon-mark-github"></i>
+              <h4>Open source. Or hosted.</h4>
+              <p>
+                Run your own server or join us on the public Zeo Hub.<br/>
+                Test it out with just your browser.<br/>
+                And if you want us to host your world, we have a plan for that.<br/>
+              </p>
+              <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class=details-wrapper style="display: none;" id=demographics-details-3>
+      <div class=faq>
+        <div class=toc>
+          <a class="toc-item selected">Zeo VR</a>
+          <a class=toc-item>Open Source</a>
+          <a class=toc-item>Zeo Hub</a>
+          <a class=toc-item>Terms of Service</a>
+          <a class=toc-item>Contact</a>
+        </div>
+        <div class=faq-content>
+          <h1 class=faq-header>Zeo VR</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>What is Zeo VR?</div>
+              <div class=a>
+                <i>Zeo VR</i> is an open source project that lets you build WebVR worlds out of NPM plugins with your browser.<br/>
+                <a href="#" class=link><i>Zeo Hub</i></a> is the hosted version of Zeo VR, which charges for hosting user accounts.<br/>
+                <i>Zeo VR Inc.</i> is the company that supports both projects.
+              </div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What do I need to run Zeo VR?</div>
+              <div class=a>
+                The only hard requirement is a web browser that supports WebGL -- there is full mouse + keyboard support. WebGL is supported every modern web browser.<br/>
+                Of course, to get the full experience, you'll want a desktop headset (HTC Vive or Oculus Rift/Touch) with a browser that supports WebVR. Currently that means the <a href="https://webvr.rocks/chromium" class=link>Chrome Experimental</a> or <a href="https://webvr.rocks/firefox" class=link>Firefox Nightly</a>, but the regular versions of Chrome and Firefox will soon ship with WebVR support out of the box.</br>
+                Mobile WebVR (Chrome for Android) support is in the works. It works, but there's bugs, controller support, and optimization work to do.
+              </div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What are the features of Zeo VR?</div>
+              <div class=a>
+                <ul>
+                  <li>Room-scale headset and controller tracking</li>
+                  <li>Drag-and drop <a href="https://npmjs.org/" class=link>npm</a> modules written for the <a href="https://threejs.org/" class=link>THREE.js</a> API</li>
+                  <li>Network multiplayer out of the box</li>
+                  <li>Voice chat support</li>
+                  <li>Server-side multiplayer physics engine based on Bullet</li>
+                  <li>File uploads including images, audio, video, and models</li>
+                  <li>Multi-world architecture with inter-world links</li>
+                  <li>Inventory system to save your elements and files</li>
+                </ul>
+              </div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Which NPM modules work with Zeo?</div>
+              <div class=a>Any public NPM module with the <code>zeo-mod</code> keyword in its <code>package.json</code> <code>keywords</code> array will show up in Zeo VR. You can browse all such modules with <a href="https://npms.io/search?q=keywords%3Azeo-mod" class=link>npms</a>.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What's the tech behind Zeo VR?</div>
+              <div class=a>
+                It's almost 100% Javascript. The main pieces are:
+                <ul>
+                  <li><a href="https://nodejs.org" class=link>node.js</a></li>
+                  <li><a href="https://npmjs.org" class=link>npm</a></li>
+                  <li><a href="https://docker.com" class=link>docker</a></li>
+                  <li><a href="https://github.com/googlevr/webvr-polyfill" class=link>webvr-polyfill</a></li>
+                  <li><a href="https://github.com/modulesio/archae" class=link>archae</a></li>
+                  <li><a href="https://github.com/websockets/ws" class=link>ws</a></li>
+                  <li><a href="https://github.com/louischatriot/nedb" class=link>nedb</a></li>
+                </ul>
+              </div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Who made Zeo VR?</div>
+              <div class=a>Zeo VR is made by <i>Zeo VR Inc.</i> We're based in the states but work from Canada.</div>
+            </div>
+          </div>
+          <h1 class=faq-header>Open Source</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>Is Zeo VR open source?</div>
+              <div class=a>Yup, Zeo VR is released under the <a href="" class=link>MIT license</a>. You can find the source <a href="https://github.com/modulesio/zeo" class=link>on Github</a>.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Are Zeo NPM modules open source?</div>
+              <div class=a>All of the Zeo modules we make at Zeo VR Inc. are open source (MIT licensed). While Zeo VR will install any module published to NPM with the <code>zeo-mod</code> keyword, we have no control over how those are licensed.</div>
+            </div>
+          </div>
+          <h1 class=faq-header>Zeo Hub</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>What is Zeo Hub?</div>
+              <div class=a>Zeo Hub is the hosted version of Zeo VR. It's a distributed network of Zeo VR worlds managed by Zeo VR, Inc.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>How much does Zeo Hub cost?</div>
+              <div class=a>Zeo Hub has both Free accounts and Admin accounts. Free accounts are free, but you'll lose all of your progress when you disconnect. Admin accounts cost $20 per month and have no restrictions. You can upgrade or downgrade at any time by <a href="mailto:support@zeovr.io">emailing us</a>.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What does an Admin account get me?</div>
+              <div class=a>A Free account loses all Adventure history, Inventory, and Karma when you disconnect, while an Admin account lets you keep these without restrictions. Admin accounts also have the ability to set a custom avatar that will display above your headset in VR.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What are Zeo Adventures?</div>
+              <div class=a>Zeo Adventures are ideas for activities posted by your fellow VRnauts. By participating in Adventures you earn Karma. Zeo Adventures are time-limited to 15 minutes. At the end of an adventure each VRnaut rates the experience.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What are some examples of Zeo Adventures?</div>
+              <div class=a>
+                <ul>
+                  <li>Scavenger hunt around the city</li>
+                  <li>Build a log cabin</li>
+                  <li>3D paint charades</li>
+                  <li>DJ booth dance party</li>
+                  <li>Phychoanalyse my picture</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>What is Zeo Karma?</div>
+              <div class=a>Zeo Karma are tokens of good will earned when you particupate in adventures with other VRnauts. You can use Karma to post your own Zeo Adventures.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Can I buy or sell Zeo Karma?</div>
+              <div class=a>No, you cannot buy or sell Karma. This is expressly prohibited by our <a href="#" class=link>Terms of Service</a>. New accounts start with no Karma. The only way to get Karma is to participate in Zeo Adventures.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Do I need Zeo Hub to use Zeo VR?</div>
+              <div class=a>Nope, you can host Zeo VR yourself: it's open source. If you do this you'll be running completely seperate from Zeo Hub.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>What version of Zeo VR does Zeo Hub run?</div>
+              <div class=a>Zeo Hub always runs the latest Zeo VR release automatically.</div>
+            </div>
+          </div>
+          <h1 class=faq-header>Terms of Service</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>Scope</div>
+              <div class=a>These terms apply to your usage of Zeo Hub, the hosted version of Zeo VR. If you host your own instance of Zeo VR, these terms to not apply to you.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Allowed Conduct</div>
+              <div class=a>Zeo Hub is a public space, so pleas conduct yourself as if you were in public. If something would get you in trouble if you did it in public, do not do it in Zeo VR.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Prohibited Conduct</div>
+              <div class=a>
+                This is a non-exhaustive list of things you are not allowed to do on Zeo Hub. These are grounds for immediate termination of your account. We maintain logs to enforce these terms. Please report violations to <a href="mailto:support@zeovr.io" class=link>support@zeovr.io</a>.
+                <ul>
+                  <li>Usage by any persons under the age of 13. By using Zeo Hub you certify that you are at least 13 years of age.</li>
+                  <li>Sexual content or behavior, including pornography, sexual language, and/or sexual advances.</li>
+                  <li>Harassment of other users. This includes the use of insults, racial slurs, trolling, or any behavior intended to detract from other user's enjoyment of the service.</li>
+                  <li>Exchanging <a href="#" class=link>Adventures</a> or <a href="#" class=link>Karma</a>, or any aspect thereof, for money.</li>
+                  <li>Sharing Zeo Hub accounts with others. A Zeo Hub account is to be used by no more than one individual.</li>
+                  <li>Accessing Zeo Hub through any interface other than that provided by Zeo VR Inc., without our express written permission. This includes running "bots" or any sort of automated process.</li>
+                  <li>Commercial services, such as selling, recruiting, or posting advertisements. Using Zeo Hub as a showcase for your VR work is fine.</li>
+                  <li>Gambling or betting of any kind.</li>
+                  <li>Copyright infringement. It's our responsibility to ensure you have rights to all content you upload. We abide by the <a href="https://en.wikipedia.org/wiki/Digital_Millennium_Copyright_Act">DMCA</a>.</li>
+                </ul>
+              </div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Privacy Policy</div>
+              <div class=a>We collect your email address and other account info in order to provide you with the Zeo Hub service and contact you regarding your account. We collect your IP address to fight spam and aggregate statistics. We collect and log your multiplayer VR sessions to provide, debug, and administrate Zeo Hub services, including enforcing these Terms of Service. We may occasonally email you about Zeo VR news; you can opt out of these emails by clicking the included unsubscribe link. We do not share your info with third parties, except as required by law, such as a subpoena. If we must share your information, we will endeavor to contact you beforehand or as soon as the law allows us to do so.</div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Refund Policy</div>
+              <div class=a>
+                We only want happy customers <code>&lt;3</code>.<br/>
+                We give 100% refunds for Admin account subscriptions, as long as you cancel before the end of your monthly billing period.<br/>
+                <a href="mailto:support@zeovr.io" class=link>Email us</a> to cancel your surscription and get a refund.</div>
+            </div>
+          </div>
+          <h1 class=faq-header>Contact</h1>
+          <div class=faq-card>
+            <div class=faq-card-item>
+              <div class=q>Zeo Hub Support</div>
+              <div class=a><a href="mailto:support@zeovr.io" class=link>support@zeovr.io</a></div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Zeo VR Issues</div>
+              <div class=a><a href="https://github.com/modulesio/zeo/issues" class=link>https://github.com/modulesio/zeo/issues</a></div>
+            </div>
+            <div class=faq-card-item>
+              <div class=q>Just wanna say Hi</div>
+              <div class=a><a href="mailto:support@zeovr.io" class=link>hello@zeovr.io</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class=details-wrapper style="display: none;" id=sign-up-details>
+      <h1>Sign up for Zeo Hub</h1>
+      <form class=sign-up-form>
+        <div class=form-left>
+          <h4>Your info</h4>
+          <input type=email placeholder="your@email.com" />
+          <input type=password placeholder="Choose a password" />
+          <p class=sub>By signing up you agree to the <a href="#" class=link>Terms of Service</a>.</p>
+          <div class="sign-up-form-submit-button button">Sign up</div>
+        </div>
+        <div class=form-right>
+          <h4>Choose account type</h4>
+          <div class=buttons>
+            <div class="button blue left selected" id=demo-account-button>Free account</div>
+          </div>
+          <div class=account-details>
+            <div class=admin-account-button id=admin-account-button>
+              <div class=buttons>
+                <div class="button right red">Admin account</div>
+              </div>
+              <div class=price>$20<span class=sub>/mo</span></div>
+            </div>
+            <div class=account-details-content>
+              <div>An admin account lets you:</div>
+              <ul>
+                <li><i class="icon octicon octicon-credit-card"></i> Display a custom avatar</li>
+                <li><i class="icon octicon octicon-device-camera"></i> Save your <a href="#" class=link>Adventure</a> history</li>
+                <li><i class="icon octicon octicon-heart"></i> Save your <a href="#" class=link>Karma</a> balance</li>
+                <li><i class="icon octicon octicon-ruby"></i> Keep your inventory</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+  <footer>
+    <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:hello@zeovr.io">Contact</a></aside>
+    <aside class=footer-right>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></aside>
+  </footer>
+  <script src="https://js.stripe.com/v2/"></script>
+  <script>
+const $ = s => document.querySelectorAll(s);
+
+const demographicsButtons = [
+  $('#slides-nav-1')[0],
+  $('#slides-nav-2')[0],
+  $('#slides-nav-3')[0],
+];
+const demographicsDetails = [
+  $('#slide-1')[0],
+  $('#slide-2')[0],
+  $('#slide-3')[0],
+];
+demographicsButtons.forEach((demographicsButton, index) => {
+  demographicsButton.addEventListener('click', () => {
+    demographicsButtons.forEach((demographicsButton, index2) => {
+      if (index2 === index) {
+        demographicsButton.classList.add('selected');
+      } else {
+        demographicsButton.classList.remove('selected');
+      }
+    });
+
+    demographicsDetails.forEach((demographicsDetail, index2) => {
+      demographicsDetail.style.display = index2 === index ? null : 'none';
+    });
+  });
+});
+
+const demoAccountButton = $('#demo-account-button')[0];
+const adminAccountButton = $('#admin-account-button')[0];
+
+demoAccountButton.addEventListener('click', () => {
+  demoAccountButton.classList.add('selected');
+  adminAccountButton.classList.remove('selected');
+});
+adminAccountButton.addEventListener('click', () => {
+  demoAccountButton.classList.remove('selected');
+  adminAccountButton.classList.add('selected');
+});
+
+const body = $('body')[0];
+const header = $('#header')[0];
+const headerLoginUsername = $('#header-login-username')[0];
+const connectButton = $('#connect-button')[0];
+const signUpEmail = $('#sign-up-email')[0];
+const signUpName = $('#sign-up-name')[0];
+const signUpCcn = $('#sign-up-ccn')[0];
+const signUpCvc = $('#sign-up-cvc')[0];
+const signUpExpiry = $('#sign-up-expiry')[0];
+const signUpButton = $('#sign-up-button')[0];
+
+let user = null;
+
+const _login = j => fetch('/hub/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(j),
+}).then(res => {
+  if (res.status >= 200 && res.status < 300) {
+    return res.json();
+  } else {
+    const err = new Error('failed to log in');
+    return Promise.reject(err);
+  }
+});
+
+const _jsonParse = s => {
+  let err = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (e) {
+    err = e;
+  }
+  if (!err) {
+    return result;
+  } else {
+    return null;
+  }
+};
+
+const _getConnectUrl = (worldName, token) => window.location.protocol + '//' + worldName + '.' + window.location.host + '?token=' + token;
+
+  </script>
+</body>
+</html/>
