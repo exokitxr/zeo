@@ -284,7 +284,7 @@ const _getAllPlugins = () => {
     const acc = [];
 
     return Promise.all(files.map(file => new Promise((accept, reject) => {
-      fs.lstat(file, (err, stats) => {
+      fs.stat(file, (err, stats) => {
         if (!err) {
           if (stats.isDirectory()) {
             acc.push(file);
