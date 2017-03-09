@@ -17,10 +17,31 @@ class ZCake {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/zeo',
+    const _requestAudios = () => new Promise((accept, reject) => {
+      const eatAudio = document.createElement('audio');
+      eatAudio.src = '/archae/z-cake/audio/eat.mp3';
+      eatAudio.oncanplaythrough = () => {
+        accept({
+          eatAudio,
+        });
+      };
+      eatAudio.onerror = err => {
+        reject(err);
+      };
+    });
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/zeo',
+      ]),
+      _requestAudios(),
     ]).then(([
-      zeo,
+      [
+        zeo,
+      ],
+      {
+        eatAudio,
+      },
     ]) => {
       if (live) {
         const {THREE, scene} = zeo;
@@ -72,9 +93,10 @@ class ZCake {
                 this.sliceSide = null;
                 this.sliceMesh = null;
 
-                console.log('cake released');
-
-                // XXX check if edible, and if so play eat sound effect
+                eatAudio.currentTime = 0;
+                if (eatAudio.paused) {
+                  eatAudio.play();
+                }
               }
             };
             zeo.on('release', _release);
