@@ -1,5 +1,7 @@
 const CakeModel = require('./lib/models/cake');
 
+const GRAB_RADIUS = 0.2;
+
 const SIDES = ['left', 'right'];
 
 class ZCake {
@@ -29,56 +31,66 @@ class ZCake {
 
             this.slices = 8;
             this.mesh = null;
+            this.sliceSide = null;
+            this.sliceMesh = null;
 
             this._render();
 
-            const _makeHoverState = () => ({
-              hovered: false,
-            });
-            const hoverStates = {
-              left: _makeHoverState(),
-              right: _makeHoverState(),
-            };
-
-            const update = () => {
-              const {gamepads} = zeo.getStatus();
-
-              SIDES.forEach(side => {
-                const hoverState = hoverStates[side];
-
-                const hovered = (() => {
-                  const gamepad = gamepads[side];
-
-                  if (gamepad) {
-                    return true;
-                  } else {
-                    return false;
-                  }
-                })();
-                hoverState.hovered = hovered;
-              });
-            };
-            updates.push(update);
-
-            const _trigger = e => {
+            const _gripdown = e => {
               const {side} = e;
-              const hoverState = hoverStates[side];
-              const {hovered} = hoverState;
+              const {mesh} = this;
 
-              if (hovered) {
+              const canGrab = zeo.canGrab(side, mesh, {
+                radius: GRAB_RADIUS,
+              });
+
+              if (canGrab) {
+                const sliceMesh = new CakeModel({
+                  THREE,
+                  slices: 1,
+                });
+                sliceMesh.position.z = -0.2;
+                zeo.grab(side, sliceMesh);
+                this.sliceSide = side;
+                this.sliceMesh = sliceMesh;
+
                 this.slices = Math.max(this.slices - 1, 0);
 
                 this._render();
+
+                e.stopImmediatePropagation();
               }
             };
-            zeo.on('trigger', _trigger);
+            zeo.on('gripdown', _gripdown, {
+              priority: 1,
+            });
+            const _release = e => {
+              const {side, object} = e;
+              const {sliceSide, sliceMesh} = this;
+
+              if (side === sliceSide && object === sliceMesh) {
+                this.sliceSide = null;
+                this.sliceMesh = null;
+
+                console.log('cake released');
+
+                // XXX check if edible, and if so play eat sound effect
+              }
+            };
+            zeo.on('release', _release);
 
             this._cleanup = () => {
               const {mesh} = this;
               scene.remove(mesh);
 
+              const {sliceSide, sliceMesh} = this;
+              if (sliceSide && sliceMesh) {
+                zeo.release(sliceSide, sliceMesh);
+              }
+
               updates.slice(updates.indexOf(update), 1);
-              zeo.removeListener('trigger', _trigger);
+              zeo.removeListener('gripdown', _gripdown);
+              zeo.removeListener('release', _release);
             };
           }
 

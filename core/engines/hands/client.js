@@ -16,16 +16,16 @@ class Hands {
     };
 
     return archae.requestPlugins([
+      '/core/engines/input',
       '/core/engines/three',
       '/core/engines/webvr',
-      '/core/engines/rend',
       '/core/engines/cyborg',
       '/core/plugins/js-utils',
     ])
       .then(([
+        input,
         three,
         webvr,
-        rend,
         cyborg,
         jsUtils,
       ]) => {
@@ -46,163 +46,152 @@ class Hands {
           };
 
           const _makeGrabState = () => ({
-            grabber: null,
+            grabObject: null,
           });
           const grabStates = {
             left: _makeGrabState(),
             right: _makeGrabState(),
           };
 
-          class Grabber extends EventEmitter  {
-            constructor(side, object) {
-              super();
-
-              this.side = side;
-              this.object = object;
-            }
-
-            release() {
-              const {side, object} = this;
-
-              SIDES.forEach(side => {
-                const grabState = grabStates[side];
-                const {grabber} = grabState;
-
-                if (grabber === this) {
-                  grabState.grabber = null;
-                }
-              });
-
-              const linearVelocity = player.getControllerLinearVelocity(side);
-              const angularVelocity = player.getControllerAngularVelocity(side);
-              const result = {
-                side,
-                object,
-                linearVelocity,
-                angularVelocity,
-              };
-
-              this.emit('release', result);
-
-              return result;
-            }
-          }
-
-          const _canGrab = (side, object, options) => {
-            options = options || {};
-            const {radius = DEFAULT_GRAB_RADIUS} = options;
-
+          const _gripup = e => {
+            const {side} = e;
             const grabState = grabStates[side];
-            const {grabber} = grabState;
+            const {grabObject} = grabState;
 
-            if (!grabber) {
-              const {gamepads} = webvr.getStatus();
-              const gamepad = gamepads[side];
+            if (grabObject) {
+              handsApi.release(side);
 
-              if (gamepad) {
-                const {position: controllerPosition} = gamepad;
-                const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('gripup', _gripup);
 
-                return controllerPosition.distanceTo(objectPosition) <= radius;
+          this._cleanup = () => {
+            input.removeListener('gripup', _gripup);
+          };
+
+          class HandsApi extends EventEmitter {
+            canGrab(side, object, options) {
+              options = options || {};
+              const {radius = DEFAULT_GRAB_RADIUS} = options;
+
+              const grabState = grabStates[side];
+              const {grabObject} = grabState;
+
+              if (!grabObject) {
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {position: controllerPosition} = gamepad;
+                  const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
+
+                  return controllerPosition.distanceTo(objectPosition) <= radius;
+                } else {
+                  return false;
+                }
               } else {
                 return false;
               }
-            } else {
-              return false;
             }
-          };
-          const _getBestGrabbable = (side, objects, options) => {
-            options = options || {};
-            const {radius = DEFAULT_GRAB_RADIUS} = options;
 
-            const grabState = grabStates[side];
-            const {grabber} = grabState;
+            getBestGrabbable(side, objects, options) {
+              options = options || {};
+              const {radius = DEFAULT_GRAB_RADIUS} = options;
 
-            if (!grabber) {
-              const {gamepads} = webvr.getStatus();
-              const gamepad = gamepads[side];
+              const grabState = grabStates[side];
+              const {grabObject} = grabState;
 
-              if (gamepad) {
-                const {position: controllerPosition} = gamepad;
+              if (!grabObject) {
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
 
-                const objectDistanceSpecs = objects.map(object => {
-                  const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
-                  const distance = controllerPosition.distanceTo(objectPosition);
-                  return {
-                    object,
-                    distance,
-                  };
-                }).filter(({distance}) => distance <= radius);
+                if (gamepad) {
+                  const {position: controllerPosition} = gamepad;
 
-                if (objectDistanceSpecs.length > 0) {
-                  return objectDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].object;
+                  const objectDistanceSpecs = objects.map(object => {
+                    const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
+                    const distance = controllerPosition.distanceTo(objectPosition);
+                    return {
+                      object,
+                      distance,
+                    };
+                  }).filter(({distance}) => distance <= radius);
+
+                  if (objectDistanceSpecs.length > 0) {
+                    return objectDistanceSpecs.sort((a, b) => a.distance - b.distance)[0].object;
+                  } else {
+                    return null;
+                  }
                 } else {
                   return null;
                 }
               } else {
                 return null;
               }
-            } else {
-              return null;
             }
-          };
-          const _grab = (side, object) => {
-            const grabState = grabStates[side];
-            const {grabber} = grabState;
 
-            if (!grabber) {
-              const newGrabber = new Grabber(side, object);
-              grabState.grabber = newGrabber;
-
-              return newGrabber;
-            } else {
-              return null;
-            }
-          };
-          const _peek = side => {
-            const grabState = grabStates[side];
-            const {grabber} = grabState;
-            return grabber || null;
-          };
-
-          const _update = () => {
-            const {gamepads} = webvr.getStatus();
-
-            for (let i = 0; i < SIDES.length; i++) {
-              const side = SIDES[i];
+            grab(side, object) {
               const grabState = grabStates[side];
-              const {grabber} = grabState;
+              const {grabObject} = grabState;
 
-              if (grabber) {
-                const gamepad = gamepads[side];
+              if (!grabObject) {
+                const controllers = cyborg.getControllers();
+                const controller = controllers[side];
+                const {mesh: controllerMesh} = controller;
+                controllerMesh.add(object);
 
-                if (gamepad) {
-                  const {object} = grabber;
-                  const {position, rotation} = gamepad;
+                grabState.grabObject = object;
 
-                  object.position.copy(position);
-                  object.quaternion.copy(rotation);
-
-                  grabber.emit('update', {
-                    position,
-                    rotation,
-                  });
-                }
+                return true;
+              } else {
+                return false;
               }
             }
-          };
-          rend.on('update', _update);
 
-          this._cleanup = () => {
-            rend.removeListener('update', _update);
-          };
+            release(side, object) {
+              const grabState = grabStates[side];
+              const {grabObject} = grabState;
 
-          return {
-            canGrab: _canGrab,
-            getBestGrabbable: _getBestGrabbable,
-            grab: _grab,
-            peek: _peek,
-          };
+              if (grabObject && (object === undefined || object === grabObject)) {
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(grabObject);
+                const linearVelocity = player.getControllerLinearVelocity(side);
+                const angularVelocity = player.getControllerAngularVelocity(side);
+                const result = {
+                  side,
+                  object: grabObject,
+                  position,
+                  rotation,
+                  scale,
+                  linearVelocity,
+                  angularVelocity,
+                };
+
+                const controllers = cyborg.getControllers();
+                const controller = controllers[side];
+                const {mesh: controllerMesh} = controller;
+                controllerMesh.remove(grabObject);
+
+                grabState.grabObject = null;
+
+                this.emit('release', result);
+
+                return result;
+              } else {
+                return null;
+              }
+            }
+
+            peek(side) {
+              const grabState = grabStates[side];
+              const {grabObject} = grabState;
+
+              return grabObject || null;
+            }
+          }
+          const handsApi = new HandsApi();
+
+          return handsApi;
         }
       });
   }

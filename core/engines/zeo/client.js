@@ -520,8 +520,8 @@ class Zeo {
                       grab(side, object) {
                         return hands.grab(side, object);
                       }
-                      release(side) {
-                        return hands.release(side);
+                      release(side, object) {
+                        return hands.release(side, object);
                       }
                       peek(side) {
                         return hands.peek(side);
@@ -548,6 +548,9 @@ class Zeo {
                     });
                     rend.on('updateEye', camera => {
                       api.updateEye(camera);
+                    });
+                    hands.on('release', e => {
+                      api.emit('release', e);
                     });
 
                     return api;

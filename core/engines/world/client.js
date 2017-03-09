@@ -2060,9 +2060,7 @@ class World {
 
             _grabInventoryTagMesh() || _grabEquipmentTagMesh() || _grabEquipmentMesh() || _grabWorldTagMesh() || _startHighlight();
           };
-          input.on('gripdown', _gripdown, {
-            priority: 1,
-          });
+          input.on('gripdown', _gripdown);
 
           const _endHighlight = side => {
             const highlightState = highlightStates[side];
@@ -2181,9 +2179,7 @@ class World {
 
             _endHighlight(side);
           };
-          input.on('gripup', _gripup, {
-            priority: 1,
-          });
+          input.on('gripup', _gripup);
 
           const _keydown = e => {
             const tab = rend.getTab();
