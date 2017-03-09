@@ -58,6 +58,23 @@
       justify-content: flex-end;
     }
 
+    @keyframes arrow-canvas {
+      0%   {transform: translate3d(0, 40px, 0);}
+      100% {transform: translate3d(0, 0, 0);}
+    }
+    .arrow-canvas {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      bottom: -200px;
+      margin-left: -100px;
+      animation-name: arrow-canvas;
+      animation-duration: 1s;
+      // animation-timing-function: cubic-bezier(0, 1, 0, 1);
+      animation-timing-function: ease-out;
+      animation-iteration-count: infinite;
+    }
+
     .hero {
       display: flex;
       width: 100vw;
@@ -112,23 +129,25 @@
       background-color: #FFF;
       color: #000;
     }
-    .button.invert:hover img {
+    /* .button.invert:hover img {
       filter: invert(100%);
-    }
-    /* .button.primary {
-      background-color: #4CAF50;
+    } */
+    .button.primary {
+      background-color: #E91E63;
       border-color: transparent;
     }
     .button.primary:hover {
-      background-color: #388E3C;
+      background-color: #C2185B;
       border-color: transparent;
-    } */
+      color: #FFF;
+    }
     .button.secondary {
       background-color: #E91E63;
       border-color: transparent;
     }
     .button.secondary:hover {
       background-color: #C2185B;
+      color: #FFF;
     }
     .button.small {
       border-width: 2px;
@@ -170,7 +189,7 @@
     .hero .slides-navbar .slides-nav.green.selected {
       color: #4CAF50;
     }
-    .hero .slides-navbar .slides-nav.blue {
+    /* .hero .slides-navbar .slides-nav.blue {
       background-color: #2196F3;
     }
     .hero .slides-navbar .slides-nav.blue.selected {
@@ -181,7 +200,7 @@
     }
     .hero .slides-navbar .slides-nav.purple.selected {
       color: #673AB7;
-    }
+    } */
     .hero .slides-navbar .slides-nav.selected {
       background-color: #FFF;
       border-color: transparent;
@@ -246,20 +265,28 @@
     .hero .slide-wrap p {
       margin-bottom: 30px;
       font-size: 13px;
-    }
-
+    } 
     header .header-github-anchor {
+      display: flex;
+      width: 50px;
+      height: 50px;
       margin-left: 100px;
+      color: #FFF;
+      justify-content: center;
+      align-items: center;
     }
-    header .header-github-anchor::before {
+    header .header-github-anchor i {
+      display: block;
+      position: relative;
+      font-size: 30px !important;
+    }
+    header .header-github-anchor .header-github-anchor-notch {
       position: absolute;
       top: 0;
       right: 0;
       border-width: 0 150px 150px 0;
       border-style: solid;
-      border-color: transparent #333 transparent transparent;
-      z-index: -1;
-      content: '';
+      border-color: transparent #2196F3 transparent transparent;
     }
 
     .logged-in header {
@@ -422,21 +449,6 @@
     }
     .header-sign-up-button:hover {
       background-color: #388E3C;
-    }
-    .header-github-anchor {
-      display: flex;
-      width: 50px;
-      height: 50px;
-      color: #FFF;
-      justify-content: center;
-      align-items: center;
-    }
-    .header-github-anchor:hover {
-      color: #03A9F4;
-    }
-    .header-github-anchor > i {
-      display: block;
-      font-size: 30px !important;
     }
     .header-login-bar {
       display: flex;
@@ -1187,11 +1199,15 @@
       <a class=header-sign-up-button id=sign-up-button>
         <div class=title>Sign up</div>
       </a> -->
+      <canvas width=400 height=400 class=arrow-canvas></canvas>
       <a href="https://hub.zeovr.io">
         <button class="button invert primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
       </a>
       <!-- <button class="button invert secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
-      <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
+      <a href="https://github.com/modulesio/zeo" class=header-github-anchor>
+        <div class=header-github-anchor-notch></div>
+        <i class="octicon octicon-mark-github"></i>
+      </a>
     </div>
   </header>
   <div class=signing-up-overlay id=signing-up-overlay></div>
@@ -1205,8 +1221,8 @@
       <div class=slides>
         <div class=slides-navbar>
           <nav class="slides-nav green selected" id=slides-nav-1>Javscript</nav>
-          <nav class="slides-nav blue" id=slides-nav-2>Multiplayer</nav>
-          <nav class="slides-nav purple" id=slides-nav-3>Servers</nav>
+          <nav class="slides-nav green" id=slides-nav-2>Multiplayer</nav>
+          <nav class="slides-nav green" id=slides-nav-3>Servers</nav>
         </div>
         <div class="slide green" id=slide-1>
           <div class=slide-arrow-icon>
@@ -1218,7 +1234,7 @@
               <div class=icon>three.js</div>
               <div class=icon>WebVR</div>
             </div>
-            <h3>Download your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
+            <h3>Have your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
             <p>
               Drag-and-drop NPM modules into the world. Clients sync automagically.<br/>
               The frontend API is <a href="https://threejs.org" class=link>THREE.js</a> bundled by <a href="http://rollupjs.org" class=link>rollup</a>, so you can use any NPM module.<br/>
@@ -1669,45 +1685,30 @@ demographicsButtons.forEach((demographicsButton, index) => {
   });
 });
 
-const demoAccountButton = $('#demo-account-button')[0];
-const adminAccountButton = $('#admin-account-button')[0];
+const arrowCanvas = $('.arrow-canvas')[0];
 
-demoAccountButton.addEventListener('click', () => {
-  demoAccountButton.classList.add('selected');
-  adminAccountButton.classList.remove('selected');
-});
-adminAccountButton.addEventListener('click', () => {
-  demoAccountButton.classList.remove('selected');
-  adminAccountButton.classList.add('selected');
-});
+const _drawCanvasArrow = canvas => {
+  const ctx = canvas.getContext('2d');
 
-const body = $('body')[0];
-const header = $('#header')[0];
-const headerLoginUsername = $('#header-login-username')[0];
-const connectButton = $('#connect-button')[0];
-const signUpEmail = $('#sign-up-email')[0];
-const signUpName = $('#sign-up-name')[0];
-const signUpCcn = $('#sign-up-ccn')[0];
-const signUpCvc = $('#sign-up-cvc')[0];
-const signUpExpiry = $('#sign-up-expiry')[0];
-const signUpButton = $('#sign-up-button')[0];
+  ctx.strokeStyle = '#E91E63';
+  ctx.lineWidth = 5;
 
-let user = null;
+  const startX = (400 / 2) + Math.floor(ctx.lineWidth / 2);
+  const startY = 10;
 
-const _login = j => fetch('/hub/login', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(j),
-}).then(res => {
-  if (res.status >= 200 && res.status < 300) {
-    return res.json();
-  } else {
-    const err = new Error('failed to log in');
-    return Promise.reject(err);
-  }
-});
+  ctx.beginPath();
+  ctx.moveTo(startX, 200);
+  ctx.lineTo(startX, startY);
+
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(startX - 40, startY + 40);
+
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(startX + 40, startY + 40);
+
+  ctx.stroke();
+};
+_drawCanvasArrow(arrowCanvas);
 
 const _jsonParse = s => {
   let err = null;
