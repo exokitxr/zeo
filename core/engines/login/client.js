@@ -211,7 +211,7 @@ class Login {
 
           const _requestInitialLogin = () => {
             if (serverEnabled) {
-              const token = _getQueryVariable(document.location.href, 't');
+              const token = _getQueryVariable(window.parent.location.href, 't');
 
               if (token !== null) {
                 return _requestLogin({
@@ -306,7 +306,7 @@ class Login {
                     focusState.type = '';
 
                     if (onclick === 'login:back') {
-                      document.location = 'https://' + hubUrl;
+                      window.parent.location = 'https://' + hubUrl;
                     } else if (onclick === 'login:focus:token') {
                       const {value} = menuHoverState;
                       const valuePx = value * 640;

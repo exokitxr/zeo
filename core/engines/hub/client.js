@@ -681,7 +681,7 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {
-                  document.location.href = 'https://zeovr.io/docs';
+                  window.parent.location.href = 'https://zeovr.io/docs';
 
                   return true; // can't happen
                 } else {
@@ -726,8 +726,8 @@ class Hub {
                   const {server} = hoveredServerMesh;
 
                   const {url} = server;
-                  const t = _getQueryVariable(window.location.href, 't');
-                  document.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
+                  const t = _getQueryVariable(window.parent.location.href, 't');
+                  window.parent.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
 
                   // can't happen
                   e.stopImmediatePropagation();

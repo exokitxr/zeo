@@ -398,7 +398,7 @@ class Rend {
                     return true;
                   } else if (onclick === 'status:backToHub') {
                     const initialToken = _getQueryVariable(bootstrap.getInitialUrl(), 't');
-                    document.location = 'https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : '');
+                    window.parent.location = 'https://' + hubUrl + (initialToken ? ('?t=' + initialToken) : '');
 
                     return true; // can't happen
                   } else {
