@@ -119,6 +119,7 @@
     }
     .slide {
       display: flex;
+      flex-direction: column;
     }
     .slide.green {
       background-color: #4CAF50;
@@ -130,6 +131,7 @@
       background-color: #673AB7;
     }
     .slide-wrap {
+      padding: 20px;
     }
     .slide-wrap .icons {
       display: flex;
@@ -141,7 +143,7 @@
     }
     .slide-wrap .icon:not(.octicon) {
       width: 70px;
-      font-size: 20px;
+      font-size: 17px;
       font-family: var(--monospace-fonts);
     }
     .slide-wrap .icon.octicon {
@@ -151,20 +153,19 @@
       box-sizing: border-box;
     }
     .slide-wrap h3, .slide-wrap p {
-      width: 100%;
+      margin-bottom: 10px;
     }
     .slide-wrap h3 {
-      margin-bottom: 10px;
-      font-size: 22px;
+      font-size: 18px;
     }
     .slide-wrap p {
-      margin-bottom: 30px;
-      font-size: 13px;
+
+      font-size: 12px;
     }
 
     .sidebar .footer {
       display: flex;
-      padding: 20px 30px;
+      padding: 20px;
       line-height: 2;
       flex-direction: column;
       // justify-content: center;
@@ -1217,20 +1218,18 @@
           <nav class="slides-nav green" id=slides-nav-3>Servers</nav>
         </div>
         <div class="slide green" id=slide-1>
+          <img src="https://placehold.it/250x250" class=img />
           <div class=slide-wrap>
+            <h3>Have your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
+            <p>Drag-and-drop NPM modules into the world. Clients sync automagically.</p>
+            <p>The API is <a href="https://threejs.org" class=link>THREE.js</a> bundled by <a href="http://rollupjs.org" class=link>rollup</a>, so you can use any NPM module.</p>
+            <p>Modules also run on the server. Voice chat and multiplayer physics come in the box.</p>
             <div class=icons>
               <img src="/img/npm-logo.png" width=80 height=48 class=icon />
               <div class=icon>three.js</div>
               <div class=icon>WebVR</div>
             </div>
-            <h3>Have your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
-            <p>
-              Drag-and-drop NPM modules into the world. Clients sync automagically.<br/>
-              The frontend API is <a href="https://threejs.org" class=link>THREE.js</a> bundled by <a href="http://rollupjs.org" class=link>rollup</a>, so you can use any NPM module.<br/>
-              Modules also run on the server. Voice chat and multiplayer physics come in the box.<br/>
-              Open source <a href="https://github.com/modulesio/zeo">on Github</a>.<br/>
-            </p>
-            <a href="https://github.com/modulesio/zeo" class=button>Read API docs</a>
+            <a href="https://github.com/modulesio/zeo" class="button invert">Read API docs</a>
           </div>
         </div>
         <div class="slide blue" id=slide-2 style="display: none;">
