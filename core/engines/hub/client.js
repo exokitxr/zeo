@@ -56,7 +56,7 @@ class Hub {
         .then(res => res.blob()
           .then(blob => _requestBlobDataUrl(blob))
         );
-      const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
+      const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/core/plugins/z-cake'))
         .then(res => res.json()
           .then(itemSpec => {
             itemSpec.isStatic = true;
@@ -670,6 +670,33 @@ class Hub {
             input.on('gripdown', _gripdown, {
               priority: 1,
             });
+            const _gripup = e => {
+              const {side} = e;
+              const grabState = grabStates[side];
+              const {tagMesh} = grabState;
+
+              if (tagMesh) {
+                const {position, rotation, scale} = _decomposeObjectMatrixWorld(tagMesh);
+                scene.add(tagMesh);
+                tagMesh.position.copy(position);
+                tagMesh.quaternion.copy(rotation);
+                tagMesh.scale.copy(scale);
+
+                const {item} = tagMesh;
+                const {attributes} = item;
+                if (attributes.position) {
+                  const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                  item.setAttribute('position', matrixArray);
+                }
+
+                tags.reifyTag(tagMesh);
+
+                e.stopImmediatePropagation();
+              }
+            };
+            input.on('gripup', _gripup, {
+              priority: 1,
+            });
             const _update = () => {
               const _updateMenuAnchors = () => {
                 const {gamepads} = webvr.getStatus();
@@ -920,6 +947,7 @@ class Hub {
 
               input.removeListener('trigger', _trigger);
               input.removeListener('gripdown', _gripdown);
+              input.removeListener('gripup', _gripup);
               rend.removeListener('update', _update);
             };
           }

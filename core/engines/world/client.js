@@ -2070,8 +2070,7 @@ class World {
                   const {attributes} = item;
                   if (attributes.position) {
                     const {id} = item;
-                    const newValue = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                    _setTagAttribute('world:' + id, 'position', newValue);
+                    _setTagAttribute('world:' + id, 'position', matrixArray);
                   }
 
                   e.stopImmediatePropagation(); // so tags engine doesn't pick it up
