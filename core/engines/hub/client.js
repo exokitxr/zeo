@@ -116,6 +116,9 @@ class Hub {
               transparent: true,
             });
 
+            const controllerMeshOffset = new THREE.Vector3(0, 0, -0.02);
+            const controllerMeshQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
+            const oneVector = new THREE.Vector3(1, 1, 1);
             const backVector = new THREE.Vector3(0, 0, 1);
             const sphereDiameterVector = new THREE.Vector3(SPHERE_RADIUS * 2, SPHERE_RADIUS * 2, SPHERE_RADIUS * 2);
 
@@ -231,23 +234,13 @@ class Hub {
               right: biolumi.makeMenuHoverState(),
             };
 
-            class GrabManager {
-              constructor() {
-                this.left = null;
-                this.right = null;
-              }
-
-              getMesh(side) {
-                return this[side];
-              }
-
-              setMesh(side, mesh) {
-                this[side] = mesh;
-
-                // XXX needs to add tag mesh to the cyborg controller mesh
-              }
-            }
-            const grabManager = new GrabManager();
+            const _makeGrabState = () => ({
+              tagMesh: null,
+            });
+            const grabStates = {
+              left: _makeGrabState(),
+              right: _makeGrabState(),
+            };
 
             const _makeGrabbableState = () => ({
               hoverMesh: null,
@@ -551,6 +544,23 @@ class Hub {
             };
             _updatePages();
 
+            const _addTag = (side, srcTagMesh) => {
+              const itemSpec = _clone(srcTagMesh.item);
+              itemSpec.id = _makeId();
+              const tagMesh = tags.makeTag(itemSpec);
+
+              const grabState = grabStates[side];
+              grabState.tagMesh = tagMesh;
+
+              const controllers = cyborg.getControllers();
+              const controller = controllers[side];
+              const {mesh: controllerMesh} = controller;
+              tagMesh.position.copy(controllerMeshOffset);
+              tagMesh.quaternion.copy(controllerMeshQuaternion);
+              tagMesh.scale.copy(oneVector);
+              controllerMesh.add(tagMesh);
+            };
+
             const _trigger = e => {
               const {side} = e;
 
@@ -602,12 +612,13 @@ class Hub {
                   if (gripPressed) {
                     const tagHoverState = tagHoverStates[side];
                     const {intersectionPoint} = tagHoverState;
-                    const grabMesh = grabManager.getMesh(side);
+                    const grabState = grabStates[side];
+                    const {tagMesh: grabMesh} = grabState;
 
                     if (intersectionPoint && !grabMesh) {
                       const {metadata: pointMesh} = tagHoverState;
 
-console.log('click ok', {pointMesh}); // XXX
+                      _addTag(side, pointMesh);
 
                       return true;
                     } else {
@@ -651,7 +662,7 @@ console.log('click ok', {pointMesh}); // XXX
               const {hoverMesh} = grabbableState;
 
               if (hoverMesh) {
-console.log('grab ok', {hoverMesh}); // XXX
+                _addTag(side, hoverMesh);
 
                 e.stopImmediatePropagation();
               }
@@ -702,7 +713,8 @@ console.log('grab ok', {hoverMesh}); // XXX
 
                 if (visible) {
                   const _getHoverGrabbable = (side) => {
-                    const grabMesh = grabManager.getMesh(side);
+                    const grabState = grabStates[side];
+                    const {tagMesh: grabMesh} = grabState;
 
                     if (!grabMesh) {
                       const {gamepads} = webvr.getStatus();
@@ -920,6 +932,8 @@ console.log('grab ok', {hoverMesh}); // XXX
   }
 }
 
+const _clone = o => JSON.parse(JSON.stringify(o));
+const _makeId = () => Math.random().toString(36).substring(7);
 const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);
   const query = match ? match[1] : '';
