@@ -57,6 +57,16 @@
       justify-content: flex-end;
     }
 
+    .hub-iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #FFF;
+      border: 0;
+    }
+
     .hero {
       display: flex;
       width: 100vw;
@@ -1186,9 +1196,9 @@
       <a class=header-sign-up-button id=sign-up-button>
         <div class=title>Sign up</div>
       </a> -->
-      <a href="https://hub.zeovr.io">
+      <!-- <a href="https://hub.zeovr.io">
         <button class="button invert primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
-      </a>
+      </a> -->
       <!-- <button class="button invert secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
       <a href="https://github.com/modulesio/zeo" class=header-github-anchor>
         <div class=header-github-anchor-notch></div>
@@ -1198,6 +1208,7 @@
   </header>
   <div class=signing-up-overlay id=signing-up-overlay></div>
   <section class=hero>
+    <iframe src="https://hub.zeovr.io:8000" class=hub-iframe></iframe>
     <div class=hero-wrap>
       <div class=hero-heading>
         <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
