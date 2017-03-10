@@ -189,7 +189,7 @@ var App = React.createClass({
       </div>
 
       {/* Language toggle */ }
-      <div className={`fixed-top ${queryMatches.desktop && 'space-left16'}`}>
+      <div className={`fixed-top ${queryMatches.desktop && 'space-left16'}`} style={{zIndex: 1}}>
         <div className={`events bottom-shadow pad1 ${col1 ? '' : 'col6 pin-topright'} ${queryMatches.tablet ? 'dark fill-blue' : ''} ${queryMatches.mobile ? 'space-top5 fixed-topright' : ''}`}>
           {/* <div className='space-right1 small quiet inline'>
             Show examples in:

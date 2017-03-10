@@ -3118,7 +3118,7 @@ Alternate exists for:
 .fill-pink        { background-color:#ed6498; }
 .fill-mustard     { background-color:#fbb03b; }
 
-.fill-darken0 { background:rgba(0,0,0,0.05); }
+.fill-darken0 { background:rgba(0,0,0,0.05); background: #ECECEC; }
 .fill-darken1 { background:rgba(0,0,0,0.25); }
 .fill-darken2 { background:rgba(0,0,0,0.50); }
 .fill-darken3 { background:rgba(0,0,0,0.75); }
