@@ -68,6 +68,7 @@ class ZCake {
                   THREE,
                   slices: 1,
                 });
+                sliceMesh.rotation.y = -(1/8 * Math.PI);
                 sliceMesh.position.z = -0.2;
                 zeo.grab(side, sliceMesh);
                 this.sliceSide = side;
