@@ -9,6 +9,7 @@
       --monospace-fonts: Consolas, "Liberation Mono", Menlo, Courier, monospace;
     }
     body {
+      display: flex;
       position: relative;
       min-width: 1024px;
       min-height: 720px;
@@ -16,7 +17,7 @@
       background-color: #000;
       font-family: var(--fonts);
       color: #FFF;
-      overflow-x: hidden;
+      flex-direction: column;
     }
     a {
       color: inherit;
@@ -24,7 +25,7 @@
       outline: none;
       cursor: pointer;
     }
-    .link {
+    .link:not(.soft), .link.soft:hover {
       text-decoration: underline;
     }
     code {
@@ -57,25 +58,139 @@
       justify-content: flex-end;
     }
 
+    .body {
+      display: flex;
+      position: relative;
+      /* margin-top: -80px;
+      margin-bottom: -100px;
+      padding-top: 80px;
+      padding-bottom: 100px; */
+      flex-grow: 1;
+      // box-sizing: border-box;
+    }
+
+    .sidebar {
+      display: flex;
+      position: relative;
+      width: 250px;
+      background-color: #111;
+      font-size: 13px;
+      flex-grow: 1;
+      flex-direction: column;
+      z-index: 1;
+    }
+
+    .slides {
+      display: flex;
+      position: relative;
+      flex-grow: 1;
+      justify-content: center;
+    }
+    .slides-navbar {
+      display: flex;
+      display: none;
+      position: absolute;
+      top: 0;
+      width: 540px;
+    }
+    .slides-navbar .slides-nav {
+      width: 200px;
+      padding: 5px 0;
+      border: 2px solid;
+      border-top: 0;
+      color: #FFF;
+      font-family: var(--monospace-fonts);
+      text-align: center;
+      cursor: pointer;
+    }
+    .slides-navbar .slides-nav.green {
+      background-color: #4CAF50;
+    }
+    .slides-navbar .slides-nav.green.selected {
+      color: #4CAF50;
+    }
+    .slides-navbar .slides-nav.selected {
+      background-color: #FFF;
+      border-color: transparent;
+      cursor: default;
+    }
+    .slides-navbar .slides-nav + .slides-nav {
+      border-left: 0;
+    }
+    .slide {
+      display: flex;
+    }
+    .slide.green {
+      background-color: #4CAF50;
+    }
+    .slide.blue {
+      background-color: #2196F3;
+    }
+    .slide.purple {
+      background-color: #673AB7;
+    }
+    .slide-wrap {
+    }
+    .slide-wrap .icons {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    .slide-wrap .icon {
+      text-align: center;
+    }
+    .slide-wrap .icon:not(.octicon) {
+      width: 70px;
+      font-size: 20px;
+      font-family: var(--monospace-fonts);
+    }
+    .slide-wrap .icon.octicon {
+      height: 120px;
+      padding-top: 20px;
+      font-size: 80px;
+      box-sizing: border-box;
+    }
+    .slide-wrap h3, .slide-wrap p {
+      width: 100%;
+    }
+    .slide-wrap h3 {
+      margin-bottom: 10px;
+      font-size: 22px;
+    }
+    .slide-wrap p {
+      margin-bottom: 30px;
+      font-size: 13px;
+    }
+
+    .sidebar .footer {
+      display: flex;
+      padding: 20px 30px;
+      line-height: 2;
+      flex-direction: column;
+      // justify-content: center;
+      // align-items: center;
+    }
+
+    .hub-iframe, .hero {
+      width: calc(100vw - 250px);
+      height: calc(100vh - 80px);
+    }
+
     .hub-iframe {
       position: absolute;
       top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      left: 250px;
       background-color: #FFF;
       border: 0;
     }
 
     .hero {
       display: flex;
-      width: 100vw;
-      height: 100vh;
-      margin-top: -80px;
       color: #000;
       justify-content: center;
       align-items: center;
       flex-direction: column;
+      flex-grow: 1;
     }
     .hero .hero-wrap {
       display: flex;
@@ -144,125 +259,10 @@
       background-color: #C2185B;
       color: #FFF;
     }
-    .button.small {
-      border-width: 2px;
-      padding: 7px 12px;
-      font-size: 16px;
-    }
-    .button + .button {
-      margin-left: 10px;
-    }
     .button .icon {
       margin-right: 5px;
     }
 
-    .hero .slides {
-      display: flex;
-      position: relative;
-      width: 100%;
-      margin-top: 70px;
-      justify-content: center;
-    }
-    .hero .slides-navbar {
-      display: flex;
-      position: absolute;
-      top: 0;
-      width: 540px;
-    }
-    .hero .slides-navbar .slides-nav {
-      width: 200px;
-      padding: 5px 0;
-      border: 2px solid;
-      border-top: 0;
-      color: #FFF;
-      font-family: var(--monospace-fonts);
-      text-align: center;
-      cursor: pointer;
-    }
-    .hero .slides-navbar .slides-nav.green {
-      background-color: #4CAF50;
-    }
-    .hero .slides-navbar .slides-nav.green.selected {
-      color: #4CAF50;
-    }
-    /* .hero .slides-navbar .slides-nav.blue {
-      background-color: #2196F3;
-    }
-    .hero .slides-navbar .slides-nav.blue.selected {
-      color: #2196F3;
-    }
-    .hero .slides-navbar .slides-nav.purple {
-      background-color: #673AB7;
-    }
-    .hero .slides-navbar .slides-nav.purple.selected {
-      color: #673AB7;
-    } */
-    .hero .slides-navbar .slides-nav.selected {
-      background-color: #FFF;
-      border-color: transparent;
-      cursor: default;
-    }
-    .hero .slides-navbar .slides-nav + .slides-nav {
-      border-left: 0;
-    }
-    .hero .slide {
-      display: flex;
-      width: 100%;
-      height: 350px;
-      padding: 30px;
-      color: #FFF;
-      justify-content: center;
-      align-items: center;
-      box-sizing: border-box;
-    }
-    .hero .slide.green {
-      background-color: #4CAF50;
-    }
-    .hero .slide.blue {
-      background-color: #2196F3;
-    }
-    .hero .slide.purple {
-      background-color: #673AB7;
-    }
-    .hero .slide-arrow-icon {
-      visibility: hidden; // XXX
-      width: 50px;
-      height: 50px;
-    }
-    .hero .slide-wrap {
-      width: 540px;
-      padding: 0 30px;
-    }
-    .hero .slide-wrap .icons {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-    }
-    .hero .slide-wrap .icon {
-      text-align: center;
-    }
-    .hero .slide-wrap .icon:not(.octicon) {
-      width: 200px;
-      font-size: 40px;
-      font-family: var(--monospace-fonts);
-    }
-    .hero .slide-wrap .icon.octicon {
-      height: 120px;
-      padding-top: 20px;
-      font-size: 80px;
-      box-sizing: border-box;
-    }
-    .hero .slide-wrap h3, .hero .slide-wrap p {
-      width: 100%;
-    }
-    .hero .slide-wrap h3 {
-      margin-bottom: 10px;
-      font-size: 22px;
-    }
-    .hero .slide-wrap p {
-      margin-bottom: 30px;
-      font-size: 13px;
-    } 
     header .header-github-anchor {
       display: flex;
       width: 50px;
@@ -1086,11 +1086,13 @@
       box-sizing: border-box;
       z-index: 1;
     }
-    footer {
+
+     footer {
+      position: relative;
       display: flex;
-      height: 100px;
+      height: 50px;
       padding: 0 30px;
-      border-top: 1px solid #222;
+      background-color: #000;
       font-size: 13px;
       justify-content: center;
       align-items: center;
@@ -1196,9 +1198,9 @@
       <a class=header-sign-up-button id=sign-up-button>
         <div class=title>Sign up</div>
       </a> -->
-      <!-- <a href="https://hub.zeovr.io">
-        <button class="button invert primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
-      </a> -->
+      <a href="https://hub.zeovr.io">
+        <button class="button invert"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
+      </a>
       <!-- <button class="button invert secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
       <a href="https://github.com/modulesio/zeo" class=header-github-anchor>
         <div class=header-github-anchor-notch></div>
@@ -1206,15 +1208,8 @@
       </a>
     </div>
   </header>
-  <div class=signing-up-overlay id=signing-up-overlay></div>
-  <section class=hero>
-    <iframe src="https://hub.zeovr.io:8000" class=hub-iframe></iframe>
-    <div class=hero-wrap>
-      <div class=hero-heading>
-        <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
-        <!-- <button class="button primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
-        <button class="button secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
-      </div>
+  <div class=body>
+    <aside class=sidebar>
       <div class=slides>
         <div class=slides-navbar>
           <nav class="slides-nav green selected" id=slides-nav-1>Javscript</nav>
@@ -1222,12 +1217,9 @@
           <nav class="slides-nav green" id=slides-nav-3>Servers</nav>
         </div>
         <div class="slide green" id=slide-1>
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-left.svg" />
-          </div>
           <div class=slide-wrap>
             <div class=icons>
-              <img src="/img/npm-logo.png" width=200 height=120 class=icon style="margin-left: -40px;" />
+              <img src="/img/npm-logo.png" width=80 height=48 class=icon />
               <div class=icon>three.js</div>
               <div class=icon>WebVR</div>
             </div>
@@ -1238,16 +1230,10 @@
               Modules also run on the server. Voice chat and multiplayer physics come in the box.<br/>
               Open source <a href="https://github.com/modulesio/zeo">on Github</a>.<br/>
             </p>
-            <a href="https://github.com/modulesio/zeo" class="button small">Read API docs</a>
-          </div>
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-right.svg" />
+            <a href="https://github.com/modulesio/zeo" class=button>Read API docs</a>
           </div>
         </div>
         <div class="slide blue" id=slide-2 style="display: none;">
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-left.svg" />
-          </div>
           <div class=slide-wrap>
             <i class="icon octicon octicon-circuit-board"></i>
             <h3>Persistent multiverse tech.</h3>
@@ -1255,16 +1241,10 @@
               World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
               We did the hard work so you don't have to.<br/>
             </p>
-            <a href="https://github.com/modulesio/zeo" class="button small">See all features</a>
-          </div>
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-right.svg" />
+            <a href="https://github.com/modulesio/zeo" class=button>See all features</a>
           </div>
         </div>
         <div class="slide purple" id=slide-3 style="display: none;">
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-left.svg" />
-          </div>
           <div class=slide-wrap>
             <i class="icon octicon octicon-mark-github"></i>
             <h3>Open source. Or hosted.</h3>
@@ -1273,30 +1253,41 @@
               Test it out with just your browser.<br/>
               And if you want us to host your world, we have a plan for that.<br/>
             </p>
-            <a href="https://github.com/modulesio/zeo" class="button small">See pricing</a>
-          </div>
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-right.svg" />
+            <a href="https://github.com/modulesio/zeo" class=button>See pricing</a>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-  <section class=details>
+      <div class=footer>
+        <div><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
+        <div>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></div>
+      </div>
+    </aside>
+    <iframe src="https://hub.zeovr.io:8000" class=hub-iframe></iframe>
+    <section class=hero>
+      <div class=hero-wrap>
+        <div class=hero-heading>
+          <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
+          <!-- <button class="button primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
+          <button class="button secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
+        </div>
+      </div>
+    </section>
+  </div>
+  <!-- <section class=details>
     <div class=details-wrapper id=demographics-details-1>
       <div class=details-card>
         <div class=grid>
           <div class=grid-item-wrap>
-            <!-- -<div class="grid-item grid-item-1">
+            <div class="grid-item grid-item-1">
               <img src="https://placehold.it/1280x300" class=screenshot />
               <h4>In-browser VR worlds.</h4>
               <p>
-                Build a whole new world by dragging and dropping plugins -- literally.<br/>
+                Build a whole new world by dragging and dropping plugins; literally.<br/>
                 Conjure planets, paint a picture, or DJ your favorite track; there's a plugin for that.<br/>
                 Do it together: multiplayer comes in the box. And it all runs in your browser, headset or not.<br/>
               </p>
               <a href="https://github.com/modulesio/zeo" class=grid-button>More about Zeo VR tech</a>
-            </div> -->
+            </div>
           </div>
           <div class=grid-item-wrap>
             <div class="grid-item grid-item-2">
@@ -1647,12 +1638,7 @@
         </div>
       </form>
     </div>
-  </section>
-  <footer>
-    <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:hello@zeovr.io">Contact</a></aside>
-    <aside class=footer-right>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></aside>
-  </footer>
-  <script src="/js/lib/three.min.js"></script>
+  </section> -->
   <script>
 const $ = s => document.querySelectorAll(s);
 
