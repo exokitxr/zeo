@@ -99,6 +99,14 @@ class WebVR {
         const {events} = jsUtils;
         const EventEmitter = events;
 
+        const _decomposeMatrix = matrix => {
+          const position = new THREE.Vector3();
+          const rotation = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          matrix.decompose(position, rotation, scale);
+          return {position, rotation, scale};
+        };
+
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
 
@@ -289,7 +297,6 @@ class WebVR {
                     });
                   }
 
-                  const {stageMatrix} = this;
                   const userStageMatrix = new THREE.Matrix4().fromArray(bootstrap.getUserState().matrix);
                   const displayStageMatrix = (display && display.stageParameters) ?
                     new THREE.Matrix4().fromArray(display.stageParameters.sittingToStandingTransform)
@@ -312,6 +319,32 @@ class WebVR {
 
                     this._frameData = null;
                   });
+
+                  if (!display) {
+                    const {stageMatrix} = this;
+                    const originalStageMatrix = stageMatrix.clone();
+                    const {position, rotation: quaternion, scale} = _decomposeMatrix(originalStageMatrix);
+                    const rotation = new THREE.Euler().setFromQuaternion(quaternion, camera.rotation.order);
+
+                    const mousemove = e => {
+                      const xFactor = -0.5 + (e.clientX / window.innerWidth);
+                      const yFactor = -0.5 + (e.clientY / window.innerHeight);
+
+                      const newRotation = rotation.clone();
+                      newRotation.y -= xFactor * (Math.PI * 0.1);
+                      newRotation.x -= yFactor * (Math.PI * 0.1);
+
+                      const newStageMatrix = new THREE.Matrix4().compose(position, new THREE.Quaternion().setFromEuler(newRotation), scale);
+                      this.setStageMatrix(newStageMatrix);
+                    };
+                    input.on('mousemove', mousemove);
+
+                    cleanups.push(() => {
+                      this.setStageMatrix(originalStageMatrix);
+
+                      input.removeListener('mousemove', mousemove);
+                    });
+                  }
 
                   const _renderLoop = () => {
                     const _render = () => {
@@ -1177,10 +1210,7 @@ class WebVR {
             })();
 
             const worldMatrix = outerMatrix.clone().multiply(innerMatrix);
-            const position = new THREE.Vector3();
-            const rotation = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
-            worldMatrix.decompose(position, rotation, scale);
+            const {position, rotation, scale} = _decomposeMatrix(worldMatrix);
 
             this.position.copy(position);
             this.rotation.copy(rotation);
