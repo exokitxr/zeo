@@ -10,7 +10,243 @@
     <link href='css/railscasts.css' rel='stylesheet' />
   </head>
   <body>
-    <!--START--><div id='app'></div><!--STOP-->
+    <!--START--><div id='app'><div class="container unlimiter" data-reactroot="" data-reactid="1" data-react-checksum="245059099"><div class="fixed-top fixed-right space-left16" data-reactid="2"><div class="fill-light col6 pin-right" data-reactid="3"></div></div><div class="space-top5 scroll-styled overflow-auto pad1 width16 sidebar fixed-left fill-dark dark" data-reactid="4"><div class="pad0x small" data-reactid="5"><div class="small pad0x quiet space-top1" data-reactid="6">Introduction</div><a href="#our-api" class="line-height15 pad0x pad00y quiet block " data-reactid="7">Our API</a><div class="small pad0x quiet space-top1" data-reactid="8">Example</div><a href="#wobble" class="line-height15 pad0x pad00y quiet block " data-reactid="9">Wobble</a></div></div><div class="space-left16" data-reactid="10"><div class="" data-reactid="11"><div class="clearfix" data-reactid="12"><div data-title="Our API" class="keyline-top section contain clearfix " data-reactid="13"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="14"><h2 id="our-api">Our API</h2>
+<p>Welcome to coolcorp biz! This is our API documentation.</p>
+</div></div><div data-title="Wobble" class="keyline-top section contain clearfix " data-reactid="15"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="16"><h2 id="wobble">Wobble</h2>
+<p>This is our high-quality wobbles API. You can use this API to request
+and remove different wobbles at a low wibble price.</p>
+</div></div><div data-title="List wobbles" class="keyline-top section contain clearfix " data-reactid="17"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="18"><h3 id="list-wobbles">List wobbles</h3>
+<p>Lists all wobbles for a particular account.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="19"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>GET</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span></div>
+    </div>
+<h4 id="example-request">Example request</h4>
+<pre class='hljs'>$ curl https://wobble.biz/wobbles/v1/{username}</pre>
+<h4 id="example-response">Example response</h4>
+<pre class='hljs'>[
+  {
+    <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
+    <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
+    <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
+    <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
+  },
+  {
+    <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
+    <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
+    <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
+    <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
+  }
+]</pre>
+</div></div><div data-title="Create wobble" class="keyline-top section contain clearfix " data-reactid="20"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="21"><h3 id="create-wobble">Create wobble</h3>
+<p>Creates a new, empty wobble.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>(optional) the name of the wobble</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>(optional) a description of the wobble</td>
+</tr>
+</tbody>
+</table>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="22"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>POST</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span></div>
+    </div>
+<h4 id="example-request-1">Example request</h4>
+<pre class='hljs'>curl -X POST https://wobble.biz/wobbles/v1/{username}</pre>
+<h4 id="example-request-body">Example request body</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"foo"</span>,
+  <span class="hljs-attr">"description"</span>: <span class="hljs-string">"bar"</span>
+}</pre>
+<h4 id="example-response-1">Example response</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
+  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
+  <span class="hljs-attr">"name"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-attr">"description"</span>: <span class="hljs-literal">null</span>,
+  <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
+  <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
+}</pre>
+</div></div><div data-title="Retrieve a wobble" class="keyline-top section contain clearfix " data-reactid="23"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="24"><h3 id="retrieve-a-wobble">Retrieve a wobble</h3>
+<p>Returns a single wobble.</p>
+<p>Retrieve information about an existing wobble.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="25"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>GET</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span></div>
+    </div>
+<h4 id="example-request-2">Example request</h4>
+<pre class='hljs'>curl https://wobble.biz/wobbles/v1/{username}/{wobble_id}</pre>
+<h4 id="example-response-2">Example response</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
+  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
+  <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
+  <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
+}</pre>
+</div></div><div data-title="Update a wobble" class="keyline-top section contain clearfix " data-reactid="26"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="27"><h3 id="update-a-wobble">Update a wobble</h3>
+<p>Updates the properties of a particular wobble.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>(optional) the name of the wobble</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>(optional) a description of the wobble</td>
+</tr>
+</tbody>
+</table>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="28"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>PATCH</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span></div>
+    </div>
+<h4 id="example-request-3">Example request</h4>
+<pre class='hljs'>curl --request PATCH https://wobble.biz/wobbles/v1/{username}/{wobble_id} \
+  <span class="hljs-_">-d</span> @data.json</pre>
+<h4 id="example-request-body-1">Example request body</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"foo"</span>,
+  <span class="hljs-attr">"description"</span>: <span class="hljs-string">"bar"</span>
+}</pre>
+<h4 id="example-response-3">Example response</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
+  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"foo"</span>,
+  <span class="hljs-attr">"description"</span>: <span class="hljs-string">"bar"</span>,
+  <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
+  <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
+}</pre>
+</div></div><div data-title="Delete a wobble" class="keyline-top section contain clearfix " data-reactid="29"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="30"><h3 id="delete-a-wobble">Delete a wobble</h3>
+<p>Deletes a wobble, including all wibbles it contains.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="31"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>DELETE</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span></div>
+    </div>
+<h4 id="example-request-4">Example request</h4>
+<pre class='hljs'>curl -X DELETE https://wobble.biz/wobbles/v1/{username}/{wobble_id}</pre>
+<h4 id="example-response-4">Example response</h4>
+<blockquote>
+<p>HTTP 204</p>
+</blockquote>
+</div></div><div data-title="List wibbles" class="keyline-top section contain clearfix " data-reactid="32"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="33"><h3 id="list-wibbles">List wibbles</h3>
+<p>List all the wibbles in a wobble. The response body will be a
+WobbleCollection.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="34"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>GET</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span>/wibbles</div>
+    </div>
+<h4 id="example-request-5">Example request</h4>
+<pre class='hljs'>curl https://wobble.biz/wobbles/v1/{username}/{wobble_id}/wibbles</pre>
+<h4 id="example-response-5">Example response</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
+  <span class="hljs-attr">"wibbles"</span>: [
+    {
+      <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
+      <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
+      <span class="hljs-attr">"properties"</span>: {
+        <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
+      }
+    },
+    {
+      <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
+      <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
+      <span class="hljs-attr">"properties"</span>: {
+        <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
+      }
+    }
+  ]
+}</pre>
+</div></div><div data-title="Insert or update a wibble" class="keyline-top section contain clearfix " data-reactid="35"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="36"><h3 id="insert-or-update-a-wibble">Insert or update a wibble</h3>
+<p>Inserts or updates a wibble in a wobble. If there's already a wibble
+with the given ID in the wobble, it will be replaced. If there isn't
+a wibble with that ID, a new wibble is created.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>the id of an existing wibble in the wobble</td>
+</tr>
+</tbody>
+</table>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="37"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>PUT</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span>/wibbles/<span class="strong">{wibble_id}</span></div>
+    </div>
+<h4 id="example-request-6">Example request</h4>
+<pre class='hljs'>curl https://wobble.biz/wobbles/v1/{username}/{wobble_id}/wibbles/{wibble_id} \
+  -X PUT \
+  <span class="hljs-_">-d</span> @file.geojson</pre>
+<h4 id="example-request-body-2">Example request body</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
+  <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
+  <span class="hljs-attr">"properties"</span>: {
+    <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
+  }
+}</pre>
+<h4 id="example-response-6">Example response</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
+  <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
+  <span class="hljs-attr">"properties"</span>: {
+    <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
+  }
+}</pre>
+</div></div><div data-title="Retrieve a wibble" class="keyline-top section contain clearfix " data-reactid="38"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="39"><h3 id="retrieve-a-wibble">Retrieve a wibble</h3>
+<p>Retrieves a wibble in a wobble.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="40"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>GET</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span>/wibbles/<span class="strong">{wibble_id}</span></div>
+    </div>
+<h4 id="example-request-7">Example request</h4>
+<pre class='hljs'>curl https://wobble.biz/wobbles/v1/{username}/{wobble_id}/wibbles/{wibble_id}</pre>
+<h4 id="example-response-7">Example response</h4>
+<pre class='hljs'>{
+  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
+  <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
+  <span class="hljs-attr">"properties"</span>: {
+    <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
+  }
+}</pre>
+</div></div><div data-title="Delete a wibble" class="keyline-top section contain clearfix " data-reactid="41"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="42"><h3 id="delete-a-wibble">Delete a wibble</h3>
+<p>Removes a wibble from a wobble.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="43"><div class='endpoint dark fill-dark round '>
+      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>DELETE</div>
+      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span>/wibbles/<span class="strong">{wibble_id}</span></div>
+    </div>
+<h4 id="example-request-8">Example request</h4>
+<pre class='hljs'>curl -X DELETE https://wobble.biz/wobbles/v1/{username}/{wobble_id}/wibbles/{wibble_id}</pre>
+<h4 id="example-response-8">Example response</h4>
+<blockquote>
+<p>HTTP 204</p>
+</blockquote>
+</div></div></div></div></div><div class="fixed-top space-left16" data-reactid="44"><div class="events bottom-shadow pad1 col6 pin-topright  " data-reactid="45"><div class="fr pad0" data-reactid="46"><a title="Display as 1 column" style="cursor:pointer;" class="icon quiet caret-left pad0 fill-darken0 round" data-reactid="47"></a></div></div></div></div></div><!--STOP-->
     <script src='bundle.js'></script>
   </body>
 </html>
