@@ -190,15 +190,15 @@ var App = React.createClass({
 
       {/* Language toggle */ }
       <div className={`fixed-top ${queryMatches.desktop && 'space-left16'}`}>
-        <div className={`events fill-light bottom-shadow pad1 ${col1 ? '' : 'col6 pin-topright'} ${queryMatches.tablet ? 'dark fill-blue' : ''} ${queryMatches.mobile ? 'space-top5 fixed-topright' : ''}`}>
-          <div className='space-right1 small quiet inline'>
+        <div className={`events bottom-shadow pad1 ${col1 ? '' : 'col6 pin-topright'} ${queryMatches.tablet ? 'dark fill-blue' : ''} ${queryMatches.mobile ? 'space-top5 fixed-topright' : ''}`}>
+          {/* <div className='space-right1 small quiet inline'>
             Show examples in:
           </div>
           <RoundedToggle
             short={!queryMatches.widescreen}
             options={languageOptions}
             onChange={this.onChangeLanguage}
-            active={this.state.language} />
+            active={this.state.language} /> */}
           <div className='fr pad0'>
             {queryMatches.desktop ?
               <a
@@ -211,7 +211,7 @@ var App = React.createClass({
       </div>
 
       {/* Header */ }
-      <div className={`fill-dark dark bottom-shadow fixed-top ${queryMatches.tablet ? 'pad1y pad2x col6' : 'pad0 width16'}`}>
+      {/* <div className={`fill-dark dark bottom-shadow fixed-top ${queryMatches.tablet ? 'pad1y pad2x col6' : 'pad0 width16'}`}>
         <a href='/' className={`active space-top1 space-left1 pin-topleft icon round dark pad0 ${brandClasses}`}></a>
         <div className={`strong small pad0
           ${queryMatches.mobile ? 'space-left3' : ''}
@@ -233,7 +233,7 @@ var App = React.createClass({
                 ast={ast} />
             </div>}
           </div>}
-      </div>
+      </div> */}
 
     </div>);
   }

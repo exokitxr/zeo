@@ -25,7 +25,7 @@ article, aside, details, figcaption, figure,
 footer, header, hgroup, menu, nav, section {
   display:block;
   }
-body { line-height:1; }
+body { line-height:1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
 ol, ul { list-style:none;  }
 blockquote, q { quotes:none; }
 blockquote:before, blockquote:after,
@@ -49,7 +49,7 @@ button,
 button::-moz-focus-inner {
   border: 0;
   padding: 0;
-  font:15px/20px sans-serif;
+  // font:15px/20px sans-serif;
 }
 
 /* Inline Elements: Defaults
@@ -59,7 +59,7 @@ input,
 textarea {
   color:#404040;
   color:rgba(0,0,0,0.75);
-  font:15px/20px sans-serif;
+  // font:15px/20px sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -72,7 +72,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family:sans-serif;
+  // font-family:sans-serif;
   font-weight:bold;
   margin:0;
   }
@@ -83,7 +83,7 @@ em h3, h3 em,
 em h4, h4 em,
 em h5, h5 em,
 em h6, h6 em {
-  font-family:'Open Sans Bold Italic', sans-serif;
+  // font-family:'Open Sans Bold Italic', sans-serif;
   }
 
 h1 {
@@ -131,15 +131,15 @@ small { display:block; }
 
 .strong,
 strong {
-  font-family:'Open Sans Bold', sans-serif;
+  // font-family:'Open Sans Bold', sans-serif;
   font-weight:normal;
   }
   strong em,
-  em strong { font-family:'Open Sans Bold Italic', sans-serif; }
+  em strong { // font-family:'Open Sans Bold Italic', sans-serif; }
 
 address,
 em {
-  font-family:'Open Sans Italic', sans-serif;
+  // font-family:'Open Sans Italic', sans-serif;
   }
 
 /* Fancy font style */
@@ -147,7 +147,7 @@ em {
 h1.fancy,
 h2.fancy,
 h3.fancy {
-  font-family:'Brandon', sans-serif;
+  // font-family:'Brandon', sans-serif;
   }
 
 h1.fancy {
@@ -177,7 +177,7 @@ h3.fancy {
 h1.futura,
 h2.futura,
 h3.futura {
-  font-family:'Brandon', sans-serif;
+  // font-family:'Brandon', sans-serif;
   }
 
 h1.futura {
@@ -235,10 +235,13 @@ a.quiet > code {
 a.quiet.active, a.quiet:hover { color:rgba(0,0,0,0.75); }
 
 .dark a.quiet,
-a.quiet.dark { color:white; }
+a.quiet.dark { color:white; margin: 0 -15px; padding: 4px 20px; }
+
+.dark .space-left1 > a.quiet,
+.space-left1 > a.quiet.dark { margin-left: -25px; padding-left: 28px; }
 
 .dark a.quiet:hover,
-a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); }
+a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); color: white; background-color: #2196F3; }
 
 /* Buttons */
 .button {
@@ -255,7 +258,7 @@ a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); }
   white-space:nowrap;
   text-overflow:ellipsis;
   /* Protects button metrics in .prose context */
-  font-family:'Open Sans Bold', sans-serif;
+  // font-family:'Open Sans Bold', sans-serif;
   line-height:20px;
   font-size:12px;
   -webkit-appearance:none;
@@ -520,7 +523,7 @@ a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); }
     border-bottom:1px solid rgba(0,0,0,0.25);
     background:transparent;
     color:rgba(0,0,0,.5);
-    font-family:'Open Sans Bold', sans-serif;
+    // font-family:'Open Sans Bold', sans-serif;
     font-size:12px;
     text-align:center;
     display:inline-block;
@@ -959,7 +962,7 @@ form fieldset:last-child {
   }
 
 form fieldset label {
-  font:12px/20px 'Open Sans Bold', sans-serif;
+  // font:12px/20px 'Open Sans Bold', sans-serif;
   display:block;
   margin:0 0 5px;
   }
@@ -1301,7 +1304,7 @@ table {
     border-bottom:1px solid #ddd;
     }
   table th {
-    font-family:'Open Sans Bold', sans-serif;
+    // font-family:'Open Sans Bold', sans-serif;
     }
   table thead th {
     vertical-align:bottom;
@@ -2914,7 +2917,7 @@ Alternate exists for:
 .width4    { width:  40px; float: left; }
 .width8    { width:  80px; float: left; }
 .width12   { width: 120px; float: left; }
-.width16   { width: 160px; float: left; }
+.width16   { width: 250px; float: left; }
 .width20   { width: 200px; float: left; }
 .width24   { width: 240px; float: left; }
 .width28   { width: 280px; float: left; }
@@ -2978,7 +2981,7 @@ Alternate exists for:
 .space-left4  { margin-left:   40px;}
 .space-left8  { margin-left:   80px;}
 .space-left12 { margin-left:  120px;}
-.space-left16 { margin-left:  160px;}
+.space-left16 { margin-left:  250px;}
 .space-left20 { margin-left:  200px;}
 .space-left24 { margin-left:  240px;}
 
@@ -3001,7 +3004,7 @@ Alternate exists for:
 .space-bottom8                { margin-bottom: 80px;}
 
 .space-top0                   { margin-top:  5px;}
-.space-top1                   { margin-top: 10px;}
+.space-top1                   { margin-top: 10px; font-size: 16px; line-height: 26px;}
 .space-top2                   { margin-top: 20px;}
 .space-top4                   { margin-top: 40px;}
 .space-top8                   { margin-top: 80px;}
@@ -3077,7 +3080,7 @@ Alternate exists for:
   }
   .fixed-bottom { right:0; bottom:0; left:0; }
   .fixed-top    { top:0; right:0; left:0; }
-  .fixed-left   { top:0; bottom:0; left:0; }
+  .fixed-left   { top:0; bottom:0; left:0; margin: 0 !important; }
   .fixed-right  { top:0; right:0; bottom:0; }
   .fixed-bottomright { bottom:0; right:0; }
   .fixed-bottomleft  { bottom:0; left:0; }
@@ -3088,7 +3091,7 @@ Alternate exists for:
 
 /* Fills
 -------------------------------------------------------- */
-.fill-dark        { background-color:#404040; }
+.fill-dark        { background-color:#000; }
 .fill-gray,
 .fill-grey        { background:#eee; }
 .fill-grey-dark,
@@ -3121,6 +3124,7 @@ Alternate exists for:
 .fill-darken3 { background:rgba(0,0,0,0.75); }
 
 .fill-lighten0 { background:rgba(255,255,255,0.10); }
+.fixed-left .fill-lighten0 { background: #2196F3; }
 .fill-lighten1 { background:rgba(255,255,255,0.25); }
 .fill-lighten2 { background:rgba(255,255,255,0.50); }
 .fill-lighten3 { background:rgba(255,255,255,0.75); }
@@ -3435,7 +3439,7 @@ img.inline, .inline           { display:inline-block; }
 .z8   { z-index:8; }
 .z10  { z-index:10; }
 .z100 { z-index:100; }
-.round                  { border-radius:3px; }
+.round                  { border-radius:3px; border-radius:0; }
 .round-top              { border-radius:3px 3px 0 0; }
 .round-right            { border-radius:0 3px 3px 0; }
 .round-bottom           { border-radius:0 0 3px 3px; }
@@ -3698,7 +3702,7 @@ img.inline, .inline           { display:inline-block; }
   /* Inline rules */
   body, input, textarea, p {
     color:#000;
-    font:12px/20px sans-serif;
+    // font:12px/20px sans-serif;
     }
   .prose a:after { content:' [' attr(href) '] '; }
 
