@@ -43,7 +43,7 @@
       padding: 0 30px;
       background-color: #000;
       align-items: center;
-      z-index: 2;
+      z-index: 1;
     }
     .header-left, .header-right {
       display: flex;
@@ -51,7 +51,7 @@
       align-items: center;
     }
     .header-left {
-      margin-right: auto;
+      margin-right: 120px;
     }
     .header-right {
       margin-left: auto;
@@ -67,6 +67,9 @@
       padding-bottom: 100px; */
       flex-grow: 1;
       // box-sizing: border-box;
+    }
+    .body.api-body {
+      z-index: 1;
     }
 
     .sidebar {
@@ -176,13 +179,18 @@
       width: calc(100vw - 250px);
       height: calc(100vh - 80px);
     }
-
+    .hub-iframe, .docs-iframe {
+      background-color: #FFF;
+      border: 0;
+    }
     .hub-iframe {
       position: absolute;
       top: 0;
       left: 250px;
-      background-color: #FFF;
-      border: 0;
+    }
+    .docs-iframe {
+      width: 100vw;
+      height: calc(100vh - 80px);
     }
 
     .hero {
@@ -393,7 +401,6 @@
     }
     .header-logo-anchor {
       display: flex;
-      margin-right: auto;
       font-size: 20px;
       font-weight: 300;
       align-items: center;
@@ -1188,13 +1195,13 @@
     </div>
     <div class=demographics>
       <navbar>
-        <nav class="green selected" id=demographics-button-1>
-          <div class=title>Wat?</div>
+        <nav class="green selected" id=nav-button-1>
+          <div class=title>Try it</div>
         </nav>
-        <nav class=green id=demographics-button-2>
+        <nav class=green id=nav-button-2>
           <div class=title>API Docs</div>
         </nav>
-        <nav class=purple id=demographics-button-3>
+        <nav class=purple id=nav-button-3>
           <div class=title>FAQ</div>
         </nav>
       </navbar>
@@ -1215,7 +1222,7 @@
       </a>
     </div>
   </header>
-  <div class=body>
+  <div class="body home-body" id=home-body>
     <aside class=sidebar>
       <div class=slides>
         <div class=slides-navbar>
@@ -1224,7 +1231,7 @@
           <nav class="slides-nav green" id=slides-nav-3>Servers</nav>
         </div>
         <div class="slide green" id=slide-1>
-          <img src="https://placehold.it/250x250" class=img />
+          <img src="https://placehold.it/250x250" class=img width=250 height=250 />
           <div class=slide-wrap>
             <h3>Have your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
             <p>Drag-and-drop NPM modules into the world. Clients sync automagically.</p>
@@ -1277,6 +1284,9 @@
         </div>
       </div>
     </section>
+  </div>
+  <div class="body api-body" id=api-body style="display: none;">
+    <iframe src="/docs/index.html" class=docs-iframe></iframe>
   </div>
   <!-- <section class=details>
     <div class=details-wrapper id=demographics-details-1>
@@ -1758,6 +1768,31 @@ const _drawCanvasGrid = canvas => {
 };
 /* const gridCanvas = $('.grid-canvas')[0];
 _drawCanvasGrid(gridCanvas); */
+
+const homeBody = $('#home-body')[0];
+const apiBody = $('#api-body')[0];
+const navButton1 = $('#nav-button-1')[0];
+const navButton2 = $('#nav-button-2')[0];
+const navButton3 = $('#nav-button-3')[0];
+const navButtons = [navButton1, navButton2, navButton3];
+navButton1.addEventListener('click', () => {
+  navButtons.forEach(navButton => {
+    navButton.classList.remove('selected');
+  });
+  navButton1.classList.add('selected');
+
+  homeBody.style.display = 'flex';
+  apiBody.style.display = 'none';
+});
+navButton2.addEventListener('click', () => {
+  navButtons.forEach(navButton => {
+    navButton.classList.remove('selected');
+  });
+  navButton2.classList.add('selected');
+
+  homeBody.style.display = 'none';
+  apiBody.style.display = 'flex';
+});
 
 window.addEventListener('message', m => {
   const heroWrap = $('#hero-wrap')[0];
