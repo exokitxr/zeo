@@ -57,23 +57,6 @@
       justify-content: flex-end;
     }
 
-    @keyframes arrow-canvas {
-      0%   {transform: translate3d(0, 40px, 0);}
-      100% {transform: translate3d(0, 0, 0);}
-    }
-    .arrow-canvas {
-      position: absolute;
-      width: 200px;
-      height: 200px;
-      bottom: -200px;
-      margin-left: -100px;
-      animation-name: arrow-canvas;
-      animation-duration: 1s;
-      // animation-timing-function: cubic-bezier(0, 1, 0, 1);
-      animation-timing-function: ease-out;
-      animation-iteration-count: infinite;
-    }
-
     .grid-canvas {
       position: absolute;
       top: 0;
@@ -1212,7 +1195,6 @@
       <a class=header-sign-up-button id=sign-up-button>
         <div class=title>Sign up</div>
       </a> -->
-      <canvas width=400 height=400 class=arrow-canvas></canvas>
       <a href="https://hub.zeovr.io">
         <button class="button invert primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
       </a>
@@ -1698,31 +1680,6 @@ demographicsButtons.forEach((demographicsButton, index) => {
     });
   });
 });
-
-
-const _drawCanvasArrow = canvas => {
-  const ctx = canvas.getContext('2d');
-
-  ctx.strokeStyle = '#E91E63';
-  ctx.lineWidth = 5;
-
-  const startX = (400 / 2) + Math.floor(ctx.lineWidth / 2);
-  const startY = 10;
-
-  ctx.beginPath();
-  ctx.moveTo(startX, 200);
-  ctx.lineTo(startX, startY);
-
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(startX - 40, startY + 40);
-
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(startX + 40, startY + 40);
-
-  ctx.stroke();
-};
-const arrowCanvas = $('.arrow-canvas')[0];
-_drawCanvasArrow(arrowCanvas);
 
 const _drawCanvasGrid = canvas => {
   const renderer = new THREE.WebGLRenderer({
