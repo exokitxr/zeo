@@ -129,7 +129,7 @@ class Hub {
                 servers.forEach(server => {
                   result.push(server);
                 });
-                return result;
+                return result.sort((a, b) => a.url.localeCompare(b.url));
               }
 
               listen() {
