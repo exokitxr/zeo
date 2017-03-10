@@ -497,11 +497,12 @@ class Hub {
                       console.warn(err);
                     });
 
-                  setTimeout(() => {
-                    const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(mesh); // the mesh is in the scene at this point
+                  const _updateBoxTarget = () => {
+                    const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(mesh);
                     const boxTarget = geometryUtils.makeBoxTarget(envMeshPosition, envMeshRotation, envMeshScale, sphereDiameterVector);
                     mesh.boxTarget = boxTarget;
-                  });
+                  };
+                  mesh.updateBoxTarget = _updateBoxTarget;
 
                   return mesh;
                 };
@@ -619,13 +620,19 @@ class Hub {
                   object.add(newServerMesh);
                 }
                 object.serverMeshes = newServerMeshes;
+
+                object.updateMatrixWorld();
+                for (let i = 0; i < newServerMeshes.length; i++) {
+                  const newServerMesh = newServerMeshes[i];
+                  const {envMesh} = newServerMesh;
+                  envMesh.updateBoxTarget();
+                }
               };
               object.refreshServerMeshes = _refreshServerMeshes;
 
               return object;
             })();
             scene.add(serversMesh);
-            // serversMesh.updateMatrixWorld();
 
             const _updatePages = () => {
               menuUi.update();
