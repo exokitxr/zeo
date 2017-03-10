@@ -75,6 +75,7 @@ class Hub {
           '/core/engines/cyborg',
           '/core/engines/rend',
           '/core/engines/tags',
+          '/core/plugins/js-utils',
           '/core/plugins/geometry-utils',
         ]),
         _requestLogoImg(),
@@ -90,6 +91,7 @@ class Hub {
             cyborg,
             rend,
             tags,
+            jsUtils,
             geometryUtils,
           ],
           logoImg,
@@ -97,6 +99,8 @@ class Hub {
         ]) => {
           if (live) {
             const {THREE, scene, camera} = three;
+            const {events} = jsUtils;
+            const {EventEmitter} = events;
 
             const transparentMaterial = biolumi.getTransparentMaterial();
             const transparentImg = biolumi.getTransparentImg();
@@ -108,6 +112,81 @@ class Hub {
               object.matrixWorld.decompose(position, rotation, scale);
               return {position, rotation, scale};
             };
+
+            class ServerTracker extends EventEmitter {
+              constructor() {
+                super();
+
+                this.connection = null;
+                this.servers = new Map();
+
+                this.listen();
+              }
+
+              getServers() {
+                const result = [];
+                const {servers} = this;
+                servers.forEach(server => {
+                  result.push(server);
+                });
+                return result;
+              }
+
+              listen() {
+                const connection = new WebSocket('wss://' + hubUrl + '/hubWs');
+                connection.onopen = () => {
+                  // nothing
+                };
+                connection.onclose = () => {
+                  console.warn('hub server tracker connection closed');
+                };
+                connection.onerror = err => {
+                  console.warn(err);
+                };
+                connection.onmessage = msg => {
+                  const m = JSON.parse(msg.data);
+                  const {type} = m;
+
+                  if (type === 'servers') {
+                    const {args: [servers]} = m;
+
+                    for (let i = 0; i < servers.length; i++) {
+                      const server = servers[i];
+                      const {url} = server;
+                      this.servers.set(url, server);
+                    }
+
+                    const serversJson = this.getServers();
+                    this.emit('update', serversJson);
+                  } else if (type === 'server') {
+                    const {args: [url, server]} = m;
+
+                    if (server) {
+                      this.servers.set(url, server);
+                    } else {
+                      this.servers.delete(url, server);
+                    }
+
+                    const serversJson = this.getServers();
+                    this.emit('update', serversJson);
+                  } else {
+                    console.warn('unknown hub server tracker message type:', JSON.stringify(type));
+                  }
+                };
+                this.connection = connection;
+              }
+
+              destroy() {
+                const {connection} = this;
+                connection.close();
+              }
+            }
+            const serverTracker = new ServerTracker();
+
+            const _serverTrackerUpdate = servers => {
+              serversMesh.refreshServerMeshes(servers);
+            };
+            serverTracker.on('update', _serverTrackerUpdate);
 
             const wireframeHighlightMaterial = new THREE.MeshBasicMaterial({
               color: 0x0000FF,
@@ -334,210 +413,219 @@ class Hub {
             scene.add(envBoxMeshes.left);
             scene.add(envBoxMeshes.right);
 
-            const _getServerMeshes = servers => {
-              const result = Array(servers.length);
+            const serversMesh = (() => {
+              const object = new THREE.Object3D();
+              object.serverMeshes = [];
 
-              const _makeServerEnvMesh = server => {
-                const _requestImageFile = p => new Promise((accept, reject) => {
-                  const img = new Image();
-                  img.src = 'https://' + hubUrl + p;
-                  img.onload = () => {
-                    accept(img);
-                  };
-                  img.onerror = err => {
-                    reject(err);
-                  };
-                });
-                const _requestCubeMapImgs = server => Promise.all(FACES.map(face => _requestImageFile('/servers/img/cubemap/' + encodeURIComponent(server.url) + '/'+ face + '.png')))
-                  .then(cubeMapImgs => {
-                    const result = {};
-                    for (let i = 0; i < cubeMapImgs.length; i++) {
-                      const cubeMapImg = cubeMapImgs[i];
-                      const face = FACES[i];
-                      result[face] = cubeMapImg;
-                    }
-                    return result;
+              const _makeServerMeshes = servers => {
+                const result = Array(servers.length);
+
+                const _makeServerEnvMesh = server => {
+                  const _requestImageFile = p => new Promise((accept, reject) => {
+                    const img = new Image();
+                    img.src = 'https://' + hubUrl + p;
+                    img.onload = () => {
+                      accept(img);
+                    };
+                    img.onerror = err => {
+                      reject(err);
+                    };
                   });
-
-                const mesh = (() => {
-                  const geometry = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 15, 8);
-                  const material = (() => {
-                    const texture = new THREE.CubeTexture(
-                      [
-                        transparentImg,
-                        transparentImg,
-                        transparentImg,
-                        transparentImg,
-                        transparentImg,
-                        transparentImg,
-                      ],
-                      THREE.UVMapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.NearestFilter,
-                      THREE.NearestFilter,
-                      THREE.RGBAFormat,
-                      THREE.UnsignedByteType,
-                      1
-                    );
-                    texture.needsUpdate = true;
-
-                    const material = new THREE.MeshLambertMaterial({
-                      envMap: texture,
-                      // shininess: 10,
+                  const _requestCubeMapImgs = server => Promise.all(FACES.map(face => _requestImageFile('/servers/img/cubemap/' + encodeURIComponent(server.url) + '/'+ face + '.png')))
+                    .then(cubeMapImgs => {
+                      const result = {};
+                      for (let i = 0; i < cubeMapImgs.length; i++) {
+                        const cubeMapImg = cubeMapImgs[i];
+                        const face = FACES[i];
+                        result[face] = cubeMapImg;
+                      }
+                      return result;
                     });
-                    return material;
+
+                  const mesh = (() => {
+                    const geometry = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 15, 8);
+                    const material = (() => {
+                      const texture = new THREE.CubeTexture(
+                        [
+                          transparentImg,
+                          transparentImg,
+                          transparentImg,
+                          transparentImg,
+                          transparentImg,
+                          transparentImg,
+                        ],
+                        THREE.UVMapping,
+                        THREE.ClampToEdgeWrapping,
+                        THREE.ClampToEdgeWrapping,
+                        THREE.NearestFilter,
+                        THREE.NearestFilter,
+                        THREE.RGBAFormat,
+                        THREE.UnsignedByteType,
+                        1
+                      );
+                      texture.needsUpdate = true;
+
+                      const material = new THREE.MeshLambertMaterial({
+                        envMap: texture,
+                        // shininess: 10,
+                      });
+                      return material;
+                    })();
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+
+                    return mesh;
                   })();
 
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.castShadow = true;
+                  _requestCubeMapImgs(server) // load the actual cube map asynchronously
+                    .then(faceImgs => {
+                      const images = [
+                        'right',
+                        'left',
+                        'top',
+                        'bottom',
+                        'front',
+                        'back',
+                      ].map(face => faceImgs[face]);
 
-                  return mesh;
-                })();
-
-                _requestCubeMapImgs(server) // load the actual cube map asynchronously
-                  .then(faceImgs => {
-                    const images = [
-                      'right',
-                      'left',
-                      'top',
-                      'bottom',
-                      'front',
-                      'back',
-                    ].map(face => faceImgs[face]);
-
-                    const {material: {envMap: texture}} = mesh;
-                    texture.images = images;
-                    texture.needsUpdate = true;
-                  })
-                  .catch(err => {
-                    console.warn(err);
-                  });
-
-                setTimeout(() => {
-                  const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(mesh); // the mesh is in the scene at this point
-                  const boxTarget = geometryUtils.makeBoxTarget(envMeshPosition, envMeshRotation, envMeshScale, sphereDiameterVector);
-                  mesh.boxTarget = boxTarget;
-                });
-
-                return mesh;
-              };
-              const _makeServerMenuMesh = server => {
-                const object = new THREE.Object3D();
-
-                const _requestServerIcon = server => fetch('https://' + hubUrl + '/servers/img/icon/' + encodeURIComponent(server.url))
-                  .then(res => res.blob()
-                    .then(blob => _requestBlobDataUrl(blob))
-                  );
-                _requestServerIcon(server)
-                   .then(serverIcon => {
-                      const planeMesh = (() => {
-                        const serverUi = biolumi.makeUi({
-                          width: SERVER_WIDTH,
-                          height: SERVER_HEIGHT,
-                        });
-
-                        const mesh = serverUi.addPage(({
-                          server: {
-                            worldname,
-                            description,
-                          },
-                          serverIcon,
-                        }) => {
-                          return [
-                            {
-                              type: 'html',
-                              src: menuRenderer.getServerSrc({
-                                worldname,
-                                description,
-                                serverIcon,
-                              }),
-                              x: 0,
-                              y: 0,
-                              w: SERVER_WIDTH,
-                              h: SERVER_HEIGHT,
-                            },
-                          ];
-                        }, {
-                          type: 'hub',
-                          state: {
-                            server: {
-                              worldname: server.worldname,
-                              description: server.url,
-                            },
-                            serverIcon,
-                          },
-                          worldWidth: SERVER_WORLD_WIDTH,
-                          worldHeight: SERVER_WORLD_HEIGHT,
-                        });
-                        mesh.position.y = 0.45;
-                        mesh.receiveShadow = true;
-                        mesh.ui = serverUi;
-
-                        serverUi.update();
-
-                        return mesh;
-                      })();
-                      object.add(planeMesh);
-                      object.planeMesh = planeMesh;
+                      const {material: {envMap: texture}} = mesh;
+                      texture.images = images;
+                      texture.needsUpdate = true;
                     })
                     .catch(err => {
                       console.warn(err);
                     });
 
-                const shadowMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(SERVER_WORLD_WIDTH, SERVER_WORLD_HEIGHT, 0.01);
-                  const material = transparentMaterial.clone();
-                  material.depthWrite = false;
+                  setTimeout(() => {
+                    const {position: envMeshPosition, rotation: envMeshRotation, scale: envMeshScale} = _decomposeObjectMatrixWorld(mesh); // the mesh is in the scene at this point
+                    const boxTarget = geometryUtils.makeBoxTarget(envMeshPosition, envMeshRotation, envMeshScale, sphereDiameterVector);
+                    mesh.boxTarget = boxTarget;
+                  });
 
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.castShadow = true;
                   return mesh;
-                })();
-                object.add(shadowMesh);
-
-                return object;
-              };
-
-              for (let i = 0; i < servers.length; i++) {
-                const server = servers[i];
-
-                const mesh = (() => {
+                };
+                const _makeServerMenuMesh = server => {
                   const object = new THREE.Object3D();
-                  object.position.x = -2 + (i * 1);
-                  object.position.y = 1.2;
-                  object.server = server;
 
-                  const envMesh = _makeServerEnvMesh(server, i);
-                  object.add(envMesh);
-                  object.envMesh = envMesh;
+                  const _requestServerIcon = server => fetch('https://' + hubUrl + '/servers/img/icon/' + encodeURIComponent(server.url))
+                    .then(res => res.blob()
+                      .then(blob => _requestBlobDataUrl(blob))
+                    );
+                  _requestServerIcon(server)
+                     .then(serverIcon => {
+                        const planeMesh = (() => {
+                          const serverUi = biolumi.makeUi({
+                            width: SERVER_WIDTH,
+                            height: SERVER_HEIGHT,
+                          });
 
-                  const menuMesh = _makeServerMenuMesh(server);
-                  object.add(menuMesh);
-                  object.menuMesh = menuMesh;
+                          const mesh = serverUi.addPage(({
+                            server: {
+                              worldname,
+                              description,
+                            },
+                            serverIcon,
+                          }) => {
+                            return [
+                              {
+                                type: 'html',
+                                src: menuRenderer.getServerSrc({
+                                  worldname,
+                                  description,
+                                  serverIcon,
+                                }),
+                                x: 0,
+                                y: 0,
+                                w: SERVER_WIDTH,
+                                h: SERVER_HEIGHT,
+                              },
+                            ];
+                          }, {
+                            type: 'hub',
+                            state: {
+                              server: {
+                                worldname: server.worldname,
+                                description: server.url,
+                              },
+                              serverIcon,
+                            },
+                            worldWidth: SERVER_WORLD_WIDTH,
+                            worldHeight: SERVER_WORLD_HEIGHT,
+                          });
+                          mesh.position.y = 0.45;
+                          mesh.receiveShadow = true;
+                          mesh.ui = serverUi;
+
+                          serverUi.update();
+
+                          return mesh;
+                        })();
+                        object.add(planeMesh);
+                        object.planeMesh = planeMesh;
+                      })
+                      .catch(err => {
+                        console.warn(err);
+                      });
+
+                  const shadowMesh = (() => {
+                    const geometry = new THREE.BoxBufferGeometry(SERVER_WORLD_WIDTH, SERVER_WORLD_HEIGHT, 0.01);
+                    const material = transparentMaterial.clone();
+                    material.depthWrite = false;
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    return mesh;
+                  })();
+                  object.add(shadowMesh);
 
                   return object;
-                })();
-                result[i] = mesh;
-              }
+                };
 
-              return result;
-            };
-            const serversMesh = (() => {
-              const object = new THREE.Object3D();
+                for (let i = 0; i < servers.length; i++) {
+                  const server = servers[i];
 
-              const servers = bootstrap.getServers();
-              const serverMeshes = _getServerMeshes(servers);
-              for (let i = 0; i < serverMeshes.length; i++) {
-                const serverMesh = serverMeshes[i];
-                object.add(serverMesh);
-              }
-              object.serverMeshes = serverMeshes;
+                  const mesh = (() => {
+                    const object = new THREE.Object3D();
+                    object.position.x = -2 + (i * 1);
+                    object.position.y = 1.2;
+                    object.server = server;
+
+                    const envMesh = _makeServerEnvMesh(server, i);
+                    object.add(envMesh);
+                    object.envMesh = envMesh;
+
+                    const menuMesh = _makeServerMenuMesh(server);
+                    object.add(menuMesh);
+                    object.menuMesh = menuMesh;
+
+                    return object;
+                  })();
+                  result[i] = mesh;
+                }
+
+                return result;
+              };
+              const _refreshServerMeshes = servers => {
+                const {serverMeshes: oldServerMeshes} = object;
+                for (let i = 0; i < oldServerMeshes.length; i++) {
+                  const oldServerMesh = oldServerMeshes[i];
+                  object.remove(oldServerMesh);
+                }
+
+                const newServerMeshes = _makeServerMeshes(servers);
+                for (let i = 0; i < newServerMeshes.length; i++) {
+                  const newServerMesh = newServerMeshes[i];
+                  object.add(newServerMesh);
+                }
+                object.serverMeshes = newServerMeshes;
+              };
+              object.refreshServerMeshes = _refreshServerMeshes;
 
               return object;
             })();
             scene.add(serversMesh);
-            serversMesh.updateMatrixWorld();
+            // serversMesh.updateMatrixWorld();
 
             const _updatePages = () => {
               menuUi.update();
@@ -925,6 +1013,9 @@ class Hub {
             rend.on('update', _update);
 
             this._cleanup = () => {
+              serverTracker.destroy();
+              serverTracker.removeListener('update', _serverTrackerUpdate);
+
               scene.remove(menuMesh);
               SIDES.forEach(side => {
                 scene.remove(menuDotMeshes[side]);

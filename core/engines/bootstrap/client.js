@@ -30,20 +30,20 @@ class Bootstrap {
 
     const initialUrl = document.location.href;
     const hostUrl = serverEnabled ? serverUrl : hubUrl;
-    const _requestServers = hostUrl => fetch('https://' + hostUrl + '/servers/servers.json')
-      .then(res => res.json());
     const _requestServer = hostUrl => fetch('https://' + hostUrl + '/servers/server.json')
       .then(res => res.json());
 
     return Promise.all([
-      _requestServers(hostUrl),
       _requestServer(hostUrl),
     ])
       .then(([
-        serversJson,
         serverJson,
       ]) => {
         if (live) {
+          const serversJson = { // XXX get rid of this
+            servers: [],
+          };
+
           const _getInitialUrl = () => initialUrl;
           const _getServers = () => serversJson.servers;
           const _getCurrentServer = () => serverJson;
