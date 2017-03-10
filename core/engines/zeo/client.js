@@ -64,6 +64,8 @@ class Zeo {
       const _destroy = () => {
         cleanup();
         cleanups.splice(cleanups.indexOf(cleanup), 1);
+
+        window.parent.postMessage('loaded', '*');
       };
 
       accept({
@@ -188,6 +190,13 @@ class Zeo {
                 return result;
               })();
               const supportsWebVR = webvr.supportsWebVR();
+              const isInIframe = (() => {
+                try {
+                  return window.self !== window.top;
+                } catch (e) {
+                  return true;
+                }
+              })();
 
               const updates = [];
               const updateEyes = [];
@@ -260,9 +269,9 @@ class Zeo {
                     renderer.domElement.style.filter = filterText;
 
                     // begin helper content
-                    const helper = document.createElement('div');
-                    helper.id = 'helper';
-                    helper.style.cssText = `\
+
+                    const overlay = document.createElement('div');
+                    overlay.style.cssText = `\
                       display: flex;
                       position: absolute;
                       top: 0;
@@ -272,33 +281,43 @@ class Zeo {
                       align-items: center;
                       font-family: ${biolumi.getFonts()};
                     `;
+                    overlay.innerHTML = `\
+                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; justify-content: center;">
+                        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
+                      </div>
+                    `;
+                    document.body.appendChild(overlay);
+                    const overlayContent = overlay.querySelector('.overlay-content');
+
+                    const helper = document.createElement('div');
+                    helper.style.cssText = `\
+                      display: flex;
+                      width: 400px;
+                      flex-direction: column;
+                      justify-content: center;
+                      align-items: center;
+                    `;
                     const fonts = biolumi.getFonts().replace(/"/g, "'");
                     helper.innerHTML = `\
-                      <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; justify-content: center;">
-                        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                          <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
-                          <h1 style="display: flex; width: 400px; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
-                          <div class=helper-content style="width: 400px;"></div>
-                        </div>
-                      </div>
+                      <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
+                      <h1 style="display: flex; width: 400px; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
                     `;
                     helper.addEventListener('dragover', fs.dragover);
                     helper.addEventListener('drop', fs.drop);
-                    document.body.appendChild(helper);
-
-                    const helperConent = helper.querySelector('.helper-content');
 
                     const enterHelperContent = document.createElement('div');
                     enterHelperContent.innerHTML = `\
-                      <div>
-                        <div style="display: flex; margin-bottom: 20px;">
-                          <button style="display: inline-block; margin-right: 10px; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class="headset-button">Headset</button>
-                          <button style="display: inline-block; padding: 10px 20px; border: 1px solid; background-color: transparent; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
-                        </div>
-                        <div style="padding: 15px; background-color: #000; color: #FFF;" class="error-message">
-                          <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
-                          <div style="font-size: 13px; font-weight: 400;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
-                        </div>
+                      <div style="display: flex; width: 400px; margin-bottom: 20px;">
+                        <button style="display: inline-block; position: relative; margin-right: 10px; padding: 10px 20px; background-color: transparent; border: 1px solid; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=headset-button>Headset</button>
+                        <button style="display: inline-block; position: relative; padding: 10px 20px; background-color: transparent; border: 1px solid; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
+                      </div>
+                    `;
+
+                    const errorMessage = document.createElement('div');
+                    errorMessage.innerHTML = `\
+                      <div style="padding: 15px; background-color: #000; color: #FFF;">
+                        <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
+                        <div style="font-size: 13px; font-weight: 400;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
                       </div>
                     `;
 
@@ -307,7 +326,7 @@ class Zeo {
                       <div style="margin-top: 10px; margin-bottom: 18px; padding: 15px; background-color: #4CAF50; color: #FFF; cursor: pointer;">
                         <div style="display: flex; margin-bottom: 10px; font-size: 18px; line-height: 1;">
                           <div style="margin-right: auto; color: #FFF;">Media Permissions</div>
-                          <button style="display: inline-flex; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
+                          <button style="display: inline-flex; position: relative; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
                             <div style="width: 10px; height: 10px; background-color: #FFF;"></div>
                             <div style="width: 10px; height: 10px;"></div>
                           </button>
@@ -319,61 +338,93 @@ class Zeo {
                       _reinitMediaPermissions();
                     });
 
+                    const siteContent = document.createElement('div');
+                    siteContent.innerHTML = `\
+                      <div style="margin-bottom: 10px; padding: 0 30px; padding-bottom: 20px; background-color: #000; color: #FFF; font-size: 60px; line-height: 1.4; font-weight: 300;">Multiplayer VR worlds<br>in your browser<br>powered by npm</div>
+                      <div style="display: flex; margin-bottom: 10px;">
+                        <button style="display: inline-flex; position: relative; margin-right: 10px; padding: 4px 8px; background-color: #000; border: 0; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; justify-content: center; align-items: center; box-sizing: border-box;" class=headset-button>
+                          <img src="/img/headset.svg" style="margin-right: 5px; padding: 5px;" />
+                          Headset
+                        </button>
+                        <button style="display: inline-flex; position: relative; padding: 4px 8px; background-color: #000; border: 0; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; justify-content: center; align-items: center; box-sizing: border-box;" class=keyboard-button>
+                          <img src="/img/mouse.svg" style="margin-right: 5px; padding: 5px;" />
+                          Mouse + keyboard
+                        </button>
+                      </div>
+                    `;
+
+                    const strikethrough = document.createElement('div');
+                    strikethrough.style.cssText = 'position: absolute; top: 50%; margin-top: -1px; left: -5px; right: -5px; height: 2px; background-color: #F44336;';
+
                     const _styleButton = button => {
-                      button.addEventListener('mouseover', e => {
-                        button.style.backgroundColor = '#000';
-                        button.style.borderColor = 'transparent';
-                        button.style.color = '#FFF';
-                      });
-                      button.addEventListener('mouseout', e => {
-                        button.style.backgroundColor = 'transparent';
-                        button.style.borderColor = 'currentColor';
-                        button.style.color = '#000';
-                      });
+                      if (!isInIframe) {
+                        button.addEventListener('mouseover', e => {
+                          button.style.backgroundColor = '#000';
+                          button.style.borderColor = 'transparent';
+                          button.style.color = '#FFF';
+                        });
+                        button.addEventListener('mouseout', e => {
+                          button.style.backgroundColor = 'transparent';
+                          button.style.borderColor = 'currentColor';
+                          button.style.color = '#000';
+                        });
+                      } else {
+                        button.addEventListener('mouseover', e => {
+                          button.style.backgroundColor = '#4CAF50';
+                        });
+                        button.addEventListener('mouseout', e => {
+                          button.style.backgroundColor = '#000';
+                        });
+                      }
                     };
 
-                    const headsetButton = $$(enterHelperContent, '.headset-button')[0];
+                    const headsetButtons = [$$(enterHelperContent, '.headset-button')[0], $$(siteContent, '.headset-button')[0]];
                     if (supportsWebVR) {
-                      _styleButton(headsetButton);
-                      headsetButton.addEventListener('click', e => {
+                      headsetButtons.forEach(headsetButton => {
+                        _styleButton(headsetButton);
+
+                        headsetButton.addEventListener('click', e => {
+                          if (!webvr.display) {
+                            _enterVR({
+                              stereoscopic: true,
+                              onExit: () => {
+                                overlay.style.display = 'flex';
+                                renderer.domElement.style.filter = filterText;
+                              },
+                            });
+
+                            overlay.style.display = 'none';
+                            renderer.domElement.style.filter = 'none';
+                          }
+                        });
+                      });
+
+                      errorMessage.style.display = 'none';
+                    } else {
+                      headsetButtons.forEach(headsetButton => {
+                        headsetButton.appendChild(strikethrough.cloneNode(true));
+                      });
+                    }
+
+                    const keyboardButtons = [$$(enterHelperContent, '.keyboard-button')[0], $$(siteContent, '.keyboard-button')[0]];
+                    keyboardButtons.forEach(keyboardButton => {
+                      _styleButton(keyboardButton);
+
+                      keyboardButton.addEventListener('click', e => {
                         if (!webvr.display) {
                           _enterVR({
-                            stereoscopic: true,
+                            stereoscopic: false,
                             onExit: () => {
-                              helper.style.display = 'flex';
+                              overlay.style.display = 'flex';
                               renderer.domElement.style.filter = filterText;
                             },
                           });
 
-                          helper.style.display = 'none';
+                          overlay.style.display = 'none';
                           renderer.domElement.style.filter = 'none';
                         }
                       });
-                    } else {
-                      headsetButton.style.display = 'none';
-                    }
-
-                    const keyboardButton = $$(enterHelperContent, '.keyboard-button')[0];
-                    _styleButton(keyboardButton);
-                    keyboardButton.addEventListener('click', e => {
-                      if (!webvr.display) {
-                        _enterVR({
-                          stereoscopic: false,
-                          onExit: () => {
-                            helper.style.display = 'flex';
-                            renderer.domElement.style.filter = filterText;
-                          },
-                        });
-
-                        helper.style.display = 'none';
-                        renderer.domElement.style.filter = 'none';
-                      }
                     });
-
-                    const errorMessage = $$(enterHelperContent, '.error-message')[0];
-                    if (supportsWebVR) {
-                      errorMessage.style.display = 'none';
-                    }
 
                     const _updateHelperContent = () => {
                       if (mediaPermissions) {
@@ -384,8 +435,15 @@ class Zeo {
                     };
                     _updateHelperContent();
 
-                    helperConent.appendChild(enterHelperContent);
-                    helperConent.appendChild(permissionsHelperContent);
+                    if (!isInIframe) {
+                      overlayContent.appendChild(helper);
+                      helper.appendChild(enterHelperContent);
+                      helper.appendChild(errorMessage);
+                      helper.appendChild(permissionsHelperContent);
+                    } else {
+                      overlayContent.appendChild(siteContent);
+                      siteContent.appendChild(errorMessage);
+                    }
 
                     const _reinitMediaPermissions = () => {
                       _requestMediaPermissions()

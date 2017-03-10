@@ -197,6 +197,7 @@
       display: flex;
       width: 100%;
       height: 100%;
+      margin-bottom: 100px;
       flex-direction: column;
       justify-content: center;
       align-items: center;
@@ -205,11 +206,11 @@
     .hero .hero-heading {
       position: relative;
       padding: 0 30px;
+      padding-bottom: 20px;
       background-color: #000;
       color: #FFF;
     }
     .hero h1 {
-      margin-bottom: 30px;
       font-size: 60px;
       font-weight: 300;
     }
@@ -1268,7 +1269,7 @@
     </aside>
     <iframe src="https://hub.zeovr.io:8000" class=hub-iframe></iframe>
     <section class=hero>
-      <div class=hero-wrap>
+      <div class=hero-wrap id=hero-wrap>
         <div class=hero-heading>
           <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
           <!-- <button class="button primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
@@ -1757,6 +1758,11 @@ const _drawCanvasGrid = canvas => {
 };
 /* const gridCanvas = $('.grid-canvas')[0];
 _drawCanvasGrid(gridCanvas); */
+
+window.addEventListener('message', m => {
+  const heroWrap = $('#hero-wrap')[0];
+  heroWrap.parentNode.removeChild(heroWrap);
+});
 
 const _jsonParse = s => {
   let err = null;
