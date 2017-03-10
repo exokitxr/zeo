@@ -777,16 +777,10 @@ class Hub {
                       grabBoxMesh.position.copy(tagMeshPosition);
                       grabBoxMesh.quaternion.copy(tagMeshRotation);
                       grabBoxMesh.scale.copy(tagMeshScale);
-
-                      if (!grabBoxMesh.visible) {
-                        grabBoxMesh.visible = true;
-                      }
+                      grabBoxMesh.visible = true;
                     } else {
                       grabbableState.hoverMesh = null;
-
-                      if (grabBoxMesh.visible) {
-                        grabBoxMesh.visible = false;
-                      }
+                      grabBoxMesh.visible = false;
                     }
                   });
                 } else {
@@ -795,10 +789,7 @@ class Hub {
                     const grabBoxMesh = grabBoxMeshes[side];
 
                     grabbableState.hoverMesh = null;
-
-                    if (grabBoxMesh.visible) {
-                      grabBoxMesh.visible = false;
-                    }
+                    grabBoxMesh.visible = false;
                   });
                 }
               };
@@ -807,13 +798,14 @@ class Hub {
                 const {cakeTagMesh} = menuMesh;
 
                 SIDES.forEach(side => {
+                  const {visible} = cakeTagMesh;
                   const gamepad = gamepads[side];
+                  const tagHoverState = tagHoverStates[side];
+                  const tagDotMesh = tagDotMeshes[side];
+                  const tagBoxMesh = tagBoxMeshes[side];
 
-                  if (gamepad) {
+                  if (visible && gamepad) {
                     const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                    const tagHoverState = tagHoverStates[side];
-                    const tagDotMesh = tagDotMeshes[side];
-                    const tagBoxMesh = tagBoxMeshes[side];
 
                     const {planeMesh, initialScale} = cakeTagMesh;
                     const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
@@ -836,6 +828,10 @@ class Hub {
                       controllerPosition,
                       controllerRotation,
                     });
+                  } else {
+                    tagHoverState.intersectionPoint = null;
+                    tagDotMesh.visible = false;
+                    tagBoxMesh.visible = false;
                   }
                 });
               };
