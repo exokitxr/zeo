@@ -28,7 +28,7 @@ class Bootstrap {
       live = false;
     };
 
-    const initialUrl = window.parent.location.href;
+    const initialUrl = document.location.href;
     const hostUrl = serverEnabled ? serverUrl : hubUrl;
     const _requestServer = hostUrl => fetch('https://' + hostUrl + '/servers/server.json')
       .then(res => res.json());
