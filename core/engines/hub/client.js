@@ -786,6 +786,8 @@ class Hub {
 
                 tags.reifyTag(tagMesh);
 
+                grabState.tagMesh = null;
+
                 e.stopImmediatePropagation();
               }
             };
