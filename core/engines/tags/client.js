@@ -1181,6 +1181,12 @@ class Tags {
 
           const modElementApis = {};
           class TagsApi extends EventEmitter {
+            constructor() {
+              super();
+
+              this.listen();
+            }
+
             registerElement(pluginInstance, elementApi) {
               const tag = archae.getName(pluginInstance);
 
@@ -1344,7 +1350,7 @@ class Tags {
                           baseClass,
                         });
                         element.onsetattribute = (attribute, value) => {
-                          _setAttribute({id, attribute, value});
+                          tagsApi.emit('setAttribute', {id, attribute, value});
                         };
                         item.instance = element;
                         item.instancing = false;
@@ -1392,9 +1398,20 @@ class Tags {
             updatePages() {
               _updatePages();
             }
-          };
 
+            listen() {
+              this.on('setAttribute', setAttrbuteSpec => {
+                if (this.listeners('setAttribute').length === 1) { // if this is the only listener, we need to set the attribute on ourselves
+                  const {id, attribute, value} = setAttrbuteSpec;
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tagMesh;
+                  item.setAttribute(attribute, value);
+                }
+              });
+            }
+          };
           const tagsApi = new TagsApi();
+
           return tagsApi;
         }
       });
