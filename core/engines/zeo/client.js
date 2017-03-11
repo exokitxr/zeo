@@ -256,7 +256,7 @@ class Zeo {
                     const helper = document.createElement('div');
                     helper.style.cssText = `\
                       display: flex;
-                      width: 400px;
+                      width: 500px;
                       flex-direction: column;
                       justify-content: center;
                       align-items: center;
@@ -264,14 +264,14 @@ class Zeo {
                     const fonts = biolumi.getFonts().replace(/"/g, "'");
                     helper.innerHTML = `\
                       <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
-                      <h1 style="display: flex; width: 400px; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
+                      <h1 style="display: flex; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
                     `;
                     helper.addEventListener('dragover', fs.dragover);
                     helper.addEventListener('drop', fs.drop);
 
                     const enterHelperContent = document.createElement('div');
                     enterHelperContent.innerHTML = `\
-                      <div style="display: flex; width: 400px; margin-bottom: 20px;">
+                      <div style="display: flex; width: 500px; margin-bottom: 20px;">
                         <button style="display: inline-block; position: relative; height: 42px; margin-right: 10px; padding: 10px 20px; background-color: transparent; border: 1px solid; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=headset-button>Headset</button>
                         <button style="display: inline-block; position: relative; height: 42px; padding: 10px 20px; background-color: transparent; border: 1px solid; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
                       </div>
@@ -281,7 +281,7 @@ class Zeo {
                     errorMessage.innerHTML = `\
                       <div style="height: 80px; padding: 15px; background-color: #000; color: #FFF; box-sizing: border-box;">
                         <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
-                        <div style="font-size: 13px; font-weight: 400;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
+                        <div style="font-size: 13px;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
                       </div>
                     `;
 
