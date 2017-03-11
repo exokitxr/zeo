@@ -58,20 +58,26 @@ class Hub {
        );
       const _requestImgs = () => Promise.all([
         '/img/logo-large.png',
+        '/archae/hub/img/keyboard.png',
         '/archae/hub/img/controller.png',
+        '/archae/hub/img/menu.png',
         '/archae/hub/img/teleport.png',
         '/archae/hub/img/cake.png',
         '/archae/hub/img/server.png',
       ].map(_requestFileBlobData))
         .then(([
           logo,
+          keyboard,
           controller,
+          menu,
           teleport,
           cake,
           server,
         ]) => ({
           logo,
+          keyboard,
           controller,
+          menu,
           teleport,
           cake,
           server,

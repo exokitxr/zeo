@@ -37,7 +37,10 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
         <img src="${imgs.logo}" width="${100 * 0.75}" height="{158 * 0.75}" />
         <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
           ${keyboardVrMode ? `\
-            <p>You're using a keyboard and mouse, but you can still do everything you could with a headset! Here are the controls:</p>
+            <p>You're using a keyboard and mouse, so here are the controls:</p>
+            <div style="display: flex; justify-content: center; align-items: center;">
+              <img src="${imgs.keyboard}" width="128" height="${128 / 3}" />
+            </div>
             <p>
               <b>WASD</b>: Move around<br/>
               <b>Z or C</b>: Focus left or right controller (<i>required</i> to use the buttons below)<br/>
@@ -69,7 +72,10 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
     case 1: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
         <div style="font-size: 30px; font-weight: 400;">Discover your superpowers</div>
-        <img src="${imgs.teleport}" width="256" height="128" style="margin: 10px 0;" />
+        <div style="display: flex;">
+          <img src="${imgs.menu}" width="256" height="128" style="margin: 10px 0; margin-right: 28px;" />
+          <img src="${imgs.teleport}" width="256" height="128" style="margin: 10px 0;" />
+        </div>
         <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
           <p>This screen is the <b>MENU</b>. The menu has tools to edit your VR world, move between worlds, and change settings. It's showing you this tutorial.</p>
           <p>To <b>OPEN</b> or <b>CLOSE</b> the menu, press the <b>MENU</b> the <b>PAD${keyboardVrMode ? ' (E key)' : ''}</b> on your controller.</p>
