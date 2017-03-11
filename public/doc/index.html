@@ -10,243 +10,212 @@
     <link href='css/railscasts.css' rel='stylesheet' />
   </head>
   <body>
-    <!--START--><div id='app'><div class="container unlimiter" data-reactroot="" data-reactid="1" data-react-checksum="-419605422"><div class="fixed-top fixed-right space-left16" data-reactid="2"><div class="fill-light col6 pin-right" data-reactid="3"></div></div><div class="space-top5 scroll-styled overflow-auto pad1 width16 sidebar fixed-left fill-dark dark" data-reactid="4"><div class="pad0x small" data-reactid="5"><div class="small pad0x quiet space-top1" data-reactid="6">Introduction</div><a href="#our-api" class="line-height15 pad0x pad00y quiet block " data-reactid="7">Our API</a><div class="small pad0x quiet space-top1" data-reactid="8">Example</div><a href="#wobble" class="line-height15 pad0x pad00y quiet block " data-reactid="9">Wobble</a></div></div><div class="space-left16" data-reactid="10"><div class="" data-reactid="11"><div class="clearfix" data-reactid="12"><div data-title="Our API" class="keyline-top section contain clearfix " data-reactid="13"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="14"><h2 id="our-api">Our API</h2>
-<p>Welcome to coolcorp biz! This is our API documentation.</p>
-</div></div><div data-title="Wobble" class="keyline-top section contain clearfix " data-reactid="15"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="16"><h2 id="wobble">Wobble</h2>
-<p>This is our high-quality wobbles API. You can use this API to request
-and remove different wobbles at a low wibble price.</p>
-</div></div><div data-title="List wobbles" class="keyline-top section contain clearfix " data-reactid="17"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="18"><h3 id="list-wobbles">List wobbles</h3>
-<p>Lists all wobbles for a particular account.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="19"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>GET</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span></div>
-    </div>
-<h4 id="example-request">Example request</h4>
-<pre class='hljs'>$ curl https://wobble.biz/wobbles/v1/{username}</pre>
-<h4 id="example-response">Example response</h4>
-<pre class='hljs'>[
-  {
-    <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
-    <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
-    <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
-    <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
-  },
-  {
-    <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
-    <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
-    <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
-    <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
-  }
-]</pre>
-</div></div><div data-title="Create wobble" class="keyline-top section contain clearfix " data-reactid="20"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="21"><h3 id="create-wobble">Create wobble</h3>
-<p>Creates a new, empty wobble.</p>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>name</code></td>
-<td>(optional) the name of the wobble</td>
-</tr>
-<tr>
-<td><code>description</code></td>
-<td>(optional) a description of the wobble</td>
-</tr>
-</tbody>
-</table>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="22"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>POST</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span></div>
-    </div>
-<h4 id="example-request-1">Example request</h4>
-<pre class='hljs'>curl -X POST https://wobble.biz/wobbles/v1/{username}</pre>
-<h4 id="example-request-body">Example request body</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"foo"</span>,
-  <span class="hljs-attr">"description"</span>: <span class="hljs-string">"bar"</span>
-}</pre>
-<h4 id="example-response-1">Example response</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
-  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
-  <span class="hljs-attr">"name"</span>: <span class="hljs-literal">null</span>,
-  <span class="hljs-attr">"description"</span>: <span class="hljs-literal">null</span>,
-  <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
-  <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
-}</pre>
-</div></div><div data-title="Retrieve a wobble" class="keyline-top section contain clearfix " data-reactid="23"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="24"><h3 id="retrieve-a-wobble">Retrieve a wobble</h3>
-<p>Returns a single wobble.</p>
-<p>Retrieve information about an existing wobble.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="25"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>GET</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span></div>
-    </div>
-<h4 id="example-request-2">Example request</h4>
-<pre class='hljs'>curl https://wobble.biz/wobbles/v1/{username}/{wobble_id}</pre>
-<h4 id="example-response-2">Example response</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
-  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
-  <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
-  <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
-}</pre>
-</div></div><div data-title="Update a wobble" class="keyline-top section contain clearfix " data-reactid="26"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="27"><h3 id="update-a-wobble">Update a wobble</h3>
-<p>Updates the properties of a particular wobble.</p>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>name</code></td>
-<td>(optional) the name of the wobble</td>
-</tr>
-<tr>
-<td><code>description</code></td>
-<td>(optional) a description of the wobble</td>
-</tr>
-</tbody>
-</table>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="28"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>PATCH</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span></div>
-    </div>
-<h4 id="example-request-3">Example request</h4>
-<pre class='hljs'>curl --request PATCH https://wobble.biz/wobbles/v1/{username}/{wobble_id} \
-  <span class="hljs-_">-d</span> @data.json</pre>
-<h4 id="example-request-body-1">Example request body</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"foo"</span>,
-  <span class="hljs-attr">"description"</span>: <span class="hljs-string">"bar"</span>
-}</pre>
-<h4 id="example-response-3">Example response</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"owner"</span>: <span class="hljs-string">"{username}"</span>,
-  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wobble_id}"</span>,
-  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"foo"</span>,
-  <span class="hljs-attr">"description"</span>: <span class="hljs-string">"bar"</span>,
-  <span class="hljs-attr">"created"</span>: <span class="hljs-string">"{timestamp}"</span>,
-  <span class="hljs-attr">"modified"</span>: <span class="hljs-string">"{timestamp}"</span>
-}</pre>
-</div></div><div data-title="Delete a wobble" class="keyline-top section contain clearfix " data-reactid="29"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="30"><h3 id="delete-a-wobble">Delete a wobble</h3>
-<p>Deletes a wobble, including all wibbles it contains.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="31"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>DELETE</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span></div>
-    </div>
-<h4 id="example-request-4">Example request</h4>
-<pre class='hljs'>curl -X DELETE https://wobble.biz/wobbles/v1/{username}/{wobble_id}</pre>
-<h4 id="example-response-4">Example response</h4>
-<blockquote>
-<p>HTTP 204</p>
-</blockquote>
-</div></div><div data-title="List wibbles" class="keyline-top section contain clearfix " data-reactid="32"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="33"><h3 id="list-wibbles">List wibbles</h3>
-<p>List all the wibbles in a wobble. The response body will be a
-WobbleCollection.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="34"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>GET</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span>/wibbles</div>
-    </div>
-<h4 id="example-request-5">Example request</h4>
-<pre class='hljs'>curl https://wobble.biz/wobbles/v1/{username}/{wobble_id}/wibbles</pre>
-<h4 id="example-response-5">Example response</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
-  <span class="hljs-attr">"wibbles"</span>: [
-    {
-      <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
-      <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
-      <span class="hljs-attr">"properties"</span>: {
-        <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
-      }
-    },
-    {
-      <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
-      <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
-      <span class="hljs-attr">"properties"</span>: {
-        <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
-      }
-    }
-  ]
-}</pre>
-</div></div><div data-title="Insert or update a wibble" class="keyline-top section contain clearfix " data-reactid="35"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="36"><h3 id="insert-or-update-a-wibble">Insert or update a wibble</h3>
-<p>Inserts or updates a wibble in a wobble. If there's already a wibble
-with the given ID in the wobble, it will be replaced. If there isn't
-a wibble with that ID, a new wibble is created.</p>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>id</code></td>
-<td>the id of an existing wibble in the wobble</td>
-</tr>
-</tbody>
-</table>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="37"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>PUT</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span>/wibbles/<span class="strong">{wibble_id}</span></div>
-    </div>
-<h4 id="example-request-6">Example request</h4>
-<pre class='hljs'>curl https://wobble.biz/wobbles/v1/{username}/{wobble_id}/wibbles/{wibble_id} \
-  -X PUT \
-  <span class="hljs-_">-d</span> @file.geojson</pre>
-<h4 id="example-request-body-2">Example request body</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
-  <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
-  <span class="hljs-attr">"properties"</span>: {
-    <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
-  }
-}</pre>
-<h4 id="example-response-6">Example response</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
-  <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
-  <span class="hljs-attr">"properties"</span>: {
-    <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
-  }
-}</pre>
-</div></div><div data-title="Retrieve a wibble" class="keyline-top section contain clearfix " data-reactid="38"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="39"><h3 id="retrieve-a-wibble">Retrieve a wibble</h3>
-<p>Retrieves a wibble in a wobble.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="40"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>GET</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span>/wibbles/<span class="strong">{wibble_id}</span></div>
-    </div>
-<h4 id="example-request-7">Example request</h4>
-<pre class='hljs'>curl https://wobble.biz/wobbles/v1/{username}/{wobble_id}/wibbles/{wibble_id}</pre>
-<h4 id="example-response-7">Example response</h4>
-<pre class='hljs'>{
-  <span class="hljs-attr">"id"</span>: <span class="hljs-string">"{wibble_id}"</span>,
-  <span class="hljs-attr">"type"</span>: <span class="hljs-string">"Wobble"</span>,
-  <span class="hljs-attr">"properties"</span>: {
-    <span class="hljs-attr">"prop0"</span>: <span class="hljs-string">"value0"</span>
-  }
-}</pre>
-</div></div><div data-title="Delete a wibble" class="keyline-top section contain clearfix " data-reactid="41"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="42"><h3 id="delete-a-wibble">Delete a wibble</h3>
-<p>Removes a wibble from a wobble.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="43"><div class='endpoint dark fill-dark round '>
-      <div class='round-left pad0y pad1x fill-lighten0 code small endpoint-method'>DELETE</div>
-      <div class='pad0 code small endpoint-url'>/wobbles/v1/<span class="strong">{username}</span>/<span class="strong">{wobble_id}</span>/wibbles/<span class="strong">{wibble_id}</span></div>
-    </div>
-<h4 id="example-request-8">Example request</h4>
-<pre class='hljs'>curl -X DELETE https://wobble.biz/wobbles/v1/{username}/{wobble_id}/wibbles/{wibble_id}</pre>
-<h4 id="example-response-8">Example response</h4>
-<blockquote>
-<p>HTTP 204</p>
-</blockquote>
-</div></div></div></div></div><div class="fixed-top space-left16" style="z-index:1;" data-reactid="44"><div class="events bottom-shadow pad1 col6 pin-topright  " data-reactid="45"><div class="fr pad0" data-reactid="46"><a title="Display as 1 column" style="cursor:pointer;" class="icon quiet caret-left pad0 fill-darken0 round" data-reactid="47"></a></div></div></div></div></div><!--STOP-->
+    <!--START--><div id='app'><div class="container unlimiter" data-reactroot="" data-reactid="1" data-react-checksum="1255158909"><div class="fixed-top fixed-right space-left16" data-reactid="2"><div class="fill-light col6 pin-right" data-reactid="3"></div></div><div class="space-top5 scroll-styled overflow-auto pad1 width16 sidebar fixed-left fill-dark dark" data-reactid="4"><div class="pad0x small" data-reactid="5"><div class="small pad0x quiet space-top1" data-reactid="6">Module API</div><a href="#introduction" class="line-height15 pad0x pad00y quiet block " data-reactid="7">Introduction</a><a href="#module-specification" class="line-height15 pad0x pad00y quiet block " data-reactid="8">Module specification</a><a href="#loading-modules" class="line-height15 pad0x pad00y quiet block " data-reactid="9">Loading modules</a><a href="#zeo-api" class="line-height15 pad0x pad00y quiet block " data-reactid="10">Zeo API</a></div></div><div class="space-left16" data-reactid="11"><div class="" data-reactid="12"><div class="clearfix" data-reactid="13"><div class="keyline-top section contain clearfix " data-reactid="14"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="15"><p>This document specifies what you need to do to write your own Zeo plugins, which are self-contained units of code you can add to your Zeo worlds.</p>
+<p>It is assumed that you already have a Zeo server running. If not, see <a href="https://github.com/modulesio/zeo/tree/master/docs/getting-started.md">Getting started</a>.</p>
+</div></div><div data-title="Introduction" class="keyline-top section contain clearfix " data-reactid="16"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="17"><h2 id="introduction">Introduction</h2>
+<p>A Zeo plugin is just an <a href="https://www.npmjs.com/"><code>npm</code></a> module: that is, a <a href="https://docs.npmjs.com/files/package.json"><code>package.json</code></a> plus the Javascript files with your plugin code.</p>
+<p>The only difference between a Zeo plugin and any other <code>npm</code> module is some extra keys in the <code>package.json</code> that tell Zeo how to start it and stop it. Your plugin will probably also probably  <code>requestPlugin('zeo')</code> to interfact with the Zeo world.</p>
+<p>If you're a hands-on learner, you might want to simply dive into the <a href="/plugins/demo/"><code>Bouncy ball</code> demo plugin</a>. Otherwise, read on for the full Zeo plugin specification.</p>
+</div></div><div data-title="Module specification" class="keyline-top section contain clearfix " data-reactid="18"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="19"><h2 id="module-specification">Module specification</h2>
+<p>Under the hood, Zeo uses the <a href="https://github.com/modulesio/archae"><code>archae</code></a> module loader. It's just a way of writing client/server <code>npm</code> modules that can be started and stopped dynamically.</p>
+</div></div><div data-title="Package format" class="keyline-top section contain clearfix " data-reactid="20"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="21"><h3 id="package-format">Package format</h3>
+<p>The main thing that makes an <code>npm</code> module compatible with Zeo is that its <code>package.json</code> includes the keys <code>client</code>, <code>server</code>, or <code>worker</code> (all of which are optional). These should point to the (package-relative) <code>.js</code> files you want to run in the corresponding environments:</p>
+<p>Also note the <code>"keywords": ["zeo-mod"]</code>: this is used by Zeo to find your module when searching <code>npm</code>. It's not required to load</p>
+<p>The reference <code>.js</code> files (e.g. <code>client.js</code>) should export <code>mount</code> and <code>unmount</code> functions to call when your plugin is to be started or stopped, respectively:</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="22"><h4 id="packagejson">package.json</h4>
+<h4 id="clientjs">client.js</h4>
+</div></div><div data-title="Plugin APIs" class="keyline-top section contain clearfix " data-reactid="23"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="24"><h3 id="plugin-apis">Plugin APIs</h3>
+<p>In addition to loading and unloading plugins, Zeo lets plugins export their APIs and import other plugin's APIs.</p>
+</div></div><div data-title="Import a plugin&#x27;s API" class="keyline-top section contain clearfix " data-reactid="25"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="26"><h3 id="import-a-plugins-api">Import a plugin's API</h3>
+<p>To import a plugin API, use a <code>function</code> or <code>class</code> at the top-level <code>export default</code> or <code>module.exports</code> of your Javascript file, to capture the <code>archae</code> object:</p>
+<p>The important part is the call to <code>archae.requestPlugin()</code>, which lets us request other plugins. The return value of this function is a <code>Promise</code> that will <code>resolve</code> to the API that's exported by that plugin, or <code>reject</code> with an error describing how loading the plugin failed.</p>
+<p>In this case we are requesting the <code>/core/engines/zeo</code> plugin, which resolves to the Zeo plugin API. This betrays a key design principle of Zeo: it's actually just a plugin! That is, Zeo is just plugins all the way down.</p>
+<p>Also note the <code>return archae.requestPlugin(...)</code>: we are returning a <code>Promise</code> from <code>mount</code>. In this case, it means we want the plugin's loading to wait until the returned <code>Promise</code> resolves. This is also the mechanism that allows a plugin to export its own API for other plugins to consume.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="27"><h4 id="clientjs-1">client.js</h4>
+</div></div><div data-title="Export your plugin&#x27;s API" class="keyline-top section contain clearfix " data-reactid="28"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="29"><h3 id="export-your-plugins-api">Export your plugin's API</h3>
+<p>To export an API for your plugin, simply return (a <code>Promise</code> that resolves to) your API from the plugin's <code>mount</code> function in its Javascript implementation file.</p>
+<p>Returning a regular value means that the plugin should be considered loaded immediately, while returning a <code>Promise</code> means you want to wait for the plugin to load until the <code>Promise</code> resolves. Either way, the behavior is the same from the user's perspective: the resolved value of the <code>Promise</code> that the user gets as the result of calling <code>archae.requestPlugin()</code> will be the API your plugin exports.</p>
+<p>Here's an example of a plugin exporting an API and another plugin importing it for use:</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="30"><h4 id="databaseclientjs">database/client.js</h4>
+<h4 id="some-other-pluginclientjs">some-other-plugin/client.js</h4>
+</div></div><div data-title="Loading modules" class="keyline-top section contain clearfix " data-reactid="31"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="32"><h2 id="loading-modules">Loading modules</h2>
+<p>Now that you know how to write modules, you'll need to know how to load them into Zeo.</p>
+<p>There are two ways to do this: you can either installed from the local filesystem (in which case the plugin will only be available to your server), or publish to the public <code>npm</code> registry (in which case the plugin will be available for anyone to find and install). Either way, there's no difference in functionality and the code for your module is the same.</p>
+</div></div><div data-title="Option 1: Local install" class="keyline-top section contain clearfix " data-reactid="33"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="34"><h3 id="option-1-local-install">Option 1: Local install</h3>
+<p>This method is most useful for testing plugins as you develop them, without the overhead of publishing and downloading from <code>npm</code>.</p>
+<p>To use a plugin locally, simply drop your <code>npm</code> module (which otherwise meets the same Zeo mods specification) into Zeo's <code>plugins/</code> directory. For example, <code>plugins/my-mod</code> would be the right place to put a <code>zeo</code> plugin named <code>my-mod</code>.</p>
+<p>Once you've done this, you'll be able to add your plugin to Zeo the normal way, by going to <code>Mods > Local Mods</code> in the main Zeo menu. You can only do this on the server where you dropped your plugin.</p>
+<p>// XXX explain reinstalls</p>
+</div></div><div data-title="Option 2: Publish to npm" class="keyline-top section contain clearfix " data-reactid="35"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="36"><h3 id="option-2-publish-to-npm">Option 2: Publish to npm</h3>
+<p>Publishing your plugin to <code>npm</code> is the best way to deliver your module to anyone running Zeo. This is mostly just a straightforward <a href="https://docs.npmjs.com/cli/publish"><code>npm publish</code></a>. The only additional thing you need to do is to make sure that <code>"zeo-mod"</code> is included in your <code>"keywords" array in</code>package.json`, so Zeo knows how to find your module.</p>
+<p>To install a Zeo mod that was published to <code>npm</code>, go to <code>Mods > Npm search</code> in the main Zeo menu. Anyone running a Zeo server will be able to search for your mod and install it this way.</p>
+</div></div><div data-title="Zeo API" class="keyline-top section contain clearfix " data-reactid="37"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="38"><h2 id="zeo-api">Zeo API</h2>
+<p>The above describes how to write and load Zeo plugins that do nothing. To interact with the user and the Zeo world you'll want to use the API exported by <code>/core/engines/zeo</code>.</p>
+<p>This lets you get at the THREE.js <code>THREE</code>, <code>scene</code>, <code>camera</code>, and <code>renderer</code> objects, listen for frame updates, and get user poses:</p>
+<p>This plugin uses the Zeo API to add a sphere to the <code>scene</code> that Zeo has created for us, makes it float up and down in the scene, and colors it <code>BLUE</code> when we're looking directly at it or <code>RED</code> when we're touching it with tracked controllers.</p>
+<p>We update the scene every frame on by listening for <code>zeo.on('update', _update)</code> and get the HMD and controllers status via <code>zeo.getStatus()</code>. These APIs are documented below.</p>
+</div></div><div data-title="Exported objects" class="keyline-top section contain clearfix " data-reactid="39"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="40"><h3 id="exported-objects">Exported objects</h3>
+<p>The Zeo API exports some standard THREE.js primitives as seen above. These include:</p>
+<ul>
+<li><code>THREE</code>, the raw THREE.js API</li>
+<li><code>scene</code>, the <code>THREE.Scene</code> for the current world</li>
+<li><code>camera</code>, the <code>THREE.PerspectiveCamera</code> for viewing the current world</li>
+<li><code>render</code>, the <code>THREE.WebGLRenderer</code> for rendering the current world</li>
+</ul>
+<p>You can use these freely, as you would in any THREE.js app, but note that your plugin should conform to the module loader requirement that whatever you do in the <code>mount</code> step (such as adding objects to the <code>scene</code>) should be undone un the <code>unmount</code> step (such as removing the objects you added to the <code>scene</code>). If you don't this, your plugin will not behave correctly: it might leak resources, impact performance, or crash.</p>
+</div></div><div data-title="Frame Events" class="keyline-top section contain clearfix " data-reactid="41"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="42"><h3 id="frame-events">Frame Events</h3>
+<p>The Zeo API doubles as an <a href="https://nodejs.org/api/events.html"><code>EventEmitter</code></a> that you can listen to for events relating to frame timing and and input.</p>
+<p>The API is inherited from <code>node</code>: <code>zeo.on('eventName', eventHandler)</code> registers <code>eventHandler</code> to listen for <code>'eventName'</code> events and <code>zeo.removeListener('eventName', eventHandler)</code> unregisters it. The events you can subscribe to are:</p>
+<p>The <code>update</code> event fires <em>before</em> every frame is rendered. It's intended to let plugins perform update that need to happen on every frame, such as applying velocities to positions.</p>
+<p>Note that since listeners for the <code>update</code> event run on every frame, they need to be fast.</p>
+<p>That is, you shouldn't be iterating over large arrays, adding materials or textures, and other expensive things in your <code>update</code> function. If you need to do these, you should prefer:</p>
+<ul>
+<li>precomputation in <code>mount</code></li>
+<li>asynchronous computation in a worker</li>
+<li>doing the work in a vertex/fragment shader</li>
+</ul>
+<p>The <code>updateEye</code> event fires before each eye is rendered, and receives the eye's <code>camera</code> as an argument.</p>
+<p>The <code>camera</code> argument is the <code>THREE.PerspectiveCamera</code> for the eye being rendered. <code>updateEye</code> is most useful for cases where you want to render something that <em>depends on the eye camera</em> but <em>is not accounted for by the camera's transform matrix</em>. An example is rendering to a texture that depends on the camera, if you want the texture to be stereoscopic (such as a portal).</p>
+<p>Note that <code>updateEye</code> and <code>update</code> are <em>not</em> interchangeable. In the stereoscopic rendering case you will get <em>two</em> <code>updateEye</code> events per frame, so you'd be doing double the work ad double the rate.</p>
+<p>For consistency, <code>updateEye</code> will fire even if the renderering is monoscopic. In that case there will be a single <code>updateEye</code> event and a single <code>update</code> event fired.</p>
+<p>In general, prefer to use <code>update</code> instead of <code>updateEye</code>.</p>
+<p>Interacting with the VR world is a bit different than interacting with a regular browser page. For example, you want to be able to take input events from tracked controllers, which have buttons that do not correspond to anything on a standard keyboard or mouse. You'll want to know <em>which</em> controller your events are coming from. And with features such as virtual keyboards, some logical events do not correspond to any native event in the browser.</p>
+<p>For this reason, Zeo abstracts input events for you. It listens to the hardware and passes events to you through the regular <code>EventEmitter</code> interface. For example, listening to tracked controller events:</p>
+<p>The full list of available events is:</p>
+<ul>
+<li>
+<p><code>trigger</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>trigger</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
+</ul>
+</li>
+<li>
+<p><code>triggerdown</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>trigger</code> button is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>triggerup</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>trigger</code> button is released <em>up</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>pad</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>pad</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
+</ul>
+</li>
+<li>
+<p><code>paddown</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>pad</code> button is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>padup</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>pad</code> button is released <em>up</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>grip</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>grip</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
+</ul>
+</li>
+<li>
+<p><code>gripdown</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>grip</code> button is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>gripup</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>grip</code> button is released <em>up</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>menu</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>menu</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
+</ul>
+</li>
+<li>
+<p><code>menudown</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>menu</code> button is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>menuup</code> <code>{side: 'left'}</code></p>
+<ul>
+<li>Fired when the controller's <code>menu</code> button is released <em>up</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>keyboardpress</code> <code>{ key: 'a', keyCode: 65, side: 'left' }</code></p>
+<ul>
+<li>Fired when a virtual keyboard key is pressed.</li>
+<li><code>key</code> is the textual representation of the key. <code>keyCode</code> is the corresponding Javascript-compatible key code. <code>side</code> is whether the <code>left</code> or <code>right</code> controller was used to press the key. </li>
+</ul>
+</li>
+<li>
+<p><code>keyboarddown</code> <code>{ key: 'a', keyCode: 65, side: 'left' }</code></p>
+<ul>
+<li>Fired when a virtual keyboard key is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li>
+<p><code>keyboardup</code> <code>{ key: 'a', keyCode: 65, side: 'left' }</code></p>
+<ul>
+<li>Fired when a virtual keyboard key is released <em>up</em>.</li>
+</ul>
+</li>
+</ul>
+<p>// XXX describe event priorities and how event.stopImmediatePropagation() short-circuits</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="43"><h4 id="update"><code>update</code></h4>
+<h4 id="updateeyecamera"><code>updateEye(camera)</code></h4>
+<h4 id="input-events">Input events</h4>
+</div></div><div data-title="Status API" class="keyline-top section contain clearfix " data-reactid="44"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="45"><h3 id="status-api">Status API</h3>
+<p>// XXX finish this</p>
+</div></div><div data-title="Engine API" class="keyline-top section contain clearfix " data-reactid="46"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="47"><h3 id="engine-api">Engine API</h3>
+<p>The first thing you'll need to do to get access to the rest of Zeo's APIs is to request the Zeo engine with <code>archae.requestEngine()</code>. Per the Archae specification, you can get the <code>archae</code> loader instance by grabbing it in the top-level function that's exported from your module:</p>
+<p>Once you've done that, you get the Zeo engine instance with <code>archae.requestEngine('/core/engines/zeo')</code>. This returns a <code>Promise</code> that will resolve to the Zeo API root:</p>
+<p>Note the <code>return archae.requestEngine()</code>: per the Archae specification, the <code>mount</code> function can return a Promise that will resolve once the mod completes its loading. Since our mod technically depends on loading the Zeo engine API, <code>return archae.requestEngine()</code> magically does the correct thing. We could load multiple things with <code>Promise.all</code>, or continue the <code>Promise</code> chain if we wanted to load more stuff here and it would "just work", but we'll stick with the simple example for now.</p>
+<p>The rest of what your module does communicates with Zeo through the API you get out of the resolved <code>archae.requestEngine('/core/engines/zeo')</code>.</p>
+</div></div><div data-title="Scene API" class="keyline-top section contain clearfix " data-reactid="48"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="49"><h3 id="scene-api">Scene API</h3>
+<p>Zeo loads <code>THREE.js</code> and sets up the <code>scene</code> rendering for you, and exposes these at the root of the Zeo API.</p>
+<p>These objects (<code>THREE</code>, <code>scene</code>, <code>camera</code>, <code>renderer</code>) are the bare THREE.js APIs and you can immediately use them to add meshes and other objects to the THREE.js scene graph. There's no magic here and you have the full THREE.js API at your disposal.</p>
+<p>Here we add a green sphere floating in the middle of the scene:</p>
+<p>Note that a full example of this mod is available as a demo plugin in the <a href="/plugins/demo/">plugins/demo/</a>.</p>
+</div></div><div data-title="Zeo update callbacks API" class="keyline-top section contain clearfix " data-reactid="50"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="51"><h3 id="zeo-update-callbacks-api">Zeo update callbacks API</h3>
+<p>Since Zeo is fundamentally about interactive VR, you will probably want a way to "do something on every frame", or "do something for each eye camera" -- such as advance an animation or render something stereoscopically.</p>
+<p>The Zeo framework is the "owner" of the VR camera, the rendering pipeline, and timing, so to be able to do stuff (like updating animations), you'll need to be able to hook in your code at the right time in a frame. That's what the update callbacks are for.</p>
+<p>All callbacks are declared by your mod via the <a href="https://github.com/modulesio/archae">Archae specification</a>. That is, your mount function should return (a <code>Promise</code> that resolves to) an object with the callback key mapping to the callback handler:</p>
+<p>The <code>update</code> callback will fire <em>before</em> Zeo renders every frame. This lets you do additional work that needs to be done per frame, such as updating animations.</p>
+<p>Note that whatever your <code>update</code> callback runs once per frame, so it needs to be fast.</p>
+<p>This means your <code>update</code> callback should not add or remove objects from the scene, construct new materials (<code>new THREE.Material()</code>), or do heavy math.</p>
+<p>If you need to do these things, the right place to do them is in the <code>mount</code> function; if this setup needs to be asynchronous (such as needing to fetch resources), your <code>mount</code> function can return the appropriate <code>Promise</code>.</p>
+<p>The <code>updateEye</code> callback is similar to <code>update</code>, only it will get called once <em>per eye</em> being rendered (generally, twice per frame).</p>
+<p>Additionally, it gets passed the <code>camera</code> that correponds to the eye being rendered. You can use the <code>camera</code> object to perform additional computation or set up shader parameters for more complicated rendering passes. For example, if you want to render a stereoscopic portal texture, <code>updateEye</code> is the way you'd do it.</p>
+<p>Note that <code>update</code> and <code>updateEye</code> are <em>not</em> mutually exclusive. You can use both, in which case <code>updateEye</code> will be called for each eye, followed by <code>update</code>.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="52"><h4 id="update-1"><code>update</code></h4>
+<h4 id="updateeye"><code>updateEye</code></h4>
+</div></div><div data-title="Zeo status API" class="keyline-top section contain clearfix " data-reactid="53"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="54"><h3 id="zeo-status-api">Zeo status API</h3>
+<p>The Zeo status API lets you get details about the current user state -- their Head Mounted Display (HMD) pose, controller poses, and button states.</p>
+<p>// XXX</p>
+</div></div><div data-title="Zeo world API" class="keyline-top section contain clearfix " data-reactid="55"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="56"><h3 id="zeo-world-api">Zeo world API</h3>
+<p>The Zeo world API lets your mod get details about the currently loaded VR world -- such as accurate world timing information for animations. For this, the Zeo engine exports a <code>getCurrentWorld()</code> function:</p>
+<p>The API behind the <code>World</code> object exported from is still settling, but you can rely on <code>getWorldTime()</code> being available, for getting the current number of milliseconds that the world has been executing.</p>
+</div></div><div data-title="Zeo elements API" class="keyline-top section contain clearfix " data-reactid="57"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="58"><h3 id="zeo-elements-api">Zeo elements API</h3>
+<p>The Zeo elements API is a way for mods to comunicate -- with the user (via configuration in the menu interface), and with each other (via a DOM object model and event system). The key idea is that a Zeo mod can export a specification for custom DOM elements, and these can be added to the world and configured by the user.</p>
+<p>Here's a simple example of a mod that allows user-configurable placement of a cube:</p>
+<p>There are basically three parts to the elements API: <code>element declarations</code>, <code>attrbute declarations</code>, and <code>template declarations</code>. We'll tackle them individually.</p>
+<p>// XXX</p>
+</div></div></div></div></div><div class="fixed-top space-left16" style="z-index:1;" data-reactid="59"><div class="events bottom-shadow pad1 col6 pin-topright  " data-reactid="60"><div class="fr pad0" data-reactid="61"><a title="Display as 1 column" style="cursor:pointer;" class="icon quiet caret-left pad0 fill-darken0 round" data-reactid="62"></a></div></div></div></div></div><!--STOP-->
     <script src='bundle.js'></script>
   </body>
 </html>
