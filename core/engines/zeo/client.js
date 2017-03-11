@@ -390,8 +390,12 @@ class Zeo {
                               onExit: () => {
                                 overlay.style.display = 'flex';
                                 renderer.domElement.style.filter = filterText;
+
+                                bootstrap.setVrMode(null);
                               },
                             });
+
+                            bootstrap.setVrMode('hmd');
 
                             overlay.style.display = 'none';
                             renderer.domElement.style.filter = 'none';
@@ -417,8 +421,12 @@ class Zeo {
                             onExit: () => {
                               overlay.style.display = 'flex';
                               renderer.domElement.style.filter = filterText;
+
+                              bootstrap.setVrMode(null);
                             },
                           });
+
+                          bootstrap.setVrMode('keyboard');
 
                           overlay.style.display = 'none';
                           renderer.domElement.style.filter = 'none';

@@ -233,11 +233,18 @@ class Hub {
               inputValue: 0,
               loading: false,
               error: null,
-              controlsType: 'keyboard', // XXX actually track this
+              vrMode: bootstrap.getVrMode(),
             };
             const focusState = {
               type: '',
             };
+
+            const _vrModeChange = vrMode => {
+              hubState.vrMode = vrMode;
+
+              _updatePages();
+            };
+            bootstrap.on('vrModeChange', _vrModeChange);
 
             const menuMesh = (() => {
               const object = new THREE.Object3D();
@@ -252,7 +259,7 @@ class Hub {
                     inputValue,
                     loading,
                     error,
-                    controlsType,
+                    vrMode,
                   },
                   focus: {
                     type: focusType,
@@ -1029,6 +1036,8 @@ class Hub {
             this._cleanup = () => {
               serverTracker.destroy();
               serverTracker.removeListener('update', _serverTrackerUpdate);
+
+              bootstrap.removeListener('vrModeChange', _vrModeChange);
 
               scene.remove(menuMesh);
               SIDES.forEach(side => {

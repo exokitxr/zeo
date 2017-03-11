@@ -34,48 +34,25 @@ class Bootstrap {
       .then(res => res.json());
 
     return Promise.all([
+      archae.requestPlugins([
+        '/core/plugins/js-utils',
+      ]),
       _requestServer(hostUrl),
     ])
       .then(([
+        [
+          jsUtils
+        ],
         serverJson,
       ]) => {
         if (live) {
+          const {events} = jsUtils;
+          const {EventEmitter} = events;
+
           const serversJson = { // XXX get rid of this
             servers: [],
           };
-
-          const _getInitialUrl = () => initialUrl;
-          const _getServers = () => serversJson.servers;
-          const _getCurrentServer = () => serverJson;
-          const _changeServer = serverUrl => {
-            if (serverUrl !== null) {
-              return _requestServer(serverUrl)
-                .then(serverJsonData => {
-                  serverJson = serverJsonData;
-                });
-            } else {
-              serverJson = {
-                type: 'hub',
-                url: null,
-              };
-
-              return Promise.resolve();
-            }
-          };
-          const _requestLogout = () => fetch('https://' + serverUrl + '/server/logout', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'same-origin',
-          })
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.json();
-              } else {
-                return null;
-              }
-            });
+          let vrMode = null;
           const userState = {
             username: null,
             world: null,
@@ -89,64 +66,118 @@ class Bootstrap {
             })(),
           };
 
-          const _getUserState = () => userState;
-          const _getUserStateJson = () => {
-            const {world, matrix} = userState;
-            return {
-              token: null,
-              state: {
-                world,
-                matrix,
-                inventory,
-              },
-            };
-          };
-          const _setUserStateMatrix = matrix => {
-            userState.matrix = matrix;
-          };
-          const _getUserStateInventoryItem = index => {
-            return userState.inventory[index] || null;
-          };
-          const _setUserStateInventoryItem = (index, item) => {
-            userState.inventory[index] = item;
-          };
-          const _saveUserState = () => {
-            const {username} = userState;
+          class BootstrapApi extends EventEmitter {
+            getInitialUrl() {
+              return initialUrl;
+            }
 
-            if (hubEnabled && username) {
-              return fetch(hubUrl + '/hub/userState', {
+            getServers() {
+              return serversJson.servers;
+            }
+
+            getCurrentServer() {
+              return serverJson;
+            }
+
+            changeServer(serverUrl) {
+              if (serverUrl !== null) {
+                return _requestServer(serverUrl)
+                  .then(serverJsonData => {
+                    serverJson = serverJsonData;
+                  });
+              } else {
+                serverJson = {
+                  type: 'hub',
+                  url: null,
+                };
+
+                return Promise.resolve();
+              }
+            }
+
+            getVrMode() {
+              return vrMode;
+            }
+
+            setVrMode(newVrMode) {
+              vrMode = newVrMode;
+
+              this.emit('vrModeChange');
+            }
+
+            requestLogout() {
+              return fetch('https://' + serverUrl + '/server/logout', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(_getUserStateJson()),
-              });
-            } else {
-              return Promise.resolve();
+                credentials: 'same-origin',
+              })
+                .then(res => {
+                  if (res.status >= 200 && res.status < 300) {
+                    return res.json();
+                  } else {
+                    return null;
+                  }
+                });
             }
-          };
-          const _saveUserStateAsync = () => {
-            const {username} = userState;
-            if (hubEnabled && username) {
-              navigator.sendBeacon(hubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
-                type: 'application/json',
-              }));
-            }
-          };
 
-          return {
-            getInitialUrl: _getInitialUrl,
-            getServers: _getServers,
-            getCurrentServer: _getCurrentServer,
-            changeServer: _changeServer,
-            requestLogout: _requestLogout,
-            getUserState: _getUserState,
-            setUserStateMatrix: _setUserStateMatrix,
-            getUserStateInventoryItem: _getUserStateInventoryItem,
-            setUserStateInventoryItem: _setUserStateInventoryItem,
-            saveUserState: _saveUserState,
-            saveUserStateAsync: _saveUserStateAsync,
-          };
+            getUserState() {
+              return userState;
+            }
+
+            getUserStateJson() {
+              const {world, matrix} = userState;
+              return {
+                token: null,
+                state: {
+                  world,
+                  matrix,
+                  inventory,
+                },
+              };
+            }
+
+            setUserStateMatrix(matrix) {
+              userState.matrix = matrix;
+            }
+
+            getUserStateInventoryItem(index) {
+              return userState.inventory[index] || null;
+            }
+
+            setUserStateInventoryItem(index, item) {
+              userState.inventory[index] = item;
+            }
+
+            saveUserState() {
+              const {username} = userState;
+
+              if (hubEnabled && username) {
+                return fetch(hubUrl + '/hub/userState', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(_getUserStateJson()),
+                });
+              } else {
+                return Promise.resolve();
+              }
+            }
+
+            saveUserStateAsync() {
+              const {username} = userState;
+              if (hubEnabled && username) {
+                navigator.sendBeacon(hubUrl + '/hub/userState', new Blob([JSON.stringify(_getUserStateJson())], {
+                  type: 'application/json',
+                }));
+              }
+            }
+          }
+          const bootstrapApi = new BootstrapApi();
+
+          return bootstrapApi;
         }
       });
   }

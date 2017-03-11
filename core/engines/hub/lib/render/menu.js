@@ -19,26 +19,26 @@ const earthImgSrc = 'data:image/svg+xml;base64,' + btoa(earthImg);
 const swordImg = require('../img/sword');
 const swordImgSrc = 'data:image/svg+xml;base64,' + btoa(swordImg);
 
-const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, focusType, controlsType, imgs}) => {
+const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs}) => {
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
       <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
         <img src="${imgs.logo}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
         <div>zeo vr</div>
       </div>
-      ${getPageSrc(page, searchText, inputIndex, inputValue, loading, error, focusType, controlsType, imgs)}
+      ${getPageSrc(page, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs)}
     </div>
   `;
 };
 
-const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, focusType, controlsType, imgs) => {
+const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs) => {
   switch (page) {
     case 0: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
         <div style="margin-bottom: 10px; font-size: 30px; font-weight: 400;">Welcome to Zeo!</div>
         <img src="${imgs.logo}" width="${100 * 0.75}" height="{158 * 0.75}" />
         <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
-          ${controlsType === 'keyboard' ? `\
+          ${(!vrMode || vrMode === 'keyboard') ? `\
             <p>You're using a keyboard and mouse, but you can still do everything you could with a headset! Here are the controls:</p>
             <p>
               <b>WASD</b>: Move around<br/>
