@@ -59,13 +59,19 @@ class Hub {
       const _requestImgs = () => Promise.all([
         '/img/logo-large.png',
         '/img/controller-small.png',
+        '/img/cake.png',
+        '/img/server.png',
       ].map(_requestFileBlobData))
         .then(([
           logo,
           controller,
+          cake,
+          server,
         ]) => ({
           logo,
           controller,
+          cake,
+          server,
         }));
       const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/core/plugins/z-cake'))
         .then(res => res.json()
@@ -274,6 +280,7 @@ class Hub {
                     inputValue,
                     loading,
                     error,
+                    vrMode,
                     focusType,
                     imgs,
                   }),
@@ -301,7 +308,7 @@ class Hub {
 
               const scale = 2;
               const cakeTagMesh = tags.makeTag(zCakeItemSpec);
-              cakeTagMesh.position.y = -0.2;
+              cakeTagMesh.position.y = -0.26;
               cakeTagMesh.position.z = -1 + 0.01;
               cakeTagMesh.scale.set(scale, scale, 1);
               cakeTagMesh.initialScale = cakeTagMesh.scale.clone();

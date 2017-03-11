@@ -12,14 +12,10 @@ const rightWhiteImg = require('../img/right-white');
 const rightWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(rightWhiteImg);
 const chipImg = require('../img/chip');
 const chipImgSrc = 'data:image/svg+xml;base64,' + btoa(chipImg);
-const cakeImg = require('../img/cake');
-const cakeImgSrc = 'data:image/svg+xml;base64,' + btoa(cakeImg);
 const earthImg = require('../img/earth');
 const earthImgSrc = 'data:image/svg+xml;base64,' + btoa(earthImg);
-const swordImg = require('../img/sword');
-const swordImgSrc = 'data:image/svg+xml;base64,' + btoa(swordImg);
 
-const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs}) => {
+const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
       <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
@@ -71,7 +67,7 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
     case 1: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
         <div style="font-size: 30px; font-weight: 400;">The cake is real!</div>
-        <img src="${cakeImgSrc}" width="100" height="100" style="margin: 10px 0;" />
+        <img src="${imgs.cake}" width="256" height="128" style="margin: 10px 0;" />
         <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
           <p>In Zeo VR, your world is made up of <i>modules</i>. Modules are objects you can add to the world.</p>
           <p>For example, here is a <b>CAKE MODULE</b>:</p>
@@ -92,14 +88,14 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
     case 2: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
         <div style="font-size: 30px; font-weight: 400;">It's dangerous to go alone!</div>
-        <img src="${swordImgSrc}" width="100" height="100" style="margin: 10px 0;" />
+        <img src="${imgs.server}" width="256" height="128" style="margin: 10px 0;" />
         <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
-          <p>There's a world of multiplayer servers for you to explore!<p>
-          <p>Look at the <b>LINK ORBS</b> around you. Each Link Orb is a live server you can join. To connect to a server, <b>POINT</b> at it and click your <b>TRIGGER</b>.</p>
-          <p>Some servers are <b>locked</b> until you get permission from the owner. Contact info for each server is written above the server, but you can <i>sneak a peek</i> through the orb.</p>
+          <p>Zeo VR lets you connect to multiplayer world servers.</p>
+          <p>Look at the <b>LINK ORBS</b> around you. Each Link Orb is a server you can join. To connect to a server, <b>POINT</b> at it and click your <b>TRIGGER</b>.</p>
+          <p>Some servers are <b>LOCKED</b> until you get permission from the owner. Contact info for each server is written above the server, but you can <i>sneak a peek</i> through the orb.</p>
           <p style="margin-bottom: 0; font-size: 18px;">
             <i>
-              To <b>LEARN</b> how to make modules, read the <a onclick="hub:apiDocs"><b>API Documentation</b></a>.<br/>
+              To <b>LEARN</b> how to code your own worlds, read the <a onclick="hub:apiDocs"><b>API Docs</b></a>.<br/>
               To <b>HIDE</b> the tutorial, click the <b>NEXT BUTTON</b>.<br/>
             </i>
           </p>
