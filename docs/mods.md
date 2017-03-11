@@ -1,4 +1,4 @@
-# Zeo plugins
+# Module API
 
 This document specifies what you need to do to write your own Zeo plugins, which are self-contained units of code you can add to your Zeo worlds.
 
@@ -140,7 +140,7 @@ Once you've done this, you'll be able to add your plugin to Zeo the normal way, 
 
 // XXX explain reinstalls
 
-### Option 2: Publish to `npm`
+### Option 2: Publish to npm
 
 Publishing your plugin to `npm` is the best way to deliver your module to anyone running Zeo. This is mostly just a straightforward [`npm publish`](https://docs.npmjs.com/cli/publish). The only additional thing you need to do is to make sure that `"zeo-mod"` is included in your `"keywords" array in `package.json`, so Zeo knows how to find your module.
 

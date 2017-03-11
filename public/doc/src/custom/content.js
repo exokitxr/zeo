@@ -1,4 +1,4 @@
-var fs = require('fs');
+var index = require('../../../../docs/index.js');
 
 /**
  * This file exports the content of your website, as a bunch of concatenated
@@ -9,8 +9,4 @@ var fs = require('fs');
  * into strings of those files' content before the file is delivered to a
  * browser: the content is read ahead-of-time and included in bundle.js.
  */
-module.exports =
-  '# Introduction\n' +
-  fs.readFileSync('./content/introduction.md', 'utf8') + '\n' +
-  '# Example\n' +
-  fs.readFileSync('./content/example.md', 'utf8') + '\n';
+module.exports = index.getMarkdown();
