@@ -59,17 +59,20 @@ class Hub {
       const _requestImgs = () => Promise.all([
         '/img/logo-large.png',
         '/archae/hub/img/controller.png',
+        '/archae/hub/img/teleport.png',
         '/archae/hub/img/cake.png',
         '/archae/hub/img/server.png',
       ].map(_requestFileBlobData))
         .then(([
           logo,
           controller,
+          teleport,
           cake,
           server,
         ]) => ({
           logo,
           controller,
+          teleport,
           cake,
           server,
         }));
@@ -689,7 +692,7 @@ class Hub {
                   _updatePages();
 
                   const {cakeTagMesh} = menuMesh;
-                  cakeTagMesh.visible = page === 1;
+                  cakeTagMesh.visible = page === 2;
                 };
 
                 if (onclick === 'hub:next') {

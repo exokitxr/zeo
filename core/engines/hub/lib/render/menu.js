@@ -28,13 +28,15 @@ const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, vr
 };
 
 const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs) => {
+  const keyboardVrMode = vrMode === null || vrMode === 'keyboard';
+
   switch (page) {
     case 0: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
         <div style="margin-bottom: 10px; font-size: 30px; font-weight: 400;">Welcome to Zeo!</div>
         <img src="${imgs.logo}" width="${100 * 0.75}" height="{158 * 0.75}" />
         <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
-          ${(!vrMode || vrMode === 'keyboard') ? `\
+          ${keyboardVrMode ? `\
             <p>You're using a keyboard and mouse, but you can still do everything you could with a headset! Here are the controls:</p>
             <p>
               <b>WASD</b>: Move around<br/>
@@ -66,7 +68,28 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
     `;
     case 1: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
-        <div style="font-size: 30px; font-weight: 400;">The cake is real!</div>
+        <div style="font-size: 30px; font-weight: 400;">Discover your superpowers</div>
+        <img src="${imgs.teleport}" width="256" height="128" style="margin: 10px 0;" />
+        <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
+          <p>This screen is the <b>MENU</b>. The menu has tools to edit your VR world, move between worlds, and change settings. It's showing you this tutorial.</p>
+          <p>To <b>OPEN</b> or <b>CLOSE</b> the menu, press the <b>MENU</b> the <b>PAD${keyboardVrMode ? ' (E key)' : ''}</b> on your controller.</p>
+          <p>To <b>TELEPORT</b> around the world, <b>HOLD</b> the <b>PAD${keyboardVrMode ? ' (Q key)' : ''}</b> on to target and <b>RELEASE</b> to go there. Use your finger to adjust how far you'll teleport.</p>
+          <p style="margin-bottom: 0; font-size: 18px;">
+            <i>
+              <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
+            </i>
+          </p>
+          </p>
+        </div>
+        <div style="display: flex; width: 100%;">
+          <a style="padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:back">&lt; Back</a>
+          <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Servers &gt;</a>
+        </div>
+      </div>
+    `;
+    case 2: return `\
+      <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
+        <div style="font-size: 30px; font-weight: 400;">The cake is real</div>
         <img src="${imgs.cake}" width="256" height="128" style="margin: 10px 0;" />
         <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
           <p>In Zeo VR, your world is made up of <i>modules</i>. Modules are objects you can add to the world.</p>
@@ -85,7 +108,7 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
         </div>
       </div>
     `;
-    case 2: return `\
+    case 3: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
         <div style="font-size: 30px; font-weight: 400;">It's dangerous to go alone!</div>
         <img src="${imgs.server}" width="256" height="128" style="margin: 10px 0;" />
@@ -106,7 +129,7 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
         </div>
       </div>
     `;
-    case 3: return `\
+    case 4: return `\
       <div style="display: flex; height: 200px; justify-content: center; align-items: center;">
         <div style="font-size: 50px;">Choose a server</div>
       </div>

@@ -113,7 +113,7 @@ class Bootstrap {
             setVrMode(newVrMode) {
               vrMode = newVrMode;
 
-              this.emit('vrModeChange');
+              this.emit('vrModeChange', vrMode);
             }
 
             navigate(url) {
