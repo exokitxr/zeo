@@ -106,42 +106,6 @@ class Zeo {
             '/core/plugins/js-utils',
           ]);
 
-          let mediaPermissions = false;
-          let mediaPermissionsLoaded = false;
-          const _requestMediaPermissions = () => new Promise((accept, reject) => {
-            navigator.mediaDevices.getUserMedia({
-              video: true,
-              audio: true,
-            })
-              .then(mediaStream => {
-                const tracks = mediaStream.getTracks();
-                let video = false;
-                let audio = false;
-                for (let i = 0; i < tracks.length; i++) {
-                  const track = tracks[i];
-                  if (track.kind === 'video') {
-                    video = true;
-                  } else if (track.kind === 'audio') {
-                    audio = true;
-                  }
-                  track.stop();
-                }
-
-                accept(video && audio);
-              })
-              .catch(err => {
-                console.warn(err);
-
-                accept(false);
-              });
-          });
-          const _initMediaPermissions = () => _requestMediaPermissions()
-            .then(newMediaPermissions => {
-              mediaPermissions = newMediaPermissions;
-              mediaPermissionsLoaded = true;
-            });
-          _initMediaPermissions();
-
           return _requestPlugins().then(([
             bootstrap,
             input,
@@ -321,23 +285,6 @@ class Zeo {
                       </div>
                     `;
 
-                    const permissionsHelperContent = document.createElement('div');
-                    permissionsHelperContent.innerHTML = `\
-                      <div style="height: 42px; margin-top: 10px; margin-bottom: 18px; padding: 15px; background-color: #4CAF50; color: #FFF; cursor: pointer;">
-                        <div style="display: flex; margin-bottom: 10px; font-size: 18px; line-height: 1;">
-                          <div style="margin-right: auto; color: #FFF;">Media Permissions</div>
-                          <button style="display: inline-flex; position: relative; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
-                            <div style="width: 10px; height: 10px; background-color: #FFF;"></div>
-                            <div style="width: 10px; height: 10px;"></div>
-                          </button>
-                        </div>
-                        <p style="margin: 0; font-size: 13px; font-weight: 400;" class="help-message">Media permissions enable avatar chat in VR. Click to grant permission.</p>
-                      </div>
-                    `;
-                    permissionsHelperContent.addEventListener('click', () => {
-                      _reinitMediaPermissions();
-                    });
-
                     const siteContent = document.createElement('div');
                     siteContent.innerHTML = `\
                       <div style="margin-bottom: 10px; padding: 0 30px; padding-bottom: 20px; background-color: #000; color: #FFF; font-size: 60px; line-height: 1.4; font-weight: 300;">Multiplayer VR worlds<br>in your browser<br>powered by npm</div>
@@ -434,35 +381,13 @@ class Zeo {
                       });
                     });
 
-                    const _updateHelperContent = () => {
-                      if (mediaPermissions) {
-                        permissionsHelperContent.style.display = 'none';
-                      } else {
-                        permissionsHelperContent.style.display = 'block';
-                      }
-                    };
-                    _updateHelperContent();
-
                     if (!isInIframe) {
                       overlayContent.appendChild(helper);
                       helper.appendChild(enterHelperContent);
                       helper.appendChild(errorMessage);
-                      helper.appendChild(permissionsHelperContent);
                     } else {
                       overlayContent.appendChild(siteContent);
                       siteContent.appendChild(errorMessage);
-                    }
-
-                    const _reinitMediaPermissions = () => {
-                      _requestMediaPermissions()
-                        .then(newMediaPermissions => {
-                          mediaPermissions = newMediaPermissions;
-
-                          _updateHelperContent();
-                        });
-                    };
-                    if (!mediaPermissionsLoaded) {
-                      _reinitMediaPermissions();
                     }
 
                     // end helper content
