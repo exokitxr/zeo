@@ -1,5 +1,9 @@
 import React from 'react';
 import PureRenderMixin from 'react-pure-render/mixin';
+import GithubSlugger from 'github-slugger';
+
+let slugger = new GithubSlugger();
+let slug = title => { slugger.reset(); return slugger.slug(title); };
 
 var NavigationItem = React.createClass({
   mixins: [PureRenderMixin],
@@ -9,8 +13,17 @@ var NavigationItem = React.createClass({
     onClick: React.PropTypes.func.isRequired,
     href: React.PropTypes.string.isRequired
   },
-  onClick() {
-    this.props.onClick(this.props.sectionName);
+  onClick(e) {
+    const url = '#' + slug(this.props.sectionName);
+
+    window.parent.postMessage({
+      method: 'pushState',
+      args: [url],
+    }, '*');
+
+    e.preventDefault();
+
+    // this.props.onClick(this.props.sectionName);
   },
   render() {
     var {sectionName, href, active} = this.props;
