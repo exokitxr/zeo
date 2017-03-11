@@ -717,7 +717,7 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {
-                  bootstrap.isInIframe('https://zeovr.io/docs');
+                  bootstrap.navigate('https://zeovr.io/docs');
 
                   return true; // can't happen
                 } else {

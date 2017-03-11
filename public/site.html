@@ -530,9 +530,9 @@
       height: 80px;
       align-items: center;
       font-size: 13px;
-      font-weight: 400;a
+      font-weight: 400;
     }
-    .demographics > navbar > nav {
+    .demographics > navbar > a {
       display: flex;
       position: relative;
       height: 100%;
@@ -543,37 +543,36 @@
       box-sizing: border-box;
       cursor: pointer;
     }
-    .demographics > navbar > nav.selected::after {
+    .demographics > navbar > a.selected::after {
       position: absolute;
       bottom: -16px;
       left: 50%;
       margin-left: -11px;
       border-style: solid;
       border-width: 12px 12px 0 12px;
-      /* content: ''; */
     }
-    .demographics > navbar > nav.red.selected {
+    .demographics > navbar > a.red.selected {
       color: #E91E63;
       border-bottom-color: #E91E63;
     }
-    .demographics > navbar > nav.red.selected::after {
+    .demographics > navbar > a.red.selected::after {
       border-color: #E91E63 transparent transparent transparent;
     }
-    .demographics > navbar > nav.green.selected {
+    .demographics > navbar > a.green.selected, .demographics > navbar > a:hover {
       color: #4CAF50;
       border-bottom-color: #4CAF50;
     }
-    .demographics > navbar > nav.green.selected::after {
+    .demographics > navbar > a.green.selected::after {
       border-color: #4CAF50 transparent transparent transparent;
     }
-    .demographics > navbar > nav.purple.selected {
+    .demographics > navbar > a.purple.selected {
       color: #7E57C2;
       border-bottom-color: #7E57C2;
     }
-    .demographics > navbar > nav.purple.selected::after {
+    .demographics > navbar > a.purple.selected::after {
       border-color: #7E57C2 transparent transparent transparent;
     }
-    .demographics > navbar > nav > i {
+    .demographics > navbar > a > i {
       margin-right: 10px;
     }
     section.details {
@@ -1195,15 +1194,9 @@
     </div>
     <div class=demographics>
       <navbar>
-        <nav class="green selected" id=nav-button-1>
-          <div class=title>Try it</div>
-        </nav>
-        <nav class=green id=nav-button-2>
-          <div class=title>API Docs</div>
-        </nav>
-        <nav class=purple id=nav-button-3>
-          <div class=title>FAQ</div>
-        </nav>
+        <a href="/" class="green selected" id=nav-button-1>Try it</a>
+        <a href="/docs" class=green id=nav-button-2>API Docs</a>
+        <a href="/faq" class=green id=nav-button-3>FAQ</a>
       </navbar>
     </div>
     <div class=header-right>
@@ -1286,7 +1279,7 @@
     </section>
   </div>
   <div class="body api-body" id=api-body style="display: none;">
-    <iframe src="/docs/index.html" class=docs-iframe></iframe>
+    <iframe src="/doc/index.html" class=docs-iframe></iframe>
   </div>
   <!-- <section class=details>
     <div class=details-wrapper id=demographics-details-1>
@@ -1775,24 +1768,45 @@ const navButton1 = $('#nav-button-1')[0];
 const navButton2 = $('#nav-button-2')[0];
 const navButton3 = $('#nav-button-3')[0];
 const navButtons = [navButton1, navButton2, navButton3];
-navButton1.addEventListener('click', () => {
+navButtons.forEach(navButton => {
+  navButton.addEventListener('click', e => {
+    const href = e.target.getAttribute('href');
+    history.pushState({}, '', href);
+
+    _updatePage();
+
+    e.preventDefault();
+  });
+});
+
+window.addEventListener('popstate', e => {
+  _updatePage();
+});
+
+const _updatePage = () => {
+  const path = document.location.pathname;
+
   navButtons.forEach(navButton => {
     navButton.classList.remove('selected');
   });
-  navButton1.classList.add('selected');
+  if (path === '/') {
+    navButton1.classList.add('selected');
 
-  homeBody.style.display = 'flex';
-  apiBody.style.display = 'none';
-});
-navButton2.addEventListener('click', () => {
-  navButtons.forEach(navButton => {
-    navButton.classList.remove('selected');
-  });
-  navButton2.classList.add('selected');
+    homeBody.style.display = 'flex';
+    apiBody.style.display = 'none';
+  } else if (path === '/docs') {
+    navButton2.classList.add('selected');
 
-  homeBody.style.display = 'none';
-  apiBody.style.display = 'flex';
-});
+    homeBody.style.display = 'none';
+    apiBody.style.display = 'flex';
+  } else if (path === '/faq') {
+    navButton3.classList.add('selected');
+
+    homeBody.style.display = 'none';
+    apiBody.style.display = 'none';
+  }
+};
+_updatePage();
 
 window.addEventListener('message', e => {
   const {data} = e;
