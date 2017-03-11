@@ -1267,7 +1267,7 @@
         <div>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></div>
       </div>
     </aside>
-    <iframe src="https://hub.zeovr.io:8000" class=hub-iframe></iframe>
+    <iframe class=hub-iframe id=hub-iframe></iframe>
     <section class=hero>
       <div class=hero-wrap id=hero-wrap>
         <div class=hero-heading>
@@ -1279,7 +1279,7 @@
     </section>
   </div>
   <div class="body api-body" id=api-body style="display: none;">
-    <iframe src="/doc/index.html" class=docs-iframe></iframe>
+    <iframe class=docs-iframe id=docs-iframe></iframe>
   </div>
   <!-- <section class=details>
     <div class=details-wrapper id=demographics-details-1>
@@ -1768,6 +1768,9 @@ const navButton1 = $('#nav-button-1')[0];
 const navButton2 = $('#nav-button-2')[0];
 const navButton3 = $('#nav-button-3')[0];
 const navButtons = [navButton1, navButton2, navButton3];
+const hubIframe = $('#hub-iframe')[0];
+const docsIframe = $('#docs-iframe')[0];
+
 navButtons.forEach(navButton => {
   navButton.addEventListener('click', e => {
     const href = e.target.getAttribute('href');
@@ -1779,27 +1782,38 @@ navButtons.forEach(navButton => {
   });
 });
 
-window.addEventListener('popstate', e => {
+window.addEventListener('popstate', () => {
   _updatePage();
 });
 
 const _updatePage = () => {
-  const path = document.location.pathname;
+  const path = document.location.pathname + document.location.search + document.location.hash;
 
   navButtons.forEach(navButton => {
     navButton.classList.remove('selected');
   });
-  if (path === '/') {
+
+  let match;
+  if (/^\/?(?:\?|#.*|$)/.test(path)) {
     navButton1.classList.add('selected');
+
+    if (!hubIframe.loaded) {
+      hubIframe.contentWindow.location.replace('https://' + 'hub.' + document.location.host + document.location.pathname + document.location.search + document.location.hash);
+      hubIframe.loaded = true;
+    }
 
     homeBody.style.display = 'flex';
     apiBody.style.display = 'none';
-  } else if (path === '/docs') {
+  } else if (match = path.match(/^\/docs\/?(?:\?|(#.*)|$)/)) {
+    const hash = match[1] || '';
+
     navButton2.classList.add('selected');
+
+    docsIframe.contentWindow.location.replace('/doc/index.html' + hash);
 
     homeBody.style.display = 'none';
     apiBody.style.display = 'flex';
-  } else if (path === '/faq') {
+  } else if (/^\/faq\/?(?:\?|#.*|$)/.test(path)) {
     navButton3.classList.add('selected');
 
     homeBody.style.display = 'none';
@@ -1815,10 +1829,16 @@ window.addEventListener('message', e => {
   if (method === 'loaded') {
     const heroWrap = $('#hero-wrap')[0];
     heroWrap.parentNode.removeChild(heroWrap);
-  } else if (method === '') {
+  } else if (method === 'navigate') {
     const {args: [url]} = data;
 
     document.location.href = url;
+  } else if (method === 'pushState') {
+    const {args: [url]} = data;
+
+    history.pushState({}, '', '/docs' + document.location.search + url);
+
+    _updatePage();
   }
 });
 
