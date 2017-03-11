@@ -308,14 +308,14 @@ class Zeo {
                     const enterHelperContent = document.createElement('div');
                     enterHelperContent.innerHTML = `\
                       <div style="display: flex; width: 400px; margin-bottom: 20px;">
-                        <button style="display: inline-block; position: relative; margin-right: 10px; padding: 10px 20px; background-color: transparent; border: 1px solid; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=headset-button>Headset</button>
-                        <button style="display: inline-block; position: relative; padding: 10px 20px; background-color: transparent; border: 1px solid; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
+                        <button style="display: inline-block; position: relative; height: 42px; margin-right: 10px; padding: 10px 20px; background-color: transparent; border: 1px solid; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=headset-button>Headset</button>
+                        <button style="display: inline-block; position: relative; height: 42px; padding: 10px 20px; background-color: transparent; border: 1px solid; border-radius: 100px; color: #000; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; box-sizing: border-box;" class=keyboard-button>Mouse + Keyboard</button>
                       </div>
                     `;
 
                     const errorMessage = document.createElement('div');
                     errorMessage.innerHTML = `\
-                      <div style="padding: 15px; background-color: #000; color: #FFF;">
+                      <div style="height: 80px; padding: 15px; background-color: #000; color: #FFF; box-sizing: border-box;">
                         <div style="margin-bottom: 15px; font-size: 18px; line-height: 1;">No WebVR</div>
                         <div style="font-size: 13px; font-weight: 400;">WebVR is not supported by your browser, so you can't use a headset. <a href="#" style="color: inherit; text-decoration: underline;">Learn more</a>
                       </div>
@@ -323,7 +323,7 @@ class Zeo {
 
                     const permissionsHelperContent = document.createElement('div');
                     permissionsHelperContent.innerHTML = `\
-                      <div style="margin-top: 10px; margin-bottom: 18px; padding: 15px; background-color: #4CAF50; color: #FFF; cursor: pointer;">
+                      <div style="height: 42px; margin-top: 10px; margin-bottom: 18px; padding: 15px; background-color: #4CAF50; color: #FFF; cursor: pointer;">
                         <div style="display: flex; margin-bottom: 10px; font-size: 18px; line-height: 1;">
                           <div style="margin-right: auto; color: #FFF;">Media Permissions</div>
                           <button style="display: inline-flex; position: relative; padding: 2px; border: 2px solid; background-color: transparent; color: #FFF; cursor: pointer; outline: none; opacity: 0.5; box-sizing: border-box;" class=permission-button>
