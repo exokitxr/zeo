@@ -19,39 +19,49 @@ const earthImgSrc = 'data:image/svg+xml;base64,' + btoa(earthImg);
 const swordImg = require('../img/sword');
 const swordImgSrc = 'data:image/svg+xml;base64,' + btoa(swordImg);
 
-const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg}) => {
+const getHubSrc = ({page, searchText, inputIndex, inputValue, loading, error, focusType, controlsType, imgs}) => {
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
       <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
-        <img src="${logoImg}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
+        <img src="${imgs.logo}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
         <div>zeo vr</div>
       </div>
-      ${getPageSrc(page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg)}
+      ${getPageSrc(page, searchText, inputIndex, inputValue, loading, error, focusType, controlsType, imgs)}
     </div>
   `;
 };
 
-const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, focusType, logoImg) => {
+const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, focusType, controlsType, imgs) => {
   switch (page) {
     case 0: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
         <div style="margin-bottom: 10px; font-size: 30px; font-weight: 400;">Welcome to Zeo!</div>
-        <img src="${logoImg}" width="${100 * 0.75}" height="{158 * 0.75}" />
+        <img src="${imgs.logo}" width="${100 * 0.75}" height="{158 * 0.75}" />
         <div style="width: 540px; margin-bottom: auto; font-size: 15px; font-weight: 400; flex-grow: 1">
-          <p>Zeo lets you build multiplayer virtual worlds in your browser!</p>
-          <p>Looks like you're using a keyboard and mouse, but you can still do everything you could with a headset! Here are the controls:</p>
-          <p>
-            <b>WASD</b>: Move around<br/>
-            <b>Z or C</b>: Focus left or right controller (<i>required</i> to use the buttons below)<br/>
-            <b>Click, E, F, Q</b>: Trigger, menu, grip, touchpad buttons<br/>
-            <b>Mousewheel</b> Move controller x/y axis<br/>
-            <b>Ctrl + Mousewheel</b> Move controller x/z axis<br/>
-            <b>Shift + mousewheel</b> Rotate controller<br/>
-            The <b>red dots</b> show where your controllers are pointing<br/>
-          </p>
-          <p style="margin: 0; font-size: 18px;">
-            <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
-          </p>
+          ${controlsType === 'keyboard' ? `\
+            <p>You're using a keyboard and mouse, but you can still do everything you could with a headset! Here are the controls:</p>
+            <p>
+              <b>WASD</b>: Move around<br/>
+              <b>Z or C</b>: Focus left or right controller (<i>required</i> to use the buttons below)<br/>
+              <b>Click, E, F, Q</b>: Trigger, menu, grip, touchpad buttons<br/>
+              <b>Mousewheel</b> Move controller x/y axis<br/>
+              <b>Ctrl + Mousewheel</b> Move controller x/z axis<br/>
+              <b>Shift + mousewheel</b> Rotate controller<br/>
+              <b>RED DOTS</b> show where your controllers are pointing<br/>
+            </p>
+            <p style="margin: 0; font-size: 18px;">
+              <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
+            </p>
+          ` : `\
+            <p>You're using a headset, so you can interact with the world with your controllers!</p>
+            <p><b>PRESS A BUTTON</b> on your controllers to <b>WAKE</b> them. <b>RED DOTS</b> show where your controllers are pointing.</p>
+            <div style="display: flex; margin-top: -20px; justify-content: center; align-items: center;">
+              <img src="${imgs.controller}" width="200" height="200" />
+            </div>
+            <p style="margin: 0; font-size: 18px;">
+              <i>To continue, click the <b>NEXT BUTTON</b> with your <b>TRIGGER</b>:</i>
+            </p>
+          `}
         </div>
         <div style="display: flex; width: 100%;">
           <a style="margin-left: auto; padding: 10px 15px; border: 1px solid; border-radius: 5px; font-size: 20px; font-weight: 400; text-decoration: none;" onclick="hub:next">Next: Modules &gt;</a>
@@ -89,7 +99,7 @@ const getPageSrc = (page, searchText, inputIndex, inputValue, loading, error, fo
           <p>Some servers are <b>locked</b> until you get permission from the owner. Contact info for each server is written above the server, but you can <i>sneak a peek</i> through the orb.</p>
           <p style="margin-bottom: 0; font-size: 18px;">
             <i>
-              To <b>LEARN</b> how to make modules, read the <a onclick="hub:apiDocs"><b>API docs</b></a>.<br/>
+              To <b>LEARN</b> how to make modules, read the <a onclick="hub:apiDocs"><b>API Documentation</b></a>.<br/>
               To <b>HIDE</b> the tutorial, click the <b>NEXT BUTTON</b>.<br/>
             </i>
           </p>

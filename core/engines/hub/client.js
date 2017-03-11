@@ -51,11 +51,22 @@ class Hub {
           accept(e.target.result);
         };
         reader.readAsDataURL(blob);
-     });
-      const _requestLogoImg = () => fetch('/img/logo-large.png')
-        .then(res => res.blob()
-          .then(blob => _requestBlobDataUrl(blob))
-        );
+      });
+      const _requestFileBlobData = url => fetch(url)
+       .then(res => res.blob()
+         .then(blob => _requestBlobDataUrl(blob))
+       );
+      const _requestImgs = () => Promise.all([
+        '/img/logo-large.png',
+        '/img/controller-small.png',
+      ].map(_requestFileBlobData))
+        .then(([
+          logo,
+          controller,
+        ]) => ({
+          logo,
+          controller,
+        }));
       const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/core/plugins/z-cake'))
         .then(res => res.json()
           .then(itemSpec => {
@@ -78,7 +89,7 @@ class Hub {
           '/core/plugins/js-utils',
           '/core/plugins/geometry-utils',
         ]),
-        _requestLogoImg(),
+        _requestImgs(),
         _requestZCakeModSpec(),
       ])
         .then(([
@@ -94,7 +105,7 @@ class Hub {
             jsUtils,
             geometryUtils,
           ],
-          logoImg,
+          imgs,
           zCakeItemSpec,
         ]) => {
           if (live) {
@@ -222,6 +233,7 @@ class Hub {
               inputValue: 0,
               loading: false,
               error: null,
+              controlsType: 'keyboard', // XXX actually track this
             };
             const focusState = {
               type: '',
@@ -240,11 +252,12 @@ class Hub {
                     inputValue,
                     loading,
                     error,
+                    controlsType,
                   },
                   focus: {
                     type: focusType,
                   },
-                  logoImg,
+                  imgs,
                 }) => ({
                   type: 'html',
                   src: menuRenderer.getHubSrc({
@@ -255,7 +268,7 @@ class Hub {
                     loading,
                     error,
                     focusType,
-                    logoImg,
+                    imgs,
                   }),
                   x: 0,
                   y: 0,
@@ -266,7 +279,7 @@ class Hub {
                   state: {
                     hub: hubState,
                     focus: focusState,
-                    logoImg: logoImg,
+                    imgs: imgs,
                   },
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
