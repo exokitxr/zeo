@@ -52,6 +52,13 @@ class Bootstrap {
           const serversJson = { // XXX get rid of this
             servers: [],
           };
+          const isInIframe = (() => {
+            try {
+              return window.self !== window.top;
+            } catch (e) {
+              return true;
+            }
+          })();
           let vrMode = null;
           const userState = {
             username: null,
@@ -67,6 +74,7 @@ class Bootstrap {
           };
 
           class BootstrapApi extends EventEmitter {
+
             getInitialUrl() {
               return initialUrl;
             }
@@ -93,6 +101,10 @@ class Bootstrap {
 
                 return Promise.resolve();
               }
+            }
+
+            isInIframe() {
+              return isInIframe;
             }
 
             getVrMode() {

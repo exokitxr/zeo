@@ -153,14 +153,8 @@ class Zeo {
                 }
                 return result;
               })();
+              const isInIframe = bootstrap.isInIframe();
               const supportsWebVR = webvr.supportsWebVR();
-              const isInIframe = (() => {
-                try {
-                  return window.self !== window.top;
-                } catch (e) {
-                  return true;
-                }
-              })();
 
               const updates = [];
               const updateEyes = [];
