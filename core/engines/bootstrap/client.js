@@ -21,7 +21,7 @@ class Bootstrap {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {site: {url: siteUrl}, hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -74,7 +74,6 @@ class Bootstrap {
           };
 
           class BootstrapApi extends EventEmitter {
-
             getInitialUrl() {
               return initialUrl;
             }
@@ -115,6 +114,17 @@ class Bootstrap {
               vrMode = newVrMode;
 
               this.emit('vrModeChange');
+            }
+
+            navigate(url) {
+              if (!isInIframe) {
+                document.location.href = url;
+              } else {
+                window.parent.postMessage({
+                  method: 'navigate',
+                  args: [url],
+                }, 'https://' + siteUrl);
+              }
             }
 
             requestLogout() {

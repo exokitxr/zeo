@@ -708,7 +708,7 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {
-                  window.parent.location.href = 'https://zeovr.io/docs';
+                  bootstrap.isInIframe('https://zeovr.io/docs');
 
                   return true; // can't happen
                 } else {
@@ -753,7 +753,7 @@ class Hub {
                   const {server} = hoveredServerMesh;
 
                   const {url} = server;
-                  const t = _getQueryVariable(window.parent.location.href, 't');
+                  const t = _getQueryVariable(bootstrap.getInitialUrl(), 't');
                   window.parent.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
 
                   // can't happen

@@ -5,6 +5,7 @@ class Zeo {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {site: {url: siteUrl}}} = archae;
 
     let cleanups = [];
     const _cleanup = () => {
@@ -64,8 +65,6 @@ class Zeo {
       const _destroy = () => {
         cleanup();
         cleanups.splice(cleanups.indexOf(cleanup), 1);
-
-        window.parent.postMessage('loaded', '*');
       };
 
       accept({
@@ -145,6 +144,15 @@ class Zeo {
 
               loader.destroy();
 
+              const isInIframe = bootstrap.isInIframe();
+              const supportsWebVR = webvr.supportsWebVR();
+
+              if (isInIframe) {
+                window.parent.postMessage({
+                  method: 'loaded',
+                }, 'https://' + siteUrl);
+              }
+
               const inputEventsIndex = (() => {
                 const result = {};
                 for (let i = 0; i < EVENTS.length; i++) {
@@ -153,8 +161,6 @@ class Zeo {
                 }
                 return result;
               })();
-              const isInIframe = bootstrap.isInIframe();
-              const supportsWebVR = webvr.supportsWebVR();
 
               const updates = [];
               const updateEyes = [];

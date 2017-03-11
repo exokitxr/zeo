@@ -1794,9 +1794,18 @@ navButton2.addEventListener('click', () => {
   apiBody.style.display = 'flex';
 });
 
-window.addEventListener('message', m => {
-  const heroWrap = $('#hero-wrap')[0];
-  heroWrap.parentNode.removeChild(heroWrap);
+window.addEventListener('message', e => {
+  const {data} = e;
+  const {method} = data;
+
+  if (method === 'loaded') {
+    const heroWrap = $('#hero-wrap')[0];
+    heroWrap.parentNode.removeChild(heroWrap);
+  } else if (method === '') {
+    const {args: [url]} = data;
+
+    document.location.href = url;
+  }
 });
 
 const _jsonParse = s => {
