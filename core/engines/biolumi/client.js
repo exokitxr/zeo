@@ -440,11 +440,6 @@ class Biolumi {
               return entry;
             };
           })();
-          const _getTextureAtlasUv = (atlasSize, pageIndex) => {
-            const x = pageIndex % atlasSize;
-            const y = Math.floor(pageIndex / atlasSize);
-            return new THREE.Vector2(x, y);
-          };
 
           class MegaTexture {
             constructor(width, height, atlasSize, maxNumTextures, color) {
@@ -539,9 +534,8 @@ class Biolumi {
                         const texture = textures.value[j];
 
                         // draw the layer image into the texture atlas
-                        const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
-                        const x = textureAtlasUv.x * layer.img.width;
-                        const y = textureAtlasUv.y * layer.img.height;
+                        const x = 0;
+                        const y = 0;
                         const w = layer.img.width;
                         const h = layer.img.height;
                         texture.image = layer.img;
@@ -616,23 +610,6 @@ class Biolumi {
 
                 const planeMesh = (() => {
                   const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-                  const atlasUvs = (() => {
-                    const positions = geometry.getAttribute('position').array;
-                    const numPositions = positions.length / 3;
-
-                    const array = Array(numPositions * 2);
-                    const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
-                    for (let i = 0; i < numPositions; i++) {
-                      const baseIndex = i * 2;
-                      array[baseIndex + 0] = textureAtlasUvs.x;
-                      array[baseIndex + 1] = textureAtlasUvs.y;
-                    }
-
-                    const float32Array = Float32Array.from(array);
-                    return float32Array;
-                  })();
-                  geometry.addAttribute('atlasUv', new THREE.BufferAttribute(atlasUvs, 2));
-
                   const material = megaTexture.getMaterial();
 
                   const mesh = new THREE.Mesh(geometry, material);

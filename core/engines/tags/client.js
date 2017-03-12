@@ -119,7 +119,6 @@ class Tags {
                 lastUi = biolumi.makeUi({
                   width: width,
                   height: height,
-                  maxNumTextures: 3,
                   color,
                 });
                 uis.push(lastUi);
