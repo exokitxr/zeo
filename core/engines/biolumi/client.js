@@ -195,47 +195,6 @@ class Biolumi {
 
                           return new XMLSerializer().serializeToString(el);
                         })();
-                        const divEl = (() => {
-                          const el = document.createElement('div');
-                          el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                          el.innerHTML = innerSrc;
-
-                          return el;
-                        })();
-                        document.body.appendChild(divEl);
-
-                        const anchors = (() => {
-                          const as = (() => {
-                            const as = divEl.querySelectorAll('a');
-
-                            const result = [];
-                            for (let i = 0; i < as.length; i++) {
-                              const a = as[i];
-                              if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
-                                result.push(a);
-                              }
-                            }
-                            return result;
-                          })();
-                          const numAs = as.length;
-
-                          const result = Array(numAs);
-                          for (let i = 0; i < numAs; i++) {
-                            const a = as[i];
-
-                            const rect = a.getBoundingClientRect();
-                            const onclick = a.getAttribute('onclick') || null;
-                            const onmousedown = a.getAttribute('onmousedown') || null;
-                            const onmouseup = a.getAttribute('onmouseup') || null;
-
-                            const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
-                            result[i] = anchor;
-                          }
-
-                          return result;
-                        })();
-
-                        document.body.removeChild(divEl);
 
                         const img = new Image();
                         img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
@@ -255,8 +214,55 @@ class Biolumi {
                           pend();
                         };
 
+                        const _makeAnchors = () => {
+                          const divEl = (() => {
+                            const el = document.createElement('div');
+                            el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                            el.innerHTML = innerSrc;
+
+                            return el;
+                          })();
+                          document.body.appendChild(divEl);
+
+                          const anchors = (() => {
+                            const as = (() => {
+                              const as = divEl.querySelectorAll('a');
+
+                              const result = [];
+                              for (let i = 0; i < as.length; i++) {
+                                const a = as[i];
+                                if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
+                                  result.push(a);
+                                }
+                              }
+                              return result;
+                            })();
+                            const numAs = as.length;
+
+                            const result = Array(numAs);
+                            for (let i = 0; i < numAs; i++) {
+                              const a = as[i];
+
+                              const rect = a.getBoundingClientRect();
+                              const onclick = a.getAttribute('onclick') || null;
+                              const onmousedown = a.getAttribute('onmousedown') || null;
+                              const onmouseup = a.getAttribute('onmouseup') || null;
+
+                              const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
+                              result[i] = anchor;
+                            }
+
+                            return result;
+                          })();
+
+                          document.body.removeChild(divEl);
+
+                          return anchors;
+                        };
+
                         const layer = new Layer(this);
-                        layer.anchors = anchors;
+                        layer.anchors = null;
+                        layer.makeAnchors = _makeAnchors;
                         layer.x = x;
                         layer.y = y;
                         layer.w = w;
@@ -309,6 +315,7 @@ class Biolumi {
 
               this.img = null;
               this.anchors = [];
+              this.makeAnchors = null;
               const {parent: {width, height}} = parent;
 
               this.x = 0;
@@ -359,11 +366,19 @@ class Biolumi {
             }
 
             getAnchors() {
+              let {anchors} = this;
+              const {makeAnchors} = this;
+              if (!anchors && makeAnchors) {
+                anchors = makeAnchors();
+                this.anchors = anchors;
+                this.makeAnchors = null;
+              }
+
               const position = this.getPosition();
               const {x: px, y: py, w: pw, h: ph} = position;
               const {parent: {parent: {width, height}}} = this;
 
-              return this.anchors.map(anchor => {
+              return anchors.map(anchor => {
                 const {rect, onclick, onmousedown, onmouseup} = anchor;
                 const {top, bottom, left, right} = rect;
 
