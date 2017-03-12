@@ -462,7 +462,7 @@ class Biolumi {
                 const {atlasSize, maxNumTextures, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
 
                 for (let i = 0; i < pages.length; i++) {
-                  const page = pages[i]; // XXX optimize the case of atlasSize = 1: in that case we can skip drawing the texture atlas and feed through the image directly
+                  const page = pages[i];
                   const {layers} = page;
 
                   for (let j = 0; j < maxNumTextures; j++) {
@@ -474,26 +474,13 @@ class Biolumi {
                       if (layer.img.needsUpdate) {
                         const texture = textures.value[j];
 
-                        // ensure the texture exists with the right size
-                        // we are assuming that all page's layers have identical metrics
-                        if (texture.image.tagName !== 'CANVAS') {
-                          const canvas = document.createElement('canvas');
-                          canvas.width = layer.img.width * atlasSize;
-                          canvas.height = layer.img.height * atlasSize;
-                          const ctx = canvas.getContext('2d');
-                          canvas.ctx = ctx;
-
-                          texture.image = canvas;
-                        }
-
                         // draw the layer image into the texture atlas
                         const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
                         const x = textureAtlasUv.x * layer.img.width;
                         const y = textureAtlasUv.y * layer.img.height;
                         const w = layer.img.width;
                         const h = layer.img.height;
-                        texture.image.ctx.clearRect(x, y, w, h);
-                        texture.image.ctx.drawImage(layer.img, x, y);
+                        texture.image = layer.img;
 
                         // set texture pixelation properties
                         if (!layer.pixelated) {
