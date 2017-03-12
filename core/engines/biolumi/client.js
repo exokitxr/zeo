@@ -2,6 +2,8 @@ import keycode from 'keycode';
 
 import menuShaders from './lib/shaders/menu';
 
+const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
+
 class Biolumi {
   constructor(archae) {
     this._archae = archae;
@@ -31,7 +33,52 @@ class Biolumi {
         reject(err);
       };
     });
-    const _requestUiTimer = () => new Promise((accept, reject) => {
+    const _requestUiWorker = () => {
+      class UiWorker {
+        constructor({frameTime = DEFAULT_FRAME_TIME} = {}) {
+          this.frameTime = frameTime;
+
+          this.threads = [];
+
+          this.work = debounce(this.work.bind(this));
+        }
+
+        add(thread) {
+          const {threads} = this;
+          threads.push(thread);
+        }
+
+        work(next) {
+          const {frameTime, threads} = this;
+
+          const _recurseFrame = () => {
+            const startTime = Date.now();
+
+            const _recurseThread = () => {
+              if (threads.length > 0) {
+                const now = Date.now();
+
+                if ((now - startTime) < frameTime) {
+                  const thread = threads.pop();
+                  thread();
+
+                  _recurseThread();
+                } else {
+                  requestAnimationFrame(_recurseFrame);
+                }
+              } else {
+                next();
+              }
+            };
+            _recurseThread();
+          };
+          _recurseFrame();
+        }
+      }
+
+      return Promise.resolve(new UiWorker());
+    };
+    const _requestUiTimer = () => {
       const startTime = Date.now();
       let uiTime = 0;
 
@@ -46,8 +93,8 @@ class Biolumi {
         }
       }
 
-      accept(new UiTimer());
-    });
+      return Promise.resolve(new UiTimer());
+    };
 
     return Promise.all([
       archae.requestPlugins([
@@ -56,6 +103,7 @@ class Biolumi {
         '/core/plugins/geometry-utils',
       ]),
       _requestTransparentImg(),
+      _requestUiWorker(),
       _requestUiTimer(),
     ])
       .then(([
@@ -65,6 +113,7 @@ class Biolumi {
           geometryUtils,
         ],
         transparentImg,
+        uiWorker,
         uiTimer,
       ]) => {
         if (live) {
@@ -461,11 +510,11 @@ class Biolumi {
               if (pages.length > 0) {
                 const {atlasSize, maxNumTextures, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
 
-                for (let i = 0; i < pages.length; i++) {
-                  const page = pages[i];
-                  const {layers} = page;
+                const _doUpdate = (i, j) => {
+                  uiWorker.add(() => {
+                    const page = pages[i];
+                    const {layers} = page;
 
-                  for (let j = 0; j < maxNumTextures; j++) {
                     const layer = j < layers.length ? layers[j] : null;
 
                     if (layer && layer.getValid()) {
@@ -506,11 +555,15 @@ class Biolumi {
                     } else {
                       validTextures.value[j] = 0;
                     }
+                  });
+                };
+
+                for (let i = 0; i < pages.length; i++) {
+                  for (let j = 0; j < maxNumTextures; j++) {
+                    _doUpdate(i, j);
                   }
                 }
               }
-
-              return Promise.resolve();
             }
           }
 
@@ -583,11 +636,11 @@ class Biolumi {
             update(next) {
               const {pages, megaTexture} = this;
 
-              Promise.all(
-                pages.map(page => page.update())
-              )
-                .then(() => megaTexture.update(pages))
+              Promise.all(pages.map(page => page.update()))
                 .then(() => {
+                  megaTexture.update(pages);
+                  uiWorker.work();
+
                   next();
                 })
                 .catch(err => {
