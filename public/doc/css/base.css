@@ -242,10 +242,10 @@ a.quiet > code {
 a.quiet.active, a.quiet:hover { color:rgba(0,0,0,0.75); }
 
 .dark a.quiet,
-a.quiet.dark { color:white; margin: 0 -15px; padding: 4px 20px; }
+a.quiet.dark { color:white; margin: 0 -15px; padding: 4px 20px; font-size: 13px; }
 
 .dark .space-left1 > a.quiet,
-.space-left1 > a.quiet.dark { margin-left: -25px; padding-left: 28px; }
+.space-left1 > a.quiet.dark { margin-left: -25px; padding-left: 30px; font-size: 12px; }
 
 .dark a.quiet:hover,
 a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); color: white; background-color: #2196F3; }
