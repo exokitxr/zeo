@@ -75,7 +75,7 @@ var Navigation = React.createClass({
               active={active}
               sectionName={sectionName} />);
           } else if (child.depth === 3) {
-            if (activeHeadings.hasOwnProperty(sectionName)) {
+            // if (activeHeadings.hasOwnProperty(sectionName)) {
               return (<div
                 key={i}
                 className='space-left1'>
@@ -85,7 +85,7 @@ var Navigation = React.createClass({
                     active={active}
                     sectionName={sectionName} />
                 </div>);
-            }
+            // }
           }
         })}
         {footerContent}
