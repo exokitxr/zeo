@@ -36,11 +36,13 @@ npm install zeo
 sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
 ```
 
-### Client requirements
+### Browser requirements
 
 The only requirement for connecting to a Zeo VR server is a device with a web browser that supports [`WebGL`](https://en.wikipedia.org/wiki/WebGL). This includes virtually [every modern web browser](http://caniuse.com/#feat=webgl), including mobile ones.
 
 Note that neither [`WebVR`](https://webvr.info/) nor any VR hardware is actually required: there is mouse + keyboard emulation of VR controls (keybindings are [here](#key-bindings)). That said, the main point of Zeo VR is that it works in virtual reality, so you're missing out without a headset. But the option of working without gear is there, and enjoys first-class support.
+
+If you want to use `WebVR`, you'll need a browser that supports it. For desktop, at the moment that means either [Chromium Experimental](https://webvr.info/get-chrome/) or [Firefox Nightly](https://www.mozilla.org/en-US/firefox/channel/desktop/#nightly). This requirement will go away when WebVR makes it to the stable version of your favorite browser.
 
 ### Server requirements
 
