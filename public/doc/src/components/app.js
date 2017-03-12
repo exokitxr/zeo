@@ -12,6 +12,9 @@ let slugger = new GithubSlugger();
 let slug = title => { slugger.reset(); return slugger.slug(title); };
 
 let languageOptions = [
+  { title: 'JavaScript',
+    short: 'JS',
+    value: 'javascript' },
   { title: 'cURL',
     short: 'cURL',
     value: 'curl' },
@@ -21,9 +24,6 @@ let languageOptions = [
   { title: 'Python',
     short: 'Python',
     value: 'python' },
-  { title: 'JavaScript',
-    short: 'JS',
-    value: 'javascript' },
   { title: 'Java',
     short: 'Java',
     value: 'java' },
