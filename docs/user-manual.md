@@ -27,11 +27,13 @@ https://twitter.com/@modulesio
 
 ## Setting up a server
 
+Here's how to set up Zeo VR on a bare server.
+
 ### Step 1: Get Linux
 
 Get yourself a Linux machine.
 
-It can be actual Linux or a virtual machine running on any other operating system, but it needs to be Linux. It doesn't matter which distribution you use.
+It can be raw Linux or a virtual machine, but it needs to be Linux. It doesn't matter which distribution.
 
 ### Step 2: Get node.js
 
