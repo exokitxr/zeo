@@ -11,10 +11,8 @@ import {
   WORLD_DEPTH,
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
-
-  FRAME_TIME,
 } from './lib/constants/tags';
-import tagsRenderer from './lib/render/tags';
+import tagsRender from './lib/render/tags';
 import menuUtils from './lib/utils/menu';
 import OBJLoader from './lib/three-extra/OBJLoader';
 
@@ -75,6 +73,8 @@ class Tags {
 
           const transparentImg = biolumi.getTransparentImg();
           const {sound} = somnifer;
+
+          const tagsRenderer = tagsRender.makeRenderer({creatureUtils});
 
           const THREEOBJLoader = OBJLoader(THREE);
 
@@ -888,7 +888,7 @@ class Tags {
             uiManager.update();
             uiOpenManager.update();
             uiStaticManager.update();
-          }, FRAME_TIME);
+          }, 100);
 
           this._cleanup = () => {
             for (let i = 0; i < tagMeshes.length; i++) {
@@ -1254,16 +1254,6 @@ class Tags {
                       w: !open ? WIDTH : OPEN_WIDTH,
                       h: !open ? HEIGHT : OPEN_HEIGHT,
                     },
-                    {
-                      type: 'image',
-                      img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
-                      x: 10,
-                      y: 0,
-                      w: 100,
-                      h: 100,
-                      frameTime: FRAME_TIME,
-                      pixelated: true,
-                    }
                   ];
                 }, {
                   type: 'tag',

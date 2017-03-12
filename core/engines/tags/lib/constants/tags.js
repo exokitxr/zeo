@@ -11,8 +11,6 @@ export const WORLD_DEPTH = 0.02;
 export const WORLD_OPEN_WIDTH = WORLD_WIDTH;
 export const WORLD_OPEN_HEIGHT = WORLD_HEIGHT * 4;
 
-export const FRAME_TIME = 300;
-
 export default {
   WIDTH,
   HEIGHT,
@@ -24,5 +22,4 @@ export default {
   WORLD_DEPTH,
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
-  FRAME_TIME,
 };
