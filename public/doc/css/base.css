@@ -84,6 +84,8 @@ em h4, h4 em,
 em h5, h5 em,
 em h6, h6 em {
   // font-family:'Open Sans Bold Italic', sans-serif;
+  font-weight: bold;
+  font-style: italic;
   }
 
 h1 {
@@ -132,14 +134,19 @@ small { display:block; }
 .strong,
 strong {
   // font-family:'Open Sans Bold', sans-serif;
-  font-weight:normal;
+  font-weight:bold;
   }
   strong em,
-  em strong { // font-family:'Open Sans Bold Italic', sans-serif; }
+  em strong {
+  // font-family:'Open Sans Bold Italic', sans-serif;
+  font-weight: bold;
+  font-style: italic;
+  }
 
 address,
 em {
   // font-family:'Open Sans Italic', sans-serif;
+  font-style: italic;
   }
 
 /* Fancy font style */
@@ -259,6 +266,7 @@ a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); color: wh
   text-overflow:ellipsis;
   /* Protects button metrics in .prose context */
   // font-family:'Open Sans Bold', sans-serif;
+  font-weight: bold;
   line-height:20px;
   font-size:12px;
   -webkit-appearance:none;
@@ -524,6 +532,7 @@ a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); color: wh
     background:transparent;
     color:rgba(0,0,0,.5);
     // font-family:'Open Sans Bold', sans-serif;
+    font-weight: bold;
     font-size:12px;
     text-align:center;
     display:inline-block;
@@ -963,6 +972,7 @@ form fieldset:last-child {
 
 form fieldset label {
   // font:12px/20px 'Open Sans Bold', sans-serif;
+  font-weight: bold;
   display:block;
   margin:0 0 5px;
   }
@@ -1305,6 +1315,7 @@ table {
     }
   table th {
     // font-family:'Open Sans Bold', sans-serif;
+    font-weight: bold;
     }
   table thead th {
     vertical-align:bottom;
