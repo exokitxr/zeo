@@ -4,7 +4,7 @@ This document specifies what you need to do to write your own Zeo plugins, which
 
 It is assumed that you already have a Zeo server running. If not, see [Getting started](https://github.com/modulesio/zeo/tree/master/docs/getting-started.md).
 
-## Introduction
+## API Introduction
 
 A Zeo plugin is just an [`npm`](https://www.npmjs.com/) module: that is, a [`package.json`](https://docs.npmjs.com/files/package.json) plus the Javascript files with your plugin code.
 
