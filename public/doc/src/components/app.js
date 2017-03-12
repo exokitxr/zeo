@@ -98,7 +98,8 @@ var App = React.createClass({
   },
   componentDidMount() {
     this.mediaQueryChanged();
-    this.onScroll = debounce(this.onScrollImmediate, 100);
+    // this.onScroll = debounce(this.onScrollImmediate, 100);
+    this.onScroll = this.onScrollImmediate;
     document.addEventListener('scroll', this.onScroll);
     this.onScrollImmediate();
   },
