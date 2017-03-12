@@ -52,8 +52,10 @@ Technically all you need is `node.js`, but some native C++ modules require a bui
 
 ### Headset support
 
-Currently only the [HTC Vive](https://en.wikipedia.org/wiki/HTC_Vive) is supported.
+Only [HTC Vive](https://en.wikipedia.org/wiki/HTC_Vive) is actively supported at the moment.
 
-Most other headsets (including mobile platforms like Daydream) _have been known to work_ but are not actively tested. The main annoyance you'll run into is that models, tutorials, and documentation currently assume you're using a Vive. The other is performance.
+Most other headsets (including mobile platforms like Daydream) _have been known to work_ but are not tested.
+
+The main problem you'll run into is that models, tutorials, and documentation currently assume you're using a Vive. The other potential problem is performance.
 
 Support for more devices is on the roadmap.
