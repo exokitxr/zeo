@@ -145,7 +145,7 @@ class Biolumi {
         uiTimer,
       ]) => {
         if (live) {
-          const {THREE} = three;
+          const {THREE, renderer} = three;
 
           class Page {
             constructor(parent, spec, type, state) {
@@ -184,30 +184,26 @@ class Biolumi {
             }
 
             update() {
-              uiWorker.add(() => new Promise((accept, reject) => {
-                const _updateTexture = (img, {pixelated}) => {
-                  const {material: {uniforms: {texture: {value: texture}}}} = this;
-                  texture.image = img;
-                  if (!pixelated) {
-                    texture.minFilter = THREE.LinearFilter;
-                    texture.magFilter = THREE.LinearFilter;
-                    texture.anisotropy = 16;
-                  } else {
-                    texture.minFilter = THREE.NearestFilter;
-                    texture.magFilter = THREE.NearestFilter;
-                    texture.anisotropy = 1;
-                  }
-                  texture.needsUpdate = true;
-                };
+              let cache = {
+                layerSpec: null,
+                innerSrc: null,
+                img: null,
+              };
 
+              const _requestLayerSpec = () => {
                 const {spec, state} = this;
-                const layerSpec = typeof spec === 'function' ? spec(state) : spec;
+                cache.layerSpec = typeof spec === 'function' ? spec(state) : spec;
+
+                return Promise.resolve();
+              };
+              const _requestInnerSrc = () => {
+                const {layerSpec} = cache;
                 const {type = 'html'} = layerSpec;
                 if (type === 'html') {
                   const {parent: {width, height}} = this;
                   const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
 
-                  const innerSrc = (() => {
+                  cache.innerSrc = (() => {
                     const el = document.createElement('div');
                     el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
                     el.setAttribute('style', rootCss);
@@ -239,15 +235,26 @@ class Biolumi {
 
                     return new XMLSerializer().serializeToString(el);
                   })();
+                }
+
+                return Promise.resolve();
+              };
+              const _requestImage = () => new Promise((accept, reject) => {
+                const {layerSpec} = cache;
+                const {type = 'html'} = layerSpec;
+                if (type === 'html') {
+                  const {parent: {width, height}} = this;
+                  const {w = width, h = height} = layerSpec;
 
                   const img = new Image();
+                  const {innerSrc} = cache;
                   img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
                     '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
                       innerSrc +
                     '</foreignObject>' +
                   '</svg>');
                   img.onload = () => {
-                    _updateTexture(img, {pixelated});
+                    cache.img = img;
 
                     accept();
                   };
@@ -256,11 +263,49 @@ class Biolumi {
 
                     accept();
                   };
+                } else if (type === 'image') {
+                  const {img} = layerSpec;
+
+                  cache.img = img;
+
+                  accept();
+                } else {
+                  accept();
+                }
+              });
+              const _requestTexture = () => {
+                const {layerSpec, img} = cache;
+                const {pixelated = false} = layerSpec;
+
+                const {material: {uniforms: {texture: {value: texture}}}} = this;
+                texture.image = img;
+                if (!pixelated) {
+                  texture.minFilter = THREE.LinearFilter;
+                  texture.magFilter = THREE.LinearFilter;
+                  texture.anisotropy = 16;
+                } else {
+                  texture.minFilter = THREE.NearestFilter;
+                  texture.magFilter = THREE.NearestFilter;
+                  texture.anisotropy = 1;
+                }
+                texture.needsUpdate = true;
+
+                renderer.setTexture2D(texture, 0);
+
+                return Promise.resolve();
+              };
+              const _requestLayer = () => {
+                const {layerSpec} = cache;
+                const {type = 'html'} = layerSpec;
+                if (type === 'html') {
+                  const {parent: {width, height}} = this;
+                  const {src, x = 0, y = 0, w = width, h = height} = layerSpec;
 
                   const _makeAnchors = () => {
                     const divEl = (() => {
                       const el = document.createElement('div');
                       el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                      const {innerSrc} = cache;
                       el.innerHTML = innerSrc;
 
                       return el;
@@ -314,9 +359,7 @@ class Biolumi {
                   this.layer = layer;
                 } else if (type === 'image') {
                   const {parent: {width, height}} = this;
-                  const {img, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
-
-                  _updateTexture(img, {pixelated});
+                  const {x = 0, y = 0, w = width, h = height} = layerSpec;
 
                   const layer = new Layer(this);
                   layer.x = x;
@@ -325,14 +368,19 @@ class Biolumi {
                   layer.h = h;
 
                   this.layer = layer;
-
-                  accept();
                 } else {
                   console.warn('illegal layer spec type:' + JSON.stringify(type));
 
                   this.layer = null;
                 }
-              }));
+
+                return Promise.resolve();
+              };
+              uiWorker.add(_requestLayerSpec);
+              uiWorker.add(_requestInnerSrc);
+              uiWorker.add(_requestImage);
+              uiWorker.add(_requestTexture);
+              uiWorker.add(_requestLayer);
             }
           }
 
