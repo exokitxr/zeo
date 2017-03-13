@@ -772,30 +772,35 @@ class Biolumi {
 
               const anchorBoxTargets = (() => {
                 const {layer} = page;
-                const anchors = layer.getAnchors();
 
-                return anchors.map(anchor => {
-                  const {rect} = anchor;
+                if (layer) {
+                  const anchors = layer.getAnchors();
 
-                  const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                    position,
-                    rotation,
-                    scale,
-                    new THREE.Vector3(
-                      -(worldWidth / 2) + (rect.left / width) * worldWidth,
-                      (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                      -worldDepth
-                    ),
-                    new THREE.Vector3(
-                      -(worldWidth / 2) + (rect.right / width) * worldWidth,
-                      (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                      worldDepth
-                    )
-                  );
-                  anchorBoxTarget.anchor = anchor;
+                  return anchors.map(anchor => {
+                    const {rect} = anchor;
 
-                  return anchorBoxTarget;
-                });
+                    const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                      position,
+                      rotation,
+                      scale,
+                      new THREE.Vector3(
+                        -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                        (worldHeight / 2) + (-rect.top / height) * worldHeight,
+                        -worldDepth
+                      ),
+                      new THREE.Vector3(
+                        -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                        (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
+                        worldDepth
+                      )
+                    );
+                    anchorBoxTarget.anchor = anchor;
+
+                    return anchorBoxTarget;
+                  });
+                } else {
+                  return [];
+                }
               })();
               const anchorBoxTarget = (() => {
                 const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));
