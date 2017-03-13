@@ -1,10 +1,12 @@
 # User manual
 
-## Getting started (Docker)
+## Getting started
 
-The easiest way to run Zeo VR is with [Docker](https://docker.com). That way you won't have to install anything else or worry about versions.
+## Server setup (Docker)
 
-The 
+The recommended (and easiest) way to run Zeo VR is with [Docker](https://docker.com). That way you won't have to install anything else or worry about versions.
+
+Unless you need to hack Zeo VR itself, this is your best option.
 
 ### Step 1: Get Docker
 
@@ -18,7 +20,7 @@ If you don't have Docker yet, follow [these instructions](https://docs.docker.co
 docker pull modulesio/zeo
 ```
 
-The [latest Zeo VR image is on Docker hub](https://hub.docker.com/r/modulesio/zeo/). The build is automated from the Github `master` branch.
+The [latest Zeo VR image](https://hub.docker.com/r/modulesio/zeo/) is on Docker hub. The build is automated from the Github `master` branch.
 
 To pull the image locally, use `docker pull modulesio/zeo`.
 
@@ -41,7 +43,9 @@ However, you might also want to (or need to) clean up your configuration to get 
 - [Update your /etc/hosts](#step-6-hosts-file-optional)
 - [Configure a TLS certificate](#step-7-tls-certificate-optional)
 
-## Getting started (bare server)
+[See here](#command-line) for the command line arguments you can use when starting your container. They're passed through directly to the server start script.
+
+## Server setup (bare)
 
 Here's how to set up Zeo VR on a bare server.
 
@@ -97,15 +101,17 @@ npm install zeo
 
 If everything worked, you should be able to start your server now. The first run will need to generate some stuff like SSL certificates, signing keys, and a server identity (procedurally generated icons and skyboxes), so it might take a minute.
 
-Once everything's up and running, you'll get a URL and access token you can use to connect to your server from your browser.
-
-Note that since you're using a self-signed SSL certificate, your browser will complain that the connection is insecure. The fix is to use your own SSL certificate (see below).
-
-#### Start zeo module
+#### Start Zeo VR server
 
 ```javascript
 ./scripts/start.sh
 ```
+
+Once everything's up and running, you'll get a URL and access token you can use to connect to your server from your browser.
+
+Note that since you're using a self-signed SSL certificate, your browser will complain that the connection is insecure. The fix is to use your own SSL certificate (see below).
+
+[See here](#command-line) for the command line arguments you can use.
 
 #### After a while you should see
 
@@ -151,6 +157,10 @@ Need help? [Reach out on Twitter](https://twitter.com/modulesio).
 ## Reference
 
 Here are some useful reference pages.
+
+### Command line
+
+// XXX
 
 ### Key bindings
 

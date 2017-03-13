@@ -10,12 +10,12 @@
     <link href='css/railscasts.css' rel='stylesheet' />
   </head>
   <body>
-    <!--START--><div id='app'><div class="container unlimiter" data-reactroot="" data-reactid="1" data-react-checksum="-537636476"><div class="fixed-top fixed-right space-left16" data-reactid="2"><div class="fill-light col6 pin-right" data-reactid="3"></div></div><div class="space-top5 scroll-styled overflow-auto pad1 width16 sidebar fixed-left fill-dark dark" data-reactid="4"><div class="pad0x small" data-reactid="5"><div class="small pad0x quiet space-top1" data-reactid="6">Introduction</div><a href="#what-is-zeo-vr" class="line-height15 pad0x pad00y quiet block " data-reactid="7">What is Zeo VR?</a><div class="space-left1" data-reactid="8"><a href="#highlights" class="line-height15 pad0x pad00y quiet block " data-reactid="9">Highlights</a></div><div class="space-left1" data-reactid="10"><a href="#browser-requirements" class="line-height15 pad0x pad00y quiet block " data-reactid="11">Browser requirements</a></div><div class="space-left1" data-reactid="12"><a href="#server-requirements" class="line-height15 pad0x pad00y quiet block " data-reactid="13">Server requirements</a></div><div class="space-left1" data-reactid="14"><a href="#headset-support" class="line-height15 pad0x pad00y quiet block " data-reactid="15">Headset support</a></div><div class="small pad0x quiet space-top1" data-reactid="16">User manual</div><a href="#getting-started-docker" class="line-height15 pad0x pad00y quiet block " data-reactid="17">Getting started (Docker)</a><div class="space-left1" data-reactid="18"><a href="#step-1-get-docker" class="line-height15 pad0x pad00y quiet block " data-reactid="19">Step 1: Get Docker</a></div><div class="space-left1" data-reactid="20"><a href="#step-2-pull-image" class="line-height15 pad0x pad00y quiet block " data-reactid="21">Step 2: Pull image</a></div><div class="space-left1" data-reactid="22"><a href="#step-3-run-container" class="line-height15 pad0x pad00y quiet block " data-reactid="23">Step 3: Run container</a></div><a href="#getting-started-bare-server" class="line-height15 pad0x pad00y quiet block " data-reactid="24">Getting started (bare server)</a><div class="space-left1" data-reactid="25"><a href="#step-1-get-linux" class="line-height15 pad0x pad00y quiet block " data-reactid="26">Step 1: Get Linux</a></div><div class="space-left1" data-reactid="27"><a href="#step-2-get-nodejs" class="line-height15 pad0x pad00y quiet block " data-reactid="28">Step 2: Get node.js</a></div><div class="space-left1" data-reactid="29"><a href="#step-3-install-dependencies" class="line-height15 pad0x pad00y quiet block " data-reactid="30">Step 3: Install dependencies</a></div><div class="space-left1" data-reactid="31"><a href="#step-4-npm-install" class="line-height15 pad0x pad00y quiet block " data-reactid="32">Step 4: Npm install</a></div><div class="space-left1" data-reactid="33"><a href="#step-5-start-server" class="line-height15 pad0x pad00y quiet block " data-reactid="34">Step 5: Start server</a></div><div class="space-left1" data-reactid="35"><a href="#step-6-hosts-file-optional" class="line-height15 pad0x pad00y quiet block " data-reactid="36">Step 6: Hosts file (optional)</a></div><div class="space-left1" data-reactid="37"><a href="#step-7-tls-certificate-optional" class="line-height15 pad0x pad00y quiet block " data-reactid="38">Step 7: TLS certificate (optional)</a></div><a href="#getting-help" class="line-height15 pad0x pad00y quiet block " data-reactid="39">Getting help</a><a href="#reference" class="line-height15 pad0x pad00y quiet block " data-reactid="40">Reference</a><div class="space-left1" data-reactid="41"><a href="#key-bindings" class="line-height15 pad0x pad00y quiet block " data-reactid="42">Key bindings</a></div><div class="space-left1" data-reactid="43"><a href="#data-directories" class="line-height15 pad0x pad00y quiet block " data-reactid="44">Data directories</a></div><div class="small pad0x quiet space-top1" data-reactid="45">Module specification</div><a href="#api-introduction" class="line-height15 pad0x pad00y quiet block " data-reactid="46">API Introduction</a><a href="#module-specification-1" class="line-height15 pad0x pad00y quiet block " data-reactid="47">Module specification</a><div class="space-left1" data-reactid="48"><a href="#package-format" class="line-height15 pad0x pad00y quiet block " data-reactid="49">Package format</a></div><div class="space-left1" data-reactid="50"><a href="#plugin-apis" class="line-height15 pad0x pad00y quiet block " data-reactid="51">Plugin APIs</a></div><div class="space-left1" data-reactid="52"><a href="#import-a-plugins-api" class="line-height15 pad0x pad00y quiet block " data-reactid="53">Import a plugin&#x27;s API</a></div><div class="space-left1" data-reactid="54"><a href="#export-your-plugins-api" class="line-height15 pad0x pad00y quiet block " data-reactid="55">Export your plugin&#x27;s API</a></div><a href="#loading-modules" class="line-height15 pad0x pad00y quiet block " data-reactid="56">Loading modules</a><div class="space-left1" data-reactid="57"><a href="#option-1-local-module" class="line-height15 pad0x pad00y quiet block " data-reactid="58">Option 1: Local module</a></div><div class="space-left1" data-reactid="59"><a href="#option-2-publish-to-npm" class="line-height15 pad0x pad00y quiet block " data-reactid="60">Option 2: Publish to npm</a></div><a href="#zeo-api" class="line-height15 pad0x pad00y quiet block " data-reactid="61">Zeo API</a><div class="space-left1" data-reactid="62"><a href="#exported-objects" class="line-height15 pad0x pad00y quiet block " data-reactid="63">Exported objects</a></div><div class="space-left1" data-reactid="64"><a href="#frame-events" class="line-height15 pad0x pad00y quiet block " data-reactid="65">Frame Events</a></div><div class="space-left1" data-reactid="66"><a href="#status-api" class="line-height15 pad0x pad00y quiet block " data-reactid="67">Status API</a></div><div class="space-left1" data-reactid="68"><a href="#engine-api" class="line-height15 pad0x pad00y quiet block " data-reactid="69">Engine API</a></div><div class="space-left1" data-reactid="70"><a href="#scene-api" class="line-height15 pad0x pad00y quiet block " data-reactid="71">Scene API</a></div><div class="space-left1" data-reactid="72"><a href="#zeo-update-callbacks-api" class="line-height15 pad0x pad00y quiet block " data-reactid="73">Zeo update callbacks API</a></div><div class="space-left1" data-reactid="74"><a href="#zeo-status-api" class="line-height15 pad0x pad00y quiet block " data-reactid="75">Zeo status API</a></div><div class="space-left1" data-reactid="76"><a href="#zeo-world-api" class="line-height15 pad0x pad00y quiet block " data-reactid="77">Zeo world API</a></div><div class="space-left1" data-reactid="78"><a href="#zeo-elements-api" class="line-height15 pad0x pad00y quiet block " data-reactid="79">Zeo elements API</a></div><div class="small pad0x quiet space-top1" data-reactid="80">API docs</div><a href="#api-introduction-1" class="line-height15 pad0x pad00y quiet block " data-reactid="81">API Introduction</a><a href="#module-specification-2" class="line-height15 pad0x pad00y quiet block " data-reactid="82">Module specification</a><div class="space-left1" data-reactid="83"><a href="#package-format-1" class="line-height15 pad0x pad00y quiet block " data-reactid="84">Package format</a></div><div class="space-left1" data-reactid="85"><a href="#plugin-apis-1" class="line-height15 pad0x pad00y quiet block " data-reactid="86">Plugin APIs</a></div><div class="space-left1" data-reactid="87"><a href="#import-a-plugins-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="88">Import a plugin&#x27;s API</a></div><div class="space-left1" data-reactid="89"><a href="#export-your-plugins-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="90">Export your plugin&#x27;s API</a></div><a href="#loading-modules-1" class="line-height15 pad0x pad00y quiet block " data-reactid="91">Loading modules</a><div class="space-left1" data-reactid="92"><a href="#option-1-local-install" class="line-height15 pad0x pad00y quiet block " data-reactid="93">Option 1: Local install</a></div><div class="space-left1" data-reactid="94"><a href="#option-2-publish-to-npm-1" class="line-height15 pad0x pad00y quiet block " data-reactid="95">Option 2: Publish to npm</a></div><a href="#zeo-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="96">Zeo API</a><div class="space-left1" data-reactid="97"><a href="#exported-objects-1" class="line-height15 pad0x pad00y quiet block " data-reactid="98">Exported objects</a></div><div class="space-left1" data-reactid="99"><a href="#frame-events-1" class="line-height15 pad0x pad00y quiet block " data-reactid="100">Frame Events</a></div><div class="space-left1" data-reactid="101"><a href="#status-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="102">Status API</a></div><div class="space-left1" data-reactid="103"><a href="#engine-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="104">Engine API</a></div><div class="space-left1" data-reactid="105"><a href="#scene-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="106">Scene API</a></div><div class="space-left1" data-reactid="107"><a href="#zeo-update-callbacks-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="108">Zeo update callbacks API</a></div><div class="space-left1" data-reactid="109"><a href="#zeo-status-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="110">Zeo status API</a></div><div class="space-left1" data-reactid="111"><a href="#zeo-world-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="112">Zeo world API</a></div><div class="space-left1" data-reactid="113"><a href="#zeo-elements-api-1" class="line-height15 pad0x pad00y quiet block " data-reactid="114">Zeo elements API</a></div></div></div><div class="space-left16" data-reactid="115"><div class="" data-reactid="116"><div class="clearfix" data-reactid="117"><div data-title="What is Zeo VR?" class="keyline-top section contain clearfix " data-reactid="118"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="119"><h2 id="what-is-zeo-vr">What is Zeo VR?</h2>
+    <!--START--><div id='app'><div class="container unlimiter" data-reactroot="" data-reactid="1" data-react-checksum="-1105973664"><div class="fixed-top fixed-right space-left16" data-reactid="2"><div class="fill-light col6 pin-right" data-reactid="3"></div></div><div class="space-top5 scroll-styled overflow-auto pad1 width16 sidebar fixed-left fill-dark dark" data-reactid="4"><div class="pad0x small" data-reactid="5"><div class="small pad0x quiet space-top1" data-reactid="6">Introduction</div><a href="#what-is-zeo-vr" class="line-height15 pad0x pad00y quiet block " data-reactid="7">What is Zeo VR?</a><div class="space-left1" data-reactid="8"><a href="#highlights" class="line-height15 pad0x pad00y quiet block " data-reactid="9">Highlights</a></div><div class="space-left1" data-reactid="10"><a href="#browser-requirements" class="line-height15 pad0x pad00y quiet block " data-reactid="11">Browser requirements</a></div><div class="space-left1" data-reactid="12"><a href="#server-requirements" class="line-height15 pad0x pad00y quiet block " data-reactid="13">Server requirements</a></div><div class="space-left1" data-reactid="14"><a href="#headset-support" class="line-height15 pad0x pad00y quiet block " data-reactid="15">Headset support</a></div><div class="small pad0x quiet space-top1" data-reactid="16">User manual</div><a href="#getting-started" class="line-height15 pad0x pad00y quiet block " data-reactid="17">Getting started</a><a href="#server-setup-docker" class="line-height15 pad0x pad00y quiet block " data-reactid="18">Server setup (Docker)</a><div class="space-left1" data-reactid="19"><a href="#step-1-get-docker" class="line-height15 pad0x pad00y quiet block " data-reactid="20">Step 1: Get Docker</a></div><div class="space-left1" data-reactid="21"><a href="#step-2-pull-image" class="line-height15 pad0x pad00y quiet block " data-reactid="22">Step 2: Pull image</a></div><div class="space-left1" data-reactid="23"><a href="#step-3-run-container" class="line-height15 pad0x pad00y quiet block " data-reactid="24">Step 3: Run container</a></div><a href="#server-setup-bare" class="line-height15 pad0x pad00y quiet block " data-reactid="25">Server setup (bare)</a><div class="space-left1" data-reactid="26"><a href="#step-1-get-linux" class="line-height15 pad0x pad00y quiet block " data-reactid="27">Step 1: Get Linux</a></div><div class="space-left1" data-reactid="28"><a href="#step-2-get-nodejs" class="line-height15 pad0x pad00y quiet block " data-reactid="29">Step 2: Get node.js</a></div><div class="space-left1" data-reactid="30"><a href="#step-3-install-dependencies" class="line-height15 pad0x pad00y quiet block " data-reactid="31">Step 3: Install dependencies</a></div><div class="space-left1" data-reactid="32"><a href="#step-4-npm-install" class="line-height15 pad0x pad00y quiet block " data-reactid="33">Step 4: Npm install</a></div><div class="space-left1" data-reactid="34"><a href="#step-5-start-server" class="line-height15 pad0x pad00y quiet block " data-reactid="35">Step 5: Start server</a></div><div class="space-left1" data-reactid="36"><a href="#step-6-hosts-file-optional" class="line-height15 pad0x pad00y quiet block " data-reactid="37">Step 6: Hosts file (optional)</a></div><div class="space-left1" data-reactid="38"><a href="#step-7-tls-certificate-optional" class="line-height15 pad0x pad00y quiet block " data-reactid="39">Step 7: TLS certificate (optional)</a></div><a href="#getting-help" class="line-height15 pad0x pad00y quiet block " data-reactid="40">Getting help</a><a href="#reference" class="line-height15 pad0x pad00y quiet block " data-reactid="41">Reference</a><div class="space-left1" data-reactid="42"><a href="#command-line" class="line-height15 pad0x pad00y quiet block " data-reactid="43">Command line</a></div><div class="space-left1" data-reactid="44"><a href="#key-bindings" class="line-height15 pad0x pad00y quiet block " data-reactid="45">Key bindings</a></div><div class="space-left1" data-reactid="46"><a href="#data-directories" class="line-height15 pad0x pad00y quiet block " data-reactid="47">Data directories</a></div><div class="small pad0x quiet space-top1" data-reactid="48">Module specification</div><a href="#modules-overview" class="line-height15 pad0x pad00y quiet block " data-reactid="49">Modules overview</a><a href="#writing-a-module" class="line-height15 pad0x pad00y quiet block " data-reactid="50">Writing a module</a><div class="space-left1" data-reactid="51"><a href="#packagejson" class="line-height15 pad0x pad00y quiet block " data-reactid="52">package.json</a></div><div class="space-left1" data-reactid="53"><a href="#client--server--worker" class="line-height15 pad0x pad00y quiet block " data-reactid="54">client / server / worker</a></div><div class="space-left1" data-reactid="55"><a href="#mount--unmount" class="line-height15 pad0x pad00y quiet block " data-reactid="56">mount / unmount</a></div><a href="#loading-modules" class="line-height15 pad0x pad00y quiet block " data-reactid="57">Loading modules</a><div class="space-left1" data-reactid="58"><a href="#option-1-local-install" class="line-height15 pad0x pad00y quiet block " data-reactid="59">Option 1: Local install</a></div><div class="space-left1" data-reactid="60"><a href="#option-2-publish-to-npm" class="line-height15 pad0x pad00y quiet block " data-reactid="61">Option 2: Publish to npm</a></div><div class="small pad0x quiet space-top1" data-reactid="62">API docs</div><a href="#api-introduction" class="line-height15 pad0x pad00y quiet block " data-reactid="63">API Introduction</a><a href="#module-specification-1" class="line-height15 pad0x pad00y quiet block " data-reactid="64">Module specification</a><div class="space-left1" data-reactid="65"><a href="#package-format" class="line-height15 pad0x pad00y quiet block " data-reactid="66">Package format</a></div><div class="space-left1" data-reactid="67"><a href="#plugin-apis" class="line-height15 pad0x pad00y quiet block " data-reactid="68">Plugin APIs</a></div><div class="space-left1" data-reactid="69"><a href="#import-a-plugins-api" class="line-height15 pad0x pad00y quiet block " data-reactid="70">Import a plugin&#x27;s API</a></div><div class="space-left1" data-reactid="71"><a href="#export-your-plugins-api" class="line-height15 pad0x pad00y quiet block " data-reactid="72">Export your plugin&#x27;s API</a></div><a href="#loading-modules-1" class="line-height15 pad0x pad00y quiet block " data-reactid="73">Loading modules</a><div class="space-left1" data-reactid="74"><a href="#option-1-local-install-1" class="line-height15 pad0x pad00y quiet block " data-reactid="75">Option 1: Local install</a></div><div class="space-left1" data-reactid="76"><a href="#option-2-publish-to-npm-1" class="line-height15 pad0x pad00y quiet block " data-reactid="77">Option 2: Publish to npm</a></div><a href="#zeo-api" class="line-height15 pad0x pad00y quiet block " data-reactid="78">Zeo API</a><div class="space-left1" data-reactid="79"><a href="#exported-objects" class="line-height15 pad0x pad00y quiet block " data-reactid="80">Exported objects</a></div><div class="space-left1" data-reactid="81"><a href="#frame-events" class="line-height15 pad0x pad00y quiet block " data-reactid="82">Frame Events</a></div><div class="space-left1" data-reactid="83"><a href="#status-api" class="line-height15 pad0x pad00y quiet block " data-reactid="84">Status API</a></div><div class="space-left1" data-reactid="85"><a href="#engine-api" class="line-height15 pad0x pad00y quiet block " data-reactid="86">Engine API</a></div><div class="space-left1" data-reactid="87"><a href="#scene-api" class="line-height15 pad0x pad00y quiet block " data-reactid="88">Scene API</a></div><div class="space-left1" data-reactid="89"><a href="#zeo-update-callbacks-api" class="line-height15 pad0x pad00y quiet block " data-reactid="90">Zeo update callbacks API</a></div><div class="space-left1" data-reactid="91"><a href="#zeo-status-api" class="line-height15 pad0x pad00y quiet block " data-reactid="92">Zeo status API</a></div><div class="space-left1" data-reactid="93"><a href="#zeo-world-api" class="line-height15 pad0x pad00y quiet block " data-reactid="94">Zeo world API</a></div><div class="space-left1" data-reactid="95"><a href="#zeo-elements-api" class="line-height15 pad0x pad00y quiet block " data-reactid="96">Zeo elements API</a></div></div></div><div class="space-left16" data-reactid="97"><div class="" data-reactid="98"><div class="clearfix" data-reactid="99"><div data-title="What is Zeo VR?" class="keyline-top section contain clearfix " data-reactid="100"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="101"><h2 id="what-is-zeo-vr">What is Zeo VR?</h2>
 <p><strong>Zeo VR</strong> is a <a href="https://nodejs.org"><code>node.js</code></a> web server that runs <a href="https://npmjs.org"><code>npm</code></a> modules in <a href="https://webvr.info/"><code>WebVR</code></a>.</p>
 <p>There is a <a href="#module-specification"><code>package.json</code> spec</a> for making your own VR NPM modules and a <a href="#api-docs">THREE.js DOM API</a> for presenting 3D content.</p>
 <p>There's also an in-VR world builder, mutiplayer, and server-side physics.</p>
 <p>Basically, Zeo VR uses web technologies to run your Javascript modules in VR.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="120"><blockquote>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="102"><blockquote>
 <p><img src="https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png" alt="alt text" title="Logo Title Text 1"></p>
 </blockquote>
 <h4 id="install-zeo-vr">Install Zeo VR</h4>
@@ -24,7 +24,7 @@
 <pre class='hljs'>sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev</pre>
 <h4 id="install-depencencies-debian">Install depencencies (Debian)</h4>
 <pre class='hljs'>sudo apt-get install build-essential cmake python libav-tools libcairo2-dev</pre>
-</div></div><div data-title="Highlights" class="keyline-top section contain clearfix " data-reactid="121"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="122"><h3 id="highlights">Highlights</h3>
+</div></div><div data-title="Highlights" class="keyline-top section contain clearfix " data-reactid="103"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="104"><h3 id="highlights">Highlights</h3>
 <ul>
 <li>Multiplayer</li>
 <li>Voice chat</li>
@@ -44,31 +44,32 @@
 <li>Mostly just Javascript</li>
 <li><a href="https://github.com/modulesio/zeo">Open source on Github</a></li>
 </ul>
-</div></div><div data-title="Browser requirements" class="keyline-top section contain clearfix " data-reactid="123"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="124"><h3 id="browser-requirements">Browser requirements</h3>
+</div></div><div data-title="Browser requirements" class="keyline-top section contain clearfix " data-reactid="105"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="106"><h3 id="browser-requirements">Browser requirements</h3>
 <p>The only browser requirement is <a href="https://en.wikipedia.org/wiki/WebGL"><code>WebGL</code></a>. This includes virtually <a href="http://caniuse.com/#feat=webgl">every modern web browser</a>, including mobile ones.</p>
 <p>Note that <a href="https://webvr.info/"><code>WebVR</code></a> itself is <em>not</em> required, nor do you need VR hardware: there is mouse + keyboard emulation of VR controls (keybindings are <a href="#key-bindings">here</a>). That said, the main point of Zeo VR is that it works in virtual reality, so you're missing out without a headset. But the option of working without gear is there, and enjoys first-class support.</p>
 <p>If you want to use <code>WebVR</code>, you'll need a browser that supports it. For desktop, that means either <a href="https://webvr.info/get-chrome/">Chromium Experimental</a> or <a href="https://www.mozilla.org/en-US/firefox/channel/desktop/#nightly">Firefox Nightly</a>. This requirement will go away when WebVR makes it to to the stable release.</p>
-</div></div><div data-title="Server requirements" class="keyline-top section contain clearfix " data-reactid="125"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="126"><h3 id="server-requirements">Server requirements</h3>
+</div></div><div data-title="Server requirements" class="keyline-top section contain clearfix " data-reactid="107"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="108"><h3 id="server-requirements">Server requirements</h3>
 <p>The main requirement for running your own Zeo VR server is <em>Linux</em>.</p>
 <p>Technically all you need is <code>node.js</code>, but some native C++ modules require a build step and a native C++ compiler.</p>
 <p><em>Windows</em> and <em>OSX</em> might work, but are not tested. It's recommended that you simply use a Linux virtual machine.</p>
-</div></div><div data-title="Headset support" class="keyline-top section contain clearfix " data-reactid="127"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="128"><h3 id="headset-support">Headset support</h3>
+</div></div><div data-title="Headset support" class="keyline-top section contain clearfix " data-reactid="109"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="110"><h3 id="headset-support">Headset support</h3>
 <p>Only <a href="https://en.wikipedia.org/wiki/HTC_Vive">HTC Vive</a> is supported at the moment.</p>
 <p>Most other headsets (including mobile platforms like Daydream) <em>will probably work</em> but are not tested.</p>
 <p>The main problem you'll run into is that models, tutorials, and documentation assume you're using a Vive. The other potential problem is performance.</p>
 <p>Support for more devices is on the roadmap.</p>
-</div></div><div data-title="Getting started (Docker)" class="keyline-top section contain clearfix " data-reactid="129"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="130"><h2 id="getting-started-docker">Getting started (Docker)</h2>
-<p>The easiest way to run Zeo VR is with <a href="https://docker.com">Docker</a>. That way you won't have to install anything else or worry about versions.</p>
-<p>The </p>
-</div></div><div data-title="Step 1: Get Docker" class="keyline-top section contain clearfix " data-reactid="131"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="132"><h3 id="step-1-get-docker">Step 1: Get Docker</h3>
+</div></div><div data-title="Getting started" class="keyline-top section contain clearfix " data-reactid="111"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="112"><h2 id="getting-started">Getting started</h2>
+</div></div><div data-title="Server setup (Docker)" class="keyline-top section contain clearfix " data-reactid="113"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="114"><h2 id="server-setup-docker">Server setup (Docker)</h2>
+<p>The recommended (and easiest) way to run Zeo VR is with <a href="https://docker.com">Docker</a>. That way you won't have to install anything else or worry about versions.</p>
+<p>Unless you need to hack Zeo VR itself, this is your best option.</p>
+</div></div><div data-title="Step 1: Get Docker" class="keyline-top section contain clearfix " data-reactid="115"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="116"><h3 id="step-1-get-docker">Step 1: Get Docker</h3>
 <p>If you don't have Docker yet, follow <a href="https://docs.docker.com/engine/getstarted/step_one/">these instructions</a>.</p>
-</div></div><div data-title="Step 2: Pull image" class="keyline-top section contain clearfix " data-reactid="133"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="134"><h3 id="step-2-pull-image">Step 2: Pull image</h3>
-<p>The <a href="https://hub.docker.com/r/modulesio/zeo/">latest Zeo VR image is on Docker hub</a>. The build is automated from the Github <code>master</code> branch.</p>
+</div></div><div data-title="Step 2: Pull image" class="keyline-top section contain clearfix " data-reactid="117"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="118"><h3 id="step-2-pull-image">Step 2: Pull image</h3>
+<p>The <a href="https://hub.docker.com/r/modulesio/zeo/">latest Zeo VR image</a> is on Docker hub. The build is automated from the Github <code>master</code> branch.</p>
 <p>To pull the image locally, use <code>docker pull modulesio/zeo</code>.</p>
 <p>You can repeat this anytime to get the latest Zeo VR image, but note that you will also need to follow the rest of the steps to create a new container for the the image.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="135"><h4 id="pull-modulesiozeo-with-docker">Pull modulesio/zeo with docker</h4>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="119"><h4 id="pull-modulesiozeo-with-docker">Pull modulesio/zeo with docker</h4>
 <pre class='hljs'>docker pull modulesio/zeo</pre>
-</div></div><div data-title="Step 3: Run container" class="keyline-top section contain clearfix " data-reactid="136"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="137"><h3 id="step-3-run-container">Step 3: Run container</h3>
+</div></div><div data-title="Step 3: Run container" class="keyline-top section contain clearfix " data-reactid="120"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="121"><h3 id="step-3-run-container">Step 3: Run container</h3>
 <p>Once you have the Zeo VR Docker image, run it with <code>docker run modulesio/zeo</code>.</p>
 <p>If you did everything right, the autput should be a URL that you can access from your browser.</p>
 <p>However, you might also want to (or need to) clean up your configuration to get your browser pointed at the right place and fix browser warnings:</p>
@@ -76,17 +77,18 @@
 <li><a href="#step-6-hosts-file-optional">Update your /etc/hosts</a></li>
 <li><a href="#step-7-tls-certificate-optional">Configure a TLS certificate</a></li>
 </ul>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="138"><h4 id="run-modulesiozeo-with-docker">Run modulesio/zeo with docker</h4>
+<p><a href="#command-line">See here</a> for the command line arguments you can use when starting your container. They're passed through directly to the server start script.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="122"><h4 id="run-modulesiozeo-with-docker">Run modulesio/zeo with docker</h4>
 <pre class='hljs'>docker run modulesio/zeo</pre>
-</div></div><div data-title="Getting started (bare server)" class="keyline-top section contain clearfix " data-reactid="139"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="140"><h2 id="getting-started-bare-server">Getting started (bare server)</h2>
+</div></div><div data-title="Server setup (bare)" class="keyline-top section contain clearfix " data-reactid="123"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="124"><h2 id="server-setup-bare">Server setup (bare)</h2>
 <p>Here's how to set up Zeo VR on a bare server.</p>
-</div></div><div data-title="Step 1: Get Linux" class="keyline-top section contain clearfix " data-reactid="141"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="142"><h3 id="step-1-get-linux">Step 1: Get Linux</h3>
+</div></div><div data-title="Step 1: Get Linux" class="keyline-top section contain clearfix " data-reactid="125"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="126"><h3 id="step-1-get-linux">Step 1: Get Linux</h3>
 <p>Get yourself a Linux machine.</p>
 <p>It can be raw Linux or a virtual machine, but it needs to be Linux. It doesn't matter which distribution.</p>
-</div></div><div data-title="Step 2: Get node.js" class="keyline-top section contain clearfix " data-reactid="143"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="144"><h3 id="step-2-get-nodejs">Step 2: Get node.js</h3>
+</div></div><div data-title="Step 2: Get node.js" class="keyline-top section contain clearfix " data-reactid="127"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="128"><h3 id="step-2-get-nodejs">Step 2: Get node.js</h3>
 <p><a href="https://nodejs.org/en/download/">Install node.js</a>, version <code>7+</code>.</p>
 <p>You have many options here: install the binaries, use your distribution's package manager, or use <a href="https://github.com/creationix/nvm"><code>nvm</code></a> (recommended).</p>
-</div></div><div data-title="Step 3: Install dependencies" class="keyline-top section contain clearfix " data-reactid="145"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="146"><h3 id="step-3-install-dependencies">Step 3: Install dependencies</h3>
+</div></div><div data-title="Step 3: Install dependencies" class="keyline-top section contain clearfix " data-reactid="129"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="130"><h3 id="step-3-install-dependencies">Step 3: Install dependencies</h3>
 <p>Zeo VR requires some native modules to be built for server-side physics, audio/video processing, and such. These should be built automatically when you <code>npm install zeo</code>, but for that to work you'll need a compiler, build system, and a few libraries on your system.</p>
 <p>These are:</p>
 <ul>
@@ -97,42 +99,45 @@
 <li><code>libcairo2-dev</code></li>
 </ul>
 <p>You'll find these in your package manager of choice.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="147"><h4 id="install-dependencies-ubuntu">Install dependencies (Ubuntu)</h4>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="131"><h4 id="install-dependencies-ubuntu">Install dependencies (Ubuntu)</h4>
 <pre class='hljs'>sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev</pre>
 <h4 id="install-dependencies-debian">Install dependencies (Debian)</h4>
 <pre class='hljs'>sudo apt-get install build-essential cmake python libav-tools libcairo2-dev</pre>
-</div></div><div data-title="Step 4: Npm install" class="keyline-top section contain clearfix " data-reactid="148"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="149"><h3 id="step-4-npm-install">Step 4: Npm install</h3>
+</div></div><div data-title="Step 4: Npm install" class="keyline-top section contain clearfix " data-reactid="132"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="133"><h3 id="step-4-npm-install">Step 4: Npm install</h3>
 <p>This one is fairly straightforward. Just make sure there are no build errors.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="150"><h4 id="install-zeo-module">Install zeo module</h4>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="134"><h4 id="install-zeo-module">Install zeo module</h4>
 <pre class='hljs'>npm install zeo</pre>
-</div></div><div data-title="Step 5: Start server" class="keyline-top section contain clearfix " data-reactid="151"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="152"><h3 id="step-5-start-server">Step 5: Start server</h3>
+</div></div><div data-title="Step 5: Start server" class="keyline-top section contain clearfix " data-reactid="135"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="136"><h3 id="step-5-start-server">Step 5: Start server</h3>
 <p>If everything worked, you should be able to start your server now. The first run will need to generate some stuff like SSL certificates, signing keys, and a server identity (procedurally generated icons and skyboxes), so it might take a minute.</p>
 <p>Once everything's up and running, you'll get a URL and access token you can use to connect to your server from your browser.</p>
 <p>Note that since you're using a self-signed SSL certificate, your browser will complain that the connection is insecure. The fix is to use your own SSL certificate (see below).</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="153"><h4 id="start-zeo-module">Start zeo module</h4>
+<p><a href="#command-line">See here</a> for the command line arguments you can use.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="137"><h4 id="start-zeo-vr-server">Start Zeo VR server</h4>
 <pre class='hljs'>./scripts/start.sh</pre>
 <h4 id="after-a-while-you-should-see">After a while you should see</h4>
 <pre class='hljs'>https:<span class="hljs-comment">//local.zeovr.io:8000?t=ZU1TVgYyUAlDCnJgDVNDRHlrCmhAGDvCgHRhexoD</span></pre>
-</div></div><div data-title="Step 6: Hosts file (optional)" class="keyline-top section contain clearfix " data-reactid="154"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="155"><h3 id="step-6-hosts-file-optional">Step 6: Hosts file (optional)</h3>
+</div></div><div data-title="Step 6: Hosts file (optional)" class="keyline-top section contain clearfix " data-reactid="138"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="139"><h3 id="step-6-hosts-file-optional">Step 6: Hosts file (optional)</h3>
 <p>Since you're running a server on your own domain (<code>local.zeovr.io</code>) and you (probably) don't own that domain, you'll need to teach your computer how to reach it.</p>
 <p>That is, you'll need to add a line to your <a href="https://en.wikipedia.org/wiki/Hosts_(file)">hosts file</a>.</p>
 <p>Once you've done that, you should be able to connect to your server by opening the URL from the previous step in your browser.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="156"><pre class='hljs'># /etc/hosts
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="140"><pre class='hljs'># /etc/hosts
 127.0.0.1 local.zeovr.io</pre>
-</div></div><div data-title="Step 7: TLS certificate (optional)" class="keyline-top section contain clearfix " data-reactid="157"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="158"><h3 id="step-7-tls-certificate-optional">Step 7: TLS certificate (optional)</h3>
+</div></div><div data-title="Step 7: TLS certificate (optional)" class="keyline-top section contain clearfix " data-reactid="141"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="142"><h3 id="step-7-tls-certificate-optional">Step 7: TLS certificate (optional)</h3>
 <p>Zeo VR uses <em>HTTP/2</em> and this requires using TLS and a TLS certificate. By default the server will generate a self-signed certificate for a fake domain on which to run your server (<code>local.zeovr.io</code>).</p>
 <p>However, this will cause browsers to complain, it's totally insecure, and will impact load performance due to browser's lack of caching for insecure responses.</p>
 <p>The good news is that if you have a domain, you can fix this with a <a href="https://certbot.eff.org/">free TLS certificate from Let's Encrypt</a>. If you don't have a domain, you'll need to either get one or accept these issues.</p>
 <p>Once you have a certificate, just drop it into the <code>crypto/cert</code> directory and restart your sever. You can overwrite the autogenerated self-signed certificate files there.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="159"><h4 id="place-your-tls-certificate-here">Place your TLS certificate here</h4>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="143"><h4 id="place-your-tls-certificate-here">Place your TLS certificate here</h4>
 <pre class='hljs'>./crypto/cert/cert.pem
 ./crypto/cert/private.pem</pre>
-</div></div><div data-title="Getting help" class="keyline-top section contain clearfix " data-reactid="160"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="161"><h2 id="getting-help">Getting help</h2>
+</div></div><div data-title="Getting help" class="keyline-top section contain clearfix " data-reactid="144"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="145"><h2 id="getting-help">Getting help</h2>
 <p>Found a bug? <a href="https://github.com/modulesio/zeo/issues">File an issue on Github</a>.
 Need help? <a href="https://twitter.com/modulesio">Reach out on Twitter</a>.</p>
-</div></div><div data-title="Reference" class="keyline-top section contain clearfix " data-reactid="162"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="163"><h2 id="reference">Reference</h2>
+</div></div><div data-title="Reference" class="keyline-top section contain clearfix " data-reactid="146"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="147"><h2 id="reference">Reference</h2>
 <p>Here are some useful reference pages.</p>
-</div></div><div data-title="Key bindings" class="keyline-top section contain clearfix " data-reactid="164"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="165"><h3 id="key-bindings">Key bindings</h3>
+</div></div><div data-title="Command line" class="keyline-top section contain clearfix " data-reactid="148"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="149"><h3 id="command-line">Command line</h3>
+<p>// XXX</p>
+</div></div><div data-title="Key bindings" class="keyline-top section contain clearfix " data-reactid="150"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="151"><h3 id="key-bindings">Key bindings</h3>
 <p>Zeo VR works best with a headset, but here are the mouse + keyboard key bindings in case you missed them in the Hub tutorial:</p>
 <ul>
 <li><strong>WASD</strong> Move around</li>
@@ -145,259 +150,141 @@ Need help? <a href="https://twitter.com/modulesio">Reach out on Twitter</a>.</p>
 <li><strong>Ctrl + Mousewheel</strong> Move controller x/z axis</li>
 <li><strong>Shift + Mousewheel</strong> Rotate controller</li>
 </ul>
-</div></div><div data-title="Data directories" class="keyline-top section contain clearfix " data-reactid="166"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="167"><h3 id="data-directories">Data directories</h3>
+</div></div><div data-title="Data directories" class="keyline-top section contain clearfix " data-reactid="152"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="153"><h3 id="data-directories">Data directories</h3>
 <p>XXX</p>
-<p>This document specifies what you need to do to write your own Zeo plugins, which are self-contained units of code you can add to your Zeo worlds.</p>
-<p>It is assumed that you already have a Zeo server running. If not, see <a href="https://github.com/modulesio/zeo/tree/master/docs/getting-started.md">Getting started</a>.</p>
-</div></div><div data-title="API Introduction" class="keyline-top section contain clearfix " data-reactid="168"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="169"><h2 id="api-introduction">API Introduction</h2>
+<p>This document specifies what you need to do to write your own VR <code>npm</code> modules.</p>
+<p>These are self-contained units of Javascript code you can add to your worlds, and they can be anything from <a href="https://github.com/modulesio/z-cake">an edible cake</a> to a <a href="https://github.com/modulesio/z-primitives">physics toolbox</a>.</p>
+<p>It is assumed that you already have a Zeo VR server. If not, see <a href="https://github.com/modulesio/zeo/tree/master/docs/getting-started.md">Getting started</a>.</p>
+</div></div><div data-title="Modules overview" class="keyline-top section contain clearfix " data-reactid="154"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="155"><h2 id="modules-overview">Modules overview</h2>
 <p>A Zeo module is just an <a href="https://www.npmjs.com/"><code>npm</code></a> module that follows this standard.</p>
-<p>Basically, to make your module VR-compatible, you add some extra keys in the <a href="https://docs.npmjs.com/files/package.json"><code>package.json</code></a> to reference your Javascript VR code, add the <code>zeo-module</code> <code>keyword</code> to make it discoverable, and then publish the result to <code>npm</code>. After that, your module will automagically be available for drag-and-drop on any Zeo VR server.</p>
+<p>Basically, to make your module VR-compatible, you add some extra keys in the <a href="https://docs.npmjs.com/files/package.json"><code>package.json</code></a>. These keys reference your Javascript VR code so we know how to load your module. Then you add the <code>zeo-module</code> <code>keyword</code> to make your module discoverable on <code>npm</code>.</p>
+<p>When you publish such a module to the <code>npm</code> registry, it will automagically become available on any Zeo VR server.</p>
 <p>If you're a hands-on learner and you already know Javascript, you might want to simply dive into the <a href="https://github.com/modulesio/zeo/tree/master/plugins/demo"><code>Bouncy ball</code> demo plugin on Github</a>.</p>
 <p>Otherwise, read on for the full Zeo VR module specification.</p>
-</div></div><div data-title="Module specification" class="keyline-top section contain clearfix " data-reactid="170"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="171"><h2 id="module-specification-1">Module specification</h2>
+</div></div><div data-title="Writing a module" class="keyline-top section contain clearfix " data-reactid="156"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="157"><h2 id="writing-a-module">Writing a module</h2>
 <p>Under the hood, Zeo uses the <a href="https://github.com/modulesio/archae"><code>archae</code></a> module loader. It's just a way of writing client/server <code>npm</code> modules that can be started and stopped dynamically.</p>
-</div></div><div data-title="Package format" class="keyline-top section contain clearfix " data-reactid="172"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="173"><h3 id="package-format">Package format</h3>
-<p>The main thing that makes an <code>npm</code> module compatible with Zeo is that its <code>package.json</code> includes the keys <code>client</code>, <code>server</code>, or <code>worker</code> (all of which are optional). These should point to the (package-relative) <code>.js</code> files you want to run in the corresponding environments:</p>
+</div></div><div data-title="package.json" class="keyline-top section contain clearfix " data-reactid="158"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="159"><h3 id="packagejson">package.json</h3>
+<p>The main thing that makes an <code>npm</code> module runnable in VR is that its <code>package.json</code> includes the keys <code>client</code>, <code>server</code>, or <code>worker</code> (all of which are optional). These should point to the (package-relative) <code>.js</code> files you want to run in the corresponding environments:</p>
 <p>We'll go into the structure of each of these files below.</p>
 <p>Also note the <code>"keywords": ["zeo-module"]</code>. This is used to discover your module when searching <code>npm</code>, but it's not required for loading a <a href="#option-1-local-module">local module</a> that you don't intend to publish.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="174"><h4 id="packagejson">package.json</h4>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="160"><h4 id="packagejson-1">package.json</h4>
+<pre class='hljs'>{
+  <span class="hljs-string">"name"</span>: <span class="hljs-string">"my-vr-plugin"</span>,
+  <span class="hljs-string">"client"</span>: <span class="hljs-string">"client.js"</span>,
+  <span class="hljs-string">"server"</span>: <span class="hljs-string">"server.js"</span>,
+  <span class="hljs-string">"worker"</span>: <span class="hljs-string">"worker.js"</span>
+  <span class="hljs-string">"keywords"</span>: [<span class="hljs-string">"zeo-module"</span>],
+}</pre>
 <h4 id="clientjs">client.js</h4>
-</div></div><div data-title="Plugin APIs" class="keyline-top section contain clearfix " data-reactid="175"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="176"><h3 id="plugin-apis">Plugin APIs</h3>
-<p>In addition to loading and unloading plugins, Zeo lets plugins export their APIs and import other plugin's APIs.</p>
-</div></div><div data-title="Import a plugin&#x27;s API" class="keyline-top section contain clearfix " data-reactid="177"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="178"><h3 id="import-a-plugins-api">Import a plugin's API</h3>
-<p>To import a plugin API, use a <code>function</code> or <code>class</code> at the top-level <code>export default</code> or <code>module.exports</code> of your Javascript file, to capture the <code>archae</code> object:</p>
-<p>The important part is the call to <code>archae.requestPlugin()</code>, which lets us request other plugins. The return value of this function is a <code>Promise</code> that will <code>resolve</code> to the API that's exported by that plugin, or <code>reject</code> with an error describing how loading the plugin failed.</p>
-<p>In this case we are requesting the <code>/core/engines/zeo</code> plugin, which resolves to the Zeo plugin API. This betrays a key design principle of Zeo: it's actually just a plugin! That is, Zeo is just plugins all the way down.</p>
-<p>Also note the <code>return archae.requestPlugin(...)</code>: we are returning a <code>Promise</code> from <code>mount</code>. In this case, it means we want the plugin's loading to wait until the returned <code>Promise</code> resolves. This is also the mechanism that allows a plugin to export its own API for other plugins to consume.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="179"><h4 id="clientjs-1">client.js</h4>
-</div></div><div data-title="Export your plugin&#x27;s API" class="keyline-top section contain clearfix " data-reactid="180"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="181"><h3 id="export-your-plugins-api">Export your plugin's API</h3>
-<p>To export an API for your plugin, simply return (a <code>Promise</code> that resolves to) your API from the plugin's <code>mount</code> function in its Javascript implementation file.</p>
-<p>Returning a regular value means that the plugin should be considered loaded immediately, while returning a <code>Promise</code> means you want to wait for the plugin to load until the <code>Promise</code> resolves. Either way, the behavior is the same from the user's perspective: the resolved value of the <code>Promise</code> that the user gets as the result of calling <code>archae.requestPlugin()</code> will be the API your plugin exports.</p>
-<p>Here's an example of a plugin exporting an API and another plugin importing it for use:</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="182"><h4 id="databaseclientjs">database/client.js</h4>
-<h4 id="some-other-pluginclientjs">some-other-plugin/client.js</h4>
-</div></div><div data-title="Loading modules" class="keyline-top section contain clearfix " data-reactid="183"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="184"><h2 id="loading-modules">Loading modules</h2>
-<p>Now that you know how to write modules, you'll need to know how to load them into Zeo.</p>
-<p>There are two ways to do this: you can either installed from the local filesystem (in which case the plugin will only be available to your server), or publish to the public <code>npm</code> registry (in which case the plugin will be available for anyone to find and install). Either way, there's no difference in functionality and the code for your module is the same.</p>
-</div></div><div data-title="Option 1: Local module" class="keyline-top section contain clearfix " data-reactid="185"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="186"><h3 id="option-1-local-module">Option 1: Local module</h3>
+<pre class='hljs'><span class="hljs-built_in">module</span>.exports = {
+  mount() {
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'module loaded'</span>);
+  },
+  unmount() {
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'module unloaded'</span>);
+  },
+};</pre>
+</div></div><div data-title="client / server / worker" class="keyline-top section contain clearfix " data-reactid="161"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="162"><h3 id="client--server--worker">client / server / worker</h3>
+<p>Zeo VR handles all of the details of installing, building, bundling, loading, and unloading your modules in the correct environment (<code>client</code>, <code>server</code>, or <code>worker</code>).</p>
+<p>The environment in which your Javascript file is loaded depends on which key you use to reference the entry point file in your <code>package.json</code>:</p>
+<ul>
+<li><code>client</code> files are loaded in the browser</li>
+<li><code>server</code> files are loaded on the server</li>
+<li><code>worker</code> files are loaded in the browser <a href="#worker-api">via the API</a></li>
+</ul>
+<p>Regardless of environment, your code can <code>require()</code> any NPM module or file in the usual way.</p>
+<p>Your <code>client</code> and <code>worker</code> files will be automatically bundled with <a href="https://rollupjs.org/"><code>rollup.js</code></a> and loaded in the browser. Likewise, the <code>server</code> file can require any <code>node</code> module, including native modules.</p>
+<p>Although you can only have one of each <code>client</code>, <code>server</code>, and <code>worker</code> Javascript file entrypoints, these can do anything -- including loading additional files and starting parallel processes. Just make sur that whatever you do in your <code>mount</code> function <a href="#writing-a-module">gets cleaned up in <code>unmount</code></a>.</p>
+<p>Just make sure any npm modules you're using appear in your <a href="https://docs.npmjs.com/files/package.json#dependencies"><code>package.json</code> <code>dependencies</code></a> (i.e. you did <a href="https://docs.npmjs.com/cli/install"><code>npm install --save</code></a>).</p>
+<p>Note that although can use ES6 <code>import</code>/<code>export</code> for frontend files, <code>server</code> files are run bare in <code>node</code> and must use <code>require()</code> and <code>module.exports</code>. Also, note that there is no compilation step -- you must ensure that you're only using Javascript features supported by your environment.</p>
+</div></div><div data-title="mount / unmount" class="keyline-top section contain clearfix " data-reactid="163"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="164"><h3 id="mount--unmount">mount / unmount</h3>
+<p>The only requirement for making this work is that your Javascript files <code>export</code> a <code>mount</code> function to run when your module is loaded, and (optionally) an <code>unmount</code> function to run when your module is unloaded.</p>
+<p>The only requirement on these functions is that:</p>
+<ol>
+<li><code>mount</code> ensures everything you need is loaded, and either does so synchronously or returns a <code>Promise</code> that will resolve when loading is finished, and</li>
+<li><code>unmount</code> undoes everything that <code>mount</code> did, and either does so synchronously or returns a <code>Promise</code> that will resovle when unloading is finished</li>
+</ol>
+<p>(Under the hood, this is just the <a href="https://github.com/modulesio/archae"><code>archae</code></a> plugin format).</p>
+<p>If all you do is this, your module will be loadable in Zeo VR.</p>
+<p>However, to do meaningful VR things, such as add content to the scene, make your module configurable, or interact with other modules, you'll want to use the <code>zeo</code> API.</p>
+<p><code>zeo</code> is available as a global variable. The full API specification is <a href="#api-introduction">here</a>.</p>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="165"><h4 id="example-module-file">Example module file</h4>
+<pre class='hljs'><span class="hljs-comment">// a valid VR module</span>
+<span class="hljs-built_in">module</span>.exports = {
+  mount() {
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'module loaded'</span>);
+  },
+  unmount() {
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'module unloaded'</span>);
+  },
+};</pre>
+<h4 id="getting-at-the-zeo-object">Getting at the zeo object</h4>
+<pre class='hljs'><span class="hljs-built_in">module</span>.exports = {
+  mount() {
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'here is the THREE object'</span>, zeo.THREE);
+  },
+};</pre>
+</div></div><div data-title="Loading modules" class="keyline-top section contain clearfix " data-reactid="166"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="167"><h2 id="loading-modules">Loading modules</h2>
+<p>Once you've written a module that meets the specification, you have two options for loading it into Zeo VR:</p>
+<ul>
+<li>put the module files on your server (<a href="#option-1-local-install">Option 1</a>)</li>
+<li>publish to <code>npm</code> (<a href="#option-2-publish-to-npm">Option 2</a>)</li>
+</ul>
+<p>These are functionally equivalent. The only difference is that your module will not be available on other Zeo VR servers unless you publish to <code>npm</code> (option 2).</p>
+</div></div><div data-title="Option 1: Local install" class="keyline-top section contain clearfix " data-reactid="168"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="169"><h3 id="option-1-local-install">Option 1: Local install</h3>
 <p>This method is most useful for testing plugins as you develop them, without the overhead of publishing and downloading from <code>npm</code>.</p>
-<p>To use a plugin locally, simply drop your <code>npm</code> module (which otherwise meets the same Zeo mods specification) into Zeo's <code>plugins/</code> directory. For example, <code>plugins/my-mod</code> would be the right place to put a <code>zeo</code> plugin named <code>my-mod</code>.</p>
-<p>Once you've done this, you'll be able to add your plugin to Zeo the normal way, by going to <code>Mods > Local Mods</code> in the main Zeo menu. You can only do this on the server where you dropped your plugin.</p>
-<p>// XXX explain reinstalls</p>
-</div></div><div data-title="Option 2: Publish to npm" class="keyline-top section contain clearfix " data-reactid="187"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="188"><h3 id="option-2-publish-to-npm">Option 2: Publish to npm</h3>
-<p>Publishing your plugin to <code>npm</code> is the best way to deliver your module to anyone running Zeo. This is mostly just a straightforward <a href="https://docs.npmjs.com/cli/publish"><code>npm publish</code></a>. The only additional thing you need to do is to make sure that <code>"zeo-mod"</code> is included in your <code>"keywords" array in</code>package.json`, so Zeo knows how to find your module.</p>
-<p>To install a Zeo mod that was published to <code>npm</code>, go to <code>Mods > Npm search</code> in the main Zeo menu. Anyone running a Zeo server will be able to search for your mod and install it this way.</p>
-</div></div><div data-title="Zeo API" class="keyline-top section contain clearfix " data-reactid="189"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="190"><h2 id="zeo-api">Zeo API</h2>
-<p>The above describes how to write and load Zeo plugins that do nothing. To interact with the user and the Zeo world you'll want to use the API exported by <code>/core/engines/zeo</code>.</p>
-<p>This lets you get at the THREE.js <code>THREE</code>, <code>scene</code>, <code>camera</code>, and <code>renderer</code> objects, listen for frame updates, and get user poses:</p>
-<p>This plugin uses the Zeo API to add a sphere to the <code>scene</code> that Zeo has created for us, makes it float up and down in the scene, and colors it <code>BLUE</code> when we're looking directly at it or <code>RED</code> when we're touching it with tracked controllers.</p>
-<p>We update the scene every frame on by listening for <code>zeo.on('update', _update)</code> and get the HMD and controllers status via <code>zeo.getStatus()</code>. These APIs are documented below.</p>
-</div></div><div data-title="Exported objects" class="keyline-top section contain clearfix " data-reactid="191"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="192"><h3 id="exported-objects">Exported objects</h3>
-<p>The Zeo API exports some standard THREE.js primitives as seen above. These include:</p>
-<ul>
-<li><code>THREE</code>, the raw THREE.js API</li>
-<li><code>scene</code>, the <code>THREE.Scene</code> for the current world</li>
-<li><code>camera</code>, the <code>THREE.PerspectiveCamera</code> for viewing the current world</li>
-<li><code>render</code>, the <code>THREE.WebGLRenderer</code> for rendering the current world</li>
-</ul>
-<p>You can use these freely, as you would in any THREE.js app, but note that your plugin should conform to the module loader requirement that whatever you do in the <code>mount</code> step (such as adding objects to the <code>scene</code>) should be undone un the <code>unmount</code> step (such as removing the objects you added to the <code>scene</code>). If you don't this, your plugin will not behave correctly: it might leak resources, impact performance, or crash.</p>
-</div></div><div data-title="Frame Events" class="keyline-top section contain clearfix " data-reactid="193"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="194"><h3 id="frame-events">Frame Events</h3>
-<p>The Zeo API doubles as an <a href="https://nodejs.org/api/events.html"><code>EventEmitter</code></a> that you can listen to for events relating to frame timing and and input.</p>
-<p>The API is inherited from <code>node</code>: <code>zeo.on('eventName', eventHandler)</code> registers <code>eventHandler</code> to listen for <code>'eventName'</code> events and <code>zeo.removeListener('eventName', eventHandler)</code> unregisters it. The events you can subscribe to are:</p>
-<p>The <code>update</code> event fires <em>before</em> every frame is rendered. It's intended to let plugins perform update that need to happen on every frame, such as applying velocities to positions.</p>
-<p>Note that since listeners for the <code>update</code> event run on every frame, they need to be fast.</p>
-<p>That is, you shouldn't be iterating over large arrays, adding materials or textures, and other expensive things in your <code>update</code> function. If you need to do these, you should prefer:</p>
-<ul>
-<li>precomputation in <code>mount</code></li>
-<li>asynchronous computation in a worker</li>
-<li>doing the work in a vertex/fragment shader</li>
-</ul>
-<p>The <code>updateEye</code> event fires before each eye is rendered, and receives the eye's <code>camera</code> as an argument.</p>
-<p>The <code>camera</code> argument is the <code>THREE.PerspectiveCamera</code> for the eye being rendered. <code>updateEye</code> is most useful for cases where you want to render something that <em>depends on the eye camera</em> but <em>is not accounted for by the camera's transform matrix</em>. An example is rendering to a texture that depends on the camera, if you want the texture to be stereoscopic (such as a portal).</p>
-<p>Note that <code>updateEye</code> and <code>update</code> are <em>not</em> interchangeable. In the stereoscopic rendering case you will get <em>two</em> <code>updateEye</code> events per frame, so you'd be doing double the work ad double the rate.</p>
-<p>For consistency, <code>updateEye</code> will fire even if the renderering is monoscopic. In that case there will be a single <code>updateEye</code> event and a single <code>update</code> event fired.</p>
-<p>In general, prefer to use <code>update</code> instead of <code>updateEye</code>.</p>
-<p>Interacting with the VR world is a bit different than interacting with a regular browser page. For example, you want to be able to take input events from tracked controllers, which have buttons that do not correspond to anything on a standard keyboard or mouse. You'll want to know <em>which</em> controller your events are coming from. And with features such as virtual keyboards, some logical events do not correspond to any native event in the browser.</p>
-<p>For this reason, Zeo abstracts input events for you. It listens to the hardware and passes events to you through the regular <code>EventEmitter</code> interface. For example, listening to tracked controller events:</p>
-<p>The full list of available events is:</p>
-<ul>
-<li>
-<p><code>trigger</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>trigger</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
-</ul>
-</li>
-<li>
-<p><code>triggerdown</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>trigger</code> button is pushed <em>down</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>triggerup</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>trigger</code> button is released <em>up</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>pad</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>pad</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
-</ul>
-</li>
-<li>
-<p><code>paddown</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>pad</code> button is pushed <em>down</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>padup</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>pad</code> button is released <em>up</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>grip</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>grip</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
-</ul>
-</li>
-<li>
-<p><code>gripdown</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>grip</code> button is pushed <em>down</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>gripup</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>grip</code> button is released <em>up</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>menu</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>menu</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
-</ul>
-</li>
-<li>
-<p><code>menudown</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>menu</code> button is pushed <em>down</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>menuup</code> <code>{side: 'left'}</code></p>
-<ul>
-<li>Fired when the controller's <code>menu</code> button is released <em>up</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>keyboardpress</code> <code>{ key: 'a', keyCode: 65, side: 'left' }</code></p>
-<ul>
-<li>Fired when a virtual keyboard key is pressed.</li>
-<li><code>key</code> is the textual representation of the key. <code>keyCode</code> is the corresponding Javascript-compatible key code. <code>side</code> is whether the <code>left</code> or <code>right</code> controller was used to press the key. </li>
-</ul>
-</li>
-<li>
-<p><code>keyboarddown</code> <code>{ key: 'a', keyCode: 65, side: 'left' }</code></p>
-<ul>
-<li>Fired when a virtual keyboard key is pushed <em>down</em>.</li>
-</ul>
-</li>
-<li>
-<p><code>keyboardup</code> <code>{ key: 'a', keyCode: 65, side: 'left' }</code></p>
-<ul>
-<li>Fired when a virtual keyboard key is released <em>up</em>.</li>
-</ul>
-</li>
-</ul>
-<p>// XXX describe event priorities and how event.stopImmediatePropagation() short-circuits</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="195"><h4 id="update"><code>update</code></h4>
-<h4 id="updateeyecamera"><code>updateEye(camera)</code></h4>
-<h4 id="input-events">Input events</h4>
-</div></div><div data-title="Status API" class="keyline-top section contain clearfix " data-reactid="196"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="197"><h3 id="status-api">Status API</h3>
-<p>// XXX finish this</p>
-</div></div><div data-title="Engine API" class="keyline-top section contain clearfix " data-reactid="198"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="199"><h3 id="engine-api">Engine API</h3>
-<p>The first thing you'll need to do to get access to the rest of Zeo's APIs is to request the Zeo engine with <code>archae.requestEngine()</code>. Per the Archae specification, you can get the <code>archae</code> loader instance by grabbing it in the top-level function that's exported from your module:</p>
-<p>Once you've done that, you get the Zeo engine instance with <code>archae.requestEngine('/core/engines/zeo')</code>. This returns a <code>Promise</code> that will resolve to the Zeo API root:</p>
-<p>Note the <code>return archae.requestEngine()</code>: per the Archae specification, the <code>mount</code> function can return a Promise that will resolve once the mod completes its loading. Since our mod technically depends on loading the Zeo engine API, <code>return archae.requestEngine()</code> magically does the correct thing. We could load multiple things with <code>Promise.all</code>, or continue the <code>Promise</code> chain if we wanted to load more stuff here and it would "just work", but we'll stick with the simple example for now.</p>
-<p>The rest of what your module does communicates with Zeo through the API you get out of the resolved <code>archae.requestEngine('/core/engines/zeo')</code>.</p>
-</div></div><div data-title="Scene API" class="keyline-top section contain clearfix " data-reactid="200"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="201"><h3 id="scene-api">Scene API</h3>
-<p>Zeo loads <code>THREE.js</code> and sets up the <code>scene</code> rendering for you, and exposes these at the root of the Zeo API.</p>
-<p>These objects (<code>THREE</code>, <code>scene</code>, <code>camera</code>, <code>renderer</code>) are the bare THREE.js APIs and you can immediately use them to add meshes and other objects to the THREE.js scene graph. There's no magic here and you have the full THREE.js API at your disposal.</p>
-<p>Here we add a green sphere floating in the middle of the scene:</p>
-<p>Note that a full example of this mod is available as a demo plugin in the <a href="/plugins/demo/">plugins/demo/</a>.</p>
-</div></div><div data-title="Zeo update callbacks API" class="keyline-top section contain clearfix " data-reactid="202"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="203"><h3 id="zeo-update-callbacks-api">Zeo update callbacks API</h3>
-<p>Since Zeo is fundamentally about interactive VR, you will probably want a way to "do something on every frame", or "do something for each eye camera" -- such as advance an animation or render something stereoscopically.</p>
-<p>The Zeo framework is the "owner" of the VR camera, the rendering pipeline, and timing, so to be able to do stuff (like updating animations), you'll need to be able to hook in your code at the right time in a frame. That's what the update callbacks are for.</p>
-<p>All callbacks are declared by your mod via the <a href="https://github.com/modulesio/archae">Archae specification</a>. That is, your mount function should return (a <code>Promise</code> that resolves to) an object with the callback key mapping to the callback handler:</p>
-<p>The <code>update</code> callback will fire <em>before</em> Zeo renders every frame. This lets you do additional work that needs to be done per frame, such as updating animations.</p>
-<p>Note that whatever your <code>update</code> callback runs once per frame, so it needs to be fast.</p>
-<p>This means your <code>update</code> callback should not add or remove objects from the scene, construct new materials (<code>new THREE.Material()</code>), or do heavy math.</p>
-<p>If you need to do these things, the right place to do them is in the <code>mount</code> function; if this setup needs to be asynchronous (such as needing to fetch resources), your <code>mount</code> function can return the appropriate <code>Promise</code>.</p>
-<p>The <code>updateEye</code> callback is similar to <code>update</code>, only it will get called once <em>per eye</em> being rendered (generally, twice per frame).</p>
-<p>Additionally, it gets passed the <code>camera</code> that correponds to the eye being rendered. You can use the <code>camera</code> object to perform additional computation or set up shader parameters for more complicated rendering passes. For example, if you want to render a stereoscopic portal texture, <code>updateEye</code> is the way you'd do it.</p>
-<p>Note that <code>update</code> and <code>updateEye</code> are <em>not</em> mutually exclusive. You can use both, in which case <code>updateEye</code> will be called for each eye, followed by <code>update</code>.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="204"><h4 id="update-1"><code>update</code></h4>
-<h4 id="updateeye"><code>updateEye</code></h4>
-</div></div><div data-title="Zeo status API" class="keyline-top section contain clearfix " data-reactid="205"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="206"><h3 id="zeo-status-api">Zeo status API</h3>
-<p>The Zeo status API lets you get details about the current user state -- their Head Mounted Display (HMD) pose, controller poses, and button states.</p>
-<p>// XXX</p>
-</div></div><div data-title="Zeo world API" class="keyline-top section contain clearfix " data-reactid="207"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="208"><h3 id="zeo-world-api">Zeo world API</h3>
-<p>The Zeo world API lets your mod get details about the currently loaded VR world -- such as accurate world timing information for animations. For this, the Zeo engine exports a <code>getCurrentWorld()</code> function:</p>
-<p>The API behind the <code>World</code> object exported from is still settling, but you can rely on <code>getWorldTime()</code> being available, for getting the current number of milliseconds that the world has been executing.</p>
-</div></div><div data-title="Zeo elements API" class="keyline-top section contain clearfix " data-reactid="209"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="210"><h3 id="zeo-elements-api">Zeo elements API</h3>
-<p>The Zeo elements API is a way for mods to comunicate -- with the user (via configuration in the menu interface), and with each other (via a DOM object model and event system). The key idea is that a Zeo mod can export a specification for custom DOM elements, and these can be added to the world and configured by the user.</p>
-<p>Here's a simple example of a mod that allows user-configurable placement of a cube:</p>
-<p>There are basically three parts to the elements API: <code>element declarations</code>, <code>attrbute declarations</code>, and <code>template declarations</code>. We'll tackle them individually.</p>
-<p>// XXX</p>
+<p>To use a plugin locally, simply drop your <code>npm</code> module's directory (which otherwise meets the same module specification) into <code>/plugins</code> in the <code>zeo</code> project root. For example, <code>/plugins/my-vr-module</code> would be the right place to put a <code>zeo</code> plugin named <code>my-vr-module</code>.</p>
+<p>Once you've done this, you'll be able to add your plugin to your world the normal way in Zeo VR, by choosing it from <code>World</code> tab. Note that you can only do this on the server where you dropped your plugin.</p>
+</div></div><div data-title="Option 2: Publish to npm" class="keyline-top section contain clearfix " data-reactid="170"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="171"><h3 id="option-2-publish-to-npm">Option 2: Publish to npm</h3>
+<p>Publishing your plugin to <code>npm</code> is the best way to make your module available on any Zeo VR server.</p>
+<p>To do this, just do a regular <a href="https://docs.npmjs.com/cli/publish"><code>npm publish</code></a> for any module after adding <code>"zeo-module"</code> to the <code>"keywords"</code> array in your <code>package.json</code> so Zeo VR can find it on <code>npm</code>.</p>
+<p>To add a published module to your world, search for it in the <code>World</code> tab. Anyone on any Zeo VR server will be able to search for your module and add it to their world.</p>
 <p>This document specifies what you need to do to write your own Zeo plugins, which are self-contained units of code you can add to your Zeo worlds.</p>
 <p>It is assumed that you already have a Zeo server running. If not, see <a href="https://github.com/modulesio/zeo/tree/master/docs/getting-started.md">Getting started</a>.</p>
-</div></div><div data-title="API Introduction" class="keyline-top section contain clearfix " data-reactid="211"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="212"><h2 id="api-introduction-1">API Introduction</h2>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="172"><h4 id="packagejson-2">package.json</h4>
+</div></div><div data-title="API Introduction" class="keyline-top section contain clearfix " data-reactid="173"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="174"><h2 id="api-introduction">API Introduction</h2>
 <p>A Zeo plugin is just an <a href="https://www.npmjs.com/"><code>npm</code></a> module: that is, a <a href="https://docs.npmjs.com/files/package.json"><code>package.json</code></a> plus the Javascript files with your plugin code.</p>
 <p>The only difference between a Zeo plugin and any other <code>npm</code> module is some extra keys in the <code>package.json</code> that tell Zeo how to start it and stop it. Your plugin will probably also probably  <code>requestPlugin('zeo')</code> to interfact with the Zeo world.</p>
 <p>If you're a hands-on learner, you might want to simply dive into the <a href="/plugins/demo/"><code>Bouncy ball</code> demo plugin</a>. Otherwise, read on for the full Zeo plugin specification.</p>
-</div></div><div data-title="Module specification" class="keyline-top section contain clearfix " data-reactid="213"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="214"><h2 id="module-specification-2">Module specification</h2>
+</div></div><div data-title="Module specification" class="keyline-top section contain clearfix " data-reactid="175"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="176"><h2 id="module-specification-1">Module specification</h2>
 <p>Under the hood, Zeo uses the <a href="https://github.com/modulesio/archae"><code>archae</code></a> module loader. It's just a way of writing client/server <code>npm</code> modules that can be started and stopped dynamically.</p>
-</div></div><div data-title="Package format" class="keyline-top section contain clearfix " data-reactid="215"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="216"><h3 id="package-format-1">Package format</h3>
+</div></div><div data-title="Package format" class="keyline-top section contain clearfix " data-reactid="177"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="178"><h3 id="package-format">Package format</h3>
 <p>The main thing that makes an <code>npm</code> module compatible with Zeo is that its <code>package.json</code> includes the keys <code>client</code>, <code>server</code>, or <code>worker</code> (all of which are optional). These should point to the (package-relative) <code>.js</code> files you want to run in the corresponding environments:</p>
 <p>Also note the <code>"keywords": ["zeo-mod"]</code>: this is used by Zeo to find your module when searching <code>npm</code>. It's not required to load</p>
 <p>The reference <code>.js</code> files (e.g. <code>client.js</code>) should export <code>mount</code> and <code>unmount</code> functions to call when your plugin is to be started or stopped, respectively:</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="217"><h4 id="packagejson-1">package.json</h4>
-<h4 id="clientjs-2">client.js</h4>
-</div></div><div data-title="Plugin APIs" class="keyline-top section contain clearfix " data-reactid="218"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="219"><h3 id="plugin-apis-1">Plugin APIs</h3>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="179"><h4 id="packagejson-3">package.json</h4>
+<h4 id="clientjs-1">client.js</h4>
+</div></div><div data-title="Plugin APIs" class="keyline-top section contain clearfix " data-reactid="180"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="181"><h3 id="plugin-apis">Plugin APIs</h3>
 <p>In addition to loading and unloading plugins, Zeo lets plugins export their APIs and import other plugin's APIs.</p>
-</div></div><div data-title="Import a plugin&#x27;s API" class="keyline-top section contain clearfix " data-reactid="220"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="221"><h3 id="import-a-plugins-api-1">Import a plugin's API</h3>
+</div></div><div data-title="Import a plugin&#x27;s API" class="keyline-top section contain clearfix " data-reactid="182"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="183"><h3 id="import-a-plugins-api">Import a plugin's API</h3>
 <p>To import a plugin API, use a <code>function</code> or <code>class</code> at the top-level <code>export default</code> or <code>module.exports</code> of your Javascript file, to capture the <code>archae</code> object:</p>
 <p>The important part is the call to <code>archae.requestPlugin()</code>, which lets us request other plugins. The return value of this function is a <code>Promise</code> that will <code>resolve</code> to the API that's exported by that plugin, or <code>reject</code> with an error describing how loading the plugin failed.</p>
 <p>In this case we are requesting the <code>/core/engines/zeo</code> plugin, which resolves to the Zeo plugin API. This betrays a key design principle of Zeo: it's actually just a plugin! That is, Zeo is just plugins all the way down.</p>
 <p>Also note the <code>return archae.requestPlugin(...)</code>: we are returning a <code>Promise</code> from <code>mount</code>. In this case, it means we want the plugin's loading to wait until the returned <code>Promise</code> resolves. This is also the mechanism that allows a plugin to export its own API for other plugins to consume.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="222"><h4 id="clientjs-3">client.js</h4>
-</div></div><div data-title="Export your plugin&#x27;s API" class="keyline-top section contain clearfix " data-reactid="223"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="224"><h3 id="export-your-plugins-api-1">Export your plugin's API</h3>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="184"><h4 id="clientjs-2">client.js</h4>
+</div></div><div data-title="Export your plugin&#x27;s API" class="keyline-top section contain clearfix " data-reactid="185"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="186"><h3 id="export-your-plugins-api">Export your plugin's API</h3>
 <p>To export an API for your plugin, simply return (a <code>Promise</code> that resolves to) your API from the plugin's <code>mount</code> function in its Javascript implementation file.</p>
 <p>Returning a regular value means that the plugin should be considered loaded immediately, while returning a <code>Promise</code> means you want to wait for the plugin to load until the <code>Promise</code> resolves. Either way, the behavior is the same from the user's perspective: the resolved value of the <code>Promise</code> that the user gets as the result of calling <code>archae.requestPlugin()</code> will be the API your plugin exports.</p>
 <p>Here's an example of a plugin exporting an API and another plugin importing it for use:</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="225"><h4 id="databaseclientjs-1">database/client.js</h4>
-<h4 id="some-other-pluginclientjs-1">some-other-plugin/client.js</h4>
-</div></div><div data-title="Loading modules" class="keyline-top section contain clearfix " data-reactid="226"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="227"><h2 id="loading-modules-1">Loading modules</h2>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="187"><h4 id="databaseclientjs">database/client.js</h4>
+<h4 id="some-other-pluginclientjs">some-other-plugin/client.js</h4>
+</div></div><div data-title="Loading modules" class="keyline-top section contain clearfix " data-reactid="188"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="189"><h2 id="loading-modules-1">Loading modules</h2>
 <p>Now that you know how to write modules, you'll need to know how to load them into Zeo.</p>
 <p>There are two ways to do this: you can either installed from the local filesystem (in which case the plugin will only be available to your server), or publish to the public <code>npm</code> registry (in which case the plugin will be available for anyone to find and install). Either way, there's no difference in functionality and the code for your module is the same.</p>
-</div></div><div data-title="Option 1: Local install" class="keyline-top section contain clearfix " data-reactid="228"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="229"><h3 id="option-1-local-install">Option 1: Local install</h3>
+</div></div><div data-title="Option 1: Local install" class="keyline-top section contain clearfix " data-reactid="190"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="191"><h3 id="option-1-local-install-1">Option 1: Local install</h3>
 <p>This method is most useful for testing plugins as you develop them, without the overhead of publishing and downloading from <code>npm</code>.</p>
 <p>To use a plugin locally, simply drop your <code>npm</code> module (which otherwise meets the same Zeo mods specification) into Zeo's <code>plugins/</code> directory. For example, <code>plugins/my-mod</code> would be the right place to put a <code>zeo</code> plugin named <code>my-mod</code>.</p>
 <p>Once you've done this, you'll be able to add your plugin to Zeo the normal way, by going to <code>Mods > Local Mods</code> in the main Zeo menu. You can only do this on the server where you dropped your plugin.</p>
 <p>// XXX explain reinstalls</p>
-</div></div><div data-title="Option 2: Publish to npm" class="keyline-top section contain clearfix " data-reactid="230"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="231"><h3 id="option-2-publish-to-npm-1">Option 2: Publish to npm</h3>
+</div></div><div data-title="Option 2: Publish to npm" class="keyline-top section contain clearfix " data-reactid="192"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="193"><h3 id="option-2-publish-to-npm-1">Option 2: Publish to npm</h3>
 <p>Publishing your plugin to <code>npm</code> is the best way to deliver your module to anyone running Zeo. This is mostly just a straightforward <a href="https://docs.npmjs.com/cli/publish"><code>npm publish</code></a>. The only additional thing you need to do is to make sure that <code>"zeo-mod"</code> is included in your <code>"keywords" array in</code>package.json`, so Zeo knows how to find your module.</p>
 <p>To install a Zeo mod that was published to <code>npm</code>, go to <code>Mods > Npm search</code> in the main Zeo menu. Anyone running a Zeo server will be able to search for your mod and install it this way.</p>
-</div></div><div data-title="Zeo API" class="keyline-top section contain clearfix " data-reactid="232"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="233"><h2 id="zeo-api-1">Zeo API</h2>
+</div></div><div data-title="Zeo API" class="keyline-top section contain clearfix " data-reactid="194"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="195"><h2 id="zeo-api">Zeo API</h2>
 <p>The above describes how to write and load Zeo plugins that do nothing. To interact with the user and the Zeo world you'll want to use the API exported by <code>/core/engines/zeo</code>.</p>
 <p>This lets you get at the THREE.js <code>THREE</code>, <code>scene</code>, <code>camera</code>, and <code>renderer</code> objects, listen for frame updates, and get user poses:</p>
 <p>This plugin uses the Zeo API to add a sphere to the <code>scene</code> that Zeo has created for us, makes it float up and down in the scene, and colors it <code>BLUE</code> when we're looking directly at it or <code>RED</code> when we're touching it with tracked controllers.</p>
 <p>We update the scene every frame on by listening for <code>zeo.on('update', _update)</code> and get the HMD and controllers status via <code>zeo.getStatus()</code>. These APIs are documented below.</p>
-</div></div><div data-title="Exported objects" class="keyline-top section contain clearfix " data-reactid="234"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="235"><h3 id="exported-objects-1">Exported objects</h3>
+</div></div><div data-title="Exported objects" class="keyline-top section contain clearfix " data-reactid="196"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="197"><h3 id="exported-objects">Exported objects</h3>
 <p>The Zeo API exports some standard THREE.js primitives as seen above. These include:</p>
 <ul>
 <li><code>THREE</code>, the raw THREE.js API</li>
@@ -406,7 +293,7 @@ Need help? <a href="https://twitter.com/modulesio">Reach out on Twitter</a>.</p>
 <li><code>render</code>, the <code>THREE.WebGLRenderer</code> for rendering the current world</li>
 </ul>
 <p>You can use these freely, as you would in any THREE.js app, but note that your plugin should conform to the module loader requirement that whatever you do in the <code>mount</code> step (such as adding objects to the <code>scene</code>) should be undone un the <code>unmount</code> step (such as removing the objects you added to the <code>scene</code>). If you don't this, your plugin will not behave correctly: it might leak resources, impact performance, or crash.</p>
-</div></div><div data-title="Frame Events" class="keyline-top section contain clearfix " data-reactid="236"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="237"><h3 id="frame-events-1">Frame Events</h3>
+</div></div><div data-title="Frame Events" class="keyline-top section contain clearfix " data-reactid="198"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="199"><h3 id="frame-events">Frame Events</h3>
 <p>The Zeo API doubles as an <a href="https://nodejs.org/api/events.html"><code>EventEmitter</code></a> that you can listen to for events relating to frame timing and and input.</p>
 <p>The API is inherited from <code>node</code>: <code>zeo.on('eventName', eventHandler)</code> registers <code>eventHandler</code> to listen for <code>'eventName'</code> events and <code>zeo.removeListener('eventName', eventHandler)</code> unregisters it. The events you can subscribe to are:</p>
 <p>The <code>update</code> event fires <em>before</em> every frame is rendered. It's intended to let plugins perform update that need to happen on every frame, such as applying velocities to positions.</p>
@@ -519,22 +406,22 @@ Need help? <a href="https://twitter.com/modulesio">Reach out on Twitter</a>.</p>
 </li>
 </ul>
 <p>// XXX describe event priorities and how event.stopImmediatePropagation() short-circuits</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="238"><h4 id="update-2"><code>update</code></h4>
-<h4 id="updateeyecamera-1"><code>updateEye(camera)</code></h4>
-<h4 id="input-events-1">Input events</h4>
-</div></div><div data-title="Status API" class="keyline-top section contain clearfix " data-reactid="239"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="240"><h3 id="status-api-1">Status API</h3>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="200"><h4 id="update"><code>update</code></h4>
+<h4 id="updateeyecamera"><code>updateEye(camera)</code></h4>
+<h4 id="input-events">Input events</h4>
+</div></div><div data-title="Status API" class="keyline-top section contain clearfix " data-reactid="201"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="202"><h3 id="status-api">Status API</h3>
 <p>// XXX finish this</p>
-</div></div><div data-title="Engine API" class="keyline-top section contain clearfix " data-reactid="241"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="242"><h3 id="engine-api-1">Engine API</h3>
+</div></div><div data-title="Engine API" class="keyline-top section contain clearfix " data-reactid="203"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="204"><h3 id="engine-api">Engine API</h3>
 <p>The first thing you'll need to do to get access to the rest of Zeo's APIs is to request the Zeo engine with <code>archae.requestEngine()</code>. Per the Archae specification, you can get the <code>archae</code> loader instance by grabbing it in the top-level function that's exported from your module:</p>
 <p>Once you've done that, you get the Zeo engine instance with <code>archae.requestEngine('/core/engines/zeo')</code>. This returns a <code>Promise</code> that will resolve to the Zeo API root:</p>
 <p>Note the <code>return archae.requestEngine()</code>: per the Archae specification, the <code>mount</code> function can return a Promise that will resolve once the mod completes its loading. Since our mod technically depends on loading the Zeo engine API, <code>return archae.requestEngine()</code> magically does the correct thing. We could load multiple things with <code>Promise.all</code>, or continue the <code>Promise</code> chain if we wanted to load more stuff here and it would "just work", but we'll stick with the simple example for now.</p>
 <p>The rest of what your module does communicates with Zeo through the API you get out of the resolved <code>archae.requestEngine('/core/engines/zeo')</code>.</p>
-</div></div><div data-title="Scene API" class="keyline-top section contain clearfix " data-reactid="243"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="244"><h3 id="scene-api-1">Scene API</h3>
+</div></div><div data-title="Scene API" class="keyline-top section contain clearfix " data-reactid="205"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="206"><h3 id="scene-api">Scene API</h3>
 <p>Zeo loads <code>THREE.js</code> and sets up the <code>scene</code> rendering for you, and exposes these at the root of the Zeo API.</p>
 <p>These objects (<code>THREE</code>, <code>scene</code>, <code>camera</code>, <code>renderer</code>) are the bare THREE.js APIs and you can immediately use them to add meshes and other objects to the THREE.js scene graph. There's no magic here and you have the full THREE.js API at your disposal.</p>
 <p>Here we add a green sphere floating in the middle of the scene:</p>
 <p>Note that a full example of this mod is available as a demo plugin in the <a href="/plugins/demo/">plugins/demo/</a>.</p>
-</div></div><div data-title="Zeo update callbacks API" class="keyline-top section contain clearfix " data-reactid="245"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="246"><h3 id="zeo-update-callbacks-api-1">Zeo update callbacks API</h3>
+</div></div><div data-title="Zeo update callbacks API" class="keyline-top section contain clearfix " data-reactid="207"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="208"><h3 id="zeo-update-callbacks-api">Zeo update callbacks API</h3>
 <p>Since Zeo is fundamentally about interactive VR, you will probably want a way to "do something on every frame", or "do something for each eye camera" -- such as advance an animation or render something stereoscopically.</p>
 <p>The Zeo framework is the "owner" of the VR camera, the rendering pipeline, and timing, so to be able to do stuff (like updating animations), you'll need to be able to hook in your code at the right time in a frame. That's what the update callbacks are for.</p>
 <p>All callbacks are declared by your mod via the <a href="https://github.com/modulesio/archae">Archae specification</a>. That is, your mount function should return (a <code>Promise</code> that resolves to) an object with the callback key mapping to the callback handler:</p>
@@ -545,20 +432,20 @@ Need help? <a href="https://twitter.com/modulesio">Reach out on Twitter</a>.</p>
 <p>The <code>updateEye</code> callback is similar to <code>update</code>, only it will get called once <em>per eye</em> being rendered (generally, twice per frame).</p>
 <p>Additionally, it gets passed the <code>camera</code> that correponds to the eye being rendered. You can use the <code>camera</code> object to perform additional computation or set up shader parameters for more complicated rendering passes. For example, if you want to render a stereoscopic portal texture, <code>updateEye</code> is the way you'd do it.</p>
 <p>Note that <code>update</code> and <code>updateEye</code> are <em>not</em> mutually exclusive. You can use both, in which case <code>updateEye</code> will be called for each eye, followed by <code>update</code>.</p>
-</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="247"><h4 id="update-3"><code>update</code></h4>
-<h4 id="updateeye-1"><code>updateEye</code></h4>
-</div></div><div data-title="Zeo status API" class="keyline-top section contain clearfix " data-reactid="248"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="249"><h3 id="zeo-status-api-1">Zeo status API</h3>
+</div><div class="space-bottom4 col6 pad2 prose clip fill-light space-top5" data-reactid="209"><h4 id="update-1"><code>update</code></h4>
+<h4 id="updateeye"><code>updateEye</code></h4>
+</div></div><div data-title="Zeo status API" class="keyline-top section contain clearfix " data-reactid="210"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="211"><h3 id="zeo-status-api">Zeo status API</h3>
 <p>The Zeo status API lets you get details about the current user state -- their Head Mounted Display (HMD) pose, controller poses, and button states.</p>
 <p>// XXX</p>
-</div></div><div data-title="Zeo world API" class="keyline-top section contain clearfix " data-reactid="250"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="251"><h3 id="zeo-world-api-1">Zeo world API</h3>
+</div></div><div data-title="Zeo world API" class="keyline-top section contain clearfix " data-reactid="212"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="213"><h3 id="zeo-world-api">Zeo world API</h3>
 <p>The Zeo world API lets your mod get details about the currently loaded VR world -- such as accurate world timing information for animations. For this, the Zeo engine exports a <code>getCurrentWorld()</code> function:</p>
 <p>The API behind the <code>World</code> object exported from is still settling, but you can rely on <code>getWorldTime()</code> being available, for getting the current number of milliseconds that the world has been executing.</p>
-</div></div><div data-title="Zeo elements API" class="keyline-top section contain clearfix " data-reactid="252"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="253"><h3 id="zeo-elements-api-1">Zeo elements API</h3>
+</div></div><div data-title="Zeo elements API" class="keyline-top section contain clearfix " data-reactid="214"><div class="space-bottom8 col6 pad2x prose clip" data-reactid="215"><h3 id="zeo-elements-api">Zeo elements API</h3>
 <p>The Zeo elements API is a way for mods to comunicate -- with the user (via configuration in the menu interface), and with each other (via a DOM object model and event system). The key idea is that a Zeo mod can export a specification for custom DOM elements, and these can be added to the world and configured by the user.</p>
 <p>Here's a simple example of a mod that allows user-configurable placement of a cube:</p>
 <p>There are basically three parts to the elements API: <code>element declarations</code>, <code>attrbute declarations</code>, and <code>template declarations</code>. We'll tackle them individually.</p>
 <p>// XXX</p>
-</div></div></div></div></div><div class="fixed-top space-left16" style="z-index:1;" data-reactid="254"><div class="events bottom-shadow pad1 col6 pin-topright  " data-reactid="255"><div class="fr pad0" data-reactid="256"><a title="Display as 1 column" style="cursor:pointer;" class="icon quiet caret-left pad0 fill-darken0 round" data-reactid="257"></a></div></div></div></div></div><!--STOP-->
+</div></div></div></div></div><div class="fixed-top space-left16" style="z-index:1;" data-reactid="216"><div class="events bottom-shadow pad1 col6 pin-topright  " data-reactid="217"><div class="fr pad0" data-reactid="218"><a title="Display as 1 column" style="cursor:pointer;" class="icon quiet caret-left pad0 fill-darken0 round" data-reactid="219"></a></div></div></div></div></div><!--STOP-->
     <script src='bundle.js'></script>
   </body>
 </html>
