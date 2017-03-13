@@ -151,18 +151,14 @@ class Servers {
                         focus: {
                           type,
                         }
-                      }) => {
-                        return [
-                          {
-                            type: 'html',
-                            src: serversRenderer.getServersPageSrc(servers),
-                            x: 0,
-                            y: 0,
-                            w: WIDTH,
-                            h: HEIGHT,
-                          },
-                        ];
-                      }, {
+                      }) => ({
+                        type: 'html',
+                        src: serversRenderer.getServersPageSrc(servers),
+                        x: 0,
+                        y: 0,
+                        w: WIDTH,
+                        h: HEIGHT,
+                      }), {
                         type: 'main',
                         state: {
                           servers: serversState,

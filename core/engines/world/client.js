@@ -951,8 +951,7 @@ class World {
               const id = match[1];
 
               const tagMesh = elementManager.getTagMesh(id);
-              const {item} = tagMesh;
-              item.setAttribute(attribute, value);
+              tagMesh.setAttribute(attribute, value);
             } else {
               console.warn('invalid set tag attribute arguments', {src, attributeName, attributeValue});
             }
@@ -1067,16 +1066,14 @@ class World {
                 }) => {
                   const focus = type === 'npm';
 
-                  return [
-                    {
-                      type: 'html',
-                      src: worldRenderer.getWorldPageSrc({loading, inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick: 'npm:focus'}),
-                      x: 0,
-                      y: 0,
-                      w: WIDTH,
-                      h: HEIGHT,
-                    },
-                  ];
+                  return {
+                    type: 'html',
+                    src: worldRenderer.getWorldPageSrc({loading, inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick: 'npm:focus'}),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                  };
                 }, {
                   type: 'world',
                   state: {
@@ -2392,6 +2389,7 @@ class World {
                 name,
                 mimeType,
                 matrix,
+                instancing: true,
               };
               _handleAddTag(localUserId, itemSpec, 'world');
 
@@ -2400,11 +2398,6 @@ class World {
               if (!rend.isOpen()) {
                 tempTagMesh.visible = false;
               }
-
-              const {item} = tempTagMesh;
-              item.instancing = true;
-
-              tags.updatePages();
 
               const _cleanupTempTagMesh = () => {
                 elementManager.remove(tempTagMesh);

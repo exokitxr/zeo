@@ -11,10 +11,8 @@ import {
   WORLD_DEPTH,
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
-
-  FRAME_TIME,
 } from './lib/constants/tags';
-import tagsRenderer from './lib/render/tags';
+import tagsRender from './lib/render/tags';
 import menuUtils from './lib/utils/menu';
 import OBJLoader from './lib/three-extra/OBJLoader';
 
@@ -76,6 +74,8 @@ class Tags {
           const transparentImg = biolumi.getTransparentImg();
           const {sound} = somnifer;
 
+          const tagsRenderer = tagsRender.makeRenderer({creatureUtils});
+
           const THREEOBJLoader = OBJLoader(THREE);
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
@@ -103,10 +103,11 @@ class Tags {
           };
 
           class UiManager {
-            constructor({width, height, color}) {
+            constructor({width, height, color, metadata}) {
               this.width = width;
               this.height = height;
               this.color = color;
+              this.metadata = metadata;
 
               this.uis = [];
             }
@@ -114,19 +115,14 @@ class Tags {
             addPage(pageSpec, options) {
               const {width, height, color, uis} = this;
 
-              let lastUi = uis.length > 0 ? uis[uis.length - 1] : null;
-              if (!lastUi || !lastUi.hasFreePages()) {
-                lastUi = biolumi.makeUi({
-                  width: width,
-                  height: height,
-                  atlasSize: 4,
-                  maxNumTextures: 3,
-                  color,
-                });
-                uis.push(lastUi);
-              }
+              const ui = biolumi.makeUi({
+                width: width,
+                height: height,
+                color,
+              });
+              uis.push(ui);
 
-              return lastUi.addPage(pageSpec, options);
+              return ui.addPage(pageSpec, options);
             }
 
             update() {
@@ -141,17 +137,26 @@ class Tags {
           const uiManager = new UiManager({
             width: WIDTH,
             height: HEIGHT,
-            color: [1, 1, 1, 0]
+            color: [1, 1, 1, 0],
+            metadata: {
+              open: false,
+            },
           });
           const uiOpenManager = new UiManager({
             width: OPEN_WIDTH,
             height: OPEN_HEIGHT,
-            color: [1, 1, 1, 0]
+            color: [1, 1, 1, 0],
+            metadata: {
+              open: true,
+            },
           });
           const uiStaticManager = new UiManager({
             width: WIDTH,
             height: HEIGHT,
-            color: [1, 1, 1, 1]
+            color: [1, 1, 1, 1],
+            metadata: {
+              open: false,
+            },
           });
 
           const hoverStates = {
@@ -250,12 +255,6 @@ class Tags {
 
           const localUpdates = [];
 
-          const _updatePages = () => {
-            uiManager.update();
-            uiOpenManager.update();
-            uiStaticManager.update();
-          };
-
           const _getItemPreviewMode = item => {
             const {mimeType} = item;
 
@@ -271,7 +270,9 @@ class Tags {
               return null;
             }
           };
-          const _requestFileItemImageMesh = item => new Promise((accept, reject) => {
+          const _requestFileItemImageMesh = tagMesh => new Promise((accept, reject) => {
+            const {item} = tagMesh;
+
             const geometry = new THREE.PlaneBufferGeometry(0.2, 0.2);
             const material = (() => {
               const texture = new THREE.Texture(
@@ -310,7 +311,9 @@ class Tags {
             const mesh = new THREE.Mesh(geometry, material);
             accept(mesh);
           });
-          const _requestFileItemAudioMesh = item => new Promise((accept, reject) => {
+          const _requestFileItemAudioMesh = tagMesh => new Promise((accept, reject) => {
+            const {item} = tagMesh;
+
             const mesh = new THREE.Object3D();
 
             const audio = document.createElement('audio');
@@ -342,7 +345,8 @@ class Tags {
               if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
                 item.value = nextValue;
 
-                _updatePages();
+                const {page} = tagMesh;
+                page.update();
               }
             };
 
@@ -359,7 +363,9 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemVideoMesh = item => new Promise((accept, reject) => {
+          const _requestFileItemVideoMesh = tagMesh => new Promise((accept, reject) => {
+            const {item} = tagMesh;
+
             const geometry = new THREE.PlaneBufferGeometry(WORLD_OPEN_WIDTH, (OPEN_HEIGHT - HEIGHT - 100) / OPEN_HEIGHT * WORLD_OPEN_HEIGHT);
             const material = (() => {
               const texture = new THREE.Texture(
@@ -422,7 +428,8 @@ class Tags {
               if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
                 item.value = nextValue;
 
-                _updatePages();
+                const {planeOpenMesh: {page: openPage}} = tagMesh;
+                openPage.update();
               }
 
               texture.needsUpdate = true;
@@ -441,7 +448,7 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemModelMesh = item => fetch('/archae/fs/' + item.id)
+          const _requestFileItemModelMesh = tagMesh => fetch('/archae/fs/' + tagMesh.item.id)
             .then(res => res.text()
               .then(modelText => new Promise((accept, reject) => {
                 const loader = new THREEOBJLoader();
@@ -473,7 +480,6 @@ class Tags {
                   item.open = true;
                   planeMesh.visible = false;
                   planeOpenMesh.visible = true;
-                  _updatePages();
 
                   if (item.type === 'file') {
                     if (!item.preview) {
@@ -482,7 +488,7 @@ class Tags {
 
                         const mode = _getItemPreviewMode(item);
                         if (mode === 'image') {
-                          _requestFileItemImageMesh(item)
+                          _requestFileItemImageMesh(tagMesh)
                             .then(imageMesh => {
                               imageMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
 
@@ -492,7 +498,7 @@ class Tags {
                               console.warn(err);
                             });
                         } else if (mode === 'audio') {
-                          _requestFileItemAudioMesh(item)
+                          _requestFileItemAudioMesh(tagMesh)
                             .then(audioMesh => {
                               object.add(audioMesh);
                             })
@@ -500,7 +506,7 @@ class Tags {
                               console.warn(err);
                             });
                         } else if (mode === 'video') {
-                          _requestFileItemVideoMesh(item)
+                          _requestFileItemVideoMesh(tagMesh)
                             .then(videoMesh => {
                               videoMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) + ((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 2);
 
@@ -510,7 +516,7 @@ class Tags {
                               console.warn(err);
                             });
                         } else if (mode === 'model') {
-                          _requestFileItemModelMesh(item)
+                          _requestFileItemModelMesh(tagMesh)
                             .then(modelMesh => {
                               const boundingBox = new THREE.Box3().setFromObject(modelMesh);
                               const boundingBoxSize = boundingBox.getSize();
@@ -547,7 +553,6 @@ class Tags {
                   item.open = false;
                   planeMesh.visible = true;
                   planeOpenMesh.visible = false;
-                  _updatePages();
 
                   if (item.type === 'file') {
                     if (item.preview && item.preview.visible) {
@@ -572,26 +577,24 @@ class Tags {
                   const action = match[1];
                   const id = match[2];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item} = tagMesh;
+                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
 
                   if (action === 'play') {
                     item.play();
-
-                    _updatePages();
                   } else if (action === 'pause') {
                     item.pause();
-
-                    _updatePages();
                   }
+
+                  openPage.update();
                 } else if (match = onclick.match(/^media:seek:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item} = tagMesh;
+                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
 
                   const {value} = hoverState;
                   item.seek(value);
 
-                   _updatePages();
+                  openPage.update();
                 } else {
                   return false;
                 }
@@ -619,7 +622,9 @@ class Tags {
                 detailsState.positioningName = null;
                 detailsState.positioningSide = null;
 
-                _updatePages();
+                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === positioningId);
+                const {planeOpenMesh: {page: openPage}} = tagMesh;
+                openPage.update();
 
                 return true;
               } else {
@@ -749,7 +754,8 @@ class Tags {
                     }); */
                   }
 
-                  _updatePages();
+                  const {planeOpenMesh: {page: openPage}} = tagMesh;
+                  openPage.update();
 
                   return true;
                 } else {
@@ -838,7 +844,6 @@ class Tags {
 
                 if (positioningId && positioningName && positioningSide) {
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === positioningId);
-                  const {item} = tagMesh;
                   const {gamepads} = webvr.getStatus();
                   const gamepad = gamepads[positioningSide];
 
@@ -848,8 +853,6 @@ class Tags {
                     positioningMesh.quaternion.copy(controllerRotation);
                     positioningMesh.scale.copy(controllerScale);
 
-                    const {attributes} = item;
-                    const attribute = attributes[positioningName];
                     const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
                     item.setAttribute(positioningName, newValue); // XXX figure out what to do with this live update
                   }
@@ -885,12 +888,6 @@ class Tags {
           };
           rend.on('update', _update);
 
-          const frameInterval = setInterval(() => {
-            uiManager.update();
-            uiOpenManager.update();
-            uiStaticManager.update();
-          }, FRAME_TIME);
-
           this._cleanup = () => {
             for (let i = 0; i < tagMeshes.length; i++) {
               const tagMesh = tagMeshes[i];
@@ -908,8 +905,6 @@ class Tags {
 
             input.removeListener('trigger', _trigger);
             rend.removeListener('update', _update);
-
-            clearInterval(frameInterval);
           };
 
           class Item {
@@ -1154,19 +1149,6 @@ class Tags {
               }
             }
 
-            jsonStringify() { // used to let update checks see Symbol-hidden properties
-              const result = {};
-              for (const k in this) {
-                result[k] = this[k];
-              }
-              const {instancing, open, paused, value} = this;
-              result.instancing = instancing;
-              result.open = open;
-              result.paused = paused;
-              result.value = value;
-              return result;
-            }
-
             destroy() {
               const {preview} = this;
 
@@ -1222,7 +1204,9 @@ class Tags {
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
               object.scale.set(item.matrix[7], item.matrix[8], item.matrix[9]);
 
-              const _addUiManagerPage = ({uiManager, open}) => {
+              const _addUiManagerPage = uiManager => {
+                const {metadata: {open}} = uiManager;
+
                 const mesh = uiManager.addPage(({
                   item,
                   details: {
@@ -1245,27 +1229,15 @@ class Tags {
                   })();
                   const mode = _getItemPreviewMode(item);
 
-                  return [
-                    {
-                      type: 'html',
-                      src: type === 'element' ?
-                        tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, isStatic})
-                      :
-                        tagsRenderer.getFileSrc({item, mode}),
-                      w: !open ? WIDTH : OPEN_WIDTH,
-                      h: !open ? HEIGHT : OPEN_HEIGHT,
-                    },
-                    {
-                      type: 'image',
-                      img: creatureUtils.makeAnimatedCreature(type + ':' + item.displayName),
-                      x: 10,
-                      y: 0,
-                      w: 100,
-                      h: 100,
-                      frameTime: FRAME_TIME,
-                      pixelated: true,
-                    }
-                  ];
+                  return {
+                    type: 'html',
+                    src: type === 'element' ?
+                      tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic})
+                    :
+                      tagsRenderer.getFileSrc({item, mode, open}),
+                    w: !open ? WIDTH : OPEN_WIDTH,
+                    h: !open ? HEIGHT : OPEN_HEIGHT,
+                  };
                 }, {
                   type: 'tag',
                   state: {
@@ -1282,30 +1254,29 @@ class Tags {
               };
 
               if (!isStatic) { 
-                const planeMesh = _addUiManagerPage({
-                  uiManager: uiManager,
-                  open: false,
-                });
+                const planeMesh = _addUiManagerPage(uiManager);
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
-                const planeOpenMesh = _addUiManagerPage({
-                  uiManager: uiOpenManager,
-                  open: true,
-                });
+                const planeOpenMesh = _addUiManagerPage(uiOpenManager);
                 planeOpenMesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
                 planeOpenMesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
                 planeOpenMesh.visible = false;
                 object.add(planeOpenMesh);
                 object.planeOpenMesh = planeOpenMesh;
               } else {
-                const planeMesh = _addUiManagerPage({
-                  uiManager: uiStaticManager,
-                  open: false,
-                });
+                const planeMesh = _addUiManagerPage(uiStaticManager);
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
               }
+
+              const _setAttribute = (attribute, value) => {
+                item.setAttribute(attribute, value);
+
+                const {planeMesh: {page}} = object;
+                page.update();
+              };
+              object.setAttribute = _setAttribute;
 
               tagMeshes.push(object);
 
@@ -1356,7 +1327,9 @@ class Tags {
                         item.instancing = false;
                         item.attributes = _clone(attributes);
 
-                        _updatePages();
+                        const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                        page.update();
+                        openPage.update();
 
                         unlock();
                       })
@@ -1369,7 +1342,9 @@ class Tags {
 
                 item.instancing = true;
 
-                _updatePages();
+                const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                page.update();
+                openPage.update();
               }
             }
 
@@ -1393,10 +1368,6 @@ class Tags {
 
             getPointedTagMesh(side) {
               return hoverStates[side].metadata;
-            }
-
-            updatePages() {
-              _updatePages();
             }
 
             listen() {

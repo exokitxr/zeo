@@ -1,6 +1,8 @@
 import keycode from 'keycode';
 
-import menuShaders from './lib/shaders/menu';
+import menuShader from './lib/shaders/menu';
+
+const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
 class Biolumi {
   constructor(archae) {
@@ -31,7 +33,80 @@ class Biolumi {
         reject(err);
       };
     });
-    const _requestUiTimer = () => new Promise((accept, reject) => {
+    const _requestUiWorker = () => {
+      class UiWorker {
+        constructor({frameTime = DEFAULT_FRAME_TIME} = {}) {
+          this.frameTime = frameTime;
+
+          this.threads = [];
+          this.workTime = 0;
+          this.clearingWorkTime = false;
+
+          this.work = debounce(this.work.bind(this));
+        }
+
+        
+        add(thread) {
+          const {threads} = this;
+          threads.push(thread);
+
+          this.work();
+        }
+
+        work(next) {
+          const {frameTime, threads} = this;
+
+          const _recurseFrame = () => {
+            const _recurseThread = () => {
+              if (threads.length > 0) {
+                const {workTime} = this;
+
+                if (workTime < frameTime) {
+                  const workStartTime = Date.now();
+
+                  const _updateWorkTime = () => {
+                    this.workTime += Date.now() - workStartTime;
+
+                    if (!this.clearingWorkTime) {
+                      this.clearingWorkTime = true;
+
+                      requestAnimationFrame(() => {
+                        this.workTime = 0;
+                        this.clearingWorkTime = false;
+                      });
+                    }
+                  };
+
+                  const thread = threads.shift();
+                  thread()
+                    .then(() => {
+                      _updateWorkTime();
+
+                      _recurseThread();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      _updateWorkTime();
+
+                      _recurseThread();
+                    });
+                } else {
+                  requestAnimationFrame(_recurseFrame);
+                }
+              } else {
+                next();
+              }
+            };
+            _recurseThread();
+          };
+          _recurseFrame();
+        }
+      }
+
+      return Promise.resolve(new UiWorker());
+    };
+    const _requestUiTimer = () => {
       const startTime = Date.now();
       let uiTime = 0;
 
@@ -46,8 +121,8 @@ class Biolumi {
         }
       }
 
-      accept(new UiTimer());
-    });
+      return Promise.resolve(new UiTimer());
+    };
 
     return Promise.all([
       archae.requestPlugins([
@@ -56,6 +131,7 @@ class Biolumi {
         '/core/plugins/geometry-utils',
       ]),
       _requestTransparentImg(),
+      _requestUiWorker(),
       _requestUiTimer(),
     ])
       .then(([
@@ -65,10 +141,11 @@ class Biolumi {
           geometryUtils,
         ],
         transparentImg,
+        uiWorker,
         uiTimer,
       ]) => {
         if (live) {
-          const {THREE} = three;
+          const {THREE, renderer} = three;
 
           class Page {
             constructor(parent, spec, type, state) {
@@ -77,180 +154,235 @@ class Biolumi {
               this.type = type;
               this.state = state;
 
-              this.layers = [];
-
-              this._lastStateJson = '';
+              const material = (() => {
+                const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
+                shaderUniforms.texture.value = new THREE.Texture(
+                  transparentImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.LinearFilter,
+                  THREE.LinearFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  16
+                );
+                shaderUniforms.backgroundColor.value = Float32Array.from(parent.color);
+                const shaderMaterial = new THREE.ShaderMaterial({
+                  uniforms: shaderUniforms,
+                  vertexShader: menuShader.vertexShader,
+                  fragmentShader: menuShader.fragmentShader,
+                  side: THREE.DoubleSide,
+                  transparent: true,
+                });
+                // shaderMaterial.polygonOffset = true;
+                // shaderMaterial.polygonOffsetFactor = 1;
+                return shaderMaterial;
+              })();
+              this.material = material;
+              this.layer = null;
             }
 
             update() {
-              return new Promise((accept, reject) => {
-                const {state} = this;
-                // replacer used to account for Symbol-hidden properties
-                const stateJson = JSON.stringify(state, (k, v) => (v && v.jsonStringify) ? v.jsonStringify() : v);
-                const {_lastStateJson: lastStateJson} = this;
+              let cache = {
+                layerSpec: null,
+                innerSrc: null,
+                img: null,
+              };
 
-                if (stateJson !== lastStateJson) {
-                  this._lastStateJson = stateJson;
+              const _requestLayerSpec = () => {
+                const {spec, state} = this;
+                cache.layerSpec = typeof spec === 'function' ? spec(state) : spec;
 
-                  const {spec} = this;
+                return Promise.resolve();
+              };
+              const _requestInnerSrc = () => {
+                const {layerSpec} = cache;
+                const {type = 'html'} = layerSpec;
+                if (type === 'html') {
+                  const {parent: {width, height}} = this;
+                  const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
 
-                  const layers = [];
-                  const layersSpec = typeof spec === 'function' ? spec(state) : spec;
-                  if (layersSpec.length > 0) {
-                    let pending = layersSpec.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        this.layers = layers;
+                  cache.innerSrc = (() => {
+                    const el = document.createElement('div');
+                    el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+                    el.setAttribute('style', rootCss);
+                    el.innerHTML = src
+                      .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
 
-                        accept();
-                      }
-                    };
+                    const imgs = el.querySelectorAll('img');
 
-                    for (let i = 0; i < layersSpec.length; i++) {
-                      const layerSpec = layersSpec[i];
-                      const {type = 'html'} = layerSpec;
-
-                      if (type === 'html') {
-                        const {parent: {width, height}} = this;
-                        const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
-
-                        const innerSrc = (() => {
-                          const el = document.createElement('div');
-                          el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-                          el.setAttribute('style', rootCss);
-                          el.innerHTML = src
-                            .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
-
-                          const imgs = el.querySelectorAll('img');
-
-                          // do not load images without an explicit width + height
-                          for (let i = 0; i < imgs.length; i++) {
-                            const img = imgs[i];
-                            if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
-                              img.parentNode.removeChild(img);
-                            }
-                          }
-
-                          // remove empty anchors
-                          const as = el.querySelectorAll('a');
-                          for (let i = 0; i < as.length; i++) {
-                            const a = as[i];
-                            if (a.childNodes.length > 0) {
-                              if (!a.style.textDecoration) {
-                                a.style.textDecoration = 'underline';
-                              }
-                            } else {
-                              a.parentNode.removeChild(a);
-                            }
-                          }
-
-                          return new XMLSerializer().serializeToString(el);
-                        })();
-                        const divEl = (() => {
-                          const el = document.createElement('div');
-                          el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                          el.innerHTML = innerSrc;
-
-                          return el;
-                        })();
-                        document.body.appendChild(divEl);
-
-                        const anchors = (() => {
-                          const as = (() => {
-                            const as = divEl.querySelectorAll('a');
-
-                            const result = [];
-                            for (let i = 0; i < as.length; i++) {
-                              const a = as[i];
-                              if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
-                                result.push(a);
-                              }
-                            }
-                            return result;
-                          })();
-                          const numAs = as.length;
-
-                          const result = Array(numAs);
-                          for (let i = 0; i < numAs; i++) {
-                            const a = as[i];
-
-                            const rect = a.getBoundingClientRect();
-                            const onclick = a.getAttribute('onclick') || null;
-                            const onmousedown = a.getAttribute('onmousedown') || null;
-                            const onmouseup = a.getAttribute('onmouseup') || null;
-
-                            const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
-                            result[i] = anchor;
-                          }
-
-                          return result;
-                        })();
-
-                        document.body.removeChild(divEl);
-
-                        const img = new Image();
-                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
-                          '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                            innerSrc +
-                          '</foreignObject>' +
-                        '</svg>');
-                        img.onload = () => {
-                          layer.img = img;
-                          layer.img.needsUpdate = true;
-
-                          pend();
-                        };
-                        img.onerror = err => {
-                          console.warn('biolumi image load error', {src: img.src}, err);
-
-                          pend();
-                        };
-
-                        const layer = new Layer(this);
-                        layer.anchors = anchors;
-                        layer.x = x;
-                        layer.y = y;
-                        layer.w = w;
-                        layer.h = h;
-                        layer.pixelated = pixelated;
-                        layers.push(layer);
-                      } else if (type === 'image') {
-                        let {img: imgs} = layerSpec;
-                        if (!Array.isArray(imgs)) {
-                          imgs = [imgs];
-                        }
-                        const {parent: {width, height}} = this;
-                        const {x = 0, y = 0, w = width, h = height, frameTime = 300, pixelated = false} = layerSpec;
-
-                        for (let j = 0; j < imgs.length; j++) {
-                          const img = imgs[j];
-
-                          const layer = new Layer(this);
-                          layer.img = img;
-                          layer.img.needsUpdate = true;
-                          layer.x = x;
-                          layer.y = y;
-                          layer.w = w;
-                          layer.h = h;
-                          layer.numFrames = imgs.length;
-                          layer.frameIndex = j;
-                          layer.frameTime = frameTime;
-                          layer.pixelated = pixelated;
-                          layers.push(layer);
-                        }
-
-                        setTimeout(pend);
-                      } else {
-                        throw new Error('unknown layer type: ' + type);
+                    // do not load images without an explicit width + height
+                    for (let i = 0; i < imgs.length; i++) {
+                      const img = imgs[i];
+                      if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
+                        img.parentNode.removeChild(img);
                       }
                     }
-                  } else {
-                    setTimeout(accept);
-                  }
+
+                    // remove empty anchors
+                    const as = el.querySelectorAll('a');
+                    for (let i = 0; i < as.length; i++) {
+                      const a = as[i];
+                      if (a.childNodes.length > 0) {
+                        if (!a.style.textDecoration) {
+                          a.style.textDecoration = 'underline';
+                        }
+                      } else {
+                        a.parentNode.removeChild(a);
+                      }
+                    }
+
+                    return new XMLSerializer().serializeToString(el);
+                  })();
+                }
+
+                return Promise.resolve();
+              };
+              const _requestImage = () => new Promise((accept, reject) => {
+                const {layerSpec} = cache;
+                const {type = 'html'} = layerSpec;
+                if (type === 'html') {
+                  const {parent: {width, height}} = this;
+                  const {w = width, h = height} = layerSpec;
+
+                  const img = new Image();
+                  const {innerSrc} = cache;
+                  img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
+                    '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                      innerSrc +
+                    '</foreignObject>' +
+                  '</svg>');
+                  img.onload = () => {
+                    cache.img = img;
+
+                    accept();
+                  };
+                  img.onerror = err => {
+                    console.warn('biolumi image load error', {src: img.src}, err);
+
+                    accept();
+                  };
+                } else if (type === 'image') {
+                  const {img} = layerSpec;
+
+                  cache.img = img;
+
+                  accept();
                 } else {
-                  setTimeout(accept);
+                  accept();
                 }
               });
+              const _requestTexture = () => {
+                const {layerSpec, img} = cache;
+                const {pixelated = false} = layerSpec;
+
+                const {material: {uniforms: {texture: {value: texture}}}} = this;
+                texture.image = img;
+                if (!pixelated) {
+                  texture.minFilter = THREE.LinearFilter;
+                  texture.magFilter = THREE.LinearFilter;
+                  texture.anisotropy = 16;
+                } else {
+                  texture.minFilter = THREE.NearestFilter;
+                  texture.magFilter = THREE.NearestFilter;
+                  texture.anisotropy = 1;
+                }
+                texture.needsUpdate = true;
+
+                // This forces THREE.js to submit the texture to the GPU
+                // This is a relatively slow operation
+                renderer.setTexture2D(texture, 0);
+
+                return Promise.resolve();
+              };
+              const _requestLayer = () => {
+                const {layerSpec} = cache;
+                const {type = 'html'} = layerSpec;
+                if (type === 'html') {
+                  const {parent: {width, height}} = this;
+                  const {src, x = 0, y = 0, w = width, h = height} = layerSpec;
+
+                  const _makeAnchors = () => {
+                    const divEl = (() => {
+                      const el = document.createElement('div');
+                      el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                      const {innerSrc} = cache;
+                      el.innerHTML = innerSrc;
+
+                      return el;
+                    })();
+                    document.body.appendChild(divEl);
+
+                    const anchors = (() => {
+                      const as = (() => {
+                        const as = divEl.querySelectorAll('a');
+
+                        const result = [];
+                        for (let i = 0; i < as.length; i++) {
+                          const a = as[i];
+                          if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
+                            result.push(a);
+                          }
+                        }
+                        return result;
+                      })();
+                      const numAs = as.length;
+
+                      const result = Array(numAs);
+                      for (let i = 0; i < numAs; i++) {
+                        const a = as[i];
+
+                        const rect = a.getBoundingClientRect();
+                        const onclick = a.getAttribute('onclick') || null;
+                        const onmousedown = a.getAttribute('onmousedown') || null;
+                        const onmouseup = a.getAttribute('onmouseup') || null;
+
+                        const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
+                        result[i] = anchor;
+                      }
+
+                      return result;
+                    })();
+
+                    document.body.removeChild(divEl);
+
+                    return anchors;
+                  };
+
+                  const layer = new Layer(this);
+                  layer.anchors = null;
+                  layer.makeAnchors = _makeAnchors;
+                  layer.x = x;
+                  layer.y = y;
+                  layer.w = w;
+                  layer.h = h;
+
+                  this.layer = layer;
+                } else if (type === 'image') {
+                  const {parent: {width, height}} = this;
+                  const {x = 0, y = 0, w = width, h = height} = layerSpec;
+
+                  const layer = new Layer(this);
+                  layer.x = x;
+                  layer.y = y;
+                  layer.w = w;
+                  layer.h = h;
+
+                  this.layer = layer;
+                } else {
+                  console.warn('illegal layer spec type:' + JSON.stringify(type));
+
+                  this.layer = null;
+                }
+
+                return Promise.resolve();
+              };
+              uiWorker.add(_requestLayerSpec);
+              uiWorker.add(_requestInnerSrc);
+              uiWorker.add(_requestImage);
+              uiWorker.add(_requestTexture);
+              uiWorker.add(_requestLayer);
             }
           }
 
@@ -260,29 +392,13 @@ class Biolumi {
 
               this.img = null;
               this.anchors = [];
+              this.makeAnchors = null;
               const {parent: {width, height}} = parent;
 
               this.x = 0;
               this.y = 0;
               this.w = width;
               this.h = height;
-              this.numFrames = 1;
-              this.frameIndex = 0;
-              this.frameTime = 0;
-              this.pixelated = false;
-            }
-
-            getValid() {
-              const {numFrames} = this;
-
-              if (numFrames > 1) {
-                const {parent, frameIndex, frameTime} = this;
-                const uiTime = uiTimer.getUiTime();
-                const currentFrameIndex = Math.floor(uiTime / frameTime) % numFrames;
-                return currentFrameIndex === frameIndex;
-              } else {
-                return true; // XXX optimize this
-              }
             }
 
             getPosition() {
@@ -310,11 +426,19 @@ class Biolumi {
             }
 
             getAnchors() {
+              let {anchors} = this;
+              const {makeAnchors} = this;
+              if (!anchors && makeAnchors) {
+                anchors = makeAnchors();
+                this.anchors = anchors;
+                this.makeAnchors = null;
+              }
+
               const position = this.getPosition();
               const {x: px, y: py, w: pw, h: ph} = position;
               const {parent: {parent: {width, height}}} = this;
 
-              return this.anchors.map(anchor => {
+              return anchors.map(anchor => {
                 const {rect, onclick, onmousedown, onmouseup} = anchor;
                 const {top, bottom, left, right} = rect;
 
@@ -360,229 +484,29 @@ class Biolumi {
             }
           }
 
-          const _getMenuShader = (() => {
-            const cache = {};
-
-            return ({
-              maxNumTextures,
-            }) => {
-              let entry = cache[maxNumTextures];
-              if (!entry) {
-                entry = menuShaders.getShader({
-                  maxNumTextures,
-                });
-                cache[maxNumTextures] = entry;
-              }
-              return entry;
-            };
-          })();
-          const _getTextureAtlasUv = (atlasSize, pageIndex) => {
-            const x = pageIndex % atlasSize;
-            const y = Math.floor(pageIndex / atlasSize);
-            return new THREE.Vector2(x, y);
-          };
-
-          class MegaTexture {
-            constructor(width, height, atlasSize, maxNumTextures, color) {
-              this.width = width;
-              this.height = height;
-              this.atlasSize = atlasSize;
-              this.maxNumTextures = maxNumTextures;
-              this.color = color;
-
-              const material = (() => {
-                const menuShader = _getMenuShader({
-                  maxNumTextures,
-                });
-                const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
-                shaderUniforms.textures.value = (() => {
-                  const result = Array(maxNumTextures);
-                  for (let i = 0; i < maxNumTextures; i++) {
-                    const texture = new THREE.Texture(
-                      transparentImg,
-                      THREE.UVMapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.LinearFilter,
-                      THREE.LinearFilter,
-                      THREE.RGBAFormat,
-                      THREE.UnsignedByteType,
-                      16
-                    );
-
-                    result[i] = texture;
-                  }
-                  return result;
-                })();
-                shaderUniforms.validTextures.value = (() => {
-                  const result = Array(maxNumTextures);
-                  for (let i = 0; i < maxNumTextures; i++) {
-                    result[i] = 0;
-                  }
-                  return result;
-                })();
-                shaderUniforms.texturePositions.value = (() => {
-                  const result = Array(2 * maxNumTextures);
-                  for (let i = 0; i < maxNumTextures; i++) {
-                    result[(i * 2) + 0] = 0;
-                    result[(i * 2) + 1] = 0;
-                  }
-                  return result;
-                })();
-                shaderUniforms.textureLimits.value = (() => {
-                  const result = Array(2 * maxNumTextures);
-                  for (let i = 0; i < maxNumTextures; i++) {
-                    result[(i * 2) + 0] = 0;
-                    result[(i * 2) + 1] = 0;
-                  }
-                  return result;
-                })();
-                shaderUniforms.atlasSize.value = atlasSize;
-                shaderUniforms.backgroundColor.value = Float32Array.from(color);
-                const shaderMaterial = new THREE.ShaderMaterial({
-                  uniforms: shaderUniforms,
-                  vertexShader: menuShader.vertexShader,
-                  fragmentShader: menuShader.fragmentShader,
-                  side: THREE.DoubleSide,
-                  transparent: true,
-                });
-                // shaderMaterial.polygonOffset = true;
-                // shaderMaterial.polygonOffsetFactor = 1;
-                return shaderMaterial;
-              })();
-              this.material = material;
-            }
-
-            getMaterial() {
-              return this.material;
-            }
-
-            update(pages) {
-              if (pages.length > 0) {
-                const {atlasSize, maxNumTextures, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
-
-                for (let i = 0; i < pages.length; i++) {
-                  const page = pages[i]; // XXX optimize the case of atlasSize = 1: in that case we can skip drawing the texture atlas and feed through the image directly
-                  const {layers} = page;
-
-                  for (let j = 0; j < maxNumTextures; j++) {
-                    const layer = j < layers.length ? layers[j] : null;
-
-                    if (layer && layer.getValid()) {
-                      validTextures.value[j] = 1;
-
-                      if (layer.img.needsUpdate) {
-                        const texture = textures.value[j];
-
-                        // ensure the texture exists with the right size
-                        // we are assuming that all page's layers have identical metrics
-                        if (texture.image.tagName !== 'CANVAS') {
-                          const canvas = document.createElement('canvas');
-                          canvas.width = layer.img.width * atlasSize;
-                          canvas.height = layer.img.height * atlasSize;
-                          const ctx = canvas.getContext('2d');
-                          canvas.ctx = ctx;
-
-                          texture.image = canvas;
-                        }
-
-                        // draw the layer image into the texture atlas
-                        const textureAtlasUv = _getTextureAtlasUv(atlasSize, i);
-                        const x = textureAtlasUv.x * layer.img.width;
-                        const y = textureAtlasUv.y * layer.img.height;
-                        const w = layer.img.width;
-                        const h = layer.img.height;
-                        texture.image.ctx.clearRect(x, y, w, h);
-                        texture.image.ctx.drawImage(layer.img, x, y);
-
-                        // set texture pixelation properties
-                        if (!layer.pixelated) {
-                          texture.minFilter = THREE.LinearFilter;
-                          texture.magFilter = THREE.LinearFilter;
-                          texture.anisotropy = 16;
-                        } else {
-                          texture.minFilter = THREE.NearestFilter;
-                          texture.magFilter = THREE.NearestFilter;
-                          texture.anisotropy = 1;
-                        }
-
-                        texture.needsUpdate = true;
-                        layer.img.needsUpdate = false;
-                      }
-
-                      const position = layer.getPosition();
-                      const baseIndex = j * 2;
-                      texturePositions.value[baseIndex + 0] = position.x;
-                      texturePositions.value[baseIndex + 1] = position.y;
-                      textureLimits.value[baseIndex + 0] = position.w;
-                      textureLimits.value[baseIndex + 1] = position.h;
-                    } else {
-                      validTextures.value[j] = 0;
-                    }
-                  }
-                }
-              }
-
-              return Promise.resolve();
-            }
-          }
-
           class Ui {
-            constructor(width, height, atlasSize, maxNumTextures, color) {
+            constructor(width, height, color) {
               this.width = width;
               this.height = height;
-              this.atlasSize = atlasSize;
               this.color = color;
 
-              this.pages = [];
-              this.megaTexture = new MegaTexture(width, height, atlasSize, maxNumTextures, color);
-
-              this.update = debounce(this.update.bind(this));
-            }
-
-            getPage(index) {
-              return this.pages[index];
-            }
-
-            hasFreePages() {
-              const {atlasSize, pages} = this;
-              const maxPages = atlasSize * atlasSize;
-              return pages.length < maxPages;
+              this.page = null;
             }
 
             addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
-              if (this.hasFreePages()) {
-                const {atlasSize, pages, megaTexture} = this;
+              const {page} = this;
 
+              if (!page) {
                 const page = new Page(this, spec, type, state);
-
-                const pageIndex = pages.length;
-                pages.push(page);
+                page.update();
+                this.page = page;
 
                 const planeMesh = (() => {
                   const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-                  const atlasUvs = (() => {
-                    const positions = geometry.getAttribute('position').array;
-                    const numPositions = positions.length / 3;
-
-                    const array = Array(numPositions * 2);
-                    const textureAtlasUvs = _getTextureAtlasUv(atlasSize, pageIndex);
-                    for (let i = 0; i < numPositions; i++) {
-                      const baseIndex = i * 2;
-                      array[baseIndex + 0] = textureAtlasUvs.x;
-                      array[baseIndex + 1] = textureAtlasUvs.y;
-                    }
-
-                    const float32Array = Float32Array.from(array);
-                    return float32Array;
-                  })();
-                  geometry.addAttribute('atlasUv', new THREE.BufferAttribute(atlasUvs, 2));
-
-                  const material = megaTexture.getMaterial();
+                  const {material} = page;
 
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.page = page;
-                  mesh.pageIndex = pageIndex;
 
                   return mesh;
                 })();
@@ -593,25 +517,15 @@ class Biolumi {
               }
             }
 
-            update(next) {
-              const {pages, megaTexture} = this;
-
-              Promise.all(
-                pages.map(page => page.update())
-              )
-                .then(() => megaTexture.update(pages))
-                .then(() => {
-                  next();
-                })
-                .catch(err => {
-                  console.warn(err);
-
-                  next();
-                });
+            update() {
+              const {page} = this;
+              if (page) {
+                page.update();
+              }
             }
           }
 
-          const _makeUi = ({width, height, atlasSize = 1, maxNumTextures = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, atlasSize, maxNumTextures, color);
+          const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
 
           const _updateUiTimer = () => {
             uiTimer.update();
@@ -915,15 +829,12 @@ class Biolumi {
               });
 
               const anchorBoxTargets = (() => {
-                const result = [];
+                const {layer} = page;
 
-                const {layers} = page;
-                for (let i = 0; i < layers.length; i++) {
-                  const layer = layers[i];
+                if (layer) {
                   const anchors = layer.getAnchors();
 
-                  for (let j = 0; j < anchors.length; j++) {
-                    const anchor = anchors[j];
+                  return anchors.map(anchor => {
                     const {rect} = anchor;
 
                     const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
@@ -943,11 +854,11 @@ class Biolumi {
                     );
                     anchorBoxTarget.anchor = anchor;
 
-                    result.push(anchorBoxTarget);
-                  }
+                    return anchorBoxTarget;
+                  });
+                } else {
+                  return [];
                 }
-
-                return result;
               })();
               const anchorBoxTarget = (() => {
                 const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));

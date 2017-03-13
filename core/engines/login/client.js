@@ -123,26 +123,22 @@ class Login {
                 focus: {
                   type: focusType,
                 }
-              }) => {
-                return [
-                  {
-                    type: 'html',
-                    src: menuRenderer.getLoginSrc({
-                      hasHub,
-                      token,
-                      inputIndex,
-                      inputValue,
-                      loading,
-                      error,
-                      focusType,
-                    }),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                  },
-                ];
-              }, {
+              }) => ({
+                type: 'html',
+                src: menuRenderer.getLoginSrc({
+                  hasHub,
+                  token,
+                  inputIndex,
+                  inputValue,
+                  loading,
+                  error,
+                  focusType,
+                }),
+                x: 0,
+                y: 0,
+                w: WIDTH,
+                h: HEIGHT,
+              }), {
                 type: 'login',
                 state: {
                   login: loginState,

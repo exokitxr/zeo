@@ -181,17 +181,15 @@ class Universe {
               const object = new THREE.Object3D();
 
               const planeMesh = (() => {
-                const mesh = backgroundUi.addPage(({backgroundImage}) => ([
-                  {
-                    type: 'html',
-                    src: universeRenderer.getBackgroundImageSrc(backgroundImage),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                    pixelated: true,
-                  },
-                ]), {
+                const mesh = backgroundUi.addPage(({backgroundImage}) => ({
+                  type: 'html',
+                  src: universeRenderer.getBackgroundImageSrc(backgroundImage),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                  pixelated: true,
+                }), {
                   type: 'background',
                   state: {
                     backgroundImage: backgroundImageState,

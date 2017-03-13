@@ -245,27 +245,23 @@ class Hub {
                     type: focusType,
                   },
                   logoImg,
-                }) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: menuRenderer.getHubSrc({
-                        page,
-                        searchText,
-                        inputIndex,
-                        inputValue,
-                        loading,
-                        error,
-                        focusType,
-                        logoImg,
-                      }),
-                      x: 0,
-                      y: 0,
-                      w: WIDTH,
-                      h: HEIGHT,
-                    },
-                  ];
-                }, {
+                }) => ({
+                  type: 'html',
+                  src: menuRenderer.getHubSrc({
+                    page,
+                    searchText,
+                    inputIndex,
+                    inputValue,
+                    loading,
+                    error,
+                    focusType,
+                    logoImg,
+                  }),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                }), {
                   type: 'hub',
                   state: {
                     hub: hubState,
@@ -527,22 +523,18 @@ class Hub {
                               description,
                             },
                             serverIcon,
-                          }) => {
-                            return [
-                              {
-                                type: 'html',
-                                src: menuRenderer.getServerSrc({
-                                  worldname,
-                                  description,
-                                  serverIcon,
-                                }),
-                                x: 0,
-                                y: 0,
-                                w: SERVER_WIDTH,
-                                h: SERVER_HEIGHT,
-                              },
-                            ];
-                          }, {
+                          }) => ({
+                            type: 'html',
+                            src: menuRenderer.getServerSrc({
+                              worldname,
+                              description,
+                              serverIcon,
+                            }),
+                            x: 0,
+                            y: 0,
+                            w: SERVER_WIDTH,
+                            h: SERVER_HEIGHT,
+                          }), {
                             type: 'hub',
                             state: {
                               server: {
