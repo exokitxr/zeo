@@ -55,10 +55,16 @@ These are:
 
 You'll find these in your package manager of choice.
 
-#### Install dependencies (Debian/Ubuntu)
+#### Install dependencies (Ubuntu)
 
 ```javascript
 sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
+```
+
+#### Install dependencies (Debian)
+
+```javascript
+sudo apt-get install build-essential cmake python libav-tools libcairo2-dev
 ```
 
 ### Step 4: Npm install

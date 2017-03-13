@@ -18,10 +18,16 @@ Basically, Zeo VR uses web technologies to run your Javascript modules in immers
 npm install zeo
 ```
 
-#### Install depencencies (Debian/Ubuntu)
+#### Install depencencies (Ubuntu)
 
 ```javascript
 sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
+```
+
+#### Install depencencies (Debian)
+
+```javascript
+sudo apt-get install build-essential cmake python libav-tools libcairo2-dev
 ```
 
 ### Highlights
