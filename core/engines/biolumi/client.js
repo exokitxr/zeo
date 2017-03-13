@@ -597,8 +597,6 @@ class Biolumi {
                 const {megaTexture} = this;
 
                 const page = new Page(this, spec, type, state);
-
-                const pageIndex = pages.length;
                 pages.push(page);
 
                 const planeMesh = (() => {
@@ -607,7 +605,6 @@ class Biolumi {
 
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.page = page;
-                  mesh.pageIndex = pageIndex;
 
                   return mesh;
                 })();
