@@ -99,19 +99,15 @@ class Mail {
               object.visible = false;
 
               const planeMesh = (() => {
-                const mesh = menuUi.addPage(({mail, focus: {type}}) => {
-                  return [
-                    {
-                      type: 'html',
-                      src: mailRenderer.getMailPageSrc(mail),
-                      x: 0,
-                      y: 0,
-                      w: WIDTH,
-                      h: HEIGHT,
-                      scroll: true,
-                    },
-                  ];
-                }, {
+                const mesh = menuUi.addPage(({mail, focus: {type}}) => ({
+                  type: 'html',
+                  src: mailRenderer.getMailPageSrc(mail),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                  scroll: true,
+                }), {
                   type: 'main',
                   state: {
                     mail: mailState,

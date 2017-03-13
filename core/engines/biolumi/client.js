@@ -1,6 +1,6 @@
 import keycode from 'keycode';
 
-import menuShaders from './lib/shaders/menu';
+import menuShader from './lib/shaders/menu';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
@@ -59,10 +59,16 @@ class Biolumi {
                 const now = Date.now();
 
                 if ((now - startTime) < frameTime) {
-                  const thread = threads.pop();
-                  thread();
+                  const thread = threads.shift();
+                  thread()
+                    .then(() => {
+                      _recurseThread();
+                    })
+                    .catch(err => {
+                      console.warn(err);
 
-                  _recurseThread();
+                      _recurseThread();
+                    });
                 } else {
                   requestAnimationFrame(_recurseFrame);
                 }
@@ -126,13 +132,39 @@ class Biolumi {
               this.type = type;
               this.state = state;
 
-              this.layers = [];
+              const material = (() => {
+                const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
+                shaderUniforms.texture.value = new THREE.Texture(
+                  transparentImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.LinearFilter,
+                  THREE.LinearFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  16
+                );
+                shaderUniforms.backgroundColor.value = Float32Array.from(parent.color);
+                const shaderMaterial = new THREE.ShaderMaterial({
+                  uniforms: shaderUniforms,
+                  vertexShader: menuShader.vertexShader,
+                  fragmentShader: menuShader.fragmentShader,
+                  side: THREE.DoubleSide,
+                  transparent: true,
+                });
+                // shaderMaterial.polygonOffset = true;
+                // shaderMaterial.polygonOffsetFactor = 1;
+                return shaderMaterial;
+              })();
+              this.material = material;
+              this.layer = null;
 
               this._lastStateJson = '';
             }
 
             update() {
-              return new Promise((accept, reject) => {
+              uiWorker.add(() => new Promise((accept, reject) => {
                 const {state} = this;
                 // replacer used to account for Symbol-hidden properties
                 const stateJson = JSON.stringify(state, (k, v) => (v && v.jsonStringify) ? v.jsonStringify() : v);
@@ -141,171 +173,160 @@ class Biolumi {
                 if (stateJson !== lastStateJson) {
                   this._lastStateJson = stateJson;
 
+                  const _updateTexture = (img, {pixelated}) => {
+                    const {material: {uniforms: {texture: {value: texture}}}} = this;
+                    texture.image = img;
+                    if (!pixelated) {
+                      texture.minFilter = THREE.LinearFilter;
+                      texture.magFilter = THREE.LinearFilter;
+                      texture.anisotropy = 16;
+                    } else {
+                      texture.minFilter = THREE.NearestFilter;
+                      texture.magFilter = THREE.NearestFilter;
+                      texture.anisotropy = 1;
+                    }
+                    texture.needsUpdate = true;
+                  };
+
                   const {spec} = this;
+                  const layerSpec = typeof spec === 'function' ? spec(state) : spec;
+if (!(typeof layerSpec === 'object' && !Array.isArray(layerSpec))) {
+  console.warn('fail layer spec', layerSpec);
+}
+                  const {type = 'html'} = layerSpec;
+                  if (type === 'html') {
+                    const {parent: {width, height}} = this;
+                    const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
 
-                  const layers = [];
-                  const layersSpec = typeof spec === 'function' ? spec(state) : spec;
-                  if (layersSpec.length > 0) {
-                    let pending = layersSpec.length;
-                    const pend = () => {
-                      if (--pending === 0) {
-                        this.layers = layers;
+                    const innerSrc = (() => {
+                      const el = document.createElement('div');
+                      el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+                      el.setAttribute('style', rootCss);
+                      el.innerHTML = src
+                        .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
 
-                        accept();
+                      const imgs = el.querySelectorAll('img');
+
+                      // do not load images without an explicit width + height
+                      for (let i = 0; i < imgs.length; i++) {
+                        const img = imgs[i];
+                        if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
+                          img.parentNode.removeChild(img);
+                        }
                       }
+
+                      // remove empty anchors
+                      const as = el.querySelectorAll('a');
+                      for (let i = 0; i < as.length; i++) {
+                        const a = as[i];
+                        if (a.childNodes.length > 0) {
+                          if (!a.style.textDecoration) {
+                            a.style.textDecoration = 'underline';
+                          }
+                        } else {
+                          a.parentNode.removeChild(a);
+                        }
+                      }
+
+                      return new XMLSerializer().serializeToString(el);
+                    })();
+
+                    const img = new Image();
+                    img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
+                      '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                        innerSrc +
+                      '</foreignObject>' +
+                    '</svg>');
+                    img.onload = () => {
+                      _updateTexture(img, {pixelated});
+
+                      accept();
+                    };
+                    img.onerror = err => {
+                      console.warn('biolumi image load error', {src: img.src}, err);
+
+                      accept();
                     };
 
-                    for (let i = 0; i < layersSpec.length; i++) {
-                      const layerSpec = layersSpec[i];
-                      const {type = 'html'} = layerSpec;
+                    const _makeAnchors = () => {
+                      const divEl = (() => {
+                        const el = document.createElement('div');
+                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                        el.innerHTML = innerSrc;
 
-                      if (type === 'html') {
-                        const {parent: {width, height}} = this;
-                        const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
+                        return el;
+                      })();
+                      document.body.appendChild(divEl);
 
-                        const innerSrc = (() => {
-                          const el = document.createElement('div');
-                          el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-                          el.setAttribute('style', rootCss);
-                          el.innerHTML = src
-                            .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
+                      const anchors = (() => {
+                        const as = (() => {
+                          const as = divEl.querySelectorAll('a');
 
-                          const imgs = el.querySelectorAll('img');
-
-                          // do not load images without an explicit width + height
-                          for (let i = 0; i < imgs.length; i++) {
-                            const img = imgs[i];
-                            if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
-                              img.parentNode.removeChild(img);
-                            }
-                          }
-
-                          // remove empty anchors
-                          const as = el.querySelectorAll('a');
+                          const result = [];
                           for (let i = 0; i < as.length; i++) {
                             const a = as[i];
-                            if (a.childNodes.length > 0) {
-                              if (!a.style.textDecoration) {
-                                a.style.textDecoration = 'underline';
-                              }
-                            } else {
-                              a.parentNode.removeChild(a);
+                            if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
+                              result.push(a);
                             }
                           }
-
-                          return new XMLSerializer().serializeToString(el);
+                          return result;
                         })();
+                        const numAs = as.length;
 
-                        const img = new Image();
-                        img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
-                          '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                            innerSrc +
-                          '</foreignObject>' +
-                        '</svg>');
-                        img.onload = () => {
-                          layer.img = img;
-                          layer.img.needsUpdate = true;
+                        const result = Array(numAs);
+                        for (let i = 0; i < numAs; i++) {
+                          const a = as[i];
 
-                          pend();
-                        };
-                        img.onerror = err => {
-                          console.warn('biolumi image load error', {src: img.src}, err);
+                          const rect = a.getBoundingClientRect();
+                          const onclick = a.getAttribute('onclick') || null;
+                          const onmousedown = a.getAttribute('onmousedown') || null;
+                          const onmouseup = a.getAttribute('onmouseup') || null;
 
-                          pend();
-                        };
-
-                        const _makeAnchors = () => {
-                          const divEl = (() => {
-                            const el = document.createElement('div');
-                            el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                            el.innerHTML = innerSrc;
-
-                            return el;
-                          })();
-                          document.body.appendChild(divEl);
-
-                          const anchors = (() => {
-                            const as = (() => {
-                              const as = divEl.querySelectorAll('a');
-
-                              const result = [];
-                              for (let i = 0; i < as.length; i++) {
-                                const a = as[i];
-                                if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
-                                  result.push(a);
-                                }
-                              }
-                              return result;
-                            })();
-                            const numAs = as.length;
-
-                            const result = Array(numAs);
-                            for (let i = 0; i < numAs; i++) {
-                              const a = as[i];
-
-                              const rect = a.getBoundingClientRect();
-                              const onclick = a.getAttribute('onclick') || null;
-                              const onmousedown = a.getAttribute('onmousedown') || null;
-                              const onmouseup = a.getAttribute('onmouseup') || null;
-
-                              const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
-                              result[i] = anchor;
-                            }
-
-                            return result;
-                          })();
-
-                          document.body.removeChild(divEl);
-
-                          return anchors;
-                        };
-
-                        const layer = new Layer(this);
-                        layer.anchors = null;
-                        layer.makeAnchors = _makeAnchors;
-                        layer.x = x;
-                        layer.y = y;
-                        layer.w = w;
-                        layer.h = h;
-                        layer.pixelated = pixelated;
-                        layers.push(layer);
-                      } else if (type === 'image') {
-                        let {img: imgs} = layerSpec;
-                        if (!Array.isArray(imgs)) {
-                          imgs = [imgs];
-                        }
-                        const {parent: {width, height}} = this;
-                        const {x = 0, y = 0, w = width, h = height, frameTime = 300, pixelated = false} = layerSpec;
-
-                        for (let j = 0; j < imgs.length; j++) {
-                          const img = imgs[j];
-
-                          const layer = new Layer(this);
-                          layer.img = img;
-                          layer.img.needsUpdate = true;
-                          layer.x = x;
-                          layer.y = y;
-                          layer.w = w;
-                          layer.h = h;
-                          layer.numFrames = imgs.length;
-                          layer.frameIndex = j;
-                          layer.frameTime = frameTime;
-                          layer.pixelated = pixelated;
-                          layers.push(layer);
+                          const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
+                          result[i] = anchor;
                         }
 
-                        setTimeout(pend);
-                      } else {
-                        throw new Error('unknown layer type: ' + type);
-                      }
-                    }
+                        return result;
+                      })();
+
+                      document.body.removeChild(divEl);
+
+                      return anchors;
+                    };
+
+                    const layer = new Layer(this);
+                    layer.anchors = null;
+                    layer.makeAnchors = _makeAnchors;
+                    layer.x = x;
+                    layer.y = y;
+                    layer.w = w;
+                    layer.h = h;
+
+                    this.layer = layer;
+                  } else if (type === 'image') {
+                    const {parent: {width, height}} = this;
+                    const {img, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
+
+                    _updateTexture(img, {pixelated});
+
+                    const layer = new Layer(this);
+                    layer.x = x;
+                    layer.y = y;
+                    layer.w = w;
+                    layer.h = h;
+
+                    this.layer = layer;
+
+                    accept();
                   } else {
-                    setTimeout(accept);
+                    console.warn('illegal layer spec type:' + JSON.stringify(type));
+
+                    this.layer = null;
                   }
                 } else {
-                  setTimeout(accept);
+                  accept();
                 }
-              });
+              }));
             }
           }
 
@@ -322,23 +343,6 @@ class Biolumi {
               this.y = 0;
               this.w = width;
               this.h = height;
-              this.numFrames = 1;
-              this.frameIndex = 0;
-              this.frameTime = 0;
-              this.pixelated = false;
-            }
-
-            getValid() {
-              const {numFrames} = this;
-
-              if (numFrames > 1) {
-                const {parent, frameIndex, frameTime} = this;
-                const uiTime = uiTimer.getUiTime();
-                const currentFrameIndex = Math.floor(uiTime / frameTime) % numFrames;
-                return currentFrameIndex === frameIndex;
-              } else {
-                return true; // XXX optimize this
-              }
             }
 
             getPosition() {
@@ -424,184 +428,25 @@ class Biolumi {
             }
           }
 
-          const _getMenuShader = (() => {
-            const cache = {};
-
-            return ({
-              maxNumTextures,
-            }) => {
-              let entry = cache[maxNumTextures];
-              if (!entry) {
-                entry = menuShaders.getShader({
-                  maxNumTextures,
-                });
-                cache[maxNumTextures] = entry;
-              }
-              return entry;
-            };
-          })();
-
-          class MegaTexture {
-            constructor(width, height, maxNumTextures, color) {
-              this.width = width;
-              this.height = height;
-              this.maxNumTextures = maxNumTextures;
-              this.color = color;
-
-              const material = (() => {
-                const menuShader = _getMenuShader({
-                  maxNumTextures,
-                });
-                const shaderUniforms = THREE.UniformsUtils.clone(menuShader.uniforms);
-                shaderUniforms.textures.value = (() => {
-                  const result = Array(maxNumTextures);
-                  for (let i = 0; i < maxNumTextures; i++) {
-                    const texture = new THREE.Texture(
-                      transparentImg,
-                      THREE.UVMapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.ClampToEdgeWrapping,
-                      THREE.LinearFilter,
-                      THREE.LinearFilter,
-                      THREE.RGBAFormat,
-                      THREE.UnsignedByteType,
-                      16
-                    );
-
-                    result[i] = texture;
-                  }
-                  return result;
-                })();
-                shaderUniforms.validTextures.value = (() => {
-                  const result = Array(maxNumTextures);
-                  for (let i = 0; i < maxNumTextures; i++) {
-                    result[i] = 0;
-                  }
-                  return result;
-                })();
-                shaderUniforms.texturePositions.value = (() => {
-                  const result = Array(2 * maxNumTextures);
-                  for (let i = 0; i < maxNumTextures; i++) {
-                    result[(i * 2) + 0] = 0;
-                    result[(i * 2) + 1] = 0;
-                  }
-                  return result;
-                })();
-                shaderUniforms.textureLimits.value = (() => {
-                  const result = Array(2 * maxNumTextures);
-                  for (let i = 0; i < maxNumTextures; i++) {
-                    result[(i * 2) + 0] = 0;
-                    result[(i * 2) + 1] = 0;
-                  }
-                  return result;
-                })();
-                shaderUniforms.backgroundColor.value = Float32Array.from(color);
-                const shaderMaterial = new THREE.ShaderMaterial({
-                  uniforms: shaderUniforms,
-                  vertexShader: menuShader.vertexShader,
-                  fragmentShader: menuShader.fragmentShader,
-                  side: THREE.DoubleSide,
-                  transparent: true,
-                });
-                // shaderMaterial.polygonOffset = true;
-                // shaderMaterial.polygonOffsetFactor = 1;
-                return shaderMaterial;
-              })();
-              this.material = material;
-            }
-
-            getMaterial() {
-              return this.material;
-            }
-
-            update(pages) {
-              if (pages.length > 0) {
-                const {maxNumTextures, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
-
-                const _doUpdate = (i, j) => {
-                  uiWorker.add(() => {
-                    const page = pages[i];
-                    const {layers} = page;
-
-                    const layer = j < layers.length ? layers[j] : null;
-
-                    if (layer && layer.getValid()) {
-                      validTextures.value[j] = 1;
-
-                      if (layer.img.needsUpdate) {
-                        const texture = textures.value[j];
-
-                        // draw the layer image into the texture atlas
-                        const x = 0;
-                        const y = 0;
-                        const w = layer.img.width;
-                        const h = layer.img.height;
-                        texture.image = layer.img;
-
-                        // set texture pixelation properties
-                        if (!layer.pixelated) {
-                          texture.minFilter = THREE.LinearFilter;
-                          texture.magFilter = THREE.LinearFilter;
-                          texture.anisotropy = 16;
-                        } else {
-                          texture.minFilter = THREE.NearestFilter;
-                          texture.magFilter = THREE.NearestFilter;
-                          texture.anisotropy = 1;
-                        }
-
-                        texture.needsUpdate = true;
-                        layer.img.needsUpdate = false;
-                      }
-
-                      const position = layer.getPosition();
-                      const baseIndex = j * 2;
-                      texturePositions.value[baseIndex + 0] = position.x;
-                      texturePositions.value[baseIndex + 1] = position.y;
-                      textureLimits.value[baseIndex + 0] = position.w;
-                      textureLimits.value[baseIndex + 1] = position.h;
-                    } else {
-                      validTextures.value[j] = 0;
-                    }
-                  });
-                };
-
-                for (let i = 0; i < pages.length; i++) {
-                  for (let j = 0; j < maxNumTextures; j++) {
-                    _doUpdate(i, j);
-                  }
-                }
-              }
-            }
-          }
-
           class Ui {
-            constructor(width, height, maxNumTextures, color) {
+            constructor(width, height, color) {
               this.width = width;
               this.height = height;
               this.color = color;
 
-              this.pages = [];
-              this.megaTexture = new MegaTexture(width, height, maxNumTextures, color);
-
-              this.update = debounce(this.update.bind(this));
-            }
-
-            getPage(index) {
-              return this.pages[index];
+              this.page = null;
             }
 
             addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
-              const {pages} = this;
+              const {page} = this;
 
-              if (pages.length === 0) {
-                const {megaTexture} = this;
-
+              if (!page) {
                 const page = new Page(this, spec, type, state);
-                pages.push(page);
+                this.page = page;
 
                 const planeMesh = (() => {
                   const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-                  const material = megaTexture.getMaterial();
+                  const {material} = page;
 
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.page = page;
@@ -615,25 +460,17 @@ class Biolumi {
               }
             }
 
-            update(next) {
-              const {pages, megaTexture} = this;
+            update() {
+              const {page} = this;
 
-              Promise.all(pages.map(page => page.update()))
-                .then(() => {
-                  megaTexture.update(pages);
-                  uiWorker.work();
-
-                  next();
-                })
-                .catch(err => {
-                  console.warn(err);
-
-                  next();
-                });
+              if (page) {
+                page.update();
+                uiWorker.work();
+              }
             }
           }
 
-          const _makeUi = ({width, height, maxNumTextures = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, maxNumTextures, color);
+          const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
 
           const _updateUiTimer = () => {
             uiTimer.update();
@@ -937,39 +774,31 @@ class Biolumi {
               });
 
               const anchorBoxTargets = (() => {
-                const result = [];
+                const {layer} = page;
+                const anchors = layer.getAnchors();
 
-                const {layers} = page;
-                for (let i = 0; i < layers.length; i++) {
-                  const layer = layers[i];
-                  const anchors = layer.getAnchors();
+                return anchors.map(anchor => {
+                  const {rect} = anchor;
 
-                  for (let j = 0; j < anchors.length; j++) {
-                    const anchor = anchors[j];
-                    const {rect} = anchor;
+                  const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
+                    position,
+                    rotation,
+                    scale,
+                    new THREE.Vector3(
+                      -(worldWidth / 2) + (rect.left / width) * worldWidth,
+                      (worldHeight / 2) + (-rect.top / height) * worldHeight,
+                      -worldDepth
+                    ),
+                    new THREE.Vector3(
+                      -(worldWidth / 2) + (rect.right / width) * worldWidth,
+                      (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
+                      worldDepth
+                    )
+                  );
+                  anchorBoxTarget.anchor = anchor;
 
-                    const anchorBoxTarget = geometryUtils.makeBoxTargetOffset(
-                      position,
-                      rotation,
-                      scale,
-                      new THREE.Vector3(
-                        -(worldWidth / 2) + (rect.left / width) * worldWidth,
-                        (worldHeight / 2) + (-rect.top / height) * worldHeight,
-                        -worldDepth
-                      ),
-                      new THREE.Vector3(
-                        -(worldWidth / 2) + (rect.right / width) * worldWidth,
-                        (worldHeight / 2) + (-rect.bottom / height) * worldHeight,
-                        worldDepth
-                      )
-                    );
-                    anchorBoxTarget.anchor = anchor;
-
-                    result.push(anchorBoxTarget);
-                  }
-                }
-
-                return result;
+                  return anchorBoxTarget;
+                });
               })();
               const anchorBoxTarget = (() => {
                 const interstectedAnchorBoxTargets = anchorBoxTargets.filter(anchorBoxTarget => anchorBoxTarget.intersectLine(controllerLine));

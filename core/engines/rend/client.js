@@ -200,16 +200,14 @@ class Rend {
                 const mesh = menuUi.addPage(({
                   status,
                   iconImg,
-                }) => [
-                  {
-                    type: 'html',
-                    src: menuRenderer.getStatusSrc({status, iconImg}),
-                    x: 0,
-                    y: 0,
-                    w: WIDTH,
-                    h: HEIGHT,
-                  },
-                ], {
+                }) => ({
+                  type: 'html',
+                  src: menuRenderer.getStatusSrc({status, iconImg}),
+                  x: 0,
+                  y: 0,
+                  w: WIDTH,
+                  h: HEIGHT,
+                }), {
                   type: 'status',
                   state: {
                     status: statusState,
@@ -238,16 +236,14 @@ class Rend {
                   navbar: {
                     tab,
                   },
-                }) => ([
-                  {
-                    type: 'html',
-                    src: menuRenderer.getNavbarSrc({tab}),
-                    x: 0,
-                    y: 0,
-                    w: NAVBAR_WIDTH,
-                    h: NAVBAR_HEIGHT,
-                  },
-                ]), {
+                }) => ({
+                  type: 'html',
+                  src: menuRenderer.getNavbarSrc({tab}),
+                  x: 0,
+                  y: 0,
+                  w: NAVBAR_WIDTH,
+                  h: NAVBAR_HEIGHT,
+                }), {
                   type: 'navbar',
                   state: {
                     navbar: navbarState,

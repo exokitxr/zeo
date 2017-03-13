@@ -1240,17 +1240,15 @@ class Tags {
                   })();
                   const mode = _getItemPreviewMode(item);
 
-                  return [
-                    {
-                      type: 'html',
-                      src: type === 'element' ?
-                        tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, isStatic})
-                      :
-                        tagsRenderer.getFileSrc({item, mode}),
-                      w: !open ? WIDTH : OPEN_WIDTH,
-                      h: !open ? HEIGHT : OPEN_HEIGHT,
-                    },
-                  ];
+                  return {
+                    type: 'html',
+                    src: type === 'element' ?
+                      tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, isStatic})
+                    :
+                      tagsRenderer.getFileSrc({item, mode}),
+                    w: !open ? WIDTH : OPEN_WIDTH,
+                    h: !open ? HEIGHT : OPEN_HEIGHT,
+                  };
                 }, {
                   type: 'tag',
                   state: {

@@ -1067,16 +1067,14 @@ class World {
                 }) => {
                   const focus = type === 'npm';
 
-                  return [
-                    {
-                      type: 'html',
-                      src: worldRenderer.getWorldPageSrc({loading, inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick: 'npm:focus'}),
-                      x: 0,
-                      y: 0,
-                      w: WIDTH,
-                      h: HEIGHT,
-                    },
-                  ];
+                  return {
+                    type: 'html',
+                    src: worldRenderer.getWorldPageSrc({loading, inputText, inputPlaceholder, inputValue, numTags, page, focus, onclick: 'npm:focus'}),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                  };
                 }, {
                   type: 'world',
                   state: {

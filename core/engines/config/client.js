@@ -186,25 +186,23 @@ class Config {
                       focus: {
                         type: focusType,
                       }
-                    }) => ([
-                      {
-                        type: 'html',
-                        src: configRenderer.getConfigPageSrc({
-                          inputText,
-                          inputValue,
-                          focus: focusType === 'config',
-                          sliderValue,
-                          airlockCheckboxValue,
-                          voiceChatCheckboxValue, 
-                          statsCheckboxValue,
-                          physicsDebugCheckboxValue,
-                        }),
-                        x: 0,
-                        y: 0,
-                        w: WIDTH,
-                        h: HEIGHT,
-                      }
-                    ]), {
+                    }) => ({
+                      type: 'html',
+                      src: configRenderer.getConfigPageSrc({
+                        inputText,
+                        inputValue,
+                        focus: focusType === 'config',
+                        sliderValue,
+                        airlockCheckboxValue,
+                        voiceChatCheckboxValue,
+                        statsCheckboxValue,
+                        physicsDebugCheckboxValue,
+                      }),
+                      x: 0,
+                      y: 0,
+                      w: WIDTH,
+                      h: HEIGHT,
+                    }), {
                       type: 'config',
                       state: {
                         config: configState,
@@ -241,16 +239,14 @@ class Config {
                       stats: {
                         frame,
                       },
-                    }) => ([
-                      {
-                        type: 'image',
-                        img: statsDom,
-                        x: 0,
-                        y: 0,
-                        w: 500,
-                        h: 500 * (48 / 80),
-                      },
-                    ]), {
+                    }) => ({
+                      type: 'image',
+                      img: statsDom,
+                      x: 0,
+                      y: 0,
+                      w: 500,
+                      h: 500 * (48 / 80),
+                    }), {
                       type: 'stats',
                       state: {
                         config: {
