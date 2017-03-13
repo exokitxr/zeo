@@ -2,6 +2,8 @@
 
 ## Getting started
 
+Here's how to get started running your own Zeo VR server.
+
 ## Server setup (Docker)
 
 The recommended (and easiest) way to run Zeo VR is with [Docker](https://docker.com). That way you won't have to install anything else or worry about versions.
@@ -152,6 +154,7 @@ If you have a certificate, just drop `cert.pem` and `private.pem` it into the `c
 ## Getting help
 
 Found a bug? [File an issue on Github](https://github.com/modulesio/zeo/issues).
+
 Need help? [Reach out on Twitter](https://twitter.com/modulesio).
 
 ## Reference
