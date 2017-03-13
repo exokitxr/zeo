@@ -103,10 +103,11 @@ class Tags {
           };
 
           class UiManager {
-            constructor({width, height, color}) {
+            constructor({width, height, color, metadata}) {
               this.width = width;
               this.height = height;
               this.color = color;
+              this.metadata = metadata;
 
               this.uis = [];
             }
@@ -136,17 +137,26 @@ class Tags {
           const uiManager = new UiManager({
             width: WIDTH,
             height: HEIGHT,
-            color: [1, 1, 1, 0]
+            color: [1, 1, 1, 0],
+            metadata: {
+              open: false,
+            },
           });
           const uiOpenManager = new UiManager({
             width: OPEN_WIDTH,
             height: OPEN_HEIGHT,
-            color: [1, 1, 1, 0]
+            color: [1, 1, 1, 0],
+            metadata: {
+              open: true,
+            },
           });
           const uiStaticManager = new UiManager({
             width: WIDTH,
             height: HEIGHT,
-            color: [1, 1, 1, 1]
+            color: [1, 1, 1, 1],
+            metadata: {
+              open: false,
+            },
           });
 
           const hoverStates = {
@@ -744,7 +754,7 @@ class Tags {
                     }); */
                   }
 
-                  const {pageMesh: {page: openPage}} = tagMesh;
+                  const {planeOpenMesh: {page: openPage}} = tagMesh;
                   openPage.update();
 
                   return true;
@@ -1194,7 +1204,9 @@ class Tags {
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
               object.scale.set(item.matrix[7], item.matrix[8], item.matrix[9]);
 
-              const _addUiManagerPage = ({uiManager, open}) => {
+              const _addUiManagerPage = uiManager => {
+                const {metadata: {open}} = uiManager;
+
                 const mesh = uiManager.addPage(({
                   item,
                   details: {
@@ -1220,9 +1232,9 @@ class Tags {
                   return {
                     type: 'html',
                     src: type === 'element' ?
-                      tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, isStatic})
+                      tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic})
                     :
-                      tagsRenderer.getFileSrc({item, mode}),
+                      tagsRenderer.getFileSrc({item, mode, open}),
                     w: !open ? WIDTH : OPEN_WIDTH,
                     h: !open ? HEIGHT : OPEN_HEIGHT,
                   };
@@ -1242,27 +1254,18 @@ class Tags {
               };
 
               if (!isStatic) { 
-                const planeMesh = _addUiManagerPage({
-                  uiManager: uiManager,
-                  open: false,
-                });
+                const planeMesh = _addUiManagerPage(uiManager);
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
-                const planeOpenMesh = _addUiManagerPage({
-                  uiManager: uiOpenManager,
-                  open: true,
-                });
+                const planeOpenMesh = _addUiManagerPage(uiOpenManager);
                 planeOpenMesh.position.x = (WORLD_OPEN_WIDTH - WORLD_WIDTH) / 2;
                 planeOpenMesh.position.y = -(WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2;
                 planeOpenMesh.visible = false;
                 object.add(planeOpenMesh);
                 object.planeOpenMesh = planeOpenMesh;
               } else {
-                const planeMesh = _addUiManagerPage({
-                  uiManager: uiStaticManager,
-                  open: false,
-                });
+                const planeMesh = _addUiManagerPage(uiStaticManager);
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
               }
