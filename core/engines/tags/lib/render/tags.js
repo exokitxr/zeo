@@ -25,7 +25,7 @@ const makeRenderer = ({creatureUtils}) => {
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #2196F3; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Mod</div>
         <img src="${creatureUtils.makeStaticCreature('element:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: pixelated;" />
-        <div style="width: 190px; margin-right: 10px;">
+        <div style="margin-right: 10px; flex-grow: 1;">
           <div style="height: 100px;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
             <p style="margin: 0; font-size: 15px; line-height: 1.4;">${description}</p>
@@ -231,7 +231,7 @@ const makeRenderer = ({creatureUtils}) => {
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #E91E63; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">File</div>
         <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: pixelated;" />
-        <div style="width: 190px; margin-right: 10px;">
+        <div style="margin-right: 10px; flex-grow: 1;">
           <div style="height: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
             <p style="margin: 0; margin-bottom: 10px; font-size: 15px; line-height: 1.4;">${mimeType}</p>
