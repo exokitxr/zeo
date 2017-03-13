@@ -190,9 +190,6 @@ class Biolumi {
 
                   const {spec} = this;
                   const layerSpec = typeof spec === 'function' ? spec(state) : spec;
-if (!(typeof layerSpec === 'object' && !Array.isArray(layerSpec))) {
-  console.warn('fail layer spec', layerSpec);
-}
                   const {type = 'html'} = layerSpec;
                   if (type === 'html') {
                     const {parent: {width, height}} = this;
