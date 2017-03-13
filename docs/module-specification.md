@@ -18,7 +18,7 @@ If you're a hands-on learner and you already know Javascript, you might want to 
 
 Otherwise, read on for the full Zeo VR module specification.
 
-## Writing a module
+## Writing modules
 
 Under the hood, Zeo uses the [`archae`](https://github.com/modulesio/archae) module loader. It's just a way of writing client/server `npm` modules that can be started and stopped dynamically.
 
