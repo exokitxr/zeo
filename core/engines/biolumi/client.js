@@ -290,6 +290,8 @@ class Biolumi {
                 }
                 texture.needsUpdate = true;
 
+                // This forces THREE.js to submit the texture to the GPU
+                // This is a relatively slow operation
                 renderer.setTexture2D(texture, 0);
 
                 return Promise.resolve();
