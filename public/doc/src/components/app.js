@@ -171,7 +171,7 @@ var App = React.createClass({
       </div>}
 
       {/* Desktop nav */ }
-      {queryMatches.desktop && <div className='space-top5 scroll-styled overflow-auto pad1 width16 sidebar fixed-left fill-dark dark'>
+      {queryMatches.desktop && <div className='space-top5 scroll-styled overflow-auto width16 sidebar fixed-left fill-dark dark'>
         <Navigation
           navigationItemClicked={this.navigationItemClicked}
           activeSection={activeSection}
