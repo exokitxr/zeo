@@ -57,8 +57,8 @@ button::-moz-focus-inner {
 body,
 input,
 textarea {
-  color:#404040;
-  color:rgba(0,0,0,0.75);
+  // color:#404040;
+  // color:rgba(0,0,0,0.75);
   // font:15px/20px sans-serif;
   -webkit-font-smoothing: antialiased;
 }
