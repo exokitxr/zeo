@@ -8,6 +8,150 @@ These APIs live on the `zeo` global variable. You don't need to do anything spec
 
 It is assumed that you already have a working Zeo VR server, and you're ready to write a VR module. If not, see [Getting started](#getting-started) and/or [Writing modules](#writing-modules).
 
+## Elements API
+
+The `elements` API is used to integrate your module into the DOM that keeps track of all modules in the VR world.
+
+### registerElement()
+
+`zeo.elements.registerElement()` lets you describe your module as a DOM [Custom element](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements) with user-configurable attributes.
+
+### getTags()
+
+`zeo.elements.getDOM()` lets you access the currently instantiated modules (represented as Custom DOM elements) in the VR world.
+
+You can use this to find which modules are currently live (including your own) and communicate with them via standard DOM events.
+
+XXX
+
+## Pose API
+
+The `pose` API lets you inspect the state of the user's VR pose.
+
+This includes getting the position/orientation of the headset and controllers, the controller button state, and eye and stage matrices.
+
+The Pose API is particularly useful for scenarios where you would like to instantaneously react to what the user is doing. For example, you might want to trigger an action based on the user's gaze target -- in which case you could cast a ray from the headset to some target object and react if an intersection is detected.
+
+This API works the same way for all control modes, including mouse and keyboard, sit/stand, and room scale.
+
+Use [Render API](#render-api) to synchronize your pose queries to the world frame rate.
+
+### getStatus()
+
+`zeo.vr.getStatus()` returns an object containing the current instantaneous headset and controllers state.
+
+XXX
+
+## Input API
+
+The `input` API is used to access normalized DOM input events from the user.
+
+This includes gamepad, mouse, and keyboard input (real and virtual) under a single normalized event system.
+
+When possible,  prefer this API for detecting user input -- although it is technically possible to detect these events in other ways, such as native browser events or the [Pose API](#pose-api), this API abstracts away differences in browser behavior, hardware, and control schemes.
+
+Note that when you add event listeners for the input events, you'll need to make sure the event listeners are removed when your element is destroyed (if added on element creation), or otherwise in your module's `unmount` function (if added in your module's `mount` function).
+
+### Supported events
+
+- `trigger` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `triggerdown` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is pushed _down_.
+- `triggerup` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is released _up_.
+- `pad` `{side: 'left'}`
+  - Fired when the controller's `pad` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `paddown` `{side: 'left'}`
+  - Fired when the controller's `pad` button is pushed _down_.
+- `padup` `{side: 'left'}`
+  - Fired when the controller's `pad` button is released _up_.
+- `grip` `{side: 'left'}`
+  - Fired when the controller's `grip` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `gripdown` `{side: 'left'}`
+  - Fired when the controller's `grip` button is pushed _down_.
+- `gripup` `{side: 'left'}`
+  - Fired when the controller's `grip` button is released _up_.
+- `menu` `{side: 'left'}`
+  - Fired when the controller's `menu` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `menudown` `{side: 'left'}`
+  - Fired when the controller's `menu` button is pushed _down_.
+- `menuup` `{side: 'left'}`
+  - Fired when the controller's `menu` button is released _up_.
+- `keyboardpress` `{ key: 'a', keyCode: 65, side: 'left' }`
+   - Fired when a virtual keyboard key is pressed.
+   - `key` is the textual representation of the key. `keyCode` is the corresponding Javascript-compatible key code. `side` is whether the `left` or `right` controller was used to press the key. 
+- `keyboarddown` `{ key: 'a', keyCode: 65, side: 'left' }`
+  - Fired when a virtual keyboard key is pushed _down_.
+- `keyboardup` `{ key: 'a', keyCode: 65, side: 'left' }`
+  - Fired when a virtual keyboard key is released _up_.
+
+## UI API
+
+The UI API includes utilities for rendering interactive _2D_ HTML interfaces in the 3D scene.
+
+This is useful for implementing displays and menu interfaces, and works out of the box with most static HTML, includng inline images.
+
+The architecture is designed for VR-scale (90 FPS) performance, and implements fiber-like cooperative multitasking that prefers to yield instead of locking up the render loop and missing frames. The end result is a powerful UI rendering model that works for most use cases without too many caveats.
+
+XXX
+
+## Render API
+
+The Render API emits events that you can listen for to be notified when we are about to render scene frames, as well as separate eye cameras.
+
+This is particularly useful when you need to perform frame-accurate updates, such as an auxiliary camera render, or update something based on the user's VR pose (see the [Post API](#pose-api)).
+
+XXX
+
+## File API
+
+The File API lets you access and decode files that have been added to the world.
+
+This includes functionality such as finding files uploaded by the user, detecting the type of media they represent (e.g. image, audio, video, model), and translating these into a form usable by the rest of the APIs (such as DOM images and THREE.js models).
+
+XXX
+
+## Hands API
+
+The Hands API is used to manage grabbing of objects in the scene. It includes utilities and events for handling targeting
+
+XXX
+
+## Multiplayer API
+
+The Multiplayer API gives you access to the current state of all users connected to the server. This includes pose data and avatar meshes, as well as events that you can listen for when interesting things happen, such as users joining or leaving teh server.
+
+XXX
+
+## Sound API
+
+The Sound API implements a positional audio subsystem that you can use to play audio media (`audio` and `video` tags) bound to specific objects in the scene, with realistic panning and gain attenuation.
+
+XXX
+
+## Physics API
+
+The Physics API is a frontend interface to the server-side multiplayer physics engine (powered by Bullet).
+
+This includes facilities for querying, constructing, adding, and removing physics bodies from the scene, binding them to THREE.js objects such as meshes, and helper utilities for things like debug box rendering and shaping physics bodies to your geometries.
+
+The physics subsystem works out of the box and is automatically synchronized to multiplayer clients.
+
+XXX
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Zeo API
 
 The above describes how to write and load Zeo plugins that do nothing. To interact with the user and the Zeo world you'll want to use the API exported by `/core/engines/zeo`.
@@ -210,7 +354,7 @@ The full list of available events is:
   - Fired when the controller's `menu` button is released _up_.
 - `keyboardpress` `{ key: 'a', keyCode: 65, side: 'left' }`
    - Fired when a virtual keyboard key is pressed.
-   - `key` is the textual representation of the key. `keyCode` is the corresponding Javascript-compatible key code. `side` is whether the `left` or `right` controller was used to press the key. 
+   - `key` is the textual representation of the key. `keyCode` is the corresponding Javascript-compatible key code. `side` is whether the `left` or `right` controller was used to press the key.
 - `keyboarddown` `{ key: 'a', keyCode: 65, side: 'left' }`
   - Fired when a virtual keyboard key is pushed _down_.
 - `keyboardup` `{ key: 'a', keyCode: 65, side: 'left' }`
