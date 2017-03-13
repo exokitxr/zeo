@@ -115,7 +115,7 @@ class Tags {
               const {width, height, color, uis} = this;
 
               let lastUi = uis.length > 0 ? uis[uis.length - 1] : null;
-              if (!lastUi || !lastUi.hasFreePages()) {
+              if (!lastUi || lastUi.pages.length > 0) {
                 lastUi = biolumi.makeUi({
                   width: width,
                   height: height,

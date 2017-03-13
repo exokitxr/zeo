@@ -16,10 +16,6 @@ const getShader = ({maxNumTextures}) => ({
       type: 'v2v',
       value: null,
     },
-    atlasSize: {
-      type: 'f',
-      value: null,
-    },
     backgroundColor: {
       type: '4f',
       value: null,
@@ -37,7 +33,6 @@ const getShader = ({maxNumTextures}) => ({
     "uniform int validTextures[" + maxNumTextures + "];",
     "uniform vec2 texturePositions[" + maxNumTextures + "];",
     "uniform vec2 textureLimits[" + maxNumTextures + "];",
-    "uniform float atlasSize;",
     "uniform vec4 backgroundColor;",
     "varying vec2 vUv;",
     "void main() {",

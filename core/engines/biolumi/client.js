@@ -442,10 +442,9 @@ class Biolumi {
           })();
 
           class MegaTexture {
-            constructor(width, height, atlasSize, maxNumTextures, color) {
+            constructor(width, height, maxNumTextures, color) {
               this.width = width;
               this.height = height;
-              this.atlasSize = atlasSize;
               this.maxNumTextures = maxNumTextures;
               this.color = color;
 
@@ -496,7 +495,6 @@ class Biolumi {
                   }
                   return result;
                 })();
-                shaderUniforms.atlasSize.value = atlasSize;
                 shaderUniforms.backgroundColor.value = Float32Array.from(color);
                 const shaderMaterial = new THREE.ShaderMaterial({
                   uniforms: shaderUniforms,
@@ -518,7 +516,7 @@ class Biolumi {
 
             update(pages) {
               if (pages.length > 0) {
-                const {atlasSize, maxNumTextures, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
+                const {maxNumTextures, material: {uniforms: {textures, validTextures, texturePositions, textureLimits, textureOffsets, textureDimensions}}} = this;
 
                 const _doUpdate = (i, j) => {
                   uiWorker.add(() => {
@@ -577,14 +575,13 @@ class Biolumi {
           }
 
           class Ui {
-            constructor(width, height, atlasSize, maxNumTextures, color) {
+            constructor(width, height, maxNumTextures, color) {
               this.width = width;
               this.height = height;
-              this.atlasSize = atlasSize;
               this.color = color;
 
               this.pages = [];
-              this.megaTexture = new MegaTexture(width, height, atlasSize, maxNumTextures, color);
+              this.megaTexture = new MegaTexture(width, height, maxNumTextures, color);
 
               this.update = debounce(this.update.bind(this));
             }
@@ -593,15 +590,11 @@ class Biolumi {
               return this.pages[index];
             }
 
-            hasFreePages() {
-              const {atlasSize, pages} = this;
-              const maxPages = atlasSize * atlasSize;
-              return pages.length < maxPages;
-            }
-
             addPage(spec, {type = null, state = null, worldWidth, worldHeight} = {}) {
-              if (this.hasFreePages()) {
-                const {atlasSize, pages, megaTexture} = this;
+              const {pages} = this;
+
+              if (pages.length === 0) {
+                const {megaTexture} = this;
 
                 const page = new Page(this, spec, type, state);
 
@@ -643,7 +636,7 @@ class Biolumi {
             }
           }
 
-          const _makeUi = ({width, height, atlasSize = 1, maxNumTextures = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, atlasSize, maxNumTextures, color);
+          const _makeUi = ({width, height, maxNumTextures = 1, color = [1, 1, 1, 1]}) => new Ui(width, height, maxNumTextures, color);
 
           const _updateUiTimer = () => {
             uiTimer.update();
