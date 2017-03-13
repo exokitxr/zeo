@@ -39,6 +39,7 @@ class Biolumi {
           this.frameTime = frameTime;
 
           this.threads = [];
+          this.workStartTime = 0;
 
           this.work = debounce(this.work.bind(this));
         }
@@ -52,13 +53,21 @@ class Biolumi {
           const {frameTime, threads} = this;
 
           const _recurseFrame = () => {
-            const startTime = Date.now();
+            let {workStartTime} = this;
+            if (workStartTime === 0) {
+              workStartTime = Date.now();
+              this.workStartTime = workStartTime;
+
+              requestAnimationFrame(() => {
+                this.workStartTime = 0;
+              });
+            }
 
             const _recurseThread = () => {
               if (threads.length > 0) {
                 const now = Date.now();
 
-                if ((now - startTime) < frameTime) {
+                if ((now - workStartTime) < frameTime) {
                   const thread = threads.shift();
                   thread()
                     .then(() => {
