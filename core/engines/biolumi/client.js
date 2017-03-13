@@ -39,42 +39,55 @@ class Biolumi {
           this.frameTime = frameTime;
 
           this.threads = [];
-          this.workStartTime = 0;
+          this.workTime = 0;
+          this.clearingWorkTime = false;
 
           this.work = debounce(this.work.bind(this));
         }
 
+        
         add(thread) {
           const {threads} = this;
           threads.push(thread);
+
+          this.work();
         }
 
         work(next) {
           const {frameTime, threads} = this;
 
           const _recurseFrame = () => {
-            let {workStartTime} = this;
-            if (workStartTime === 0) {
-              workStartTime = Date.now();
-              this.workStartTime = workStartTime;
-
-              requestAnimationFrame(() => {
-                this.workStartTime = 0;
-              });
-            }
-
             const _recurseThread = () => {
               if (threads.length > 0) {
-                const now = Date.now();
+                const {workTime} = this;
 
-                if ((now - workStartTime) < frameTime) {
+                if (workTime < frameTime) {
+                  const workStartTime = Date.now();
+
+                  const _updateWorkTime = () => {
+                    this.workTime += Date.now() - workStartTime;
+
+                    if (!this.clearingWorkTime) {
+                      this.clearingWorkTime = true;
+
+                      requestAnimationFrame(() => {
+                        this.workTime = 0;
+                        this.clearingWorkTime = false;
+                      });
+                    }
+                  };
+
                   const thread = threads.shift();
                   thread()
                     .then(() => {
+                      _updateWorkTime();
+
                       _recurseThread();
                     })
                     .catch(err => {
                       console.warn(err);
+
+                      _updateWorkTime();
 
                       _recurseThread();
                     });
@@ -456,10 +469,8 @@ class Biolumi {
 
             update() {
               const {page} = this;
-
               if (page) {
                 page.update();
-                uiWorker.work();
               }
             }
           }
