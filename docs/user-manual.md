@@ -1,31 +1,47 @@
 # User manual
 
-## Getting started
+## Getting started (Docker)
 
-// XXX rewrite this
+The easiest way to run Zeo VR is with [Docker](https://docker.com). That way you won't have to install anything else or worry about versions.
 
-Zeo VR is a persistent multiplayer virtual world server. [There are setup instructions](#setting-up-a-server).
+The 
 
-If you want to try a crippled version of the tech solo, open [the tutorial in the Hub](https://hub.zeovr.io). There are a few preloaded modules for you to play with, though you're missing the best part.
+### Step 1: Get Docker
 
-#### Test it out: Singleplayer
+If you don't have Docker yet, follow [these instructions](https://docs.docker.com/engine/getstarted/step_one/).
 
-```javascript
-https://hub.zeovr.io
-```
+### Step 2: Pull image
 
-If you just want to try the multiplayer persistent worlds, either ask for a public server key on Twitter ([@modulesio](https://twitter.com/modulesio)), or run your own server (recommended). [Setup instructions are here](#setting-up-a-server).
-
-#### Test it out: Multiplayer
+#### Pull modulesio/zeo with docker
 
 ```javascript
-Ask for a key on Twitter:
-https://twitter.com/@modulesio
-
-...or, run your own server!
+docker pull modulesio/zeo
 ```
 
-## Setting up a server
+The [latest Zeo VR image is on Docker hub](https://hub.docker.com/r/modulesio/zeo/). The build is automated from the Github `master` branch.
+
+To pull the image locally, use `docker pull modulesio/zeo`.
+
+You can repeat this anytime to get the latest Zeo VR image, but note that you will also need to follow the rest of the steps to create a new container for the the image.
+
+### Step 3: Run container
+
+#### Run modulesio/zeo with docker
+
+```javascript
+docker run modulesio/zeo
+```
+
+Once you have the Zeo VR Docker image, run it with `docker run modulesio/zeo`.
+
+If you did everything right, the autput should be a URL that you can access from your browser.
+
+However, you might also want to (or need to) clean up your configuration to get your browser pointed at the right place and fix browser warnings:
+
+- [Update your /etc/hosts](#step-6-hosts-file-optional)
+- [Configure a TLS certificate](#step-7-tls-certificate-optional)
+
+## Getting started (bare server)
 
 Here's how to set up Zeo VR on a bare server.
 
@@ -112,7 +128,7 @@ Once you've done that, you should be able to connect to your server by opening t
 
 ### Step 7: TLS certificate (optional)
 
-Zeo VR uses HTTP/2 and this requires using TLS and a TLS certificate. By default the server will generate a self-signed certificate for a fake domain on which to run your server (`local.zeovr.io`).
+Zeo VR uses *HTTP/2* and this requires using TLS and a TLS certificate. By default the server will generate a self-signed certificate for a fake domain on which to run your server (`local.zeovr.io`).
 
 However, this will cause browsers to complain, it's totally insecure, and will impact load performance due to browser's lack of caching for insecure responses.
 
@@ -129,9 +145,12 @@ Once you have a certificate, just drop it into the `crypto/cert` directory and r
 
 ## Getting help
 
-If you think you've found a bug or you just can't figure it out, [file an issue on Github](https://github.com/modulesio/zeo/issues), or [reach out on Twitter (@modulesio)](https://twitter.com/modulesio)!
+Found a bug? [File an issue on Github](https://github.com/modulesio/zeo/issues).
+Need help? [Reach out on Twitter](https://twitter.com/modulesio).
 
 ## Reference
+
+Here are some useful reference pages.
 
 ### Key bindings
 
