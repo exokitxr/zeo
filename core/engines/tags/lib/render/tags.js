@@ -87,7 +87,7 @@ const makeRenderer = ({creatureUtils}) => {
       `;
     } else {
       return `\
-        <div>No attributes</div>
+        <div style="padding: 0 20px;">No attributes</div>
       `;
     }
   };
