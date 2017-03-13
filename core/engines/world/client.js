@@ -2389,6 +2389,7 @@ class World {
                 name,
                 mimeType,
                 matrix,
+                instancing: true,
               };
               _handleAddTag(localUserId, itemSpec, 'world');
 
@@ -2397,11 +2398,6 @@ class World {
               if (!rend.isOpen()) {
                 tempTagMesh.visible = false;
               }
-
-              const {item} = tempTagMesh;
-              item.instancing = true;
-
-              tags.updatePages();
 
               const _cleanupTempTagMesh = () => {
                 elementManager.remove(tempTagMesh);

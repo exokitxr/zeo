@@ -245,12 +245,6 @@ class Tags {
 
           const localUpdates = [];
 
-          const _updatePages = () => {
-            uiManager.update();
-            uiOpenManager.update();
-            uiStaticManager.update();
-          };
-
           const _getItemPreviewMode = item => {
             const {mimeType} = item;
 
@@ -266,7 +260,9 @@ class Tags {
               return null;
             }
           };
-          const _requestFileItemImageMesh = item => new Promise((accept, reject) => {
+          const _requestFileItemImageMesh = tagMesh => new Promise((accept, reject) => {
+            const {item} = tagMesh;
+
             const geometry = new THREE.PlaneBufferGeometry(0.2, 0.2);
             const material = (() => {
               const texture = new THREE.Texture(
@@ -305,7 +301,9 @@ class Tags {
             const mesh = new THREE.Mesh(geometry, material);
             accept(mesh);
           });
-          const _requestFileItemAudioMesh = item => new Promise((accept, reject) => {
+          const _requestFileItemAudioMesh = tagMesh => new Promise((accept, reject) => {
+            const {item} = tagMesh;
+
             const mesh = new THREE.Object3D();
 
             const audio = document.createElement('audio');
@@ -337,7 +335,8 @@ class Tags {
               if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
                 item.value = nextValue;
 
-                _updatePages();
+                const {page} = tagMesh;
+                page.update();
               }
             };
 
@@ -354,7 +353,9 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemVideoMesh = item => new Promise((accept, reject) => {
+          const _requestFileItemVideoMesh = tagMesh => new Promise((accept, reject) => {
+            const {item} = tagMesh;
+
             const geometry = new THREE.PlaneBufferGeometry(WORLD_OPEN_WIDTH, (OPEN_HEIGHT - HEIGHT - 100) / OPEN_HEIGHT * WORLD_OPEN_HEIGHT);
             const material = (() => {
               const texture = new THREE.Texture(
@@ -417,7 +418,8 @@ class Tags {
               if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
                 item.value = nextValue;
 
-                _updatePages();
+                const {planeOpenMesh: {page: openPage}} = tagMesh;
+                openPage.update();
               }
 
               texture.needsUpdate = true;
@@ -436,7 +438,7 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemModelMesh = item => fetch('/archae/fs/' + item.id)
+          const _requestFileItemModelMesh = tagMesh => fetch('/archae/fs/' + tagMesh.item.id)
             .then(res => res.text()
               .then(modelText => new Promise((accept, reject) => {
                 const loader = new THREEOBJLoader();
@@ -468,7 +470,6 @@ class Tags {
                   item.open = true;
                   planeMesh.visible = false;
                   planeOpenMesh.visible = true;
-                  _updatePages();
 
                   if (item.type === 'file') {
                     if (!item.preview) {
@@ -477,7 +478,7 @@ class Tags {
 
                         const mode = _getItemPreviewMode(item);
                         if (mode === 'image') {
-                          _requestFileItemImageMesh(item)
+                          _requestFileItemImageMesh(tagMesh)
                             .then(imageMesh => {
                               imageMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2);
 
@@ -487,7 +488,7 @@ class Tags {
                               console.warn(err);
                             });
                         } else if (mode === 'audio') {
-                          _requestFileItemAudioMesh(item)
+                          _requestFileItemAudioMesh(tagMesh)
                             .then(audioMesh => {
                               object.add(audioMesh);
                             })
@@ -495,7 +496,7 @@ class Tags {
                               console.warn(err);
                             });
                         } else if (mode === 'video') {
-                          _requestFileItemVideoMesh(item)
+                          _requestFileItemVideoMesh(tagMesh)
                             .then(videoMesh => {
                               videoMesh.position.y = -(WORLD_HEIGHT / 2) - ((WORLD_OPEN_HEIGHT - WORLD_HEIGHT) / 2) + ((100 / OPEN_HEIGHT * WORLD_OPEN_HEIGHT) / 2);
 
@@ -505,7 +506,7 @@ class Tags {
                               console.warn(err);
                             });
                         } else if (mode === 'model') {
-                          _requestFileItemModelMesh(item)
+                          _requestFileItemModelMesh(tagMesh)
                             .then(modelMesh => {
                               const boundingBox = new THREE.Box3().setFromObject(modelMesh);
                               const boundingBoxSize = boundingBox.getSize();
@@ -542,7 +543,6 @@ class Tags {
                   item.open = false;
                   planeMesh.visible = true;
                   planeOpenMesh.visible = false;
-                  _updatePages();
 
                   if (item.type === 'file') {
                     if (item.preview && item.preview.visible) {
@@ -567,26 +567,24 @@ class Tags {
                   const action = match[1];
                   const id = match[2];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item} = tagMesh;
+                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
 
                   if (action === 'play') {
                     item.play();
-
-                    _updatePages();
                   } else if (action === 'pause') {
                     item.pause();
-
-                    _updatePages();
                   }
+
+                  openPage.update();
                 } else if (match = onclick.match(/^media:seek:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item} = tagMesh;
+                  const {item, planeOpenMesh: {page: openPage}} = tagMesh;
 
                   const {value} = hoverState;
                   item.seek(value);
 
-                   _updatePages();
+                  openPage.update();
                 } else {
                   return false;
                 }
@@ -614,7 +612,9 @@ class Tags {
                 detailsState.positioningName = null;
                 detailsState.positioningSide = null;
 
-                _updatePages();
+                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === positioningId);
+                const {planeOpenMesh: {page: openPage}} = tagMesh;
+                openPage.update();
 
                 return true;
               } else {
@@ -744,7 +744,8 @@ class Tags {
                     }); */
                   }
 
-                  _updatePages();
+                  const {pageMesh: {page: openPage}} = tagMesh;
+                  openPage.update();
 
                   return true;
                 } else {
@@ -1323,7 +1324,9 @@ class Tags {
                         item.instancing = false;
                         item.attributes = _clone(attributes);
 
-                        _updatePages();
+                        const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                        page.update();
+                        openPage.update();
 
                         unlock();
                       })
@@ -1336,7 +1339,9 @@ class Tags {
 
                 item.instancing = true;
 
-                _updatePages();
+                const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                page.update();
+                openPage.update();
               }
             }
 
@@ -1360,10 +1365,6 @@ class Tags {
 
             getPointedTagMesh(side) {
               return hoverStates[side].metadata;
-            }
-
-            updatePages() {
-              _updatePages();
             }
 
             listen() {
