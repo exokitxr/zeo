@@ -213,12 +213,12 @@ h3.futura {
 /* Links */
 a,
 a > code {
-  color:#3887BE;
+  color:#2196F3;
   text-decoration:none;
   }
   a:hover > code,
   a.active,
-  a:hover { color:#63b6e5; }
+  a:hover { color:#1976D2; }
   a:focus {
     box-shadow:inset 0 0 0 1px rgba(0,0,0,0.05);
   }
