@@ -833,7 +833,6 @@ class Tags {
 
                 if (positioningId && positioningName && positioningSide) {
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === positioningId);
-                  const {item} = tagMesh;
                   const {gamepads} = webvr.getStatus();
                   const gamepad = gamepads[positioningSide];
 
@@ -843,8 +842,6 @@ class Tags {
                     positioningMesh.quaternion.copy(controllerRotation);
                     positioningMesh.scale.copy(controllerScale);
 
-                    const {attributes} = item;
-                    const attribute = attributes[positioningName];
                     const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
                     item.setAttribute(positioningName, newValue); // XXX figure out what to do with this live update
                   }
@@ -880,12 +877,6 @@ class Tags {
           };
           rend.on('update', _update);
 
-          const frameInterval = setInterval(() => {
-            uiManager.update();
-            uiOpenManager.update();
-            uiStaticManager.update();
-          }, 100);
-
           this._cleanup = () => {
             for (let i = 0; i < tagMeshes.length; i++) {
               const tagMesh = tagMeshes[i];
@@ -903,8 +894,6 @@ class Tags {
 
             input.removeListener('trigger', _trigger);
             rend.removeListener('update', _update);
-
-            clearInterval(frameInterval);
           };
 
           class Item {
@@ -1289,6 +1278,14 @@ class Tags {
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
               }
+
+              const _setAttribute = (attribute, value) => {
+                item.setAttribute(attribute, value);
+
+                const {planeMesh: {page}} = object;
+                page.update();
+              };
+              object.setAttribute = _setAttribute;
 
               tagMeshes.push(object);
 

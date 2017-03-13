@@ -439,6 +439,7 @@ class Biolumi {
 
               if (!page) {
                 const page = new Page(this, spec, type, state);
+                page.update();
                 this.page = page;
 
                 const planeMesh = (() => {
