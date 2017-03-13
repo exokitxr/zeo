@@ -1138,19 +1138,6 @@ class Tags {
               }
             }
 
-            jsonStringify() { // used to let update checks see Symbol-hidden properties
-              const result = {};
-              for (const k in this) {
-                result[k] = this[k];
-              }
-              const {instancing, open, paused, value} = this;
-              result.instancing = instancing;
-              result.open = open;
-              result.paused = paused;
-              result.value = value;
-              return result;
-            }
-
             destroy() {
               const {preview} = this;
 

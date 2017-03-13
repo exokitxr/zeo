@@ -159,169 +159,156 @@ class Biolumi {
               })();
               this.material = material;
               this.layer = null;
-
-              this._lastStateJson = '';
             }
 
             update() {
               uiWorker.add(() => new Promise((accept, reject) => {
-                const {state} = this;
-                // replacer used to account for Symbol-hidden properties
-                const stateJson = JSON.stringify(state, (k, v) => (v && v.jsonStringify) ? v.jsonStringify() : v);
-                const {_lastStateJson: lastStateJson} = this;
+                const _updateTexture = (img, {pixelated}) => {
+                  const {material: {uniforms: {texture: {value: texture}}}} = this;
+                  texture.image = img;
+                  if (!pixelated) {
+                    texture.minFilter = THREE.LinearFilter;
+                    texture.magFilter = THREE.LinearFilter;
+                    texture.anisotropy = 16;
+                  } else {
+                    texture.minFilter = THREE.NearestFilter;
+                    texture.magFilter = THREE.NearestFilter;
+                    texture.anisotropy = 1;
+                  }
+                  texture.needsUpdate = true;
+                };
 
-                if (stateJson !== lastStateJson) {
-                  this._lastStateJson = stateJson;
+                const {spec, state} = this;
+                const layerSpec = typeof spec === 'function' ? spec(state) : spec;
+                const {type = 'html'} = layerSpec;
+                if (type === 'html') {
+                  const {parent: {width, height}} = this;
+                  const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
 
-                  const _updateTexture = (img, {pixelated}) => {
-                    const {material: {uniforms: {texture: {value: texture}}}} = this;
-                    texture.image = img;
-                    if (!pixelated) {
-                      texture.minFilter = THREE.LinearFilter;
-                      texture.magFilter = THREE.LinearFilter;
-                      texture.anisotropy = 16;
-                    } else {
-                      texture.minFilter = THREE.NearestFilter;
-                      texture.magFilter = THREE.NearestFilter;
-                      texture.anisotropy = 1;
+                  const innerSrc = (() => {
+                    const el = document.createElement('div');
+                    el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+                    el.setAttribute('style', rootCss);
+                    el.innerHTML = src
+                      .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
+
+                    const imgs = el.querySelectorAll('img');
+
+                    // do not load images without an explicit width + height
+                    for (let i = 0; i < imgs.length; i++) {
+                      const img = imgs[i];
+                      if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
+                        img.parentNode.removeChild(img);
+                      }
                     }
-                    texture.needsUpdate = true;
-                  };
 
-                  const {spec} = this;
-                  const layerSpec = typeof spec === 'function' ? spec(state) : spec;
-                  const {type = 'html'} = layerSpec;
-                  if (type === 'html') {
-                    const {parent: {width, height}} = this;
-                    const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
-
-                    const innerSrc = (() => {
-                      const el = document.createElement('div');
-                      el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-                      el.setAttribute('style', rootCss);
-                      el.innerHTML = src
-                        .replace(/(<img\s+(?:(?!src=)[^>])*)(src=(?!['"]?data:)\S+)/g, '$1'); // optimization: do not load non-dataurl images
-
-                      const imgs = el.querySelectorAll('img');
-
-                      // do not load images without an explicit width + height
-                      for (let i = 0; i < imgs.length; i++) {
-                        const img = imgs[i];
-                        if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
-                          img.parentNode.removeChild(img);
+                    // remove empty anchors
+                    const as = el.querySelectorAll('a');
+                    for (let i = 0; i < as.length; i++) {
+                      const a = as[i];
+                      if (a.childNodes.length > 0) {
+                        if (!a.style.textDecoration) {
+                          a.style.textDecoration = 'underline';
                         }
+                      } else {
+                        a.parentNode.removeChild(a);
                       }
+                    }
 
-                      // remove empty anchors
-                      const as = el.querySelectorAll('a');
-                      for (let i = 0; i < as.length; i++) {
-                        const a = as[i];
-                        if (a.childNodes.length > 0) {
-                          if (!a.style.textDecoration) {
-                            a.style.textDecoration = 'underline';
-                          }
-                        } else {
-                          a.parentNode.removeChild(a);
-                        }
-                      }
+                    return new XMLSerializer().serializeToString(el);
+                  })();
 
-                      return new XMLSerializer().serializeToString(el);
-                    })();
-
-                    const img = new Image();
-                    img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
-                      '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
-                        innerSrc +
-                      '</foreignObject>' +
-                    '</svg>');
-                    img.onload = () => {
-                      _updateTexture(img, {pixelated});
-
-                      accept();
-                    };
-                    img.onerror = err => {
-                      console.warn('biolumi image load error', {src: img.src}, err);
-
-                      accept();
-                    };
-
-                    const _makeAnchors = () => {
-                      const divEl = (() => {
-                        const el = document.createElement('div');
-                        el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
-                        el.innerHTML = innerSrc;
-
-                        return el;
-                      })();
-                      document.body.appendChild(divEl);
-
-                      const anchors = (() => {
-                        const as = (() => {
-                          const as = divEl.querySelectorAll('a');
-
-                          const result = [];
-                          for (let i = 0; i < as.length; i++) {
-                            const a = as[i];
-                            if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
-                              result.push(a);
-                            }
-                          }
-                          return result;
-                        })();
-                        const numAs = as.length;
-
-                        const result = Array(numAs);
-                        for (let i = 0; i < numAs; i++) {
-                          const a = as[i];
-
-                          const rect = a.getBoundingClientRect();
-                          const onclick = a.getAttribute('onclick') || null;
-                          const onmousedown = a.getAttribute('onmousedown') || null;
-                          const onmouseup = a.getAttribute('onmouseup') || null;
-
-                          const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
-                          result[i] = anchor;
-                        }
-
-                        return result;
-                      })();
-
-                      document.body.removeChild(divEl);
-
-                      return anchors;
-                    };
-
-                    const layer = new Layer(this);
-                    layer.anchors = null;
-                    layer.makeAnchors = _makeAnchors;
-                    layer.x = x;
-                    layer.y = y;
-                    layer.w = w;
-                    layer.h = h;
-
-                    this.layer = layer;
-                  } else if (type === 'image') {
-                    const {parent: {width, height}} = this;
-                    const {img, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
-
+                  const img = new Image();
+                  img.src = 'data:image/svg+xml;base64,' + btoa('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + w + '\' height=\'' + h + '\'>' +
+                    '<foreignObject width=\'100%\' height=\'100%\' x=\'0\' y=\'0\'>' +
+                      innerSrc +
+                    '</foreignObject>' +
+                  '</svg>');
+                  img.onload = () => {
                     _updateTexture(img, {pixelated});
 
-                    const layer = new Layer(this);
-                    layer.x = x;
-                    layer.y = y;
-                    layer.w = w;
-                    layer.h = h;
-
-                    this.layer = layer;
+                    accept();
+                  };
+                  img.onerror = err => {
+                    console.warn('biolumi image load error', {src: img.src}, err);
 
                     accept();
-                  } else {
-                    console.warn('illegal layer spec type:' + JSON.stringify(type));
+                  };
 
-                    this.layer = null;
-                  }
-                } else {
+                  const _makeAnchors = () => {
+                    const divEl = (() => {
+                      const el = document.createElement('div');
+                      el.style.cssText = 'position: absolute; top: 0; left: 0; width: ' + w + 'px;';
+                      el.innerHTML = innerSrc;
+
+                      return el;
+                    })();
+                    document.body.appendChild(divEl);
+
+                    const anchors = (() => {
+                      const as = (() => {
+                        const as = divEl.querySelectorAll('a');
+
+                        const result = [];
+                        for (let i = 0; i < as.length; i++) {
+                          const a = as[i];
+                          if (a.style.display !== 'none' && a.style.visibility !== 'hidden') {
+                            result.push(a);
+                          }
+                        }
+                        return result;
+                      })();
+                      const numAs = as.length;
+
+                      const result = Array(numAs);
+                      for (let i = 0; i < numAs; i++) {
+                        const a = as[i];
+
+                        const rect = a.getBoundingClientRect();
+                        const onclick = a.getAttribute('onclick') || null;
+                        const onmousedown = a.getAttribute('onmousedown') || null;
+                        const onmouseup = a.getAttribute('onmouseup') || null;
+
+                        const anchor = new Anchor(rect, onclick, onmousedown, onmouseup);
+                        result[i] = anchor;
+                      }
+
+                      return result;
+                    })();
+
+                    document.body.removeChild(divEl);
+
+                    return anchors;
+                  };
+
+                  const layer = new Layer(this);
+                  layer.anchors = null;
+                  layer.makeAnchors = _makeAnchors;
+                  layer.x = x;
+                  layer.y = y;
+                  layer.w = w;
+                  layer.h = h;
+
+                  this.layer = layer;
+                } else if (type === 'image') {
+                  const {parent: {width, height}} = this;
+                  const {img, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
+
+                  _updateTexture(img, {pixelated});
+
+                  const layer = new Layer(this);
+                  layer.x = x;
+                  layer.y = y;
+                  layer.w = w;
+                  layer.h = h;
+
+                  this.layer = layer;
+
                   accept();
+                } else {
+                  console.warn('illegal layer spec type:' + JSON.stringify(type));
+
+                  this.layer = null;
                 }
               }));
             }
