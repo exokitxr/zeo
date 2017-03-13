@@ -114,17 +114,14 @@ class Tags {
             addPage(pageSpec, options) {
               const {width, height, color, uis} = this;
 
-              let lastUi = uis.length > 0 ? uis[uis.length - 1] : null;
-              if (!lastUi || lastUi.pages.length > 0) {
-                lastUi = biolumi.makeUi({
-                  width: width,
-                  height: height,
-                  color,
-                });
-                uis.push(lastUi);
-              }
+              const ui = biolumi.makeUi({
+                width: width,
+                height: height,
+                color,
+              });
+              uis.push(ui);
 
-              return lastUi.addPage(pageSpec, options);
+              return ui.addPage(pageSpec, options);
             }
 
             update() {
