@@ -2,9 +2,29 @@
 
 ## What is Zeo VR?
 
-*Zeo VR* is a [`node.js`](https://nodejs.org) server that delivers Javascript modules from [`npm`](https://npmjs.org) to your web browser and runs them in [`WebVR`](https://webvr.info/).
+**Zeo VR** is a [`node.js`](https://nodejs.org) web server that takes [`npm`](https://npmjs.org) modules and runs them in [`WebVR`](https://webvr.info/).
 
-Basically, it uses web technologies to glue together plain Javascript modules and present it in an immersive VR context. Highlights:
+There is a [simple `package.json` spec](#module-specification) for making your modules load in VR, and a [familiar THREE.js DOM API](#api-docs) for presenting arbitrary 3D content.
+
+There's also an in-VR world builder, mutiplayer, and server-side physics.
+
+Basically, Zeo VR uses web technologies to run your Javascript modules in immersive VR.
+
+> ![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
+
+#### Install Zeo VR
+
+```javascript
+npm install zeo
+```
+
+#### Install depencencies (Debian/Ubuntu)
+
+```javascript
+sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
+```
+
+### Highlights
 
 - Multiplayer
 - Voice chat
@@ -24,18 +44,6 @@ Basically, it uses web technologies to glue together plain Javascript modules an
 - Mostly just Javascript
 - [Open source on Github](https://github.com/modulesio/zeo)
 
-#### Install Zeo VR
-
-```javascript
-npm install zeo
-```
-
-#### Install depencencies (Debian/Ubuntu)
-
-```javascript
-sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
-```
-
 ### Browser requirements
 
 The only requirement for connecting to a Zeo VR server is a device with a web browser that supports [`WebGL`](https://en.wikipedia.org/wiki/WebGL). This includes virtually [every modern web browser](http://caniuse.com/#feat=webgl), including mobile ones.
@@ -48,7 +56,9 @@ If you want to use `WebVR`, you'll need a browser that supports it. For desktop,
 
 The main requirement for running your own Zeo VR server is _Linux_.
 
-Technically all you need is `node.js`, but some native C++ modules require a build step and a native C++ compiler. _Windows_ and _OSX_ might work, but are not tested. It's recommended that you simply use a Linux virtual machine.
+Technically all you need is `node.js`, but some native C++ modules require a build step and a native C++ compiler.
+
+_Windows_ and _OSX_ might work, but are not tested. It's recommended that you simply use a Linux virtual machine.
 
 ### Headset support
 

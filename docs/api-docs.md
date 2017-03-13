@@ -1,4 +1,4 @@
-# Module API
+# API docs
 
 This document specifies what you need to do to write your own Zeo plugins, which are self-contained units of code you can add to your Zeo worlds.
 

@@ -5,6 +5,7 @@ module.exports = {
     return '' +
       fs.readFileSync(__dirname + '/introduction.md') + '\n' +
       fs.readFileSync(__dirname + '/user-manual.md') + '\n' +
-      fs.readFileSync(__dirname + '/mods.md') + '\n';
+      fs.readFileSync(__dirname + '/module-specification.md') + '\n' +
+      fs.readFileSync(__dirname + '/api-docs.md') + '\n';
   },
 };
