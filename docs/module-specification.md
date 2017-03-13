@@ -6,11 +6,13 @@ It is assumed that you already have a Zeo server running. If not, see [Getting s
 
 ## API Introduction
 
-A Zeo plugin is just an [`npm`](https://www.npmjs.com/) module: that is, a [`package.json`](https://docs.npmjs.com/files/package.json) plus the Javascript files with your plugin code.
+A Zeo module is just an [`npm`](https://www.npmjs.com/) module that follows this standard.
 
-The only difference between a Zeo plugin and any other `npm` module is some extra keys in the `package.json` that tell Zeo how to start it and stop it. Your plugin will probably also probably  `requestPlugin('zeo')` to interfact with the Zeo world.
+Basically, to make your module VR-compatible, you add some extra keys in the [`package.json`](https://docs.npmjs.com/files/package.json) to reference your Javascript VR code, add the `zeo-module` `keyword` to make it discoverable, and then publish the result to `npm`. After that, your module will automagically be available for drag-and-drop on any Zeo VR server.
 
-If you're a hands-on learner, you might want to simply dive into the [`Bouncy ball` demo plugin](/plugins/demo/). Otherwise, read on for the full Zeo plugin specification.
+If you're a hands-on learner and you already know Javascript, you might want to simply dive into the [`Bouncy ball` demo plugin on Github](https://github.com/modulesio/zeo/tree/master/plugins/demo).
+
+Otherwise, read on for the full Zeo VR module specification.
 
 ## Module specification
 
@@ -24,17 +26,16 @@ The main thing that makes an `npm` module compatible with Zeo is that its `packa
 ```js
 {
   "name": "my-plugin",
-  "version": "0.0.1",
-  "keywords": ["zeo-mod"],
   "client": "client.js",
   "server": "server.js",
   "worker": "worker.js"
+  "keywords": ["zeo-module"],
 }
 ```
 
-Also note the `"keywords": ["zeo-mod"]`: this is used by Zeo to find your module when searching `npm`. It's not required to load
+We'll go into the structure of each of these files below.
 
-The reference `.js` files (e.g. `client.js`) should export `mount` and `unmount` functions to call when your plugin is to be started or stopped, respectively:
+Also note the `"keywords": ["zeo-module"]`. This is used to discover your module when searching `npm`, but it's not required for loading a [local module](#option-1-local-module) that you don't intend to publish.
 
 #### client.js
 ```js
@@ -130,7 +131,7 @@ Now that you know how to write modules, you'll need to know how to load them int
 
 There are two ways to do this: you can either installed from the local filesystem (in which case the plugin will only be available to your server), or publish to the public `npm` registry (in which case the plugin will be available for anyone to find and install). Either way, there's no difference in functionality and the code for your module is the same.
 
-### Option 1: Local install
+### Option 1: Local module
 
 This method is most useful for testing plugins as you develop them, without the overhead of publishing and downloading from `npm`.
 
