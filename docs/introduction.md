@@ -4,11 +4,11 @@
 
 **Zeo VR** is a [`node.js`](https://nodejs.org) web server that takes [`npm`](https://npmjs.org) modules and runs them in [`WebVR`](https://webvr.info/).
 
-There is a [simple `package.json` spec](#module-specification) for making your modules load in VR, and a [familiar THREE.js DOM API](#api-docs) for presenting arbitrary 3D content.
+There is a [`package.json` spec](#module-specification) for making your own VR NPM modules and a [THREE.js DOM API](#api-docs) for presenting 3D content.
 
 There's also an in-VR world builder, mutiplayer, and server-side physics.
 
-Basically, Zeo VR uses web technologies to run your Javascript modules in immersive VR.
+Basically, Zeo VR uses web technologies to run your Javascript modules in VR.
 
 > ![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
 
