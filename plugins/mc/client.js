@@ -25,7 +25,12 @@ const SIDES = ['left', 'right'];
 
 class Mc {
   mount() {
-    const {three: {THREE, scene, camera}, input, pose, physics, hands, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, physics, hands, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
+
+    let live = true;
+    this.cleanup = () => {
+      live = false;
+    };
 
     const physicsWorld = physics.getPhysicsWorld();
     const controllerPhysicsBodies = physics.getControllerPhysicsBodies();
