@@ -2353,7 +2353,7 @@ class World {
               return worldTimer.getWorldTime();
             }
 
-            getGrabElement(side) {
+            /* getGrabElement(side) {
               const equipmentTagMeshes = equipmentManager.getTagMeshes();
               const tagMesh = equipmentTagMeshes[side === 'right' ? 2 : 3];
 
@@ -2426,7 +2426,7 @@ class World {
                     reject(err);
                   });
               });
-            }
+            } */
           }
           const worldApi = new WorldApi();
 

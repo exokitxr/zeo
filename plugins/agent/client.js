@@ -174,7 +174,7 @@ class Agent {
             this.mesh = mesh;
 
             const soundBody = (() => {
-              const result = new sound.Body();
+              const result = new sound.makeBody();
               // result.setInputElement(audio);
               result.setObject(mesh);
               return result;

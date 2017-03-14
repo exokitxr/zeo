@@ -187,12 +187,14 @@ class Camera {
         const _paddown = e => {
           const {side} = e;
 
-          const grabElement = zeo.getGrabElement(side);
+          // XXX figure out how to implement save here
+
+          /* const grabElement = zeo.getGrabElement(side);
           const cameraElement = cameraElements.find(cameraElement => cameraElement === grabElement);
 
           if (cameraElement) {
             e.stopImmediatePropagation();
-          }
+          } */
         };
         zeo.on('paddown', _paddown, {
           priority: 1,
