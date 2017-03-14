@@ -516,8 +516,8 @@ class Zeo {
                         return biolumi.makeUi(options);
                       }
 
-                      getTransparentMaterial() {
-                        return biolumi.getTransparentMaterial();
+                      getTransparentImg() {
+                        return biolumi.getTransparentImg();
                       }
                     }
 

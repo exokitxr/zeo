@@ -79,6 +79,7 @@ class Ar {
 
             const material = new THREE.MeshBasicMaterial({
               map: videoTexture,
+              side: THREE.DoubleSide,
             });
             return material;
           })();
