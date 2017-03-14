@@ -499,6 +499,7 @@ class Zeo {
                       registerElement(pluginInstance, elementApi) {
                         tags.registerElement(pluginInstance, elementApi);
                       }
+
                       unregisterElement(pluginInstance) {
                         tags.unregisterElement(pluginInstance);
                       }
@@ -571,7 +572,7 @@ class Zeo {
                       }
                     }
 
-                    class ZeoUtilApi {
+                    class ZeoUtilsApi {
                       constructor() {
                         this.js = jsUtils;
                         this.function = functionUtils;
@@ -597,11 +598,13 @@ class Zeo {
                         this.physics = new ZeoPhysicsApi();
                         this.hands = new ZeoHandsApi();
                         this.animation = new ZeoAnimationApi();
-                        this.util = new ZeoUtilApi();
+                        this.utils = new ZeoUtilsApi();
                       }
                     }
                     const zeoApi = new ZeoApi();
                     window.zeo = zeoApi;
+
+                    servers.requestInitialConnect();
 
                     return zeoApi;
                   }

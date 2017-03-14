@@ -15,7 +15,7 @@ class Agent {
     return _requestTokens()
       .then(({tokens}) => {
         if (live) {
-          const {three: {THREE, scene, camera, sound}, input, elements, world, js: {events: {EventEmitter}}} = zeo;
+          const {three: {THREE, scene, camera}, elements, pose, input, render, world, sound, utils: {js: {events: {EventEmitter}}}} = zeo;
           const {tts: ttsToken, stt: sttToken} = tokens;
 
           const COLORS = {
@@ -155,7 +155,7 @@ class Agent {
               this.mesh = mesh;
 
               const soundBody = (() => {
-                const result = new sound.makeBody();
+                const result = sound.makeBody();
                 // result.setInputElement(audio);
                 result.setObject(mesh);
                 return result;
@@ -165,8 +165,7 @@ class Agent {
               this.text = null;
 
               const update = () => {
-                const status = world.getStatus();
-                const {gamepads: gamepadsStatus} = status;
+                const {gamepads: gamepadsStatus} = pose.getStatus();
 
                 const _getSelected = side => {
                   const gamepadStatus = gamepadsStatus[side];
@@ -352,12 +351,12 @@ class Agent {
               update();
             }
           };
-          elements.on('update', _update);
+          render.on('update', _update);
 
           this._cleanup = () => {
-            elements.removeListener('update', _update);
-
             elements.unregisterElement(this);
+
+            render.removeListener('update', _update);
           };
 
           return {};

@@ -47,7 +47,7 @@ class Fog {
     }
     elements.registerElement(this, FogElement);
 
-    elements.on('update', _update);
+    render.on('update', _update);
 
     this._cleanup = () => {
       elements.unregisterElement(this);

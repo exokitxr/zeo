@@ -103,7 +103,7 @@ module.exports = archae => ({
         audio,
       }) => {
         if (live) {
-          const {three: {THREE, scene, camera, sound}, pose, input, render, elements, animation, util: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
+          const {three: {THREE, scene, camera, sound}, pose, input, render, elements, animation, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
 
           const starGeometries = starImgs.map(starImg => spriteUtils.makeImageGeometry(starImg, PIXEL_SIZE));
           const textMaterialDark = new THREE.MeshPhongMaterial({
