@@ -1,6 +1,6 @@
 export default class Voxel {
   mount() {
-    const {three: {THREE, scene}} = zeo;
+    const {three: {THREE, scene}, elements} = zeo;
 
     const voxelBlockGenerator = (() => {
       const MASK_SIZE = 4096;
