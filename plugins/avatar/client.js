@@ -2,7 +2,7 @@ const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
 class Avatar {
   mount() {
-    const {three: {THREE, scene}, element} = zeo;
+    const {three: {THREE, scene}, elements} = zeo;
 
     const THREEConvexGeometry = ConvexGeometry(THREE);
 
@@ -121,10 +121,10 @@ class Avatar {
         this._cleanup();
       }
     }
-    element.registerElement(this, AvatarElement);
+    elements.registerElement(this, AvatarElement);
 
     this._cleanup = () => {
-      element.unregisterElement(this);
+      elements.unregisterElement(this);
     };
   }
 
