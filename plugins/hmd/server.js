@@ -1,7 +1,12 @@
 const path = require('path');
 
 class Hmd {
+  constructor(archae) {
+    this._archae = archae;
+  }
+
   mount() {
+    const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
     const hmdModelStatic = express.static(path.join(__dirname, 'models', 'hmd'));
@@ -21,10 +26,11 @@ class Hmd {
       }
       app._router.stack.forEach(removeMiddlewares);
     };
-  },
+  }
+
   unmount() {
     this._cleanup();
-  },
+  }
 }
 
 module.exports = Hmd;
