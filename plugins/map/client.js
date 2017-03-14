@@ -23,7 +23,7 @@ class MapClient {
 
   mount() {
     const {_archae: archae} = this;
-    const {three: {THREE, scene, camera}, renderer} = zeo;
+    const {three: {THREE, scene, camera}, render} = zeo;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -181,10 +181,10 @@ class MapClient {
                 tryMapChunkUpdate();
               };
 
-              renderer.on('update', _update);
+              render.on('update', _update);
 
               cleanups.push(() => {
-                renderer.removeListener('update', _update);
+                render.removeListener('update', _update);
               });
 
               return {};
