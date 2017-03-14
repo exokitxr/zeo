@@ -9,6 +9,7 @@
       --monospace-fonts: Consolas, "Liberation Mono", Menlo, Courier, monospace;
     }
     body {
+      display: flex;
       position: relative;
       min-width: 1024px;
       min-height: 720px;
@@ -16,7 +17,7 @@
       background-color: #000;
       font-family: var(--fonts);
       color: #FFF;
-      overflow-x: hidden;
+      flex-direction: column;
     }
     a {
       color: inherit;
@@ -24,7 +25,7 @@
       outline: none;
       cursor: pointer;
     }
-    .link {
+    .link:not(.soft), .link.soft:hover {
       text-decoration: underline;
     }
     code {
@@ -41,9 +42,8 @@
       height: 80px;
       padding: 0 30px;
       background-color: #000;
-      /* border-bottom: 1px solid #222; */
       align-items: center;
-      z-index: 2;
+      z-index: 1;
     }
     .header-left, .header-right {
       display: flex;
@@ -51,37 +51,174 @@
       align-items: center;
     }
     .header-left {
-      margin-right: auto;
+      margin-right: 120px;
     }
     .header-right {
       margin-left: auto;
       justify-content: flex-end;
     }
 
+    .body {
+      display: flex;
+      position: relative;
+      /* margin-top: -80px;
+      margin-bottom: -100px;
+      padding-top: 80px;
+      padding-bottom: 100px; */
+      flex-grow: 1;
+      // box-sizing: border-box;
+    }
+    .body.api-body {
+      z-index: 1;
+    }
+
+    .sidebar {
+      display: flex;
+      position: relative;
+      width: 250px;
+      background-color: #111;
+      font-size: 13px;
+      flex-grow: 1;
+      flex-direction: column;
+      z-index: 1;
+    }
+
+    .slides {
+      display: flex;
+      position: relative;
+      flex-grow: 1;
+      justify-content: center;
+    }
+    .slides-navbar {
+      display: flex;
+      display: none;
+      position: absolute;
+      top: 0;
+      width: 540px;
+    }
+    .slides-navbar .slides-nav {
+      width: 200px;
+      padding: 5px 0;
+      border: 2px solid;
+      border-top: 0;
+      color: #FFF;
+      font-family: var(--monospace-fonts);
+      text-align: center;
+      cursor: pointer;
+    }
+    .slides-navbar .slides-nav.green {
+      background-color: #4CAF50;
+    }
+    .slides-navbar .slides-nav.green.selected {
+      color: #4CAF50;
+    }
+    .slides-navbar .slides-nav.selected {
+      background-color: #FFF;
+      border-color: transparent;
+      cursor: default;
+    }
+    .slides-navbar .slides-nav + .slides-nav {
+      border-left: 0;
+    }
+    .slide {
+      display: flex;
+      margin-bottom: auto;
+      flex-direction: column;
+    }
+    .slide.green {
+      background-color: #4CAF50;
+    }
+    .slide.blue {
+      background-color: #2196F3;
+    }
+    .slide.purple {
+      background-color: #673AB7;
+    }
+    .slide-wrap {
+      padding: 20px;
+    }
+    .slide-wrap .icons {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    .slide-wrap .icon {
+      text-align: center;
+    }
+    .slide-wrap .icon:not(.octicon) {
+      width: 70px;
+      font-size: 17px;
+      font-family: var(--monospace-fonts);
+    }
+    .slide-wrap .icon.octicon {
+      height: 120px;
+      padding-top: 20px;
+      font-size: 80px;
+      box-sizing: border-box;
+    }
+    .slide-wrap h3, .slide-wrap p {
+      margin-bottom: 10px;
+    }
+    .slide-wrap h3 {
+      font-size: 17px;
+    }
+    .slide-wrap p {
+
+      font-size: 12px;
+    }
+
+    .sidebar .footer {
+      display: flex;
+      padding: 20px;
+      font-size: 12px;
+      line-height: 2;
+      flex-direction: column;
+    }
+
+    .hub-iframe, .hero {
+      width: calc(100vw - 250px);
+      height: calc(100vh - 80px);
+    }
+    .hub-iframe, .docs-iframe {
+      background-color: #FFF;
+      border: 0;
+    }
+    .hub-iframe {
+      position: absolute;
+      top: 0;
+      left: 250px;
+    }
+    .docs-iframe {
+      width: 100vw;
+      height: calc(100vh - 80px);
+    }
+
     .hero {
       display: flex;
-      width: 100vw;
-      height: 100vh;
-      margin-top: -80px;
-      background-color: #FFF;
       color: #000;
       justify-content: center;
       align-items: center;
       flex-direction: column;
+      flex-grow: 1;
     }
     .hero .hero-wrap {
       display: flex;
       width: 100%;
       height: 100%;
+      margin-bottom: 100px;
       flex-direction: column;
       justify-content: center;
       align-items: center;
     }
 
     .hero .hero-heading {
+      position: relative;
+      padding: 0 30px;
+      padding-bottom: 20px;
+      background-color: #000;
+      color: #FFF;
     }
     .hero h1 {
-      margin-bottom: 30px;
       font-size: 60px;
       font-weight: 300;
     }
@@ -115,151 +252,53 @@
     .button.invert:hover img {
       filter: invert(100%);
     }
-    /* .button.primary {
-      background-color: #4CAF50;
+    .button.primary {
+      background-color: #E91E63;
       border-color: transparent;
     }
     .button.primary:hover {
-      background-color: #388E3C;
+      background-color: #C2185B;
       border-color: transparent;
-    } */
+      color: #FFF;
+    }
     .button.secondary {
       background-color: #E91E63;
       border-color: transparent;
     }
     .button.secondary:hover {
       background-color: #C2185B;
-    }
-    .button.small {
-      border-width: 2px;
-      padding: 7px 12px;
-      font-size: 16px;
-    }
-    .button + .button {
-      margin-left: 10px;
+      color: #FFF;
     }
     .button .icon {
       margin-right: 5px;
     }
-
-    .hero .slides {
-      display: flex;
-      position: relative;
-      width: 100%;
-      margin-top: 70px;
-      justify-content: center;
-    }
-    .hero .slides-navbar {
-      display: flex;
-      position: absolute;
-      top: 0;
-      width: 540px;
-    }
-    .hero .slides-navbar .slides-nav {
-      width: 200px;
-      padding: 5px 0;
-      border: 2px solid;
-      border-top: 0;
-      color: #FFF;
-      font-family: var(--monospace-fonts);
-      text-align: center;
-    }
-    .hero .slides-navbar .slides-nav.green {
-      background-color: #4CAF50;
-    }
-    .hero .slides-navbar .slides-nav.green.selected {
-      color: #4CAF50;
-    }
-    .hero .slides-navbar .slides-nav.blue {
-      background-color: #2196F3;
-    }
-    .hero .slides-navbar .slides-nav.blue.selected {
-      color: #2196F3;
-    }
-    .hero .slides-navbar .slides-nav.purple {
-      background-color: #673AB7;
-    }
-    .hero .slides-navbar .slides-nav.purple.selected {
-      color: #673AB7;
-    }
-    .hero .slides-navbar .slides-nav.selected {
-      background-color: #FFF;
-      border-color: transparent;
-    }
-    .hero .slides-navbar .slides-nav + .slides-nav {
-      border-left: 0;
-    }
-    .hero .slide {
-      display: flex;
-      width: 100%;
-      height: 350px;
-      padding: 30px;
-      color: #FFF;
-      justify-content: center;
-      align-items: center;
-      box-sizing: border-box;
-    }
-    .hero .slide.green {
-      background-color: #4CAF50;
-    }
-    .hero .slide.blue {
-      background-color: #2196F3;
-    }
-    .hero .slide.purple {
-      background-color: #673AB7;
-    }
-    .hero .slide-arrow-icon {
-      visibility: hidden; // XXX
-      width: 50px;
-      height: 50px;
-    }
-    .hero .slide-wrap {
-      width: 540px;
-      padding: 0 30px;
-    }
-    .hero .slide-wrap .icons {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-    }
-    .hero .slide-wrap .icon {
-      text-align: center;
-    }
-    .hero .slide-wrap .icon:not(.octicon) {
-      width: 200px;
-      font-size: 40px;
-      font-family: var(--monospace-fonts);
-    }
-    .hero .slide-wrap .icon.octicon {
-      height: 120px;
-      padding-top: 20px;
-      font-size: 80px;
-      box-sizing: border-box;
-    }
-    .hero .slide-wrap h3, .hero .slide-wrap p {
-      width: 100%;
-    }
-    .hero .slide-wrap h3 {
-      margin-bottom: 10px;
-      font-size: 22px;
-    }
-    .hero .slide-wrap p {
-      margin-bottom: 30px;
+    .button.small {
+      height: 30px;
+      padding: 0 10px;
       font-size: 13px;
     }
 
     header .header-github-anchor {
+      display: flex;
+      width: 50px;
+      height: 50px;
       margin-left: 100px;
+      color: #FFF;
+      justify-content: center;
+      align-items: center;
     }
-    header .header-github-anchor::before {
+    header .header-github-anchor i {
+      display: block;
+      position: relative;
+      font-size: 30px !important;
+    }
+    header .header-github-anchor .header-github-anchor-notch {
       position: absolute;
       top: 0;
       right: 0;
       border-width: 0 150px 150px 0;
       border-style: solid;
-      border-color: transparent #333 transparent transparent;
-      z-index: -1;
-      content: '';
+      border-color: transparent #2196F3 transparent transparent;
     }
 
     .logged-in header {
@@ -362,7 +401,6 @@
     }
     .header-logo-anchor {
       display: flex;
-      margin-right: auto;
       font-size: 20px;
       font-weight: 300;
       align-items: center;
@@ -422,21 +460,6 @@
     }
     .header-sign-up-button:hover {
       background-color: #388E3C;
-    }
-    .header-github-anchor {
-      display: flex;
-      width: 50px;
-      height: 50px;
-      color: #FFF;
-      justify-content: center;
-      align-items: center;
-    }
-    .header-github-anchor:hover {
-      color: #03A9F4;
-    }
-    .header-github-anchor > i {
-      display: block;
-      font-size: 30px !important;
     }
     .header-login-bar {
       display: flex;
@@ -507,9 +530,9 @@
       height: 80px;
       align-items: center;
       font-size: 13px;
-      font-weight: 400;a
+      font-weight: 400;
     }
-    .demographics > navbar > nav {
+    .demographics > navbar > a {
       display: flex;
       position: relative;
       height: 100%;
@@ -520,37 +543,36 @@
       box-sizing: border-box;
       cursor: pointer;
     }
-    .demographics > navbar > nav.selected::after {
+    .demographics > navbar > a.selected::after {
       position: absolute;
       bottom: -16px;
       left: 50%;
       margin-left: -11px;
       border-style: solid;
       border-width: 12px 12px 0 12px;
-      /* content: ''; */
     }
-    .demographics > navbar > nav.red.selected {
+    .demographics > navbar > a.red.selected {
       color: #E91E63;
       border-bottom-color: #E91E63;
     }
-    .demographics > navbar > nav.red.selected::after {
+    .demographics > navbar > a.red.selected::after {
       border-color: #E91E63 transparent transparent transparent;
     }
-    .demographics > navbar > nav.green.selected {
+    .demographics > navbar > a.green.selected, .demographics > navbar > a:hover {
       color: #4CAF50;
       border-bottom-color: #4CAF50;
     }
-    .demographics > navbar > nav.green.selected::after {
+    .demographics > navbar > a.green.selected::after {
       border-color: #4CAF50 transparent transparent transparent;
     }
-    .demographics > navbar > nav.purple.selected {
+    .demographics > navbar > a.purple.selected {
       color: #7E57C2;
       border-bottom-color: #7E57C2;
     }
-    .demographics > navbar > nav.purple.selected::after {
+    .demographics > navbar > a.purple.selected::after {
       border-color: #7E57C2 transparent transparent transparent;
     }
-    .demographics > navbar > nav > i {
+    .demographics > navbar > a > i {
       margin-right: 10px;
     }
     section.details {
@@ -1077,11 +1099,13 @@
       box-sizing: border-box;
       z-index: 1;
     }
-    footer {
+
+     footer {
+      position: relative;
       display: flex;
-      height: 100px;
+      height: 50px;
       padding: 0 30px;
-      border-top: 1px solid #222;
+      background-color: #000;
       font-size: 13px;
       justify-content: center;
       align-items: center;
@@ -1166,19 +1190,13 @@
 <body>
   <header id=header>
     <div class=header-left>
-      <a href="https://zeo.sh" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
+      <a href="https://zeovr.io" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
     </div>
     <div class=demographics>
       <navbar>
-        <nav class="green selected" id=demographics-button-1>
-          <div class=title>Wat?</div>
-        </nav>
-        <nav class=green id=demographics-button-2>
-          <div class=title>API Docs</div>
-        </nav>
-        <nav class=purple id=demographics-button-3>
-          <div class=title>FAQ</div>
-        </nav>
+        <a href="/" class="green selected" id=nav-button-1>Try it</a>
+        <a href="/docs" class=green id=nav-button-2>API Docs</a>
+        <a href="/faq" class=green id=nav-button-3>FAQ</a>
       </navbar>
     </div>
     <div class=header-right>
@@ -1188,53 +1206,39 @@
         <div class=title>Sign up</div>
       </a> -->
       <a href="https://hub.zeovr.io">
-        <button class="button invert primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
+        <button class="button invert"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
       </a>
       <!-- <button class="button invert secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
-      <a href="https://github.com/modulesio/zeo" class=header-github-anchor><i class="octicon octicon-mark-github"></i></a>
+      <a href="https://github.com/modulesio/zeo" class=header-github-anchor>
+        <div class=header-github-anchor-notch></div>
+        <i class="octicon octicon-mark-github"></i>
+      </a>
     </div>
   </header>
-  <div class=signing-up-overlay id=signing-up-overlay></div>
-  <section class=hero>
-    <div class=hero-wrap>
-      <div class=hero-heading>
-        <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
-        <!-- <button class="button primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
-        <button class="button secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
-      </div>
+  <div class="body home-body" id=home-body>
+    <aside class=sidebar>
       <div class=slides>
         <div class=slides-navbar>
           <nav class="slides-nav green selected" id=slides-nav-1>Javscript</nav>
-          <nav class="slides-nav blue" id=slides-nav-2>Multiplayer</nav>
-          <nav class="slides-nav purple" id=slides-nav-3>Servers</nav>
+          <nav class="slides-nav green" id=slides-nav-2>Multiplayer</nav>
+          <nav class="slides-nav green" id=slides-nav-3>Servers</nav>
         </div>
         <div class="slide green" id=slide-1>
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-left.svg" />
-          </div>
+          <img src="https://placehold.it/250x250" class=img width=250 height=250 />
           <div class=slide-wrap>
-            <div class=icons>
-              <img src="/img/npm-logo.png" width=200 height=120 class=icon style="margin-left: -40px;" />
+            <h3>Have your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
+            <p>Drag-and-drop NPM modules into the world. Clients sync automagically.</p>
+            <p>The API is <a href="https://threejs.org" class=link>THREE.js</a> bundled by <a href="http://rollupjs.org" class=link>rollup.js</a>, so you can use any NPM module.</p>
+            <p>Modules also run on the server. Voice chat and multiplayer physics come in the box.</p>
+            <!-- <div class=icons>
+              <img src="/img/npm-logo.png" width=80 height=48 class=icon />
               <div class=icon>three.js</div>
               <div class=icon>WebVR</div>
-            </div>
-            <h3>Download your <a href="https://github.com/modulesio/z-cake" class=link><code>z-cake</code></a> and eat it too.</h3>
-            <p>
-              Drag-and-drop NPM modules into the world. Clients sync automagically.<br/>
-              The frontend API is <a href="https://threejs.org" class=link>THREE.js</a> bundled by <a href="http://rollupjs.org" class=link>rollup</a>, so you can use any NPM module.<br/>
-              Modules also run on the server. Voice chat and multiplayer physics come in the box.<br/>
-              Open source <a href="https://github.com/modulesio/zeo">on Github</a>.<br/>
-            </p>
-            <a href="https://github.com/modulesio/zeo" class="button small">Read API docs</a>
-          </div>
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-right.svg" />
+            </div> -->
+            <a href="https://github.com/modulesio/zeo" class="button invert small">Read API docs</a>
           </div>
         </div>
         <div class="slide blue" id=slide-2 style="display: none;">
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-left.svg" />
-          </div>
           <div class=slide-wrap>
             <i class="icon octicon octicon-circuit-board"></i>
             <h3>Persistent multiverse tech.</h3>
@@ -1242,16 +1246,10 @@
               World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
               We did the hard work so you don't have to.<br/>
             </p>
-            <a href="https://github.com/modulesio/zeo" class="button small">See all features</a>
-          </div>
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-right.svg" />
+            <a href="https://github.com/modulesio/zeo" class=button>See all features</a>
           </div>
         </div>
         <div class="slide purple" id=slide-3 style="display: none;">
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-left.svg" />
-          </div>
           <div class=slide-wrap>
             <i class="icon octicon octicon-mark-github"></i>
             <h3>Open source. Or hosted.</h3>
@@ -1260,30 +1258,44 @@
               Test it out with just your browser.<br/>
               And if you want us to host your world, we have a plan for that.<br/>
             </p>
-            <a href="https://github.com/modulesio/zeo" class="button small">See pricing</a>
-          </div>
-          <div class=slide-arrow-icon>
-            <img src="/img/chevron-right.svg" />
+            <a href="https://github.com/modulesio/zeo" class=button>See pricing</a>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-  <section class=details>
+      <div class=footer>
+        <div><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
+        <div>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></div>
+      </div>
+    </aside>
+    <iframe class=hub-iframe id=hub-iframe></iframe>
+    <section class=hero>
+      <div class=hero-wrap id=hero-wrap>
+        <div class=hero-heading>
+          <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
+          <!-- <button class="button primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
+          <button class="button secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="body api-body" id=api-body style="display: none;">
+    <iframe class=docs-iframe id=docs-iframe></iframe>
+  </div>
+  <!-- <section class=details>
     <div class=details-wrapper id=demographics-details-1>
       <div class=details-card>
         <div class=grid>
           <div class=grid-item-wrap>
-            <!-- -<div class="grid-item grid-item-1">
+            <div class="grid-item grid-item-1">
               <img src="https://placehold.it/1280x300" class=screenshot />
               <h4>In-browser VR worlds.</h4>
               <p>
-                Build a whole new world by dragging and dropping plugins -- literally.<br/>
+                Build a whole new world by dragging and dropping plugins; literally.<br/>
                 Conjure planets, paint a picture, or DJ your favorite track; there's a plugin for that.<br/>
                 Do it together: multiplayer comes in the box. And it all runs in your browser, headset or not.<br/>
               </p>
               <a href="https://github.com/modulesio/zeo" class=grid-button>More about Zeo VR tech</a>
-            </div> -->
+            </div>
           </div>
           <div class=grid-item-wrap>
             <div class="grid-item grid-item-2">
@@ -1634,12 +1646,7 @@
         </div>
       </form>
     </div>
-  </section>
-  <footer>
-    <aside class=footer-left><a href="/">Home</a> | <a href="https://github.com/modulesio/zeo">Github</a> | <a href="mailto:hello@zeovr.io">Contact</a></aside>
-    <aside class=footer-right>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></aside>
-  </footer>
-  <script src="https://js.stripe.com/v2/"></script>
+  </section> -->
   <script>
 const $ = s => document.querySelectorAll(s);
 
@@ -1669,43 +1676,169 @@ demographicsButtons.forEach((demographicsButton, index) => {
   });
 });
 
-const demoAccountButton = $('#demo-account-button')[0];
-const adminAccountButton = $('#admin-account-button')[0];
+const _drawCanvasGrid = canvas => {
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+  });
 
-demoAccountButton.addEventListener('click', () => {
-  demoAccountButton.classList.add('selected');
-  adminAccountButton.classList.remove('selected');
+  const _resize = () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+  _resize();
+
+  renderer.domElement.className = canvas.className;
+  canvas.parentNode.replaceChild(renderer.domElement, canvas);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xFFFFFF);
+  const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.001, 100000);
+  camera.position.set(0, 20, 50);
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  window.addEventListener('mousemove', e => {
+    const xFactor = -0.5 + (e.clientX / window.innerWidth);
+    const yFactor = -0.5 + (e.clientY / window.innerHeight);
+
+    camera.lookAt(new THREE.Vector3(xFactor * 50, -yFactor * 50, 0));
+    _render();
+  });
+
+  const planeMesh = (() => {
+    const img = new Image();
+    img.src = '/img/grid.svg';
+    img.onload = () => {
+      texture.needsUpdate = true;
+
+      _render();
+    };
+    img.onerror = err => {
+      console.warn(err);
+    };
+
+    const texture = new THREE.Texture(
+      img,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.LinearFilter,
+      THREE.LinearFilter,
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType,
+      16
+    );
+
+    const geometry = new THREE.PlaneBufferGeometry(100, 100);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      // color: 0x333333,
+      transparent: true,
+      opacity: 0.8,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    // mesh.position.z = -5;
+    // mesh.position.y = -10;
+    mesh.rotation.x = -Math.PI / 2;
+
+    return mesh;
+  })();
+  scene.add(planeMesh);
+
+  const light = new THREE.DirectionalLight(0x808080, 2);
+  light.position.set(10, 10, 10);
+  light.lookAt(new THREE.Vector3(0, 0, 0));
+  scene.add(light);
+
+  const _render = () => {
+    renderer.render(scene, camera);
+  };
+  _render();
+
+  window.addEventListener('resize', () => {
+    _resize();
+    _render();
+  });
+};
+/* const gridCanvas = $('.grid-canvas')[0];
+_drawCanvasGrid(gridCanvas); */
+
+const homeBody = $('#home-body')[0];
+const apiBody = $('#api-body')[0];
+const navButton1 = $('#nav-button-1')[0];
+const navButton2 = $('#nav-button-2')[0];
+const navButton3 = $('#nav-button-3')[0];
+const navButtons = [navButton1, navButton2, navButton3];
+const hubIframe = $('#hub-iframe')[0];
+const docsIframe = $('#docs-iframe')[0];
+
+navButtons.forEach(navButton => {
+  navButton.addEventListener('click', e => {
+    const href = e.target.getAttribute('href');
+    history.pushState({}, '', href);
+
+    _updatePage();
+
+    e.preventDefault();
+  });
 });
-adminAccountButton.addEventListener('click', () => {
-  demoAccountButton.classList.remove('selected');
-  adminAccountButton.classList.add('selected');
+
+window.addEventListener('popstate', () => {
+  _updatePage();
 });
 
-const body = $('body')[0];
-const header = $('#header')[0];
-const headerLoginUsername = $('#header-login-username')[0];
-const connectButton = $('#connect-button')[0];
-const signUpEmail = $('#sign-up-email')[0];
-const signUpName = $('#sign-up-name')[0];
-const signUpCcn = $('#sign-up-ccn')[0];
-const signUpCvc = $('#sign-up-cvc')[0];
-const signUpExpiry = $('#sign-up-expiry')[0];
-const signUpButton = $('#sign-up-button')[0];
+const _updatePage = () => {
+  const path = document.location.pathname + document.location.search + document.location.hash;
 
-let user = null;
+  navButtons.forEach(navButton => {
+    navButton.classList.remove('selected');
+  });
 
-const _login = j => fetch('/hub/login', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(j),
-}).then(res => {
-  if (res.status >= 200 && res.status < 300) {
-    return res.json();
-  } else {
-    const err = new Error('failed to log in');
-    return Promise.reject(err);
+  let match;
+  if (/^\/?(?:\?|#.*|$)/.test(path)) {
+    navButton1.classList.add('selected');
+
+    if (!hubIframe.loaded) {
+      hubIframe.contentWindow.location.replace('https://' + 'hub.' + document.location.host + document.location.pathname + document.location.search + document.location.hash);
+      hubIframe.loaded = true;
+    }
+
+    homeBody.style.display = 'flex';
+    apiBody.style.display = 'none';
+  } else if (match = path.match(/^\/docs\/?(?:\?|(#.*)|$)/)) {
+    const hash = match[1] || '';
+
+    navButton2.classList.add('selected');
+
+    docsIframe.contentWindow.location.replace('/doc/index.html' + hash);
+
+    homeBody.style.display = 'none';
+    apiBody.style.display = 'flex';
+  } else if (/^\/faq\/?(?:\?|#.*|$)/.test(path)) {
+    navButton3.classList.add('selected');
+
+    homeBody.style.display = 'none';
+    apiBody.style.display = 'none';
+  }
+};
+_updatePage();
+
+window.addEventListener('message', e => {
+  const {data} = e;
+  const {method} = data;
+
+  if (method === 'loaded') {
+    const heroWrap = $('#hero-wrap')[0];
+    heroWrap.parentNode.removeChild(heroWrap);
+  } else if (method === 'navigate') {
+    const {args: [url]} = data;
+
+    document.location.href = url;
+  } else if (method === 'pushState') {
+    const {args: [url]} = data;
+
+    history.pushState({}, '', '/docs' + document.location.search + url);
+
+    _updatePage();
   }
 });
 

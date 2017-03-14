@@ -1,162 +1,156 @@
-# Zeo plugins
+# API docs
 
-This document specifies what you need to do to write your own Zeo plugins, which are self-contained units of code you can add to your Zeo worlds.
+## API introduction
 
-It is assumed that you already have a Zeo server running. If not, see [Getting started](https://github.com/modulesio/zeo/tree/master/docs/getting-started.md).
+Zeo VR exposes a collection of APIs (including `THREE.js`, DOM elements, and input events) for your VR module to interact with the world, the user, and other modules.
 
-## Introduction
+These APIs live on the `zeo` global variable. You don't need to do anything special to access these APIs -- 
 
-A Zeo plugin is just an [`npm`](https://www.npmjs.com/) module: that is, a [`package.json`](https://docs.npmjs.com/files/package.json) plus the Javascript files with your plugin code.
+It is assumed that you already have a working Zeo VR server, and you're ready to write a VR module. If not, see [Getting started](#getting-started) and/or [Writing modules](#writing-modules).
 
-The only difference between a Zeo plugin and any other `npm` module is some extra keys in the `package.json` that tell Zeo how to start it and stop it. Your plugin will probably also probably  `requestPlugin('zeo')` to interfact with the Zeo world.
+## Elements API
 
-If you're a hands-on learner, you might want to simply dive into the [`Bouncy ball` demo plugin](/plugins/demo/). Otherwise, read on for the full Zeo plugin specification.
+The `elements` API is used to integrate your module into the DOM that keeps track of all modules in the VR world.
 
-## Module specification
+### registerElement()
 
-Under the hood, Zeo uses the [`archae`](https://github.com/modulesio/archae) module loader. It's just a way of writing client/server `npm` modules that can be started and stopped dynamically.
+`zeo.elements.registerElement()` lets you describe your module as a DOM [Custom element](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements) with user-configurable attributes.
 
-### Package format
+### getTags()
 
-The main thing that makes an `npm` module compatible with Zeo is that its `package.json` includes the keys `client`, `server`, or `worker` (all of which are optional). These should point to the (package-relative) `.js` files you want to run in the corresponding environments:
+`zeo.elements.getDOM()` lets you access the currently instantiated modules (represented as Custom DOM elements) in the VR world.
 
-#### package.json
-```js
-{
-  "name": "my-plugin",
-  "version": "0.0.1",
-  "keywords": ["zeo-mod"],
-  "client": "client.js",
-  "server": "server.js",
-  "worker": "worker.js"
-}
-```
+You can use this to find which modules are currently live (including your own) and communicate with them via standard DOM events.
 
-Also note the `"keywords": ["zeo-mod"]`: this is used by Zeo to find your module when searching `npm`. It's not required to load
+XXX
 
-The reference `.js` files (e.g. `client.js`) should export `mount` and `unmount` functions to call when your plugin is to be started or stopped, respectively:
+## Pose API
 
-#### client.js
-```js
-module.exports = {
-  mount() {
-    console.log('plugin loading!');
-  },
-  unmount() {
-    console.log('plugin unloading!');
-  },
-};
-```
+The `pose` API lets you inspect the state of the user's VR pose.
 
-### Plugin APIs
+This includes getting the position/orientation of the headset and controllers, the controller button state, and eye and stage matrices.
 
-In addition to loading and unloading plugins, Zeo lets plugins export their APIs and import other plugin's APIs.
+The Pose API is particularly useful for scenarios where you would like to instantaneously react to what the user is doing. For example, you might want to trigger an action based on the user's gaze target -- in which case you could cast a ray from the headset to some target object and react if an intersection is detected.
 
-### Import a plugin's API
+This API works the same way for all control modes, including mouse and keyboard, sit/stand, and room scale.
 
-To import a plugin API, use a `function` or `class` at the top-level `export default` or `module.exports` of your Javascript file, to capture the `archae` object:
+Use [Render API](#render-api) to synchronize your pose queries to the world frame rate.
 
-#### client.js
-```js
-export default const MyPluginClient = archae => {
-  mount() {
-    return archae.requestPlugin('/core/engines/zeo') // load the Zeo plugin
-      .then(zeo => {
-        console.log('got the Zeo API!', zeo);
-      });
-  },
-};
-```
+### getStatus()
 
-The important part is the call to `archae.requestPlugin()`, which lets us request other plugins. The return value of this function is a `Promise` that will `resolve` to the API that's exported by that plugin, or `reject` with an error describing how loading the plugin failed.
+`zeo.vr.getStatus()` returns an object containing the current instantaneous headset and controllers state.
 
-In this case we are requesting the `/core/engines/zeo` plugin, which resolves to the Zeo plugin API. This betrays a key design principle of Zeo: it's actually just a plugin! That is, Zeo is just plugins all the way down.
+XXX
 
-Also note the `return archae.requestPlugin(...)`: we are returning a `Promise` from `mount`. In this case, it means we want the plugin's loading to wait until the returned `Promise` resolves. This is also the mechanism that allows a plugin to export its own API for other plugins to consume.
+## Input API
 
-### Export your plugin's API
+The `input` API is used to access normalized DOM input events from the user.
 
-To export an API for your plugin, simply return (a `Promise` that resolves to) your API from the plugin's `mount` function in its Javascript implementation file.
+This includes gamepad, mouse, and keyboard input (real and virtual) under a single normalized event system.
 
-Returning a regular value means that the plugin should be considered loaded immediately, while returning a `Promise` means you want to wait for the plugin to load until the `Promise` resolves. Either way, the behavior is the same from the user's perspective: the resolved value of the `Promise` that the user gets as the result of calling `archae.requestPlugin()` will be the API your plugin exports.
+When possible,  prefer this API for detecting user input -- although it is technically possible to detect these events in other ways, such as native browser events or the [Pose API](#pose-api), this API abstracts away differences in browser behavior, hardware, and control schemes.
 
-Here's an example of a plugin exporting an API and another plugin importing it for use:
+Note that when you add event listeners for the input events, you'll need to make sure the event listeners are removed when your element is destroyed (if added on element creation), or otherwise in your module's `unmount` function (if added in your module's `mount` function).
 
-#### database/client.js
-```js
-export default class Database {
-  mount() {
-    return new Promise((accept, reject) => {
-      const databaseInstance = {}; // load the database instance somehow...
-      accept(databaseInstance);
-    })
-      .then(databaseInstance => {
-        const databaseApi = {
-          get(key) {
-            return new Promise((accept, reject) => {
-              // get the value from databaseApi and accept() it...
-            });
-          },
-          set(key, value) {
-            return new Promise((accept, reject) => {
-              // set the value from databaseApi and accept() when done...
-            });
-          },
-        };
-      });
-  }
+### Supported events
 
-  unmount() {}
-}
-```
+- `trigger` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `triggerdown` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is pushed _down_.
+- `triggerup` `{side: 'left'}`
+  - Fired when the controller's `trigger` button is released _up_.
+- `pad` `{side: 'left'}`
+  - Fired when the controller's `pad` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `paddown` `{side: 'left'}`
+  - Fired when the controller's `pad` button is pushed _down_.
+- `padup` `{side: 'left'}`
+  - Fired when the controller's `pad` button is released _up_.
+- `grip` `{side: 'left'}`
+  - Fired when the controller's `grip` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `gripdown` `{side: 'left'}`
+  - Fired when the controller's `grip` button is pushed _down_.
+- `gripup` `{side: 'left'}`
+  - Fired when the controller's `grip` button is released _up_.
+- `menu` `{side: 'left'}`
+  - Fired when the controller's `menu` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
+- `menudown` `{side: 'left'}`
+  - Fired when the controller's `menu` button is pushed _down_.
+- `menuup` `{side: 'left'}`
+  - Fired when the controller's `menu` button is released _up_.
+- `keyboardpress` `{ key: 'a', keyCode: 65, side: 'left' }`
+   - Fired when a virtual keyboard key is pressed.
+   - `key` is the textual representation of the key. `keyCode` is the corresponding Javascript-compatible key code. `side` is whether the `left` or `right` controller was used to press the key. 
+- `keyboarddown` `{ key: 'a', keyCode: 65, side: 'left' }`
+  - Fired when a virtual keyboard key is pushed _down_.
+- `keyboardup` `{ key: 'a', keyCode: 65, side: 'left' }`
+  - Fired when a virtual keyboard key is released _up_.
 
-#### some-other-plugin/client.js
-```js
-module.exports = archae => {
-  mount() {
-    return archae.requestPlugin('database')
-      .then(database => {
-        // call database.get() or database.set() here to use the database...
-      });
-  }
+## UI API
 
-  unmount() {}
-};
-```
+The UI API includes utilities for rendering interactive _2D_ HTML interfaces in the 3D scene.
 
-## Loading modules
+This is useful for implementing displays and menu interfaces, and works out of the box with most static HTML, includng inline images.
 
-Now that you know how to write modules, you'll need to know how to load them into Zeo.
+The architecture is designed for VR-scale (90 FPS) performance, and implements fiber-like cooperative multitasking that prefers to yield instead of locking up the render loop and missing frames. The end result is a powerful UI rendering model that works for most use cases without too many caveats.
 
-There are two ways to do this: you can either installed from the local filesystem (in which case the plugin will only be available to your server), or publish to the public `npm` registry (in which case the plugin will be available for anyone to find and install). Either way, there's no difference in functionality and the code for your module is the same.
+XXX
 
-### Option 1: Local install
+## Render API
 
-This method is most useful for testing plugins as you develop them, without the overhead of publishing and downloading from `npm`.
+The Render API emits events that you can listen for to be notified when we are about to render scene frames, as well as separate eye cameras.
 
-To use a plugin locally, simply drop your `npm` module (which otherwise meets the same Zeo mods specification) into Zeo's `plugins/` directory. For example, `plugins/my-mod` would be the right place to put a `zeo` plugin named `my-mod`.
+This is particularly useful when you need to perform frame-accurate updates, such as an auxiliary camera render, or update something based on the user's VR pose (see the [Post API](#pose-api)).
 
-Once you've done this, you'll be able to add your plugin to Zeo the normal way, by going to `Mods > Local Mods` in the main Zeo menu. You can only do this on the server where you dropped your plugin.
+XXX
 
-// XXX explain reinstalls
+## File API
 
-### Option 2: Publish to `npm`
+The File API lets you access and decode files that have been added to the world.
 
-Publishing your plugin to `npm` is the best way to deliver your module to anyone running Zeo. This is mostly just a straightforward [`npm publish`](https://docs.npmjs.com/cli/publish). The only additional thing you need to do is to make sure that `"zeo-mod"` is included in your `"keywords" array in `package.json`, so Zeo knows how to find your module.
+This includes functionality such as finding files uploaded by the user, detecting the type of media they represent (e.g. image, audio, video, model), and translating these into a form usable by the rest of the APIs (such as DOM images and THREE.js models).
 
-```js
-// package.json
-{
-  "name": "my-mod",
-  "version": "0.0.1",
-  "keywords": [
-    "zeo-mod"
-  ],
-  "client": "client.js"
-}
-```
+XXX
 
-To install a Zeo mod that was published to `npm`, go to `Mods > Npm search` in the main Zeo menu. Anyone running a Zeo server will be able to search for your mod and install it this way.
+## Hands API
+
+The Hands API is used to manage grabbing of objects in the scene. It includes utilities and events for handling targeting
+
+XXX
+
+## Multiplayer API
+
+The Multiplayer API gives you access to the current state of all users connected to the server. This includes pose data and avatar meshes, as well as events that you can listen for when interesting things happen, such as users joining or leaving teh server.
+
+XXX
+
+## Sound API
+
+The Sound API implements a positional audio subsystem that you can use to play audio media (`audio` and `video` tags) bound to specific objects in the scene, with realistic panning and gain attenuation.
+
+XXX
+
+## Physics API
+
+The Physics API is a frontend interface to the server-side multiplayer physics engine (powered by Bullet).
+
+This includes facilities for querying, constructing, adding, and removing physics bodies from the scene, binding them to THREE.js objects such as meshes, and helper utilities for things like debug box rendering and shaping physics bodies to your geometries.
+
+The physics subsystem works out of the box and is automatically synchronized to multiplayer clients.
+
+XXX
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Zeo API
 
@@ -360,7 +354,7 @@ The full list of available events is:
   - Fired when the controller's `menu` button is released _up_.
 - `keyboardpress` `{ key: 'a', keyCode: 65, side: 'left' }`
    - Fired when a virtual keyboard key is pressed.
-   - `key` is the textual representation of the key. `keyCode` is the corresponding Javascript-compatible key code. `side` is whether the `left` or `right` controller was used to press the key. 
+   - `key` is the textual representation of the key. `keyCode` is the corresponding Javascript-compatible key code. `side` is whether the `left` or `right` controller was used to press the key.
 - `keyboarddown` `{ key: 'a', keyCode: 65, side: 'left' }`
   - Fired when a virtual keyboard key is pushed _down_.
 - `keyboardup` `{ key: 'a', keyCode: 65, side: 'left' }`

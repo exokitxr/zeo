@@ -175,7 +175,7 @@ const _install = () => {
 };
 
 const _checkArgs = () => new Promise((accept, reject) => {
-  if ((Boolean(flags.hub) + Boolean(flags.server) + Boolean(flags.site)) > 1) {
+  if ((Boolean(flags.hub) + Boolean(flags.server)) > 1) {
     const err = new Error('hub, server, and site arguments are mutually exclusive');
     reject(err);
   } else {

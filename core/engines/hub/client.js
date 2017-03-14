@@ -51,11 +51,37 @@ class Hub {
           accept(e.target.result);
         };
         reader.readAsDataURL(blob);
-     });
-      const _requestLogoImg = () => fetch('/img/logo-large.png')
-        .then(res => res.blob()
-          .then(blob => _requestBlobDataUrl(blob))
-        );
+      });
+      const _requestFileBlobData = url => fetch(url)
+       .then(res => res.blob()
+         .then(blob => _requestBlobDataUrl(blob))
+       );
+      const _requestImgs = () => Promise.all([
+        '/img/logo-large.png',
+        '/archae/hub/img/keyboard.png',
+        '/archae/hub/img/controller.png',
+        '/archae/hub/img/menu.png',
+        '/archae/hub/img/teleport.png',
+        '/archae/hub/img/cake.png',
+        '/archae/hub/img/server.png',
+      ].map(_requestFileBlobData))
+        .then(([
+          logo,
+          keyboard,
+          controller,
+          menu,
+          teleport,
+          cake,
+          server,
+        ]) => ({
+          logo,
+          keyboard,
+          controller,
+          menu,
+          teleport,
+          cake,
+          server,
+        }));
       const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/core/plugins/z-cake'))
         .then(res => res.json()
           .then(itemSpec => {
@@ -78,7 +104,7 @@ class Hub {
           '/core/plugins/js-utils',
           '/core/plugins/geometry-utils',
         ]),
-        _requestLogoImg(),
+        _requestImgs(),
         _requestZCakeModSpec(),
       ])
         .then(([
@@ -94,7 +120,7 @@ class Hub {
             jsUtils,
             geometryUtils,
           ],
-          logoImg,
+          imgs,
           zCakeItemSpec,
         ]) => {
           if (live) {
@@ -222,10 +248,18 @@ class Hub {
               inputValue: 0,
               loading: false,
               error: null,
+              vrMode: bootstrap.getVrMode(),
             };
             const focusState = {
               type: '',
             };
+
+            const _vrModeChange = vrMode => {
+              hubState.vrMode = vrMode;
+
+              _updatePages();
+            };
+            bootstrap.on('vrModeChange', _vrModeChange);
 
             const menuMesh = (() => {
               const object = new THREE.Object3D();
@@ -240,11 +274,12 @@ class Hub {
                     inputValue,
                     loading,
                     error,
+                    vrMode,
                   },
                   focus: {
                     type: focusType,
                   },
-                  logoImg,
+                  imgs,
                 }) => ({
                   type: 'html',
                   src: menuRenderer.getHubSrc({
@@ -254,8 +289,9 @@ class Hub {
                     inputValue,
                     loading,
                     error,
+                    vrMode,
                     focusType,
-                    logoImg,
+                    imgs,
                   }),
                   x: 0,
                   y: 0,
@@ -266,7 +302,7 @@ class Hub {
                   state: {
                     hub: hubState,
                     focus: focusState,
-                    logoImg: logoImg,
+                    imgs: imgs,
                   },
                   worldWidth: WORLD_WIDTH,
                   worldHeight: WORLD_HEIGHT,
@@ -281,7 +317,7 @@ class Hub {
 
               const scale = 2;
               const cakeTagMesh = tags.makeTag(zCakeItemSpec);
-              cakeTagMesh.position.y = -0.2;
+              cakeTagMesh.position.y = -0.26;
               cakeTagMesh.position.z = -1 + 0.01;
               cakeTagMesh.scale.set(scale, scale, 1);
               cakeTagMesh.initialScale = cakeTagMesh.scale.clone();
@@ -662,7 +698,7 @@ class Hub {
                   _updatePages();
 
                   const {cakeTagMesh} = menuMesh;
-                  cakeTagMesh.visible = page === 1;
+                  cakeTagMesh.visible = page === 2;
                 };
 
                 if (onclick === 'hub:next') {
@@ -681,7 +717,7 @@ class Hub {
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {
-                  document.location.href = 'https://zeovr.io/docs';
+                  bootstrap.navigate('https://zeovr.io/docs');
 
                   return true; // can't happen
                 } else {
@@ -726,8 +762,8 @@ class Hub {
                   const {server} = hoveredServerMesh;
 
                   const {url} = server;
-                  const t = _getQueryVariable(window.location.href, 't');
-                  document.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
+                  const t = _getQueryVariable(bootstrap.getInitialUrl(), 't');
+                  window.parent.location = 'https://' + server.url + (t ? ('?t=' + encodeURIComponent(t)) : '');
 
                   // can't happen
                   e.stopImmediatePropagation();
@@ -1016,6 +1052,8 @@ class Hub {
             this._cleanup = () => {
               serverTracker.destroy();
               serverTracker.removeListener('update', _serverTrackerUpdate);
+
+              bootstrap.removeListener('vrModeChange', _vrModeChange);
 
               scene.remove(menuMesh);
               SIDES.forEach(side => {
