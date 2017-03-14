@@ -20,7 +20,7 @@ const SIDES = ['left', 'right'];
 
 class Shell {
   mount() {
-    const {three: {THREE, scene}, elements, pose, input, ui} = zeo;
+    const {three: {THREE, scene}, elements, pose, input, render, ui} = zeo;
 
     const transparentImg = ui.getTransparentImg();
 
