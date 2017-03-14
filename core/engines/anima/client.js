@@ -18,11 +18,14 @@ const Anima = {
       }
     }
 
-    const makeAnimation = duration => new Animation(duration);
+    class AnimaApi {
+      makeAnimation(duration) {
+        return new Animation(duration);
+      }
+    }
+    const animaApi = new AnimaApi();
 
-    return {
-      makeAnimation,
-    };
+    return animaApi;
   },
   unmount() {},
 };

@@ -34,123 +34,102 @@ const MODELS = { // XXX fold these transforms into the models themselves
 };
 
 class Model {
-  constructor(archae) {
-    this._archae = archae;
-  }
-
   mount() {
-    const {_archae: archae} = this;
+    const {three: {THREE, scene}, elements} = zeo;
+ 
+    const _requestModel = file => file.fetch({
+      type: 'json',
+    }).then(modelJson => new Promise((accept, reject) => {
+      const loader = new THREE.ObjectLoader();
+      loader.crossOrigin = true;
+      const {url} = file;
+      const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
+      loader.setTexturePath(texturePath);
+      loader.parse(modelJson, accept);
+    }));
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
+    class ModelElement extends HTMLElement {
+      createdCallback() {
+        this.position = null;
+        this.mesh = null;
 
-    return archae.requestPlugins([
-      '/core/engines/zeo',
-    ]).then(([
-      zeo,
-    ]) => {
-      if (live) {
-        const {THREE, scene} = zeo;
-
-        const _requestModel = file => file.fetch({
-          type: 'json',
-        }).then(modelJson => new Promise((accept, reject) => {
-          const loader = new THREE.ObjectLoader();
-
-          const {url} = file;
-          const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
-          loader.setTexturePath(texturePath);
-          loader.parse(modelJson, accept);
-        }));
-
-        class ModelElement extends HTMLElement {
-          createdCallback() {
-            this.position = null;
-            this.mesh = null;
-
-            this._cancelRequest = null;
-
-            this._cleanup = () => {
-              const {mesh, _cancelRequest: cancelRequest} = this;
-              if (mesh) {
-                scene.remove(mesh);
-              }
-              if (cancelRequest) {
-                cancelRequest();
-              }
-            };
-          }
-
-          destructor() {
-            this._cleanup();
-          }
-
-          attributeValueChangedCallback(name, oldValue, newValue) {
-            switch (name) {
-              case 'position': {
-                this.position = newValue;
-
-                this._updateMesh();
-
-                break;
-              }
-              case 'model': {
-                const {mesh: oldMesh, _cancelRequest: cancelRequest} = this;
-                if (oldMesh) {
-                  scene.remove(oldMesh);
-                  this.mesh = null;
-                }
-                if (cancelRequest) {
-                  cancelRequest();
-                }
-
-                let live = true;
-                this._cancelRequest = () => {
-                  live = false;
-                };
-
-                const file = newValue;
-                _requestModel(file)
-                  .then(mesh => {
-                    if (live) {
-                      scene.add(mesh);
-                      this.mesh = mesh;
-
-                      this._updateMesh();
-
-                      this._cancelRequest = null;
-                    }
-                  })
-                  .catch(err => {
-                    console.warn('failed to load model', err);
-                  });
-
-                break;
-              }
-            }
-          }
-
-          _updateMesh() {
-            const {mesh, position} = this;
-
-            if (mesh && position) {
-              mesh.position.set(position[0], position[1], position[2]);
-              mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-              mesh.scale.set(position[7], position[8], position[9]);
-            }
-          }
-        }
-        zeo.registerElement(this, ModelElement);
+        this._cancelRequest = null;
 
         this._cleanup = () => {
-          zeo.unregisterElement(this);
+          const {mesh, _cancelRequest: cancelRequest} = this;
+          if (mesh) {
+            scene.remove(mesh);
+          }
+          if (cancelRequest) {
+            cancelRequest();
+          }
         };
-
-        return {};
       }
-    });
+
+      destructor() {
+        this._cleanup();
+      }
+
+      attributeValueChangedCallback(name, oldValue, newValue) {
+        switch (name) {
+          case 'position': {
+            this.position = newValue;
+
+            this._updateMesh();
+
+            break;
+          }
+          case 'model': {
+            const {mesh: oldMesh, _cancelRequest: cancelRequest} = this;
+            if (oldMesh) {
+              scene.remove(oldMesh);
+              this.mesh = null;
+            }
+            if (cancelRequest) {
+              cancelRequest();
+            }
+
+            let live = true;
+            this._cancelRequest = () => {
+              live = false;
+            };
+
+            const file = newValue;
+            _requestModel(file)
+              .then(mesh => {
+                if (live) {
+                  scene.add(mesh);
+                  this.mesh = mesh;
+
+                  this._updateMesh();
+
+                  this._cancelRequest = null;
+                }
+              })
+              .catch(err => {
+                console.warn('failed to load model', err);
+              });
+
+            break;
+          }
+        }
+      }
+
+      _updateMesh() {
+        const {mesh, position} = this;
+
+        if (mesh && position) {
+          mesh.position.set(position[0], position[1], position[2]);
+          mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+          mesh.scale.set(position[7], position[8], position[9]);
+        }
+      }
+    }
+    elements.registerElement(this, ModelElement);
+
+    this._cleanup = () => {
+      elements.unregisterElement(this);
+    };
   }
 
   unmount() {

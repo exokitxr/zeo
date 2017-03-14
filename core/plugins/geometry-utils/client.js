@@ -13,10 +13,10 @@ const geometryUtils = archae => ({
 
     return archae.requestPlugins([
       '/core/engines/three',
-      '/core/plugins/fun-utils',
+      '/core/plugins/function-utils',
     ]).then(([
       three,
-      funUtils,
+      functionUtils,
     ]) => {
       if (live) {
         const {THREE} = three;
@@ -361,7 +361,7 @@ const geometryUtils = archae => ({
 
           const positions = (() => {
             const geometryPositions = geometries.map(geometry => geometry.getAttribute('position').array);
-            const numPositions = funUtils.sum(geometryPositions.map(geometryPosition => geometryPosition.length));
+            const numPositions = functionUtils.sum(geometryPositions.map(geometryPosition => geometryPosition.length));
 
             const result = new Float32Array(numPositions);
             let i = 0;
@@ -373,7 +373,7 @@ const geometryUtils = archae => ({
           })();
           const normals = (() => {
             const geometryNormals = geometries.map(geometry => geometry.getAttribute('normal').array);
-            const numNormals = funUtils.sum(geometryNormals.map(geometryNormal => geometryNormal.length));
+            const numNormals = functionUtils.sum(geometryNormals.map(geometryNormal => geometryNormal.length));
 
             const result = new Float32Array(numNormals);
             let i = 0;

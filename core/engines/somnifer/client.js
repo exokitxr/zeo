@@ -26,7 +26,7 @@ class Somnifer {
 
         const bodies = [];
 
-        class Body {
+        class SoundBody {
           constructor() {
             const sound = new THREE.PositionalAudio(listener);
             this.sound = sound;
@@ -93,12 +93,14 @@ class Somnifer {
           }
         };
 
-        const sound = {
-          Body,
-        };
-        return {
-          sound,
-        };
+        class SoundApi {
+          makeBody() {
+            return new SoundBody();
+          }
+        }
+        const soundApi = new SoundApi();
+
+        return soundApi;
       }
     });
   }

@@ -103,6 +103,12 @@ class Zeo {
             '/core/engines/somnifer',
             '/core/engines/bullet',
             '/core/plugins/js-utils',
+            '/core/plugins/function-utils',
+            '/core/plugins/geometry-utils',
+            '/core/plugins/random-utils',
+            '/core/plugins/text-utils',
+            '/core/plugins/creature-utils',
+            '/core/plugins/sprite-utils',
           ]);
 
           return _requestPlugins().then(([
@@ -133,11 +139,17 @@ class Zeo {
             somnifer,
             bullet,
             jsUtils,
+            functionUtils,
+            geometryUtils,
+            randomUtils,
+            textUtils,
+            creatureUtils,
+            spriteUtils,
           ]) => {
             if (live) {
               const {THREE, scene, camera, renderer} = three;
               const {domElement} = renderer;
-              const {EVENTS} = input;
+              const {EVENTS: INPUT_EVENTS} = input;
               const {sound} = somnifer;
               const {events} = jsUtils;
               const {EventEmitter} = events;
@@ -152,15 +164,6 @@ class Zeo {
                   method: 'loaded',
                 }, 'https://' + siteUrl);
               }
-
-              const inputEventsIndex = (() => {
-                const result = {};
-                for (let i = 0; i < EVENTS.length; i++) {
-                  const eventName = EVENTS[i];
-                  result[eventName] = true;
-                }
-                return result;
-              })();
 
               const updates = [];
               const updateEyes = [];
@@ -441,68 +444,112 @@ class Zeo {
                       _stopRenderLoop();
                     };
 
-                    class ZeoApi extends EventEmitter {
-                      constructor({THREE, scene, camera, renderer, sound, anima}) {
-                        super();
-
+                    class ZeoThreeApi {
+                      constructor() {
                         this.THREE = THREE;
                         this.scene = scene;
                         this.camera = camera;
                         this.renderer = renderer;
-                        this.sound = sound;
-                        this.anima = anima;
+                      }
+                    }
+
+                    class ZeoPoseApi {
+                      getStatus() {
+                        return webvr.getStatus();
                       }
 
-                      on(eventName, handler, options) {
-                        if (inputEventsIndex[eventName]) {
-                          input.on(eventName, handler, options);
-                          return this;
-                        } else {
-                          return super.on(eventName, handler);
-                        }
-                      }
-                      removeListener(eventName, handler) {
-                        if (inputEventsIndex[eventName]) {
-                          input.removeListener(eventName, handler);
-                          return this;
-                        } else {
-                          return super.removeListener(eventName, handler);
-                        }
-                      }
-                      removeAllListeners(eventName) {
-                        if (inputEventsIndex[eventName]) {
-                          input.removeAllListeners(eventName);
-                          return this;
-                        } else {
-                          return super.removeAllListeners(eventName);
-                        }
+                      getStageMatrix() {
+                        return webvr.getStageMatrix();
                       }
 
-                      update() {
-                        this.emit('update');
-                      }
-                      updateEye(camera) {
-                        this.emit('updateEye', camera);
+                      setStageMatrix(stageMatrix) {
+                        webvr.setStageMatrix(stageMatrix);
                       }
 
+                      updateStatus() {
+                        webvr.updateStatus();
+                      }
+
+                      resetPose() {
+                        webvr.resetPose();
+                      }
+                    }
+
+                    class ZeoInputApi extends EventEmitter {
+                      constructor() {
+                        super();
+
+                        for (let i = 0; i < INPUT_EVENTS.length; i++) {
+                          const eventName = INPUT_EVENTS[i];
+                          input.on(eventName, e => {
+                            this.emit(eventName, e);
+                          });
+                        }
+                      }
+                    }
+
+                    class ZeoRenderApi extends EventEmitter {
+                      constructor() {
+                        super();
+
+                        rend.on('update', () => {
+                          this.emit('update');
+                        });
+                        rend.on('updateEye', camera => {
+                          this.emit('updateEye', camera);
+                        });
+                      }
+                    }
+
+                    class ZeoElementsApi {
+                      registerElement(pluginInstance, elementApi) {
+                        tags.registerElement(pluginInstance, elementApi);
+                      }
+
+                      unregisterElement(pluginInstance) {
+                        tags.unregisterElement(pluginInstance);
+                      }
+                    }
+
+                    class ZeoWorldApi {
                       getWorldTime() {
                         return world.getWorldTime();
                       }
+                    }
 
-                      getGrabElement(side) {
-                        return world.getGrabElement(side);
+                    class ZeoUiApi {
+                      makeUi(options) {
+                        return biolumi.makeUi(options);
                       }
 
-                      createFile(blob) {
-                        return world.createFile(blob);
+                      getTransparentImg() {
+                        return biolumi.getTransparentImg();
                       }
+                    }
 
+                    class ZeoSoundApi {
+                      makeBody() {
+                        return somnifer.makeBody();
+                      }
+                    }
+
+                    class ZeoPhysicsApi {
                       getPhysicsWorld() {
                         return bullet.getPhysicsWorld();
                       }
 
-                      getStatus() {
-                        return webvr.getStatus();
+                      getControllerPhysicsBodies() {
+                        return cyborg.getControllerPhysicsBodies();
+                      }
+                    }
+
+                    class ZeoHandsApi extends EventEmitter {
+                      constructor() {
+                        super();
+
+                        hands.on('release', e => {
+                          this.emit('release', e);
+                        });
                       }
 
                       canGrab(side, object, options) {
@@ -517,34 +564,56 @@ class Zeo {
                       peek(side) {
                         return hands.peek(side);
                       }
+                    }
 
-                      registerElement(pluginInstance, elementApi) {
-                        tags.registerElement(pluginInstance, elementApi);
-                      }
-                      unregisterElement(pluginInstance) {
-                        tags.unregisterElement(pluginInstance);
+                    class ZeoAnimationApi {
+                      makeAnimation(duration) {
+                        return anima.makeAnimation(duration);
                       }
                     }
 
-                    const api = new ZeoApi({
-                      THREE,
-                      scene,
-                      camera,
-                      renderer,
-                      sound,
-                      anima,
-                    });
-                    rend.on('update', () => {
-                      api.update();
-                    });
-                    rend.on('updateEye', camera => {
-                      api.updateEye(camera);
-                    });
-                    hands.on('release', e => {
-                      api.emit('release', e);
-                    });
+                    class ZeoJsApi {
+                      constructor() {
+                        this.events = events;
+                      }
+                    }
 
-                    return api;
+                    class ZeoUtilsApi {
+                      constructor() {
+                        this.js = jsUtils;
+                        this.function = functionUtils;
+                        this.geometry = geometryUtils;
+                        this.random = randomUtils;
+                        this.text = textUtils;
+                        this.creature = creatureUtils;
+                        this.sprite = spriteUtils;
+                      }
+                    }
+
+                    class ZeoApi extends EventEmitter {
+                      constructor() {
+                        super();
+
+                        this.three = new ZeoThreeApi();
+                        this.pose = new ZeoPoseApi();
+                        this.input = new ZeoInputApi();
+                        this.render = new ZeoRenderApi();
+                        this.elements = new ZeoElementsApi();
+                        this.world = new ZeoWorldApi();
+                        this.ui = new ZeoUiApi();
+                        this.sound = new ZeoSoundApi();
+                        this.physics = new ZeoPhysicsApi();
+                        this.hands = new ZeoHandsApi();
+                        this.animation = new ZeoAnimationApi();
+                        this.utils = new ZeoUtilsApi();
+                      }
+                    }
+                    const zeoApi = new ZeoApi();
+                    window.zeo = zeoApi;
+
+                    servers.requestInitialConnect();
+
+                    return zeoApi;
                   }
                 })
             }

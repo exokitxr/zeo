@@ -668,10 +668,6 @@ class WebVR {
             return newStatus;
           }
 
-          getDisplay() {
-            return this.display;
-          }
-
           getStatus() {
             return this.status;
           }
@@ -716,6 +712,11 @@ class WebVR {
 
               bootstrap.setUserStateMatrix(newUserStageMatrix.toArray());
             }
+          }
+
+          resetPose() {
+            const {display} = this;
+            display.resetPose();
           }
         }
 

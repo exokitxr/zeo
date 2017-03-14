@@ -40,19 +40,13 @@ class Portal {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/zeo',
-      '/core/engines/webvr',
+    return archae.requestPlugins([ // XXX get rid of this dependency
       '/core/engines/cyborg',
-      '/core/plugins/geometry-utils',
     ]).then(([
-      zeo,
-      webvr,
       cyborg,
-      geometryUtils,
     ]) => {
       if (live) {
-        const {THREE, scene, camera, renderer} = zeo;
+        const {three: {THREE, scene, camera, renderer}, elements, render, pose, utils: {geometry: geometryUtils}} = zeo;
 
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
         const _decomposeMatrix = matrix => {
@@ -270,10 +264,9 @@ class Portal {
               const _getTeleportMatrix = (camera, sourcePortalMesh, targetPortalMesh) => {
                 const {position: destinationPoint, rotation: destinationRotation} = _getSourcePortalCameraPosition(camera, sourcePortalMesh, targetPortalMesh);
 
-                const matrix = webvr.getStageMatrix();
+                const matrix = pose.getStageMatrix();
                 const {position, quaternion, scale} = _decomposeMatrix(matrix);
                 position.copy(destinationPoint);
-                const display = webvr.getDisplay();
                 const {position: cameraPosition, quaternion: cameraQuaternion, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
                 const cameraRotation = new THREE.Euler().setFromQuaternion(cameraQuaternion, camera.rotation.order);
                 quaternion.setFromEuler(new THREE.Euler(
@@ -314,13 +307,12 @@ class Portal {
                         const sourcePortalMesh = a[i === 0 ? 1 : 0];
 
                         const matrix = _getTeleportMatrix(camera, sourcePortalMesh, targetPortalMesh);
-                        webvr.setStageMatrix(matrix);
+                        pose.setStageMatrix(matrix);
 
-                        const display = webvr.getDisplay();
-                        display.resetPose();
+                        pose.resetPose();
 
                         // apply the camera change this frame
-                        webvr.updateStatus();
+                        pose.updateStatus();
                         cyborg.update();
                       }
                     }
@@ -442,16 +434,16 @@ class Portal {
             }
           }
         }
-        zeo.registerElement(this, PortalElement);
+        elements.registerElement(this, PortalElement);
 
-        zeo.on('update', _update);
-        zeo.on('updateEye', _updateEye);
+        render.on('update', _update);
+        render.on('updateEye', _updateEye);
 
         this._cleanup = () => {
-          zeo.unregisterElement(this);
+          elements.unregisterElement(this);
 
-          zeo.removeListener('update', _update);
-          zeo.removeListener('updateEye', _updateEye);
+          render.removeListener('update', _update);
+          render.removeListener('updateEye', _updateEye);
         };
 
         return {};
