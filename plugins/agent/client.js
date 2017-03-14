@@ -89,18 +89,6 @@ class Agent {
               this.position = null;
               this.text = null;
 
-              this._cancelRequest = null;
-
-              this._cleanup = () => {
-                const {mesh, _cancelRequest: cancelRequest} = this;
-                if (mesh) {
-                  scene.remove(mesh);
-                }
-                if (cancelRequest) {
-                  cancelRequest();
-                }
-              };
-
               const _makeHoverState = () => ({
                 target: null,
               });
@@ -309,6 +297,9 @@ class Agent {
               input.on('grip', grip);
 
               this._cleanup = () => {
+                scene.remove(box);
+                scene.remove(mesh);
+
                 updates.splice(updates.indexOf(update), 1);
 
                 input.removeListener('trigger', trigger);
@@ -358,8 +349,6 @@ class Agent {
 
             render.removeListener('update', _update);
           };
-
-          return {};
         }
       });
   }
