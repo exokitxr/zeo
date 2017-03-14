@@ -68,7 +68,7 @@
       flex-grow: 1;
       // box-sizing: border-box;
     }
-    .body.api-body {
+    .api-body {
       z-index: 1;
     }
 
@@ -299,6 +299,48 @@
       border-width: 0 150px 150px 0;
       border-style: solid;
       border-color: transparent #2196F3 transparent transparent;
+    }
+
+    .modules-body {
+      margin: 20px;
+      margin-right: 0;
+      flex-grow: 0;
+      flex-wrap: wrap;
+    }
+    .modules-body .module {
+      display: flex;
+      width: calc(((100vw - 20px) / 3) - 20px);
+      height: 200px;
+      margin-right: 20px;
+      margin-bottom: 20px;
+      background-color: #333;
+      flex-direction: column;
+      cursor: pointer;
+    }
+    .modules-body .module:hover {
+      background-color: #444;
+    }
+    .modules-body .module-image {
+      height: 100px;
+    }
+    .modules-body .header {
+      display: flex;
+      padding: 10px;
+      padding-bottom: 5px;
+      align-items: flex-end;
+    }
+    .modules-body .header .name {
+      margin-right: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      flex-grow: 1;
+    }
+    .modules-body .header .version {
+      font-size: 12px;
+    }
+    .modules-body .description {
+      padding: 0 10px;
+      font-size: 13px;
     }
 
     .logged-in header {
@@ -1196,7 +1238,7 @@
       <navbar>
         <a href="/" class="green selected" id=nav-button-1>Try it</a>
         <a href="/docs" class=green id=nav-button-2>API Docs</a>
-        <a href="/faq" class=green id=nav-button-3>FAQ</a>
+        <a href="/modules" class=green id=nav-button-3>Modules</a>
       </navbar>
     </div>
     <div class=header-right>
@@ -1280,6 +1322,40 @@
   </div>
   <div class="body api-body" id=api-body style="display: none;">
     <iframe class=docs-iframe id=docs-iframe></iframe>
+  </div>
+  <div class="body modules-body" id=modules-body style="display: none;">
+    <div class=module>
+      <img class=module-image />
+      <div class=header>
+        <div class=name>Module</div>
+        <div class=version>0.3.26</div>
+      </div>
+      <div class=description>This is a fake module for demonstration purposes</div>
+    </div>
+    <div class=module>
+      <img class=module-image />
+      <div class=header>
+        <div class=name>Module</div>
+        <div class=version>0.3.26</div>
+      </div>
+      <div class=description>This is a fake module for demonstration purposes</div>
+    </div>
+    <div class=module>
+      <img class=module-image />
+      <div class=header>
+        <div class=name>Module</div>
+        <div class=version>0.3.26</div>
+      </div>
+      <div class=description>This is a fake module for demonstration purposes</div>
+    </div>
+    <div class=module>
+      <img class=module-image />
+      <div class=header>
+        <div class=name>Module</div>
+        <div class=version>0.3.26</div>
+      </div>
+      <div class=description>This is a fake module for demonstration purposes</div>
+    </div>
   </div>
   <!-- <section class=details>
     <div class=details-wrapper id=demographics-details-1>
@@ -1764,6 +1840,7 @@ _drawCanvasGrid(gridCanvas); */
 
 const homeBody = $('#home-body')[0];
 const apiBody = $('#api-body')[0];
+const modulesBody = $('#modules-body')[0];
 const navButton1 = $('#nav-button-1')[0];
 const navButton2 = $('#nav-button-2')[0];
 const navButton3 = $('#nav-button-3')[0];
@@ -1804,6 +1881,7 @@ const _updatePage = () => {
 
     homeBody.style.display = 'flex';
     apiBody.style.display = 'none';
+    modulesBody.style.display = 'none';
   } else if (match = path.match(/^\/docs\/?(?:\?|(#.*)|$)/)) {
     const hash = match[1] || '';
 
@@ -1813,11 +1891,25 @@ const _updatePage = () => {
 
     homeBody.style.display = 'none';
     apiBody.style.display = 'flex';
-  } else if (/^\/faq\/?(?:\?|#.*|$)/.test(path)) {
+    modulesBody.style.display = 'none';
+  } else if (/^\/modules\/?(?:\?|#.*|$)/.test(path)) {
     navButton3.classList.add('selected');
 
     homeBody.style.display = 'none';
     apiBody.style.display = 'none';
+    modulesBody.style.display = 'flex';
+
+    fetch('https://www.reddit.com/r/wallpapers/.json')
+      .then(res => res.json()
+        .then(j => {
+          const urls = j.data.children.map(o => o.data.url);
+          const validUrls = urls.filter(url => /\.(?:png|jpg)$/.test(url));
+          const url = validUrls[Math.floor(Math.random() * validUrls.length)];
+          $('.module-image').forEach(moduleImage => {
+            moduleImage.src = url;
+          });
+        })
+      );
   }
 };
 _updatePage();
