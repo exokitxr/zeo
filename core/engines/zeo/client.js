@@ -527,6 +527,10 @@ class Zeo {
                       }
                     }
 
+                    class ZeoJsApi {
+                      this.events = events;
+                    }
+
                     class ZeoApi extends EventEmitter {
                       constructor() {
                         super();
@@ -541,6 +545,7 @@ class Zeo {
                         this.physics = new ZeoPhysicsApi();
                         this.hands = new ZeoHandsApi();
                         this.animation = new ZeoAnimationApi();
+                        this.js = new ZeoJsApi();
                       }
                     }
                     const zeoApi = new ZeoApi();
