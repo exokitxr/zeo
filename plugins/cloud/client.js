@@ -9,7 +9,7 @@ const NUM_CELLS = 64;
 
 class Cloud {
   mount() {
-    const {three: {THREE, scene}, elements, world, utils: {random: {alea}}} = zeo;
+    const {three: {THREE, scene}, elements, pose, render, world, utils: {random: {alea}}} = zeo;
 
     const THREEConvexGeometry = ConvexGeometry(THREE);
 
