@@ -93,7 +93,6 @@ class Tags {
             opacity: 0.5,
             transparent: true,
           });
-
           const subcontentFontSpec = {
             fonts: biolumi.getFonts(),
             fontSize: 20,
@@ -101,6 +100,9 @@ class Tags {
             fontWeight: biolumi.getFontWeight(),
             fontStyle: biolumi.getFontStyle(),
           };
+
+          const rootElement = document.createElement('div');
+          rootElement.id = 'zeo-root';
 
           class UiManager {
             constructor({width, height, color, metadata}) {
@@ -1324,6 +1326,8 @@ class Tags {
                           tagsApi.emit('setAttribute', {id, attribute, value});
                         };
                         item.instance = element;
+                        rootElement.appendChild(element);
+
                         item.instancing = false;
                         item.attributes = _clone(attributes);
 
@@ -1360,10 +1364,16 @@ class Tags {
                       instance.destructor();
                     }
                     item.instance = null;
+
+                    rootElement.removeChild(instance);
                   }
 
                   unlock();
                 });
+            }
+
+            getRootElement() {
+              return rootElement;
             }
 
             getPointedTagMesh(side) {

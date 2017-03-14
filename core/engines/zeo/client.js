@@ -509,6 +509,10 @@ class Zeo {
                       unregisterElement(pluginInstance) {
                         tags.unregisterElement(pluginInstance);
                       }
+
+                      getRootElement() {
+                        return tags.getRootElement();
+                      }
                     }
 
                     class ZeoWorldApi {

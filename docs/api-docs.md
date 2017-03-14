@@ -16,13 +16,52 @@ The `elements` API is used to integrate your module into the DOM that keeps trac
 
 `zeo.elements.registerElement()` lets you describe your module as a DOM [Custom element](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements) with user-configurable attributes.
 
-### getTags()
+### getRootElement()
 
-`zeo.elements.getDOM()` lets you access the currently instantiated modules (represented as Custom DOM elements) in the VR world.
+`zeo.elements.getRootElement()` lets you access the root DOM node that contains all currently instantiated modules (represented as Custom DOM elements) in the VR world.
 
-You can use this to find which modules are currently live (including your own) and communicate with them via standard DOM events.
+This is a regular `div` that lives in the DOM. However, should should not rely on it having any particular properties. Always access it via `elements.getRootElement`.
 
-XXX
+You can walk this DOM node to find which modules are currently live (including your own) and communicate with them via standard DOM events.
+
+#### Example cross-module events
+
+```javascript
+// my-plugin/client.js
+class MyPlugin {
+  mount() {
+    class MyPluginElement extends HTMLElement {
+      createdCallback() {
+        this.addEventListener('somethingHappened', e => {
+          console.log('something happened: ' + e.what);
+        });
+      }
+    }
+
+    zeo.elements.registerElement(MyPluginElement);
+  }
+}
+```
+
+```javascript
+// my-other-plugin/client.js
+class MyOtherPlugin {
+  mount() {
+    setInterval(() => {
+      const rootElement = zeo.elements.getRootElement();
+      const myPluginInstances = rootElement.querySelectorAll('z-my-plugin');
+
+      const somethingHappenedEvent = new CustomEvent('somethingHappened', {
+        what: 'something',
+      });
+
+      myPluginInstances.forEach(myPluginInstance => {
+        myPluginInstance.dispatchEvent(somethingHappenedEvent);
+      });
+    }, 1000);
+  }
+}
+```
 
 ## Pose API
 
