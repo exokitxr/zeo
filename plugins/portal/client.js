@@ -267,7 +267,7 @@ class Portal {
                 const matrix = pose.getStageMatrix();
                 const {position, quaternion, scale} = _decomposeMatrix(matrix);
                 position.copy(destinationPoint);
-                const {position: cameraPosition, rotation: cameraQuaternion, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
+                const {position: cameraPosition, quaternion: cameraQuaternion, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
                 const cameraRotation = new THREE.Euler().setFromQuaternion(cameraQuaternion, camera.rotation.order);
                 quaternion.setFromEuler(new THREE.Euler(
                   destinationRotation.x - cameraRotation.x,
@@ -307,7 +307,7 @@ class Portal {
                         const sourcePortalMesh = a[i === 0 ? 1 : 0];
 
                         const matrix = _getTeleportMatrix(camera, sourcePortalMesh, targetPortalMesh);
-                        webvr.setStageMatrix(matrix);
+                        pose.setStageMatrix(matrix);
 
                         pose.resetPose();
 

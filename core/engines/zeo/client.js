@@ -462,6 +462,10 @@ class Zeo {
                         return webvr.getStageMatrix();
                       }
 
+                      setStageMatrix(stageMatrix) {
+                        webvr.setStageMatrix(stageMatrix);
+                      }
+
                       updateStatus() {
                         webvr.updateStatus();
                       }
