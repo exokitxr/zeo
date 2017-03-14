@@ -24,7 +24,7 @@ This is a regular `div` that lives in the DOM. However, should should not rely o
 
 You can walk this DOM node to find which modules are currently live (including your own) and communicate with them via standard DOM events.
 
-#### Example cross-module events
+#### Example: cross-module events
 
 ```javascript
 // my-plugin/client.js
@@ -120,39 +120,69 @@ When possible,  prefer this API for detecting user input -- although it is techn
 
 Note that when you add event listeners for the input events, you'll need to make sure the event listeners are removed when your element is destroyed (if added on element creation), or otherwise in your module's `unmount` function (if added in your module's `mount` function).
 
-### Supported events
+### Common properties
 
-- `trigger` `{side: 'left'}`
-  - Fired when the controller's `trigger` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
-- `triggerdown` `{side: 'left'}`
-  - Fired when the controller's `trigger` button is pushed _down_.
-- `triggerup` `{side: 'left'}`
-  - Fired when the controller's `trigger` button is released _up_.
-- `pad` `{side: 'left'}`
-  - Fired when the controller's `pad` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
-- `paddown` `{side: 'left'}`
-  - Fired when the controller's `pad` button is pushed _down_.
-- `padup` `{side: 'left'}`
-  - Fired when the controller's `pad` button is released _up_.
-- `grip` `{side: 'left'}`
-  - Fired when the controller's `grip` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
-- `gripdown` `{side: 'left'}`
-  - Fired when the controller's `grip` button is pushed _down_.
-- `gripup` `{side: 'left'}`
-  - Fired when the controller's `grip` button is released _up_.
-- `menu` `{side: 'left'}`
-  - Fired when the controller's `menu` button is pressed. The `side` argument tells you whether the `left` or `right` controller was pressed.
-- `menudown` `{side: 'left'}`
-  - Fired when the controller's `menu` button is pushed _down_.
-- `menuup` `{side: 'left'}`
-  - Fired when the controller's `menu` button is released _up_.
-- `keyboardpress` `{ key: 'a', keyCode: 65, side: 'left' }`
-   - Fired when a virtual keyboard key is pressed.
-   - `key` is the textual representation of the key. `keyCode` is the corresponding Javascript-compatible key code. `side` is whether the `left` or `right` controller was used to press the key. 
-- `keyboarddown` `{ key: 'a', keyCode: 65, side: 'left' }`
-  - Fired when a virtual keyboard key is pushed _down_.
-- `keyboardup` `{ key: 'a', keyCode: 65, side: 'left' }`
-  - Fired when a virtual keyboard key is released _up_.
+All `input` API events have a `side` property equal to either `'left'` or `'right'`, depending on which hand corresponds to the controller that fired the event.
+
+The `side` property exists for all input events, regardless of the actual control scheme being used -- even with mouse + keyboard controls there are two controllers with distinct `side`s.
+
+Note that whether this might not correspond to the actual hand that the user is holding the controller in. The accuracy of this depends entirely on the browser API and user behavior. The main purpose of `side` is to distinguish and correlate controllers across multiple events. For example, if you do something on `gripdown` you might want to do something else on `gripup`, but you'll need to know _which_ controller fired the event so your code doesn't get confused when the user decides to grip both controllers simultaneously.
+
+#### Track controller grip
+
+```javascript
+zeo.input.on('gripdown', e => {
+  const {side} = e;
+  console.log(`grip down on ${side} side`);
+});
+
+zeo.input.on('gripup', e => {
+  const {side} = e;
+  console.log(`grip up on ${side} side`);
+});
+```
+
+### VR events
+
+The `input` api emits the following virtual events.
+
+You should prefer these over the browser-native events, since they work regardless of control scheme: for example, if the user is using the virtual keyboard, you will get `keyboardpress` but not `keypress` events..
+
+|event|schema|description|
+|-|-|-|
+|`trigger`|`{side: String}`|Trigger button pressed.|
+|`triggerdown`|`{side: String}`|Trigger button held.|
+|`triggerup`|`{side: String}`|Trigger button released.|
+|`pad`|`{side: String}`|Pad button pressed.|
+|`paddown`|`{side: String}`|Pad button held.|
+|`padup`|`{side: String}`|Pad button released.|
+|`grip`|`{side: String}`|Grip button pressed.|
+|`gripdown`|`{side: String}`|Grip button held.|
+|`gripup`|`{side: String}`|Grip button released.|
+|`menu`|`{side: String}`|Menu button pressed.|
+|`menudown`|`{side: String}`|Menu button held.|
+|`menuup`|`{side: String}`|Menu button released.|
+|`keyboardpress`|`{side: String, keyCode: Number}`|Virtual keyboard key pressed. `keyCode` is the Javascript keycode for the corresponding key.|
+|`keyboarddown`|`{side: String, keyCode: Number}`|Virtual keyboard key held. `keyCode` is the Javascript keycode for the corresponding key.|
+|`keyboardup`|`{side: String, keyCode: Number}`|Virtual keyboard key released. `keyCode` is the Javascript keycode for the corresponding key.|
+
+### Browser events
+
+The `input` api proxies the following browser events.
+
+Prefer to listen for these instead of adding native browser event listeners, which might have unexpected differences in capture, bubbling, and focus. Also note that you should prefer to use the [VR events](#vr-events) instead, so your code does not make assumptions about the user's control scheme.
+
+|event|description|
+|-|-|
+|`click`|Browser native.|
+|`mousedown`|Browser native.|
+|`mouseup`|Browser native.|
+|`mousewheel`|Browser native.|
+|`keypress`|Browser native.|
+|`keyup`|Browser native.|
+|`paste`|Browser native.|
+
+These are emitted exactly as reported by the browser.
 
 ## UI API
 
