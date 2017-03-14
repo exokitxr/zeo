@@ -8,6 +8,11 @@ class Paint {
   mount() {
     const {three: {THREE, scene}, elements, input, pose, world, render, utils: {geometry: geometryUtils}} = zeo;
 
+    let live = true;
+    this.cleanup = () => {
+      live = false;
+    };
+
     const planeUvs = geometryUtils.unindexBufferGeometry(new THREE.PlaneBufferGeometry(1, 1, 1, 1)).getAttribute('uv').array;
 
     const _requestImage = src => new Promise((accept, reject) => {
@@ -249,7 +254,7 @@ class Paint {
                   }
                 });
               };
-              input.on('update', _update);
+              render.on('update', _update);
 
               this._cleanup = () => {
                 scene.remove(mesh);
