@@ -14,7 +14,7 @@ class Physics {
       .then(res => res.json()
         .then(modelJson => new Promise((accept, reject) => {
           const loader = new THREE.ObjectLoader();
-
+          loader.crossOrigin = true;
           const url = MODEL_SRC;
           const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
           loader.setTexturePath(texturePath);

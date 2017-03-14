@@ -41,7 +41,7 @@ class Model {
       type: 'json',
     }).then(modelJson => new Promise((accept, reject) => {
       const loader = new THREE.ObjectLoader();
-
+      loader.crossOrigin = true;
       const {url} = file;
       const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
       loader.setTexturePath(texturePath);

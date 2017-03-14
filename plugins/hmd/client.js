@@ -15,6 +15,7 @@ class Hmd {
             const object = new THREE.Object3D();
 
             const loader = new THREE.ObjectLoader();
+            loader.crossOrigin = true;
             loader.load(modelPath, mesh => {
               mesh.scale.set(0.045, 0.045, 0.045);
               mesh.rotation.order = camera.rotation.order;
