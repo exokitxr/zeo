@@ -15,6 +15,11 @@ class Draw {
   mount() {
     const {three: {THREE, scene}, input, elements, render, pose, world, utils: {geometry: geometryUtils}} = zeo;
 
+    let live = true;
+    this._cleanup = () => {
+      live = false;
+    };
+
     const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
       const position = new THREE.Vector3();
