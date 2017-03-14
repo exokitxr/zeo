@@ -257,10 +257,10 @@ a.quiet.active, a.quiet:hover { color:rgba(0,0,0,0.75); }
 a.quiet.dark { color:white; margin: 0 -15px; padding: 4px 21px; font-size: 13px; font-weight: 600; color: #000; }
 
 .dark .space-left1 > a.quiet,
-.space-left1 > a.quiet.dark { margin-left: -25px; padding-left: 35px; font-size: 12px; }
+.space-left1 > a.quiet.dark { margin-left: -25px; padding-left: 35px; }
 
 .dark a.quiet:hover,
-a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); color: white; background-color: #4CAF50; }
+a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); color: white; background-color: #000; }
 
 /* Buttons */
 .button {
@@ -3147,7 +3147,7 @@ Alternate exists for:
 .fill-darken3 { background:rgba(0,0,0,0.75); }
 
 .fill-lighten0 { background:rgba(255,255,255,0.10); }
-.fixed-left .fill-lighten0 { background: #4CAF50; color: #FFF !important; }
+.fixed-left .fill-lighten0 { background: #000; color: #FFF !important; }
 .fill-lighten1 { background:rgba(255,255,255,0.25); }
 .fill-lighten2 { background:rgba(255,255,255,0.50); }
 .fill-lighten3 { background:rgba(255,255,255,0.75); }
@@ -3437,7 +3437,7 @@ Details: http://www.positioniseverything.net/easyclearing.html
 .unfloat                      { float:none; }
 .dot                          { border-radius:50%; }
 .quiet                        { color:#7f7f7f; }
-.dark .quiet                  { color: #7f7f7f;}
+.dark .quiet                  { color: #000; font-weight: 700;}
 .center                       { text-align:center; }
 .contain                      { position:relative; }
 .clip                         { overflow:hidden; }
