@@ -128,11 +128,11 @@ class Paint {
                       const uvs = uvsAttribute.array;
 
                       const gamepad = gamepads[side];
-                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                      const {position: controllerPosition, quaternion: controllerQuaternion} = gamepad;
 
                       const brushSize = 0.1;
                       const direction = new THREE.Vector3(1, 0, 0)
-                        .applyQuaternion(controllerRotation);
+                        .applyQuaternion(controllerQuaternion);
                       const posA = controllerPosition.clone()
                         .add(direction.clone().multiplyScalar(brushSize / 2));
                       const posB = controllerPosition.clone()

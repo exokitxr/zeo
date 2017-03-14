@@ -381,13 +381,13 @@ class Shell {
             const {gamepads} = pose.getStatus();
 
             SIDES.forEach(side => {
-              const gamepadStatus = gamepads[side];
+              const gamepad = gamepads[side];
               const hoverState = hoverStates[side];
 
-              if (gamepadStatus) {
-                const {position: controllerPosition, rotation: controllerRotation} = gamepadStatus;
+              if (gamepad) {
+                const {position: controllerPosition, quaternion: controllerQuaternion} = gamepad;
                 const ray = new THREE.Vector3(0, 0, -10)
-                  .applyQuaternion(controllerRotation);
+                  .applyQuaternion(controllerQuaternion);
                 const controllerLine = new THREE.Line3(
                   controllerPosition.clone(),
                   controllerPosition.clone().add(ray.clone().multiplyScalar(15))

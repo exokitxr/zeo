@@ -50,8 +50,7 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
           sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
 
           // detect hits
-          const status = pose.getStatus();
-          const {gamepads: gamepadsStatus} = status;
+          const {gamepads: gamepadsStatus} = pose.getStatus();
           const lines = ['left', 'right'].map(side => {
             const gamepadStatus = gamepadsStatus[side];
             if (gamepadStatus) {

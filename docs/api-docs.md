@@ -79,7 +79,36 @@ Use [Render API](#render-api) to synchronize your pose queries to the world fram
 
 `zeo.vr.getStatus()` returns an object containing the current instantaneous headset and controllers state.
 
-XXX
+#### Get HMD pose
+
+```javascript
+const status = zeo.pose.getStatus();
+const {hmd: {position, quaternion, scale}} = status;
+
+console.log('current headset pose:', {
+  position, // THREE.Vector3
+  quaternion, // THREE.Quaternion
+  scale, // THREE.Vector3
+});
+```
+
+#### Get gamepads pose
+
+```javascript
+const status = zeo.pose.getStatus();
+const {gamepads} = status;
+
+['left', 'right'].forEach(side => {
+  const gamepad = gamepads[side];
+  const {position, quaternion, scale} = gamepad;
+
+  console.log(`current ${side} controller pose:', {
+    position, // THREE.Vector3
+    quaternion, // THREE.Quaternion
+    scale, // THREE.Vector3
+  });
+});
+```
 
 ## Input API
 
