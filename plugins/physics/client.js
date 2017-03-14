@@ -7,7 +7,7 @@ class Physics {
       live = false;
     };
 
-    const {three: {THREE, scene, camera}, pose, physics, hands} = zeo;
+    const {three: {THREE, scene, camera}, pose, input, physics, hands} = zeo;
     const physicsWorld = physics.getPhysicsWorld();
 
     const _requestModelData = () => fetch(MODEL_SRC)
