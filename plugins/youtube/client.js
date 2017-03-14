@@ -106,7 +106,7 @@ class Youtube {
             mesh.rotation.y = Math.PI / 2;
 
             const soundBody = (() => {
-              const result = new sound.makeBody();
+              const result = sound.makeBody();
               // result.setInputElement(video);
               result.setObject(mesh);
               return result;
