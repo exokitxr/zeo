@@ -108,6 +108,7 @@ class Zeo {
             '/core/plugins/random-utils',
             '/core/plugins/text-utils',
             '/core/plugins/creature-utils',
+            '/core/plugins/sprite-utils',
           ]);
 
           return _requestPlugins().then(([
@@ -143,6 +144,7 @@ class Zeo {
             randomUtils,
             textUtils,
             creatureUtils,
+            spriteUtils,
           ]) => {
             if (live) {
               const {THREE, scene, camera, renderer} = three;
@@ -580,6 +582,7 @@ class Zeo {
                         this.random = randomUtils;
                         this.text = textUtils;
                         this.creature = creatureUtils;
+                        this.sprite = spriteUtils;
                       }
                     }
 

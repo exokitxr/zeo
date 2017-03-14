@@ -50,7 +50,7 @@ module.exports = archae => ({
     const _requestStarImgs = () => Promise.all(STAR_IMG_URLS.map(starImgUrl => _requestImg(starImgUrl)));
     const _requestAdImg = () => _requestImg(AD_IMG_URL);
     const _requestCloseImg = () => _requestImg(CLOSE_IMG_URL);
-    const _requestYoturThingHereImg = () => _requestImg(YOUR_THING_HERE_IMG_URL);
+    const _requestYourThingHereImg = () => _requestImg(YOUR_THING_HERE_IMG_URL);
     const _requestClickImg = () => _requestImg(CLICK_IMG_URL);
     const _requestSupportImg = () => _requestImg(SUPPORT_IMG_URL);
     const _requestAudio = () => new Promise((accept, reject) => {
@@ -103,7 +103,7 @@ module.exports = archae => ({
         audio,
       }) => {
         if (live) {
-          const {three: {THREE, scene, camera, sound}, pose, input, render, elements, animation, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
+          const {three: {THREE, scene, camera, sound}, elements, pose, input, render, world, animation, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
 
           const starGeometries = starImgs.map(starImg => spriteUtils.makeImageGeometry(starImg, PIXEL_SIZE));
           const textMaterialDark = new THREE.MeshPhongMaterial({
