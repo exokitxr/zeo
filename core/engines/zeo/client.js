@@ -5,7 +5,7 @@ class Zeo {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}}} = archae;
+    const {metadata: {site: {url: siteUrl}, server: {enabled: serverEnabled}}} = archae;
 
     let cleanups = [];
     const _cleanup = () => {
@@ -611,7 +611,9 @@ class Zeo {
                     const zeoApi = new ZeoApi();
                     window.zeo = zeoApi;
 
-                    servers.requestInitialConnect();
+                    if (serverEnabled) {
+                      servers.requestInitialConnect();
+                    }
 
                     return zeoApi;
                   }
