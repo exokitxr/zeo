@@ -14,23 +14,15 @@ class Weapons {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/zeo',
+    return archae.requestPlugins([ // XXX get rid of this dependency
       '/core/engines/cyborg',
-      '/core/plugins/geometry-utils',
-      '/core/plugins/text-utils',
-      '/core/plugins/creature-utils',
     ]).then(([
-      zeo,
       cyborg,
-      geometryUtils,
-      textUtils,
-      creatureUtils,
     ]) => {
       if (live) {
-        const {THREE, scene, camera, renderer} = zeo;
+        const {three: {THREE, scene, camera, renderer}, input, render, world, physics, utils: {geometry: geometryUtils, text: textUtils, creature: creatureUtils}} = zeo;
 
-        const physicsWorld = zeo.getPhysicsWorld();
+        const physicsWorld = physics.getPhysicsWorld();
         const player = cyborg.getPlayer();
         const controllers = cyborg.getControllers();
 
@@ -79,7 +71,7 @@ class Weapons {
 
         const keydown = e => {
           if (window.document.pointerLockElement) {
-            switch (e.keyCode) {
+            switch (e.keyCode) { // XXX need to rewrite this with a proper UI
               case 49: { // 1
                 const mode = cyborg.getMode();
                 if (mode !== 'move' && !_hasWeapon(mode)) {
@@ -146,7 +138,7 @@ class Weapons {
             }
           }
         };
-        zeo.on('keydown', keydown);
+        input.on('keydown', keydown);
         const hmdUpdate = update => {
           ['left', 'right'].forEach(_syncWeaponSide);
         };
@@ -725,7 +717,7 @@ class Weapons {
             const hudWeaponMeshes = [weaponMeshes.left, weaponMeshes.right].filter(weaponMesh => weaponMesh && weaponMesh.weaponType === 'hud');
 
             if (hudWeaponMeshes.length > 0) {
-              const worldTime = zeo.getWorldTime();
+              const worldTime = world.getWorldTime();
 
               const _updateHudMeshIcon = () => {
                 const frameIndex = Math.floor(worldTime / 200) % 2;
@@ -763,14 +755,15 @@ class Weapons {
           _updateHud();
         };
 
-        zeo.on('update', _update);
+        render.on('update', _update);
 
         this._cleanup = () => {
-          zeo.removeListener('keydown', keydown);
+          input.removeListener('keydown', keydown);
+
           player.removeEventListener('hmdUpdate', hmdUpdate);
           player.removeEventListener('controllerUpdate', controllerUpdate);
 
-          zeo.removeListener('update', _update);
+          render.removeListener('update', _update);
         };
 
         return {};

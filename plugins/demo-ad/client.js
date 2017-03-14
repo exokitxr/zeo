@@ -50,7 +50,7 @@ module.exports = archae => ({
     const _requestStarImgs = () => Promise.all(STAR_IMG_URLS.map(starImgUrl => _requestImg(starImgUrl)));
     const _requestAdImg = () => _requestImg(AD_IMG_URL);
     const _requestCloseImg = () => _requestImg(CLOSE_IMG_URL);
-    const _requestYourThingHereImg = () => _requestImg(YOUR_THING_HERE_IMG_URL);
+    const _requestYoturThingHereImg = () => _requestImg(YOUR_THING_HERE_IMG_URL);
     const _requestClickImg = () => _requestImg(CLICK_IMG_URL);
     const _requestSupportImg = () => _requestImg(SUPPORT_IMG_URL);
     const _requestAudio = () => new Promise((accept, reject) => {
@@ -91,36 +91,19 @@ module.exports = archae => ({
       supportImg,
     }));
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/zeo',
-        '/core/plugins/geometry-utils',
-        '/core/plugins/sprite-utils',
-        '/core/plugins/random-utils',
-      ]),
-      _requestResources(),
-    ])
-      .then(([
-        [
-          zeo,
-          geometryUtils,
-          spriteUtils,
-          randomUtils,
-        ],
-        {
-          iconImg,
-          starImgs,
-          adImg,
-          closeImg,
-          yourThingHereImg,
-          clickImg,
-          supportImg,
-          audio,
-        },
-      ]) => {
+    return _requestResources()
+      .then(({
+        iconImg,
+        starImgs,
+        adImg,
+        closeImg,
+        yourThingHereImg,
+        clickImg,
+        supportImg,
+        audio,
+      }) => {
         if (live) {
-          const {THREE, scene, camera, sound, anima} = zeo;
-          const {alea} = randomUtils;
+          const {three: {THREE, scene, camera, sound}, pose, input, render, elements, animation, util: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
 
           const starGeometries = starImgs.map(starImg => spriteUtils.makeImageGeometry(starImg, PIXEL_SIZE));
           const textMaterialDark = new THREE.MeshPhongMaterial({
@@ -396,15 +379,15 @@ module.exports = archae => ({
 
                 if (target) {
                   adState.open = false;
-                  adState.animation = anima.makeAnimation(TRANSITION_DURATION);
+                  adState.animation = animation.makeAnimation(TRANSITION_DURATION);
 
                   const dotMesh = dotMeshes[side];
                   dotMesh.visible = false;
                 }
               };
-              zeo.on('trigger', _trigger);
+              input.on('trigger', _trigger);
 
-              let lastTime = zeo.getWorldTime();
+              let lastTime = world.getWorldTime();
               const _update = () => {
                 const _updateMesh = () => {
                   const {open} = adState;
@@ -423,8 +406,7 @@ module.exports = archae => ({
                   }
                 };
                 const _updateControllers = () => {
-                  const status = zeo.getStatus();
-                  const {gamepads} = zeo.getStatus();
+                  const {gamepads} = pose.getStatus();
 
                   const _updateNyancatMesh = () => {
                     if (audio) {
@@ -497,7 +479,7 @@ module.exports = archae => ({
                 const _updateAnimations = () => {
                   const {starMeshes, yourThingHereMesh} = mesh;
 
-                  const currentTime = zeo.getWorldTime();
+                  const currentTime = world.getWorldTime();
 
                   const lastFrame = Math.floor(lastTime / FRAME_INTERVAL);
                   const currentFrame = Math.floor(currentTime / FRAME_INTERVAL);
@@ -527,7 +509,7 @@ module.exports = archae => ({
                 _updateControllers();
                 _updateAnimations();
               };
-              zeo.on('update', _update);
+              render.on('update', _update);
 
               this._cleanup = () => {
                 scene.remove(mesh);
@@ -535,8 +517,8 @@ module.exports = archae => ({
                   scene.remove(dotMeshes[side]);
                 });
 
-                zeo.removeListener('trigger', _trigger);
-                zeo.removeListener('update', _update);
+                input.removeListener('trigger', _trigger);
+                input.removeListener('update', _update);
 
                 if (audio && !audio.paused) {
                   audio.pause();
@@ -562,10 +544,10 @@ module.exports = archae => ({
               }
             }
           }
-          zeo.registerElement(this, DemoAdElement); // register our element as available to the scene
+          elements.registerElement(this, DemoAdElement); // register our element as available to the scene
 
           this._cleanup = () => {
-            zeo.unregisterElement(this);
+            elements.unregisterElement(this);
           };
         }
       });

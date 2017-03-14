@@ -1,80 +1,59 @@
 const FOG_DENSITY = 0.05;
 
 class Fog {
-  constructor(archae) {
-    this._archae = archae;
-  }
-
   mount() {
-    const {_archae: archae} = this;
+    const {three: {scene}, elements, render} = zeo;
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
+    const updates = [];
+    const _update = () => {
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        update();
+      }
     };
 
-    return archae.requestPlugins([
-      '/core/engines/zeo',
-    ]).then(([
-      zeo,
-    ]) => {
-      if (live) {
-        const {scene} = zeo;
+    class FogElement extends HTMLElement {
+      createdCallback() {
+        const update = () => {
+          const skybox = (() => {
+            for (let {parentNode: node} = this; node; node = node.parentNode) {
+              if (/^z-i-skybox$/i.test(node.tagName)) {
+                return node;
+              }
+            }
+            return null;
+          })();
 
-        const updates = [];
-        const _update = () => {
-          for (let i = 0; i < updates.length; i++) {
-            const update = updates[i];
-            update();
+          if (skybox) {
+            const sunSphere = skybox.getSunSphere();
+            const sunFactor = Math.max(sunSphere.position.y / sunSphere.distance, 0);
+            scene.fog.density = sunFactor * FOG_DENSITY;
+          } else {
+            scene.fog.density = 0;
           }
         };
-
-        class FogElement extends HTMLElement {
-          createdCallback() {
-            const update = () => {
-              const skybox = (() => {
-                for (let {parentNode: node} = this; node; node = node.parentNode) {
-                  if (/^z-i-skybox$/i.test(node.tagName)) {
-                    return node;
-                  }
-                }
-                return null;
-              })();
-
-              if (skybox) {
-                const sunSphere = skybox.getSunSphere();
-                const sunFactor = Math.max(sunSphere.position.y / sunSphere.distance, 0);
-                scene.fog.density = sunFactor * FOG_DENSITY;
-              } else {
-                scene.fog.density = 0;
-              }
-            };
-            updates.push(update);
-
-            this._cleanup = () => {
-              updates.splice(updates.indexOf(update), 1);
-
-              scene.fog.density = 0;
-            };
-          }
-
-          destructor() {
-            this._cleanup();
-          }
-        }
-        zeo.registerElement(this, FogElement);
-
-        zeo.on('update', _update);
+        updates.push(update);
 
         this._cleanup = () => {
-          zeo.unregisterElement(this);
+          updates.splice(updates.indexOf(update), 1);
 
-          zeo.removeListener('update', _update);
+          scene.fog.density = 0;
         };
-
-        return {};
       }
-    });
+
+      destructor() {
+        this._cleanup();
+      }
+    }
+    elements.registerElement(this, FogElement);
+
+    elements.on('update', _update);
+
+    this._cleanup = () => {
+      elements.unregisterElement(this);
+
+      render.removeListener('update', _update);
+    };
   }
 
   unmount() {

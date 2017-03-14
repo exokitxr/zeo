@@ -103,6 +103,11 @@ class Zeo {
             '/core/engines/somnifer',
             '/core/engines/bullet',
             '/core/plugins/js-utils',
+            '/core/plugins/function-utils',
+            '/core/plugins/geometry-utils',
+            '/core/plugins/random-utils',
+            '/core/plugins/text-utils',
+            '/core/plugins/creature-utils',
           ]);
 
           return _requestPlugins().then(([
@@ -133,6 +138,11 @@ class Zeo {
             somnifer,
             bullet,
             jsUtils,
+            functionUtils,
+            geometryUtils,
+            randomUtils,
+            textUtils,
+            creatureUtils,
           ]) => {
             if (live) {
               const {THREE, scene, camera, renderer} = three;
@@ -443,6 +453,18 @@ class Zeo {
                       getStatus() {
                         return webvr.getStatus();
                       }
+
+                      getStageMatrix() {
+                        return webvr.getStageMatrix();
+                      }
+
+                      updateStatus() {
+                        webvr.updateStatus();
+                      }
+
+                      resetPose() {
+                        webvr.resetPose();
+                      }
                     }
 
                     class ZeoInputApi extends EventEmitter {
@@ -486,6 +508,16 @@ class Zeo {
                       }
                     }
 
+                    class ZeoUiApi {
+                      makeUi(options) {
+                        return biolumi.makeUi(options);
+                      }
+
+                      getTransparentMaterial() {
+                        return biolumi.getTransparentMaterial();
+                      }
+                    }
+
                     class ZeoSoundApi {
                       makeBody() {
                         return somnifer.makeBody();
@@ -495,6 +527,10 @@ class Zeo {
                     class ZeoPhysicsApi {
                       getPhysicsWorld() {
                         return bullet.getPhysicsWorld();
+                      }
+
+                      getControllerPhysicsBodies() {
+                        return cyborg.getControllerPhysicsBodies();
                       }
                     }
 
@@ -531,6 +567,15 @@ class Zeo {
                       this.events = events;
                     }
 
+                    class ZeoUtilApi {
+                      this.js = jsUtils;
+                      this.function = functionUtils;
+                      this.geometry = geometryUtils;
+                      this.random = randomUtils;
+                      this.text = textUtils;
+                      this.creature = creatureUtils;
+                    }
+
                     class ZeoApi extends EventEmitter {
                       constructor() {
                         super();
@@ -541,11 +586,12 @@ class Zeo {
                         this.render = new ZeoRenderApi();
                         this.elements = new ZeoElementsApi();
                         this.world = new ZeoWorldApi();
+                        this.ui = new ZeoUiApi();
                         this.sound = new ZeoSoundApi();
                         this.physics = new ZeoPhysicsApi();
                         this.hands = new ZeoHandsApi();
                         this.animation = new ZeoAnimationApi();
-                        this.js = new ZeoJsApi();
+                        this.util = new ZeoUtilApi();
                       }
                     }
                     const zeoApi = new ZeoApi();
