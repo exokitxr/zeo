@@ -2,7 +2,7 @@ const SkyShader = require('./lib/three-extra/SkyShader');
 
 class Skybox {
   mount() {
-    const {three: {THREE, scene}, world, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene}, elements, render, world, utils: {geometry: geometryUtils}} = zeo;
 
     const THREESky = SkyShader(THREE);
 
