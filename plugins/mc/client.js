@@ -67,8 +67,8 @@ class Mc {
 
       const _requestImage = url => new Promise((accept, reject) => {
         const img = new Image();
-        img.src = url;
         img.crossOrigin = 'Anonymous';
+        img.src = url;
         img.onload = () => {
           accept(img);
         };
