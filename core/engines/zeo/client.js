@@ -443,10 +443,12 @@ class Zeo {
                     };
 
                     class ZeoThreeApi {
-                      this.THREE = THREE;
-                      this.scene = scene;
-                      this.camera = camera;
-                      this.renderer = renderer;
+                      constructor() {
+                        this.THREE = THREE;
+                        this.scene = scene;
+                        this.camera = camera;
+                        this.renderer = renderer;
+                      }
                     }
 
                     class ZeoPoseApi {
@@ -564,16 +566,20 @@ class Zeo {
                     }
 
                     class ZeoJsApi {
-                      this.events = events;
+                      constructor() {
+                        this.events = events;
+                      }
                     }
 
                     class ZeoUtilApi {
-                      this.js = jsUtils;
-                      this.function = functionUtils;
-                      this.geometry = geometryUtils;
-                      this.random = randomUtils;
-                      this.text = textUtils;
-                      this.creature = creatureUtils;
+                      constructor() {
+                        this.js = jsUtils;
+                        this.function = functionUtils;
+                        this.geometry = geometryUtils;
+                        this.random = randomUtils;
+                        this.text = textUtils;
+                        this.creature = creatureUtils;
+                      }
                     }
 
                     class ZeoApi extends EventEmitter {

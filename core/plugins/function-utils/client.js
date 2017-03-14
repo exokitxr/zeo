@@ -1,4 +1,4 @@
-const funUtils = () => ({
+const functionUtils = {
   mount() {
     function sum(a) {
       let result = 0;
@@ -13,6 +13,6 @@ const funUtils = () => ({
     };
   },
   unmount() {},
-});
+};
 
-module.exports = funUtils;
+module.exports = functionUtils;
