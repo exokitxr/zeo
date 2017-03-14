@@ -1,6 +1,6 @@
 class Sprite {
   mount() {
-    const {three: {THREE, scene}, utils: {sprite: spriteUtils}} = zeo;
+    const {three: {THREE, scene}, elements, utils: {sprite: spriteUtils}} = zeo;
 
     const pixelMaterial = new THREE.MeshPhongMaterial({
       vertexColors: THREE.FaceColors,
