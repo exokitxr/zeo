@@ -211,7 +211,7 @@ class Camera {
       priority: 1,
     });
 
-    input.on('update', _update);
+    render.on('update', _update);
 
     this._cleanup = () => {
       elements.unregisterElement(this);
