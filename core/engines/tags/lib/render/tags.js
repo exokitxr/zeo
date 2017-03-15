@@ -16,7 +16,7 @@ const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
 
 const makeRenderer = ({creatureUtils}) => {
-  const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open}) => {
+  const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
     const {id, name, displayName, description, instancing, metadata: {isStatic, exists}} = item;
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
@@ -34,27 +34,16 @@ const makeRenderer = ({creatureUtils}) => {
             : ''}
           </div>
         </div>
-        ${!open ?
-          `<${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="tag:open:${id}">
-            <img src="${barsBlackImgSrc}" width="50" height="50">
-          </${linkTagName}>`
-        :
-          `<${linkTagName} style="display: flex; width: 80px; background-color: #000; justify-content: center; align-items: center;" onclick="tag:close:${id}">
-            <img src="${barsWhiteImgSrc}" width="50" height="50">
-          </${linkTagName}>`
+        <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
+          <img src="${barsBlackImgSrc}" width="50" height="50">
+        </${linkTagName}>
         }
       </div>
     `;
-    const bodySrc = open ? `\
-      <div style="position: relative; width: ${OPEN_WIDTH}px; height: ${OPEN_HEIGHT}px; padding: 10px 0; background-color: #F0F0F0; overflow: hidden; box-sizing: border-box;">
-        ${getAttributesSrc(item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec)}
-      </div>
-    ` : '';
 
     return `\
       <${tagName} style="display: block; text-decoration: none;" onclick="module:${id}">
         ${headerSrc}
-        ${bodySrc}
       </${tagName}>
     `;
   };

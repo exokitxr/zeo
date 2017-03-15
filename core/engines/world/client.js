@@ -2253,6 +2253,26 @@ class World {
           };
           tags.on('download', _download);
 
+          const _link = ({tagMesh}) => {
+            const item = _clone(tagMesh.item);
+            item.id = _makeId();
+            item.type = 'entity';
+            const matrix = (() => {
+              const {matrix: oldMatrix} = item;
+              const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
+              const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
+              const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
+
+              position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
+
+              return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+            })();
+            item.matrix = matrix;
+
+            _addTag(item, 'world');
+          };
+          tags.on('link', _link);
+
           const _upload = file => {
             if (!login.isOpen()) {
               worldApi.createFile(file)
@@ -2412,6 +2432,7 @@ class World {
             input.removeListener('keyboarddown', _keyboarddown);
 
             tags.removeListener('download', _download);
+            tags.removeListener('link', _link);
             tags.removeListener('setAttribute', _setAttribute);
 
             fs.removeListener('upload', _upload);

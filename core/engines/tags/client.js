@@ -578,6 +578,13 @@ class Tags {
                     id,
                     name,
                   });
+                } else if (match = onclick.match(/^module:link:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                  tagsApi.emit('link', {
+                    tagMesh,
+                  });
                 } else if (match = onclick.match(/^media:(play|pause):(.+)$/)) {
                   const action = match[1];
                   const id = match[2];
