@@ -1773,8 +1773,9 @@ class World {
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
-                    if (match = onclick.match(/^(?:tag|entity):(.+?)$/)) {
-                      const id = match[1];
+                    if (match = onclick.match(/^(module|entity):(.+?)$/)) {
+                      const type = match[1];
+                      const id = match[2];
                       const npmTagMeshes = npmManager.getTagMeshes();
                       const {npmMesh} = worldMesh;
                       const {newEntityTagMesh} = npmMesh;
@@ -1782,15 +1783,20 @@ class World {
                         .concat([newEntityTagMesh])
                         .find(tagMesh => tagMesh.item.id === id);
 
-                      const item = _clone(tagMesh.item);
-                      item.id = _makeId();
-                      item.metadata.isStatic = false;
-                      _addTag(item, 'hand:' + side);
+                      const canMakeTag = !(type === 'module' && tagMesh.item.metadata.exists); // XXX handle the multi-controller case
+                      if (canMakeTag) {
+                        const item = _clone(tagMesh.item);
+                        item.id = _makeId();
+                        item.metadata.isStatic = false;
+                        _addTag(item, 'hand:' + side);
 
-                      const highlightState = highlightStates[side];
-                      highlightState.startPoint = null;
+                        const highlightState = highlightStates[side];
+                        highlightState.startPoint = null;
 
-                      return true;
+                        return true;
+                      } else {
+                        return false;
+                      }
                     } else {
                       return false;
                     }
@@ -1999,14 +2005,20 @@ class World {
                       return true;
                     } else if (npmTagMeshes.includes(grabMesh)) {
                       const tagMesh = grabMesh;
-                      const item = _clone(tagMesh.item);
-                      item.id = _makeId();
-                      item.metadata.isStatic = false;
-                      _addTag(item, 'hand:' + side);
+                      const canMakeTag = !tagMesh.item.metadata.exists; // XXX handle the multi-controller case
 
-                      e.stopImmediatePropagation();
+                      if (canMakeTag) {
+                        const item = _clone(tagMesh.item);
+                        item.id = _makeId();
+                        item.metadata.isStatic = false;
+                        _addTag(item, 'hand:' + side);
 
-                      return true;
+                        e.stopImmediatePropagation();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
                     } else if (grabMesh === newEntityTagMesh) {
                       const tagMesh = grabMesh;
                       const item = _clone(tagMesh.item);

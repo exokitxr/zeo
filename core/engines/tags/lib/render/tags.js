@@ -52,7 +52,7 @@ const makeRenderer = ({creatureUtils}) => {
     ` : '';
 
     return `\
-      <${tagName} style="display: block; text-decoration: none;" onclick="tag:${id}">
+      <${tagName} style="display: block; text-decoration: none;" onclick="module:${id}">
         ${headerSrc}
         ${bodySrc}
       </${tagName}>
