@@ -1108,6 +1108,30 @@ class World {
               const object = new THREE.Object3D();
               object.position.z = -1.5 + 0.01;
 
+              const newEntityTagMesh = (() => {
+                const scale = 1.5;
+
+                const newEntityTagMesh = tags.makeTag({
+                  type: 'entity',
+                  id: 'entity',
+                  name: 'new-entity',
+                  displayName: 'New entity',
+                  matrix: DEFAULT_MATRIX,
+                  isStatic: true,
+                });
+                newEntityTagMesh.position.set(
+                  (WORLD_WIDTH / 2) - 0.24,
+                  (WORLD_HEIGHT / 2) - 0.1,
+                  0
+                );
+                newEntityTagMesh.scale.set(scale, scale, 1);
+                newEntityTagMesh.initialScale = newEntityTagMesh.scale.clone();
+
+                return newEntityTagMesh;
+              })();
+              object.add(newEntityTagMesh);
+              object.newEntityTagMesh = newEntityTagMesh;
+
               return object;
             })();
             result.add(npmMesh);
@@ -1362,8 +1386,11 @@ class World {
                     const npmDotMesh = npmDotMeshes[side];
                     const npmBoxMesh = npmBoxMeshes[side];
 
+                    const {npmMesh} = worldMesh;
+                    const {newEntityTagMesh} = npmMesh;
+
                     biolumi.updateAnchors({
-                      objects: npmManager.getTagMeshes().map(tagMesh => {
+                      objects: npmManager.getTagMeshes().concat([newEntityTagMesh]).map(tagMesh => {
                         const {planeMesh, initialScale = oneVector} = tagMesh;
                         const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
                         const {page} = planeMesh;

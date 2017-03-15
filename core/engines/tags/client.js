@@ -1230,13 +1230,22 @@ class Tags {
                     };
                   })();
                   const mode = _getItemPreviewMode(item);
+                  const src = (() => {
+                    switch (type) {
+                      case 'element':
+                        return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic});
+                      case 'entity':
+                        return tagsRenderer.getEntitySrc({item, isStatic});
+                      case 'file':
+                        return tagsRenderer.getFileSrc({item, mode, open});
+                      default:
+                        return null;
+                    }
+                  })();
 
                   return {
                     type: 'html',
-                    src: type === 'element' ?
-                      tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic})
-                    :
-                      tagsRenderer.getFileSrc({item, mode, open}),
+                    src: src,
                     w: !open ? WIDTH : OPEN_WIDTH,
                     h: !open ? HEIGHT : OPEN_HEIGHT,
                   };

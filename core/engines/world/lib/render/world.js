@@ -27,6 +27,7 @@ const getWorldPageSrc = ({loading, inputText, inputPlaceholder, inputValue, numT
 
     return `\
       <div style="display: flex; width: 250px; min-height: ${HEIGHT}px; padding-top: 20px; background-color: #000; flex-direction: column; box-sizing: border-box;">
+        <div style="widht: 1px; height: 100px;"></div>
         <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid #FFF; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="npm:up">
           ${upWhiteImg}
         </a>
