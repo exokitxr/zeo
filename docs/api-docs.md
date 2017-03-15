@@ -120,7 +120,7 @@ When possible,  prefer this API for detecting user input -- although it is techn
 
 Note that when you add event listeners for the input events, you'll need to make sure the event listeners are removed when your element is destroyed (if added on element creation), or otherwise in your module's `unmount` function (if added in your module's `mount` function).
 
-### Common properties
+### Event side
 
 All `input` API events have a `side` property equal to either `'left'` or `'right'`, depending on which hand corresponds to the controller that fired the event.
 
@@ -192,6 +192,12 @@ This is useful for implementing displays and menu interfaces, and works out of t
 
 The architecture is designed for VR-scale (90 FPS) performance, and implements fiber-like cooperative multitasking that prefers to yield instead of locking up the render loop and missing frames. The end result is a powerful UI rendering model that works for most use cases without too many caveats.
 
+#### makeUi()
+
+Use `zeo.ui.makeUi()` to create a `Ui` instance, which implements a single UI plane. This plane can contain an arbitrary `image`, `canvas`, or `html`.
+
+#### Ui.addPage()
+
 XXX
 
 ## Render API
@@ -200,7 +206,12 @@ The Render API emits events that you can listen for to be notified when we are a
 
 This is particularly useful when you need to perform frame-accurate updates, such as an auxiliary camera render, or update something based on the user's VR pose (see the [Post API](#pose-api)).
 
-XXX
+### Render events
+
+|event|schema|description|
+|-|-|-|
+|`update`|`null`|Emitted when we are about to render a VR frame. This event is emitted _before_ rendering starts, so any changes you make to the scene will be immediately reflected in the next frame.|
+|`updateEye`|`THREE.PerspectiveCamera`|Emitted when we are about to render a single eye of a VR frame. For VR rendering modes you will get two of these events per frame, while for monoscoping rendering you will get one. The emitted camera is positioned and oriented for the target eye. This event is separate from `update` because there are cases for which you need different math per eye -- such as rendering a stereoscopic texture. This event is emitted _before_ rendering starts, so any changes you make to the scene will be immediately reflected in the rendering of the eye camera.|
 
 ## File API
 
@@ -237,6 +248,11 @@ This includes facilities for querying, constructing, adding, and removing physic
 The physics subsystem works out of the box and is automatically synchronized to multiplayer clients.
 
 XXX
+
+
+
+
+
 
 
 
