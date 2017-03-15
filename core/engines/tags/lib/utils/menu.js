@@ -13,9 +13,9 @@ const _makeZeoModuleElementClass = ({tag, baseClass}) => {
       }
     }
 
-    entityAttributeChangedCallback(entityElement, attribute, oldValue, newValue) {
-      if (typeof super.entityAttributeChangedCallback === 'function') {
-        super.entityAttributeChangedCallback(entityElement, attribute, oldValue, newValue);
+    entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue) {
+      if (typeof super.entityAttributeValueChangedCallback === 'function') {
+        super.entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue);
       }
     }
   }

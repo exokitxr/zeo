@@ -109,7 +109,49 @@ class Tags {
           rootEntitiesElement.id = 'zeo-entities';
           document.body.appendChild(rootEntitiesElement);
           const rootEntitiesObserver = new MutationObserver(mutations => {
-            console.log('mutations', mutations); // XXX finish this
+            for (let i = 0; i < mutations.length; i++) {
+              const mutation = mutations[i];
+
+              const {addedNodes} = mutation; // XXX handle attributes
+              for (let j = 0; j < addedNodes.length; j++) {
+                const addedNode = addedNodes[j];
+                const entityElement = addedNode;
+                const {item: entityItem} = entityElement;
+                const {attributes: entityAttributes} = entityItem;
+
+                const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                for (let k = 0; k < boundComponentSpecs.length; k++) {
+                  const boundComponentSpec = boundComponentSpecs[k];
+                  const {tag, matchingAttributes} = boundComponentSpec;
+
+                  const componentApiInstance = componentApiInstances[tag];
+                  componentApiInstance.entityAddedCallback(entityElement);
+
+                  for (let l = 0; l < matchingAttributes.length; l++) {
+                    const matchingAttribute = matchingAttributes[l];
+                    const attributeValue = entityAttributes[matchingAttribute];
+                    componentApiInstance.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                  }
+                }
+              }
+
+              const {removedNodes} = mutation;
+              for (let k = 0; k < removedNodes.length; k++) {
+                const removedNode = removedNodes[k];
+                const entityElement = removedNode;
+                const {item: entityItem} = entityElement;
+                const {attributes: entityAttributes} = entityItem;
+
+                const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                for (let l = 0; l < boundComponentSpecs.length; l++) {
+                  const boundComponentSpec = boundComponentSpecs[l];
+                  const {tag} = boundComponentSpec;
+                  const componentApiInstance = componentApiInstances[tag];
+
+                  componentApiInstance.entityRemovedCallback(entityElement);
+                }
+              }
+            }
           });
           rootEntitiesObserver.observe(rootEntitiesElement, {
             childList: true,
@@ -1188,6 +1230,7 @@ class Tags {
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
           const componentApis = {};
+          const componentApiInstances = {};
           const elementApis = {};
 
           const _getBoundComponentSpecs = entityAttributes => {
@@ -1200,9 +1243,32 @@ class Tags {
               const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
               if (matchingAttributes.length > 0) {
                 result.push({
-                  componentApi,
+                  tag,
                   matchingAttributes,
                 });
+              }
+            }
+
+            return result;
+          };
+          const _getBoundEntitySpecs = componentAttributes => {
+            const result = [];
+
+            for (let i = 0; i < tagMeshes.length; i++) {
+              const tagMesh = tagMeshes[i];
+              const {item} = tagMesh;
+              const {type} = item;
+
+              if (type === 'entity' && !(item.metadata && item.metadata.isStatic)) {
+                const {attributes: entityAttributes} = item;
+
+                const matchingAttributes = Object.keys(entityAttributes).filter(attributeName => (attributeName in componentAttributes));
+                if (matchingAttributes.length > 0) {
+                  result.push({
+                    tagMesh,
+                    matchingAttributes,
+                  });
+                }
               }
             }
 
@@ -1385,13 +1451,33 @@ class Tags {
                         const {id} = item;
                         const baseClass = componentApi;
 
-                        const module = menuUtils.makeZeoModuleElement({
+                        const moduleElement = menuUtils.makeZeoModuleElement({
                           tag,
                           baseClass,
                         });
-                        item.instance = module;
-                        rootModulesElement.appendChild(module);
+                        item.instance = moduleElement;
+                        rootModulesElement.appendChild(moduleElement);
+                        componentApiInstances[tag] = moduleElement;
                         item.instancing = false;
+
+                        const {attributes: componentAttributes} = componentApi;
+                        const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
+                        for (let i = 0; i < boundEntitySpecs.length; i++) {
+                          const boundEntitySpec = boundEntitySpecs[i];
+                          const {tagMesh, matchingAttributes} = boundEntitySpec;
+                          const {item: entityItem} = tagMesh;
+                          const {instance: entityElement} = entityItem;
+                          
+                          moduleElement.entityAddedCallback(entityElement);
+
+                          for (let j = 0; j < matchingAttributes.length; j++) {
+                            const matchingAttribute = matchingAttributes[j];
+                            const {attributes: entityAttributes} = entityItem;
+                            const attributeValue = entityAttributes[matchingAttribute];
+
+                            moduleElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                          }
+                        }
 
                         const _updateInstanceUi = () => {
                           const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
@@ -1446,6 +1532,9 @@ class Tags {
                     }
                     item.instance = null;
 
+                    const {name} = item;
+                    componentApiInstances[name] = null;
+
                     const _updateNpmUi = () => {
                       const tagMesh = tagMeshes.find(tagMesh =>
                         tagMesh.item.type === 'module' &&
@@ -1477,21 +1566,7 @@ class Tags {
                 const {attributes: entityAttributes} = item;
                 
                 const entityElement = menuUtils.makeZeoEntityElement();
-
-                const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
-                for (let i = 0; i < boundComponentSpecs.length; i++) {
-                  const boundComponentSpec = boundComponentSpecs[i];
-                  const {componentApi, matchingAttributes} = boundComponentSpec;
-
-                  componentApi.entityAddedCallback(entityElement);
-                  
-                  for (let j = 0; j < matchingAttributes.length; j++) {
-                    const matchingAttribute = matchingAttributes[j];
-                    const attributeValue = entityAttributes[matchingAttribute];
-                    componentApi.entityAttributeChangedCallback(entityElement, matchingAttribute, attributeValue, null);
-                  }
-                }
-
+                entityElement.item = item;
                 item.instance = entityElement;
 
                 rootEntitiesElement.appendChild(entityElement);
@@ -1507,14 +1582,6 @@ class Tags {
 
                   if (instance) {
                     const entityElement = instance;
-
-                    const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
-                    for (let i = 0; i < boundComponentSpecs.length; i++) {
-                      const boundComponentSpec = boundComponentSpecs[i];
-                      const {componentApi} = boundComponentSpec;
-
-                      componentApi.entityRemovedCallback(entityElement);
-                    }
                     item.instance = null;
 
                     rootEntitiesElement.removeChild(entityElement);

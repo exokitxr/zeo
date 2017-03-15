@@ -2273,7 +2273,8 @@ class World {
               const result = {};
 
               const {instance: componentElement} = item;
-              const {attributes: componentAttributes = {}} = componentElement;
+              const {constructor: ComponentElement} = componentElement;
+              const {attributes: componentAttributes = {}} = ComponentElement;
               for (const attributeName in componentAttributes) {
                 const componentAttribute = componentAttributes[attributeName];
                 const {value} = componentAttribute;

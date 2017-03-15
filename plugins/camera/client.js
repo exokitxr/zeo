@@ -143,7 +143,7 @@ class Camera {
           updates.splice(updates.indexOf(update), 1);
         };
         
-        entityApi[symbol] = entityApi;
+        entityElement[symbol] = entityApi;
       }
 
       entityRemovedCallback(entityElement) {
