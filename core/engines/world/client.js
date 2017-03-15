@@ -1762,10 +1762,14 @@ class World {
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
-                    if (match = onclick.match(/^tag:(.+?)$/)) {
+                    if (match = onclick.match(/^(?:tag|entity):(.+?)$/)) {
                       const id = match[1];
                       const npmTagMeshes = npmManager.getTagMeshes();
-                      const tagMesh = npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const {npmMesh} = worldMesh;
+                      const {newEntityTagMesh} = npmMesh;
+                      const tagMesh = npmTagMeshes
+                        .concat([newEntityTagMesh])
+                        .find(tagMesh => tagMesh.item.id === id);
 
                       const item = _clone(tagMesh.item);
                       item.id = _makeId();
