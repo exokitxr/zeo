@@ -16,8 +16,8 @@ const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
 
 const makeRenderer = ({creatureUtils}) => {
-  const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic, exists}) => {
-    const {id, name, displayName, description, instancing} = item;
+  const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open}) => {
+    const {id, name, displayName, description, instancing, metadata: {isStatic, exists}} = item;
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
 
@@ -29,7 +29,7 @@ const makeRenderer = ({creatureUtils}) => {
           <div style="display: flex; height: 150px; flex-direction: column;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
             <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
-            ${exists ?
+            ${(isStatic && exists) ?
               `<div style="margin-bottom: 20px; font-size: 16px; font-weight: 400;">Exists</div>`
             : ''}
           </div>
@@ -59,8 +59,9 @@ const makeRenderer = ({creatureUtils}) => {
     `;
   };
 
-  const getElementSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic}) => {
+  const getElementSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open}) => {
     const {id, name, displayName, description, instancing} = item;
+    const isStatic = false; // XXX get rid of this
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
 
@@ -99,8 +100,8 @@ const makeRenderer = ({creatureUtils}) => {
     `;
   };
 
-  const getEntitySrc = ({item, isStatic}) => {
-    const {id, name, displayName, instancing} = item;
+  const getEntitySrc = ({item}) => {
+    const {id, name, displayName, instancing, metadata: {isStatic}} = item;
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
 

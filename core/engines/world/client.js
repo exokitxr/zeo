@@ -968,8 +968,8 @@ class World {
 
             _searchNpm(inputText)
               .then(itemSpecs => itemSpecs.map(itemSpec => {
-                itemSpec.isStatic = true; // XXX can probably be hardcoded in the render
-                itemSpec.exists = elementManager.getTagMeshes()
+                itemSpec.metadata.isStatic = true; // XXX can probably be hardcoded in the render
+                itemSpec.metadata.exists = elementManager.getTagMeshes()
                   .some(tagMesh =>
                     tagMesh.item.type === itemSpec.type &&
                     tagMesh.item.name === itemSpec.name
@@ -1126,7 +1126,9 @@ class World {
                   name: 'new-entity',
                   displayName: 'New entity',
                   matrix: DEFAULT_MATRIX,
-                  isStatic: true,
+                  metadata: {
+                    isStatic: true,
+                  },
                 });
                 newEntityTagMesh.position.set(
                   (WORLD_WIDTH / 2) - 0.24,
@@ -1782,6 +1784,7 @@ class World {
 
                       const item = _clone(tagMesh.item);
                       item.id = _makeId();
+                      item.metadata.isStatic = false;
                       _addTag(item, 'hand:' + side);
 
                       const highlightState = highlightStates[side];
@@ -1998,6 +2001,7 @@ class World {
                       const tagMesh = grabMesh;
                       const item = _clone(tagMesh.item);
                       item.id = _makeId();
+                      item.metadata.isStatic = false;
                       _addTag(item, 'hand:' + side);
 
                       e.stopImmediatePropagation();
@@ -2007,6 +2011,7 @@ class World {
                       const tagMesh = grabMesh;
                       const item = _clone(tagMesh.item);
                       item.id = _makeId();
+                      item.metadata.isStatic = false;
                       _addTag(item, 'hand:' + side);
 
                       e.stopImmediatePropagation();

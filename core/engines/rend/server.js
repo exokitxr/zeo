@@ -149,6 +149,7 @@ class Rend {
               local: path.isAbsolute(mod),
               attributes: packageJson.attributes || {},
               matrix: DEFAULT_TAG_MATRIX,
+              metadata: {},
             }));
           const _getModSpecs = mods => Promise.all(mods.map(mod => _getModSpec(mod)));
 

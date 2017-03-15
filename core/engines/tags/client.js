@@ -922,7 +922,8 @@ class Tags {
               version,
               attributes,
               mimeType,
-              matrix
+              matrix,
+              metadata
             ) {
               this.type = type;
               this.id = id;
@@ -992,6 +993,7 @@ class Tags {
               })();
               this.mimeType = mimeType;
               this.matrix = matrix;
+              this.metadata = metadata;
 
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
@@ -1201,11 +1203,10 @@ class Tags {
                 itemSpec.version,
                 itemSpec.attributes,
                 itemSpec.mimeType,
-                itemSpec.matrix
+                itemSpec.matrix,
+                itemSpec.metadata
               );
               object.item = item;
-
-              const {isStatic, exists} = itemSpec;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
@@ -1238,11 +1239,11 @@ class Tags {
                   const src = (() => {
                     switch (type) {
                       case 'module':
-                        return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic, exists});
+                        return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open});
                       case 'element':
-                        return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic});
+                        return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open});
                       case 'entity':
-                        return tagsRenderer.getEntitySrc({item, isStatic});
+                        return tagsRenderer.getEntitySrc({item});
                       case 'file':
                         return tagsRenderer.getFileSrc({item, mode, open});
                       default:
@@ -1271,6 +1272,7 @@ class Tags {
                 return mesh;
               };
 
+              const isStatic = Boolean(itemSpec.metadata && itemSpec.metadata.isStatic);
               if (!isStatic) { 
                 const planeMesh = _addUiManagerPage(uiManager);
                 object.add(planeMesh);
@@ -1339,12 +1341,30 @@ class Tags {
                         });
                         item.instance = module;
                         rootModulesElement.appendChild(module);
-
                         item.instancing = false;
 
-                        const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
-                        page.update();
-                        openPage.update();
+                        const _updateInstanceUi = () => {
+                          const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                          page.update();
+                          openPage.update();
+                        };
+                        _updateInstanceUi();
+
+                        const _updateNpmUi = () => {
+                          const tagMesh = tagMeshes.find(tagMesh =>
+                            tagMesh.item.type === 'module' &&
+                            tagMesh.item.name === item.name &&
+                            tagMesh.item.metadata.isStatic
+                          );
+                          if (tagMesh) {
+                            const {item} = tagMesh;
+                            item.metadata.exists = true;
+
+                            const {planeMesh: {page}} = tagMesh;
+                            page.update();
+                          }
+                        };
+                        _updateNpmUi();
 
                         unlock();
                       })
@@ -1363,7 +1383,7 @@ class Tags {
               }
             }
 
-            destroyModule(tagMesh) {
+            unreifyModule(tagMesh) {
               const {item} = tagMesh;
 
               item.lock()
@@ -1375,6 +1395,22 @@ class Tags {
                       instance.destructor();
                     }
                     item.instance = null;
+
+                    const _updateNpmUi = () => {
+                      const tagMesh = tagMeshes.find(tagMesh =>
+                        tagMesh.item.type === 'module' &&
+                        tagMesh.item.name === item.name &&
+                        tagMesh.item.metadata.isStatic
+                      );
+                      if (tagMesh) {
+                        const {item} = tagMesh;
+                        item.metadata.exists = false;
+
+                        const {planeMesh: {page}} = tagMesh;
+                        page.update();
+                      }
+                    };
+                    _updateNpmUi();
 
                     rootModulesElement.removeChild(instance);
                   }
