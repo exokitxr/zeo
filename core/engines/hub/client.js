@@ -812,7 +812,7 @@ class Hub {
                   item.setAttribute('position', matrixArray);
                 }
 
-                tags.reifyTag(tagMesh);
+                tags.reifyTag(tagMesh); // XXX make this work with the ECS
 
                 grabState.tagMesh = null;
 

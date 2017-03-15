@@ -101,8 +101,11 @@ class Tags {
             fontStyle: biolumi.getFontStyle(),
           };
 
-          const rootElement = document.createElement('div');
-          rootElement.id = 'zeo-root';
+          const rootModulesElement = document.createElement('div');
+          rootModulesElement.id = 'zeo-modules';
+
+          const rootEntitiesElement = document.createElement('div');
+          rootEntitiesElement.id = 'zeo-entities';
 
           class UiManager {
             constructor({width, height, color, metadata}) {
@@ -1163,7 +1166,9 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
-          const modElementApis = {};
+          const moduleApis = {};
+          const elementApis = {};
+
           class TagsApi extends EventEmitter {
             constructor() {
               super();
@@ -1174,13 +1179,13 @@ class Tags {
             registerElement(pluginInstance, elementApi) {
               const tag = archae.getName(pluginInstance);
 
-              modElementApis[tag] = elementApi;
+              elementApis[tag] = elementApi;
             }
 
             unregisterElement(pluginInstance) {
               const tag = archae.getName(pluginInstance);
 
-              delete modElementApis[tag];
+              delete elementApis[tag];
             }
 
             makeTag(itemSpec) {
@@ -1200,7 +1205,7 @@ class Tags {
               );
               object.item = item;
 
-              const {isStatic} = itemSpec;
+              const {isStatic, exists} = itemSpec;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
@@ -1233,7 +1238,7 @@ class Tags {
                   const src = (() => {
                     switch (type) {
                       case 'module':
-                        return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic});
+                        return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic, exists});
                       case 'element':
                         return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic});
                       case 'entity':
@@ -1307,6 +1312,77 @@ class Tags {
               }
             }
 
+            reifyModule(tagMesh) {
+              const {item} = tagMesh;
+              const {instance, instancing} = item;
+
+              if (!instance && !instancing) {
+                const {name} = item;
+
+                item.lock()
+                  .then(unlock => {
+                    archae.requestPlugin(name)
+                      .then(pluginInstance => {
+                        const name = archae.getName(pluginInstance);
+
+                        const tag = name;
+                        let moduleApi = moduleApis[tag];
+                        if (!HTMLElement.isPrototypeOf(moduleApi)) {
+                          moduleApi = HTMLElement;
+                        }
+                        const {id} = item;
+                        const baseClass = moduleApi;
+
+                        const module = menuUtils.makeZeoModuleElement({
+                          tag,
+                          baseClass,
+                        });
+                        item.instance = module;
+                        rootModulesElement.appendChild(module);
+
+                        item.instancing = false;
+
+                        const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                        page.update();
+                        openPage.update();
+
+                        unlock();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+
+                        unlock();
+                      });
+                  });
+
+                item.instancing = true;
+
+                const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                page.update();
+                openPage.update();
+              }
+            }
+
+            destroyModule(tagMesh) {
+              const {item} = tagMesh;
+
+              item.lock()
+                .then(unlock => {
+                  const {instance} = item;
+
+                  if (instance) {
+                    if (typeof instance.destructor === 'function') {
+                      instance.destructor();
+                    }
+                    item.instance = null;
+
+                    rootModulesElement.removeChild(instance);
+                  }
+
+                  unlock();
+                });
+            }
+
             reifyTag(tagMesh) {
               const {item} = tagMesh;
               const {instance, instancing} = item;
@@ -1321,14 +1397,14 @@ class Tags {
                         const name = archae.getName(pluginInstance);
 
                         const tag = name;
-                        let elementApi = modElementApis[tag];
+                        let elementApi = elementApis[tag];
                         if (!HTMLElement.isPrototypeOf(elementApi)) {
                           elementApi = HTMLElement;
                         }
                         const {id, attributes} = item;
                         const baseClass = elementApi;
 
-                        const element = menuUtils.makeZeoElement({
+                        const element = menuUtils.makeZeoEntityElement({
                           tag,
                           attributes,
                           baseClass,
@@ -1337,7 +1413,7 @@ class Tags {
                           tagsApi.emit('setAttribute', {id, attribute, value});
                         };
                         item.instance = element;
-                        rootElement.appendChild(element);
+                        rootEntitiesElement.appendChild(element);
 
                         item.instancing = false;
                         item.attributes = _clone(attributes);
@@ -1376,15 +1452,19 @@ class Tags {
                     }
                     item.instance = null;
 
-                    rootElement.removeChild(instance);
+                    rootEntitiesElement.removeChild(instance);
                   }
 
                   unlock();
                 });
             }
 
-            getRootElement() {
-              return rootElement;
+            getRootModulesElement() {
+              return rootModulesElement;
+            }
+
+            getRootEntitiesElement() {
+              return rootEntitiesElement;
             }
 
             getPointedTagMesh(side) {

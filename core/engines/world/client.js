@@ -296,9 +296,9 @@ class World {
 
               scene.add(tagMesh);
 
-              const {type} = item;
-              if (type === 'element') {
-                tags.reifyTag(tagMesh);
+              const {type, exists} = item;
+              if (type === 'module' && !exists) {
+                tags.reifyModule(tagMesh);
               }
             }
 
@@ -312,7 +312,11 @@ class World {
 
               const {instance} = item;
               if (instance) {
-                tags.unreifyTag(tagMesh);
+                const {type} = item;
+
+                if (type === 'module') {
+                  tags.unreifyModule(tagMesh);
+                }
               }
             }
           }
@@ -420,8 +424,8 @@ class World {
 
               const {item} = tagMesh;
               const {type} = item;
-              if (type === 'element') {
-                tags.reifyTag(tagMesh);
+              if (type === 'module') { // XXX make this work sensibly in the ECS
+                tags.reifyModule(tagMesh);
               }
             }
 
@@ -431,8 +435,8 @@ class World {
 
               const {item} = tagMesh;
               const {type} = item;
-              if (type === 'element') {
-                tags.unreifyTag(tagMesh);
+              if (type === 'module') {
+                tags.unreifyModule(tagMesh);
               }
             }
 
@@ -771,7 +775,7 @@ class World {
                 tagMesh.quaternion.copy(controllerMeshQuaternion);
                 tagMesh.scale.copy(oneVector)
 
-                tags.unreifyTag(tagMesh);
+                tags.unreifyModule(tagMesh); // XXX make this work sensible in the ECS
               } else {
                 console.warn('invalid move tag arguments', {src, dst});
               }
@@ -963,10 +967,15 @@ class World {
             const {inputText} = npmState;
 
             _searchNpm(inputText)
-              .then(tagSpecs => tagSpecs.map(tagSpec => {
-                tagSpec.isStatic = true;
+              .then(itemSpecs => itemSpecs.map(itemSpec => {
+                itemSpec.isStatic = true; // XXX can probably be hardcoded in the render
+                itemSpec.exists = elementManager.getTagMeshes()
+                  .some(tagMesh =>
+                    tagMesh.item.type === itemSpec.type &&
+                    tagMesh.item.name === itemSpec.name
+                  );
 
-                return tags.makeTag(tagSpec);
+                return tags.makeTag(itemSpec);
               }))
               .then(tagMeshes => {
                 npmState.loading = false;

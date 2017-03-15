@@ -1,8 +1,44 @@
-const zeoElementClasses = new Map();
-const _makeZeoElementClass = ({tag, attributes, baseClass}) => {
+const zeoModuleElementClasses = new Map();
+const _makeZeoModuleElementClass = ({tag, baseClass}) => {
+  class ZeoModuleElement extends baseClass {
+    entityAddedCallback(entityElement, attribute, value) {
+      if (typeof super.entityAddedCallback === 'function') {
+        super.entityAddedCallback(entityElement, attribute, value);
+      }
+    }
+
+    entityRemovedCallback(entityElement) {
+      if (typeof super.entityRemovedCallback === 'function') {
+        super.entityRemovedCallback(entityElement);
+      }
+    }
+
+    entityAttributeChangedCallback(entityElement, attribute, oldValue, newValue) {
+      if (typeof super.entityAttributeChangedCallback === 'function') {
+        super.entityAttributeChangedCallback(entityElement, attribute, oldValue, newValue);
+      }
+    }
+  }
+
+  const ZeoElementConstructor = document.registerElement('z-module-' + tag, ZeoModuleElement);
+  return ZeoElementConstructor;
+};
+const makeZeoModuleElement = ({tag, baseClass}) => {
+  let zeoModuleElementClass = zeoModuleElementClasses.get(tag);
+  if (!zeoModuleElementClass) {
+    zeoModuleElementClass = _makeZeoModuleElementClass({tag, baseClass});
+    zeoModuleElementClasses.set(tag, zeoModuleElementClass);
+  }
+
+  const zeoModuleElement = new zeoModuleElementClass();
+  return zeoModuleElement;
+};
+
+const zeoEntityElementClasses = new Map();
+const _makeZeoEntityElementClass = ({tag, attributes, baseClass}) => {
   const attributeNames = Object.keys(attributes);
 
-  class ZeoElement extends baseClass {
+  class ZeoEntityElement extends baseClass {
     get observedAttributes() {
       return attributeNames;
     }
@@ -37,17 +73,17 @@ const _makeZeoElementClass = ({tag, attributes, baseClass}) => {
     }
   }
 
-  const ZeoElementConstructor = document.registerElement('z-' + tag, ZeoElement);
-  return ZeoElementConstructor;
+  const ZeoEntityElementConstructor = document.registerElement('z-entity' + tag, ZeoEntityElement);
+  return ZeoEntityElementConstructor;
 };
-const makeZeoElement = ({tag, attributes, baseClass}) => {
-  let zeoElementClass = zeoElementClasses.get(tag);
-  if (!zeoElementClass) {
-    zeoElementClass = _makeZeoElementClass({tag, attributes, baseClass});
-    zeoElementClasses.set(tag, zeoElementClass);
+const makeZeoEntityElement = ({tag, attributes, baseClass}) => {
+  let zeoEntityElementClass = zeoEntityElementClasses.get(tag);
+  if (!zeoEntityElementClass) {
+    zeoEntityElementClass = _makeZeoEntityElementClass({tag, attributes, baseClass});
+    zeoEntityElementClasses.set(tag, zeoEntityElementClass);
   }
 
-  const zeoElement = new zeoElementClass();
+  const zeoElement = new zeoEntityElementClass();
 
   for (const attributeName in attributes) {
     const attribute = attributes[attributeName];
@@ -190,7 +226,8 @@ const _jsonParse = s => {
 };
 
 module.exports = {
-  makeZeoElement,
+  makeZeoModuleElement,
+  makeZeoEntityElement,
   castValueStringToValue,
   castValueStringToCallbackValue,
   castValueValueToString,
