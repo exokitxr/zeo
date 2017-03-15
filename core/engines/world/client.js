@@ -299,6 +299,8 @@ class World {
               const {type, exists} = item;
               if (type === 'module' && !exists) {
                 tags.reifyModule(tagMesh);
+              } else if (type === 'entity') {
+                tags.reifyEntity(tagMesh);
               }
             }
 
@@ -316,6 +318,8 @@ class World {
 
                 if (type === 'module') {
                   tags.unreifyModule(tagMesh);
+                } else if (type === 'entity') {
+                  tags.unreifyEntity(tagMesh);
                 }
               }
             }
@@ -775,7 +779,13 @@ class World {
                 tagMesh.quaternion.copy(controllerMeshQuaternion);
                 tagMesh.scale.copy(oneVector)
 
-                tags.unreifyModule(tagMesh); // XXX make this work sensible in the ECS
+                const {item} = tagMesh;
+                const {type} = item;
+                if (type === 'module') {
+                  tags.unreifyModule(tagMesh);
+                } else if (type === 'entity') {
+                  tags.unreifyEntity(tagMesh);
+                }
               } else {
                 console.warn('invalid move tag arguments', {src, dst});
               }
@@ -2254,11 +2264,28 @@ class World {
           tags.on('download', _download);
 
           const _link = ({tagMesh}) => {
-            const item = _clone(tagMesh.item);
-            item.id = _makeId();
-            item.type = 'entity';
+            const {item} = tagMesh;
+
+            const itemSpec = _clone(item);
+            itemSpec.id = _makeId();
+            itemSpec.type = 'entity';
+            const attributes = (() => {
+              const result = {};
+
+              const {instance: componentElement} = item;
+              const {attributes: componentAttributes = {}} = componentElement;
+              for (const attributeName in componentAttributes) {
+                const componentAttribute = componentAttributes[attributeName];
+                const {value} = componentAttribute;
+
+                result[attributeName] = value;
+              }
+
+              return result;
+            })();
+            itemSpec.attributes = attributes;
             const matrix = (() => {
-              const {matrix: oldMatrix} = item;
+              const {matrix: oldMatrix} = itemSpec;
               const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
               const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
               const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
@@ -2267,9 +2294,9 @@ class World {
 
               return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
             })();
-            item.matrix = matrix;
+            itemSpec.matrix = matrix;
 
-            _addTag(item, 'world');
+            _addTag(itemSpec, 'world');
           };
           tags.on('link', _link);
 

@@ -103,9 +103,20 @@ class Tags {
 
           const rootModulesElement = document.createElement('div');
           rootModulesElement.id = 'zeo-modules';
+          document.body.appendChild(rootModulesElement);
 
           const rootEntitiesElement = document.createElement('div');
           rootEntitiesElement.id = 'zeo-entities';
+          document.body.appendChild(rootEntitiesElement);
+          const rootEntitiesObserver = new MutationObserver(mutations => {
+            console.log('mutations', mutations); // XXX finish this
+          });
+          rootEntitiesObserver.observe(rootEntitiesElement, {
+            childList: true,
+            attributes: true,
+            subtree: true,
+            attributeOldValue: true,
+          });
 
           class UiManager {
             constructor({width, height, color, metadata}) {
@@ -938,7 +949,8 @@ class Tags {
               this.displayName = displayName;
               this.description = description;
               this.version = version;
-              this.attributes = (() => {
+              this.attributes = attributes;
+              /* this.attributes = (() => {
                 const result = {};
 
                 for (const k in attributes) {
@@ -997,7 +1009,7 @@ class Tags {
                 }
 
                 return result;
-              })();
+              })(); */
               this.mimeType = mimeType;
               this.matrix = matrix;
               this.metadata = metadata;
@@ -1175,14 +1187,45 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
-          const moduleApis = {};
+          const componentApis = {};
           const elementApis = {};
+
+          const _getBoundComponentSpecs = entityAttributes => {
+            const result = [];
+
+            for (const tag in componentApis) {
+              const componentApi = componentApis[tag];
+              const {attributes: componentAttributes} = componentApi;
+
+              const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
+              if (matchingAttributes.length > 0) {
+                result.push({
+                  componentApi,
+                  matchingAttributes,
+                });
+              }
+            }
+
+            return result;
+          };
 
           class TagsApi extends EventEmitter {
             constructor() {
               super();
 
               this.listen();
+            }
+
+            registerComponent(pluginInstance, componentApi) {
+              const tag = archae.getName(pluginInstance);
+
+              componentApis[tag] = componentApi;
+            }
+
+            unregisterComponent(pluginInstance) {
+              const tag = archae.getName(pluginInstance);
+
+              delete componentApis[tag];
             }
 
             registerElement(pluginInstance, elementApi) {
@@ -1335,12 +1378,12 @@ class Tags {
                         const name = archae.getName(pluginInstance);
 
                         const tag = name;
-                        let moduleApi = moduleApis[tag];
-                        if (!HTMLElement.isPrototypeOf(moduleApi)) {
-                          moduleApi = HTMLElement;
+                        let componentApi = componentApis[tag];
+                        if (!HTMLElement.isPrototypeOf(componentApi)) {
+                          componentApi = HTMLElement;
                         }
                         const {id} = item;
-                        const baseClass = moduleApi;
+                        const baseClass = componentApi;
 
                         const module = menuUtils.makeZeoModuleElement({
                           tag,
@@ -1420,6 +1463,61 @@ class Tags {
                     _updateNpmUi();
 
                     rootModulesElement.removeChild(instance);
+                  }
+
+                  unlock();
+                });
+            }
+
+            reifyEntity(tagMesh) {
+              const {item} = tagMesh;
+              const {instance} = item;
+
+              if (!instance) {
+                const {attributes: entityAttributes} = item;
+                
+                const entityElement = menuUtils.makeZeoEntityElement();
+
+                const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                for (let i = 0; i < boundComponentSpecs.length; i++) {
+                  const boundComponentSpec = boundComponentSpecs[i];
+                  const {componentApi, matchingAttributes} = boundComponentSpec;
+
+                  componentApi.entityAddedCallback(entityElement);
+                  
+                  for (let j = 0; j < matchingAttributes.length; j++) {
+                    const matchingAttribute = matchingAttributes[j];
+                    const attributeValue = entityAttributes[matchingAttribute];
+                    componentApi.entityAttributeChangedCallback(entityElement, matchingAttribute, attributeValue, null);
+                  }
+                }
+
+                item.instance = entityElement;
+
+                rootEntitiesElement.appendChild(entityElement);
+              }
+            }
+
+            unreifyEntity(tagMesh) {
+              const {item} = tagMesh;
+
+              item.lock()
+                .then(unlock => {
+                  const {instance} = item;
+
+                  if (instance) {
+                    const entityElement = instance;
+
+                    const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                    for (let i = 0; i < boundComponentSpecs.length; i++) {
+                      const boundComponentSpec = boundComponentSpecs[i];
+                      const {componentApi} = boundComponentSpec;
+
+                      componentApi.entityRemovedCallback(entityElement);
+                    }
+                    item.instance = null;
+
+                    rootEntitiesElement.removeChild(entityElement);
                   }
 
                   unlock();

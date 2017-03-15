@@ -1,3 +1,10 @@
+const symbol = Symbol();
+
+const cameraWidth = 0.2;
+const cameraHeight = 0.15;
+const cameraAspectRatio = cameraWidth / cameraHeight;
+const cameraDepth = 0.1;
+
 class Camera {
   mount() {
     const {three: {THREE, scene, camera, renderer}, input, render, elements, hands} = zeo;
@@ -12,11 +19,21 @@ class Camera {
 
     const cameraElements = [];
     class CameraElement extends HTMLElement {
-      createdCallback() {
-        const cameraWidth = 0.2;
-        const cameraHeight = 0.15;
-        const cameraAspectRatio = cameraWidth / cameraHeight;
-        const cameraDepth = 0.1;
+      static get attributes() {
+        return {
+          position: {
+            type: 'matrix',
+            value: [
+              0, 0, 0,
+              0, 0, 0, 1,
+              1, 1, 1
+            ]
+          }
+        };
+      }
+
+      entityAddedCallback(entityElement, attribute, value) {
+        const entityApi = {};
 
         const renderTarget = (() => {
           const width = 1024;
@@ -28,7 +45,7 @@ class Camera {
           });
           return renderTarget;
         })();
-        this.renderTarget = renderTarget;
+        // this.renderTarget = renderTarget;
 
         const mesh = (() => {
           const result = new THREE.Object3D();
@@ -95,9 +112,9 @@ class Camera {
           return result;
         })();
         scene.add(mesh);
-        this.mesh = mesh;
+        entityApi.mesh = mesh;
 
-        cameraElements.push(this);
+        cameraElements.push(entityApi);
 
         const sourceCamera = new THREE.PerspectiveCamera(45, cameraWidth / cameraHeight, camera.near, camera.far);
 
@@ -118,23 +135,30 @@ class Camera {
         };
         updates.push(update);
 
-        this._cleanup = () => {
+        entityApi.cleanup = () => {
           scene.remove(mesh);
 
-          cameraElements.splice(cameraElements.indexOf(this), 1);
+          cameraElements.splice(cameraElements.indexOf(entityApi), 1);
 
           updates.splice(updates.indexOf(update), 1);
         };
+        
+        entityApi[symbol] = entityApi;
       }
 
-      destructor() {
-        this._cleanup();
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
+        entityApi.cleanup();
+
+        entityApi[symbol] = null;
       }
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh} = this;
+            const {mesh} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -145,7 +169,7 @@ class Camera {
         }
       }
 
-      requestImageData() {
+      /* requestImageData() {
         const {renderTarget} = this;
         const {width, height} = renderTarget;
         const buffer = new Uint8Array(width * height * 4);
@@ -163,9 +187,9 @@ class Camera {
         const dataUrl = canvas.toDataURL('image/png');
         return fetch(dataUrl)
           .then(res => res.blob());
-      }
+      } */
     }
-    elements.registerElement(this, CameraElement);
+    elements.registerComponent(this, CameraElement);
 
     const _paddown = e => {
       const {side} = e;
@@ -214,7 +238,7 @@ class Camera {
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this);
 
       input.removeListener('paddown', _paddown);
       input.removeListener('padup', _padup);

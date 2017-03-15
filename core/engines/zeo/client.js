@@ -496,12 +496,12 @@ class Zeo {
                     }
 
                     class ZeoElementsApi {
-                      registerElement(pluginInstance, elementApi) {
-                        tags.registerElement(pluginInstance, elementApi);
+                      registerComponent(pluginInstance, componentApi) {
+                        tags.registerComponent(pluginInstance, componentApi);
                       }
 
-                      unregisterElement(pluginInstance) {
-                        tags.unregisterElement(pluginInstance);
+                      unregisterComponent(pluginInstance) {
+                        tags.unregisterComponent(pluginInstance);
                       }
 
                       getRootElement() {

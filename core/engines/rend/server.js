@@ -147,7 +147,7 @@ class Rend {
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
-              attributes: packageJson.attributes || {},
+              attributes: {},
               matrix: DEFAULT_TAG_MATRIX,
               metadata: {},
             }));

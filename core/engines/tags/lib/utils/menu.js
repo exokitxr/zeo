@@ -1,9 +1,9 @@
 const zeoModuleElementClasses = new Map();
 const _makeZeoModuleElementClass = ({tag, baseClass}) => {
   class ZeoModuleElement extends baseClass {
-    entityAddedCallback(entityElement, attribute, value) {
+    entityAddedCallback(entityElement) {
       if (typeof super.entityAddedCallback === 'function') {
-        super.entityAddedCallback(entityElement, attribute, value);
+        super.entityAddedCallback(entityElement);
       }
     }
 
@@ -34,65 +34,13 @@ const makeZeoModuleElement = ({tag, baseClass}) => {
   return zeoModuleElement;
 };
 
-const zeoEntityElementClasses = new Map();
-const _makeZeoEntityElementClass = ({tag, attributes, baseClass}) => {
-  const attributeNames = Object.keys(attributes);
+const zeoEntityElementConstructor = (() => {
+  class ZeoEntityElement extends HTMLElement {}
 
-  class ZeoEntityElement extends baseClass {
-    get observedAttributes() {
-      return attributeNames;
-    }
-
-    setAttribute(name, value) {
-      this.onsetattribute(name, value);
-    }
-
-    setAttributeRaw(name, value) {
-      super.setAttribute(name, value);
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-      if (typeof super.attributeChangedCallback === 'function') {
-        super.attributeChangedCallback(name, oldValue, newValue);
-      }
-
-      if (typeof super.attributeValueChangedCallback === 'function') {
-        const attribute = attributes[name];
-        const {type, min, max, step, options} = attribute;
-
-        const _castValue = s => {
-          if (s !== null) {
-            return castValueStringToCallbackValue(s.replace(/^"([\s\S]*)"$/, '$1'), type, min, max, step, options);
-          } else {
-            return null;
-          }
-        }
-
-        super.attributeValueChangedCallback(name, _castValue(oldValue), _castValue(newValue));
-      }
-    }
-  }
-
-  const ZeoEntityElementConstructor = document.registerElement('z-entity' + tag, ZeoEntityElement);
+  const ZeoEntityElementConstructor = document.registerElement('z-entity', ZeoEntityElement);
   return ZeoEntityElementConstructor;
-};
-const makeZeoEntityElement = ({tag, attributes, baseClass}) => {
-  let zeoEntityElementClass = zeoEntityElementClasses.get(tag);
-  if (!zeoEntityElementClass) {
-    zeoEntityElementClass = _makeZeoEntityElementClass({tag, attributes, baseClass});
-    zeoEntityElementClasses.set(tag, zeoEntityElementClass);
-  }
-
-  const zeoElement = new zeoEntityElementClass();
-
-  for (const attributeName in attributes) {
-    const attribute = attributes[attributeName];
-    const {value: attributeValue} = attribute;
-    zeoElement.setAttributeRaw(attributeName, JSON.stringify(attributeValue));
-  }
-
-  return zeoElement;
-};
+})();
+const makeZeoEntityElement = () => new zeoEntityElementConstructor();
 
 const castValueStringToValue = (s, type, min, max, step, options) => {
   switch (type) {
