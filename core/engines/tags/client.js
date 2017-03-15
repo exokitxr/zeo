@@ -1232,6 +1232,8 @@ class Tags {
                   const mode = _getItemPreviewMode(item);
                   const src = (() => {
                     switch (type) {
+                      case 'module':
+                        return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic});
                       case 'element':
                         return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic});
                       case 'entity':

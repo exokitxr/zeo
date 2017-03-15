@@ -137,7 +137,7 @@ class Rend {
             })); */
           const _getModSpec = mod => _getPluginPackageJson(mod)
             .then(packageJson => ({
-              type: 'element',
+              type: 'module',
               id: mod,
               name: mod,
               displayName: _cleanName(mod),
