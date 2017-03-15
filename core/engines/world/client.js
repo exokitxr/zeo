@@ -1328,7 +1328,11 @@ class World {
                   }
                 };
 
-                const tagMeshes = elementManager.getTagMeshes().concat(npmManager.getTagMeshes());
+                const {npmMesh} = worldMesh;
+                const {newEntityTagMesh} = npmMesh;
+                const tagMeshes = elementManager.getTagMeshes()
+                  .concat(npmManager.getTagMeshes())
+                  .concat([newEntityTagMesh]);
                 SIDES.forEach(side => {
                   const grabbableState = grabbableStates[side];
                   const grabBoxMesh = grabBoxMeshes[side];
