@@ -1,4 +1,5 @@
 import MultiMutex from 'multimutex';
+import styleParser from 'style-parser';
 
 import {
   WIDTH,
@@ -111,44 +112,83 @@ class Tags {
           const rootEntitiesObserver = new MutationObserver(mutations => {
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
+              const {type} = mutation;
 
-              const {addedNodes} = mutation; // XXX handle attributes
-              for (let j = 0; j < addedNodes.length; j++) {
-                const addedNode = addedNodes[j];
-                const entityElement = addedNode;
-                const {item: entityItem} = entityElement;
-                const {attributes: entityAttributes} = entityItem;
+              if (type === 'childList') {
+                const {addedNodes} = mutation;
+                for (let j = 0; j < addedNodes.length; j++) {
+                  const addedNode = addedNodes[j];
+                  const entityElement = addedNode;
+                  const {item: entityItem} = entityElement;
+                  const {attributes: entityAttributes} = entityItem;
 
-                const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
-                for (let k = 0; k < boundComponentSpecs.length; k++) {
-                  const boundComponentSpec = boundComponentSpecs[k];
-                  const {tag, matchingAttributes} = boundComponentSpec;
+                  const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                  for (let k = 0; k < boundComponentSpecs.length; k++) {
+                    const boundComponentSpec = boundComponentSpecs[k];
+                    const {tag, matchingAttributes} = boundComponentSpec;
 
-                  const componentApiInstance = componentApiInstances[tag];
-                  componentApiInstance.entityAddedCallback(entityElement);
+                    const componentApiInstance = componentApiInstances[tag];
+                    componentApiInstance.entityAddedCallback(entityElement);
 
-                  for (let l = 0; l < matchingAttributes.length; l++) {
-                    const matchingAttribute = matchingAttributes[l];
-                    const attributeValue = entityAttributes[matchingAttribute];
-                    componentApiInstance.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                    for (let l = 0; l < matchingAttributes.length; l++) {
+                      const matchingAttribute = matchingAttributes[l];
+                      const attributeValue = entityAttributes[matchingAttribute];
+                      componentApiInstance.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                    }
                   }
                 }
-              }
 
-              const {removedNodes} = mutation;
-              for (let k = 0; k < removedNodes.length; k++) {
-                const removedNode = removedNodes[k];
-                const entityElement = removedNode;
-                const {item: entityItem} = entityElement;
-                const {attributes: entityAttributes} = entityItem;
+                const {removedNodes} = mutation;
+                for (let k = 0; k < removedNodes.length; k++) {
+                  const removedNode = removedNodes[k];
+                  const entityElement = removedNode;
+                  const {item: entityItem} = entityElement;
+                  const {attributes: entityAttributes} = entityItem;
 
-                const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
-                for (let l = 0; l < boundComponentSpecs.length; l++) {
-                  const boundComponentSpec = boundComponentSpecs[l];
-                  const {tag} = boundComponentSpec;
-                  const componentApiInstance = componentApiInstances[tag];
+                  const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                  for (let l = 0; l < boundComponentSpecs.length; l++) {
+                    const boundComponentSpec = boundComponentSpecs[l];
+                    const {tag} = boundComponentSpec;
+                    const componentApiInstance = componentApiInstances[tag];
 
-                  componentApiInstance.entityRemovedCallback(entityElement);
+                    componentApiInstance.entityRemovedCallback(entityElement);
+                  }
+                }
+              } else if (type === 'attributes') {
+                const {target: entityElement, attributeName: baseAttributeName, oldValue: oldValueString} = mutation;
+
+                if (baseAttributeName === 'style') {
+                  const oldValues = oldValueString ? styleParser(oldValueString) : {};
+                  const newValueString = entityElement.getAttribute('style');
+                  const newValues = styleParser(newValueString);
+
+                  const allValues = (() => {
+                    const result = {};
+
+                    for (const attributeName in oldValues) {
+                      result[attributeName] = oldValues[attributeName];
+                    }
+                    for (const attributeName in newValues) {
+                      result[attributeName] = newValues[attributeName];
+                    }
+
+                    return result;
+                  })();
+                  const boundComponentSpecs = _getBoundComponentSpecs(allValues);
+                  for (let i = 0; i < boundComponentSpecs.length; i++) {
+                    const boundComponentSpec = boundComponentSpecs[i];
+                    const {tag, matchingAttributes} = boundComponentSpec;
+                    const componentApiInstance = componentApiInstances[tag];
+
+                    for (let j = 0; j < matchingAttributes.length; j++) {
+                      const attributeName = matchingAttributes[j];
+                      const oldValue = (attributeName in oldValues) ? oldValues[attributeName] : null;
+                      const newValue = (attributeName in newValues) ? newValues[attributeName] : null;
+console.log('handle', {entityElement, attributeName, oldValue, newValue}); // XXX
+
+                      componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                    }
+                  }
                 }
               }
             }
@@ -1103,29 +1143,36 @@ class Tags {
               this[itemPreviewSymbol] = preview;
             }
 
-            setAttribute(name, newValue) {
+            setAttribute(attributeName, newValue) {
               const {attributes} = this;
-              const {attribute: oldValue} = attributes[name];
-              attributes[name] = newValue;
+              attributes[attributeName] = newValue;
 
               const {instance} = this;
               if (instance) {
                 const entityElement = instance;
-                const {item: entityItem} = entityElement;
 
-                // XXX do this with mutation observers
+                const newValues = (() => {
+                  const result = {};
 
-                const attributeSpec = {
-                  [name]: newValue,
-                };
-                const boundComponentSpecs = _getBoundComponentSpecs(attributeSpec);
-                for (let i = 0; i < boundComponentSpecs.length; i++) {
-                  const boundComponentSpec = boundComponentSpecs[i];
-                  const {tag} = boundComponentSpec;
-                  const componentApiInstance = componentApiInstances[tag];
+                  for (const attributeName in attributes) {
+                    const attributeValue = attributes[attributeName];
+                    result[attributeName] = attributeValue;
+                  }
 
-                  componentApiInstance.entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue);
-                }
+                  return result;
+                })();
+                const newValueString = (() => {
+                  let result = '';
+
+                  for (const attributeName in newValues) {
+                    const newValue = newValues[attributeName];
+                    result += ((result.length > 0) ? ' ' : '') + `${attributeName}: ${JSON.stringify(newValue)};`;
+                  }
+
+                  return result;
+                })();
+
+                entityElement.setAttribute('style', newValueString);
               }
             }
 

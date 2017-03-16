@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "dependencies": {
-    "multimutex": "0.0.2"
+    "multimutex": "0.0.2",
+    "style-parser": "^1.1.1"
   }
 }
