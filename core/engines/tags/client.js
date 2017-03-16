@@ -722,6 +722,7 @@ class Tags {
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
                   tagsApi.emit('link', {
+                    side,
                     tagMesh,
                   });
                 } else if (match = onclick.match(/^media:(play|pause):(.+)$/)) {
