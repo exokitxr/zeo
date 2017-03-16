@@ -813,6 +813,17 @@ class Tags {
                   });
 
                   return true;
+                } else if (match = onclick.match(/^attribute:remove:(.+?):(.+?)$/)) {
+                  const id = match[1];
+                  const name = match[2];
+
+                  tagsApi.emit('setAttribute', {
+                    id: id,
+                    attribute: name,
+                    value: null,
+                  });
+
+                  return true;
                 } else if (match = onclick.match(/^media:(play|pause):(.+)$/)) {
                   const action = match[1];
                   const id = match[2];
@@ -1782,16 +1793,18 @@ class Tags {
                   } = attribute;
 
                   const mesh = uiAttributeManager.addPage(({
+                    item,
                     attribute,
                   }) => ({
                     type: 'html',
-                    src: tagsRenderer.getAttributeSrc({attribute}),
+                    src: tagsRenderer.getAttributeSrc({item, attribute}),
                     w: WIDTH,
                     h: HEIGHT,
                   }), {
                     type: 'attribute',
                     state: {
-                      attribute,
+                      item: item,
+                      attribute: attribute,
                     },
                     worldWidth: WORLD_WIDTH,
                     worldHeight: WORLD_HEIGHT,

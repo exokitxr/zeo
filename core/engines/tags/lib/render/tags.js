@@ -118,14 +118,15 @@ const makeRenderer = ({creatureUtils}) => {
     `;
   };
 
-  const getAttributeSrc = ({attribute}) => {
+  const getAttributeSrc = ({item, attribute}) => {
+    const {id} = item;
     const {name} = attribute;
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; flex-direction: column;">
         <div style="display: flex; background-color: #000; color: #FFF; font-size: 28px; line-height: 2;">
           <div style="margin-left: 20px; margin-right: auto;">${name}</div>
-          <a style="display: flex; padding: 0 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="attribute:remove">
+          <a style="display: flex; padding: 0 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="attribute:remove:${id}:${name}">
             <img src="${closeBoxImgSrc}" width="24" height="24" />
           </a>
         </div>
