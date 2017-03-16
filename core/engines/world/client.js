@@ -803,6 +803,9 @@ class World {
                 tagMesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
                 tagMesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
 
+                const {item} = tagMesh;
+                item.matrix = matrixArray;
+
                 elementManager.add(tagMesh);
 
                 userGrabManager.setMesh(side, null);
