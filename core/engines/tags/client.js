@@ -322,6 +322,7 @@ class Tags {
 
           const _makeDragState = () => ({
             srcTagMesh: null,
+            dstTagMesh: null,
           });
           const dragStates = {
             left: _makeDragState(),
@@ -989,13 +990,12 @@ class Tags {
               const {srcTagMesh} = dragState;
 
               if (srcTagMesh) {
-                const hoverState = hoverStates[side];
-                const {intersectionPoint} = hoverState;
+                const {dstTagMesh} = dragState;
 
-                if (intersectionPoint) {
-                  const {metadata: hoverTagMesh} = hoverState;
+                if (dstTagMesh) {
+                  if (srcTagMesh === dstTagMesh) {
+                    const tagMesh = srcTagMesh;
 
-                  if (srcTagMesh === hoverTagMesh) {
                     tagsApi.emit('link', {
                       side,
                       tagMesh,
@@ -1003,6 +1003,7 @@ class Tags {
 console.log('create link', {tagMesh}); // XXX
 
                     dragState.srcTagMesh = null;
+                    dragState.dstTagMesh = null;
 
                     return true;
                   } else {
@@ -1010,12 +1011,14 @@ console.log('create link', {tagMesh}); // XXX
 console.log('cross link', {srcTagMesh, dstTagMesh}); // XXX
 
                     dragState.srcTagMesh = null;
+                    dragState.dstTagMesh = null;
 
                     return true;
                   }
                 } else {
 console.log('no link'); // XXX
                   dragState.srcTagMesh = null;
+                  dragState.dstTagMesh = null;
 
                   return false;
                 }
@@ -1097,6 +1100,27 @@ console.log('no link'); // XXX
                     }
                   });
                 }
+              }
+              const _updateDragStates = () => {
+                if (rend.isOpen() || hubEnabled) {
+                  SIDES.forEach(side => {
+                    const dragState = dragStates[side];
+                    const {srcTagMesh} = dragState;
+
+                    if (srcTagMesh) {
+                      const hoverState = hoverStates[side];
+                      const {intersectionPoint} = hoverState;
+
+                      if (intersectionPoint) {
+                        const {metadata: hoverTagMesh} = hoverState;
+
+                        dragState.dstTagMesh = hoverTagMesh;
+                      } else {
+                        dragState.dstTagMesh = null;
+                      }
+                    }
+                  });
+                }
               };
               const _updateDragLines = () => {
                 if (rend.isOpen() || hubEnabled) {
@@ -1111,13 +1135,22 @@ console.log('no link'); // XXX
                     const dragLine = dragLines[side];
 
                     if (gamepad && srcTagMesh) {
-                      const {position: controllerPosition} = gamepad;
                       const {geometry} = dragLine;
                       const positionsAttribute = geometry.getAttribute('position');
                       const {array: positions} = positionsAttribute;
 
                       const {position: srcPosition} = srcTagMesh;
-                      const dstPosition = controllerPosition;
+                      const dstPosition = (() => {
+                        const {dstTagMesh} = dragState;
+
+                        if (dstTagMesh && dstTagMesh !== srcTagMesh) {
+                          const {position: dstTagMeshPosition} = _decomposeObjectMatrixWorld(dstTagMesh);
+                          return dstTagMeshPosition;
+                        } else {
+                          const {position: controllerPosition} = gamepad;
+                          return controllerPosition;
+                        }
+                      })();
 
                       positions.set(Float32Array.from([
                         srcPosition.x, srcPosition.y, srcPosition.z,
@@ -1172,6 +1205,7 @@ console.log('no link'); // XXX
               };
 
               _updateElementAnchors();
+              _updateDragStates();
               _updateDragLines();
               _updatePositioningMesh();
             };
