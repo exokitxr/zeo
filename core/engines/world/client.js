@@ -2267,7 +2267,8 @@ class World {
           };
           tags.on('download', _download);
 
-          const _link = ({side, tagMesh}) => {
+          const _link = linkSpec => {
+            const {side} = linkSpec;
             const {gamepads} = webvr.getStatus();
             const gamepad = gamepads[side];
 
@@ -2275,40 +2276,63 @@ class World {
               const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
               if (!gripPressed) {
-                const {item} = tagMesh;
+                const {srcTagMesh, dstTagMesh} = linkSpec;
 
-                const itemSpec = _clone(item);
-                itemSpec.id = _makeId();
-                itemSpec.type = 'entity';
-                const attributes = (() => {
-                  const result = {};
+                if (!dstTagMesh) {
+                  const {item} = srcTagMesh;
 
-                  const {instance: componentElement} = item;
-                  const {constructor: ComponentElement} = componentElement;
-                  const {attributes: componentAttributes = {}} = ComponentElement;
-                  for (const attributeName in componentAttributes) {
-                    const componentAttribute = componentAttributes[attributeName];
-                    const {value} = componentAttribute;
+                  const itemSpec = _clone(item);
+                  itemSpec.id = _makeId();
+                  itemSpec.type = 'entity';
+                  const attributes = (() => {
+                    const result = {};
 
-                    result[attributeName] = value;
+                    const {instance: componentElement} = item;
+                    const {constructor: ComponentElement} = componentElement;
+                    const {attributes: componentAttributes = {}} = ComponentElement;
+                    for (const attributeName in componentAttributes) {
+                      const componentAttribute = componentAttributes[attributeName];
+                      const {value} = componentAttribute;
+
+                      result[attributeName] = value;
+                    }
+
+                    return result;
+                  })();
+                  itemSpec.attributes = attributes;
+                  const matrix = (() => {
+                    const {matrix: oldMatrix} = itemSpec;
+                    const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
+                    const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
+                    const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
+
+                    position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
+
+                    return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                  })();
+                  itemSpec.matrix = matrix;
+
+                  _addTag(itemSpec, 'world');
+                } else {
+                  const {item: srcItem} = srcTagMesh;
+                  const {displayName: srcDisplayName} = srcItem;
+                  const componentApis = tags.getComponentApis();
+                  const componentApi = componentApis[srcDisplayName];
+                  const {attributes} = componentApi;
+
+                  const {item: dstItem} = dstTagMesh;
+                  const {id: dstId} = dstItem;
+
+                  for (const attributeName in attributes) { // XXX collect these under a single call
+                    const attribute = attributes[attributeName];
+                    const {value: attributeValue} = attribute;
+                    _setAttribute({
+                      id: dstId,
+                      attribute: attributeName,
+                      value: attributeValue,
+                    });
                   }
-
-                  return result;
-                })();
-                itemSpec.attributes = attributes;
-                const matrix = (() => {
-                  const {matrix: oldMatrix} = itemSpec;
-                  const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
-                  const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
-                  const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
-
-                  position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
-
-                  return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                })();
-                itemSpec.matrix = matrix;
-
-                _addTag(itemSpec, 'world');
+                }
               }
             }
           };

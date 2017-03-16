@@ -994,21 +994,22 @@ class Tags {
 
                 if (dstTagMesh) {
                   if (srcTagMesh === dstTagMesh) {
-                    const tagMesh = srcTagMesh;
-
                     tagsApi.emit('link', {
                       side,
-                      tagMesh,
+                      srcTagMesh,
+                      dstTagMesh: null,
                     });
-console.log('create link', {tagMesh}); // XXX
 
                     dragState.srcTagMesh = null;
                     dragState.dstTagMesh = null;
 
                     return true;
                   } else {
-                    const dstTagMesh = hoverTagMesh;
-console.log('cross link', {srcTagMesh, dstTagMesh}); // XXX
+                    tagsApi.emit('link', {
+                      side,
+                      srcTagMesh,
+                      dstTagMesh,
+                    });
 
                     dragState.srcTagMesh = null;
                     dragState.dstTagMesh = null;
@@ -1016,7 +1017,6 @@ console.log('cross link', {srcTagMesh, dstTagMesh}); // XXX
                     return true;
                   }
                 } else {
-console.log('no link'); // XXX
                   dragState.srcTagMesh = null;
                   dragState.dstTagMesh = null;
 
@@ -1923,6 +1923,10 @@ console.log('no link'); // XXX
 
             getRootEntitiesElement() {
               return rootEntitiesElement;
+            }
+
+            getComponentApis() {
+              return componentApis;
             }
 
             getPointedTagMesh(side) {
