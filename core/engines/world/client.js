@@ -193,7 +193,7 @@ class World {
               const {type} = m;
 
               if (type === 'init') {
-                const {args: [itemSpecs, equipmentSpecs, inventorySpecs]} = m;
+                const {args: [itemSpecs/*, equipmentSpecs, inventorySpecs*/]} = m;
 
                 for (let i = 0; i < itemSpecs.length; i++) {
                   const itemSpec = itemSpecs[i];
@@ -201,7 +201,7 @@ class World {
                   _handleAddTag(localUserId, itemSpec, 'world');
                 }
 
-                for (let i = 0; i < equipmentSpecs.length; i++) {
+                /* for (let i = 0; i < equipmentSpecs.length; i++) {
                   const itemSpec = equipmentSpecs[i];
 
                   if (itemSpec) {
@@ -215,7 +215,7 @@ class World {
                   if (itemSpec) {
                     _handleAddTag(localUserId, itemSpec, 'inventory:' + i);
                   }
-                }
+                } */
               } else if (type === 'addTag') {
                 const {args: [userId, itemSpec, dst]} = m;
 
@@ -674,7 +674,7 @@ class World {
               tagMesh.quaternion.copy(controllerMeshQuaternion);
               tagMesh.scale.copy(oneVector);
               controllerMesh.add(tagMesh);
-            } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+            /* } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
               const equipmentIndex = parseInt(match[1], 10);
 
               const tagMesh = tags.makeTag(itemSpec);
@@ -715,7 +715,7 @@ class World {
               const itemBoxMesh = itemBoxMeshes[inventoryIndex];
               itemBoxMesh.add(tagMesh);
 
-              userInventoryManager.set(inventoryIndex, tagMesh)
+              userInventoryManager.set(inventoryIndex, tagMesh); */
             } else {
               console.warn('invalid add tag arguments', {userId, itemSpec, dst});
             }
@@ -724,7 +724,13 @@ class World {
             const isMe = userId === localUserId;
 
             let match;
-            if (match = src.match(/^hand:(left|right)$/)) {
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+              const tagMesh = elementManager.getTagMesh(id);
+
+              elementManager.remove(tagMesh);
+              tags.destroyTag(tagMesh);
+            } else if (match = src.match(/^hand:(left|right)$/)) {
               const side = match[1];
 
               const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
@@ -2239,18 +2245,38 @@ class World {
 
             return _getWorldSrc() || _getHandSrc() || null;
           };
+          const _mutateAddEntity = ({element, attributes}) => {
+            const itemSpec = {
+              type: 'entity',
+              id: _makeId(),
+              name: 'Manual entity',
+              displayName: 'Manual entity',
+              version: '0.0.1',
+              attributes: attributes,
+              matrix: DEFAULT_MATRIX,
+              metadata: {},
+            };
+            _addTag(itemSpec, 'world');
+          };
+          tags.on('mutateAddEntity', _mutateAddEntity);
+          const _mutateRemoveEntity = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _removeTag(src);
+          };
+          tags.on('mutateRemoveEntity', _mutateRemoveEntity);
           const _setAttribute = ({id, attribute, value}) => {
             const src = _getTagIdSrc(id);
 
             _handleSetTagAttribute(localUserId, src, attribute, value);
           };
           tags.on('setAttribute', _setAttribute);
-          const _mutateAttribute = ({id, attribute, value}) => {
+          const _mutateSetAttribute = ({id, attribute, value}) => {
             const src = _getTagIdSrc(id);
 
             _request('setTagAttribute', [localUserId, src, attribute, value], _warnError);
           };
-          tags.on('mutateAttribute', _mutateAttribute);
+          tags.on('mutateSetAttribute', _mutateSetAttribute);
 
           const _download = ({id, name}) => {
             const a = document.createElement('a');
@@ -2494,8 +2520,10 @@ class World {
 
             tags.removeListener('download', _download);
             tags.removeListener('link', _link);
+            tags.removeListener('mutateAddEntity', _mutateAddEntity);
+            tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
             tags.removeListener('setAttribute', _setAttribute);
-            tags.removeListener('mutateAttribute', _mutateAttribute);
+            tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
 
             fs.removeListener('upload', _upload);
 

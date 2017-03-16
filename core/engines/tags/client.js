@@ -26,6 +26,7 @@ const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemMutexSymbol = Symbol();
+const ENTITY_TAG_NAME = 'z-entity'.toUpperCase();
 const ITEM_LOCK_KEY = 'key';
 
 class Tags {
@@ -109,7 +110,7 @@ class Tags {
           const rootModulesElement = document.createElement('div');
           rootModulesElement.id = 'zeo-modules';
           document.body.appendChild(rootModulesElement);
-          const rootModulesObserver = new MutationObserver(mutations => {
+          const rootModulesObserver = new MutationObserver(mutations => { // XXX allow user-initiated mutations here
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
               const {type} = mutation;
@@ -173,6 +174,23 @@ class Tags {
             // attributeOldValue: true,
           });
 
+          const _getElementJsonAttributes = element => {
+            const result = {};
+
+            const {attributes} = element;
+            for (let k = 0; k < attributes.length; k++) {
+              const attribute = attributes[k];
+              const {name, value: valueString} = attribute;
+              const value = _jsonParse(valueString);
+
+              if (value !== null) {
+                result[name] = value;
+              }
+            }
+
+            return result;
+          };
+
           const rootEntitiesElement = document.createElement('div');
           rootEntitiesElement.id = 'zeo-entities';
           document.body.appendChild(rootEntitiesElement);
@@ -185,22 +203,31 @@ class Tags {
                 const {addedNodes} = mutation;
                 for (let j = 0; j < addedNodes.length; j++) {
                   const addedNode = addedNodes[j];
-                  const entityElement = addedNode;
-                  const {item: entityItem} = entityElement;
-                  const {attributes: entityAttributes} = entityItem;
 
-                  const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
-                  for (let k = 0; k < boundComponentSpecs.length; k++) {
-                    const boundComponentSpec = boundComponentSpecs[k];
-                    const {tag, matchingAttributes} = boundComponentSpec;
+                  if (addedNode.tagName === ENTITY_TAG_NAME) {
+                    const entityElement = addedNode;
+                    const {item: initialEntityItem} = entityElement;
+                    const entityAttributes = _getElementJsonAttributes(entityElement);
+                    if (!initialEntityItem) { // element added manually
+                      tagsApi.emit('mutateAddEntity', {
+                        element: entityElement,
+                        attributes: entityAttributes,
+                      });
+                    }
 
-                    const componentApiInstance = componentApiInstances[tag];
-                    componentApiInstance.entityAddedCallback(entityElement);
+                    const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                    for (let k = 0; k < boundComponentSpecs.length; k++) {
+                      const boundComponentSpec = boundComponentSpecs[k];
+                      const {tag, matchingAttributes} = boundComponentSpec;
 
-                    for (let l = 0; l < matchingAttributes.length; l++) {
-                      const matchingAttribute = matchingAttributes[l];
-                      const attributeValue = entityAttributes[matchingAttribute];
-                      componentApiInstance.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                      const componentApiInstance = componentApiInstances[tag];
+                      componentApiInstance.entityAddedCallback(entityElement);
+
+                      for (let l = 0; l < matchingAttributes.length; l++) {
+                        const matchingAttribute = matchingAttributes[l];
+                        const attributeValue = entityAttributes[matchingAttribute];
+                        componentApiInstance.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                      }
                     }
                   }
                 }
@@ -208,63 +235,77 @@ class Tags {
                 const {removedNodes} = mutation;
                 for (let k = 0; k < removedNodes.length; k++) {
                   const removedNode = removedNodes[k];
-                  const entityElement = removedNode;
-                  const {item: entityItem} = entityElement;
-                  const {attributes: entityAttributes} = entityItem;
 
-                  const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
-                  for (let l = 0; l < boundComponentSpecs.length; l++) {
-                    const boundComponentSpec = boundComponentSpecs[l];
-                    const {tag} = boundComponentSpec;
-                    const componentApiInstance = componentApiInstances[tag];
+                  if (removedNode.tagName === ENTITY_TAG_NAME) {
+                    const entityElement = removedNode;
+                    const {item: initialEntityItem} = entityElement;
+                    if (initialEntityItem) { // element removed manually
+                      const {id: entityId} = initialEntityItem;
+                      tagsApi.emit('mutateRemoveEntity', {
+                        id: entityId,
+                      });
+                    }
 
-                    componentApiInstance.entityRemovedCallback(entityElement);
+                    const entityAttributes = _getElementJsonAttributes(entityElement);
+                    const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                    for (let l = 0; l < boundComponentSpecs.length; l++) {
+                      const boundComponentSpec = boundComponentSpecs[l];
+                      const {tag} = boundComponentSpec;
+                      const componentApiInstance = componentApiInstances[tag];
+
+                      componentApiInstance.entityRemovedCallback(entityElement);
+                    }
                   }
                 }
               } else if (type === 'attributes') {
-                const {target: entityElement, attributeName, oldValue: oldValueString} = mutation;
-                const newValueString = entityElement.getAttribute(attributeName);
+                const {target} = mutation;
 
-                const {item: entityItem} = entityElement;
-                const {id: entityId} = entityItem;
-                tagsApi.emit('mutateAttribute', {
-                  id: entityId,
-                  attribute: attributeName,
-                  value: newValue,
-                });
+                if (target.tagName === ENTITY_TAG_NAME) {
+                  const entityElement = target;
+                  const {attributeName, oldValue: oldValueString} = mutation;
+                  const newValueString = entityElement.getAttribute(attributeName);
+                  const oldValue = oldValueString !== null ? JSON.parse(oldValueString) : null;
+                  const newValue = newValueString !== null ? JSON.parse(newValueString) : null;
 
-                const attributeSpec = {
-                  [attributeName]: newValueString,
-                };
-                const boundComponentSpecs = _getBoundComponentSpecs(attributeSpec);
-                for (let i = 0; i < boundComponentSpecs.length; i++) {
-                  const boundComponentSpec = boundComponentSpecs[i];
-                  const {tag, matchingAttributes} = boundComponentSpec;
-                  const componentApiInstance = componentApiInstances[tag];
-                  const appliedMatchingAttributes = matchingAttributes.filter(matchingAttributeName => {
-                    if (matchingAttributeName === attributeName) {
-                      return oldValueString !== null;
-                    } else {
-                      return entityElement.hasAttribute(matchingAttributeName);
-                    }
+                  const {item: entityItem} = entityElement;
+                  const {id: entityId} = entityItem;
+                  tagsApi.emit('mutateSetAttribute', {
+                    id: entityId,
+                    attribute: attributeName,
+                    value: newValue,
                   });
 
-                  for (let j = 0; j < matchingAttributes.length; j++) {
-                    const attributeName = matchingAttributes[j];
-                    const oldValue = oldValueString !== null ? JSON.parse(oldValueString) : null;
-                    const newValue = newValueString !== null ? JSON.parse(newValueString) : null;
-
-                    if (newValue !== null) { // adding attribute
-                      if (appliedMatchingAttributes.length === 0) { // if no matching attributes were previously applied, mount the component on the entity
-                        componentApiInstance.entityAddedCallback(entityElement);
-                      }
-
-                      componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
-                    } else { // removing attribute
-                      if (appliedMatchingAttributes.length === 1) { // if this is the last attribute that applied, unmount the component from the entity
-                        componentApiInstance.entityRemovedCallback(entityElement);
+                  const attributeSpec = {
+                    [attributeName]: newValue,
+                  };
+                  const boundComponentSpecs = _getBoundComponentSpecs(attributeSpec);
+                  for (let i = 0; i < boundComponentSpecs.length; i++) {
+                    const boundComponentSpec = boundComponentSpecs[i];
+                    const {tag, matchingAttributes} = boundComponentSpec;
+                    const componentApiInstance = componentApiInstances[tag];
+                    const appliedMatchingAttributes = matchingAttributes.filter(matchingAttributeName => {
+                      if (matchingAttributeName === attributeName) {
+                        return oldValueString !== null;
                       } else {
+                        return entityElement.hasAttribute(matchingAttributeName);
+                      }
+                    });
+
+                    for (let j = 0; j < matchingAttributes.length; j++) {
+                      const attributeName = matchingAttributes[j];
+
+                      if (newValue !== null) { // adding attribute
+                        if (appliedMatchingAttributes.length === 0) { // if no matching attributes were previously applied, mount the component on the entity
+                          componentApiInstance.entityAddedCallback(entityElement);
+                        }
+
                         componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                      } else { // removing attribute
+                        if (appliedMatchingAttributes.length === 1) { // if this is the last attribute that applied, unmount the component from the entity
+                          componentApiInstance.entityRemovedCallback(entityElement);
+                        } else {
+                          componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                        }
                       }
                     }
                   }
@@ -1811,6 +1852,7 @@ class Tags {
 
                   if (instance) {
                     const moduleElement = instance;
+                    moduleElement.item = null;
                     item.instance = null;
 
                     const {name} = item;
@@ -1843,10 +1885,14 @@ class Tags {
               const {item} = tagMesh;
               const {instance} = item;
 
-              if (!instance) {
-                const {attributes: entityAttributes} = item;
-                
+              if (!instance) {                
                 const entityElement = menuUtils.makeZeoEntityElement();
+                const {attributes: entityAttributes} = item;
+                for (const attributeName in entityAttributes) {
+                  const attributeValue = entityAttributes[attributeName];
+                  const attributeValueString = JSON.stringify(attributeValue);
+                  entityElement.setAttribute(attributeName, attributeValueString);
+                }
                 entityElement.item = item;
                 item.instance = entityElement;
 
@@ -1860,9 +1906,13 @@ class Tags {
 
               if (instance) {
                 const entityElement = instance;
+                entityElement.item = null;
                 item.instance = null;
 
-                rootEntitiesElement.removeChild(entityElement);
+                const {parentNode} = entityElement;
+                if (parentNode) {
+                  parentNode.removeChild(entityElement);
+                }
               }
             }
 
@@ -1981,6 +2031,20 @@ class Tags {
   }
 }
 
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return null;
+  }
+};
 const _clone = o => JSON.parse(JSON.stringify(o));
 
 module.exports = Tags;

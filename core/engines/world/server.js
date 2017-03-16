@@ -361,7 +361,15 @@ class World {
                               })(cb);
 
                               let match;
-                              if (match = src.match(/^hand:(left|right)$/)) {
+                              if (match = src.match(/^world:(.+)$/)) {
+                                const id = match[1];
+
+                                delete tagsJson.tags[id];
+
+                                _saveTags();
+
+                                cb();
+                              } else if (match = src.match(/^hand:(left|right)$/)) {
                                 const side = match[1];
 
                                 const user = usersJson[userId];
