@@ -1802,7 +1802,7 @@ class World {
                         .concat([newEntityTagMesh])
                         .find(tagMesh => tagMesh.item.id === id);
 
-                      const canMakeTag = !(type === 'module' && tagMesh.item.metadata.exists); // XXX handle the multi-controller case
+                      const canMakeTag = !(type === 'module' && tagMesh.item.metadata.exists); // XXX handle the multi-{user,controller} conflict cases
                       if (canMakeTag) {
                         const item = _clone(tagMesh.item);
                         item.id = _makeId();
@@ -2024,7 +2024,7 @@ class World {
                       return true;
                     } else if (npmTagMeshes.includes(grabMesh)) {
                       const tagMesh = grabMesh;
-                      const canMakeTag = !tagMesh.item.metadata.exists; // XXX handle the multi-controller case
+                      const canMakeTag = !tagMesh.item.metadata.exists; // XXX handle the multi-{user,controller} conflict cases
 
                       if (canMakeTag) {
                         const item = _clone(tagMesh.item);
