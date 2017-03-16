@@ -225,9 +225,18 @@ class Tags {
                 const {target: entityElement, attributeName, oldValue: oldValueString} = mutation;
                 const newValueString = entityElement.getAttribute(attributeName);
 
-                const boundComponentSpecs = _getBoundComponentSpecs({
-                  [attributeName]: newValueString,
+                const {item: entityItem} = entityElement;
+                const {id: entityId} = entityItem;
+                tagsApi.emit('mutateAttribute', {
+                  id: entityId,
+                  attribute: attributeName,
+                  value: newValue,
                 });
+
+                const attributeSpec = {
+                  [attributeName]: newValueString,
+                };
+                const boundComponentSpecs = _getBoundComponentSpecs(attributeSpec);
                 for (let i = 0; i < boundComponentSpecs.length; i++) {
                   const boundComponentSpec = boundComponentSpecs[i];
                   const {tag, matchingAttributes} = boundComponentSpec;
@@ -1395,9 +1404,6 @@ class Tags {
             }
 
             setAttribute(attributeName, newValue) {
-              const {attributes} = this;
-              attributes[attributeName] = newValue; // XXX this should technically be set after the DOM mutation handler so externally-triggered setAttribute()s are saved
-
               const {instance} = this;
               if (instance) {
                 const entityElement = instance;

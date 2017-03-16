@@ -639,11 +639,6 @@ class World {
 
             _request('moveTag', [localUserId, src, dst], _warnError);
           };
-          const _setTagAttribute = (src, attribute, value) => {
-            _handleSetTagAttribute(localUserId, src, attribute, value);
-
-            _request('setTagAttribute', [localUserId, src, attribute, value], _warnError);
-          };
 
           const _handleAddTag = (userId, itemSpec, dst) => {
             const isMe = userId === localUserId;
@@ -2149,13 +2144,7 @@ class World {
                   const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
                   _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
 
-                  const {item} = tagMesh;
-                  const {attributes} = item;
-                  if (attributes.position) {
-                    const {id} = item;
-                    _setTagAttribute('world:' + id, 'position', matrixArray);
-                  }
-
+                  // XXX is this still needed?
                   e.stopImmediatePropagation(); // so tags engine doesn't pick it up
 
                   return true;
@@ -2226,35 +2215,42 @@ class World {
             priority: 1,
           });
 
-          const _setAttribute = ({id, attribute, value}) => {
-            const src = (() => {
-              const _getWorldSrc = () => {
-                if (elementManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
-                  return 'world:' + id;
-                } else {
-                  return null;
-                }
-              };
-              const _getHandSrc = () => {
-                const controllers = cyborg.getControllers();
-
-                for (let i = 0; i < SIDES.length; i++) {
-                  const side = SIDES[i];
-                  const grabMesh = grabManager.getMesh(side);
-
-                  if (grabMesh && grabMesh.item.id === id) {
-                    return 'hand:' + side;
-                  }
-                }
+          const _getTagIdSrc = id => {
+            const _getWorldSrc = () => {
+              if (elementManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
+                return 'world:' + id;
+              } else {
                 return null;
-              };
+              }
+            };
+            const _getHandSrc = () => {
+              const controllers = cyborg.getControllers();
 
-              return _getWorldSrc() || _getHandSrc();
-            })();
+              for (let i = 0; i < SIDES.length; i++) {
+                const side = SIDES[i];
+                const grabMesh = grabManager.getMesh(side);
 
-            _setTagAttribute(src, attribute, value);
+                if (grabMesh && grabMesh.item.id === id) {
+                  return 'hand:' + side;
+                }
+              }
+              return null;
+            };
+
+            return _getWorldSrc() || _getHandSrc() || null;
+          };
+          const _setAttribute = ({id, attribute, value}) => {
+            const src = _getTagIdSrc(id);
+
+            _handleSetTagAttribute(localUserId, src, attribute, value);
           };
           tags.on('setAttribute', _setAttribute);
+          const _mutateAttribute = ({id, attribute, value}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('setTagAttribute', [localUserId, src, attribute, value], _warnError);
+          };
+          tags.on('mutateAttribute', _mutateAttribute);
 
           const _download = ({id, name}) => {
             const a = document.createElement('a');
@@ -2499,6 +2495,7 @@ class World {
             tags.removeListener('download', _download);
             tags.removeListener('link', _link);
             tags.removeListener('setAttribute', _setAttribute);
+            tags.removeListener('mutateAttribute', _mutateAttribute);
 
             fs.removeListener('upload', _upload);
 
