@@ -717,6 +717,8 @@ class Tags {
                     id,
                     name,
                   });
+
+                  return true;
                 } else if (match = onclick.match(/^module:link:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -725,6 +727,8 @@ class Tags {
                     side,
                     tagMesh,
                   });
+
+                  return true;
                 } else if (match = onclick.match(/^media:(play|pause):(.+)$/)) {
                   const action = match[1];
                   const id = match[2];
@@ -738,6 +742,8 @@ class Tags {
                   }
 
                   openPage.update();
+
+                  return true;
                 } else if (match = onclick.match(/^media:seek:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -747,6 +753,8 @@ class Tags {
                   item.seek(value);
 
                   openPage.update();
+
+                  return true;
                 } else {
                   return false;
                 }
