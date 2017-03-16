@@ -529,8 +529,7 @@ class World {
 
                                 const itemSpec = tagsJson.tags[id];
                                 const {attributes} = itemSpec;
-                                const attribute = attributes[attributeName];
-                                attribute.value = attributeValue;
+                                attributes[attributeName] = attributeValue;
 
                                 _saveTags();
 
