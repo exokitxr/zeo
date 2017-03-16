@@ -2154,9 +2154,6 @@ class World {
                   const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
                   _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
 
-                  // XXX is this still needed?
-                  e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-
                   return true;
                 };
 
