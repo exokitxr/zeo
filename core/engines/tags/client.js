@@ -93,6 +93,11 @@ class Tags {
             opacity: 0.5,
             transparent: true,
           });
+          const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x808080,
+            linewidth: 1,
+          });
+
           const subcontentFontSpec = {
             fonts: biolumi.getFonts(),
             fontSize: 20,
@@ -307,18 +312,37 @@ class Tags {
             left: biolumi.makeMenuHoverState(),
             right: biolumi.makeMenuHoverState(),
           };
+
           const dotMeshes = {
             left: biolumi.makeMenuDotMesh(),
             right: biolumi.makeMenuDotMesh(),
           };
           scene.add(dotMeshes.left);
           scene.add(dotMeshes.right);
-          const boxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
+
+          const _makeDragState = () => ({
+            srcTagMesh: null,
+          });
+          const dragStates = {
+            left: _makeDragState(),
+            right: _makeDragState(),
           };
-          scene.add(boxMeshes.left);
-          scene.add(boxMeshes.right);
+
+          const _makeDragLine = () => {
+            const geometry = new THREE.BufferGeometry();
+            geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 2), 3));
+            const material = lineMaterial;
+
+            const line = new THREE.Line(geometry, material);
+            line.visible = false;
+            return line;
+          };
+          const dragLines = {
+            left: _makeDragLine(),
+            right: _makeDragLine(),
+          };
+          scene.add(dragLines.left);
+          scene.add(dragLines.right);
 
           const _makeGrabBoxMesh = () => {
             const width = WORLD_WIDTH;
@@ -342,6 +366,13 @@ class Tags {
           };
           scene.add(grabBoxMeshes.left);
           scene.add(grabBoxMeshes.right);
+
+          const boxMeshes = {
+            left: biolumi.makeMenuBoxMesh(),
+            right: biolumi.makeMenuBoxMesh(),
+          };
+          scene.add(boxMeshes.left);
+          scene.add(boxMeshes.right);
 
           const _makePositioningMesh = ({opacity = 1} = {}) => {
             const geometry = (() => {
@@ -719,16 +750,6 @@ class Tags {
                   });
 
                   return true;
-                } else if (match = onclick.match(/^module:link:(.+)$/)) {
-                  const id = match[1];
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-
-                  tagsApi.emit('link', {
-                    side,
-                    tagMesh,
-                  });
-
-                  return true;
                 } else if (match = onclick.match(/^media:(play|pause):(.+)$/)) {
                   const action = match[1];
                   const id = match[2];
@@ -929,6 +950,84 @@ class Tags {
             _doClickOpen() || _doSetPosition() || _doClickAttribute();
           };
           input.on('trigger', _trigger);
+          const _triggerdown = e => {
+            const {side} = e;
+
+            const _doClickTag = () => {
+              const hoverState = hoverStates[side];
+              const {intersectionPoint} = hoverState;
+
+              if (intersectionPoint) {
+                const {anchor} = hoverState;
+                const onclick = (anchor && anchor.onclick) || '';
+
+                let match;
+                if (match = onclick.match(/^module:link:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                  const dragState = dragStates[side];
+                  dragState.srcTagMesh = tagMesh;
+
+                  return true;
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
+
+            _doClickTag();
+          };
+          input.on('triggerdown', _triggerdown);
+          const _triggerup = e => {
+            const {side} = e;
+
+            const _doClickTag = () => {
+              const dragState = dragStates[side];
+              const {srcTagMesh} = dragState;
+
+              if (srcTagMesh) {
+                const hoverState = hoverStates[side];
+                const {intersectionPoint} = hoverState;
+
+                if (intersectionPoint) {
+                  const {metadata: hoverTagMesh} = hoverState;
+
+                  if (srcTagMesh === hoverTagMesh) {
+                    tagsApi.emit('link', {
+                      side,
+                      tagMesh,
+                    });
+console.log('create link', {tagMesh}); // XXX
+
+                    dragState.srcTagMesh = null;
+
+                    return true;
+                  } else {
+                    const dstTagMesh = hoverTagMesh;
+console.log('cross link', {srcTagMesh, dstTagMesh}); // XXX
+
+                    dragState.srcTagMesh = null;
+
+                    return true;
+                  }
+                } else {
+console.log('no link'); // XXX
+                  dragState.srcTagMesh = null;
+
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
+
+            _doClickTag();
+          };
+          input.on('triggerup', _triggerup);
+
           const _update = () => {
             const _updateControllers = () => {
               const _updateElementAnchors = () => {
@@ -999,6 +1098,45 @@ class Tags {
                   });
                 }
               };
+              const _updateDragLines = () => {
+                if (rend.isOpen() || hubEnabled) {
+                  const {gamepads} = webvr.getStatus();
+                  const controllers = cyborg.getControllers();
+                  const controllerMeshes = SIDES.map(side => controllers[side].mesh);
+
+                  SIDES.forEach(side => {
+                    const gamepad = gamepads[side];
+                    const dragState = dragStates[side];
+                    const {srcTagMesh} = dragState;
+                    const dragLine = dragLines[side];
+
+                    if (gamepad && srcTagMesh) {
+                      const {position: controllerPosition} = gamepad;
+                      const {geometry} = dragLine;
+                      const positionsAttribute = geometry.getAttribute('position');
+                      const {array: positions} = positionsAttribute;
+
+                      const {position: srcPosition} = srcTagMesh;
+                      const dstPosition = controllerPosition;
+
+                      positions.set(Float32Array.from([
+                        srcPosition.x, srcPosition.y, srcPosition.z,
+                        dstPosition.x, dstPosition.y, dstPosition.z,
+                      ]));
+
+                      positionsAttribute.needsUpdate = true;
+
+                      if (!dragLine.visible) {
+                        dragLine.visible = true;
+                      }
+                    } else {
+                      if (dragLine.visible) {
+                        dragLine.visible = false;
+                      }
+                    }
+                  });
+                }
+              };
               const _updatePositioningMesh = () => {
                 const {positioningId, positioningName, positioningSide} = detailsState;
 
@@ -1034,6 +1172,7 @@ class Tags {
               };
 
               _updateElementAnchors();
+              _updateDragLines();
               _updatePositioningMesh();
             };
             const _updateLocal = () => {
@@ -1056,6 +1195,7 @@ class Tags {
             SIDES.forEach(side => {
               scene.remove(dotMeshes[side]);
               scene.remove(boxMeshes[side]);
+              scene.remove(dragLines[side]);
 
               scene.remove(grabBoxMeshes[side]);
 
@@ -1064,6 +1204,9 @@ class Tags {
             });
 
             input.removeListener('trigger', _trigger);
+            input.removeListener('triggerdown', _triggerdown);
+            input.removeListener('triggerup', _triggerup);
+
             rend.removeListener('update', _update);
           };
 
