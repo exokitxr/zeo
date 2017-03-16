@@ -973,12 +973,7 @@ class World {
               const id = match[1];
 
               const tagMesh = elementManager.getTagMesh(id);
-
-              if (value !== null) {
-                tagMesh.setAttribute(attribute, value);
-              } else {
-                tagMesh.removeAttribute(attribute);
-              }
+              tagMesh.setAttribute(attribute, value);
             } else {
               console.warn('invalid set tag attribute arguments', {src, attributeName, attributeValue});
             }

@@ -1474,12 +1474,22 @@ class Tags {
             }
 
             setAttribute(attributeName, newValue) {
+              const {attributes} = this;
+              if (newValue !== null) {
+                attributes[attributeName] = newValue;
+              } else {
+                delete attributes[attributeName];
+              }
+
               const {instance} = this;
               if (instance) {
                 const entityElement = instance;
-                const newValueString = JSON.stringify(newValue);
 
-                entityElement.setAttribute(attributeName, newValueString);
+                if (newValue !== null) {
+                  entityElement.setAttribute(attributeName, JSON.stringify(newValue));
+                } else {
+                  entityElement.removeAttribute(attributeName);
+                }
               }
             }
 
@@ -1686,7 +1696,7 @@ class Tags {
                 itemSpec.displayName,
                 itemSpec.description,
                 itemSpec.version,
-                itemSpec.attributes,
+                itemSpec.attributes, // XXX get rid of this and source directly from the element
                 itemSpec.mimeType,
                 itemSpec.matrix,
                 itemSpec.metadata
@@ -1777,46 +1787,57 @@ class Tags {
 
               const attributesMesh = (() => {
                 const result = new THREE.Object3D();
+                result.attributeMeshes = [];
 
-                const attributeMeshes = [];
-
-                const {attributes} = item;
-                const attributesArray = Object.keys(attributes).map(name => ({
-                  name,
-                  value: attributes[name],
-                }));
-                for (let i = 0; i < attributesArray.length; i++) {
-                  const attribute = attributesArray[i];
-                  const {
-                    name: attributeName,
-                    value: attributeValue,
-                  } = attribute;
-
-                  const mesh = uiAttributeManager.addPage(({
-                    item,
-                    attribute,
-                  }) => ({
-                    type: 'html',
-                    src: tagsRenderer.getAttributeSrc({item, attribute}),
-                    w: WIDTH,
-                    h: HEIGHT,
-                  }), {
-                    type: 'attribute',
-                    state: {
-                      item: item,
-                      attribute: attribute,
-                    },
-                    worldWidth: WORLD_WIDTH,
-                    worldHeight: WORLD_HEIGHT,
+                const _update = () => {
+                  const {attributeMeshes: oldAttributeMeshes} = result;
+                  oldAttributeMeshes.forEach(attributeMesh => {
+                    result.remove(attributeMesh);
                   });
-                  mesh.position.x = WORLD_WIDTH * (1 + 0.1);
-                  mesh.position.y = -(attributesArray.length * WORLD_HEIGHT / 2) + (0.5 * WORLD_HEIGHT) + (i * WORLD_HEIGHT);
-                  mesh.receiveShadow = true;
 
-                  result.add(mesh);
-                  attributeMeshes.push(mesh);
+                  const newAttributeMeshes = (() => {
+                    const {attributes} = item;
+                    const attributesArray = Object.keys(attributes).map(name => ({
+                      name,
+                      value: attributes[name],
+                    }));
+                    return attributesArray.map((attribute, i) => {
+                      const {
+                        name: attributeName,
+                        value: attributeValue,
+                      } = attribute;
+
+                      const mesh = uiAttributeManager.addPage(({
+                        item,
+                        attribute,
+                      }) => ({
+                        type: 'html',
+                        src: tagsRenderer.getAttributeSrc({item, attribute}),
+                        w: WIDTH,
+                        h: HEIGHT,
+                      }), {
+                        type: 'attribute',
+                        state: {
+                          item: item,
+                          attribute: attribute,
+                        },
+                        worldWidth: WORLD_WIDTH,
+                        worldHeight: WORLD_HEIGHT,
+                      });
+                      mesh.position.x = WORLD_WIDTH * (1 + 0.1);
+                      mesh.position.y = -(attributesArray.length * WORLD_HEIGHT / 2) + (0.5 * WORLD_HEIGHT) + (i * WORLD_HEIGHT);
+                      mesh.receiveShadow = true;
+
+                      return mesh;
+                    });
+                  })();
+                  newAttributeMeshes.forEach(attributeMesh => {
+                    result.add(attributeMesh);
+                  });
+                  result.attributeMeshes = newAttributeMeshes;
                 }
-                result.attributeMeshes = attributeMeshes;
+                result.update = _update;
+                _update();
 
                 return result;
               })();
@@ -1825,6 +1846,8 @@ class Tags {
 
               const _setAttribute = (attribute, value) => {
                 item.setAttribute(attribute, value);
+
+                attributesMesh.update();
 
                 const {planeMesh: {page}} = object;
                 page.update();
