@@ -1103,14 +1103,29 @@ class Tags {
               this[itemPreviewSymbol] = preview;
             }
 
-            setAttribute(name, value) {
+            setAttribute(name, newValue) {
               const {attributes} = this;
-              const attribute = attributes[name];
-              attribute.value = value;
+              const {attribute: oldValue} = attributes[name];
+              attributes[name] = newValue;
 
-              const instance = this.instance;
+              const {instance} = this;
               if (instance) {
-                instance.setAttributeRaw(name, JSON.stringify(value));
+                const entityElement = instance;
+                const {item: entityItem} = entityElement;
+
+                // XXX do this with mutation observers
+
+                const attributeSpec = {
+                  [name]: newValue,
+                };
+                const boundComponentSpecs = _getBoundComponentSpecs(attributeSpec);
+                for (let i = 0; i < boundComponentSpecs.length; i++) {
+                  const boundComponentSpec = boundComponentSpecs[i];
+                  const {tag} = boundComponentSpec;
+                  const componentApiInstance = componentApiInstances[tag];
+
+                  componentApiInstance.entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue);
+                }
               }
             }
 
@@ -1527,8 +1542,9 @@ class Tags {
                   const {instance} = item;
 
                   if (instance) {
-                    if (typeof instance.destructor === 'function') {
-                      instance.destructor();
+                    const moduleElement = instance;
+                    if (typeof moduleElement.destructor === 'function') {
+                      moduleElement.destructor();
                     }
                     item.instance = null;
 
@@ -1551,7 +1567,7 @@ class Tags {
                     };
                     _updateNpmUi();
 
-                    rootModulesElement.removeChild(instance);
+                    rootModulesElement.removeChild(moduleElement);
                   }
 
                   unlock();
@@ -1575,20 +1591,14 @@ class Tags {
 
             unreifyEntity(tagMesh) {
               const {item} = tagMesh;
+              const {instance} = item;
 
-              item.lock()
-                .then(unlock => {
-                  const {instance} = item;
+              if (instance) {
+                const entityElement = instance;
+                item.instance = null;
 
-                  if (instance) {
-                    const entityElement = instance;
-                    item.instance = null;
-
-                    rootEntitiesElement.removeChild(entityElement);
-                  }
-
-                  unlock();
-                });
+                rootEntitiesElement.removeChild(entityElement);
+              }
             }
 
             reifyTag(tagMesh) {
