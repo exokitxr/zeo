@@ -238,6 +238,9 @@ class Tags {
                     const oldValue = JSON.parse(oldValueString);
                     const newValue = JSON.parse(newValueString);
 
+                    // XXX if this is the first time we're setting an component's attribute for this element, we need to add the component to the element
+                    // XXX additionally, if we're removing the last attribute that would have kept a component live, we need to remove the component from the element
+
                     componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
                   }
                 }
