@@ -251,7 +251,7 @@ class Zeo {
                         <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
                       </div>
                     `;
-                    document.body.appendChild(overlay);
+                    document.body.insertBefore(overlay, renderer.domElement.nextSibling);
                     const overlayContent = overlay.querySelector('.overlay-content');
 
                     const helper = document.createElement('div');
