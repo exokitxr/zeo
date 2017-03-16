@@ -1110,8 +1110,12 @@ class Tags {
                       const dotMesh = dotMeshes[side];
                       const boxMesh = boxMeshes[side];
 
-                      biolumi.updateAnchors({
-                        objects: tagMeshes.map(tagMesh => {
+                      const objects = (() => {
+                        const result = [];
+
+                        for (let i = 0; i < tagMeshes.length; i++) {
+                          const tagMesh = tagMeshes[i];
+
                           if (
                             (tagMesh.parent === scene) ||
                             controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh)
@@ -1123,7 +1127,7 @@ class Tags {
                               const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
                               const {page} = planeMesh;
 
-                              return {
+                              result.push({
                                 matrixObject: matrixObject,
                                 page: page,
                                 width: WIDTH,
@@ -1132,13 +1136,31 @@ class Tags {
                                 worldHeight: WORLD_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
                                 metadata: tagMesh,
-                              };
+                              });
+
+                              const {attributesMesh} = tagMesh;
+                              const {attributeMeshes} = attributesMesh;
+                              for (let j = 0; j < attributeMeshes.length; j++) {
+                                const attributeMesh = attributeMeshes[j];
+                                const matrixObject = _decomposeObjectMatrixWorld(attributeMesh);
+                                const {page} = attributeMesh;
+
+                                result.push({
+                                  matrixObject: matrixObject,
+                                  page: page,
+                                  width: WIDTH,
+                                  height: HEIGHT,
+                                  worldWidth: WORLD_WIDTH,
+                                  worldHeight: WORLD_HEIGHT,
+                                  worldDepth: WORLD_DEPTH,
+                                });
+                              }
                             } else {
                               const {planeOpenMesh} = tagMesh;
                               const matrixObject = _decomposeObjectMatrixWorld(planeOpenMesh);
                               const {page} = planeOpenMesh;
 
-                              return {
+                              result.push({
                                 matrixObject: matrixObject,
                                 page: page,
                                 width: OPEN_WIDTH,
@@ -1147,12 +1169,15 @@ class Tags {
                                 worldHeight: WORLD_OPEN_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
                                 metadata: tagMesh,
-                              };
+                              });
                             }
-                          } else {
-                            return null;
                           }
-                        }).filter(object => object !== null),
+                        }
+
+                        return result;
+                      })();
+                      biolumi.updateAnchors({
+                        objects: objects,
                         hoverState: hoverState,
                         dotMesh: dotMesh,
                         boxMesh: boxMesh,
@@ -1742,6 +1767,8 @@ class Tags {
               const attributesMesh = (() => {
                 const result = new THREE.Object3D();
 
+                const attributeMeshes = [];
+
                 const {attributes} = item;
                 const attributesArray = Object.keys(attributes).map(name => ({
                   name,
@@ -1774,7 +1801,9 @@ class Tags {
                   mesh.receiveShadow = true;
 
                   result.add(mesh);
+                  attributeMeshes.push(mesh);
                 }
+                result.attributeMeshes = attributeMeshes;
 
                 return result;
               })();
