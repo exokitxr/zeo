@@ -14,6 +14,8 @@ const playBlackImg = require('../img/play-black');
 const playBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(playBlackImg);
 const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
+const closeBoxImg = require('../img/close-box');
+const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
 
 const makeRenderer = ({creatureUtils}) => {
   const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
@@ -113,6 +115,27 @@ const makeRenderer = ({creatureUtils}) => {
       <${tagName} style="display: block; text-decoration: none;" onclick="entity:${id}">
         ${headerSrc}
       </${tagName}>
+    `;
+  };
+
+  const getAttributeSrc = ({attribute}) => {
+    const {name} = attribute;
+
+    const headerSrc = `\
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; flex-direction: column;">
+        <div style="display: flex; background-color: #000; color: #FFF; font-size: 28px; line-height: 2;">
+          <div style="margin-left: 20px; margin-right: auto;">${name}</div>
+          <a style="display: flex; padding: 0 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="attribute:remove">
+            <img src="${closeBoxImgSrc}" width="24" height="24" />
+          </a>
+        </div>
+      </div>
+    `;
+
+    return `\
+      <div style="display: block; text-decoration: none;">
+        ${headerSrc}
+      </div>
     `;
   };
 
@@ -394,6 +417,7 @@ const makeRenderer = ({creatureUtils}) => {
     getModuleSrc,
     getElementSrc,
     getEntitySrc,
+    getAttributeSrc,
     getAttributesSrc,
     getAttributeInputSrc,
     getFileSrc,

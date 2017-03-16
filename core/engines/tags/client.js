@@ -326,8 +326,6 @@ class Tags {
               this.height = height;
               this.color = color;
               this.metadata = metadata;
-
-              this.uis = [];
             }
 
             addPage(pageSpec, options) {
@@ -338,18 +336,8 @@ class Tags {
                 height: height,
                 color,
               });
-              uis.push(ui);
-
-              return ui.addPage(pageSpec, options);
-            }
-
-            update() {
-              const {uis} = this;
-
-              for (let i = 0; i < uis.length; i++) {
-                const ui = uis[i];
-                ui.update();
-              }
+              const pageMesh = ui.addPage(pageSpec, options);
+              return pageMesh;
             }
           }
           const uiManager = new UiManager({
@@ -375,6 +363,11 @@ class Tags {
             metadata: {
               open: false,
             },
+          });
+          const uiAttributeManager = new UiManager({
+            width: WIDTH,
+            height: HEIGHT,
+            color: [1, 1, 1, 1],
           });
 
           const hoverStates = {
@@ -1745,6 +1738,48 @@ class Tags {
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
               }
+
+              const attributesMesh = (() => {
+                const result = new THREE.Object3D();
+
+                const {attributes} = item;
+                const attributesArray = Object.keys(attributes).map(name => ({
+                  name,
+                  value: attributes[name],
+                }));
+                for (let i = 0; i < attributesArray.length; i++) {
+                  const attribute = attributesArray[i];
+                  const {
+                    name: attributeName,
+                    value: attributeValue,
+                  } = attribute;
+
+                  const mesh = uiAttributeManager.addPage(({
+                    attribute,
+                  }) => ({
+                    type: 'html',
+                    src: tagsRenderer.getAttributeSrc({attribute}),
+                    w: WIDTH,
+                    h: HEIGHT,
+                  }), {
+                    type: 'attribute',
+                    state: {
+                      attribute,
+                    },
+                    worldWidth: WORLD_WIDTH,
+                    worldHeight: WORLD_HEIGHT,
+                  });
+                  mesh.position.x = WORLD_WIDTH * (1 + 0.1);
+                  mesh.position.y = -(attributesArray.length * WORLD_HEIGHT / 2) + (0.5 * WORLD_HEIGHT) + (i * WORLD_HEIGHT);
+                  mesh.receiveShadow = true;
+
+                  result.add(mesh);
+                }
+
+                return result;
+              })();
+              object.add(attributesMesh);
+              object.attributesMesh = attributesMesh;
 
               const _setAttribute = (attribute, value) => {
                 item.setAttribute(attribute, value);
