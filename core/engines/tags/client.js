@@ -104,6 +104,69 @@ class Tags {
           const rootModulesElement = document.createElement('div');
           rootModulesElement.id = 'zeo-modules';
           document.body.appendChild(rootModulesElement);
+          const rootModulesObserver = new MutationObserver(mutations => {
+            for (let i = 0; i < mutations.length; i++) {
+              const mutation = mutations[i];
+              const {type} = mutation;
+
+              if (type === 'childList') {
+                const {addedNodes} = mutation;
+                for (let j = 0; j < addedNodes.length; j++) {
+                  const addedNode = addedNodes[j];
+                  const moduleElement = addedNode;
+                  const {item: moduleItem} = moduleElement;
+                  const {displayName} = moduleItem;
+                  const componentApi = componentApis[displayName];
+                  const {attributes: componentAttributes} = componentApi;
+
+                  const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
+                  for (let i = 0; i < boundEntitySpecs.length; i++) {
+                    const boundEntitySpec = boundEntitySpecs[i];
+                    const {tagMesh, matchingAttributes} = boundEntitySpec;
+                    const {item: entityItem} = tagMesh;
+                    const {instance: entityElement} = entityItem;
+
+                    moduleElement.entityAddedCallback(entityElement);
+
+                    for (let j = 0; j < matchingAttributes.length; j++) {
+                      const matchingAttribute = matchingAttributes[j];
+                      const {attributes: entityAttributes} = entityItem;
+                      const attributeValue = entityAttributes[matchingAttribute];
+
+                      moduleElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                    }
+                  }
+                }
+
+                const {removedNodes} = mutation;
+                for (let k = 0; k < removedNodes.length; k++) {
+                  const removedNode = removedNodes[k];
+                  const moduleElement = removedNode;
+                  const {item: moduleItem} = moduleElement;
+                  const {displayName} = moduleItem;
+                  const componentApi = componentApis[displayName];
+                  const {attributes: componentAttributes} = componentApi;
+
+                  const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
+                  for (let i = 0; i < boundEntitySpecs.length; i++) {
+                    const boundEntitySpec = boundEntitySpecs[i];
+                    const {tagMesh, matchingAttributes} = boundEntitySpec;
+                    const {item: entityItem} = tagMesh;
+                    const {instance: entityElement} = entityItem;
+
+                    moduleElement.entityRemovedCallback(entityElement);
+                  }
+                }
+              // } else if (type === 'attributes') {
+              }
+            }
+          });
+          rootModulesObserver.observe(rootModulesElement, {
+            childList: true,
+            // attributes: true,
+            subtree: true,
+            // attributeOldValue: true,
+          });
 
           const rootEntitiesElement = document.createElement('div');
           rootEntitiesElement.id = 'zeo-entities';
@@ -1128,7 +1191,7 @@ class Tags {
 
             setAttribute(attributeName, newValue) {
               const {attributes} = this;
-              attributes[attributeName] = newValue; // XXX this should technically be set after the DOM mutation handler
+              attributes[attributeName] = newValue; // XXX this should technically be set after the DOM mutation handler so externally-triggered setAttribute()s are saved
 
               const {instance} = this;
               if (instance) {
@@ -1480,29 +1543,13 @@ class Tags {
                           tag,
                           baseClass,
                         });
+                        moduleElement.item = item;
                         item.instance = moduleElement;
-                        rootModulesElement.appendChild(moduleElement);
                         componentApiInstances[tag] = moduleElement;
+
                         item.instancing = false;
 
-                        const {attributes: componentAttributes} = componentApi;
-                        const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
-                        for (let i = 0; i < boundEntitySpecs.length; i++) {
-                          const boundEntitySpec = boundEntitySpecs[i];
-                          const {tagMesh, matchingAttributes} = boundEntitySpec;
-                          const {item: entityItem} = tagMesh;
-                          const {instance: entityElement} = entityItem;
-                          
-                          moduleElement.entityAddedCallback(entityElement);
-
-                          for (let j = 0; j < matchingAttributes.length; j++) {
-                            const matchingAttribute = matchingAttributes[j];
-                            const {attributes: entityAttributes} = entityItem;
-                            const attributeValue = entityAttributes[matchingAttribute];
-
-                            moduleElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
-                          }
-                        }
+                        rootModulesElement.appendChild(moduleElement);
 
                         const _updateInstanceUi = () => {
                           const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
@@ -1553,9 +1600,6 @@ class Tags {
 
                   if (instance) {
                     const moduleElement = instance;
-                    if (typeof moduleElement.destructor === 'function') {
-                      moduleElement.destructor();
-                    }
                     item.instance = null;
 
                     const {name} = item;
