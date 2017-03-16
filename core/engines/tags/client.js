@@ -232,16 +232,30 @@ class Tags {
                   const boundComponentSpec = boundComponentSpecs[i];
                   const {tag, matchingAttributes} = boundComponentSpec;
                   const componentApiInstance = componentApiInstances[tag];
+                  const appliedMatchingAttributes = matchingAttributes.filter(attributeName => entityElement.hasAttribute(attributeName));
 
                   for (let j = 0; j < matchingAttributes.length; j++) {
                     const attributeName = matchingAttributes[j];
-                    const oldValue = JSON.parse(oldValueString);
-                    const newValue = JSON.parse(newValueString);
+                    const oldValue = oldValueString !== null ? JSON.parse(oldValueString) : null;
+                    const newValue = newValueString !== null ? JSON.parse(newValueString) : null;
 
-                    // XXX if this is the first time we're setting an component's attribute for this element, we need to add the component to the element
-                    // XXX additionally, if we're removing the last attribute that would have kept a component live, we need to remove the component from the element
+                    if (newValue !== null) { // adding attribute
+console.log('adding attribute', {appliedMatchingAttributes}); // XXX
+                      if (appliedMatchingAttributes.length === 0) { // if no matching attributes were previously applied, mount the component on the entity
+console.log('adding attribute caused instantiation'); // XXX
+                        componentApiInstance.entityAddedCallback(entityElement);
+                      }
 
-                    componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                      componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                    } else { // removing attribute
+                      if (appliedMatchingAttributes.length === 1) { // if this is the last attribute that applied, unmount the component from the entity
+console.log('removing last attribute', {appliedMatchingAttributes}); // XXX
+                        componentApiInstance.entityRemovedCallback(entityElement);
+                      } else {
+console.log('removing non-last attribute', {appliedMatchingAttributes}); // XXX
+                        componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                      }
+                    }
                   }
                 }
               }
