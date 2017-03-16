@@ -428,8 +428,10 @@ class World {
 
               const {item} = tagMesh;
               const {type} = item;
-              if (type === 'module') { // XXX make this work sensibly in the ECS
+              if (type === 'module') {
                 tags.reifyModule(tagMesh);
+              } else if (type === 'entity') {
+                tags.reifyEntity(tagMesh);
               }
             }
 
@@ -441,6 +443,8 @@ class World {
               const {type} = item;
               if (type === 'module') {
                 tags.unreifyModule(tagMesh);
+              } else if (type === 'entity') {
+                tags.unreifyEntity(tagMesh);
               }
             }
 
