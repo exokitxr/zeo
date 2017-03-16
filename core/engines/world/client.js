@@ -2346,7 +2346,7 @@ class World {
                   const {item: dstItem} = dstTagMesh;
                   const {id: dstId} = dstItem;
 
-                  for (const attributeName in attributes) { // XXX collect these under a single call
+                  for (const attributeName in attributes) {
                     const attribute = attributes[attributeName];
                     const {value: attributeValue} = attribute;
                     _setAttribute({
