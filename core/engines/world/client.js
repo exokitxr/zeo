@@ -1138,6 +1138,7 @@ class World {
                   id: 'entity',
                   name: 'new-entity',
                   displayName: 'New entity',
+                  attributes: {},
                   matrix: DEFAULT_MATRIX,
                   metadata: {
                     isStatic: true,
