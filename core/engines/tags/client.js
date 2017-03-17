@@ -704,7 +704,32 @@ class Tags {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
-                if (match = onclick.match(/^tag:open:(.+)$/)) {
+                if (match = onclick.match(/^entity:addAttribute:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tagMesh;
+                  const {attributes} = item;
+                  const newAtrributeName = (() => {
+                    for (let i = 1;; i++) {
+                      const attributeName = 'attribute-' + i;
+                      if (!(attributeName in attributes)) {
+                        return attributeName;
+                      }
+                    }
+
+                    return null;
+                  })();
+
+                  tagsApi.emit('setAttribute', {
+                    id: id,
+                    attribute: newAtrributeName,
+                    value: 'value',
+                  });
+
+                  e.stopImmediatePropagation();
+
+                  return true;
+                } else if (match = onclick.match(/^tag:open:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
@@ -1871,7 +1896,7 @@ class Tags {
                           value,
                           type,
                         };
-                      });
+                      }).sort((a, b) => a.name.localeCompare(b.name));
                       return attributesArray.map((attribute, i) => {
                         const {
                           name: attributeName,
@@ -1910,7 +1935,7 @@ class Tags {
                           worldHeight: WORLD_HEIGHT,
                         });
                         mesh.position.x = WORLD_WIDTH * (1 + 0.1);
-                        mesh.position.y = -(attributesArray.length * WORLD_HEIGHT / 2) + (0.5 * WORLD_HEIGHT) + (i * WORLD_HEIGHT);
+                        mesh.position.y = (attributesArray.length * WORLD_HEIGHT / 2) - (0.5 * WORLD_HEIGHT) - (i * WORLD_HEIGHT);
                         mesh.receiveShadow = true;
 
                         return mesh;
@@ -1920,7 +1945,7 @@ class Tags {
                       result.add(attributeMesh);
                     });
                     result.attributeMeshes = newAttributeMeshes;
-                  }
+                  };
                   result.update = _update;
                   _update();
 

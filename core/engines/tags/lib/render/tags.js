@@ -111,7 +111,7 @@ const makeRenderer = ({creatureUtils}) => {
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
           </div>
         </div>
-        <${linkTagName} style="display: flex; width: 100px; justify-content: center; align-items: center;" onclick="entity:open:${id}">
+        <${linkTagName} style="display: flex; width: 100px; justify-content: center; align-items: center;" onclick="entity:addAttribute:${id}">
           <img src="${plusBoxImgSrc}" width="40" height="40">
         </${linkTagName}>
       </div>
