@@ -2339,21 +2339,23 @@ class World {
                 } else {
                   const {item: srcItem} = srcTagMesh;
                   const {displayName: srcDisplayName} = srcItem;
-                  const componentApis = tags.getComponentApis();
-                  const componentApi = componentApis[srcDisplayName];
-                  const {attributes} = componentApi;
+                  const componentApis = tags.getTagComponentApis(srcDisplayName);
 
-                  const {item: dstItem} = dstTagMesh;
-                  const {id: dstId} = dstItem;
+                  for (let i = 0; i < componentApis.length; i++) {
+                    const componentApi = componentApis[i];
+                    const {attributes} = componentApi;
+                    const {item: dstItem} = dstTagMesh;
+                    const {id: dstId} = dstItem;
 
-                  for (const attributeName in attributes) {
-                    const attribute = attributes[attributeName];
-                    const {value: attributeValue} = attribute;
-                    _setAttribute({
-                      id: dstId,
-                      attribute: attributeName,
-                      value: attributeValue,
-                    });
+                    for (const attributeName in attributes) {
+                      const attribute = attributes[attributeName];
+                      const {value: attributeValue} = attribute;
+                      _setAttribute({
+                        id: dstId,
+                        attribute: attributeName,
+                        value: attributeValue,
+                      });
+                    }
                   }
                 }
               }

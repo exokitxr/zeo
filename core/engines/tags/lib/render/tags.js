@@ -6,6 +6,8 @@ const {
   OPEN_HEIGHT,
 } = require('../constants/tags');
 
+const vectorPolygonImg = require('../img/vector-polygon');
+const vectorPolygonImgSrc = 'data:image/svg+xml;base64,' + btoa(vectorPolygonImg);
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 const barsWhiteImg = require('../img/bars-white');
@@ -41,7 +43,7 @@ const makeRenderer = ({creatureUtils}) => {
           </div>
         </div>
         <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
-          <img src="${barsBlackImgSrc}" width="50" height="50">
+          <img src="${vectorPolygonImgSrc}" width="50" height="50">
         </${linkTagName}>
         }
       </div>

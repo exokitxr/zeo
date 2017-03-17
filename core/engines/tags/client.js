@@ -1596,6 +1596,7 @@ class Tags {
 
           const componentApis = [];
           const componentApiInstances = [];
+          const tagComponentApis = {};
           // const elementApis = {};
 
           const _getBoundComponentSpecs = entityAttributes => {
@@ -1664,7 +1665,15 @@ class Tags {
               this.listen();
             }
 
-            registerComponent(componentApi) {
+            registerComponent(pluginInstance, componentApi) {
+              const name = archae.getName(pluginInstance);
+              let tagComponentApiComponents = tagComponentApis[name];
+              if (!tagComponentApiComponents) {
+                tagComponentApiComponents = [];
+                tagComponentApis[name] = tagComponentApiComponents;
+              }
+              tagComponentApiComponents.push(componentApi);
+
               const baseObject = componentApi;
               const componentElement = menuUtils.makeZeoComponentElement({
                 baseObject,
@@ -1686,19 +1695,26 @@ class Tags {
               }
             }
 
-            unregisterComponent(componentApiToRemove) {
-              const removeIndex = {};
+            unregisterComponent(pluginInstance, componentApiToRemove) {
+              const name = archae.getName(pluginInstance);
+              const tagComponentApiComponents = tagComponentApis[name];
+              tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(componentApiToRemove), 1);
+              if (tagComponentApiComponents.length === 0) {
+                tagComponentApis[name] = null;
+              }
+
+              const removeComponentApisIndex = {};
               for (let i = 0; i < componentApis.length; i++) {
                 const componentApis = componentApis[i];
 
                 if (componentApis === componentApiToRemove) {
-                  removeIndex[i] = true;
+                  removeComponentApisIndex[i] = true;
                 }
               }
 
-              componentApis = componentApis.filter((componentApi, index) => !removeIndex[index]);
+              componentApis = componentApis.filter((componentApi, index) => !removeComponentApisIndex[index]);
               componentApiInstances = componentApiInstances.filter((componentApiInstance, index) => {
-                if (removeIndex[index]) {
+                if (removeComponentApisIndex[index]) {
                   rootComponentsElement.removeChild(componentElement);
 
                   return false;
@@ -1956,6 +1972,8 @@ class Tags {
                         };
                         item.instancing = false;
 
+                        tagComponentApis[name] = [];
+
                         const _updateInstanceUi = () => {
                           const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
                           page.update();
@@ -2007,6 +2025,8 @@ class Tags {
                   return archae.releasePlugin(name)
                     .then(() => {
                       item.instance = null;
+
+                      tagComponentApis[name] = null;
 
                       const _updateNpmUi = () => {
                         const tagMesh = tagMeshes.find(tagMesh =>
@@ -2153,8 +2173,8 @@ class Tags {
               return rootEntitiesElement;
             }
 
-            getComponentApis() {
-              return componentApis;
+            getTagComponentApis(tag) {
+              return tagComponentApis[tag];
             }
 
             getPointedTagMesh(side) {
