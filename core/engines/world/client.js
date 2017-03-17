@@ -2308,10 +2308,10 @@ class World {
 
                   for (let i = 0; i < componentApis.length; i++) {
                     const componentApi = componentApis[i];
-                    const {attributes} = componentApi;
+                    const {attributes: componentAttributes = {}} = componentApi;
 
-                    for (const attributeName in attributes) {
-                      const attribute = attributes[attributeName];
+                    for (const attributeName in componentAttributes) {
+                      const attribute = componentAttributes[attributeName];
                       const {value: attributeValue} = attribute;
 
                       fn(attributeName, attributeValue);

@@ -122,7 +122,7 @@ class Tags {
                   const addedNode = addedNodes[j];
                   const componentElement = addedNode;
                   const {componentApi} = componentElement;
-                  const {attributes: componentAttributes} = componentApi;
+                  const {attributes: componentAttributes = {}} = componentApi;
                   const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
                   for (let l = 0; l < boundEntitySpecs.length; l++) {
@@ -148,7 +148,7 @@ class Tags {
                   const removedNode = removedNodes[k];
                   const componentElement = removedNode;
                   const {componentApi} = componentElement;
-                  const {attributes: componentAttributes} = componentApi;
+                  const {attributes: componentAttributes = {}} = componentApi;
                   const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
                   for (let m = 0; m < boundEntitySpecs.length; m++) {
@@ -1624,7 +1624,7 @@ class Tags {
             for (let i = 0; i < componentApis.length; i++) {
               const componentApi = componentApis[i];
               const componentApiInstance = componentApiInstances[i];
-              const {attributes: componentAttributes} = componentApi;
+              const {attributes: componentAttributes = {}} = componentApi;
 
               const componentElement = componentApiInstance;
               const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
