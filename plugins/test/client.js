@@ -26,7 +26,7 @@ class Test {
           step: 1,
         },
         select: {
-          type: 'option',
+          type: 'select',
           value: 'Option A',
           options: [
             'Option A',
@@ -40,6 +40,10 @@ class Test {
         checkbox: {
           type: 'checkbox',
           value: false,
+        },
+        file: {
+          type: 'file',
+          value: 'https://lol.com',
         },
       },
       entityAddedCallback(entityElement, attribute, value) {
