@@ -437,7 +437,7 @@ class Tags {
           scene.add(boxMeshes.left);
           scene.add(boxMeshes.right);
 
-          const _makePositioningMesh = ({opacity = 1} = {}) => {
+          const positioningMesh = (() => {
             const geometry = (() => {
               const result = new THREE.BufferGeometry();
               const positions = Float32Array.from([
@@ -464,19 +464,13 @@ class Tags {
               // color: 0xFFFFFF,
               // color: 0x333333,
               vertexColors: THREE.VertexColors,
-              opacity: opacity,
             });
 
             const mesh = new THREE.LineSegments(geometry, material);
             mesh.visible = false;
             return mesh;
-          };
-          const positioningMesh = _makePositioningMesh();
+          })();
           scene.add(positioningMesh);
-          const oldPositioningMesh = _makePositioningMesh({
-            opacity: 0.5,
-          });
-          scene.add(oldPositioningMesh);
 
           const detailsState = {
             inputText: '',
@@ -908,10 +902,6 @@ class Tags {
                   const {value: attributeValue, type: attributeType} = attribute;
 
                   if (action === 'position') {
-                    oldPositioningMesh.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
-                    oldPositioningMesh.quaternion.set(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
-                    oldPositioningMesh.scale.set(attributeValue[7], attributeValue[8], attributeValue[9]);
-
                     detailsState.positioningId = tagId;
                     detailsState.positioningName = attributeName;
                     detailsState.positioningSide = side;
@@ -1286,23 +1276,14 @@ class Tags {
                     positioningMesh.position.copy(controllerPosition);
                     positioningMesh.quaternion.copy(controllerRotation);
                     positioningMesh.scale.copy(controllerScale);
-
-                    const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                    item.setAttribute(positioningName, newValue); // XXX figure out what to do with this live update
                   }
 
                   if (!positioningMesh.visible) {
                     positioningMesh.visible = true;
                   }
-                  if (!oldPositioningMesh.visible) {
-                    oldPositioningMesh.visible = true;
-                  }
                 } else {
                   if (positioningMesh.visible) {
                     positioningMesh.visible = false;
-                  }
-                  if (oldPositioningMesh.visible) {
-                    oldPositioningMesh.visible = false;
                   }
                 }
               };

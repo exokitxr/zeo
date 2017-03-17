@@ -16,6 +16,10 @@ const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
 const closeBoxImg = require('../img/close-box');
 const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
+const plusBoxImg = require('../img/plus-box');
+const plusBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(plusBoxImg);
+const targetImg = require('../img/target');
+const targetImgSrc = 'data:image/svg+xml;base64,' + btoa(targetImg);
 
 const makeRenderer = ({creatureUtils}) => {
   const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
@@ -100,13 +104,13 @@ const makeRenderer = ({creatureUtils}) => {
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden;">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #000; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Entity</div>
         <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
-        <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
+        <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 100}px; margin-right: 10px;">
           <div style="height: 100px;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
           </div>
         </div>
-        <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="entity:open:${id}">
-          <img src="${barsBlackImgSrc}" width="50" height="50">
+        <${linkTagName} style="display: flex; width: 100px; justify-content: center; align-items: center;" onclick="entity:open:${id}">
+          <img src="${plusBoxImgSrc}" width="40" height="40">
         </${linkTagName}>
       </div>
     `;
@@ -188,8 +192,10 @@ const makeRenderer = ({creatureUtils}) => {
     switch (type) {
       case 'matrix': {
         return `\
-  <div style="display: flex; width: ${width}px; height: 40px; justify-content: flex-end;">
-    <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">Set</a>
+  <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
+    <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">
+      <img src="${targetImgSrc}" width="50" height="50" style="mwidth: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+    </a>
   </div>
   `;
       }
