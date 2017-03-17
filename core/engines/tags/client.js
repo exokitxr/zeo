@@ -117,29 +117,34 @@ class Tags {
 
               if (type === 'childList') {
                 const {addedNodes} = mutation;
+
                 for (let j = 0; j < addedNodes.length; j++) {
                   const addedNode = addedNodes[j];
                   const moduleElement = addedNode;
                   const {item: moduleItem} = moduleElement;
                   const {displayName} = moduleItem;
-                  const componentApi = componentApis[displayName];
-                  const {attributes: componentAttributes} = componentApi;
+                  const moduleComponentApis = componentApis.get(displayName);
 
-                  const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
-                  for (let i = 0; i < boundEntitySpecs.length; i++) {
-                    const boundEntitySpec = boundEntitySpecs[i];
-                    const {tagMesh, matchingAttributes} = boundEntitySpec;
-                    const {item: entityItem} = tagMesh;
-                    const {instance: entityElement} = entityItem;
+                  for (let k = 0; k < moduleComponentApis.length; k++) {
+                    const componentApi = moduleComponentApis[k];
+                    const {attributes: componentAttributes} = componentApi;
+                    const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
-                    moduleElement.entityAddedCallback(entityElement);
+                    for (let l = 0; l < boundEntitySpecs.length; l++) {
+                      const boundEntitySpec = boundEntitySpecs[l];
+                      const {tagMesh, matchingAttributes} = boundEntitySpec;
+                      const {item: entityItem} = tagMesh;
+                      const {instance: entityElement} = entityItem;
 
-                    for (let j = 0; j < matchingAttributes.length; j++) {
-                      const matchingAttribute = matchingAttributes[j];
-                      const {attributes: entityAttributes} = entityItem;
-                      const attributeValue = entityAttributes[matchingAttribute];
+                      moduleElement.entityAddedCallback(entityElement);
 
-                      moduleElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                      for (let m = 0; m < matchingAttributes.length; m++) {
+                        const matchingAttribute = matchingAttributes[m];
+                        const {attributes: entityAttributes} = entityItem;
+                        const attributeValue = entityAttributes[matchingAttribute];
+
+                        moduleElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                      }
                     }
                   }
                 }
@@ -150,17 +155,21 @@ class Tags {
                   const moduleElement = removedNode;
                   const {item: moduleItem} = moduleElement;
                   const {displayName} = moduleItem;
-                  const componentApi = componentApis[displayName];
-                  const {attributes: componentAttributes} = componentApi;
+                  const moduleComponentApis = componentApis.get(displayName);
 
-                  const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
-                  for (let i = 0; i < boundEntitySpecs.length; i++) {
-                    const boundEntitySpec = boundEntitySpecs[i];
-                    const {tagMesh, matchingAttributes} = boundEntitySpec;
-                    const {item: entityItem} = tagMesh;
-                    const {instance: entityElement} = entityItem;
+                  for (let l = 0; l < moduleComponentApis.length; l++) {
+                    const componentApi = moduleComponentApis[l];
+                    const {attributes: componentAttributes} = componentApi;
+                    const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
-                    moduleElement.entityRemovedCallback(entityElement);
+                    for (let m = 0; m < boundEntitySpecs.length; m++) {
+                      const boundEntitySpec = boundEntitySpecs[m];
+                      const {tagMesh, matchingAttributes} = boundEntitySpec;
+                      const {item: entityItem} = tagMesh;
+                      const {instance: entityElement} = entityItem;
+
+                      moduleElement.entityRemovedCallback(entityElement);
+                    }
                   }
                 }
               // } else if (type === 'attributes') {
@@ -218,15 +227,14 @@ class Tags {
                     const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
                     for (let k = 0; k < boundComponentSpecs.length; k++) {
                       const boundComponentSpec = boundComponentSpecs[k];
-                      const {tag, matchingAttributes} = boundComponentSpec;
+                      const {componentElement, matchingAttributes} = boundComponentSpec;
 
-                      const componentApiInstance = componentApiInstances[tag];
-                      componentApiInstance.entityAddedCallback(entityElement);
+                      componentElement.entityAddedCallback(entityElement);
 
                       for (let l = 0; l < matchingAttributes.length; l++) {
                         const matchingAttribute = matchingAttributes[l];
                         const attributeValue = entityAttributes[matchingAttribute];
-                        componentApiInstance.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                        componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                       }
                     }
                   }
@@ -250,10 +258,9 @@ class Tags {
                     const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
                     for (let l = 0; l < boundComponentSpecs.length; l++) {
                       const boundComponentSpec = boundComponentSpecs[l];
-                      const {tag} = boundComponentSpec;
-                      const componentApiInstance = componentApiInstances[tag];
+                      const {componentElement} = boundComponentSpec;
 
-                      componentApiInstance.entityRemovedCallback(entityElement);
+                      componentElement.entityRemovedCallback(entityElement);
                     }
                   }
                 }
@@ -281,8 +288,7 @@ class Tags {
                   const boundComponentSpecs = _getBoundComponentSpecs(attributeSpec);
                   for (let i = 0; i < boundComponentSpecs.length; i++) {
                     const boundComponentSpec = boundComponentSpecs[i];
-                    const {tag, matchingAttributes} = boundComponentSpec;
-                    const componentApiInstance = componentApiInstances[tag];
+                    const {componentElement, matchingAttributes} = boundComponentSpec;
                     const appliedMatchingAttributes = matchingAttributes.filter(matchingAttributeName => {
                       if (matchingAttributeName === attributeName) {
                         return oldValueString !== null;
@@ -296,15 +302,15 @@ class Tags {
 
                       if (newValue !== null) { // adding attribute
                         if (appliedMatchingAttributes.length === 0) { // if no matching attributes were previously applied, mount the component on the entity
-                          componentApiInstance.entityAddedCallback(entityElement);
+                          componentElement.entityAddedCallback(entityElement);
                         }
 
-                        componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                        componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
                       } else { // removing attribute
                         if (appliedMatchingAttributes.length === 1) { // if this is the last attribute that applied, unmount the component from the entity
-                          componentApiInstance.entityRemovedCallback(entityElement);
+                          componentElement.entityRemovedCallback(entityElement);
                         } else {
-                          componentApiInstance.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                          componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
                         }
                       }
                     }
@@ -1594,38 +1600,46 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
-          const componentApis = {};
-          const componentApiInstances = {};
-          const elementApis = {};
+          const componentApis = new Map();
+          const componentApiInstances = new Map();
+          // const elementApis = {};
 
           const _getBoundComponentSpecs = entityAttributes => {
             const result = [];
 
-            for (const tag in componentApis) {
-              const componentApi = componentApis[tag];
-              const {attributes: componentAttributes} = componentApi;
+            componentApis.forEach((moduleComponents, tag) => {
+              const moduleComponentApiInstances = componentApiInstances.get(tag);
 
-              const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
-              if (matchingAttributes.length > 0) {
-                const matchingAttributeSpecs = (() => {
-                  const result = {};
+              for (let i = 0; i < moduleComponents.length; i++) {
+                const componentApi = moduleComponents[i];
+                const componentApiInstance = moduleComponentApiInstances[i];
+                const {attributes: componentAttributes} = componentApi;
 
-                  for (let i = 0; i < matchingAttributes.length; i++) {
-                    const matchingAttribute = matchingAttributes[i];
-                    const attributeSpec = componentAttributes[matchingAttribute];
-                    result[matchingAttribute] = attributeSpec;
-                  }
+                const componentElement = componentApiInstance;
+                const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
+                if (matchingAttributes.length > 0) {
+                  const matchingAttributeSpecs = (() => {
+                    const result = {};
 
-                  return result;
-                })();
+                    for (let j = 0; j < matchingAttributes.length; j++) {
+                      const matchingAttribute = matchingAttributes[j];
+                      const attributeSpec = componentAttributes[matchingAttribute];
+                      result[matchingAttribute] = attributeSpec;
+                    }
 
-                result.push({
-                  tag,
-                  matchingAttributes,
-                  matchingAttributeSpecs,
-                });
+                    return result;
+                  })();
+                  const index = tag + ':' + i;
+
+                  result.push({
+                    componentElement,
+                    matchingAttributes,
+                    matchingAttributeSpecs,
+                    index,
+                  });
+                }
               }
-            }
+            });
 
             return result;
           };
@@ -1660,10 +1674,15 @@ class Tags {
               this.listen();
             }
 
-            registerComponent(pluginInstance, componentApi) {
-              const tag = archae.getName(pluginInstance);
+            registerComponent(componentApi) {
+              const tag = archae.getName(pluginInstance); // XXX get rid of tag relation completely
 
-              componentApis[tag] = componentApi;
+              let moduleComponentApis = componentApis.get(tag);
+              if (!moduleComponentApis) {
+                moduleComponentApis = [];
+                componentApis.set(tag, moduleComponentApis);
+              }
+              moduleComponentApis.push(componentApi);
 
               for (let i = 0; i < tagMeshes.length; i++) {
                 const tagMesh = tagMeshes[i];
@@ -1677,13 +1696,20 @@ class Tags {
               }
             }
 
-            unregisterComponent(pluginInstance) {
-              const tag = archae.getName(pluginInstance);
-
-              delete componentApis[tag];
+            unregisterComponent(componentApi) {
+              componentApis.forEach((moduleComponentApis, tag) => {
+                const newModuleComponentApis = moduleComponentApis.filter(moduleComponentApi => moduleComponentApi !== componentApi);
+                if (newModuleComponentApis !== 0) {
+                  if (newModuleComponentApis.length > 0) {
+                     componentApis.set(tag, newModuleComponentApis);
+                  } else {
+                    componentApis.delete(tag);
+                  }
+                }
+              });
             }
 
-            registerElement(pluginInstance, elementApi) {
+            /* registerElement(pluginInstance, elementApi) {
               const tag = archae.getName(pluginInstance);
 
               elementApis[tag] = elementApi;
@@ -1693,7 +1719,7 @@ class Tags {
               const tag = archae.getName(pluginInstance);
 
               delete elementApis[tag];
-            }
+            } */
 
             makeTag(itemSpec) {
               const object = new THREE.Object3D();
@@ -1815,7 +1841,7 @@ class Tags {
                             [name]: value,
                           });
                           if (boundComponentSpecs.length > 0) {
-                            const boundComponentSpec = boundComponentSpecs.sort((a, b) => a.tag.localeCompare(b.tag))[0];
+                            const boundComponentSpec = boundComponentSpecs.sort((a, b) => a.index.localeCompare(b.index))[0];
                             const {matchingAttributeSpecs} = boundComponentSpec;
                             const matchingAttributeSpec = matchingAttributeSpecs[name];
                             const {type} = matchingAttributeSpec;
@@ -1929,24 +1955,23 @@ class Tags {
                         const name = archae.getName(pluginInstance);
 
                         const tag = name;
-                        let componentApi = componentApis[tag];
-                        if (!HTMLElement.isPrototypeOf(componentApi)) {
-                          componentApi = HTMLElement;
-                        }
-                        const {id} = item;
-                        const baseClass = componentApi;
+                        const moduleComponentApis = componentApis.get(tag) || [];
+                        const moduleComponentApiInstances = moduleComponentApis.map(componentApi => {
+                          const baseObject = componentApi;
 
-                        const moduleElement = menuUtils.makeZeoModuleElement({
-                          tag,
-                          baseClass,
+                          const moduleElement = menuUtils.makeZeoModuleElement({
+                            tag,
+                            baseObject,
+                          });
+                          moduleElement.item = item;
+
+                          rootModulesElement.appendChild(moduleElement);
+
+                          return moduleElement;
                         });
-                        moduleElement.item = item;
-                        item.instance = moduleElement;
-                        componentApiInstances[tag] = moduleElement;
-
+                        componentApiInstances.set(tag, moduleComponentApiInstances);
+                        item.instance = moduleComponentApiInstances;
                         item.instancing = false;
-
-                        rootModulesElement.appendChild(moduleElement);
 
                         const _updateInstanceUi = () => {
                           const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
@@ -1996,12 +2021,17 @@ class Tags {
                   const {instance} = item;
 
                   if (instance) {
-                    const moduleElement = instance;
-                    moduleElement.item = null;
+                    for (let i = 0; i < instance.length; i++) {
+                      const componentApiInstance = instance[i];
+                      componentApiInstance.item = null;
+
+                      rootModulesElement.removeChild(componentApiInstance);
+                    }
                     item.instance = null;
 
                     const {name} = item;
-                    componentApiInstances[name] = null;
+                    componentApis.delete(name);
+                    componentApiInstances.delete(name);
 
                     const _updateNpmUi = () => {
                       const tagMesh = tagMeshes.find(tagMesh =>
@@ -2018,8 +2048,6 @@ class Tags {
                       }
                     };
                     _updateNpmUi();
-
-                    rootModulesElement.removeChild(moduleElement);
                   }
 
                   unlock();

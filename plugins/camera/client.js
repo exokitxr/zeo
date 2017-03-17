@@ -18,20 +18,17 @@ class Camera {
     };
 
     const cameraElements = [];
-    class CameraElement extends HTMLElement {
-      static get attributes() {
-        return {
-          position: {
-            type: 'matrix',
-            value: [
-              0, 0, 0,
-              0, 0, 0, 1,
-              1, 1, 1
-            ]
-          }
-        };
-      }
-
+    const cameraComponent = {
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1
+          ]
+        },
+      },
       entityAddedCallback(entityElement, attribute, value) {
         const entityApi = {};
 
@@ -144,15 +141,13 @@ class Camera {
         };
         
         entityElement[symbol] = entityApi;
-      }
-
+      },
       entityRemovedCallback(entityElement) {
         const {[symbol]: entityApi} = entityElement;
         entityApi.cleanup();
 
         entityApi[symbol] = null;
-      }
-
+      },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
         const {[symbol]: entityApi} = entityElement;
 
@@ -167,7 +162,7 @@ class Camera {
             break;
           }
         }
-      }
+      },
 
       /* requestImageData() {
         const {renderTarget} = this;
@@ -188,8 +183,8 @@ class Camera {
         return fetch(dataUrl)
           .then(res => res.blob());
       } */
-    }
-    elements.registerComponent(this, CameraElement);
+    };
+    elements.registerComponent(this, cameraComponent);
 
     const _paddown = e => {
       const {side} = e;

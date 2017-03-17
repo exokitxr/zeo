@@ -1,32 +1,32 @@
 const zeoModuleElementClasses = new Map();
-const _makeZeoModuleElementClass = ({tag, baseClass}) => {
-  class ZeoModuleElement extends baseClass {
+const _makeZeoModuleElementClass = ({tag, baseObject}) => {
+  class ZeoModuleElement extends HTMLElement {
     entityAddedCallback(entityElement) {
-      if (typeof super.entityAddedCallback === 'function') {
-        super.entityAddedCallback(entityElement);
+      if (baseObject.entityAddedCallback) {
+        baseObject.entityAddedCallback.call(this, entityElement);
       }
     }
 
     entityRemovedCallback(entityElement) {
-      if (typeof super.entityRemovedCallback === 'function') {
-        super.entityRemovedCallback(entityElement);
+      if (baseObject.entityRemovedCallback) {
+        baseObject.entityRemovedCallback.call(this, entityElement);
       }
     }
 
     entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue) {
-      if (typeof super.entityAttributeValueChangedCallback === 'function') {
-        super.entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue);
+      if (baseObject.entityAttributeValueChangedCallback) {
+        baseObject.entityAttributeValueChangedCallback.call(this, entityElement, attribute, oldValue, newValue);
       }
     }
   }
 
-  const ZeoElementConstructor = document.registerElement('z-module-' + tag, ZeoModuleElement);
-  return ZeoElementConstructor;
+  const ZeoModuleElementConstructor = document.registerElement('z-module-' + tag, ZeoModuleElement);
+  return ZeoModuleElementConstructor;
 };
-const makeZeoModuleElement = ({tag, baseClass}) => {
+const makeZeoModuleElement = ({tag, baseObject}) => { // XXX rename this to makeZeoComponentElement
   let zeoModuleElementClass = zeoModuleElementClasses.get(tag);
   if (!zeoModuleElementClass) {
-    zeoModuleElementClass = _makeZeoModuleElementClass({tag, baseClass});
+    zeoModuleElementClass = _makeZeoModuleElementClass({tag, baseObject});
     zeoModuleElementClasses.set(tag, zeoModuleElementClass);
   }
 
