@@ -231,9 +231,7 @@ class Zeo {
               return _startRenderLoop()
                 .then(() => {
                   if (live) {
-                    const filterText = 'blur(5px) opacity(0.75)';
                     renderer.domElement.style.display = 'block';
-                    renderer.domElement.style.filter = filterText;
 
                     // begin helper content
 
@@ -339,7 +337,6 @@ class Zeo {
                               stereoscopic: true,
                               onExit: () => {
                                 overlay.style.display = 'flex';
-                                renderer.domElement.style.filter = filterText;
 
                                 bootstrap.setVrMode(null);
                               },
@@ -348,7 +345,6 @@ class Zeo {
                             bootstrap.setVrMode('hmd');
 
                             overlay.style.display = 'none';
-                            renderer.domElement.style.filter = 'none';
                           }
                         });
                       });
@@ -370,7 +366,6 @@ class Zeo {
                             stereoscopic: false,
                             onExit: () => {
                               overlay.style.display = 'flex';
-                              renderer.domElement.style.filter = filterText;
 
                               bootstrap.setVrMode(null);
                             },
@@ -379,7 +374,6 @@ class Zeo {
                           bootstrap.setVrMode('keyboard');
 
                           overlay.style.display = 'none';
-                          renderer.domElement.style.filter = 'none';
                         }
                       });
                     });
