@@ -2363,7 +2363,68 @@ class World {
 
           const _upload = file => {
             if (!login.isOpen()) {
-              worldApi.createFile(file)
+              const _createFile = blob => {
+                const id = _makeFileId();
+                const {name = _makeId()} = file;
+                const mimeType = (() => {
+                  const {type: mimeType} = blob;
+
+                  if (mimeType) {
+                    return mimeType;
+                  } else {
+                    const match = name.match(/\.([^.]+)$/);
+                    const suffix = match ? match[1] : 'blank';
+
+                    return 'mime/' + suffix;
+                  }
+                })();
+                const matrix = _getInFrontOfCameraMatrix();
+                const itemSpec = {
+                  type: 'file',
+                  id,
+                  name,
+                  mimeType,
+                  matrix,
+                  instancing: true,
+                };
+                _handleAddTag(localUserId, itemSpec, 'world');
+
+                const elementTagMeshes = elementManager.getTagMeshes();
+                const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                if (!rend.isOpen()) {
+                  tempTagMesh.visible = false;
+                }
+
+                const _cleanupTempTagMesh = () => {
+                  elementManager.remove(tempTagMesh);
+
+                  tags.destroyTag(tempTagMesh);
+                };
+
+                return new Promise((accept, reject) => {
+                  fs.writeFile(id, blob)
+                    .then(() => {
+                      _cleanupTempTagMesh();
+
+                      _addTag(itemSpec, 'world');
+
+                      const elementTagMeshes = elementManager.getTagMeshes();
+                      const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      if (!rend.isOpen()) {
+                        tagMesh.visible = false;
+                      }
+
+                      accept(tagMesh);
+                    })
+                    .catch(err => {
+                      _cleanupTempTagMesh();
+
+                      reject(err);
+                    });
+                });
+              };
+
+              _createFile(file)
                 .then(tagMesh => {
                   console.log('upoaded file', tagMesh);
                 });
@@ -2464,7 +2525,6 @@ class World {
 
               _uninitializeElements();
               _uninitializeEquipment();
-              // _uninitializeFiles();
               _uninitializeInventory();
             };
             const _uninitializeTimer = () => {
@@ -2549,67 +2609,6 @@ class World {
               } else {
                 return null;
               }
-            }
-
-            createFile(blob) {
-              const id = _makeFileId();
-              const {name = _makeId()} = blob;
-              const mimeType = (() => {
-                const {type: mimeType} = blob;
-
-                if (mimeType) {
-                  return mimeType;
-                } else {
-                  const match = name.match(/\.([^.]+)$/);
-                  const suffix = match ? match[1] : 'blank';
-
-                  return 'mime/' + suffix;
-                }
-              })();
-              const matrix = _getInFrontOfCameraMatrix();
-              const itemSpec = {
-                type: 'file',
-                id,
-                name,
-                mimeType,
-                matrix,
-                instancing: true,
-              };
-              _handleAddTag(localUserId, itemSpec, 'world');
-
-              const elementTagMeshes = elementManager.getTagMeshes();
-              const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
-              if (!rend.isOpen()) {
-                tempTagMesh.visible = false;
-              }
-
-              const _cleanupTempTagMesh = () => {
-                elementManager.remove(tempTagMesh);
-
-                tags.destroyTag(tempTagMesh);
-              };
-
-              return new Promise((accept, reject) => {
-                fs.writeFile(id, blob)
-                  .then(() => {
-                    _cleanupTempTagMesh();
-
-                    _addTag(itemSpec, 'world');
-
-                    const elementTagMeshes = elementManager.getTagMeshes();
-                    const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
-                    if (!rend.isOpen()) {
-                      tagMesh.visible = false;
-                    }
-
-                    accept(tagMesh);
-                  })
-                  .catch(err => {
-                    _cleanupTempTagMesh();
-
-                    reject(err);
-                  });
-              });
             } */
           }
           const worldApi = new WorldApi();

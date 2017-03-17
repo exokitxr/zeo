@@ -309,7 +309,7 @@ const makeRenderer = ({creatureUtils}) => {
   };
 
   const getFileSrc = ({item, mode, open}) => {
-    const {id, name, mimeType, instancing, paused, value} = item;
+    const {id, name, displayName, mimeType, instancing, paused, value} = item;
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">

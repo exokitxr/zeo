@@ -1131,7 +1131,8 @@ class Tags {
                             (tagMesh.parent === scene) ||
                             controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh)
                           ) {
-                            const {item: {open}} = tagMesh;
+                            const {item} = tagMesh;
+                            const {open} = item;
 
                             if (!open) {
                               const {planeMesh} = tagMesh;
@@ -1149,22 +1150,26 @@ class Tags {
                                 metadata: tagMesh,
                               });
 
-                              const {attributesMesh} = tagMesh;
-                              const {attributeMeshes} = attributesMesh;
-                              for (let j = 0; j < attributeMeshes.length; j++) {
-                                const attributeMesh = attributeMeshes[j];
-                                const matrixObject = _decomposeObjectMatrixWorld(attributeMesh);
-                                const {page} = attributeMesh;
+                              const {type} = item;
+                              if (type === 'entity') {
+                                const {attributesMesh} = tagMesh;
+                                const {attributeMeshes} = attributesMesh;
 
-                                result.push({
-                                  matrixObject: matrixObject,
-                                  page: page,
-                                  width: WIDTH,
-                                  height: HEIGHT,
-                                  worldWidth: WORLD_WIDTH,
-                                  worldHeight: WORLD_HEIGHT,
-                                  worldDepth: WORLD_DEPTH,
-                                });
+                                for (let j = 0; j < attributeMeshes.length; j++) {
+                                  const attributeMesh = attributeMeshes[j];
+                                  const matrixObject = _decomposeObjectMatrixWorld(attributeMesh);
+                                  const {page} = attributeMesh;
+
+                                  result.push({
+                                    matrixObject: matrixObject,
+                                    page: page,
+                                    width: WIDTH,
+                                    height: HEIGHT,
+                                    worldWidth: WORLD_WIDTH,
+                                    worldHeight: WORLD_HEIGHT,
+                                    worldDepth: WORLD_DEPTH,
+                                  });
+                                }
                               }
                             } else {
                               const {planeOpenMesh} = tagMesh;
@@ -1785,74 +1790,76 @@ class Tags {
                 object.planeMesh = planeMesh;
               }
 
-              const attributesMesh = (() => {
-                const result = new THREE.Object3D();
-                result.attributeMeshes = [];
+              if (itemSpec.type === 'entity') {
+                const attributesMesh = (() => {
+                  const result = new THREE.Object3D();
+                  result.attributeMeshes = [];
 
-                const _update = () => {
-                  const {attributeMeshes: oldAttributeMeshes} = result;
-                  oldAttributeMeshes.forEach(attributeMesh => {
-                    result.remove(attributeMesh);
-                  });
-
-                  const newAttributeMeshes = (() => {
-                    const {attributes} = item;
-                    const attributesArray = Object.keys(attributes).map(name => ({
-                      name,
-                      value: attributes[name],
-                    }));
-                    return attributesArray.map((attribute, i) => {
-                      const {
-                        name: attributeName,
-                        value: attributeValue,
-                      } = attribute;
-
-                      const mesh = uiAttributeManager.addPage(({
-                        item,
-                        attribute,
-                      }) => ({
-                        type: 'html',
-                        src: tagsRenderer.getAttributeSrc({item, attribute}),
-                        w: WIDTH,
-                        h: HEIGHT,
-                      }), {
-                        type: 'attribute',
-                        state: {
-                          item: item,
-                          attribute: attribute,
-                        },
-                        worldWidth: WORLD_WIDTH,
-                        worldHeight: WORLD_HEIGHT,
-                      });
-                      mesh.position.x = WORLD_WIDTH * (1 + 0.1);
-                      mesh.position.y = -(attributesArray.length * WORLD_HEIGHT / 2) + (0.5 * WORLD_HEIGHT) + (i * WORLD_HEIGHT);
-                      mesh.receiveShadow = true;
-
-                      return mesh;
+                  const _update = () => {
+                    const {attributeMeshes: oldAttributeMeshes} = result;
+                    oldAttributeMeshes.forEach(attributeMesh => {
+                      result.remove(attributeMesh);
                     });
-                  })();
-                  newAttributeMeshes.forEach(attributeMesh => {
-                    result.add(attributeMesh);
-                  });
-                  result.attributeMeshes = newAttributeMeshes;
-                }
-                result.update = _update;
-                _update();
 
-                return result;
-              })();
-              object.add(attributesMesh);
-              object.attributesMesh = attributesMesh;
+                    const newAttributeMeshes = (() => {
+                      const {attributes} = item;
+                      const attributesArray = Object.keys(attributes).map(name => ({
+                        name,
+                        value: attributes[name],
+                      }));
+                      return attributesArray.map((attribute, i) => {
+                        const {
+                          name: attributeName,
+                          value: attributeValue,
+                        } = attribute;
 
-              const _setAttribute = (attribute, value) => {
-                item.setAttribute(attribute, value);
+                        const mesh = uiAttributeManager.addPage(({
+                          item,
+                          attribute,
+                        }) => ({
+                          type: 'html',
+                          src: tagsRenderer.getAttributeSrc({item, attribute}),
+                          w: WIDTH,
+                          h: HEIGHT,
+                        }), {
+                          type: 'attribute',
+                          state: {
+                            item: item,
+                            attribute: attribute,
+                          },
+                          worldWidth: WORLD_WIDTH,
+                          worldHeight: WORLD_HEIGHT,
+                        });
+                        mesh.position.x = WORLD_WIDTH * (1 + 0.1);
+                        mesh.position.y = -(attributesArray.length * WORLD_HEIGHT / 2) + (0.5 * WORLD_HEIGHT) + (i * WORLD_HEIGHT);
+                        mesh.receiveShadow = true;
 
-                attributesMesh.update();
+                        return mesh;
+                      });
+                    })();
+                    newAttributeMeshes.forEach(attributeMesh => {
+                      result.add(attributeMesh);
+                    });
+                    result.attributeMeshes = newAttributeMeshes;
+                  }
+                  result.update = _update;
+                  _update();
 
-                const {planeMesh: {page}} = object;
-                page.update();
-              };
-              object.setAttribute = _setAttribute;
+                  return result;
+                })();
+                object.add(attributesMesh);
+                object.attributesMesh = attributesMesh;
+
+                const _setAttribute = (attribute, value) => {
+                  item.setAttribute(attribute, value);
+
+                  attributesMesh.update();
+
+                  const {planeMesh: {page}} = object;
+                  page.update();
+                };
+                object.setAttribute = _setAttribute;
+              }
 
               tagMeshes.push(object);
 
