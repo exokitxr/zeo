@@ -537,7 +537,11 @@ class World {
 
                                 const itemSpec = tagsJson.tags[id];
                                 const {attributes} = itemSpec;
-                                attributes[attributeName] = attributeValue;
+                                if (attributeValue !== null) {
+                                  attributes[attributeName] = attributeValue;
+                                } else {
+                                  delete attributes[attributeName];
+                                }
 
                                 _saveTags();
 
