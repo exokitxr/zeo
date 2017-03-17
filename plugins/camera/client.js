@@ -241,6 +241,10 @@ class Camera {
       render.removeListener('update', _update);
     };
   }
+
+  unmount() {
+    this._cleanup();
+  }
 }
 
 module.exports = Camera;

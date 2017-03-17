@@ -110,7 +110,7 @@ class Tags {
           const rootComponentsElement = document.createElement('div');
           rootComponentsElement.id = 'zeo-components';
           document.body.appendChild(rootComponentsElement);
-          const rootModulesObserver = new MutationObserver(mutations => { // XXX allow user-initiated mutations here
+          const rootComponentsObserver = new MutationObserver(mutations => { // XXX allow user-initiated mutations here
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
               const {type} = mutation;
@@ -120,28 +120,25 @@ class Tags {
 
                 for (let j = 0; j < addedNodes.length; j++) {
                   const addedNode = addedNodes[j];
-                  const moduleElement = addedNode;
+                  const componentElement = addedNode;
+                  const {componentApi} = componentElement;
+                  const {attributes: componentAttributes} = componentApi;
+                  const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
-                  for (let k = 0; k < componentApis.length; k++) {
-                    const componentApi = componentApis[k];
-                    const {attributes: componentAttributes} = componentApi;
-                    const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
+                  for (let l = 0; l < boundEntitySpecs.length; l++) {
+                    const boundEntitySpec = boundEntitySpecs[l];
+                    const {tagMesh, matchingAttributes} = boundEntitySpec;
+                    const {item: entityItem} = tagMesh;
+                    const {instance: entityElement} = entityItem;
 
-                    for (let l = 0; l < boundEntitySpecs.length; l++) {
-                      const boundEntitySpec = boundEntitySpecs[l];
-                      const {tagMesh, matchingAttributes} = boundEntitySpec;
-                      const {item: entityItem} = tagMesh;
-                      const {instance: entityElement} = entityItem;
+                    componentElement.entityAddedCallback(entityElement);
 
-                      moduleElement.entityAddedCallback(entityElement);
+                    for (let m = 0; m < matchingAttributes.length; m++) {
+                      const matchingAttribute = matchingAttributes[m];
+                      const {attributes: entityAttributes} = entityItem;
+                      const attributeValue = entityAttributes[matchingAttribute];
 
-                      for (let m = 0; m < matchingAttributes.length; m++) {
-                        const matchingAttribute = matchingAttributes[m];
-                        const {attributes: entityAttributes} = entityItem;
-                        const attributeValue = entityAttributes[matchingAttribute];
-
-                        moduleElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
-                      }
+                      componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                     }
                   }
                 }
@@ -149,28 +146,25 @@ class Tags {
                 const {removedNodes} = mutation;
                 for (let k = 0; k < removedNodes.length; k++) {
                   const removedNode = removedNodes[k];
-                  const moduleElement = removedNode;
+                  const componentElement = removedNode;
+                  const {componentApi} = componentElement;
+                  const {attributes: componentAttributes} = componentApi;
+                  const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
-                  for (let l = 0; l < componentApis.length; l++) {
-                    const componentApi = componentApis[l];
-                    const {attributes: componentAttributes} = componentApi;
-                    const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
+                  for (let m = 0; m < boundEntitySpecs.length; m++) {
+                    const boundEntitySpec = boundEntitySpecs[m];
+                    const {tagMesh, matchingAttributes} = boundEntitySpec;
+                    const {item: entityItem} = tagMesh;
+                    const {instance: entityElement} = entityItem;
 
-                    for (let m = 0; m < boundEntitySpecs.length; m++) {
-                      const boundEntitySpec = boundEntitySpecs[m];
-                      const {tagMesh, matchingAttributes} = boundEntitySpec;
-                      const {item: entityItem} = tagMesh;
-                      const {instance: entityElement} = entityItem;
-
-                      moduleElement.entityRemovedCallback(entityElement);
-                    }
+                    componentElement.entityRemovedCallback(entityElement);
                   }
                 }
               // } else if (type === 'attributes') {
               }
             }
           });
-          rootModulesObserver.observe(rootComponentsElement, {
+          rootComponentsObserver.observe(rootComponentsElement, {
             childList: true,
             // attributes: true,
             subtree: true,
@@ -1619,8 +1613,8 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
-          const componentApis = [];
-          const componentApiInstances = [];
+          let componentApis = [];
+          let componentApiInstances = [];
           const tagComponentApis = {};
           // const elementApis = {};
 
@@ -1703,6 +1697,7 @@ class Tags {
               const componentElement = menuUtils.makeZeoComponentElement({
                 baseObject,
               });
+              componentElement.componentApi = componentApi;
               rootComponentsElement.appendChild(componentElement);
 
               componentApis.push(componentApi);
@@ -1730,9 +1725,9 @@ class Tags {
 
               const removeComponentApisIndex = {};
               for (let i = 0; i < componentApis.length; i++) {
-                const componentApis = componentApis[i];
+                const componentApi = componentApis[i];
 
-                if (componentApis === componentApiToRemove) {
+                if (componentApi === componentApiToRemove) {
                   removeComponentApisIndex[i] = true;
                 }
               }
@@ -1740,7 +1735,7 @@ class Tags {
               componentApis = componentApis.filter((componentApi, index) => !removeComponentApisIndex[index]);
               componentApiInstances = componentApiInstances.filter((componentApiInstance, index) => {
                 if (removeComponentApisIndex[index]) {
-                  rootComponentsElement.removeChild(componentElement);
+                  rootComponentsElement.removeChild(componentApiInstance);
 
                   return false;
                 } else {

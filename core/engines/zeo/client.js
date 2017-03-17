@@ -500,8 +500,8 @@ class Zeo {
                         tags.registerComponent(pluginInstance, componentApi);
                       }
 
-                      unregisterComponent(pluginInstance) {
-                        tags.unregisterComponent(pluginInstance);
+                      unregisterComponent(pluginInstance, componentApi) {
+                        tags.unregisterComponent(pluginInstance, componentApi);
                       }
 
                       getRootElement() {
