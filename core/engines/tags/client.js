@@ -1876,7 +1876,7 @@ class Tags {
                             [name]: value,
                           });
                           if (boundComponentSpecs.length > 0) {
-                            const boundComponentSpec = boundComponentSpecs.sort((a, b) => a.index.localeCompare(b.index))[0];
+                            const boundComponentSpec = boundComponentSpecs.sort((a, b) => a.index - b.index)[0];
                             const {matchingAttributeSpecs} = boundComponentSpec;
                             const matchingAttributeSpec = matchingAttributeSpecs[name];
                             const {type} = matchingAttributeSpec;
