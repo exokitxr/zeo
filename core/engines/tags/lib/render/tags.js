@@ -118,29 +118,34 @@ const makeRenderer = ({creatureUtils}) => {
     `;
   };
 
-  const getAttributeSrc = ({item, attribute}) => {
+  const getAttributeSrc = ({item, attribute, inputText, inputValue, focusAttributeSpec}) => {
     const {id} = item;
-    const {name} = attribute;
+    const {name, type, value, min, max, step, options} = attribute;
+    const focus = focusAttributeSpec ? (id === focusAttributeSpec.tagId && name === focusAttributeSpec.attributeName) : false;
 
     const headerSrc = `\
-      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; flex-direction: column;">
-        <div style="display: flex; background-color: #000; color: #FFF; font-size: 28px; line-height: 2;">
-          <div style="margin-left: 20px; margin-right: auto;">${name}</div>
-          <a style="display: flex; padding: 0 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="attribute:remove:${id}:${name}">
-            <img src="${closeBoxImgSrc}" width="24" height="24" />
-          </a>
-        </div>
+      <div style="display: flex; background-color: #000; color: #FFF; font-size: 28px; line-height: 2;">
+        <div style="margin-left: 20px; margin-right: auto;">${name}</div>
+        <a style="display: flex; padding: 0 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="attribute:remove:${id}:${name}">
+          <img src="${closeBoxImgSrc}" width="24" height="24" />
+        </a>
       </div>
+    `;
+    const bodySrc = `\
+      ${getAttributeInputSrc(id, name, type, value, min, max, step, options, inputText, inputValue, focus)}
     `;
 
     return `\
-      <div style="display: block; text-decoration: none;">
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; flex-direction: column;">
         ${headerSrc}
+        ${bodySrc}
       </div>
     `;
   };
 
   const getAttributesSrc = (item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec) => {
+    return ''; // XXX remove this call entirely
+
     let acc = '';
 
     const {attributes} = item;
@@ -176,15 +181,15 @@ const makeRenderer = ({creatureUtils}) => {
     }
   };
 
-  const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus, positioning) => {
+  const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus) => {
     const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
-
     const width = 400 - (20 + 120 + 20);
+
     switch (type) {
       case 'matrix': {
         return `\
   <div style="display: flex; width: ${width}px; height: 40px; justify-content: flex-end;">
-    <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">${!positioning ? 'Set' : 'Setting...'}</a>
+    <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">Set</a>
   </div>
   `;
       }
@@ -416,11 +421,11 @@ const makeRenderer = ({creatureUtils}) => {
 
   return {
     getModuleSrc,
-    getElementSrc,
+    // getElementSrc,
     getEntitySrc,
     getAttributeSrc,
-    getAttributesSrc,
-    getAttributeInputSrc,
+    // getAttributesSrc,
+    // getAttributeInputSrc,
     getFileSrc,
   };
 };

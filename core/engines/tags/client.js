@@ -1626,9 +1626,22 @@ class Tags {
 
               const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
               if (matchingAttributes.length > 0) {
+                const matchingAttributeSpecs = (() => {
+                  const result = {};
+
+                  for (let i = 0; i < matchingAttributes.length; i++) {
+                    const matchingAttribute = matchingAttributes[i];
+                    const attributeSpec = componentAttributes[matchingAttribute];
+                    result[matchingAttribute] = attributeSpec;
+                  }
+
+                  return result;
+                })();
+
                 result.push({
                   tag,
                   matchingAttributes,
+                  matchingAttributeSpecs,
                 });
               }
             }
@@ -1670,6 +1683,17 @@ class Tags {
               const tag = archae.getName(pluginInstance);
 
               componentApis[tag] = componentApi;
+
+              for (let i = 0; i < tagMeshes.length; i++) {
+                const tagMesh = tagMeshes[i];
+                const {item} = tagMesh;
+                const {type} = item;
+
+                if (type === 'entity') {
+                  const {attributesMesh} = tagMesh;
+                  attributesMesh.update();
+                }
+              }
             }
 
             unregisterComponent(pluginInstance) {
@@ -1740,8 +1764,8 @@ class Tags {
                     switch (type) {
                       case 'module':
                         return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open});
-                      case 'element':
-                        return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open});
+                      /* case 'element':
+                        return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open}); */
                       case 'entity':
                         return tagsRenderer.getEntitySrc({item});
                       case 'file':
@@ -1803,10 +1827,29 @@ class Tags {
 
                     const newAttributeMeshes = (() => {
                       const {attributes} = item;
-                      const attributesArray = Object.keys(attributes).map(name => ({
-                        name,
-                        value: attributes[name],
-                      }));
+                      const attributesArray = Object.keys(attributes).map(name => {
+                        const value = attributes[name];
+                        const type = (() => {
+                          const boundComponentSpecs = _getBoundComponentSpecs({
+                            [name]: value,
+                          });
+                          if (boundComponentSpecs.length > 0) {
+                            const boundComponentSpec = boundComponentSpecs.sort((a, b) => a.tag.localeCompare(b.tag))[0];
+                            const {matchingAttributeSpecs} = boundComponentSpec;
+                            const matchingAttributeSpec = matchingAttributeSpecs[name];
+                            const {type} = matchingAttributeSpec;
+                            return type;
+                          } else {
+                            return null;
+                          }
+                        })();
+
+                        return {
+                          name,
+                          value,
+                          type,
+                        };
+                      });
                       return attributesArray.map((attribute, i) => {
                         const {
                           name: attributeName,
@@ -1816,16 +1859,30 @@ class Tags {
                         const mesh = uiAttributeManager.addPage(({
                           item,
                           attribute,
-                        }) => ({
-                          type: 'html',
-                          src: tagsRenderer.getAttributeSrc({item, attribute}),
-                          w: WIDTH,
-                          h: HEIGHT,
-                        }), {
+                          focus: {
+                            type: focusType,
+                          },
+                        }) => {
+                          const focusAttributeSpec = (() => {
+                            const match = focusType.match(/^attribute:(.+?):(.+?)$/);
+                            return match && {
+                              tagId: match[1],
+                              attributeName: match[2],
+                            };
+                          })();
+
+                          return {
+                            type: 'html',
+                            src: tagsRenderer.getAttributeSrc({item, attribute, focusAttributeSpec}),
+                            w: WIDTH,
+                            h: HEIGHT,
+                          };
+                        }, {
                           type: 'attribute',
                           state: {
                             item: item,
                             attribute: attribute,
+                            focus: focusState,
                           },
                           worldWidth: WORLD_WIDTH,
                           worldHeight: WORLD_HEIGHT,
