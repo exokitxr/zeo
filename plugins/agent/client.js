@@ -1,5 +1,6 @@
 const WatsonSpeech = require('./lib/watson-speech/watson-speech.js');
 
+const symbol = Symbol();
 const SIDES = ['left', 'right'];
 
 class Agent {
@@ -84,10 +85,22 @@ class Agent {
             return result;
           };
 
-          class AgentElement extends HTMLElement {
-            createdCallback() {
-              this.position = null;
-              this.text = null;
+          const agentComponent = {
+            attributes: {
+              position: {
+                type: 'matrix',
+                value: [
+                  1, 1, 0,
+                  0, 0, 0, 1,
+                  1, 1, 1,
+                ],
+              },
+            },
+            entityAddedCallback(entityElement) {
+              const entityApi = {};
+
+              entityApi.position = null;
+              entityApi.text = null;
 
               const _makeHoverState = () => ({
                 target: null,
@@ -115,7 +128,6 @@ class Agent {
                 return mesh;
               })();
               scene.add(box);
-              this.box = box;
 
               const mesh = (() => {
                 const geometry = new THREE.OctahedronBufferGeometry(0.1, 0);
@@ -140,7 +152,6 @@ class Agent {
                 return mesh;
               })();
               scene.add(mesh);
-              this.mesh = mesh;
 
               const soundBody = (() => {
                 const result = sound.makeBody();
@@ -148,9 +159,6 @@ class Agent {
                 result.setObject(mesh);
                 return result;
               })();
-              this.soundBody = soundBody;
-
-              this.text = null;
 
               const update = () => {
                 const {gamepads: gamepadsStatus} = pose.getStatus();
@@ -239,7 +247,6 @@ class Agent {
                           _requestTextToSpeech(speechText)
                             .then(audio => {
                               if (live) {
-                                const {soundBody} = this;
                                 soundBody.setInputElement(audio);
 
                                 streamState.ttsStream = null;
@@ -296,7 +303,16 @@ class Agent {
               };
               input.on('grip', grip);
 
-              this._cleanup = () => {
+              entityApi._updateMesh = () => {
+                const {position} = entityApi;
+
+                if (position) {
+                  mesh.position.set(position[0], position[1], position[2]);
+                  mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+                  mesh.scale.set(position[7], position[8], position[9]);
+                }
+              };
+              entityApi._cleanup = () => {
                 scene.remove(box);
                 scene.remove(mesh);
 
@@ -305,35 +321,23 @@ class Agent {
                 input.removeListener('trigger', trigger);
                 input.removeListener('grip', grip);
               };
-            }
 
-            destructor() {
-              this._cleanup();
-            }
+              entityElement[symbol] = entityApi;
+            },
+            entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+              const {[symbol]: entityApi} = entityElement;
 
-            attributeValueChangedCallback(name, oldValue, newValue) {
               switch (name) {
                 case 'position': {
-                  this.position = newValue;
-
-                  this._updateMesh();
+                  entityApi.position = newValue;
+                  entityApi._updateMesh();
 
                   break;
                 }
               }
-            }
-
-            _updateMesh() {
-              const {mesh, position} = this;
-
-              if (mesh && position) {
-                mesh.position.set(position[0], position[1], position[2]);
-                mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-                mesh.scale.set(position[7], position[8], position[9]);
-              }
-            }
-          }
-          elements.registerElement(this, AgentElement);
+            },
+          };
+          elements.unregisterComponent(this, agentComponent);
 
           const updates = [];
           const _update = () => {
@@ -345,7 +349,7 @@ class Agent {
           render.on('update', _update);
 
           this._cleanup = () => {
-            elements.unregisterElement(this);
+            elements.unregisterComponent(this, agentComponent);
 
             render.removeListener('update', _update);
           };
