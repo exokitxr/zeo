@@ -132,7 +132,6 @@ class Rend {
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
-              attributes: packageJson.attributes || {},
               matrix: DEFAULT_TAG_MATRIX,
             })); */
           const _getModSpec = mod => _getPluginPackageJson(mod)
@@ -147,7 +146,6 @@ class Rend {
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
-              attributes: {},
               matrix: DEFAULT_TAG_MATRIX,
               metadata: {},
             }));
