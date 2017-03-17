@@ -107,9 +107,9 @@ class Tags {
             fontStyle: biolumi.getFontStyle(),
           };
 
-          const rootModulesElement = document.createElement('div');
-          rootModulesElement.id = 'zeo-modules';
-          document.body.appendChild(rootModulesElement);
+          const rootComponentsElement = document.createElement('div');
+          rootComponentsElement.id = 'zeo-components';
+          document.body.appendChild(rootComponentsElement);
           const rootModulesObserver = new MutationObserver(mutations => { // XXX allow user-initiated mutations here
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
@@ -121,12 +121,9 @@ class Tags {
                 for (let j = 0; j < addedNodes.length; j++) {
                   const addedNode = addedNodes[j];
                   const moduleElement = addedNode;
-                  const {item: moduleItem} = moduleElement;
-                  const {displayName} = moduleItem;
-                  const moduleComponentApis = componentApis.get(displayName);
 
-                  for (let k = 0; k < moduleComponentApis.length; k++) {
-                    const componentApi = moduleComponentApis[k];
+                  for (let k = 0; k < componentApis.length; k++) {
+                    const componentApi = componentApis[k];
                     const {attributes: componentAttributes} = componentApi;
                     const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
@@ -153,12 +150,9 @@ class Tags {
                 for (let k = 0; k < removedNodes.length; k++) {
                   const removedNode = removedNodes[k];
                   const moduleElement = removedNode;
-                  const {item: moduleItem} = moduleElement;
-                  const {displayName} = moduleItem;
-                  const moduleComponentApis = componentApis.get(displayName);
 
-                  for (let l = 0; l < moduleComponentApis.length; l++) {
-                    const componentApi = moduleComponentApis[l];
+                  for (let l = 0; l < componentApis.length; l++) {
+                    const componentApi = componentApis[l];
                     const {attributes: componentAttributes} = componentApi;
                     const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
@@ -176,7 +170,7 @@ class Tags {
               }
             }
           });
-          rootModulesObserver.observe(rootModulesElement, {
+          rootModulesObserver.observe(rootComponentsElement, {
             childList: true,
             // attributes: true,
             subtree: true,
@@ -1600,46 +1594,42 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
-          const componentApis = new Map();
-          const componentApiInstances = new Map();
+          const componentApis = [];
+          const componentApiInstances = [];
           // const elementApis = {};
 
           const _getBoundComponentSpecs = entityAttributes => {
             const result = [];
 
-            componentApis.forEach((moduleComponents, tag) => {
-              const moduleComponentApiInstances = componentApiInstances.get(tag);
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
+              const componentApiInstance = componentApiInstances[i];
+              const {attributes: componentAttributes} = componentApi;
 
-              for (let i = 0; i < moduleComponents.length; i++) {
-                const componentApi = moduleComponents[i];
-                const componentApiInstance = moduleComponentApiInstances[i];
-                const {attributes: componentAttributes} = componentApi;
+              const componentElement = componentApiInstance;
+              const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
+              if (matchingAttributes.length > 0) {
+                const matchingAttributeSpecs = (() => {
+                  const result = {};
 
-                const componentElement = componentApiInstance;
-                const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
-                if (matchingAttributes.length > 0) {
-                  const matchingAttributeSpecs = (() => {
-                    const result = {};
+                  for (let j = 0; j < matchingAttributes.length; j++) {
+                    const matchingAttribute = matchingAttributes[j];
+                    const attributeSpec = componentAttributes[matchingAttribute];
+                    result[matchingAttribute] = attributeSpec;
+                  }
 
-                    for (let j = 0; j < matchingAttributes.length; j++) {
-                      const matchingAttribute = matchingAttributes[j];
-                      const attributeSpec = componentAttributes[matchingAttribute];
-                      result[matchingAttribute] = attributeSpec;
-                    }
+                  return result;
+                })();
+                const index = i;
 
-                    return result;
-                  })();
-                  const index = tag + ':' + i;
-
-                  result.push({
-                    componentElement,
-                    matchingAttributes,
-                    matchingAttributeSpecs,
-                    index,
-                  });
-                }
+                result.push({
+                  componentElement,
+                  matchingAttributes,
+                  matchingAttributeSpecs,
+                  index,
+                });
               }
-            });
+            }
 
             return result;
           };
@@ -1675,14 +1665,14 @@ class Tags {
             }
 
             registerComponent(componentApi) {
-              const tag = archae.getName(pluginInstance); // XXX get rid of tag relation completely
+              const baseObject = componentApi;
+              const componentElement = menuUtils.makeZeoComponentElement({
+                baseObject,
+              });
+              rootComponentsElement.appendChild(componentElement);
 
-              let moduleComponentApis = componentApis.get(tag);
-              if (!moduleComponentApis) {
-                moduleComponentApis = [];
-                componentApis.set(tag, moduleComponentApis);
-              }
-              moduleComponentApis.push(componentApi);
+              componentApis.push(componentApi);
+              componentApiInstances.push(componentElement);
 
               for (let i = 0; i < tagMeshes.length; i++) {
                 const tagMesh = tagMeshes[i];
@@ -1696,15 +1686,24 @@ class Tags {
               }
             }
 
-            unregisterComponent(componentApi) {
-              componentApis.forEach((moduleComponentApis, tag) => {
-                const newModuleComponentApis = moduleComponentApis.filter(moduleComponentApi => moduleComponentApi !== componentApi);
-                if (newModuleComponentApis !== 0) {
-                  if (newModuleComponentApis.length > 0) {
-                     componentApis.set(tag, newModuleComponentApis);
-                  } else {
-                    componentApis.delete(tag);
-                  }
+            unregisterComponent(componentApiToRemove) {
+              const removeIndex = {};
+              for (let i = 0; i < componentApis.length; i++) {
+                const componentApis = componentApis[i];
+
+                if (componentApis === componentApiToRemove) {
+                  removeIndex[i] = true;
+                }
+              }
+
+              componentApis = componentApis.filter((componentApi, index) => !removeIndex[index]);
+              componentApiInstances = componentApiInstances.filter((componentApiInstance, index) => {
+                if (removeIndex[index]) {
+                  rootComponentsElement.removeChild(componentElement);
+
+                  return false;
+                } else {
+                  return true;
                 }
               });
             }
@@ -1952,25 +1951,9 @@ class Tags {
                   .then(unlock => {
                     archae.requestPlugin(name)
                       .then(pluginInstance => {
-                        const name = archae.getName(pluginInstance);
-
-                        const tag = name;
-                        const moduleComponentApis = componentApis.get(tag) || [];
-                        const moduleComponentApiInstances = moduleComponentApis.map(componentApi => {
-                          const baseObject = componentApi;
-
-                          const moduleElement = menuUtils.makeZeoModuleElement({
-                            tag,
-                            baseObject,
-                          });
-                          moduleElement.item = item;
-
-                          rootModulesElement.appendChild(moduleElement);
-
-                          return moduleElement;
-                        });
-                        componentApiInstances.set(tag, moduleComponentApiInstances);
-                        item.instance = moduleComponentApiInstances;
+                        item.instance = {
+                          name,
+                        };
                         item.instancing = false;
 
                         const _updateInstanceUi = () => {
@@ -2019,38 +2002,35 @@ class Tags {
               item.lock()
                 .then(unlock => {
                   const {instance} = item;
+                  const {name} = instance;
 
-                  if (instance) {
-                    for (let i = 0; i < instance.length; i++) {
-                      const componentApiInstance = instance[i];
-                      componentApiInstance.item = null;
+                  return archae.releasePlugin(name)
+                    .then(() => {
+                      item.instance = null;
 
-                      rootModulesElement.removeChild(componentApiInstance);
-                    }
-                    item.instance = null;
+                      const _updateNpmUi = () => {
+                        const tagMesh = tagMeshes.find(tagMesh =>
+                          tagMesh.item.type === 'module' &&
+                          tagMesh.item.name === item.name &&
+                          tagMesh.item.metadata.isStatic
+                        );
+                        if (tagMesh) {
+                          const {item} = tagMesh;
+                          item.metadata.exists = false;
 
-                    const {name} = item;
-                    componentApis.delete(name);
-                    componentApiInstances.delete(name);
+                          const {planeMesh: {page}} = tagMesh;
+                          page.update();
+                        }
+                      };
+                      _updateNpmUi();
 
-                    const _updateNpmUi = () => {
-                      const tagMesh = tagMeshes.find(tagMesh =>
-                        tagMesh.item.type === 'module' &&
-                        tagMesh.item.name === item.name &&
-                        tagMesh.item.metadata.isStatic
-                      );
-                      if (tagMesh) {
-                        const {item} = tagMesh;
-                        item.metadata.exists = false;
+                      unlock();
+                    })
+                    .catch(err => {
+                      console.warn(err);
 
-                        const {planeMesh: {page}} = tagMesh;
-                        page.update();
-                      }
-                    };
-                    _updateNpmUi();
-                  }
-
-                  unlock();
+                      unlock();
+                    });
                 });
             }
 
@@ -2165,8 +2145,8 @@ class Tags {
                 });
             }
 
-            getRootModulesElement() {
-              return rootModulesElement;
+            getRootComponentsmElement() {
+              return rootComponentsElement;
             }
 
             getRootEntitiesElement() {

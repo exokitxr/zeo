@@ -1,37 +1,38 @@
-const zeoModuleElementClasses = new Map();
-const _makeZeoModuleElementClass = ({tag, baseObject}) => {
-  class ZeoModuleElement extends HTMLElement {
+const zeoComponentElementClasses = new Map();
+const zeoComponentElementConstructor = (() => {
+  class ZeoComponentElement extends HTMLElement {
     entityAddedCallback(entityElement) {
+      const {baseObject} = this;
+
       if (baseObject.entityAddedCallback) {
         baseObject.entityAddedCallback.call(this, entityElement);
       }
     }
 
     entityRemovedCallback(entityElement) {
+      const {baseObject} = this;
+
       if (baseObject.entityRemovedCallback) {
         baseObject.entityRemovedCallback.call(this, entityElement);
       }
     }
 
     entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue) {
+      const {baseObject} = this;
+
       if (baseObject.entityAttributeValueChangedCallback) {
         baseObject.entityAttributeValueChangedCallback.call(this, entityElement, attribute, oldValue, newValue);
       }
     }
   }
 
-  const ZeoModuleElementConstructor = document.registerElement('z-module-' + tag, ZeoModuleElement);
-  return ZeoModuleElementConstructor;
-};
-const makeZeoModuleElement = ({tag, baseObject}) => { // XXX rename this to makeZeoComponentElement
-  let zeoModuleElementClass = zeoModuleElementClasses.get(tag);
-  if (!zeoModuleElementClass) {
-    zeoModuleElementClass = _makeZeoModuleElementClass({tag, baseObject});
-    zeoModuleElementClasses.set(tag, zeoModuleElementClass);
-  }
-
-  const zeoModuleElement = new zeoModuleElementClass();
-  return zeoModuleElement;
+  const ZeoComponentElementConstructor = document.registerElement('z-component', ZeoComponentElement);
+  return ZeoComponentElementConstructor;
+})();
+const makeZeoComponentElement = ({baseObject}) => {
+  const zeoComponentElement = new zeoComponentElementConstructor();
+  zeoComponentElement.baseObject = baseObject;
+  return zeoComponentElement;
 };
 
 const zeoEntityElementConstructor = (() => {
@@ -174,7 +175,7 @@ const _jsonParse = s => {
 };
 
 module.exports = {
-  makeZeoModuleElement,
+  makeZeoComponentElement,
   makeZeoEntityElement,
   castValueStringToValue,
   castValueStringToCallbackValue,

@@ -184,7 +184,7 @@ class Camera {
           .then(res => res.blob());
       } */
     };
-    elements.registerComponent(this, cameraComponent);
+    elements.registerComponent(cameraComponent);
 
     const _paddown = e => {
       const {side} = e;
@@ -233,7 +233,7 @@ class Camera {
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterComponent(this);
+      elements.unregisterComponent(cameraComponent);
 
       input.removeListener('paddown', _paddown);
       input.removeListener('padup', _padup);
