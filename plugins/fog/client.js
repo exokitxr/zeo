@@ -18,7 +18,7 @@ class Fog {
       entityAddedCallback(entityElement) {
         const entityApi = {};
 
-        const update = () => {
+        /* const update = () => { // XXX fix this walk to work with the new skybox module
           const skybox = (() => {
             for (let {parentNode: node} = this; node; node = node.parentNode) {
               if (/^z-i-skybox$/i.test(node.tagName)) {
@@ -36,10 +36,10 @@ class Fog {
             scene.fog.density = 0;
           }
         };
-        updates.push(update);
+        updates.push(update); */
 
         entityApi._cleanup = () => {
-          updates.splice(updates.indexOf(update), 1);
+          // updates.splice(updates.indexOf(update), 1);
 
           scene.fog.density = 0;
         };
