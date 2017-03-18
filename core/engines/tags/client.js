@@ -107,10 +107,12 @@ class Tags {
             fontStyle: biolumi.getFontStyle(),
           };
 
+          // XXX track modules via the DOM to allow user-initiated mutations
+
           const rootComponentsElement = document.createElement('div');
           rootComponentsElement.id = 'zeo-components';
-          document.body.appendChild(rootComponentsElement);
-          const rootComponentsObserver = new MutationObserver(mutations => { // XXX allow user-initiated mutations here
+          // document.body.appendChild(rootComponentsElement);
+          const rootComponentsObserver = new MutationObserver(mutations => {
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
               const {type} = mutation;
