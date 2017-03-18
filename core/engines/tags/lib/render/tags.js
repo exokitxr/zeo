@@ -20,6 +20,8 @@ const closeBoxImg = require('../img/close-box');
 const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
 const plusBoxImg = require('../img/plus-box');
 const plusBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(plusBoxImg);
+const idImg = require('../img/id');
+const idImgSrc = 'data:image/svg+xml;base64,' + btoa(idImg);
 const targetImg = require('../img/target');
 const targetImgSrc = 'data:image/svg+xml;base64,' + btoa(targetImg);
 const linkImg = require('../img/link');
@@ -107,7 +109,7 @@ const makeRenderer = ({creatureUtils}) => {
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden;">
-        <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #000; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Entity</div>
+        <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #03A9F4; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Entity</div>
         <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
         <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 100}px; margin-right: 10px;">
           <div style="height: 100px;">
@@ -195,11 +197,18 @@ const makeRenderer = ({creatureUtils}) => {
     const width = 400 - (20 + 120 + 20);
 
     switch (type) {
+      case 'symbol': {
+        return `\
+          <div style="display: flex; justify-content: center; align-items: center;">
+            <img src="${idImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
+          </div>
+        `;
+      }
       case 'matrix': {
         return `\
           <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
             <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">
-              <img src="${targetImgSrc}" width="50" height="50" style="mwidth: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+              <img src="${targetImgSrc}" width="50" height="50" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
             </a>
           </div>
         `;
@@ -314,7 +323,7 @@ const makeRenderer = ({creatureUtils}) => {
           <div style="display: flex;">
             <div style="display: flex; position: relative; max-width: ${WIDTH - 50}; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">${focusValue}</div>
             <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:choose" onmousedown="attribute:${id}:${name}:choose">
-              <img src="${linkImgSrc}" width="50" height="50" style="mwidth: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+              <img src="${linkImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>
           </div>
         `;
@@ -331,7 +340,7 @@ const makeRenderer = ({creatureUtils}) => {
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #E91E63; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">File</div>
-        <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="mwidth: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+        <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: pixelated;" />
         <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
           <div style="height: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>

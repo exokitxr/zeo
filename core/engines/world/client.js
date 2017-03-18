@@ -229,9 +229,9 @@ class World {
 
                 _handleMoveTag(userId, src, dst);
               } else if (type === 'setTagAttribute') {
-                const {args: [userId, src, attribute, value]} = m;
+                const {args: [userId, src, {name, value}]} = m;
 
-                _handleSetTagAttribute(userId, src, attribute, value);
+                _handleSetTagAttribute(userId, src, {name, value});
               } else if (type === 'response') {
                 const {id} = m;
 
@@ -966,16 +966,16 @@ class World {
               console.warn('invalid move tag arguments', {src, dst});
             }
           };
-          const _handleSetTagAttribute = (userId, src, attribute, value) => {
+          const _handleSetTagAttribute = (userId, src, {name, value}) => {
             // same for local and remote user ids
             let match;
             if (match = src.match(/^world:(.+)$/)) {
               const id = match[1];
 
               const tagMesh = elementManager.getTagMesh(id);
-              tagMesh.setAttribute(attribute, value);
+              tagMesh.setAttribute(name, value);
             } else {
-              console.warn('invalid set tag attribute arguments', {src, attributeName, attributeValue});
+              console.warn('invalid set tag attribute arguments', {src, name, value});
             }
           };
 
@@ -2266,16 +2266,16 @@ class World {
             _removeTag(src);
           };
           tags.on('mutateRemoveEntity', _mutateRemoveEntity);
-          const _setAttribute = ({id, attribute, value}) => {
+          const _setAttribute = ({id, name, value}) => {
             const src = _getTagIdSrc(id);
 
-            _handleSetTagAttribute(localUserId, src, attribute, value);
+            _handleSetTagAttribute(localUserId, src, {name, value});
           };
           tags.on('setAttribute', _setAttribute);
-          const _mutateSetAttribute = ({id, attribute, value}) => {
+          const _mutateSetAttribute = ({id, name, value}) => {
             const src = _getTagIdSrc(id);
 
-            _request('setTagAttribute', [localUserId, src, attribute, value], _warnError);
+            _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
           };
           tags.on('mutateSetAttribute', _mutateSetAttribute);
 
@@ -2328,7 +2328,9 @@ class World {
                   const attributes = (() => {
                     const result = {};
                     _forEachSrcTagAttribute((attributeName, attributeValue) => {
-                      result[attributeName] = attributeValue;
+                      result[attributeName] = {
+                        value: attributeValue,
+                      };
                     });
                     return result;
                   })();

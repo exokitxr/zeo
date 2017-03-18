@@ -175,17 +175,31 @@ class Tags {
             const result = {};
 
             const {attributes} = element;
-            for (let k = 0; k < attributes.length; k++) {
-              const attribute = attributes[k];
+            for (let i = 0; i < attributes.length; i++) {
+              const attribute = attributes[i];
               const {name, value: valueString} = attribute;
-              const value = _jsonParse(valueString);
+              const value = _parseAttribute(valueString);
 
-              if (value !== null) {
-                result[name] = value;
-              }
+              result[name] = {
+                value: value,
+              };
             }
 
             return result;
+          };
+          const _parseAttribute = attributeString => {
+            if (attributeString !== null) {
+              return _jsonParse(attributeString);
+            } else {
+              return undefined;
+            }
+          };
+          const _stringifyAttribute = attributeValue => {
+            if (attributeValue !== undefined) {
+              return JSON.stringify(attributeValue);
+            } else {
+              return '';
+            }
           };
 
           const rootEntitiesElement = document.createElement('div');
@@ -221,7 +235,8 @@ class Tags {
 
                       for (let l = 0; l < matchingAttributes.length; l++) {
                         const matchingAttribute = matchingAttributes[l];
-                        const attributeValue = entityAttributes[matchingAttribute];
+                        const attribute = entityAttributes[matchingAttribute];
+                        const {value: attributeValue} = attribute;
                         componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                       }
                     }
@@ -259,14 +274,14 @@ class Tags {
                   const entityElement = target;
                   const {attributeName, oldValue: oldValueString} = mutation;
                   const newValueString = entityElement.getAttribute(attributeName);
-                  const oldValue = oldValueString !== null ? JSON.parse(oldValueString) : null;
-                  const newValue = newValueString !== null ? JSON.parse(newValueString) : null;
+                  const oldValue = _parseAttribute(oldValueString);
+                  const newValue = _parseAttribute(newValueString);
 
                   const {item: entityItem} = entityElement;
                   const {id: entityId} = entityItem;
                   tagsApi.emit('mutateSetAttribute', {
                     id: entityId,
-                    attribute: attributeName,
+                    name: attributeName,
                     value: newValue,
                   });
 
@@ -288,7 +303,7 @@ class Tags {
                     for (let j = 0; j < matchingAttributes.length; j++) {
                       const attributeName = matchingAttributes[j];
 
-                      if (newValue !== null) { // adding attribute
+                      if (newValue !== undefined) { // adding attribute
                         if (appliedMatchingAttributes.length === 0) { // if no matching attributes were previously applied, mount the component on the entity
                           componentElement.entityAddedCallback(entityElement);
                         }
@@ -716,7 +731,7 @@ class Tags {
 
                   tagsApi.emit('setAttribute', {
                     id: id,
-                    attribute: newAtrributeName,
+                    name: newAtrributeName,
                     value: 'value',
                   });
 
@@ -832,8 +847,8 @@ class Tags {
 
                   tagsApi.emit('setAttribute', {
                     id: id,
-                    attribute: name,
-                    value: null,
+                    name: name,
+                    value: undefined,
                   });
 
                   return true;
@@ -882,7 +897,7 @@ class Tags {
                 })();
                 tagsApi.emit('setAttribute', {
                   id: positioningId,
-                  attribute: positioningName,
+                  name: positioningName,
                   value: newValue,
                 });
 
@@ -957,7 +972,7 @@ class Tags {
                   } else if (action === 'set') {
                     tagsApi.emit('setAttribute', {
                       id: tagId,
-                      attribute: attributeName,
+                      name: attributeName,
                       value: value,
                     });
 
@@ -975,7 +990,7 @@ class Tags {
                     })();
                     tagsApi.emit('setAttribute', {
                       id: tagId,
-                      attribute: attributeName,
+                      name: attributeName,
                       value: newValue,
                     });
 
@@ -985,7 +1000,7 @@ class Tags {
 
                     tagsApi.emit('setAttribute', {
                       id: tagId,
-                      attribute: attributeName,
+                      name: attributeName,
                       value: newValue,
                     });
                   } else if (action === 'choose') {
@@ -1480,8 +1495,10 @@ class Tags {
 
             setAttribute(attributeName, newValue) {
               const {attributes} = this;
-              if (newValue !== null) {
-                attributes[attributeName] = newValue;
+              if (newValue !== undefined) {
+                attributes[attributeName] = {
+                  value: newValue,
+                };
               } else {
                 delete attributes[attributeName];
               }
@@ -1490,8 +1507,8 @@ class Tags {
               if (instance) {
                 const entityElement = instance;
 
-                if (newValue !== null) {
-                  entityElement.setAttribute(attributeName, JSON.stringify(newValue));
+                if (newValue !== undefined) {
+                  entityElement.setAttribute(attributeName, _stringifyAttribute(newValue));
                 } else {
                   entityElement.removeAttribute(attributeName);
                 }
@@ -1870,7 +1887,8 @@ class Tags {
                     const newAttributeMeshes = (() => {
                       const {attributes} = item;
                       const attributesArray = Object.keys(attributes).map(name => {
-                        const value = attributes[name];
+                        const attribute = attributes[name];
+                        const {value} = attribute;
                         const type = (() => {
                           const boundComponentSpecs = _getBoundComponentSpecs({
                             [name]: value,
@@ -2082,8 +2100,9 @@ class Tags {
                 const entityElement = menuUtils.makeZeoEntityElement();
                 const {attributes: entityAttributes} = item;
                 for (const attributeName in entityAttributes) {
-                  const attributeValue = entityAttributes[attributeName];
-                  const attributeValueString = JSON.stringify(attributeValue);
+                  const attribute = entityAttributes[attributeName];
+                  const {value: attributeValue} = attribute;
+                  const attributeValueString = _stringifyAttribute(attributeValue);
                   entityElement.setAttribute(attributeName, attributeValueString);
                 }
                 entityElement.item = item;
@@ -2135,8 +2154,8 @@ class Tags {
                           attributes,
                           baseClass,
                         });
-                        element.onsetattribute = (attribute, value) => {
-                          tagsApi.emit('setAttribute', {id, attribute, value});
+                        element.onsetattribute = (name, value) => {
+                          tagsApi.emit('setAttribute', {id, name, value});
                         };
                         item.instance = element;
                         rootEntitiesElement.appendChild(element);
@@ -2204,10 +2223,10 @@ class Tags {
             listen() {
               this.on('setAttribute', setAttrbuteSpec => {
                 if (this.listeners('setAttribute').length === 1) { // if this is the only listener, we need to set the attribute on ourselves
-                  const {id, attribute, value} = setAttrbuteSpec;
+                  const {id, name, value} = setAttrbuteSpec;
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
-                  item.setAttribute(attribute, value);
+                  item.setAttribute(name, value);
                 }
               });
             }
@@ -2235,9 +2254,16 @@ const _jsonParse = s => {
   if (!error) {
     return result;
   } else {
-    return null;
+    return undefined;
   }
 };
-const _clone = o => JSON.parse(JSON.stringify(o));
+const _clone = o => {
+  const result = {};
+  for (const k in o) {
+    const v = o[k];
+    result[k] = v;
+  }
+  return result;
+};
 
 module.exports = Tags;

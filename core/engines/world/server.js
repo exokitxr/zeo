@@ -521,11 +521,11 @@ class World {
                                 cb(_makeInvalidArgsError());
                               }
                             } else if (method === 'setTagAttribute') {
-                              const [userId, src, attributeName, attributeValue] = args;
+                              const [userId, src, {name: attributeName, value: attributeValue}] = args;
 
                               cb = (cb => err => {
                                 if (!err) {
-                                  _broadcast('setTagAttribute', [userId, src, attributeName, attributeValue]);
+                                  _broadcast('setTagAttribute', [userId, src, {name: attributeName, value: attributeValue}]);
                                 }
 
                                 cb(err);
@@ -537,8 +537,10 @@ class World {
 
                                 const itemSpec = tagsJson.tags[id];
                                 const {attributes} = itemSpec;
-                                if (attributeValue !== null) {
-                                  attributes[attributeName] = attributeValue;
+                                if (attributeValue !== undefined) {
+                                  attributes[attributeName] = {
+                                    value: attributeValue,
+                                  };
                                 } else {
                                   delete attributes[attributeName];
                                 }
