@@ -4,16 +4,6 @@
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",
-  "attributes": {
-    "position": {
-      "type": "matrix",
-      "value": [
-        0, 0, 0,
-        0, 0, 0, 1,
-        1, 1, 1
-      ]
-    }
-  },
   "dependencies": {
     "mod-loop": "0.0.2"
   }

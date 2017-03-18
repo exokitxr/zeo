@@ -45,6 +45,16 @@ class Ocean {
     };
 
     const oceanComponent = {
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
       entityAddedCallback(entityElement) {
         const entityApi = {};
 
