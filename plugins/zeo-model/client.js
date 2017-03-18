@@ -33,6 +33,8 @@ const MODELS = { // XXX fold these transforms into the models themselves
   },
 };
 
+const symbol = Symbol();
+
 class Model {
   mount() {
     const {three: {THREE, scene}, elements} = zeo;
@@ -48,15 +50,41 @@ class Model {
       loader.parse(modelJson, accept);
     }));
 
-    class ModelElement extends HTMLElement {
-      createdCallback() {
-        this.position = null;
-        this.mesh = null;
+    const modelComponent = {
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+        model: {
+          type: 'file',
+          value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
+        }
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
 
-        this._cancelRequest = null;
+        entityApi.position = null;
+        entityApi.mesh = null;
 
-        this._cleanup = () => {
-          const {mesh, _cancelRequest: cancelRequest} = this;
+        entityApi._cancelRequest = null;
+
+        entityApi._updateMesh = () => {
+          const {mesh, position} = entityApi;
+
+          if (mesh && position) {
+            mesh.position.set(position[0], position[1], position[2]);
+            mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+            mesh.scale.set(position[7], position[8], position[9]);
+          }
+        };
+
+        entityApi._cleanup = () => {
+          const {mesh, _cancelRequest: cancelRequest} = entityApi;
           if (mesh) {
             scene.remove(mesh);
           }
@@ -64,23 +92,27 @@ class Model {
             cancelRequest();
           }
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            this.position = newValue;
+            entityApi.position = newValue;
 
-            this._updateMesh();
+            entityApi._updateMesh();
 
             break;
           }
           case 'model': {
-            const {mesh: oldMesh, _cancelRequest: cancelRequest} = this;
+            const {mesh: oldMesh, _cancelRequest: cancelRequest} = entityApi;
             if (oldMesh) {
               scene.remove(oldMesh);
               this.mesh = null;
@@ -90,7 +122,7 @@ class Model {
             }
 
             let live = true;
-            this._cancelRequest = () => {
+            entityApi._cancelRequest = () => {
               live = false;
             };
 
@@ -99,11 +131,11 @@ class Model {
               .then(mesh => {
                 if (live) {
                   scene.add(mesh);
-                  this.mesh = mesh;
+                  entityApi.mesh = mesh;
 
-                  this._updateMesh();
+                  entityApi._updateMesh();
 
-                  this._cancelRequest = null;
+                  entityApi._cancelRequest = null;
                 }
               })
               .catch(err => {
@@ -113,22 +145,12 @@ class Model {
             break;
           }
         }
-      }
-
-      _updateMesh() {
-        const {mesh, position} = this;
-
-        if (mesh && position) {
-          mesh.position.set(position[0], position[1], position[2]);
-          mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-          mesh.scale.set(position[7], position[8], position[9]);
-        }
-      }
+      },
     }
-    elements.registerElement(this, ModelElement);
+    elements.registerComponent(this, modelComponent);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, modelComponent);
     };
   }
 
