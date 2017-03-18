@@ -3,51 +3,5 @@
   "description": "A shader-based rain effect at the world origin.",
   "version": "0.0.1",
   "client": "client.js",
-  "attributes": {
-    "position": {
-      "type": "matrix",
-      "value": [
-        0, 0, 0,
-        0, 0, 0, 1,
-        1, 1, 1
-      ]
-    },
-    "type": {
-      "type": "select",
-      "value": "rain",
-      "options": [
-        "rain",
-        "snow",
-        "firefly"
-      ]
-    },
-    "drops": {
-      "type": "number",
-      "value": 250,
-      "min": 1,
-      "max": 1000
-    },
-    "range": {
-      "type": "number",
-      "value": 32,
-      "min": 1,
-      "max": 128
-    },
-    "length": {
-      "type": "number",
-      "value": 64,
-      "min": 1,
-      "max": 256,
-      "step": 1
-    },
-    "color": {
-      "type": "color",
-      "value": "#3e5eb8"
-    },
-    "enabled": {
-      "type": "checkbox",
-      "value": true
-    }
-  },
   "dependencies": {}
 }

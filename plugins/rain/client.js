@@ -149,12 +149,59 @@ class Rain {
     };
 
     class RainElement extends HTMLElement {
-      createdCallback() {
-        const {drops, range, length} = ATTRIBUTE_DEFAULTS;
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+        type: {
+          type: 'select',
+          value: 'rain',
+          options: [
+            'rain',
+            'snow',
+            'firefly',
+          ],
+        },
+        drops: {
+          type: 'number',
+          value: 250,
+          min: 1,
+          max: 1000,
+        },
+        range: {
+          type: 'number',
+          value: 32,
+          min: 1,
+          max: 128,
+        },
+        length: {
+          type: 'number',
+          value: 64,
+          min: 1,
+          max: 256,
+          step: 1,
+        },
+        color: {
+          type: 'color',
+          value: '#3e5eb8',
+        },
+        enabled: {
+          type: 'checkbox',
+          value: true.
+        }
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
 
-        this.drops = drops;
-        this.range = range;
-        this.length = length;
+        const {drops, range, length} = ATTRIBUTE_DEFAULTS;
+        entityApi.drops = drops;
+        entityApi.range = range;
+        entityApi.length = length;
 
         const geometry = (() => {
           const result = new THREE.BufferGeometry();
@@ -189,7 +236,7 @@ class Rain {
           return result;
         })();
         scene.add(mesh);
-        this.mesh = mesh;
+        entityApi.mesh = mesh;
 
         const update = () => {
           const worldTime = world.getWorldTime();
@@ -199,21 +246,38 @@ class Rain {
         };
         updates.push(update);
 
-        this._cleanup = () => {
+        entityApi._updateGeometry = () => {
+          const {geometry} = mesh;
+          const {drops, range, length} = entityApi;
+          const positions = _makePositions({drops, range, length});
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        };
+        entityApi._updateMaterial = () => {
+          const {material: {uniforms}} = mesh;
+          const {range} = entityApi;
+
+          uniforms.range.value = range;
+        };
+
+        entityApi._cleanup = () => {
           scene.remove(mesh);
 
           updates.splice(updates.indexOf(update), 1);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh} = this;
+            const {mesh} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -227,61 +291,47 @@ class Rain {
             break;
           }
           case 'drops': {
-            this.drops = newValue;
-            this._updateGeometry();
+            entityApi.drops = newValue;
+            entityApi._updateGeometry();
 
             break;
           }
           case 'range': {
-            this.range = newValue;
-            this._updateGeometry();
-            this._updateMaterial();
+            entityApi.range = newValue;
+            entityApi._updateGeometry();
+            entityApi._updateMaterial();
 
             break;
           }
           case 'length': {
-            this.length = newValue;
-            this._updateGeometry();
+            entityApi.length = newValue;
+            entityApi._updateGeometry();
 
             break;
           }
           case 'color': {
-            const {mesh: {material: {uniforms}}} = this;
+            const {mesh: {material: {uniforms}}} = entityApi;
 
             uniforms.diffuse.value = new THREE.Color(newValue);
 
             break;
           }
           case 'enabled': {
-            const {mesh} = this;
-            
-            mesh.visible = newValue;
+            const {mesh} = entityApi;
+
+            entityApi.visible = newValue;
 
             break;
           }
         }
-      }
-
-      _updateGeometry() {
-        const {mesh: {geometry}} = this;
-        const {drops, range, length} = this;
-        const positions = _makePositions({drops, range, length});
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-      }
-
-      _updateMaterial() {
-        const {mesh: {material: {uniforms}}} = this;
-        const {range} = this;
-
-        uniforms.range.value = range;
-      }
+      },
     }
-    elements.registerElement(this, RainElement);
+    elements.registerComponent(this, rainComponent);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, rainComponent);
 
       render.removeListener('update', _update);
     };
