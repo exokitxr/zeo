@@ -1,11 +1,37 @@
 const SHADOW_MAP_SIZE = 2048;
 
+const symbol = Symbol();
+
 class Light {
   mount() {
     const {three: {THREE, scene}, elements} = zeo;
 
-    class LightElement extends HTMLElement {
-      createdCallback() {
+    const lightComponent = {
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            3, 3, 3,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+        lookat: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+        shadow: {
+          type: 'checkbox',
+          value: false,
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
+
         const mesh = (() => {
           const geometry = new THREE.OctahedronBufferGeometry(0.1, 0);
           const material = new THREE.MeshPhongMaterial({
@@ -16,7 +42,6 @@ class Light {
           return new THREE.Mesh(geometry, material);
         })();
         scene.add(mesh);
-        this.mesh = mesh;
 
         const light = (() => {
           const light = new THREE.DirectionalLight(0xFFFFFF, 2);
@@ -26,22 +51,25 @@ class Light {
           return light;
         })();
         scene.add(light);
-        this.light = light;
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(mesh);
           scene.remove(light);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh, light} = this;
+            const {mesh, light} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             light.position.copy(mesh.position);
@@ -49,7 +77,7 @@ class Light {
             break;
           }
           case 'lookat': {
-            const {mesh, light} = this;
+            const {mesh, light} = entityApi;
 
             const lookAtVector = new THREE.Vector3(newValue[0], newValue[1], newValue[2]);
             mesh.lookAt(lookAtVector);
@@ -58,7 +86,7 @@ class Light {
             break;
           }
           case 'shadow': {
-            const {light} = this;
+            const {light} = entityApi;
 
             light.castShadow = newValue;
 
@@ -67,10 +95,10 @@ class Light {
         }
       }
     }
-    elements.registerElement(this, LightElement);
+    elements.registerComponent(this, lightComponent);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, lightComponent);
     };
   }
 
