@@ -8,10 +8,18 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
       GREEN: new THREE.Color(0x4CAF50),
       RED: new THREE.Color(0xE91E63),
     };
+    const symbol = Symbol();
 
     // declare the element representing our plugin
-    class DemoElement extends HTMLElement {
-      createdCallback() { // `createdCallback` gets called when our element is added to the scene
+    const demoElement = {
+      attributes: {
+        demo: {
+          type: 'symbol',
+        },
+      },
+      entityCreatedCallback(entityElement) { // `entityCreatedCallback` gets called an applicable attrbute is added to the world
+        const entityApi = {};
+
         // create the sphere and add it to the scene
         const sphere = new THREE.Mesh(
           new THREE.SphereBufferGeometry(0.1, 7, 5),
@@ -85,22 +93,25 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
         render.on('update', _update);
 
         // set up a callback to call when we want to clean up after the plugin
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(sphere);
 
           render.removeListener('update', _update);
         };
-      }
 
-      destructor() { // `destructor` gets called when our element is removed from the scene
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) { // `destructor` gets called when our element is removed from the scene
+        const {[symbol]: entityApi} = entityElement;
+
+        entityApi._cleanup();
+      },
     }
-    elements.registerElement(this, DemoElement); // register our element as available to the scene
+    elements.registerComponent(this, demoComponent); // register our element as available to the scene
 
     // set up a callback to call when we want to clean up after the plugin
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, demoElement);
     };
   },
   unmount() { // `unmount` gets called when our plugin unloads
