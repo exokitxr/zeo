@@ -30,8 +30,13 @@ class Avatar {
     })();
 
     const avatarComponent = {
+      attributes: {
+        avatar: {
+          type: 'symbol',
+        },
+      },
       entityAddedCallback(entityElement) {
-        const entityElement = {};
+        const entityApi = {};
 
         const mesh = (() => {
           const result = new THREE.Object3D();
@@ -116,16 +121,16 @@ class Avatar {
         })();
         scene.add(mesh);
 
-        entityElement._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(mesh);
         };
 
         entityElement[symbol] = entityApi;
       },
-      entityRemovedCallback(entityApi) {
-        const {[symbol]: entityElement} = entityApi;
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-        entityElement._cleanup();
+        entityApi._cleanup();
       },
     };
     elements.registerComponent(this, avatarComponent);
