@@ -1,5 +1,7 @@
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
+const symbol = Symbol();
+
 class Avatar {
   mount() {
     const {three: {THREE, scene}, elements} = zeo;
@@ -27,8 +29,10 @@ class Avatar {
       return new THREEConvexGeometry(points);
     })();
 
-    class AvatarElement extends HTMLElement {
-      createdCallback() {
+    const avatarComponent = {
+      entityAddedCallback(entityElement) {
+        const entityElement = {};
+
         const mesh = (() => {
           const result = new THREE.Object3D();
 
@@ -112,19 +116,22 @@ class Avatar {
         })();
         scene.add(mesh);
 
-        this._cleanup = () => {
+        entityElement._cleanup = () => {
           scene.remove(mesh);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
-    }
-    elements.registerElement(this, AvatarElement);
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityApi) {
+        const {[symbol]: entityElement} = entityApi;
+
+        entityElement._cleanup();
+      },
+    };
+    elements.registerComponent(this, avatarComponent);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(avatarComponent);
     };
   }
 
