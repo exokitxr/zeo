@@ -31,14 +31,6 @@ class Youtube {
       transparent: true,
     });
 
-    const updates = [];
-    const _update = () => {
-      for (let i = 0; i < updates.length; i++) {
-        const update = updates[i];
-        update();
-      }
-    };
-
     const youtubeComponent = {
       attributes: {
         position: {
@@ -428,9 +420,16 @@ class Youtube {
           }
         }
       },
-    }
+    };
     elements.registerComponent(this, youtubeComponent);
 
+    const updates = [];
+    const _update = () => {
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        update();
+      }
+    };
     render.on('update', _update);
 
     this._cleanup = () => {
