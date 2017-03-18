@@ -38,7 +38,7 @@ class Paint {
                 value: '#F44336',
               },
             },
-            entityAdded(entityElement) {
+            entityAddedCallback(entityElement) {
               const entityApi = {};
 
               const mesh = (() => {
@@ -292,11 +292,11 @@ class Paint {
                 }
               }
             },
-          }
-          elements.registerElement(this, PaintElement);
+          };
+          elements.registerComponent(this, paintComponent);
 
           this._cleanup = () => {
-            elements.unregisterElement(this);
+            elements.unregisterComponent(this, paintComponent);
           };
         }
       });
