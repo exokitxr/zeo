@@ -21,6 +21,8 @@ const INITIAL_ATLAS_SIZE = 128;
 const ITEM_SIZE = 16;
 const ITEM_PIXEL_SIZE = 1 / 32;
 
+const symbol = Symbol();
+
 const SIDES = ['left', 'right'];
 
 class Mc {
@@ -130,8 +132,10 @@ class Mc {
             vertexColors: THREE.FaceColors,
           });
 
-          class McElement extends HTMLElement {
-            createdCallback() {
+          const mcComponent = {
+            entityAddedCallback(entityElement) {
+              const entityApi = {};
+
               const _makeGrabState = () => ({
                 grabber: null,
               });
@@ -422,7 +426,7 @@ class Mc {
               };
               input.on('gripup', gripup);
 
-              this._cleanup = () => {
+              entityApi._cleanup = () => {
                 scene.remove(floorMesh);
 
                 blockMeshes.forEach(blockMesh => {
@@ -442,17 +446,19 @@ class Mc {
                 input.removeListener('gripdown', gripdown);
                 input.removeListener('gripup', gripup);
               };
-            }
 
-            destructor() {
-              this._cleanup();
-            }
-          }
+              entityElement[symbol] = entityApi;
+            },
+            entityRemovedCallback() {
+              const {[symbol]: entityApi} = entityElement;
 
-          elements.registerElement(this, McElement);
+              entityApi._cleanup();
+            },
+          };
+          elements.registerComponent(this, mcComponent);
 
           this._cleanup = () => {
-            elements.unregisterElement(this);
+            elements.unregisterComponent(this, mcComponent);
           };
         }
       });
