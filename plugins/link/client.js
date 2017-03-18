@@ -1,3 +1,5 @@
+const symbol = Symbol();
+
 class Link {
   mount() {
     const {three: {THREE, scene, camera, renderer}, elements, render} = zeo;
@@ -14,8 +16,28 @@ class Link {
       }
     };
 
-    class LinkElement extends HTMLElement {
-      createdCallback() {
+    const linkComponent = {
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            -1, 1, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+        destination: {
+          type: 'matrix',
+          value: [
+            0, 1, -10,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
+
         const cubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
         scene.add(cubeCamera);
 
@@ -32,24 +54,28 @@ class Link {
         })();
         scene.add(mesh);
         meshes.push(mesh);
-        this.mesh = mesh;
+        entityApi.mesh = mesh;
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(cubeCamera);
           scene.remove(mesh);
 
           meshes.splice(meshes.indexOf(mesh), 1);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh} = this;
+            const {mesh} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -58,7 +84,7 @@ class Link {
             break;
           }
           case 'destination': {
-            const {mesh: {cubeCamera}} = this;
+            const {mesh: {cubeCamera}} = entityApi;
 
             cubeCamera.position.set(newValue[0], newValue[1], newValue[2]);
             cubeCamera.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -69,12 +95,12 @@ class Link {
         }
       }
     }
-    elements.registerElement(this, LinkElement);
+    elements.registerComponent(this, linkComponent);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, linkComponent);
 
       render.removeListener('update', _update);
     };
