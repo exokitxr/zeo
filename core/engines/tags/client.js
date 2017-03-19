@@ -460,8 +460,8 @@ class Tags {
           scene.add(dotMeshes.right);
 
           const _makeDragState = () => ({
-            srcTagMesh: null,
-            dstTagMesh: null,
+            src: null,
+            dst: null,
           });
           const dragStates = {
             left: _makeDragState(),
@@ -1146,7 +1146,24 @@ class Tags {
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
                   const dragState = dragStates[side];
-                  dragState.srcTagMesh = tagMesh;
+                  dragState.src = {
+                    type: 'module',
+                    tagMesh: tagMesh,
+                  };
+
+                  return true;
+                } else if (match = onclick.match(/^attribute:(.+?):(.+?):link$/)) {
+                  const id = match[1];
+                  const attributeName = match[2];
+
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                  const dragState = dragStates[side];
+                  dragState.src = {
+                    type: 'attribute',
+                    tagMesh: tagMesh,
+                    attributeName: attributeName,
+                  };
 
                   return true;
                 } else {
@@ -1165,42 +1182,63 @@ class Tags {
 
             const _doClickTag = () => {
               const dragState = dragStates[side];
-              const {srcTagMesh} = dragState;
+              const {src, dst} = dragState;
 
-              if (srcTagMesh) {
-                const {dstTagMesh} = dragState;
+              if (src && dst) {
+                const {type} = src;
 
-                if (dstTagMesh) {
+                if (type === 'module') {
+                  const {tagMesh: srcTagMesh} = src;
+                  const {tagMesh: dstTagMesh} = dst;
+
                   if (srcTagMesh === dstTagMesh) {
-                    tagsApi.emit('link', {
+                    tagsApi.emit('linkModule', {
                       side,
                       srcTagMesh,
                       dstTagMesh: null,
                     });
 
-                    dragState.srcTagMesh = null;
-                    dragState.dstTagMesh = null;
+                    dragState.src = null;
+                    dragState.dst = null;
 
                     return true;
                   } else {
-                    tagsApi.emit('link', {
+                    tagsApi.emit('linkModule', {
                       side,
                       srcTagMesh,
                       dstTagMesh,
                     });
 
-                    dragState.srcTagMesh = null;
-                    dragState.dstTagMesh = null;
+                    dragState.src = null;
+                    dragState.dst = null;
 
                     return true;
                   }
+                } else if (type === 'attribute') {
+                  const {tagMesh: srcTagMesh, attributeName} = src;
+                  const {tagMesh: dstTagMesh} = dst;
+
+                  tagsApi.emit('linkAttribute', {
+                    side,
+                    srcTagMesh,
+                    attributeName,
+                    dstTagMesh,
+                  });
+
+                  dragState.src = null;
+                  dragState.dst = null;
+
+                  return true;
                 } else {
-                  dragState.srcTagMesh = null;
-                  dragState.dstTagMesh = null;
+                  dragState.src = null;
+                  dragState.dst = null;
 
                   return false;
                 }
               } else {
+                dragState.src = null;
+                dragState.dst = null;
+
                 return false;
               }
             };
@@ -1268,7 +1306,7 @@ class Tags {
                             controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh)
                           ) {
                             const {item} = tagMesh;
-                            const {open} = item;
+                            const {type, open} = item;
 
                             if (!open) {
                               const {planeMesh} = tagMesh;
@@ -1283,10 +1321,12 @@ class Tags {
                                 worldWidth: WORLD_WIDTH,
                                 worldHeight: WORLD_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
-                                metadata: tagMesh,
+                                metadata: {
+                                  type,
+                                  tagMesh,
+                                },
                               });
 
-                              const {type} = item;
                               if (type === 'entity') {
                                 const {attributesMesh} = tagMesh;
                                 const {attributeMeshes} = attributesMesh;
@@ -1304,6 +1344,10 @@ class Tags {
                                     worldWidth: WORLD_WIDTH,
                                     worldHeight: WORLD_HEIGHT,
                                     worldDepth: WORLD_DEPTH,
+                                    metadata: {
+                                      type: 'attribute',
+                                      tagMesh: attributeMesh,
+                                    },
                                   });
                                 }
                               }
@@ -1320,7 +1364,10 @@ class Tags {
                                 worldWidth: WORLD_OPEN_WIDTH,
                                 worldHeight: WORLD_OPEN_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
-                                metadata: tagMesh,
+                                metadata: {
+                                  type,
+                                  tagMesh,
+                                },
                               });
                             }
                           }
@@ -1344,18 +1391,37 @@ class Tags {
                 if (rend.isOpen() || hubEnabled) {
                   SIDES.forEach(side => {
                     const dragState = dragStates[side];
-                    const {srcTagMesh} = dragState;
+                    const {src} = dragState;
 
-                    if (srcTagMesh) {
+                    if (src) {
                       const hoverState = hoverStates[side];
                       const {intersectionPoint} = hoverState;
 
                       if (intersectionPoint) {
-                        const {metadata: hoverTagMesh} = hoverState;
+                        const {type: srcType, tagMesh: srcTagMesh} = src;
+                        const {metadata} = hoverState;
+                        const {type: hoverType, tagMesh: hoverTagMesh} = metadata;
 
-                        dragState.dstTagMesh = hoverTagMesh;
+                        if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
+                          dragState.dst = {
+                            type: 'module',
+                            tagMesh: hoverTagMesh,
+                          };
+                        } else if (srcType === 'module' && hoverType === 'entity') {
+                          dragState.dst = {
+                            type: 'entity',
+                            tagMesh: hoverTagMesh,
+                          };
+                        } else if (srcType === 'attribute' && hoverType === 'file') {
+                          dragState.dst = {
+                            type: 'file',
+                            tagMesh: hoverTagMesh,
+                          };
+                        } else {
+                          dragState.dst = null;
+                        }
                       } else {
-                        dragState.dstTagMesh = null;
+                        dragState.dst = null;
                       }
                     }
                   });
@@ -1370,24 +1436,32 @@ class Tags {
                   SIDES.forEach(side => {
                     const gamepad = gamepads[side];
                     const dragState = dragStates[side];
-                    const {srcTagMesh} = dragState;
+                    const {src} = dragState;
                     const dragLine = dragLines[side];
 
-                    if (gamepad && srcTagMesh) {
+                    if (gamepad && src) {
                       const {geometry} = dragLine;
                       const positionsAttribute = geometry.getAttribute('position');
                       const {array: positions} = positionsAttribute;
 
+                      const {tagMesh: srcTagMesh} = src;
                       const {position: srcPosition} = srcTagMesh;
-                      const dstPosition = (() => {
-                        const {dstTagMesh} = dragState;
 
-                        if (dstTagMesh && dstTagMesh !== srcTagMesh) {
-                          const {position: dstTagMeshPosition} = _decomposeObjectMatrixWorld(dstTagMesh);
-                          return dstTagMeshPosition;
+                      const dstPosition = (() => {
+                        const {dst} = dragState;
+
+                        const _getControllerPosition = () => gamepad.position;
+
+                        if (dst) {
+                          const {tagMesh: dstTagMesh} = dst;
+
+                          if (dstTagMesh !== srcTagMesh) {
+                            return _decomposeObjectMatrixWorld(dstTagMesh).position;
+                          } else {
+                            return _getControllerPosition();
+                          }
                         } else {
-                          const {position: controllerPosition} = gamepad;
-                          return controllerPosition;
+                          return _getControllerPosition();
                         }
                       })();
 

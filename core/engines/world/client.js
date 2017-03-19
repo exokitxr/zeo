@@ -2290,7 +2290,7 @@ class World {
           };
           tags.on('download', _download);
 
-          const _link = linkSpec => {
+          const _linkModule = linkSpec => {
             const {side} = linkSpec;
             const {gamepads} = webvr.getStatus();
             const gamepad = gamepads[side];
@@ -2363,7 +2363,13 @@ class World {
               }
             }
           };
-          tags.on('link', _link);
+          tags.on('linkModule', _linkModule);
+          const _linkAttribute = linkSpec => {
+            const {srcTagMesh, attributeName, dstTagMesh} = linkSpec;
+
+            console.log('link attribute', {srcTagMesh, attributeName, dstTagMesh});
+          };
+          tags.on('linkAttribute', _linkAttribute);
 
           const _upload = files => {
             if (!login.isOpen()) {
@@ -2595,7 +2601,8 @@ class World {
             input.removeListener('keyboarddown', _keyboarddown);
 
             tags.removeListener('download', _download);
-            tags.removeListener('link', _link);
+            tags.removeListener('linkModule', _linkModule);
+            tags.removeListener('linkAttribute', _linkAttribute);
             tags.removeListener('mutateAddEntity', _mutateAddEntity);
             tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
             tags.removeListener('setAttribute', _setAttribute);

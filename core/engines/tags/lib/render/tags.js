@@ -320,8 +320,8 @@ const makeRenderer = ({creatureUtils}) => {
       case 'file': {
         return `\
           <div style="display: flex;">
-            <div style="display: flex; position: relative; max-width: ${WIDTH - 50}; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">${focusValue}</div>
-            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:choose" onmousedown="attribute:${id}:${name}:choose">
+            <div style="display: flex; position: relative; max-width: ${WIDTH - 50}; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1;">${focusValue}</div>
+            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:link" onmousedown="attribute:${id}:${name}:link">
               <img src="${linkImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>
           </div>
