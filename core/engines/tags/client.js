@@ -597,7 +597,7 @@ class Tags {
               );
 
               const img = new Image();
-              img.src = '/archae/fs/' + item.id;
+              img.src = '/fs/' + item.id;
               img.onload = () => {
                 const boxImg = imageUtils.boxizeImage(img);
 
@@ -626,7 +626,7 @@ class Tags {
             const mesh = new THREE.Object3D();
 
             const audio = document.createElement('audio');
-            audio.src = '/archae/fs/' + item.id;
+            audio.src = '/fs/' + item.id;
             audio.oncanplay = () => {
               soundBody.setInputElement(audio);
 
@@ -700,7 +700,7 @@ class Tags {
             const mesh = new THREE.Mesh(geometry, material);
 
             const video = document.createElement('video');
-            video.src = '/archae/fs/' + item.id;
+            video.src = '/fs/' + item.id; // XXX make these handle the multi-file case
             video.width = OPEN_WIDTH;
             video.height = (OPEN_HEIGHT - HEIGHT) - 100;
             video.oncanplay = () => {
@@ -757,13 +757,12 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemModelMesh = tagMesh => fetch('/archae/fs/' + tagMesh.item.id)
+          const _requestFileItemModelMesh = tagMesh => fetch('/fs/' + tagMesh.item.id)
             .then(res => res.text()
               .then(modelText => new Promise((accept, reject) => {
                 const loader = new THREEOBJLoader();
 
-                // XXX this texture path needs to actually be fetchable from /archae/fs/ by path, since that's what the model will be referencing
-                loader.setPath('/archae/fs/');
+                loader.setPath('/fs/');
                 const modelMesh = loader.parse(modelText);
                 accept(modelMesh);
               }))
@@ -901,12 +900,15 @@ class Tags {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
-                  const {name} = item;
+                  const {name, metadata: {paths}} = item;
 
-                  tagsApi.emit('download', {
+                  const downloadEvent = {
                     id,
-                    name,
-                  });
+                  };
+                  if (paths.length === 1) {
+                    downloadEvent.name = name;
+                  }
+                  tagsApi.emit('download', downloadEvent);
 
                   return true;
                 } else if (match = onclick.match(/^attribute:remove:(.+?):(.+?)$/)) {

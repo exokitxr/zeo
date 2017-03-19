@@ -127,7 +127,11 @@ class Fs {
 
         class FsApi extends EventEmitter {
           getFileUrl(id, path) {
-            return '/fs/' + id + path;
+            if (path) {
+              return '/fs/' + id + path;
+            } else {
+              return '/fs/' + id + '.zip';
+            }
           }
 
           readFile(id, path) {

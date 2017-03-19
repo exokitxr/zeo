@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const child_process = require('child_process');
 
 const mkdirp = require('mkdirp');
 // const ncp = require('ncp');
@@ -121,6 +122,44 @@ class Fs {
             fsStatic(req, res, next);
           }
           app.get(/^\/fs\/([^\/]+)(\/.+)$/, serveFsStatic);
+          function serveFsZip(req, res, next) {
+            const dirname = req.params[0];
+            const filePath = req.params[1];
+
+            const fullPath = path.join(fsPath, dirname);
+            fs.lstat(fullPath, (err, stats) => {
+              if (!err) {
+                if (stats.isDirectory()) {
+                  const zipProcess = child_process.spawn('zip', [
+                    '-r',
+                    '-',
+                    '.',
+                  ], {
+                    cwd: fullPath,
+                  });
+
+                  zipProcess.stdout.pipe(res);
+                  zipProcess.stderr.pipe(process.stderr);
+                  zipProcess.on('exit', code => {
+                    if (code !== 0) {
+                      res.status(500);
+                      res.send('zip returned non-zero status code: ' + code);
+                    }
+                  });
+                } else {
+                  res.status(404);
+                  res.send();
+                }
+              } else if (err.code === 'ENOENT') {
+                res.status(404);
+                res.send();
+              } else {
+                res.status(500);
+                res.send(err.stack);
+              }
+            });
+          }
+          app.get(/^\/fs\/([^\/]+)\.zip$/, serveFsZip);
           function serveFsUpload(req, res, next) {
             const dirname = req.params[0];
             const filePath = req.params[1];
@@ -206,6 +245,7 @@ class Fs {
               if (
                 // route.handle.name === 'serveFsList' ||
                 route.handle.name === 'serveFsStatic' ||
+                route.handle.name === 'serveFsZip' ||
                 route.handle.name === 'serveFsUpload'/* ||
                 route.handle.name === 'serveFsCreate' ||
                 route.handle.name === 'serveFsCopy' ||

@@ -2281,8 +2281,13 @@ class World {
 
           const _download = ({id, name}) => {
             const a = document.createElement('a');
-            a.href = fs.getFileUrl(id);
-            a.download = name;
+            if (name) {
+              a.href = fs.getFileUrl(id, name);
+              a.download = name.match(/\/?([^\/]*)$/)[1];
+            } else {
+              a.href = fs.getFileUrl(id);
+              a.download = id + '.zip';
+            }
             a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
@@ -2408,8 +2413,10 @@ class World {
                   id,
                   name,
                   mimeType,
-                  paths,
                   matrix,
+                  metadata: {
+                    paths,
+                  },
                   instancing: true,
                 };
                 _handleAddTag(localUserId, itemSpec, 'world');
