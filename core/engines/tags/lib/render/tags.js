@@ -238,7 +238,7 @@ const makeRenderer = ({creatureUtils}) => {
             </div>
           </a>
           <div style="display: flex; justify-content: center; text-align: center;">
-            <a style="display:block; position: relative; width: 100px; background-color: #FFF; font-size: 24px; font-weight: 400; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+            <a style="display: flex; position: relative; width: 100px; height: 40px; border: 2px solid; font-size: 24px; font-weight: 400; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
               ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${string}</div>
             </a>
