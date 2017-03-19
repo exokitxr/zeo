@@ -597,7 +597,7 @@ class Tags {
               );
 
               const img = new Image();
-              img.src = '/fs/' + item.id;
+              img.src = '/fs/' + item.id + item.name;
               img.onload = () => {
                 const boxImg = imageUtils.boxizeImage(img);
 
@@ -626,7 +626,7 @@ class Tags {
             const mesh = new THREE.Object3D();
 
             const audio = document.createElement('audio');
-            audio.src = '/fs/' + item.id;
+            audio.src = '/fs/' + item.id + item.name;
             audio.oncanplay = () => {
               soundBody.setInputElement(audio);
 
@@ -700,7 +700,7 @@ class Tags {
             const mesh = new THREE.Mesh(geometry, material);
 
             const video = document.createElement('video');
-            video.src = '/fs/' + item.id; // XXX make these handle the multi-file case
+            video.src = '/fs/' + item.id + item.name;
             video.width = OPEN_WIDTH;
             video.height = (OPEN_HEIGHT - HEIGHT) - 100;
             video.oncanplay = () => {
@@ -757,12 +757,12 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemModelMesh = tagMesh => fetch('/fs/' + tagMesh.item.id)
+          const _requestFileItemModelMesh = tagMesh => fetch('/fs/' + tagMesh.item.id + tagMesh.item.name)
             .then(res => res.text()
               .then(modelText => new Promise((accept, reject) => {
                 const loader = new THREEOBJLoader();
 
-                loader.setPath('/fs/');
+                loader.setPath('/fs/' + tagMesh.item.id + '/');
                 const modelMesh = loader.parse(modelText);
                 accept(modelMesh);
               }))
