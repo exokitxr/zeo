@@ -1999,15 +1999,7 @@ class Tags {
                         if (!attribute) {
                           attributesMesh.remove(attributeMesh);
                         } else {
-                          const {page: {state}, lastStateJson} = attributeMesh;
-                          state.attribute = attribute;
-                          const currentStateJson = JSON.stringify(state);
-
-                          if (currentStateJson !== lastStateJson) {
-                            attributesMesh.remove(attributeMesh);
-                          } else {
-                            index[attributeName] = attributeMesh;
-                          }
+                          index[attributeName] = attributeMesh;
                         }
                       }
 
@@ -2020,6 +2012,17 @@ class Tags {
                         const oldAttributeMesh = oldAttributesIndex[attributeName];
 
                         if (oldAttributeMesh) {
+                          const {page, lastStateJson} = oldAttributeMesh;
+                          const {state} = page;
+                          state.attribute = attribute;
+                          const currentStateJson = JSON.stringify(state);
+
+                          if (currentStateJson !== lastStateJson) {
+                            page.update();
+
+                            oldAttributeMesh.lastStateJson = currentStateJson;
+                          }
+
                           return oldAttributeMesh;
                         } else {
                           const state = {
