@@ -1209,6 +1209,37 @@ class Tags {
           };
           input.on('triggerup', _triggerup);
 
+          const _keydown = e => {
+            const {type} = focusState;
+
+            let match;
+            if (match = focusState.type.match(/^attribute:(.+?):(.+?)$/)) {
+              const tagId = match[1];
+              const attributeName = match[2];
+
+              const applySpec = biolumi.applyStateKeyEvent(detailsState, subcontentFontSpec, e);
+              if (applySpec) {
+                const {commit} = applySpec;
+                if (commit) {
+                  focusState.type = '';
+                }
+
+                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
+                const {inputText} = detailsState;
+                tagMesh.setAttribute(attributeName, inputText);
+
+                e.stopImmediatePropagation();
+              }
+            }
+          };
+          input.on('keydown', _keydown, {
+            priority: 1,
+          });
+          const _keyboarddown = _keydown;
+          input.on('keyboarddown', _keyboarddown, {
+            priority: 1,
+          });
+
           const _update = () => {
             const _updateControllers = () => {
               const _updateElementAnchors = () => {
@@ -1439,6 +1470,8 @@ class Tags {
             input.removeListener('trigger', _trigger);
             input.removeListener('triggerdown', _triggerdown);
             input.removeListener('triggerup', _triggerup);
+            input.removeListener('keydown', _keydown);
+            input.removeListener('keyboarddown', _keyboarddown);
 
             rend.removeListener('update', _update);
           };
