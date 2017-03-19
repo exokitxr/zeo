@@ -1001,7 +1001,7 @@ class Tags {
                   const {item} = tagMesh;
                   const {attributes} = item;
                   const attribute = attributes[attributeName];
-                  const {value: attributeValue, type: attributeType} = attribute;
+                  const {value: attributeValue} = attribute;
 
                   if (action === 'position') {
                     detailsState.positioningId = tagId;
@@ -1011,26 +1011,27 @@ class Tags {
                     focusState.type = '';
                   } else if (action === 'focus') {
                     const {value} = hoverState;
+                    const {type} = _getAttributeSpec(attributeName);
 
                     const textProperties = (() => {
-                      if (attributeType === 'text') {
+                      if (type === 'text') {
                         const valuePx = value * 400; // XXX update these
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                      } else if (attributeType === 'number') {
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, valuePx);
+                      } else if (type === 'number') {
                         const valuePx = value * 100;
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                      } else if (attributeType === 'color') {
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, valuePx);
+                      } else if (type === 'color') {
                         const valuePx = value * (400 - (40 + 4));
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                      } else if (attributeType === 'file') {
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, valuePx);
+                      } else if (type === 'file') {
                         const valuePx = value * 260;
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, valuePx);
                       } else {
                         return null;
                       }
                     })();
                     if (textProperties) {
-                      detailsState.inputText = menuUtils.castValueValueToString(attributeValue, attributeType);
+                      detailsState.inputText = menuUtils.castValueValueToString(attributeValue, type);
                       const {index, px} = textProperties;
                       detailsState.inputIndex = index;
                       detailsState.inputValue = px;
@@ -1041,18 +1042,18 @@ class Tags {
                     tagsApi.emit('setAttribute', {
                       id: tagId,
                       name: attributeName,
-                      value: value,
+                      value: attributeValue,
                     });
 
                     focusState.type = '';
                   } else if (action === 'tweak') {
-                    const {value} = hoverState;
-                    const {min, max, step} = attribute;
-
                     const newValue = (() => {
+                      const {value} = hoverState;
+                      const {min, max, step} = _getAttributeSpec(attributeName);
+
                       let n = min + (value * (max - min));
                       if (step > 0) {
-                        n = Math.floor(n / step) * step;
+                        n = Math.round(n / step) * step;
                       }
                       return n;
                     })();
@@ -1761,6 +1762,29 @@ class Tags {
 
             return result;
           };
+          const _getAttributeSpec = attributeName => {
+            const boundComponentSpecs = _getBoundComponentSpecs({
+              [attributeName]: true,
+            });
+            if (boundComponentSpecs.length > 0) {
+              const boundComponentSpec = boundComponentSpecs.sort((a, b) => a.index - b.index)[0];
+              const {matchingAttributeSpecs} = boundComponentSpec;
+              const matchingAttributeSpec = matchingAttributeSpecs[attributeName];
+              return matchingAttributeSpec;
+            } else {
+              return null;
+            }
+          };
+          const _getAttributeType = attributeName => {
+            const attributeSpec = _getAttributeSpec(attributeName);
+
+            if (attributeSpec) {
+              const {type} = attributeSpec;
+              return type;
+            } else {
+              return null;
+            }
+          };
 
           class TagsApi extends EventEmitter {
             constructor() {
@@ -1952,20 +1976,7 @@ class Tags {
                       return Object.keys(attributes).map(name => {
                         const attribute = attributes[name];
                         const {value} = attribute;
-                        const type = (() => {
-                          const boundComponentSpecs = _getBoundComponentSpecs({
-                            [name]: value,
-                          });
-                          if (boundComponentSpecs.length > 0) {
-                            const boundComponentSpec = boundComponentSpecs.sort((a, b) => a.index - b.index)[0];
-                            const {matchingAttributeSpecs} = boundComponentSpec;
-                            const matchingAttributeSpec = matchingAttributeSpecs[name];
-                            const {type} = matchingAttributeSpec;
-                            return type;
-                          } else {
-                            return null;
-                          }
-                        })();
+                        const type = _getAttributeType(name);
 
                         return {
                           name,
