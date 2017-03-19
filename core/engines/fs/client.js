@@ -126,26 +126,29 @@ class Fs {
         } */
 
         class FsApi extends EventEmitter {
-          getFileUrl(id) {
-            return '/archae/fs/' + id;
+          getFileUrl(id, path) {
+            return '/archae/fs/' + id + path;
           }
 
-          readFile(id) {
-            const fileUrl = this.getFileUrl(id);
+          readFile(id, path) {
+            const fileUrl = this.getFileUrl(id, path);
 
             return fetch(fileUrl)
               .then(res => res.blob());
           }
 
-          writeFile(id, blob) {
-            const fileUrl = this.getFileUrl(id);
+          writeFiles(id, files) {
+            return Promise.all(files.map(file => {
+              const {path} = file;
+              const fileUrl = this.getFileUrl(id, path);
 
-            return fetch(fileUrl, {
-              method: 'PUT',
-              body: blob,
-            }).then(res => res.blob()
-              .then(() => {})
-            );
+              return fetch(fileUrl, {
+                method: 'PUT',
+                body: file,
+              }).then(res => res.blob()
+                .then(() => {})
+              );
+            }));
           }
 
           dragover(e) {

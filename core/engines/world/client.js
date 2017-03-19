@@ -2419,30 +2419,27 @@ class World {
                   tags.destroyTag(tempTagMesh);
                 };
 
-                return new Promise((accept, reject) => {
-                  fs.writeFile(id, blob)
-                    .then(() => {
-                      _cleanupTempTagMesh();
+                return fs.writeFiles(id, files)
+                  .then(() => {
+                    _cleanupTempTagMesh();
 
-                      _addTag(itemSpec, 'world');
+                    _addTag(itemSpec, 'world');
 
-                      const elementTagMeshes = elementManager.getTagMeshes();
-                      const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
-                      if (!rend.isOpen()) {
-                        tagMesh.visible = false;
-                      }
+                    const elementTagMeshes = elementManager.getTagMeshes();
+                    const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                    if (!rend.isOpen()) {
+                      tagMesh.visible = false;
+                    }
 
-                      accept(tagMesh);
-                    })
-                    .catch(err => {
-                      _cleanupTempTagMesh();
+                    return Promise.resolve(tagMesh);
+                  })
+                  .catch(err => {
+                    _cleanupTempTagMesh();
 
-                      reject(err);
-                    });
-                });
+                    return Promise.reject(err);
+                  });
               };
-
-              _createFile(file)
+              _createFile(files)
                 .then(tagMesh => {
                   console.log('upoaded file', tagMesh);
                 });
