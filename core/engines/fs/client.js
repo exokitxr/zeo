@@ -101,7 +101,7 @@ class Fs {
             const entries = Array.from(items).map(item => item.webkitGetAsEntry());
             _getFiles(entries)
               .then(files => {
-                // fsApi.emit('upload', files); // XXX
+                fsApi.emit('upload', files);
               });
           }
         };

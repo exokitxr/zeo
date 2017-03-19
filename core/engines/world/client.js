@@ -2367,11 +2367,23 @@ class World {
 
           const _upload = files => {
             if (!login.isOpen()) {
-              const _createFile = blob => {
+              const _getMainFile = files => {
+                const _isRoot = f => /^\/[^\/]+/.test(f.path);
+                const _isExt = f => /\.[^\/]+$/.test(f.path);
+                const _isCandidate = f => _isRoot(f) && _isExt(f);
+
+                return files.sort((a, b) => {
+                  const aIsCandidate = _isCandidate(a);
+                  const bIsCandidate = _isCandidate(b);
+                  return +bIsCandidate - +aIsCandidate;
+                })[0];
+              };
+              const _createFile = files => {
                 const id = _makeFileId();
-                const {name = _makeId()} = file;
+                const mainFile = _getMainFile(files);
+                const {path: name} = mainFile;
                 const mimeType = (() => {
-                  const {type: mimeType} = blob;
+                  const {type: mimeType} = mainFile;
 
                   if (mimeType) {
                     return mimeType;
@@ -2382,12 +2394,14 @@ class World {
                     return 'mime/' + suffix;
                   }
                 })();
+                const paths = files.map(f => f.path);
                 const matrix = _getInFrontOfCameraMatrix();
                 const itemSpec = {
                   type: 'file',
                   id,
                   name,
                   mimeType,
+                  paths,
                   matrix,
                   instancing: true,
                 };
