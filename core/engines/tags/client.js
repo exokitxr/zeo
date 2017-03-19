@@ -102,7 +102,7 @@ class Tags {
 
           const subcontentFontSpec = {
             fonts: biolumi.getFonts(),
-            fontSize: 20,
+            fontSize: 24,
             lineHeight: 1.4,
             fontWeight: biolumi.getFontWeight(),
             fontStyle: biolumi.getFontStyle(),
@@ -1016,22 +1016,19 @@ class Tags {
 
                     focusState.type = '';
                   } else if (action === 'focus') {
-                    const {value} = hoverState;
+                    const {value: hoverValue} = hoverState;
                     const {type} = _getAttributeSpec(attributeName);
 
                     const textProperties = (() => {
                       if (type === 'text') {
-                        const valuePx = value * 400; // XXX update these
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, valuePx);
+                        const hoverValuePx = hoverValue * 400; // XXX update these
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
                       } else if (type === 'number') {
-                        const valuePx = value * 100;
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, valuePx);
+                        const hoverValuePx = hoverValue * 100;
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
                       } else if (type === 'color') {
-                        const valuePx = value * (400 - (40 + 4));
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, valuePx);
-                      } else if (type === 'file') {
-                        const valuePx = value * 260;
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, valuePx);
+                        const hoverValuePx = hoverValue * (400 - (40 + 4));
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
                       } else {
                         return null;
                       }
@@ -2043,11 +2040,16 @@ class Tags {
                           const state = {
                             attribute: attribute,
                             focus: focusState,
+                            details: detailsState,
                           };
                           const newAttributeMesh = uiAttributeManager.addPage(({
                             attribute,
                             focus: {
                               type: focusType,
+                            },
+                            details: {
+                              inputText,
+                              inputValue,
                             },
                           }) => {
                             const focusAttributeSpec = (() => {
@@ -2060,7 +2062,7 @@ class Tags {
 
                             return {
                               type: 'html',
-                              src: tagsRenderer.getAttributeSrc({item, attribute, focusAttributeSpec}),
+                              src: tagsRenderer.getAttributeSrc({item, attribute, inputText, inputValue, focusAttributeSpec}),
                               w: WIDTH,
                               h: HEIGHT,
                             };

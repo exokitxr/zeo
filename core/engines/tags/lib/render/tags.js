@@ -194,7 +194,6 @@ const makeRenderer = ({creatureUtils}) => {
 
   const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus) => {
     const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
-    const width = 400 - (20 + 120 + 20);
 
     switch (type) {
       case 'symbol': {
@@ -216,7 +215,7 @@ const makeRenderer = ({creatureUtils}) => {
       case 'text': {
         return `\
           <a style="display: flex; position: relative; margin: 20px; border: 2px solid #333; font-size: 24px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
-            ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+            ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
             <div>${focusValue}</div>
           </a>
         `;
@@ -240,7 +239,7 @@ const makeRenderer = ({creatureUtils}) => {
           </a>
           <div style="display: flex; justify-content: center; text-align: center;">
             <a style="display:block; position: relative; width: 100px; background-color: #FFF; font-size: 24px; font-weight: 400; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
-              ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+              ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
               <div>${string}</div>
             </a>
           </div>
