@@ -207,7 +207,7 @@ const makeRenderer = ({creatureUtils}) => {
         return `\
           <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
             <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">
-              <img src="${targetImgSrc}" width="50" height="50" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+              <img src="${targetImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>
           </div>
         `;
@@ -319,8 +319,8 @@ const makeRenderer = ({creatureUtils}) => {
       }
       case 'file': {
         return `\
-          <div style="display: flex;">
-            <div style="display: flex; position: relative; max-width: ${WIDTH - 50}; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1;">${focusValue}</div>
+          <div style="display: flex; width: ${WIDTH}px;">
+            <div style="display: flex; position: relative; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1; overflow: hidden; text-overflow: ellipsis;">${focusValue}</div>
             <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:link" onmousedown="attribute:${id}:${name}:link">
               <img src="${linkImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>

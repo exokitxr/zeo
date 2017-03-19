@@ -2366,8 +2366,9 @@ class World {
           tags.on('linkModule', _linkModule);
           const _linkAttribute = linkSpec => {
             const {srcTagMesh, attributeName, dstTagMesh} = linkSpec;
+            const {item: {id, name}} = dstTagMesh;
 
-            console.log('link attribute', {srcTagMesh, attributeName, dstTagMesh});
+            srcTagMesh.setAttribute(attributeName, '/fs/' + id + name);
           };
           tags.on('linkAttribute', _linkAttribute);
 

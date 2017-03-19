@@ -120,7 +120,7 @@ class Fs {
 
             fsStatic(req, res, next);
           }
-          app.get(/^\/archae\/fs\/([^\/]+)(\/.+)$/, serveFsStatic);
+          app.get(/^\/fs\/([^\/]+)(\/.+)$/, serveFsStatic);
           function serveFsUpload(req, res, next) {
             const dirname = req.params[0];
             const filePath = req.params[1];
@@ -145,7 +145,7 @@ class Fs {
               }
             });
           }
-          app.put(/^\/archae\/fs\/([^\/]+)(\/.+)$/, serveFsUpload);
+          app.put(/^\/fs\/([^\/]+)(\/.+)$/, serveFsUpload);
           /* function serveFsCreate(req, res, next) {
             const p = req.params[0];
 

@@ -127,7 +127,7 @@ class Fs {
 
         class FsApi extends EventEmitter {
           getFileUrl(id, path) {
-            return '/archae/fs/' + id + path;
+            return '/fs/' + id + path;
           }
 
           readFile(id, path) {
