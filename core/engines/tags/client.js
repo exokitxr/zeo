@@ -26,6 +26,7 @@ const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemMutexSymbol = Symbol();
+const MODULE_TAG_NAME = 'z-module'.toUpperCase();
 const ENTITY_TAG_NAME = 'z-entity'.toUpperCase();
 const ITEM_LOCK_KEY = 'key';
 
@@ -107,7 +108,72 @@ class Tags {
             fontStyle: biolumi.getFontStyle(),
           };
 
-          // XXX track modules via the DOM to allow user-initiated mutations
+          const rootModulesElement = document.createElement('div');
+          rootModulesElement.id = 'zeo-modules';
+          document.body.appendChild(rootModulesElement);
+          const rootModulesObserver = new MutationObserver(mutations => {
+            for (let i = 0; i < mutations.length; i++) {
+              const mutation = mutations[i];
+              const {type} = mutation;
+
+              if (type === 'childList') {
+                const {addedNodes} = mutation;
+
+                for (let j = 0; j < addedNodes.length; j++) {
+                  const addedNode = addedNodes[j];
+
+                  if (addedNode.tagName === MODULE_TAG_NAME) {
+                    const moduleElement = addedNode;
+                    const name = moduleElement.getAttribute('name');
+                    
+                    if (name) { // adding
+                      // XXX
+                    }
+                  }
+                }
+
+                const {removedNodes} = mutation;
+                for (let j = 0; j < removedNodes.length; j++) {
+                  const removedNode = removedNodes[j];
+
+                  if (removedNode.tagName === MODULE_TAG_NAME) {
+                    const moduleElement = removedNode;
+                    const name = moduleElement.getAttribute('name');
+                    
+                    if (name) { // removing
+                      // XXX
+                    }
+                  }
+                }
+              } else if (type === 'attributes') {
+                const {target} = mutation;
+
+                if (target.tagName === ENTITY_TAG_NAME) {
+                  const moduleElement = target;
+                  const {attributeName} = mutation;
+
+                  if (attributeName === 'name') {
+                    const {oldValue: oldValueString} = mutation;
+                    const newValueString = moduleElement.getAttribute('name');
+
+                    if (!oldValueString && newValueString) { // adding
+                      // XXX
+                    } else if (oldValueString && !newValueString) { // removing
+                      // XXX
+                    } else if (oldValueString && newValueString) { // changing
+                      // XXX
+                    }
+                  }
+                }
+              }
+            }
+          });
+          rootModulesObserver.observe(rootModulesElement, {
+            childList: true,
+            attributes: true,
+            subtree: true,
+            attributeOldValue: true,
+          });
 
           const rootComponentsElement = document.createElement('div');
           rootComponentsElement.id = 'zeo-components';
