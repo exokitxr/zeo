@@ -64,22 +64,52 @@ class Fs {
         const dragover = e => {
           e.preventDefault();
         };
-        domElement.addEventListener('dragover', dragover);
+        document.addEventListener('dragover', dragover);
         const drop = e => {
           e.preventDefault();
 
-          const {dataTransfer: {files}} = e;
-          if (files.length > 0) {
-            const file = files[0];
+          const {dataTransfer: {items}} = e;
+          if (items.length > 0) {
+            const _getFiles = entries => {
+              const result = [];
 
-            fsApi.emit('upload', file);
+              const _recurseEntries = entries => Promise.all(entries.map(_recurseEntry));
+              const _recurseEntry = entry => new Promise((accept, reject) => {
+                if (entry.isFile) {
+                  entry.file(file => {
+                    file.path = entry.fullPath;
+
+                    result.push(file);
+
+                    accept();
+                  });
+                } else if (entry.isDirectory) {
+                  const directoryReader = entry.createReader();
+                  directoryReader.readEntries(entries => {
+                    _recurseEntries(Array.from(entries))
+                      .then(() => {
+                        accept();
+                      });
+                  });
+                } else {
+                  accept();
+                }
+              });
+              return _recurseEntries(entries)
+                .then(() => result);
+            };
+            const entries = Array.from(items).map(item => item.webkitGetAsEntry());
+            _getFiles(entries)
+              .then(files => {
+                // fsApi.emit('upload', files); // XXX
+              });
           }
         };
-        domElement.addEventListener('drop', drop);
+        document.addEventListener('drop', drop);
 
         this._cleanup = () => {
-          domElement.removeEventListener('dragover', dragover);
-          domElement.removeEventListener('drop', drop);
+          document.removeEventListener('dragover', dragover);
+          document.removeEventListener('drop', drop);
         };
 
         /* class FsFile {

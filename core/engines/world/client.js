@@ -2365,7 +2365,7 @@ class World {
           };
           tags.on('link', _link);
 
-          const _upload = file => {
+          const _upload = files => {
             if (!login.isOpen()) {
               const _createFile = blob => {
                 const id = _makeFileId();
