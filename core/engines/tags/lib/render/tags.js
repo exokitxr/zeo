@@ -253,14 +253,14 @@ const makeRenderer = ({creatureUtils}) => {
 
         if (!focus) {
           return `\
-            <a style="display: flex; margin: 20px; padding: 5px; border: 2px solid #333; font-size: 20px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+            <a style="display: flex; height: 40px; margin: 20px; padding: 5px; border: 2px solid #333; font-size: 20px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
               <div style="text-overflow: ellipsis; flex-grow: 1; overflow: hidden;">${focusValue}</div>
               <div style="display: flex; padding: 0 10px; font-size: 16px; justify-content: center;">${unescape(encodeURIComponent('▼'))}</div>
             </a>
           `;
         } else {
           return `\
-            <div style="position: relative; width: ${width}px; height: 40px; z-index: 1;">
+            <div style="position: relative; height: 40px; margin: 20px; z-index: 1;">
               <div style="display: flex; flex-direction: column; background-color: #FFF;">
                 ${options.map((option, i, a) => {
                   const style = (() => {
@@ -276,7 +276,7 @@ const makeRenderer = ({creatureUtils}) => {
                     }
                     return result;
                   })();
-                  return `<a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:set:${option}" onmousedown="attribute:${id}:${name}:set:${option}">
+                  return `<a style="display: flex; height: 40px; padding: 5px; border: 2px solid #333; ${style}; font-size: 20px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:set:${option}" onmousedown="attribute:${id}:${name}:set:${option}">
                     ${option}
                   </a>`;
                 }).join('\n')}

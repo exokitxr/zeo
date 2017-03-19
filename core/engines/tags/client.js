@@ -1003,6 +1003,12 @@ class Tags {
                   const attribute = attributes[attributeName];
                   const {value: attributeValue} = attribute;
 
+                  const _updateAttributes = () => {
+                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
+                    const {attributesMesh} = tagMesh;
+                    attributesMesh.update();
+                  };
+
                   if (action === 'position') {
                     detailsState.positioningId = tagId;
                     detailsState.positioningName = attributeName;
@@ -1038,14 +1044,18 @@ class Tags {
                     }
 
                     focusState.type = 'attribute:' + tagId + ':' + attributeName;
+
+                    _updateAttributes();
                   } else if (action === 'set') {
+                    focusState.type = '';
+
                     tagsApi.emit('setAttribute', {
                       id: tagId,
                       name: attributeName,
-                      value: attributeValue,
+                      value: value,
                     });
 
-                    focusState.type = '';
+                    // _updateAttributes();
                   } else if (action === 'tweak') {
                     const newValue = (() => {
                       const {value} = hoverState;
@@ -1057,13 +1067,16 @@ class Tags {
                       }
                       return n;
                     })();
+
+                    focusState.type = '';
+
                     tagsApi.emit('setAttribute', {
                       id: tagId,
                       name: attributeName,
                       value: newValue,
                     });
 
-                    focusState.type = '';
+                    // _updateAttributes();
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
 
@@ -1072,6 +1085,8 @@ class Tags {
                       name: attributeName,
                       value: newValue,
                     });
+
+                    _updateAttributes();
                   } else if (action === 'choose') {
                     /* elementsState.choosingName = attributeName;
 
@@ -1102,8 +1117,8 @@ class Tags {
                     }); */
                   }
 
-                  const {planeOpenMesh: {page: openPage}} = tagMesh;
-                  openPage.update();
+                  /* const {planeOpenMesh: {page: openPage}} = tagMesh;
+                  openPage.update(); */
 
                   return true;
                 } else {
@@ -1775,16 +1790,6 @@ class Tags {
               return null;
             }
           };
-          const _getAttributeType = attributeName => {
-            const attributeSpec = _getAttributeSpec(attributeName);
-
-            if (attributeSpec) {
-              const {type} = attributeSpec;
-              return type;
-            } else {
-              return null;
-            }
-          };
 
           class TagsApi extends EventEmitter {
             constructor() {
@@ -1976,13 +1981,12 @@ class Tags {
                       return Object.keys(attributes).map(name => {
                         const attribute = attributes[name];
                         const {value} = attribute;
-                        const type = _getAttributeType(name);
+                        const attributeSpec = _getAttributeSpec(name);
 
-                        return {
-                          name,
-                          value,
-                          type,
-                        };
+                        const result = _shallowClone(attributeSpec);
+                        result.name = name;
+                        result.value = value;
+                        return result;
                       }).sort((a, b) => a.name.localeCompare(b.name));
                     })();
 
@@ -2285,7 +2289,7 @@ class Tags {
                         rootEntitiesElement.appendChild(element);
 
                         item.instancing = false;
-                        item.attributes = _clone(attributes);
+                        item.attributes = _shallowClone(attributes);
 
                         const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
                         page.update();
@@ -2381,12 +2385,14 @@ const _jsonParse = s => {
     return undefined;
   }
 };
-const _clone = o => {
+const _shallowClone = o => {
   const result = {};
+
   for (const k in o) {
     const v = o[k];
     result[k] = v;
   }
+
   return result;
 };
 
