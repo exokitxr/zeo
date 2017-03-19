@@ -136,7 +136,7 @@ class Avatar {
     elements.registerComponent(this, avatarComponent);
 
     this._cleanup = () => {
-      elements.unregisterComponent(avatarComponent);
+      elements.unregisterComponent(this, avatarComponent);
     };
   }
 
