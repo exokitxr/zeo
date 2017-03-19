@@ -2191,7 +2191,7 @@ class Tags {
                           return newAttributeMesh;
                         }
                       })();
-                      mesh.position.x = WORLD_WIDTH * (1 + 0.1);
+                      mesh.position.x = WORLD_WIDTH;
                       mesh.position.y = (attributesArray.length * WORLD_HEIGHT / 2) - (0.5 * WORLD_HEIGHT) - (i * WORLD_HEIGHT);
 
                       return mesh;
