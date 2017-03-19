@@ -1943,18 +1943,13 @@ class Tags {
 
               if (itemSpec.type === 'entity') {
                 const attributesMesh = (() => {
-                  const result = new THREE.Object3D();
-                  result.attributeMeshes = [];
+                  const attributesMesh = new THREE.Object3D();
+                  attributesMesh.attributeMeshes = [];
 
                   const _update = () => {
-                    const {attributeMeshes: oldAttributeMeshes} = result;
-                    oldAttributeMeshes.forEach(attributeMesh => {
-                      result.remove(attributeMesh);
-                    });
-
-                    const newAttributeMeshes = (() => {
+                    const attributesArray = (() => {
                       const {attributes} = item;
-                      const attributesArray = Object.keys(attributes).map(name => {
+                      return Object.keys(attributes).map(name => {
                         const attribute = attributes[name];
                         const {value} = attribute;
                         const type = (() => {
@@ -1978,59 +1973,106 @@ class Tags {
                           type,
                         };
                       }).sort((a, b) => a.name.localeCompare(b.name));
-                      return attributesArray.map((attribute, i) => {
-                        const {
-                          name: attributeName,
-                          value: attributeValue,
-                        } = attribute;
+                    })();
 
-                        const mesh = uiAttributeManager.addPage(({
-                          item,
-                          attribute,
-                          focus: {
-                            type: focusType,
-                          },
-                        }) => {
-                          const focusAttributeSpec = (() => {
-                            const match = focusType.match(/^attribute:(.+?):(.+?)$/);
-                            return match && {
-                              tagId: match[1],
-                              attributeName: match[2],
-                            };
-                          })();
+                    const attributesIndex = (() => {
+                      const index = {};
 
-                          return {
-                            type: 'html',
-                            src: tagsRenderer.getAttributeSrc({item, attribute, focusAttributeSpec}),
-                            w: WIDTH,
-                            h: HEIGHT,
-                          };
-                        }, {
-                          type: 'attribute',
-                          state: {
-                            item: item,
+                      for (let i = 0; i < attributesArray.length; i++) {
+                        const attribute = attributesArray[i];
+                        const {name} = attribute;
+                        index[name] = attribute;
+                      }
+
+                      return index;
+                    })();
+
+                    const oldAttributesIndex = (() => {
+                      const index = {};
+
+                      const {attributeMeshes: oldAttributeMeshes} = attributesMesh;
+                      for (let i = 0; i < oldAttributeMeshes.length; i++) {
+                        const attributeMesh = oldAttributeMeshes[i];
+                        const {attributeName} = attributeMesh;
+                        const attribute = attributesIndex[attributeName];
+
+                        if (!attribute) {
+                          attributesMesh.remove(attributeMesh);
+                        } else {
+                          const {page: {state}, lastStateJson} = attributeMesh;
+                          state.attribute = attribute;
+                          const currentStateJson = JSON.stringify(state);
+
+                          if (currentStateJson !== lastStateJson) {
+                            attributesMesh.remove(attributeMesh);
+                          } else {
+                            index[attributeName] = attributeMesh;
+                          }
+                        }
+                      }
+
+                      return index;
+                    })();
+
+                    const newAttributeMeshes = attributesArray.map((attribute, i) => {
+                      const mesh = (() => {
+                        const {name: attributeName} = attribute;
+                        const oldAttributeMesh = oldAttributesIndex[attributeName];
+
+                        if (oldAttributeMesh) {
+                          return oldAttributeMesh;
+                        } else {
+                          const state = {
                             attribute: attribute,
                             focus: focusState,
-                          },
-                          worldWidth: WORLD_WIDTH,
-                          worldHeight: WORLD_HEIGHT,
-                        });
-                        mesh.position.x = WORLD_WIDTH * (1 + 0.1);
-                        mesh.position.y = (attributesArray.length * WORLD_HEIGHT / 2) - (0.5 * WORLD_HEIGHT) - (i * WORLD_HEIGHT);
-                        mesh.receiveShadow = true;
+                          };
+                          const newAttributeMesh = uiAttributeManager.addPage(({
+                            attribute,
+                            focus: {
+                              type: focusType,
+                            },
+                          }) => {
+                            const focusAttributeSpec = (() => {
+                              const match = focusType.match(/^attribute:(.+?):(.+?)$/);
+                              return match && {
+                                tagId: match[1],
+                                attributeName: match[2],
+                              };
+                            })();
 
-                        return mesh;
-                      });
-                    })();
-                    newAttributeMeshes.forEach(attributeMesh => {
-                      result.add(attributeMesh);
+                            return {
+                              type: 'html',
+                              src: tagsRenderer.getAttributeSrc({item, attribute, focusAttributeSpec}),
+                              w: WIDTH,
+                              h: HEIGHT,
+                            };
+                          }, {
+                            type: 'attribute',
+                            state: state,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                          });
+                          newAttributeMesh.receiveShadow = true;
+
+                          newAttributeMesh.attributeName = attributeName;
+                          newAttributeMesh.lastStateJson = JSON.stringify(state);
+
+                          attributesMesh.add(newAttributeMesh);
+
+                          return newAttributeMesh;
+                        }
+                      })();
+                      mesh.position.x = WORLD_WIDTH * (1 + 0.1);
+                      mesh.position.y = (attributesArray.length * WORLD_HEIGHT / 2) - (0.5 * WORLD_HEIGHT) - (i * WORLD_HEIGHT);
+
+                      return mesh;
                     });
-                    result.attributeMeshes = newAttributeMeshes;
+                    attributesMesh.attributeMeshes = newAttributeMeshes;
                   };
-                  result.update = _update;
+                  attributesMesh.update = _update;
                   _update();
 
-                  return result;
+                  return attributesMesh;
                 })();
                 object.add(attributesMesh);
                 object.attributesMesh = attributesMesh;
