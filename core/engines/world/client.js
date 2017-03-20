@@ -2390,7 +2390,7 @@ class World {
                   _forEachSrcTagAttribute((attributeName, attributeValue) => {
                     _setAttribute({
                       id: dstId,
-                      attribute: attributeName,
+                      name: attributeName,
                       value: attributeValue,
                     });
                   });
