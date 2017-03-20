@@ -1,38 +1,5 @@
 const modelsPath = '/archae/models/models/';
 
-const MODELS = { // XXX fold these transforms into the models themselves
-  cloud: {
-    path: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
-    position: [0, 0.65, 0],
-    rotation: [0, Math.PI, 0],
-    scale: [0.5, 0.5, 0.5],
-  },
-  lightning: {
-    path: 'lightning/lightning.json',
-    position: [0, 0.8, 0],
-    rotation: [0, Math.PI, 0],
-    scale: [0.014, 0.014, 0.014],
-  },
-  vanille: {
-    path: 'vanille/vanille.json',
-    position: [0, 0.8, 0],
-    rotation: [0, Math.PI, 0],
-    scale: [0.014, 0.014, 0.014],
-  },
-  ellie: {
-    path: 'ellie/ellie.json',
-    position: [0, 0, 0],
-    rotation: [-Math.PI / 2, 0, 0],
-    scale: [1, 1, 1],
-  },
-  pc: {
-    path: 'pc/pc.json',
-    position: [0, 0, 0],
-    rotation: [0, Math.PI, 0],
-    scale: [0.025, 0.025, 0.025],
-  },
-};
-
 const symbol = Symbol();
 
 class Model {
@@ -63,7 +30,7 @@ class Model {
         model: {
           type: 'file',
           value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
-        }
+        },
       },
       entityAddedCallback(entityElement) {
         const entityApi = {};
@@ -127,7 +94,7 @@ class Model {
             };
 
             const file = newValue;
-            _requestModel(file)
+            file.read({type: 'model'})
               .then(mesh => {
                 if (live) {
                   scene.add(mesh);

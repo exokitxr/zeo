@@ -1,5 +1,5 @@
 {
-  "name": "zeo-model",
+  "name": "z-model",
   "description": "Load 3D models from various formats and place them in the world scene.",
   "version": "0.0.4",
   "keywords": [

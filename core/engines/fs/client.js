@@ -112,33 +112,83 @@ class Fs {
           document.removeEventListener('drop', drop);
         };
 
-        /* class FsFile {
-          constructor(id, name, mimeType, matrix) {
-            this.id = id;
-            this.name = name;
-            this.mimeType = mimeType;
-            this.matrix = matrix;
-
-            this.instancing = false;
-
-            this.open = false;
+        class FsFile {
+          constructor(url) {
+            this.url = url;
           }
-        } */
+
+          read({type = null} = {}) {
+            const {url} = this;
+
+            switch (type) {
+              case 'image': {
+                return new Promise((accept, reject) => {
+                  const img = new Image();
+                  img.src = url;
+                  img.onload = () => {
+                    accept(img);
+                  };
+                  img.onerror = err => {
+                    reject(err);
+                  };
+                });
+              }
+              case 'audio': {
+                return new Promise((accept, reject) => {
+                  const audio = document.createElement('audio');
+                  audio.src = url;
+                  audio.oncanplay = () => {
+                    accept(audio);
+                  };
+                  audio.onerror = err => {
+                    reject(err);
+                  };
+                });
+              }
+              case 'video': {
+                return new Promise((accept, reject) => {
+                  const video = document.createElement('video');
+                  video.src = url;
+                  video.oncanplay = () => {
+                    accept(video);
+                  };
+                  video.onerror = err => {
+                    reject(err);
+                  };
+                });
+              }
+              case 'model': {
+                return fetch(url)
+                  .then(res => res.text()
+                    .then(modelText => new Promise((accept, reject) => {
+                      const loader = new THREEOBJLoader(); // XXX support different model types here
+
+                      const baseUrl = url.match(/^(.*?\/?)[^\/]*$/)[1];
+                      loader.setPath('/fs/' + tagMesh.item.id + '/');
+                      const modelMesh = loader.parse(modelText);
+                      accept(modelMesh);
+                    }))
+                  );
+              }
+              default: {
+                return fetch(url)
+                  .then(res => res.blob());
+              }
+            }
+          }
+        }
 
         class FsApi extends EventEmitter {
+          makeFile(url) {
+            return new FsFile(url);
+          }
+
           getFileUrl(id, path) {
             if (path) {
               return '/fs/' + id + path;
             } else {
               return '/fs/' + id + '.zip';
             }
-          }
-
-          readFile(id, path) {
-            const fileUrl = this.getFileUrl(id, path);
-
-            return fetch(fileUrl)
-              .then(res => res.blob());
           }
 
           writeFiles(id, files) {

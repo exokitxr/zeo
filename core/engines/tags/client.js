@@ -50,6 +50,7 @@ class Tags {
       '/core/engines/webvr',
       '/core/engines/cyborg',
       '/core/engines/biolumi',
+      '/core/engines/fs',
       '/core/engines/somnifer',
       '/core/engines/rend',
       '/core/plugins/js-utils',
@@ -62,6 +63,7 @@ class Tags {
         webvr,
         cyborg,
         biolumi,
+        fs,
         somnifer,
         rend,
         jsUtils,
@@ -596,17 +598,17 @@ class Tags {
                 16
               );
 
-              const img = new Image();
-              img.src = '/fs/' + item.id + item.name;
-              img.onload = () => {
-                const boxImg = imageUtils.boxizeImage(img);
+              fs.makeFile('/fs/' + item.id + item.name)
+                .read({type: 'image'})
+                .then(img => {
+                  const boxImg = imageUtils.boxizeImage(img);
 
-                texture.image = boxImg;
-                texture.needsUpdate = true;
-              };
-              img.onerror = err => {
-                console.warn(err);
-              };
+                  texture.image = boxImg;
+                  texture.needsUpdate = true;
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
 
               const material = new THREE.MeshBasicMaterial({
                 map: texture,
@@ -625,30 +627,30 @@ class Tags {
 
             const mesh = new THREE.Object3D();
 
-            const audio = document.createElement('audio');
-            audio.src = '/fs/' + item.id + item.name;
-            audio.oncanplay = () => {
-              soundBody.setInputElement(audio);
+            fs.makeFile('/fs/' + item.id + item.name)
+              .read({type: 'audio'})
+              .then(audio => {
+                soundBody.setInputElement(audio);
 
-              audio.currentTime = item.value * audio.duration;
+                audio.currentTime = item.value * audio.duration;
 
-              if (!item.paused) {
-                audio.play();
-              }
+                if (!item.paused) {
+                  audio.play();
+                }
 
-              localUpdates.push(localUpdate);
+                mesh.audio = audio;
 
-              audio.oncanplay = null;
-            };
-            audio.onerror = err => {
-              console.warn(err);
-            };
-            mesh.audio = audio;
+                localUpdates.push(localUpdate);
+              })
+              .catch(err => {
+                console.warn(err);
+              });
 
             const soundBody = new sound.Body();
             soundBody.setObject(mesh);
 
             const localUpdate = () => {
+              const {audio} = mesh;
               const {value: prevValue} = item;
               const nextValue = audio.currentTime / audio.duration;
               if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
@@ -660,7 +662,8 @@ class Tags {
             };
 
             mesh.destroy = () => {
-              if (!audio.paused) {
+              const {audio} = mesh;
+              if (audio && !audio.paused) {
                 audio.pause();
               }
 
@@ -699,31 +702,32 @@ class Tags {
             })();
             const mesh = new THREE.Mesh(geometry, material);
 
-            const video = document.createElement('video');
-            video.src = '/fs/' + item.id + item.name;
-            video.width = OPEN_WIDTH;
-            video.height = (OPEN_HEIGHT - HEIGHT) - 100;
-            video.oncanplay = () => {
-              const {map: texture} = material;
+            fs.makeFile('/fs/' + item.id + item.name)
+              .read({type: 'video'})
+              .then(video => {
+                video.width = OPEN_WIDTH;
+                video.height = (OPEN_HEIGHT - HEIGHT) - 100;
 
-              texture.image = video;
-              texture.needsUpdate = true;
+                const {map: texture} = material;
 
-              soundBody.setInputElement(video);
+                texture.image = video;
+                texture.needsUpdate = true;
 
-              video.currentTime = item.value * video.duration;
+                soundBody.setInputElement(video);
 
-              if (!item.paused) {
-                video.play();
-              }
+                video.currentTime = item.value * video.duration;
 
-              localUpdates.push(localUpdate);
+                if (!item.paused) {
+                  video.play();
+                }
 
-              video.oncanplay = null;
-            };
-            video.onerror = err => {
-              console.warn(err);
-            };
+                mesh.video = video;
+
+                localUpdates.push(localUpdate);
+              })
+              .catch(err => {
+                console.warn(err);
+              });
 
             const soundBody = new sound.Body();
             soundBody.setObject(mesh);
@@ -745,7 +749,8 @@ class Tags {
             };
 
             mesh.destroy = () => {
-              if (!video.paused) {
+              const {video} = mesh;
+              if (video && !video.paused) {
                 video.pause();
               }
 
@@ -757,16 +762,8 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemModelMesh = tagMesh => fetch('/fs/' + tagMesh.item.id + tagMesh.item.name)
-            .then(res => res.text()
-              .then(modelText => new Promise((accept, reject) => {
-                const loader = new THREEOBJLoader();
-
-                loader.setPath('/fs/' + tagMesh.item.id + '/');
-                const modelMesh = loader.parse(modelText);
-                accept(modelMesh);
-              }))
-            );
+          const _requestFileItemModelMesh = tagMesh => fs.makeFile('/fs/' + tagMesh.item.id + tagMesh.item.name)
+            .read({type: 'model'});
 
           const _trigger = e => {
             const {side} = e;
