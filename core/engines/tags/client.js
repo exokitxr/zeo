@@ -2397,7 +2397,7 @@ class Tags {
               }
             }
 
-            reifyTag(tagMesh) {
+            /* reifyTag(tagMesh) {
               const {item} = tagMesh;
               const {instance, instancing} = item;
 
@@ -2471,7 +2471,7 @@ class Tags {
 
                   unlock();
                 });
-            }
+            } */
 
             getRootComponentsmElement() {
               return rootComponentsElement;

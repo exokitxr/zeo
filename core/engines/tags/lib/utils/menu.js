@@ -1,5 +1,13 @@
 const makeUtils = ({fs}) => {
 
+const zeoModuleElementConstructor = (() => {
+  class ZeoModuleElement extends HTMLElement {}
+
+  const ZeoModuleElementConstructor = document.registerElement('z-module', ZeoModuleElement);
+  return ZeoModuleElementConstructor;
+})();
+const makeZeoModuleElement = () => new zeoModuleElementConstructor();
+
 const zeoComponentElementClasses = new Map();
 const zeoComponentElementConstructor = (() => {
   class ZeoComponentElement extends HTMLElement {
@@ -154,6 +162,7 @@ const _jsonParse = s => {
 };
 
 return {
+  makeZeoModuleElement,
   makeZeoComponentElement,
   makeZeoEntityElement,
   castValueStringToValue,
