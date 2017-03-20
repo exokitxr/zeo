@@ -296,10 +296,8 @@ class World {
 
               scene.add(tagMesh);
 
-              const {type, exists} = item;
-              if (type === 'module' && !exists) {
-                tags.reifyModule(tagMesh);
-              } else if (type === 'entity') {
+              const {type} = item;
+              if (type === 'entity') {
                 tags.reifyEntity(tagMesh);
               }
             }
@@ -315,10 +313,8 @@ class World {
               const {instance} = item;
               if (instance) {
                 const {type} = item;
-
-                if (type === 'module') {
-                  tags.unreifyModule(tagMesh);
-                } else if (type === 'entity') {
+                
+                if (type === 'entity') {
                   tags.unreifyEntity(tagMesh);
                 }
               }
@@ -426,11 +422,8 @@ class World {
             set(index, tagMesh) {
               this.tagMeshes[index] = tagMesh;
 
-              const {item} = tagMesh;
-              const {type} = item;
-              if (type === 'module') {
-                tags.reifyModule(tagMesh);
-              } else if (type === 'entity') {
+              const {item: {type}} = tagMesh;
+              if (type === 'entity') {
                 tags.reifyEntity(tagMesh);
               }
             }
@@ -439,11 +432,8 @@ class World {
               const tagMesh = this.tagMeshes[index];
               this.tagMeshes[index] = null;
 
-              const {item} = tagMesh;
-              const {type} = item;
-              if (type === 'module') {
-                tags.unreifyModule(tagMesh);
-              } else if (type === 'entity') {
+              const {item: {type}} = tagMesh;
+              if (type === 'entity') {
                 tags.unreifyEntity(tagMesh);
               }
             }
@@ -651,11 +641,22 @@ class World {
             if (dst === 'world') {
               const tagMesh = tags.makeTag(itemSpec);
 
+              const {item: {type}} = tagMesh;
+              if (type === 'module') {
+                tags.reifyModule(tagMesh);
+              }
+
               elementManager.add(tagMesh);
             } else if (match = dst.match(/^hand:(left|right)$/)) {
               const side = match[1];
 
               const tagMesh = tags.makeTag(itemSpec);
+
+              const {item: {type}} = tagMesh;
+              if (type === 'module') {
+                tags.reifyModule(tagMesh);
+              }
+
               const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
               const userControllerMeshes = (() => {
                 if (isMe) {
@@ -732,6 +733,11 @@ class World {
               const id = match[1];
               const tagMesh = elementManager.getTagMesh(id);
 
+              const {item: {type}} = tagMesh;
+              if (type === 'module') {
+                tags.unreifyModule(tagMesh);
+              }
+
               elementManager.remove(tagMesh);
               tags.destroyTag(tagMesh);
             } else if (match = src.match(/^hand:(left|right)$/)) {
@@ -740,6 +746,11 @@ class World {
               const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
 
               const tagMesh = userGrabManager.getMesh(side);
+
+              const {item: {type}} = tagMesh;
+              if (type === 'module') {
+                tags.unreifyModule(tagMesh);
+              }
 
               elementManager.remove(tagMesh);
               tags.destroyTag(tagMesh);
@@ -784,11 +795,8 @@ class World {
                 tagMesh.quaternion.copy(controllerMeshQuaternion);
                 tagMesh.scale.copy(oneVector)
 
-                const {item} = tagMesh;
-                const {type} = item;
-                if (type === 'module') {
-                  tags.unreifyModule(tagMesh);
-                } else if (type === 'entity') {
+                const {item: {type}} = tagMesh;
+                if (type === 'entity') {
                   tags.unreifyEntity(tagMesh);
                 }
               } else {
