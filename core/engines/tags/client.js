@@ -176,7 +176,7 @@ class Tags {
           });
 
           const rootComponentsElement = document.createElement('div');
-          rootComponentsElement.id = 'zeo-components';
+          // rootComponentsElement.id = 'zeo-components';
           // document.body.appendChild(rootComponentsElement);
           const rootComponentsObserver = new MutationObserver(mutations => {
             for (let i = 0; i < mutations.length; i++) {
