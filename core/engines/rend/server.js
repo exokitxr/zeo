@@ -112,7 +112,6 @@ class Rend {
               }
             });
           });
-          const _cleanName = name => name.match(/([^\/]*)$/)[1];
           /* const _getModSpec = mod => Promise.all([
             _getPluginPackageJson(mod),
             _getPluginReadmeMd(mod),
@@ -124,7 +123,7 @@ class Rend {
               type: 'element',
               id: mod,
               name: mod,
-              displayName: _cleanName(mod),
+              displayName: packageJson.name,
               version: packageJson.version,
               description: packageJson.description || null,
               readme: readmeMd || '',
@@ -139,7 +138,7 @@ class Rend {
               type: 'module',
               id: mod,
               name: mod,
-              displayName: _cleanName(mod),
+              displayName: packageJson.name,
               version: packageJson.version,
               description: packageJson.description || null,
               hasClient: Boolean(packageJson.client),

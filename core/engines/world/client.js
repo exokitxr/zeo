@@ -2338,8 +2338,8 @@ class World {
 
                 const _forEachSrcTagAttribute = fn => {
                   const {item: srcItem} = srcTagMesh;
-                  const {displayName: srcDisplayName} = srcItem;
-                  const componentApis = tags.getTagComponentApis(srcDisplayName);
+                  const {name: srcName} = srcItem;
+                  const componentApis = tags.getTagComponentApis(srcName);
 
                   for (let i = 0; i < componentApis.length; i++) {
                     const componentApi = componentApis[i];

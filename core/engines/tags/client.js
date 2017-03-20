@@ -122,7 +122,7 @@ class Tags {
               const name = moduleElement.getAttribute('name');
               const tagMesh = tagMeshes.find(tagMesh =>
                 tagMesh.item.type === 'module' &&
-                tagMesh.item.name === item.name &&
+                tagMesh.item.name === name &&
                 !tagMesh.item.metadata.isStatic
               );
               item = tagMesh.item;
@@ -1959,7 +1959,6 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
-          const moduleApis = {}; // name -> [ module element ]
           let componentApis = []; // [ component api ]
           let componentApiInstances = []; // [ component element ]
           const tagComponentApis = {}; // plugin name -> [ component api ]
@@ -2045,7 +2044,7 @@ class Tags {
             }
 
             registerComponent(pluginInstance, componentApi) {
-              const name = archae.getName(pluginInstance);
+              const name = archae.getPath(pluginInstance);
               let tagComponentApiComponents = tagComponentApis[name];
               if (!tagComponentApiComponents) {
                 tagComponentApiComponents = [];
@@ -2076,7 +2075,7 @@ class Tags {
             }
 
             unregisterComponent(pluginInstance, componentApiToRemove) {
-              const name = archae.getName(pluginInstance);
+              const name = archae.getPath(pluginInstance);
               const tagComponentApiComponents = tagComponentApis[name];
               tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(componentApiToRemove), 1);
               if (tagComponentApiComponents.length === 0) {
