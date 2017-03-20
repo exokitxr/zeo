@@ -28,6 +28,11 @@ const itemMutexSymbol = Symbol();
 const MODULE_TAG_NAME = 'z-module'.toUpperCase();
 const ENTITY_TAG_NAME = 'z-entity'.toUpperCase();
 const ITEM_LOCK_KEY = 'key';
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 class Tags {
   constructor(archae) {
@@ -112,6 +117,146 @@ class Tags {
           rootModulesElement.id = 'zeo-modules';
           document.body.appendChild(rootModulesElement);
           const rootModulesObserver = new MutationObserver(mutations => {
+            const _reifyModule = moduleElement => {
+              let {item} = moduleElement;
+              if (!item) {
+                const name = moduleElement.getAttribute('name');
+                const tagMesh = tagsApi.makeTag({ // XXX this should go through the world engine
+                  type: 'module',
+                  id: _makeId(),
+                  name: name,
+                  displayName: name,
+                  attributes: {},
+                  matrix: DEFAULT_MATRIX,
+                  metadata: {
+                    isStatic: false,
+                  },
+                });
+                item = tagMesh.item;
+
+                item.instance = moduleElement;
+                moduleElement.item = item;
+              }
+              const tagMesh = tagMeshes.find(tagMesh =>
+                tagMesh.item.type === 'module' &&
+                tagMesh.item.name === item.name &&
+                !tagMesh.item.metadata.isStatic
+              );
+
+              const _updateNpmUi = fn => {
+                const tagMesh = tagMeshes.find(tagMesh =>
+                  tagMesh.item.type === 'module' &&
+                  tagMesh.item.name === item.name &&
+                  tagMesh.item.metadata.isStatic
+                );
+                if (tagMesh) {
+                  fn(tagMesh);
+
+                  const {planeMesh: {page}} = tagMesh;
+                  page.update();
+                }
+              };
+
+              item.lock() // XXX globalize these locks
+                .then(unlock => {
+                  archae.requestPlugin(name)
+                    .then(pluginInstance => {
+                      item.instance = {
+                        name,
+                      };
+                      item.instancing = false;
+
+                      tagComponentApis[name] = [];
+
+                      const _updateInstanceUi = () => {
+                        const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                        page.update();
+                        openPage.update();
+                      };
+                      _updateInstanceUi();
+
+                      _updateNpmUi(tagMesh => {
+                        const {item} = tagMesh;
+                        item.instancing = false;
+                        item.metadata.exists = true;
+                      });
+
+                      unlock();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      unlock();
+                    });
+                });
+
+              item.instancing = true;
+
+              const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+              page.update();
+              openPage.update();
+
+              _updateNpmUi(tagMesh => {
+                const {item} = tagMesh;
+                item.instancing = true;
+              });
+            };
+
+            const _unreifyModule = moduleElement => {
+              const {item} = moduleElement;
+              const tagMesh = tagMeshes.find(tagMesh =>
+                tagMesh.item.type === 'module' &&
+                tagMesh.item.name === item.name &&
+                !tagMesh.item.metadata.isStatic
+              );
+
+              const _updateNpmUi = fn => {
+                const tagMesh = tagMeshes.find(tagMesh =>
+                  tagMesh.item.type === 'module' &&
+                  tagMesh.item.name === item.name &&
+                  tagMesh.item.metadata.isStatic
+                );
+                if (tagMesh) {
+                  fn(tagMesh);
+
+                  const {planeMesh: {page}} = tagMesh;
+                  page.update();
+                }
+              };
+
+              item.lock()
+                .then(unlock => {
+                  const {instance} = item;
+                  const {name} = instance;
+
+                  archae.releasePlugin(name)
+                    .then(() => {
+                      item.instance = null;
+
+                      tagComponentApis[name] = null;
+
+                      _updateNpmUi(tagMesh => {
+                        const {item} = tagMesh;
+                        item.instancing = false;
+                        item.metadata.exists = false;
+                      });
+
+                      unlock();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      unlock();
+                    });
+                });
+
+              _updateNpmUi(tagMesh => {
+                const {item} = tagMesh;
+                item.instancing = true;
+                item.metadata.exists = false;
+              });
+            };
+
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
               const {type} = mutation;
@@ -127,7 +272,7 @@ class Tags {
                     const name = moduleElement.getAttribute('name');
                     
                     if (name) { // adding
-                      // XXX
+                      _reifyModule(moduleElement);
                     }
                   }
                 }
@@ -141,7 +286,7 @@ class Tags {
                     const name = moduleElement.getAttribute('name');
                     
                     if (name) { // removing
-                      // XXX
+                      _unreifyModule(moduleElement);
                     }
                   }
                 }
@@ -157,11 +302,12 @@ class Tags {
                     const newValueString = moduleElement.getAttribute('name');
 
                     if (!oldValueString && newValueString) { // adding
-                      // XXX
+                      _reifyModule(moduleElement);
                     } else if (oldValueString && !newValueString) { // removing
-                      // XXX
+                      _unreifyModule(moduleElement);
                     } else if (oldValueString && newValueString) { // changing
-                      // XXX
+                      _unreifyModule(moduleElement);
+                      _reifyModule(moduleElement);
                     }
                   }
                 }
@@ -1831,9 +1977,10 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
-          let componentApis = [];
-          let componentApiInstances = [];
-          const tagComponentApis = {};
+          const moduleApis = {}; // name -> [ module element ]
+          let componentApis = []; // [ component api ]
+          let componentApiInstances = []; // [ component element ]
+          const tagComponentApis = {}; // plugin name -> [ component api ]
           // const elementApis = {};
 
           const _getBoundComponentSpecs = entityAttributes => {
@@ -2246,119 +2393,19 @@ class Tags {
 
             reifyModule(tagMesh) {
               const {item} = tagMesh;
-              const {instance, instancing} = item;
+              const {name} = item;
 
-              if (!instance && !instancing) {
-                const {name} = item;
-
-                const _updateNpmUi = fn => {
-                  const tagMesh = tagMeshes.find(tagMesh =>
-                    tagMesh.item.type === 'module' &&
-                    tagMesh.item.name === item.name &&
-                    tagMesh.item.metadata.isStatic
-                  );
-                  if (tagMesh) {
-                    fn(tagMesh);
-
-                    const {planeMesh: {page}} = tagMesh;
-                    page.update();
-                  }
-                };
-
-                item.lock()
-                  .then(unlock => {
-                    archae.requestPlugin(name)
-                      .then(pluginInstance => {
-                        item.instance = {
-                          name,
-                        };
-                        item.instancing = false;
-
-                        tagComponentApis[name] = [];
-
-                        const _updateInstanceUi = () => {
-                          const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
-                          page.update();
-                          openPage.update();
-                        };
-                        _updateInstanceUi();
-
-                        _updateNpmUi(tagMesh => {
-                          const {item} = tagMesh;
-                          item.instancing = false;
-                          item.metadata.exists = true;
-                        });
-
-                        unlock();
-                      })
-                      .catch(err => {
-                        console.warn(err);
-
-                        unlock();
-                      });
-                  });
-
-                item.instancing = true;
-
-                const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
-                page.update();
-                openPage.update();
-
-                _updateNpmUi(tagMesh => {
-                  const {item} = tagMesh;
-                  item.instancing = true;
-                });
-              }
+              const moduleElement = menuUtils.makeZeoComponentElement();
+              moduleElement.setAttribute('name', name);
+              moduleElement.tagMesh = tagMesh;
+              rootModulesElement.appendChild(componentElement);
             }
 
             unreifyModule(tagMesh) {
               const {item} = tagMesh;
+              const {instance} = item;
 
-              const _updateNpmUi = fn => {
-                const tagMesh = tagMeshes.find(tagMesh =>
-                  tagMesh.item.type === 'module' &&
-                  tagMesh.item.name === item.name &&
-                  tagMesh.item.metadata.isStatic
-                );
-                if (tagMesh) {
-                  fn(tagMesh);
-
-                  const {planeMesh: {page}} = tagMesh;
-                  page.update();
-                }
-              };
-
-              item.lock()
-                .then(unlock => {
-                  const {instance} = item;
-                  const {name} = instance;
-
-                  archae.releasePlugin(name)
-                    .then(() => {
-                      item.instance = null;
-
-                      tagComponentApis[name] = null;
-
-                      _updateNpmUi(tagMesh => {
-                        const {item} = tagMesh;
-                        item.instancing = false;
-                        item.metadata.exists = false;
-                      });
-
-                      unlock();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      unlock();
-                    });
-                });
-
-              _updateNpmUi(tagMesh => {
-                const {item} = tagMesh;
-                item.instancing = true;
-                item.metadata.exists = false;
-              });
+              rootModulesElement.removeChild(instance);
             }
 
             reifyEntity(tagMesh) {
@@ -2536,5 +2583,6 @@ const _shallowClone = o => {
 
   return result;
 };
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Tags;
