@@ -328,6 +328,7 @@ export default class Voxel {
     })();
 
     const voxelComponent = {
+      selector: 'voxel[position]',
       attributes: {
         position: {
           type: 'matrix',

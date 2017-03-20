@@ -34,6 +34,7 @@ class ZCake {
           const {three: {THREE, scene}, elements, input, render, hands} = zeo;
 
           const cakeComponent = {
+            selector: 'cake[position][slices]',
             attributes: {
               position: {
                 type: 'matrix',

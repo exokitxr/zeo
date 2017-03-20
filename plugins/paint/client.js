@@ -32,6 +32,7 @@ class Paint {
       .then(brushImg => {
         if (live) {
           const paintComponent = {
+            selector: 'paint[color]',
             attributes: {
               color: {
                 type: 'color',

@@ -12,11 +12,8 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
 
     // declare the element representing our plugin
     const demoElement = {
-      attributes: {
-        demo: {
-          type: 'symbol',
-        },
-      },
+      selector: 'demo',
+      attributes: {},
       entityCreatedCallback(entityElement) { // `entityCreatedCallback` gets called an applicable attrbute is added to the world
         const entityApi = {};
 

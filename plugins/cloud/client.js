@@ -21,6 +21,7 @@ class Cloud {
     });
 
     const cloudComponent = {
+      selector: 'cloud[position]',
       attributes: {
         position: {
           type: 'matrix',

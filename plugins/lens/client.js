@@ -55,6 +55,7 @@ class Lens {
     });
 
     const lensComponent = {
+      selector: 'lens[position][type]',
       attributes: {
         position: {
           type: 'matrix',

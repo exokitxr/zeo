@@ -5,9 +5,10 @@ export default class Tree {
     const {three: {THREE, scene}, elements, utils: {random: {alea}}} = zeo;
 
     const treeComponent = {
+      selector: 'tree[position]',
       attributes: {
         position: {
-          type: 'matrix'"
+          type: 'matrix',
           value: [
             0, 0, 0,
             0, 0, 0, 1,

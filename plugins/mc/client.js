@@ -133,6 +133,7 @@ class Mc {
           });
 
           const mcComponent = {
+            selector: 'mc',
             entityAddedCallback(entityElement) {
               const entityApi = {};
 

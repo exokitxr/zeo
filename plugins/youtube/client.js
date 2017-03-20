@@ -32,6 +32,7 @@ class Youtube {
     });
 
     const youtubeComponent = {
+      selector: 'youtube[position]',
       attributes: {
         position: {
           type: 'matrix',

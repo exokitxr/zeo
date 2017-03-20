@@ -11,6 +11,7 @@ class Ar {
     const transparentImg = ui.getTransparentImg();
 
     const arComponent = {
+      selector: 'ar[position]',
       attributes: {
         position: {
           type: 'matrix',

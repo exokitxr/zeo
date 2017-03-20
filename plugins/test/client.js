@@ -5,7 +5,7 @@ class Test {
     console.log('mount');
 
     const testComponent = {
-      selector: 'z-entity'
+      selector: 'test'
       attributes: {
         position: {
           type: 'matrix',

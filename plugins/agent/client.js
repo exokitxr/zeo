@@ -86,6 +86,7 @@ class Agent {
           };
 
           const agentComponent = {
+            selector: 'agent',
             attributes: {
               position: {
                 type: 'matrix',

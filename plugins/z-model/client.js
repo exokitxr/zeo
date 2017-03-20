@@ -7,7 +7,7 @@ class Model {
     const {three: {THREE, scene}, elements} = zeo;
 
     const modelComponent = {
-      selector: '[model][position]',
+      selector: 'model[position][file]',
       attributes: {
         position: {
           type: 'matrix',
@@ -17,7 +17,7 @@ class Model {
             1, 1, 1,
           ],
         },
-        model: {
+        file: {
           type: 'file',
           value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
         },

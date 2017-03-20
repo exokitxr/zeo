@@ -17,6 +17,7 @@ class Link {
     };
 
     const linkComponent = {
+      selector: 'link[position][destination]',
       attributes: {
         position: {
           type: 'matrix',

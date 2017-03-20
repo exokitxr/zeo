@@ -149,6 +149,7 @@ module.exports = archae => ({
           };
 
           const demoAdComponent = {
+            selector: 'demo-ad[position]',
             attributes: {
               position: {
                 type: 'matrix',

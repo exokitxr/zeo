@@ -45,6 +45,7 @@ class Ocean {
     };
 
     const oceanComponent = {
+      selector: 'ocean[position]',
       attributes: {
         position: {
           type: 'matrix',

@@ -30,11 +30,15 @@ class Avatar {
     })();
 
     const avatarComponent = {
-      selector: '[text]'
+      selector: 'avatar[position]',
       attributes: {
-        avatar: {
-          type: 'text',
-          value: 'lol',
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
         },
       },
       entityAddedCallback(entityElement) {

@@ -36,6 +36,7 @@ class Skybox {
     const zeroVector = new THREE.Vector3(0, 0, 0);
 
     const skyboxComponent = {
+      selector: 'skybox[position]',
       attributes: {
         position: {
           type: 'matrix',

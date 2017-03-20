@@ -30,6 +30,7 @@ class Sprite {
         }));
 
     const spriteComponent = {
+      selector: 'sprite[position][image]',
       attributes: {
         position: {
           type: 'matrix',

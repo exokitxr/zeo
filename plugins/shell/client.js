@@ -43,6 +43,7 @@ class Shell {
     };
 
     const shellComponent = {
+      selector: 'shell[position]',
       attributes: {
         position: {
           type: 'matrix',

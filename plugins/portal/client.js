@@ -74,6 +74,7 @@ class Portal {
         };
 
         const portalComponent = {
+          selector: 'portal[position1][color1][position2][color2]',
           attributes: {
             position1: {
               type: 'matrix',

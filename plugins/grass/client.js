@@ -5,6 +5,7 @@ export default class Grass {
     const {three: {THREE, scene}, elements, utils: {function: functionUtils, random: {alea}}} = zeo;
 
     const grassComponent = {
+      selector: 'grass[position]',
       attributes: {
         position: {
           type: 'matrix',

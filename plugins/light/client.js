@@ -7,6 +7,7 @@ class Light {
     const {three: {THREE, scene}, elements} = zeo;
 
     const lightComponent = {
+      selector: 'light[position][lookat][shadow]',
       attributes: {
         position: {
           type: 'matrix',

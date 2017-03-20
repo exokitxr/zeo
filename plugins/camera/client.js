@@ -19,6 +19,7 @@ class Camera {
 
     const cameraElements = [];
     const cameraComponent = {
+      selector: 'camera[position]',
       attributes: {
         position: {
           type: 'matrix',

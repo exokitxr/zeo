@@ -149,6 +149,7 @@ class Rain {
     };
 
     class RainElement extends HTMLElement {
+      selector: 'rain[position][type][drops][range][length][color][enabled]',
       attributes: {
         position: {
           type: 'matrix',
