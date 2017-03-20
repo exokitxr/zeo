@@ -27,7 +27,7 @@ const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemMutexSymbol = Symbol();
-const MODULE_TAG_NAME = 'z-module'.toUpperCase();
+const MODULE_TAG_NAME = 'module'.toUpperCase();
 const ITEM_LOCK_KEY = 'key';
 
 class Tags {
@@ -122,7 +122,7 @@ class Tags {
                   element: moduleElement,
                 });
               }
-              const name = moduleElement.getAttribute('name');
+              const name = moduleElement.getAttribute('src');
               const tagMesh = tagMeshes.find(tagMesh =>
                 tagMesh.item.type === 'module' &&
                 tagMesh.item.name === name &&
@@ -205,7 +205,7 @@ class Tags {
 
                 item.lock()
                   .then(unlock => {
-                    const name = moduleElement.getAttribute('name');
+                    const name = moduleElement.getAttribute('src');
 
                     archae.releasePlugin(name)
                       .then(() => {
@@ -254,7 +254,7 @@ class Tags {
 
                   if (addedNode.tagName === MODULE_TAG_NAME) {
                     const moduleElement = addedNode;
-                    const name = moduleElement.getAttribute('name');
+                    const name = moduleElement.getAttribute('src');
                     
                     if (name) { // adding
                       _reifyModule(moduleElement);
@@ -268,7 +268,7 @@ class Tags {
 
                   if (removedNode.tagName === MODULE_TAG_NAME) {
                     const moduleElement = removedNode;
-                    const name = moduleElement.getAttribute('name');
+                    const name = moduleElement.getAttribute('src');
                     
                     if (name) { // removing
                       _unreifyModule(moduleElement);
@@ -282,9 +282,9 @@ class Tags {
                   const moduleElement = target;
                   const {attributeName} = mutation;
 
-                  if (attributeName === 'name') {
+                  if (attributeName === 'src') {
                     const {oldValue: oldValueString} = mutation;
-                    const newValueString = moduleElement.getAttribute('name');
+                    const newValueString = moduleElement.getAttribute('src');
 
                     if (!oldValueString && newValueString) { // adding
                       _reifyModule(moduleElement);
@@ -2428,8 +2428,8 @@ class Tags {
               const {item} = tagMesh;
               const {name} = item;
 
-              const moduleElement = menuUtils.makeZeoModuleElement();
-              moduleElement.setAttribute('name', name);
+              const moduleElement = document.createElement('module');
+              moduleElement.setAttribute('src', name);
               moduleElement.item = item;
               item.instance = moduleElement;
               rootModulesElement.appendChild(moduleElement);
