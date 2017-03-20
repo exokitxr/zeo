@@ -497,7 +497,9 @@ class Tags {
                   const oldEntityElement = (() => {
                     const oldEntityElement = entityElement.cloneNode(false);
                     if (oldValueString === null && newValueString !== null) {
-                      fullEntityElement.removeAttribute(attributeName);
+                      oldEntityElement.removeAttribute(attributeName);
+                    } else if (oldValueString !== null && newValueString === null) {
+                      oldEntityElement.setAttribute(attributeName, oldValueString);
                     }
                     return oldEntityElement;
                   })();

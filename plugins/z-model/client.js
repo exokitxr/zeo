@@ -7,7 +7,7 @@ class Model {
     const {three: {THREE, scene}, elements} = zeo;
 
     const modelComponent = {
-      selector: '[model]',
+      selector: '[model][position]',
       attributes: {
         position: {
           type: 'matrix',
