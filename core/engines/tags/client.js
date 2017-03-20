@@ -524,8 +524,9 @@ class Tags {
                         if (!oldElementMatches && newElementMatches) { // if no matching attributes were previously applied, mount the component on the entity
                           componentElement.entityAddedCallback(entityElement);
                         }
-
-                        componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                        if (newElementMatches) {
+                          componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                        }
                       } else { // removing attribute
                         if (oldElementMatches && !newElementMatches) { // if this is the last attribute that applied, unmount the component from the entity
                           componentElement.entityRemovedCallback(entityElement);
