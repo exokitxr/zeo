@@ -5,9 +5,6 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
-    "mkdirp": "^0.5.1",
-    "mv": "^2.1.1",
-    "ncp": "^2.0.0",
-    "rimraf": "^2.5.4"
+    "mkdirp": "^0.5.1"
   }
 }

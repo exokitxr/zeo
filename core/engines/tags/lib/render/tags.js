@@ -1,4 +1,3 @@
-const menuUtils = require('../utils/menu');
 const {
   HEIGHT,
   WIDTH,
@@ -27,7 +26,7 @@ const targetImgSrc = 'data:image/svg+xml;base64,' + btoa(targetImg);
 const linkImg = require('../img/link');
 const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
 
-const makeRenderer = ({creatureUtils}) => {
+const makeRenderer = ({menuUtils, creatureUtils}) => {
   const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
     const {id, name, displayName, description, instancing, metadata: {isStatic, exists}} = item;
     const tagName = isStatic ? 'a' : 'div';

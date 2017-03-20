@@ -12,9 +12,8 @@ import {
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
 } from './lib/constants/tags';
+import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
-import menuUtils from './lib/utils/menu';
-import OBJLoader from './lib/three-extra/OBJLoader';
 
 const SIDES = ['left', 'right'];
 
@@ -78,9 +77,8 @@ class Tags {
           const transparentImg = biolumi.getTransparentImg();
           const {sound} = somnifer;
 
-          const tagsRenderer = tagsRender.makeRenderer({creatureUtils});
-
-          const THREEOBJLoader = OBJLoader(THREE);
+          const menuUtils = menuUtilser.makeUtils({fs});
+          const tagsRenderer = tagsRender.makeRenderer({menuUtils, creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -208,6 +206,7 @@ class Tags {
                       const {attributes: entityAttributes} = entityItem;
                       const attributeValue = entityAttributes[matchingAttribute];
 
+                      // XXX these values need to be casted
                       componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                     }
                   }
@@ -307,6 +306,7 @@ class Tags {
                         const matchingAttribute = matchingAttributes[l];
                         const attribute = entityAttributes[matchingAttribute];
                         const {value: attributeValue} = attribute;
+
                         componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                       }
                     }

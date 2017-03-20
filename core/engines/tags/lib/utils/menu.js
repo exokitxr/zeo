@@ -1,3 +1,5 @@
+const makeUtils = ({fs}) => {
+
 const zeoComponentElementClasses = new Map();
 const zeoComponentElementConstructor = (() => {
   class ZeoComponentElement extends HTMLElement {
@@ -89,7 +91,7 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
       }
     }
     case 'file': {
-      return s;
+      return fs.makeFile(s);
     }
     default: {
       return s;
@@ -174,11 +176,17 @@ const _jsonParse = s => {
   }
 };
 
-module.exports = {
+return {
   makeZeoComponentElement,
   makeZeoEntityElement,
   castValueStringToValue,
   castValueStringToCallbackValue,
   castValueValueToString,
   debounce,
+};
+
+};
+
+module.exports = {
+  makeUtils,
 };

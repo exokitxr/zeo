@@ -1,29 +1,4 @@
-import menuUtils from './lib/utils/menu';
-
-import {
-  WIDTH,
-  HEIGHT,
-  OPEN_WIDTH,
-  OPEN_HEIGHT,
-
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
-  WORLD_DEPTH,
-  WORLD_OPEN_WIDTH,
-  WORLD_OPEN_HEIGHT,
-} from './lib/constants/fs';
-import fsRenderer from './lib/render/fs';
-
-const fileFlagSymbol = Symbol();
-
-const SIDES = ['left', 'right'];
-
-const DEFAULT_GRAB_RADIUS = 0.1;
-const DEFAULT_FILE_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
+import OBJLoader from './lib/three-extra/OBJLoader';
 
 class Fs {
   constructor(archae) {
@@ -56,10 +31,11 @@ class Fs {
       creatureUtils,
     ]) => {
       if (live) {
-        const {THREE, scene, camera, renderer} = three;
-        const {domElement} = renderer;
+        const {THREE} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+
+        const THREEOBJLoader = OBJLoader(THREE);
 
         const dragover = e => {
           e.preventDefault();
