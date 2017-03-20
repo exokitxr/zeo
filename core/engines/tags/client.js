@@ -1,4 +1,6 @@
 import MultiMutex from 'multimutex';
+import CssSelectorParser from 'css-selector-parser';
+const cssSelectorParser = new CssSelectorParser.CssSelectorParser();
 
 import {
   WIDTH,
@@ -26,7 +28,6 @@ const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemMutexSymbol = Symbol();
 const MODULE_TAG_NAME = 'z-module'.toUpperCase();
-const ENTITY_TAG_NAME = 'z-entity'.toUpperCase();
 const ITEM_LOCK_KEY = 'key';
 
 class Tags {
@@ -108,9 +109,11 @@ class Tags {
             fontStyle: biolumi.getFontStyle(),
           };
 
-          const rootModulesElement = document.createElement('div');
-          rootModulesElement.id = 'zeo-modules';
-          document.body.appendChild(rootModulesElement);
+          const rootWorldElement = document.createElement('world');
+          document.body.appendChild(rootWorldElement);
+
+          const rootModulesElement = document.createElement('modules');
+          rootWorldElement.appendChild(rootModulesElement);
           const rootModulesObserver = new MutationObserver(mutations => {
             const _reifyModule = moduleElement => {
               let {item} = moduleElement;
@@ -275,7 +278,7 @@ class Tags {
               } else if (type === 'attributes') {
                 const {target} = mutation;
 
-                if (target.tagName === ENTITY_TAG_NAME) {
+                if (target.nodeType === Node.ELEMENT_NODE) {
                   const moduleElement = target;
                   const {attributeName} = mutation;
 
@@ -303,9 +306,8 @@ class Tags {
             attributeOldValue: true,
           });
 
-          const rootComponentsElement = document.createElement('div');
-          // rootComponentsElement.id = 'zeo-components';
-          // document.body.appendChild(rootComponentsElement);
+          const rootComponentsElement = document.createElement('components');
+          // rootWorldElement.appendChild(rootComponentsElement);
           const rootComponentsObserver = new MutationObserver(mutations => {
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
@@ -318,8 +320,8 @@ class Tags {
                   const addedNode = addedNodes[j];
                   const componentElement = addedNode;
                   const {componentApi} = componentElement;
-                  const {attributes: componentAttributes = {}} = componentApi;
-                  const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
+                  const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+                  const boundEntitySpecs = _getBoundEntitySpecs(componentSelector, componentAttributes);
 
                   for (let k = 0; k < boundEntitySpecs.length; k++) {
                     const boundEntitySpec = boundEntitySpecs[k];
@@ -348,8 +350,8 @@ class Tags {
                   const removedNode = removedNodes[j];
                   const componentElement = removedNode;
                   const {componentApi} = componentElement;
-                  const {attributes: componentAttributes = {}} = componentApi;
-                  const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
+                  const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+                  const boundEntitySpecs = _getBoundEntitySpecs(componentSelector, componentAttributes);
 
                   for (let k = 0; k < boundEntitySpecs.length; k++) {
                     const boundEntitySpec = boundEntitySpecs[k];
@@ -402,9 +404,8 @@ class Tags {
             }
           };
 
-          const rootEntitiesElement = document.createElement('div');
-          rootEntitiesElement.id = 'zeo-entities';
-          document.body.appendChild(rootEntitiesElement);
+          const rootEntitiesElement = document.createElement('entities');
+          rootWorldElement.appendChild(rootEntitiesElement);
           const rootEntitiesObserver = new MutationObserver(mutations => {
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
@@ -415,7 +416,7 @@ class Tags {
                 for (let j = 0; j < addedNodes.length; j++) {
                   const addedNode = addedNodes[j];
 
-                  if (addedNode.tagName === ENTITY_TAG_NAME) {
+                  if (addedNode.nodeType === Node.ELEMENT_NODE) {
                     const entityElement = addedNode;
                     const {item: initialEntityItem} = entityElement;
                     const entityAttributes = _getElementJsonAttributes(entityElement);
@@ -426,7 +427,8 @@ class Tags {
                       });
                     }
 
-                    const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                    const entitySelector = _getElementSelector(entityElement);
+                    const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
                     for (let k = 0; k < boundComponentSpecs.length; k++) {
                       const boundComponentSpec = boundComponentSpecs[k];
                       const {componentElement, matchingAttributes} = boundComponentSpec;
@@ -453,7 +455,7 @@ class Tags {
                 for (let k = 0; k < removedNodes.length; k++) {
                   const removedNode = removedNodes[k];
 
-                  if (removedNode.tagName === ENTITY_TAG_NAME) {
+                  if (removedNode.nodeType === Node.ELEMENT_NODE) {
                     const entityElement = removedNode;
                     const {item: initialEntityItem} = entityElement;
                     if (initialEntityItem) { // element removed manually
@@ -463,8 +465,9 @@ class Tags {
                       });
                     }
 
+                    const entitySelector = _getElementSelector(entityElement);
                     const entityAttributes = _getElementJsonAttributes(entityElement);
-                    const boundComponentSpecs = _getBoundComponentSpecs(entityAttributes);
+                    const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
                     for (let l = 0; l < boundComponentSpecs.length; l++) {
                       const boundComponentSpec = boundComponentSpecs[l];
                       const {componentElement} = boundComponentSpec;
@@ -476,7 +479,7 @@ class Tags {
               } else if (type === 'attributes') {
                 const {target} = mutation;
 
-                if (target.tagName === ENTITY_TAG_NAME) {
+                if (target.nodeType === Node.ELEMENT_NODE) {
                   const entityElement = target;
                   const {attributeName, oldValue: oldValueString} = mutation;
                   const newValueString = entityElement.getAttribute(attributeName);
@@ -491,22 +494,22 @@ class Tags {
                     value: newValueJson,
                   });
 
-                  const attributeSpec = {
-                    [attributeName]: newValueJson,
-                  };
-                  const boundComponentSpecs = _getBoundComponentSpecs(attributeSpec);
+                  const oldEntityElement = (() => {
+                    const oldEntityElement = entityElement.cloneNode(false);
+                    if (oldValueString === null && newValueString !== null) {
+                      fullEntityElement.removeAttribute(attributeName);
+                    }
+                    return oldEntityElement;
+                  })();
+
+                  const boundComponentSpecs = _getBoundComponentAttributeSpecs({[attributeName]: true});
                   for (let i = 0; i < boundComponentSpecs.length; i++) {
                     const boundComponentSpec = boundComponentSpecs[i];
                     const {componentElement, matchingAttributes} = boundComponentSpec;
                     const {componentApi} = componentElement;
-                    const {attributes: componentAttributes = {}} = componentApi;
-                    const appliedMatchingAttributes = matchingAttributes.filter(matchingAttributeName => {
-                      if (matchingAttributeName === attributeName) {
-                        return oldValueString !== null;
-                      } else {
-                        return entityElement.hasAttribute(matchingAttributeName);
-                      }
-                    });
+                    const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+                    const oldElementMatches = oldEntityElement.webkitMatchesSelector(componentSelector);
+                    const newElementMatches = entityElement.webkitMatchesSelector(componentSelector);
 
                     for (let j = 0; j < matchingAttributes.length; j++) {
                       const attributeName = matchingAttributes[j];
@@ -515,14 +518,14 @@ class Tags {
                       const oldAttributeValue = menuUtils.castValueToCallbackValue(oldValueJson, attributeType);
                       const newAttributeValue = menuUtils.castValueToCallbackValue(newValueJson, attributeType);
 
-                      if (newValueJson !== undefined) { // adding attribute
-                        if (appliedMatchingAttributes.length === 0) { // if no matching attributes were previously applied, mount the component on the entity
+                      if (newValueString !== null) { // adding attribute
+                        if (!oldElementMatches && newElementMatches) { // if no matching attributes were previously applied, mount the component on the entity
                           componentElement.entityAddedCallback(entityElement);
                         }
 
                         componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                       } else { // removing attribute
-                        if (appliedMatchingAttributes.length === 1) { // if this is the last attribute that applied, unmount the component from the entity
+                        if (oldElementMatches && !newElementMatches) { // if this is the last attribute that applied, unmount the component from the entity
                           componentElement.entityRemovedCallback(entityElement);
                         } else {
                           componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
@@ -1964,42 +1967,63 @@ class Tags {
           const tagComponentApis = {}; // plugin name -> [ component api ]
           // const elementApis = {};
 
-          const _getBoundComponentSpecs = entityAttributes => {
+          const _getElementSelector = element => {
+            const {tagName, attributes, classList} = element;
+
+            let result = tagName.toLowerCase();
+
+            for (let i = 0; i < attributes.length; i++) {
+              const attribute = attributes[i];
+              const {name} = attribute;
+              result += '[' + name + ']';
+            }
+
+            for (let i = 0; i < classList.length; i++) {
+              const className = classList[i];
+              result += '.' + className;
+            }
+
+            return result;
+          };
+          const _isSelectorSubset = (a, b) => {
+            const {rule: {tagName: aTagName = null, attrs: aAttributes = [], classNames: aClasses = []}} = cssSelectorParser.parse(a);
+            const {rule: {tagName: bTagName = null, attrs: bAttributes = [], classNames: bClasses = []}} = cssSelectorParser.parse(b);
+
+            if (aTagName && bTagName !== aTagName) {
+              return false;
+            }
+            if (aAttributes.some(({name: aAttributeName}) => !bAttributes.some(({name: bAttributeName}) => bAttributeName === aAttributeName))) {
+              return false;
+            }
+            if (aClasses.some(aClass => !bClasses.includes(aClass))) {
+              return false;
+            }
+
+            return true;
+          };
+          const _getBoundComponentSpecs = (entitySelector, entityAttributes) => {
             const result = [];
 
             for (let i = 0; i < componentApis.length; i++) {
               const componentApi = componentApis[i];
               const componentApiInstance = componentApiInstances[i];
-              const {attributes: componentAttributes = {}} = componentApi;
+              const {selector: componentSelector = 'div'} = componentApi;
 
-              const componentElement = componentApiInstance;
-              const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
-              if (matchingAttributes.length > 0) {
-                const matchingAttributeSpecs = (() => {
-                  const result = {};
-
-                  for (let j = 0; j < matchingAttributes.length; j++) {
-                    const matchingAttribute = matchingAttributes[j];
-                    const attributeSpec = componentAttributes[matchingAttribute];
-                    result[matchingAttribute] = attributeSpec;
-                  }
-
-                  return result;
-                })();
-                const index = i;
+              if (_isSelectorSubset(componentSelector, entitySelector)) {
+                const componentElement = componentApiInstance;
+                const {attributes: componentAttributes = {}} = componentApi;
+                const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
 
                 result.push({
                   componentElement,
                   matchingAttributes,
-                  matchingAttributeSpecs,
-                  index,
                 });
               }
             }
 
             return result;
           };
-          const _getBoundEntitySpecs = componentAttributes => {
+          const _getBoundEntitySpecs = (componentSelector, componentAttributes) => {
             const result = [];
 
             for (let i = 0; i < tagMeshes.length; i++) {
@@ -2008,10 +2032,12 @@ class Tags {
               const {type} = item;
 
               if (type === 'entity' && !(item.metadata && item.metadata.isStatic)) {
-                const {attributes: entityAttributes} = item;
+                const {instance: entityElement} = item;
 
-                const matchingAttributes = Object.keys(entityAttributes).filter(attributeName => (attributeName in componentAttributes));
-                if (matchingAttributes.length > 0) {
+                if (entityElement.webkitMatchesSelector(componentSelector)) {
+                  const {attributes: entityAttributes} = item;
+                  const matchingAttributes = Object.keys(entityAttributes).filter(attributeName => (attributeName in componentAttributes));
+
                   result.push({
                     tagMesh,
                     matchingAttributes,
@@ -2022,18 +2048,39 @@ class Tags {
 
             return result;
           };
-          const _getAttributeSpec = attributeName => {
-            const boundComponentSpecs = _getBoundComponentSpecs({
-              [attributeName]: true,
-            });
-            if (boundComponentSpecs.length > 0) {
-              const boundComponentSpec = boundComponentSpecs.sort((a, b) => a.index - b.index)[0];
-              const {matchingAttributeSpecs} = boundComponentSpec;
-              const matchingAttributeSpec = matchingAttributeSpecs[attributeName];
-              return matchingAttributeSpec;
-            } else {
-              return null;
+          const _getBoundComponentAttributeSpecs = entityAttributes => {
+            const result = [];
+
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
+              const componentApiInstance = componentApiInstances[i];
+              const {attributes: componentAttributes = {}} = componentApi;
+
+              const matchingAttributes = Object.keys(entityAttributes).filter(attributeName => (attributeName in componentAttributes));
+              if (matchingAttributes.length > 0) {
+                const componentElement = componentApiInstance;
+
+                result.push({
+                  componentElement,
+                  matchingAttributes,
+                });
+              }
             }
+
+            return result;
+          };
+          const _getAttributeSpec = attributeName => {
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
+              const {attributes: componentAttributes = {}} = componentApi;
+              const componentAttribute = componentAttributes[attributeName];
+
+              if (componentAttribute) {
+                return componentAttribute;
+              }
+            }
+
+            return null;
           };
 
           class TagsApi extends EventEmitter {

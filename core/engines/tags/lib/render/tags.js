@@ -195,13 +195,6 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
 
     switch (type) {
-      case 'symbol': {
-        return `\
-          <div style="display: flex; justify-content: center; align-items: center;">
-            <img src="${idImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
-          </div>
-        `;
-      }
       case 'matrix': {
         return `\
           <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
