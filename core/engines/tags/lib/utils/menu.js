@@ -45,14 +45,6 @@ const makeZeoComponentElement = ({baseObject}) => {
   return zeoComponentElement;
 };
 
-const zeoEntityElementConstructor = (() => {
-  class ZeoEntityElement extends HTMLElement {}
-
-  const ZeoEntityElementConstructor = document.registerElement('z-entity', ZeoEntityElement);
-  return ZeoEntityElementConstructor;
-})();
-const makeZeoEntityElement = () => new zeoEntityElementConstructor();
-
 const castValueStringToValue = (s, type, min, max, step, options) => {
   switch (type) {
     case 'matrix': {
@@ -164,7 +156,6 @@ const _jsonParse = s => {
 return {
   makeZeoModuleElement,
   makeZeoComponentElement,
-  makeZeoEntityElement,
   castValueStringToValue,
   castValueToCallbackValue,
   castValueValueToString,

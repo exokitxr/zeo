@@ -1704,6 +1704,7 @@ class Tags {
               displayName,
               description,
               version,
+              tagName,
               attributes,
               mimeType,
               matrix,
@@ -1715,6 +1716,7 @@ class Tags {
               this.displayName = displayName;
               this.description = description;
               this.version = version;
+              this.tagName = tagName;
               this.attributes = attributes;
               /* this.attributes = (() => {
                 const result = {};
@@ -2175,7 +2177,8 @@ class Tags {
                 itemSpec.displayName,
                 itemSpec.description,
                 itemSpec.version,
-                itemSpec.attributes, // XXX get rid of this and source directly from the element
+                itemSpec.tagName, // XXX get rid of these
+                itemSpec.attributes,
                 itemSpec.mimeType,
                 itemSpec.matrix,
                 itemSpec.metadata
@@ -2445,9 +2448,10 @@ class Tags {
               const {item} = tagMesh;
               const {instance} = item;
 
-              if (!instance) {                
-                const entityElement = menuUtils.makeZeoEntityElement();
-                const {attributes: entityAttributes} = item;
+              if (!instance) {
+                const {tagName: entityTagName, attributes: entityAttributes} = item;
+                const entityElement = document.createElement(entityTagName);
+
                 for (const attributeName in entityAttributes) {
                   const attribute = entityAttributes[attributeName];
                   const {value: attributeValue} = attribute;

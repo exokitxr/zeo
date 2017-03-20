@@ -7,7 +7,7 @@ class Model {
     const {three: {THREE, scene}, elements} = zeo;
 
     const modelComponent = {
-      selector: 'model[position][file]',
+      selector: 'model[position][src]',
       attributes: {
         position: {
           type: 'matrix',
@@ -17,7 +17,7 @@ class Model {
             1, 1, 1,
           ],
         },
-        file: {
+        src: {
           type: 'file',
           value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/models/cloud/cloud.json',
         },
@@ -68,7 +68,7 @@ class Model {
 
             break;
           }
-          case 'model': {
+          case 'src': {
             const {mesh: oldMesh, _cancelRequest: cancelRequest} = entityApi;
             if (oldMesh) {
               scene.remove(oldMesh);

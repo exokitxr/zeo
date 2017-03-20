@@ -1,3 +1,6 @@
+import CssSelectorParser from 'css-selector-parser';
+const cssSelectorParser = new CssSelectorParser.CssSelectorParser();
+
 import {
   WIDTH,
   HEIGHT,
@@ -2335,12 +2338,11 @@ class World {
 
               if (!gripPressed) {
                 const {srcTagMesh, dstTagMesh} = linkSpec;
+                const {item: srcItem} = srcTagMesh;
+                const {name: srcName} = srcItem;
+                const componentApis = tags.getTagComponentApis(srcName);
 
                 const _forEachSrcTagAttribute = fn => {
-                  const {item: srcItem} = srcTagMesh;
-                  const {name: srcName} = srcItem;
-                  const componentApis = tags.getTagComponentApis(srcName);
-
                   for (let i = 0; i < componentApis.length; i++) {
                     const componentApi = componentApis[i];
                     const {attributes: componentAttributes = {}} = componentApi;
@@ -2360,6 +2362,19 @@ class World {
                   const itemSpec = _clone(item);
                   itemSpec.id = _makeId();
                   itemSpec.type = 'entity';
+                  const tagName = (() => {
+                    for (let i = 0; i < componentApis.length; i++) {
+                      const componentApi = componentApis[i];
+                      const {selector: componentSelector = 'div'} = componentApi;
+                      const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
+
+                      if (tagName) {
+                        return tagName;
+                      }
+                    }
+                    return 'entity';
+                  })();
+                  itemSpec.tagName = tagName;
                   const attributes = (() => {
                     const result = {};
                     _forEachSrcTagAttribute((attributeName, attributeValue) => {
