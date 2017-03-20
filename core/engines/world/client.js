@@ -2254,6 +2254,28 @@ class World {
 
             return _getWorldSrc() || _getHandSrc() || null;
           };
+          const _mutateAddModule = ({element}) => {
+            const name = element.getAttribute('name');
+            const itemSpec = {
+              type: 'module',
+              id: _makeId(),
+              name: name,
+              displayName: name,
+              attributes: {},
+              matrix: DEFAULT_MATRIX,
+              metadata: {
+                isStatic: false,
+              },
+            };
+            _addTag(itemSpec, 'world');
+          };
+          tags.on('mutateAddModule', _mutateAddModule);
+          const _mutateRemoveModule = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _removeTag(src);
+          };
+          tags.on('mutateRemoveModule', _mutateRemoveModule);
           const _mutateAddEntity = ({element, attributes}) => {
             const itemSpec = {
               type: 'entity',
@@ -2619,6 +2641,8 @@ class World {
             tags.removeListener('download', _download);
             tags.removeListener('linkModule', _linkModule);
             tags.removeListener('linkAttribute', _linkAttribute);
+            tags.removeListener('mutateAddModule', _mutateAddModule);
+            tags.removeListener('mutateRemoveModule', _mutateRemoveModule);
             tags.removeListener('mutateAddEntity', _mutateAddEntity);
             tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
             tags.removeListener('setAttribute', _setAttribute);

@@ -28,11 +28,6 @@ const itemMutexSymbol = Symbol();
 const MODULE_TAG_NAME = 'z-module'.toUpperCase();
 const ENTITY_TAG_NAME = 'z-entity'.toUpperCase();
 const ITEM_LOCK_KEY = 'key';
-const DEFAULT_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
 
 class Tags {
   constructor(archae) {
@@ -119,29 +114,18 @@ class Tags {
           const rootModulesObserver = new MutationObserver(mutations => {
             const _reifyModule = moduleElement => {
               let {item} = moduleElement;
-              if (!item) {
-                const name = moduleElement.getAttribute('name');
-                const tagMesh = tagsApi.makeTag({ // XXX this should go through the world engine
-                  type: 'module',
-                  id: _makeId(),
-                  name: name,
-                  displayName: name,
-                  attributes: {},
-                  matrix: DEFAULT_MATRIX,
-                  metadata: {
-                    isStatic: false,
-                  },
+              if (!item) { // added manually
+                tagsApi.emit('mutateAddModule', {
+                  element: moduleElement,
                 });
-                item = tagMesh.item;
-
-                item.instance = moduleElement;
-                moduleElement.item = item;
               }
+              const name = moduleElement.getAttribute('name');
               const tagMesh = tagMeshes.find(tagMesh =>
                 tagMesh.item.type === 'module' &&
                 tagMesh.item.name === item.name &&
                 !tagMesh.item.metadata.isStatic
               );
+              item = tagMesh.item;
 
               const _updateNpmUi = fn => {
                 const tagMesh = tagMeshes.find(tagMesh =>
@@ -161,12 +145,8 @@ class Tags {
                 .then(unlock => {
                   archae.requestPlugin(name)
                     .then(pluginInstance => {
-                      item.instance = {
-                        name,
-                      };
+                      item.instance = moduleElement;
                       item.instancing = false;
-
-                      tagComponentApis[name] = [];
 
                       const _updateInstanceUi = () => {
                         const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
@@ -204,57 +184,59 @@ class Tags {
 
             const _unreifyModule = moduleElement => {
               const {item} = moduleElement;
-              const tagMesh = tagMeshes.find(tagMesh =>
-                tagMesh.item.type === 'module' &&
-                tagMesh.item.name === item.name &&
-                !tagMesh.item.metadata.isStatic
-              );
 
-              const _updateNpmUi = fn => {
-                const tagMesh = tagMeshes.find(tagMesh =>
-                  tagMesh.item.type === 'module' &&
-                  tagMesh.item.name === item.name &&
-                  tagMesh.item.metadata.isStatic
-                );
-                if (tagMesh) {
-                  fn(tagMesh);
+              if (item) {
+                const _updateNpmUi = fn => {
+                  const tagMesh = tagMeshes.find(tagMesh =>
+                    tagMesh.item.type === 'module' &&
+                    tagMesh.item.name === item.name &&
+                    tagMesh.item.metadata.isStatic
+                  );
+                  if (tagMesh) {
+                    fn(tagMesh);
 
-                  const {planeMesh: {page}} = tagMesh;
-                  page.update();
-                }
-              };
+                    const {planeMesh: {page}} = tagMesh;
+                    page.update();
+                  }
+                };
 
-              item.lock()
-                .then(unlock => {
-                  const {instance} = item;
-                  const {name} = instance;
+                item.lock()
+                  .then(unlock => {
+                    const name = moduleElement.getAttribute('name');
 
-                  archae.releasePlugin(name)
-                    .then(() => {
-                      item.instance = null;
+                    archae.releasePlugin(name)
+                      .then(() => {
+                        _updateNpmUi(tagMesh => {
+                          const {item} = tagMesh;
+                          item.instancing = false;
+                          item.metadata.exists = false;
+                        });
 
-                      tagComponentApis[name] = null;
+                        unlock();
+                      })
+                      .catch(err => {
+                        console.warn(err);
 
-                      _updateNpmUi(tagMesh => {
-                        const {item} = tagMesh;
-                        item.instancing = false;
-                        item.metadata.exists = false;
+                        unlock();
                       });
+                  });
 
-                      unlock();
-                    })
-                    .catch(err => {
-                      console.warn(err);
-
-                      unlock();
-                    });
+                _updateNpmUi(tagMesh => {
+                  const {item} = tagMesh;
+                  item.instancing = true;
+                  item.metadata.exists = false;
                 });
 
-              _updateNpmUi(tagMesh => {
-                const {item} = tagMesh;
-                item.instancing = true;
-                item.metadata.exists = false;
-              });
+                moduleElement.item = null;
+                item.instance = null;
+
+                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === item.id);
+                if (tagMesh) { // removed manually
+                  tagsApi.emit('mutateRemoveModule', {
+                    id: item.id,
+                  });
+                }
+              }
             };
 
             for (let i = 0; i < mutations.length; i++) {
@@ -2395,17 +2377,20 @@ class Tags {
               const {item} = tagMesh;
               const {name} = item;
 
-              const moduleElement = menuUtils.makeZeoComponentElement();
+              const moduleElement = menuUtils.makeZeoModuleElement();
               moduleElement.setAttribute('name', name);
-              moduleElement.tagMesh = tagMesh;
-              rootModulesElement.appendChild(componentElement);
+              moduleElement.item = item;
+              item.instance = moduleElement;
+              rootModulesElement.appendChild(moduleElement);
             }
 
             unreifyModule(tagMesh) {
               const {item} = tagMesh;
               const {instance} = item;
 
-              rootModulesElement.removeChild(instance);
+              if (instance) {
+                rootModulesElement.removeChild(instance);
+              }
             }
 
             reifyEntity(tagMesh) {
