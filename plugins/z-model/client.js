@@ -5,17 +5,6 @@ const symbol = Symbol();
 class Model {
   mount() {
     const {three: {THREE, scene}, elements} = zeo;
- 
-    const _requestModel = file => file.fetch({
-      type: 'json',
-    }).then(modelJson => new Promise((accept, reject) => {
-      const loader = new THREE.ObjectLoader();
-      loader.crossOrigin = true;
-      const {url} = file;
-      const texturePath = url.substring(0, url.lastIndexOf('/') + 1);
-      loader.setTexturePath(texturePath);
-      loader.parse(modelJson, accept);
-    }));
 
     const modelComponent = {
       attributes: {

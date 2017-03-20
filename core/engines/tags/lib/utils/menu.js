@@ -98,14 +98,12 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
     }
   }
 };
-const castValueStringToCallbackValue = (s, type, min, max, step, options) => {
+const castValueToCallbackValue = (value, type) => {
   switch (type) {
-    case 'file': {
-      const url = /^\//.test(s) ? ('/archae/fs' + s) : s;
-      return new FakeFile(url);
-    }
+    case 'file':
+      return fs.makeFile(value);
     default:
-      return castValueStringToValue(s, type, min, max, step, options);
+      return value;
   }
 };
 const castValueValueToString = (s, type) => {
@@ -115,27 +113,6 @@ const castValueValueToString = (s, type) => {
     return JSON.stringify(s);
   }
 };
-
-class FakeFile {
-  constructor(url) {
-    this.url = url;
-  }
-
-  fetch({type} = {}) {
-    const {url} = this;
-
-    return fetch(url)
-      .then(res => {
-        switch (type) {
-          case 'text': return res.text();
-          case 'json': return res.json();
-          case 'arrayBuffer': return res.arrayBuffer();
-          case 'blob': return res.blob();
-          default: return res.blob();
-        }
-      });
-  }
-}
 
 const debounce = fn => {
   let running = false;
@@ -180,7 +157,7 @@ return {
   makeZeoComponentElement,
   makeZeoEntityElement,
   castValueStringToValue,
-  castValueStringToCallbackValue,
+  castValueToCallbackValue,
   castValueValueToString,
   debounce,
 };

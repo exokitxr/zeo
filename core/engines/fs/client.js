@@ -134,17 +134,55 @@ class Fs {
                 });
               }
               case 'model': {
-                return fetch(url)
-                  .then(res => res.text()
-                    .then(modelText => new Promise((accept, reject) => {
-                      const loader = new THREEOBJLoader(); // XXX support different model types here
+                const ext = (() => {
+                  const match = url.match(/\.([^\/]*)$/);
+                  return match ? match[1] : '';
+                })();
 
-                      const baseUrl = url.match(/^(.*?\/?)[^\/]*$/)[1];
-                      loader.setPath('/fs/' + tagMesh.item.id + '/');
-                      const modelMesh = loader.parse(modelText);
-                      accept(modelMesh);
-                    }))
-                  );
+                return fetch(url)
+                  .then(res => {
+                    if (ext === 'json') {
+                      return res.json();
+                    } else {
+                      return res.text();
+                    }
+                  })
+                  .then(modelData => new Promise((accept, reject) => {
+                    const loader = (() => {
+                      switch (ext) {
+                        case 'obj':
+                          return new THREEOBJLoader();
+                        case 'json':
+                          return new THREE.ObjectLoader();
+                        default:
+                          return null;
+                      }
+                    })();
+
+                    if (loader) {
+                      loader.crossOrigin = true;
+                    }
+
+                    const baseUrl = url.match(/^(.*?\/?)[^\/]*$/)[1];
+                    if (loader instanceof THREEOBJLoader) {
+                      loader.setPath(baseUrl);
+                    } else if (loader instanceof THREE.ObjectLoader) {
+                      loader.setTexturePath(baseUrl);
+                    }
+
+                    const _parse = () => {
+                      if (loader instanceof THREEOBJLoader) {
+                        const modelMesh = loader.parse(modelData);
+                        accept(modelMesh);
+                      } else if (loader instanceof THREE.ObjectLoader) {
+                        loader.parse(modelData, accept);
+                      } else {
+                        const err = new Error('unknown model type: ' + JSON.stringify(ext));
+                        reject(err);
+                      }
+                    };
+                    _parse();
+                  }));
               }
               default: {
                 return fetch(url)

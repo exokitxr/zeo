@@ -193,35 +193,38 @@ class Tags {
                   const {attributes: componentAttributes = {}} = componentApi;
                   const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
-                  for (let l = 0; l < boundEntitySpecs.length; l++) {
-                    const boundEntitySpec = boundEntitySpecs[l];
+                  for (let k = 0; k < boundEntitySpecs.length; k++) {
+                    const boundEntitySpec = boundEntitySpecs[k];
                     const {tagMesh, matchingAttributes} = boundEntitySpec;
                     const {item: entityItem} = tagMesh;
                     const {instance: entityElement} = entityItem;
 
                     componentElement.entityAddedCallback(entityElement);
 
-                    for (let m = 0; m < matchingAttributes.length; m++) {
-                      const matchingAttribute = matchingAttributes[m];
+                    for (let l = 0; l < matchingAttributes.length; l++) {
+                      const matchingAttribute = matchingAttributes[l];
                       const {attributes: entityAttributes} = entityItem;
-                      const attributeValue = entityAttributes[matchingAttribute];
+                      const entityAttribute = entityAttributes[matchingAttribute];
+                      const {value: attributeValueJson} = entityAttribute;
+                      const componentAttribute = componentAttributes[matchingAttribute];
+                      const {type: attributeType} = componentAttribute;
+                      const attributeValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
 
-                      // XXX these values need to be casted
                       componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                     }
                   }
                 }
 
                 const {removedNodes} = mutation;
-                for (let k = 0; k < removedNodes.length; k++) {
-                  const removedNode = removedNodes[k];
+                for (let j = 0; j < removedNodes.length; j++) {
+                  const removedNode = removedNodes[j];
                   const componentElement = removedNode;
                   const {componentApi} = componentElement;
                   const {attributes: componentAttributes = {}} = componentApi;
                   const boundEntitySpecs = _getBoundEntitySpecs(componentAttributes);
 
-                  for (let m = 0; m < boundEntitySpecs.length; m++) {
-                    const boundEntitySpec = boundEntitySpecs[m];
+                  for (let k = 0; k < boundEntitySpecs.length; k++) {
+                    const boundEntitySpec = boundEntitySpecs[k];
                     const {tagMesh, matchingAttributes} = boundEntitySpec;
                     const {item: entityItem} = tagMesh;
                     const {instance: entityElement} = entityItem;
@@ -299,13 +302,18 @@ class Tags {
                     for (let k = 0; k < boundComponentSpecs.length; k++) {
                       const boundComponentSpec = boundComponentSpecs[k];
                       const {componentElement, matchingAttributes} = boundComponentSpec;
+                      const {componentApi} = componentElement;
+                      const {attributes: componentAttributes = {}} = componentApi;
 
                       componentElement.entityAddedCallback(entityElement);
 
                       for (let l = 0; l < matchingAttributes.length; l++) {
                         const matchingAttribute = matchingAttributes[l];
-                        const attribute = entityAttributes[matchingAttribute];
-                        const {value: attributeValue} = attribute;
+                        const entityAttribute = entityAttributes[matchingAttribute];
+                        const {value: attributeValueJson} = entityAttribute;
+                        const componentAttribute = componentAttributes[matchingAttribute];
+                        const {type: attributeType} = componentAttribute;
+                        const attributeValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
 
                         componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                       }
@@ -344,24 +352,26 @@ class Tags {
                   const entityElement = target;
                   const {attributeName, oldValue: oldValueString} = mutation;
                   const newValueString = entityElement.getAttribute(attributeName);
-                  const oldValue = _parseAttribute(oldValueString);
-                  const newValue = _parseAttribute(newValueString);
+                  const oldValueJson = _parseAttribute(oldValueString);
+                  const newValueJson = _parseAttribute(newValueString);
 
                   const {item: entityItem} = entityElement;
                   const {id: entityId} = entityItem;
                   tagsApi.emit('mutateSetAttribute', {
                     id: entityId,
                     name: attributeName,
-                    value: newValue,
+                    value: newValueJson,
                   });
 
                   const attributeSpec = {
-                    [attributeName]: newValue,
+                    [attributeName]: newValueJson,
                   };
                   const boundComponentSpecs = _getBoundComponentSpecs(attributeSpec);
                   for (let i = 0; i < boundComponentSpecs.length; i++) {
                     const boundComponentSpec = boundComponentSpecs[i];
                     const {componentElement, matchingAttributes} = boundComponentSpec;
+                    const {componentApi} = componentElement;
+                    const {attributes: componentAttributes = {}} = componentApi;
                     const appliedMatchingAttributes = matchingAttributes.filter(matchingAttributeName => {
                       if (matchingAttributeName === attributeName) {
                         return oldValueString !== null;
@@ -372,18 +382,22 @@ class Tags {
 
                     for (let j = 0; j < matchingAttributes.length; j++) {
                       const attributeName = matchingAttributes[j];
+                      const componentAttribute = componentAttributes[attributeName];
+                      const {type: attributeType} = componentAttribute;
+                      const oldAttributeValue = menuUtils.castValueToCallbackValue(oldValueJson, attributeType);
+                      const newAttributeValue = menuUtils.castValueToCallbackValue(newValueJson, attributeType);
 
-                      if (newValue !== undefined) { // adding attribute
+                      if (newValueJson !== undefined) { // adding attribute
                         if (appliedMatchingAttributes.length === 0) { // if no matching attributes were previously applied, mount the component on the entity
                           componentElement.entityAddedCallback(entityElement);
                         }
 
-                        componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                        componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                       } else { // removing attribute
                         if (appliedMatchingAttributes.length === 1) { // if this is the last attribute that applied, unmount the component from the entity
                           componentElement.entityRemovedCallback(entityElement);
                         } else {
-                          componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldValue, newValue);
+                          componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                         }
                       }
                     }

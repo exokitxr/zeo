@@ -319,7 +319,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       case 'file': {
         return `\
           <div style="display: flex; width: ${WIDTH}px;">
-            <div style="display: flex; position: relative; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1; overflow: hidden; text-overflow: ellipsis;">${focusValue}</div>
+            <div style="display: flex; position: relative; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${focusValue}</div>
             <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:link" onmousedown="attribute:${id}:${name}:link">
               <img src="${linkImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
             </a>
