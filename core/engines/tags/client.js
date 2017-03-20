@@ -2251,6 +2251,20 @@ class Tags {
               if (!instance && !instancing) {
                 const {name} = item;
 
+                const _updateNpmUi = fn => {
+                  const tagMesh = tagMeshes.find(tagMesh =>
+                    tagMesh.item.type === 'module' &&
+                    tagMesh.item.name === item.name &&
+                    tagMesh.item.metadata.isStatic
+                  );
+                  if (tagMesh) {
+                    fn(tagMesh);
+
+                    const {planeMesh: {page}} = tagMesh;
+                    page.update();
+                  }
+                };
+
                 item.lock()
                   .then(unlock => {
                     archae.requestPlugin(name)
@@ -2269,21 +2283,11 @@ class Tags {
                         };
                         _updateInstanceUi();
 
-                        const _updateNpmUi = () => {
-                          const tagMesh = tagMeshes.find(tagMesh =>
-                            tagMesh.item.type === 'module' &&
-                            tagMesh.item.name === item.name &&
-                            tagMesh.item.metadata.isStatic
-                          );
-                          if (tagMesh) {
-                            const {item} = tagMesh;
-                            item.metadata.exists = true;
-
-                            const {planeMesh: {page}} = tagMesh;
-                            page.update();
-                          }
-                        };
-                        _updateNpmUi();
+                        _updateNpmUi(tagMesh => {
+                          const {item} = tagMesh;
+                          item.instancing = false;
+                          item.metadata.exists = true;
+                        });
 
                         unlock();
                       })
@@ -2299,38 +2303,47 @@ class Tags {
                 const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
                 page.update();
                 openPage.update();
+
+                _updateNpmUi(tagMesh => {
+                  const {item} = tagMesh;
+                  item.instancing = true;
+                });
               }
             }
 
             unreifyModule(tagMesh) {
               const {item} = tagMesh;
 
+              const _updateNpmUi = fn => {
+                const tagMesh = tagMeshes.find(tagMesh =>
+                  tagMesh.item.type === 'module' &&
+                  tagMesh.item.name === item.name &&
+                  tagMesh.item.metadata.isStatic
+                );
+                if (tagMesh) {
+                  fn(tagMesh);
+
+                  const {planeMesh: {page}} = tagMesh;
+                  page.update();
+                }
+              };
+
               item.lock()
                 .then(unlock => {
                   const {instance} = item;
                   const {name} = instance;
 
-                  return archae.releasePlugin(name)
+                  archae.releasePlugin(name)
                     .then(() => {
                       item.instance = null;
 
                       tagComponentApis[name] = null;
 
-                      const _updateNpmUi = () => {
-                        const tagMesh = tagMeshes.find(tagMesh =>
-                          tagMesh.item.type === 'module' &&
-                          tagMesh.item.name === item.name &&
-                          tagMesh.item.metadata.isStatic
-                        );
-                        if (tagMesh) {
-                          const {item} = tagMesh;
-                          item.metadata.exists = false;
-
-                          const {planeMesh: {page}} = tagMesh;
-                          page.update();
-                        }
-                      };
-                      _updateNpmUi();
+                      _updateNpmUi(tagMesh => {
+                        const {item} = tagMesh;
+                        item.instancing = false;
+                        item.metadata.exists = false;
+                      });
 
                       unlock();
                     })
@@ -2340,6 +2353,12 @@ class Tags {
                       unlock();
                     });
                 });
+
+              _updateNpmUi(tagMesh => {
+                const {item} = tagMesh;
+                item.instancing = true;
+                item.metadata.exists = false;
+              });
             }
 
             reifyEntity(tagMesh) {
