@@ -551,11 +551,7 @@ class World {
                               } else {
                                 cb(_makeInvalidArgsError());
                               }
-                            } else {
-                              const err = new Error('no such method:' + JSON.stringify(method));
-                              cb(err.stack);
-                            }
-                          } else if (method === 'setTagData') {
+                            } else if (method === 'setTagData') {
                               const [userId, src, {value}] = args;
 
                               cb = (cb => err => {
