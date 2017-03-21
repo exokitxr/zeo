@@ -151,6 +151,17 @@ class ZGrabbable {
             }
           }
 
+          const _gripup = e => {
+            const {side} = e;
+            const globalGrabState = globalGrabStates[side];
+            const {grabbable: globalGrabbable} = globalGrabState;
+
+            if (globalGrabbable) {
+              globalGrabbable.release();
+            }
+          };
+          input.on('gripup', _gripup);
+
           const grabbableComponent = {
             selector: '[grabbable]',
             attributes: {
@@ -184,6 +195,8 @@ class ZGrabbable {
 
           this._cleanup = () => {
             elements.unregisterComponent(this, grabbableComponent);
+
+            input.removeListener('gripup', _gripup);
           };
         }
       });
