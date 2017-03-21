@@ -16,19 +16,17 @@ class ZGrabbable {
     };
 
     return archae.requestPlugins([
-      '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/cyborg',
       '/core/plugins/js-utils',
     ])
       .then(([
-        input,
         webvr,
         cyborg,
         jsUtils,
       ]) => {
         if (live) {
-          const {three: {THREE}, elements} = zeo;
+          const {three: {THREE}, elements, input} = zeo;
           const player = cyborg.getPlayer();
 
           const {events} = jsUtils;
@@ -146,6 +144,14 @@ class ZGrabbable {
                 },
               });
               entityElement.dispatchEvent(releaseEvent);
+            }
+
+            destroy() {
+              const {grabState} = this;
+
+              if (grabState) {
+                this.release();
+              }
             }
           }
 
