@@ -1,5 +1,7 @@
 const SkyShader = require('./lib/three-extra/SkyShader');
 
+const symbol = Symbol();
+
 class Skybox {
   mount() {
     const {three: {THREE, scene}, elements, render, world, utils: {geometry: geometryUtils}} = zeo;
@@ -33,16 +35,21 @@ class Skybox {
 
     const zeroVector = new THREE.Vector3(0, 0, 0);
 
-    const updates = [];
-    const _update = () => {
-      for (let i = 0; i < updates.length; i++) {
-        const update = updates[i];
-        update();
-      }
-    };
+    const skyboxComponent = {
+      selector: 'skybox[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        }
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
 
-    class SkyboxElement extends HTMLElement {
-      createdCallback() {
         const mesh = (() => {
           const object = new THREE.Object3D();
 
@@ -136,7 +143,7 @@ class Skybox {
           return object;
         })();
         scene.add(mesh);
-        this.mesh = mesh;
+        entityApi.mesh = mesh;
 
         const update = () => {
           const {sky, sunSphere, sunLight, starsMesh, moonSphere} = mesh;
@@ -194,21 +201,25 @@ class Skybox {
         };
         updates.push(update);
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(mesh);
 
           updates.splice(updates.indexOf(update), 1);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh} = this;
+            const {mesh} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -218,20 +229,20 @@ class Skybox {
           }
         }
       }
+    };
+    elements.registerComponent(this, skyboxComponent);
 
-      getSunSphere() {
-        const {mesh} = this;
-        const {sunSphere} = mesh;
-
-        return sunSphere;
+    const updates = [];
+    const _update = () => {
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        update();
       }
-    }
-    elements.registerElement(this, SkyboxElement);
-
+    };
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, skyboxComponent);
 
       render.removeListener('update', _update);
     };

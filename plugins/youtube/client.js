@@ -9,6 +9,8 @@ const trackbarWidth = videoResolutionWidth - trackbarStart - (16);
 
 const videoUrl = 'https://www.youtube.com/watch?v=AOZtqDhQP44';
 
+const symbol = Symbol();
+
 class Youtube {
   mount() {
     const {three: {THREE, scene, camera}, elements, input, render, ui, sound} = zeo;
@@ -29,16 +31,21 @@ class Youtube {
       transparent: true,
     });
 
-    const updates = [];
-    const _update = () => {
-      for (let i = 0; i < updates.length; i++) {
-        const update = updates[i];
-        update();
-      }
-    };
+    const youtubeComponent = {
+      selector: 'youtube[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
 
-    class YoutubeElement extends HTMLElement {
-      createdCallback() {
         const mesh = (() => {
           const object = new THREE.Object3D();
 
@@ -336,7 +343,7 @@ class Youtube {
           return object;
         })();
         scene.add(mesh);
-        this.mesh = mesh;
+        entityApi.mesh = mesh;
 
         const trigger = e => {
           const {videoMesh, menuMesh} = mesh;
@@ -384,23 +391,27 @@ class Youtube {
         };
         updates.push(update);
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(mesh);
 
           input.removeListener('trigger', trigger);
 
           updates.splice(updates.indexOf(update), 1);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh} = this;
+            const {mesh} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -409,14 +420,21 @@ class Youtube {
             break;
           }
         }
-      }
-    }
-    elements.registerElement(this, YoutubeElement);
+      },
+    };
+    elements.registerComponent(this, youtubeComponent);
 
+    const updates = [];
+    const _update = () => {
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        update();
+      }
+    };
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, youtubeComponent);
 
       render.removeListener('update', _update);
     };

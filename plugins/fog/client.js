@@ -1,5 +1,7 @@
 const FOG_DENSITY = 0.05;
 
+const symbol = Symbol();
+
 class Fog {
   mount() {
     const {three: {scene}, elements, render} = zeo;
@@ -12,9 +14,11 @@ class Fog {
       }
     };
 
-    class FogElement extends HTMLElement {
-      createdCallback() {
-        const update = () => {
+    const fogElement = {
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
+
+        /* const update = () => { // XXX fix this walk to work with the new skybox module
           const skybox = (() => {
             for (let {parentNode: node} = this; node; node = node.parentNode) {
               if (/^z-i-skybox$/i.test(node.tagName)) {
@@ -32,25 +36,28 @@ class Fog {
             scene.fog.density = 0;
           }
         };
-        updates.push(update);
+        updates.push(update); */
 
-        this._cleanup = () => {
-          updates.splice(updates.indexOf(update), 1);
+        entityApi._cleanup = () => {
+          // updates.splice(updates.indexOf(update), 1);
 
           scene.fog.density = 0;
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
+
+        entityApi._cleanup();
+      },
     }
-    elements.registerElement(this, FogElement);
+    elements.registerComponent(this, fogComponent);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, fogComponent);
 
       render.removeListener('update', _update);
     };

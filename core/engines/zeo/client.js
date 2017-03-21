@@ -251,7 +251,7 @@ class Zeo {
                         <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
                       </div>
                     `;
-                    document.body.appendChild(overlay);
+                    document.body.insertBefore(overlay, renderer.domElement.nextSibling);
                     const overlayContent = overlay.querySelector('.overlay-content');
 
                     const helper = document.createElement('div');
@@ -496,12 +496,12 @@ class Zeo {
                     }
 
                     class ZeoElementsApi {
-                      registerElement(pluginInstance, elementApi) {
-                        tags.registerElement(pluginInstance, elementApi);
+                      registerComponent(pluginInstance, componentApi) {
+                        tags.registerComponent(pluginInstance, componentApi);
                       }
 
-                      unregisterElement(pluginInstance) {
-                        tags.unregisterElement(pluginInstance);
+                      unregisterComponent(pluginInstance, componentApi) {
+                        tags.unregisterComponent(pluginInstance, componentApi);
                       }
 
                       getRootElement() {

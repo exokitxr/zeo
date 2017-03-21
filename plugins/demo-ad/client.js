@@ -26,6 +26,7 @@ const STARS_FRAME_SKIP = 4;
 const HIGHLIGHT_LOOP_FRAMES = 20;
 const HIGHLIGHT_FRAME_RATIO = 1 / 3;
 
+const symbol = Symbol();
 const SIDES = ['left', 'right'];
 
 module.exports = archae => ({
@@ -147,8 +148,21 @@ module.exports = archae => ({
             return {position, rotation, scale};
           };
 
-          class DemoAdElement extends HTMLElement {
-            createdCallback() {
+          const demoAdComponent = {
+            selector: 'demo-ad[position]',
+            attributes: {
+              position: {
+                type: 'matrix',
+                value: [
+                  0, 0, 0,
+                  0, 0, 0, 1,
+                  1, 1, 1,
+                ],
+              },
+            },
+            entityAddedCallback(entityElement) {
+              const entityApi = {};
+
               const adState = {
                 open: true,
                 animation: null,
@@ -334,7 +348,6 @@ module.exports = archae => ({
                 return object;
               })();
               scene.add(mesh);
-              this.mesh = mesh;
 
               const _makeDotMesh = () => {
                 const geometry = new THREE.BufferGeometry();
@@ -511,7 +524,7 @@ module.exports = archae => ({
               };
               render.on('update', _update);
 
-              this._cleanup = () => {
+              entityApi._cleanup = () => {
                 scene.remove(mesh);
                 SIDES.forEach(side => {
                   scene.remove(dotMeshes[side]);
@@ -524,16 +537,20 @@ module.exports = archae => ({
                   audio.pause();
                 }
               };
-            }
 
-            destructor() {
-              this._cleanup();
-            }
+              entityElement[symbol] = entityApi;
+            },
+            entityRemovedCallback(entityElement) {
+              const {[symbol]: entityApi} = entityElement;
 
-            attributeValueChangedCallback(name, oldValue, newValue) {
+              entityApi._cleanup();
+            },
+            entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+              const {[symbol]: entityApi} = entityElement;
+
               switch (name) {
                 case 'position': {
-                  const {mesh} = this;
+                  const {mesh} = entityElement;
 
                   mesh.position.set(newValue[0], newValue[1], newValue[2]);
                   mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -542,12 +559,12 @@ module.exports = archae => ({
                   break;
                 }
               }
-            }
-          }
-          elements.registerElement(this, DemoAdElement); // register our element as available to the scene
+            },
+          };
+          elements.registerComponent(this, demoAdComponent);
 
           this._cleanup = () => {
-            elements.unregisterElement(this);
+            elements.unregisterComponent(this, demoAdComponent);
           };
         }
       });

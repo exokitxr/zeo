@@ -1,3 +1,6 @@
+import CssSelectorParser from 'css-selector-parser';
+const cssSelectorParser = new CssSelectorParser.CssSelectorParser();
+
 import {
   WIDTH,
   HEIGHT,
@@ -193,7 +196,7 @@ class World {
               const {type} = m;
 
               if (type === 'init') {
-                const {args: [itemSpecs, equipmentSpecs, inventorySpecs]} = m;
+                const {args: [itemSpecs/*, equipmentSpecs, inventorySpecs*/]} = m;
 
                 for (let i = 0; i < itemSpecs.length; i++) {
                   const itemSpec = itemSpecs[i];
@@ -201,7 +204,7 @@ class World {
                   _handleAddTag(localUserId, itemSpec, 'world');
                 }
 
-                for (let i = 0; i < equipmentSpecs.length; i++) {
+                /* for (let i = 0; i < equipmentSpecs.length; i++) {
                   const itemSpec = equipmentSpecs[i];
 
                   if (itemSpec) {
@@ -215,7 +218,7 @@ class World {
                   if (itemSpec) {
                     _handleAddTag(localUserId, itemSpec, 'inventory:' + i);
                   }
-                }
+                } */
               } else if (type === 'addTag') {
                 const {args: [userId, itemSpec, dst]} = m;
 
@@ -229,9 +232,9 @@ class World {
 
                 _handleMoveTag(userId, src, dst);
               } else if (type === 'setTagAttribute') {
-                const {args: [userId, src, attribute, value]} = m;
+                const {args: [userId, src, {name, value}]} = m;
 
-                _handleSetTagAttribute(userId, src, attribute, value);
+                _handleSetTagAttribute(userId, src, {name, value});
               } else if (type === 'response') {
                 const {id} = m;
 
@@ -297,8 +300,8 @@ class World {
               scene.add(tagMesh);
 
               const {type} = item;
-              if (type === 'element') {
-                tags.reifyTag(tagMesh);
+              if (type === 'entity') {
+                tags.reifyEntity(tagMesh);
               }
             }
 
@@ -312,7 +315,11 @@ class World {
 
               const {instance} = item;
               if (instance) {
-                tags.unreifyTag(tagMesh);
+                const {type} = item;
+                
+                if (type === 'entity') {
+                  tags.unreifyEntity(tagMesh);
+                }
               }
             }
           }
@@ -418,10 +425,9 @@ class World {
             set(index, tagMesh) {
               this.tagMeshes[index] = tagMesh;
 
-              const {item} = tagMesh;
-              const {type} = item;
-              if (type === 'element') {
-                tags.reifyTag(tagMesh);
+              const {item: {type}} = tagMesh;
+              if (type === 'entity') {
+                tags.reifyEntity(tagMesh);
               }
             }
 
@@ -429,10 +435,9 @@ class World {
               const tagMesh = this.tagMeshes[index];
               this.tagMeshes[index] = null;
 
-              const {item} = tagMesh;
-              const {type} = item;
-              if (type === 'element') {
-                tags.unreifyTag(tagMesh);
+              const {item: {type}} = tagMesh;
+              if (type === 'entity') {
+                tags.unreifyEntity(tagMesh);
               }
             }
 
@@ -631,11 +636,6 @@ class World {
 
             _request('moveTag', [localUserId, src, dst], _warnError);
           };
-          const _setTagAttribute = (src, attribute, value) => {
-            _handleSetTagAttribute(localUserId, src, attribute, value);
-
-            _request('setTagAttribute', [localUserId, src, attribute, value], _warnError);
-          };
 
           const _handleAddTag = (userId, itemSpec, dst) => {
             const isMe = userId === localUserId;
@@ -644,11 +644,22 @@ class World {
             if (dst === 'world') {
               const tagMesh = tags.makeTag(itemSpec);
 
+              const {item: {type}} = tagMesh;
+              if (type === 'module') {
+                tags.reifyModule(tagMesh);
+              }
+
               elementManager.add(tagMesh);
             } else if (match = dst.match(/^hand:(left|right)$/)) {
               const side = match[1];
 
               const tagMesh = tags.makeTag(itemSpec);
+
+              const {item: {type}} = tagMesh;
+              if (type === 'module') {
+                tags.reifyModule(tagMesh);
+              }
+
               const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
               const userControllerMeshes = (() => {
                 if (isMe) {
@@ -671,7 +682,7 @@ class World {
               tagMesh.quaternion.copy(controllerMeshQuaternion);
               tagMesh.scale.copy(oneVector);
               controllerMesh.add(tagMesh);
-            } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
+            /* } else if (match = dst.match(/^equipment:([0-9]+)$/)) {
               const equipmentIndex = parseInt(match[1], 10);
 
               const tagMesh = tags.makeTag(itemSpec);
@@ -712,7 +723,7 @@ class World {
               const itemBoxMesh = itemBoxMeshes[inventoryIndex];
               itemBoxMesh.add(tagMesh);
 
-              userInventoryManager.set(inventoryIndex, tagMesh)
+              userInventoryManager.set(inventoryIndex, tagMesh); */
             } else {
               console.warn('invalid add tag arguments', {userId, itemSpec, dst});
             }
@@ -721,12 +732,28 @@ class World {
             const isMe = userId === localUserId;
 
             let match;
-            if (match = src.match(/^hand:(left|right)$/)) {
+            if (match = src.match(/^world:(.+)$/)) {
+              const id = match[1];
+              const tagMesh = elementManager.getTagMesh(id);
+
+              const {item: {type}} = tagMesh;
+              if (type === 'module') {
+                tags.unreifyModule(tagMesh);
+              }
+
+              elementManager.remove(tagMesh);
+              tags.destroyTag(tagMesh);
+            } else if (match = src.match(/^hand:(left|right)$/)) {
               const side = match[1];
 
               const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
 
               const tagMesh = userGrabManager.getMesh(side);
+
+              const {item: {type}} = tagMesh;
+              if (type === 'module') {
+                tags.unreifyModule(tagMesh);
+              }
 
               elementManager.remove(tagMesh);
               tags.destroyTag(tagMesh);
@@ -771,7 +798,10 @@ class World {
                 tagMesh.quaternion.copy(controllerMeshQuaternion);
                 tagMesh.scale.copy(oneVector)
 
-                tags.unreifyTag(tagMesh);
+                const {item: {type}} = tagMesh;
+                if (type === 'entity') {
+                  tags.unreifyEntity(tagMesh);
+                }
               } else {
                 console.warn('invalid move tag arguments', {src, dst});
               }
@@ -788,6 +818,9 @@ class World {
                 tagMesh.position.set(matrixArray[0], matrixArray[1], matrixArray[2]);
                 tagMesh.quaternion.set(matrixArray[3], matrixArray[4], matrixArray[5], matrixArray[6]);
                 tagMesh.scale.set(matrixArray[7], matrixArray[8], matrixArray[9]);
+
+                const {item} = tagMesh;
+                item.matrix = matrixArray;
 
                 elementManager.add(tagMesh);
 
@@ -944,16 +977,16 @@ class World {
               console.warn('invalid move tag arguments', {src, dst});
             }
           };
-          const _handleSetTagAttribute = (userId, src, attribute, value) => {
+          const _handleSetTagAttribute = (userId, src, {name, value}) => {
             // same for local and remote user ids
             let match;
             if (match = src.match(/^world:(.+)$/)) {
               const id = match[1];
 
               const tagMesh = elementManager.getTagMesh(id);
-              tagMesh.setAttribute(attribute, value);
+              tagMesh.setAttribute(name, value);
             } else {
-              console.warn('invalid set tag attribute arguments', {src, attributeName, attributeValue});
+              console.warn('invalid set tag attribute arguments', {src, name, value});
             }
           };
 
@@ -963,10 +996,15 @@ class World {
             const {inputText} = npmState;
 
             _searchNpm(inputText)
-              .then(tagSpecs => tagSpecs.map(tagSpec => {
-                tagSpec.isStatic = true;
+              .then(itemSpecs => itemSpecs.map(itemSpec => {
+                itemSpec.metadata.isStatic = true; // XXX can probably be hardcoded in the render
+                itemSpec.metadata.exists = elementManager.getTagMeshes()
+                  .some(tagMesh =>
+                    tagMesh.item.type === itemSpec.type &&
+                    tagMesh.item.name === itemSpec.name
+                  );
 
-                return tags.makeTag(tagSpec);
+                return tags.makeTag(itemSpec);
               }))
               .then(tagMeshes => {
                 npmState.loading = false;
@@ -1107,6 +1145,33 @@ class World {
             const npmMesh = (() => {
               const object = new THREE.Object3D();
               object.position.z = -1.5 + 0.01;
+
+              const newEntityTagMesh = (() => {
+                const scale = 1.5;
+
+                const newEntityTagMesh = tags.makeTag({
+                  type: 'entity',
+                  id: 'entity',
+                  name: 'new-entity',
+                  displayName: 'New entity',
+                  attributes: {},
+                  matrix: DEFAULT_MATRIX,
+                  metadata: {
+                    isStatic: true,
+                  },
+                });
+                newEntityTagMesh.position.set(
+                  (WORLD_WIDTH / 2) - 0.24,
+                  (WORLD_HEIGHT / 2) - 0.1,
+                  0
+                );
+                newEntityTagMesh.scale.set(scale, scale, 1);
+                newEntityTagMesh.initialScale = newEntityTagMesh.scale.clone();
+
+                return newEntityTagMesh;
+              })();
+              object.add(newEntityTagMesh);
+              object.newEntityTagMesh = newEntityTagMesh;
 
               return object;
             })();
@@ -1304,7 +1369,11 @@ class World {
                   }
                 };
 
-                const tagMeshes = elementManager.getTagMeshes().concat(npmManager.getTagMeshes());
+                const {npmMesh} = worldMesh;
+                const {newEntityTagMesh} = npmMesh;
+                const tagMeshes = elementManager.getTagMeshes()
+                  .concat(npmManager.getTagMeshes())
+                  .concat([newEntityTagMesh]);
                 SIDES.forEach(side => {
                   const grabbableState = grabbableStates[side];
                   const grabBoxMesh = grabBoxMeshes[side];
@@ -1362,8 +1431,11 @@ class World {
                     const npmDotMesh = npmDotMeshes[side];
                     const npmBoxMesh = npmBoxMeshes[side];
 
+                    const {npmMesh} = worldMesh;
+                    const {newEntityTagMesh} = npmMesh;
+
                     biolumi.updateAnchors({
-                      objects: npmManager.getTagMeshes().map(tagMesh => {
+                      objects: npmManager.getTagMeshes().concat([newEntityTagMesh]).map(tagMesh => {
                         const {planeMesh, initialScale = oneVector} = tagMesh;
                         const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
                         const {page} = planeMesh;
@@ -1731,19 +1803,30 @@ class World {
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
-                    if (match = onclick.match(/^tag:(.+?)$/)) {
-                      const id = match[1];
+                    if (match = onclick.match(/^(module|entity):(.+?)$/)) {
+                      const type = match[1];
+                      const id = match[2];
                       const npmTagMeshes = npmManager.getTagMeshes();
-                      const tagMesh = npmTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const {npmMesh} = worldMesh;
+                      const {newEntityTagMesh} = npmMesh;
+                      const tagMesh = npmTagMeshes
+                        .concat([newEntityTagMesh])
+                        .find(tagMesh => tagMesh.item.id === id);
 
-                      const item = _clone(tagMesh.item);
-                      item.id = _makeId();
-                      _addTag(item, 'hand:' + side);
+                      const canMakeTag = !(type === 'module' && (tagMesh.item.metadata.exists || tagMesh.item.instancing)); // XXX handle the multi-{user,controller} conflict cases
+                      if (canMakeTag) {
+                        const item = _clone(tagMesh.item);
+                        item.id = _makeId();
+                        item.metadata.isStatic = false;
+                        _addTag(item, 'hand:' + side);
 
-                      const highlightState = highlightStates[side];
-                      highlightState.startPoint = null;
+                        const highlightState = highlightStates[side];
+                        highlightState.startPoint = null;
 
-                      return true;
+                        return true;
+                      } else {
+                        return false;
+                      }
                     } else {
                       return false;
                     }
@@ -1938,6 +2021,8 @@ class World {
                   if (!equipmentTagMeshes.includes(grabMesh)) {
                     const elementsTagMeshes = elementManager.getTagMeshes();
                     const npmTagMeshes = npmManager.getTagMeshes();
+                    const {npmMesh} = worldMesh;
+                    const {newEntityTagMesh} = npmMesh;
 
                     if (elementsTagMeshes.includes(grabMesh)) {
                       const tagMesh = grabMesh;
@@ -1950,8 +2035,25 @@ class World {
                       return true;
                     } else if (npmTagMeshes.includes(grabMesh)) {
                       const tagMesh = grabMesh;
+                      const canMakeTag = !(tagMesh.item.metadata.exists || tagMesh.item.instancing); // XXX handle the multi-{user,controller} conflict cases
+
+                      if (canMakeTag) {
+                        const item = _clone(tagMesh.item);
+                        item.id = _makeId();
+                        item.metadata.isStatic = false;
+                        _addTag(item, 'hand:' + side);
+
+                        e.stopImmediatePropagation();
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else if (grabMesh === newEntityTagMesh) {
+                      const tagMesh = grabMesh;
                       const item = _clone(tagMesh.item);
                       item.id = _makeId();
+                      item.metadata.isStatic = false;
                       _addTag(item, 'hand:' + side);
 
                       e.stopImmediatePropagation();
@@ -2063,15 +2165,6 @@ class World {
                   const matrixArray = position.toArray().concat(rotation.toArray()).concat(scale.toArray());
                   _moveTag('hand:' + side, 'world:' + JSON.stringify(matrixArray));
 
-                  const {item} = tagMesh;
-                  const {attributes} = item;
-                  if (attributes.position) {
-                    const {id} = item;
-                    _setTagAttribute('world:' + id, 'position', matrixArray);
-                  }
-
-                  e.stopImmediatePropagation(); // so tags engine doesn't pick it up
-
                   return true;
                 };
 
@@ -2140,40 +2233,94 @@ class World {
             priority: 1,
           });
 
-          const _setAttribute = ({id, attribute, value}) => {
-            const src = (() => {
-              const _getWorldSrc = () => {
-                if (elementManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
-                  return 'world:' + id;
-                } else {
-                  return null;
-                }
-              };
-              const _getHandSrc = () => {
-                const controllers = cyborg.getControllers();
-
-                for (let i = 0; i < SIDES.length; i++) {
-                  const side = SIDES[i];
-                  const grabMesh = grabManager.getMesh(side);
-
-                  if (grabMesh && grabMesh.item.id === id) {
-                    return 'hand:' + side;
-                  }
-                }
+          const _getTagIdSrc = id => {
+            const _getWorldSrc = () => {
+              if (elementManager.getTagMeshes().some(tagMesh => tagMesh.item.id === id)) {
+                return 'world:' + id;
+              } else {
                 return null;
-              };
+              }
+            };
+            const _getHandSrc = () => {
+              const controllers = cyborg.getControllers();
 
-              return _getWorldSrc() || _getHandSrc();
-            })();
+              for (let i = 0; i < SIDES.length; i++) {
+                const side = SIDES[i];
+                const grabMesh = grabManager.getMesh(side);
 
-            _setTagAttribute(src, attribute, value);
+                if (grabMesh && grabMesh.item.id === id) {
+                  return 'hand:' + side;
+                }
+              }
+              return null;
+            };
+
+            return _getWorldSrc() || _getHandSrc() || null;
+          };
+          const _mutateAddModule = ({element}) => {
+            const name = element.getAttribute('name');
+            const itemSpec = {
+              type: 'module',
+              id: _makeId(),
+              name: name,
+              displayName: name,
+              attributes: {},
+              matrix: DEFAULT_MATRIX,
+              metadata: {
+                isStatic: false,
+              },
+            };
+            _addTag(itemSpec, 'world');
+          };
+          tags.on('mutateAddModule', _mutateAddModule);
+          const _mutateRemoveModule = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _removeTag(src);
+          };
+          tags.on('mutateRemoveModule', _mutateRemoveModule);
+          const _mutateAddEntity = ({element, attributes}) => {
+            const itemSpec = {
+              type: 'entity',
+              id: _makeId(),
+              name: 'Manual entity',
+              displayName: 'Manual entity',
+              version: '0.0.1',
+              attributes: attributes,
+              matrix: DEFAULT_MATRIX,
+              metadata: {},
+            };
+            _addTag(itemSpec, 'world');
+          };
+          tags.on('mutateAddEntity', _mutateAddEntity);
+          const _mutateRemoveEntity = ({id}) => {
+            const src = _getTagIdSrc(id);
+
+            _removeTag(src);
+          };
+          tags.on('mutateRemoveEntity', _mutateRemoveEntity);
+          const _setAttribute = ({id, name, value}) => {
+            const src = _getTagIdSrc(id);
+
+            _handleSetTagAttribute(localUserId, src, {name, value});
           };
           tags.on('setAttribute', _setAttribute);
+          const _mutateSetAttribute = ({id, name, value}) => {
+            const src = _getTagIdSrc(id);
+
+            _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
+          };
+          tags.on('mutateSetAttribute', _mutateSetAttribute);
 
           const _download = ({id, name}) => {
             const a = document.createElement('a');
-            a.href = fs.getFileUrl(id);
-            a.download = name;
+            if (name) {
+              a.href = fs.getFileUrl(id, name);
+              a.download = name.match(/\/?([^\/]*)$/)[1];
+            } else {
+              a.href = fs.getFileUrl(id);
+              a.download = id + '.zip';
+            }
             a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
@@ -2181,9 +2328,177 @@ class World {
           };
           tags.on('download', _download);
 
-          const _upload = file => {
+          const _linkModule = linkSpec => {
+            const {side} = linkSpec;
+            const {gamepads} = webvr.getStatus();
+            const gamepad = gamepads[side];
+
+            if (gamepad) {
+              const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+              if (!gripPressed) {
+                const {srcTagMesh, dstTagMesh} = linkSpec;
+                const {item: srcItem} = srcTagMesh;
+                const {name: srcName} = srcItem;
+                const componentApis = tags.getTagComponentApis(srcName);
+
+                const _forEachSrcTagAttribute = fn => {
+                  for (let i = 0; i < componentApis.length; i++) {
+                    const componentApi = componentApis[i];
+                    const {attributes: componentAttributes = {}} = componentApi;
+
+                    for (const attributeName in componentAttributes) {
+                      const attribute = componentAttributes[attributeName];
+                      const {value: attributeValue} = attribute;
+
+                      fn(attributeName, attributeValue);
+                    }
+                  }
+                };
+
+                if (!dstTagMesh) {
+                  const {item} = srcTagMesh;
+
+                  const itemSpec = _clone(item);
+                  itemSpec.id = _makeId();
+                  itemSpec.type = 'entity';
+                  const tagName = (() => {
+                    for (let i = 0; i < componentApis.length; i++) {
+                      const componentApi = componentApis[i];
+                      const {selector: componentSelector = 'div'} = componentApi;
+                      const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
+
+                      if (tagName) {
+                        return tagName;
+                      }
+                    }
+                    return 'entity';
+                  })();
+                  itemSpec.tagName = tagName;
+                  const attributes = (() => {
+                    const result = {};
+                    _forEachSrcTagAttribute((attributeName, attributeValue) => {
+                      result[attributeName] = {
+                        value: attributeValue,
+                      };
+                    });
+                    return result;
+                  })();
+                  itemSpec.attributes = attributes;
+                  const matrix = (() => {
+                    const {matrix: oldMatrix} = itemSpec;
+                    const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
+                    const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
+                    const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
+
+                    position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
+
+                    return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                  })();
+                  itemSpec.matrix = matrix;
+
+                  _addTag(itemSpec, 'world');
+                } else {
+                  const {item: dstItem} = dstTagMesh;
+                  const {id: dstId} = dstItem;
+
+                  _forEachSrcTagAttribute((attributeName, attributeValue) => {
+                    _setAttribute({
+                      id: dstId,
+                      name: attributeName,
+                      value: attributeValue,
+                    });
+                  });
+                }
+              }
+            }
+          };
+          tags.on('linkModule', _linkModule);
+          const _linkAttribute = linkSpec => {
+            const {srcTagMesh, attributeName, dstTagMesh} = linkSpec;
+            const {item: {id, name}} = dstTagMesh;
+
+            srcTagMesh.setAttribute(attributeName, '/fs/' + id + name);
+          };
+          tags.on('linkAttribute', _linkAttribute);
+
+          const _upload = files => {
             if (!login.isOpen()) {
-              worldApi.createFile(file)
+              const _getMainFile = files => {
+                const _isRoot = f => /^\/[^\/]+/.test(f.path);
+                const _isExt = f => /\.[^\/]+$/.test(f.path);
+                const _isCandidate = f => _isRoot(f) && _isExt(f);
+
+                return files.sort((a, b) => {
+                  const aIsCandidate = _isCandidate(a);
+                  const bIsCandidate = _isCandidate(b);
+                  return +bIsCandidate - +aIsCandidate;
+                })[0];
+              };
+              const _createFile = files => {
+                const id = _makeFileId();
+                const mainFile = _getMainFile(files);
+                const {path: name} = mainFile;
+                const mimeType = (() => {
+                  const {type: mimeType} = mainFile;
+
+                  if (mimeType) {
+                    return mimeType;
+                  } else {
+                    const match = name.match(/\.([^.]+)$/);
+                    const suffix = match ? match[1] : 'blank';
+
+                    return 'mime/' + suffix;
+                  }
+                })();
+                const paths = files.map(f => f.path);
+                const matrix = _getInFrontOfCameraMatrix();
+                const itemSpec = {
+                  type: 'file',
+                  id,
+                  name,
+                  mimeType,
+                  matrix,
+                  metadata: {
+                    paths,
+                  },
+                  instancing: true,
+                };
+                _handleAddTag(localUserId, itemSpec, 'world');
+
+                const elementTagMeshes = elementManager.getTagMeshes();
+                const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                if (!rend.isOpen()) {
+                  tempTagMesh.visible = false;
+                }
+
+                const _cleanupTempTagMesh = () => {
+                  elementManager.remove(tempTagMesh);
+
+                  tags.destroyTag(tempTagMesh);
+                };
+
+                return fs.writeFiles(id, files)
+                  .then(() => {
+                    _cleanupTempTagMesh();
+
+                    _addTag(itemSpec, 'world');
+
+                    const elementTagMeshes = elementManager.getTagMeshes();
+                    const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                    if (!rend.isOpen()) {
+                      tagMesh.visible = false;
+                    }
+
+                    return Promise.resolve(tagMesh);
+                  })
+                  .catch(err => {
+                    _cleanupTempTagMesh();
+
+                    return Promise.reject(err);
+                  });
+              };
+              _createFile(files)
                 .then(tagMesh => {
                   console.log('upoaded file', tagMesh);
                 });
@@ -2284,7 +2599,6 @@ class World {
 
               _uninitializeElements();
               _uninitializeEquipment();
-              // _uninitializeFiles();
               _uninitializeInventory();
             };
             const _uninitializeTimer = () => {
@@ -2340,7 +2654,14 @@ class World {
             input.removeListener('keyboarddown', _keyboarddown);
 
             tags.removeListener('download', _download);
+            tags.removeListener('linkModule', _linkModule);
+            tags.removeListener('linkAttribute', _linkAttribute);
+            tags.removeListener('mutateAddModule', _mutateAddModule);
+            tags.removeListener('mutateRemoveModule', _mutateRemoveModule);
+            tags.removeListener('mutateAddEntity', _mutateAddEntity);
+            tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
             tags.removeListener('setAttribute', _setAttribute);
+            tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
 
             fs.removeListener('upload', _upload);
 
@@ -2365,67 +2686,6 @@ class World {
               } else {
                 return null;
               }
-            }
-
-            createFile(blob) {
-              const id = _makeFileId();
-              const {name = _makeId()} = blob;
-              const mimeType = (() => {
-                const {type: mimeType} = blob;
-
-                if (mimeType) {
-                  return mimeType;
-                } else {
-                  const match = name.match(/\.([^.]+)$/);
-                  const suffix = match ? match[1] : 'blank';
-
-                  return 'mime/' + suffix;
-                }
-              })();
-              const matrix = _getInFrontOfCameraMatrix();
-              const itemSpec = {
-                type: 'file',
-                id,
-                name,
-                mimeType,
-                matrix,
-                instancing: true,
-              };
-              _handleAddTag(localUserId, itemSpec, 'world');
-
-              const elementTagMeshes = elementManager.getTagMeshes();
-              const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
-              if (!rend.isOpen()) {
-                tempTagMesh.visible = false;
-              }
-
-              const _cleanupTempTagMesh = () => {
-                elementManager.remove(tempTagMesh);
-
-                tags.destroyTag(tempTagMesh);
-              };
-
-              return new Promise((accept, reject) => {
-                fs.writeFile(id, blob)
-                  .then(() => {
-                    _cleanupTempTagMesh();
-
-                    _addTag(itemSpec, 'world');
-
-                    const elementTagMeshes = elementManager.getTagMeshes();
-                    const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
-                    if (!rend.isOpen()) {
-                      tagMesh.visible = false;
-                    }
-
-                    accept(tagMesh);
-                  })
-                  .catch(err => {
-                    _cleanupTempTagMesh();
-
-                    reject(err);
-                  });
-              });
             } */
           }
           const worldApi = new WorldApi();

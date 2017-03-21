@@ -1,4 +1,6 @@
 import MultiMutex from 'multimutex';
+import CssSelectorParser from 'css-selector-parser';
+const cssSelectorParser = new CssSelectorParser.CssSelectorParser();
 
 import {
   WIDTH,
@@ -12,9 +14,8 @@ import {
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
 } from './lib/constants/tags';
+import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
-import menuUtils from './lib/utils/menu';
-import OBJLoader from './lib/three-extra/OBJLoader';
 
 const SIDES = ['left', 'right'];
 
@@ -26,6 +27,7 @@ const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
 const itemMutexSymbol = Symbol();
+const MODULE_TAG_NAME = 'module'.toUpperCase();
 const ITEM_LOCK_KEY = 'key';
 
 class Tags {
@@ -48,6 +50,7 @@ class Tags {
       '/core/engines/webvr',
       '/core/engines/cyborg',
       '/core/engines/biolumi',
+      '/core/engines/fs',
       '/core/engines/somnifer',
       '/core/engines/rend',
       '/core/plugins/js-utils',
@@ -60,6 +63,7 @@ class Tags {
         webvr,
         cyborg,
         biolumi,
+        fs,
         somnifer,
         rend,
         jsUtils,
@@ -74,9 +78,8 @@ class Tags {
           const transparentImg = biolumi.getTransparentImg();
           const {sound} = somnifer;
 
-          const tagsRenderer = tagsRender.makeRenderer({creatureUtils});
-
-          const THREEOBJLoader = OBJLoader(THREE);
+          const menuUtils = menuUtilser.makeUtils({fs});
+          const tagsRenderer = tagsRender.makeRenderer({menuUtils, creatureUtils});
 
           const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
           const _decomposeMatrix = matrix => {
@@ -93,16 +96,456 @@ class Tags {
             opacity: 0.5,
             transparent: true,
           });
+          const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x808080,
+            linewidth: 1,
+          });
+
           const subcontentFontSpec = {
             fonts: biolumi.getFonts(),
-            fontSize: 20,
+            fontSize: 24,
             lineHeight: 1.4,
             fontWeight: biolumi.getFontWeight(),
             fontStyle: biolumi.getFontStyle(),
           };
 
-          const rootElement = document.createElement('div');
-          rootElement.id = 'zeo-root';
+          const rootWorldElement = document.createElement('world');
+          document.body.appendChild(rootWorldElement);
+
+          const rootModulesElement = document.createElement('modules');
+          rootWorldElement.appendChild(rootModulesElement);
+          const rootModulesObserver = new MutationObserver(mutations => {
+            const _reifyModule = moduleElement => {
+              let {item} = moduleElement;
+              if (!item) { // added manually
+                tagsApi.emit('mutateAddModule', {
+                  element: moduleElement,
+                });
+              }
+              const name = moduleElement.getAttribute('src');
+              const tagMesh = tagMeshes.find(tagMesh =>
+                tagMesh.item.type === 'module' &&
+                tagMesh.item.name === name &&
+                !tagMesh.item.metadata.isStatic
+              );
+              item = tagMesh.item;
+
+              const _updateNpmUi = fn => {
+                const tagMesh = tagMeshes.find(tagMesh =>
+                  tagMesh.item.type === 'module' &&
+                  tagMesh.item.name === item.name &&
+                  tagMesh.item.metadata.isStatic
+                );
+                if (tagMesh) {
+                  fn(tagMesh);
+
+                  const {planeMesh: {page}} = tagMesh;
+                  page.update();
+                }
+              };
+
+              item.lock() // XXX globalize these locks
+                .then(unlock => {
+                  archae.requestPlugin(name)
+                    .then(pluginInstance => {
+                      item.instance = moduleElement;
+                      item.instancing = false;
+
+                      const _updateInstanceUi = () => {
+                        const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                        page.update();
+                        openPage.update();
+                      };
+                      _updateInstanceUi();
+
+                      _updateNpmUi(tagMesh => {
+                        const {item} = tagMesh;
+                        item.instancing = false;
+                        item.metadata.exists = true;
+                      });
+
+                      unlock();
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      unlock();
+                    });
+                });
+
+              item.instancing = true;
+
+              const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+              page.update();
+              openPage.update();
+
+              _updateNpmUi(tagMesh => {
+                const {item} = tagMesh;
+                item.instancing = true;
+              });
+            };
+
+            const _unreifyModule = moduleElement => {
+              const {item} = moduleElement;
+
+              if (item) {
+                const _updateNpmUi = fn => {
+                  const tagMesh = tagMeshes.find(tagMesh =>
+                    tagMesh.item.type === 'module' &&
+                    tagMesh.item.name === item.name &&
+                    tagMesh.item.metadata.isStatic
+                  );
+                  if (tagMesh) {
+                    fn(tagMesh);
+
+                    const {planeMesh: {page}} = tagMesh;
+                    page.update();
+                  }
+                };
+
+                item.lock()
+                  .then(unlock => {
+                    const name = moduleElement.getAttribute('src');
+
+                    archae.releasePlugin(name)
+                      .then(() => {
+                        _updateNpmUi(tagMesh => {
+                          const {item} = tagMesh;
+                          item.instancing = false;
+                          item.metadata.exists = false;
+                        });
+
+                        unlock();
+                      })
+                      .catch(err => {
+                        console.warn(err);
+
+                        unlock();
+                      });
+                  });
+
+                _updateNpmUi(tagMesh => {
+                  const {item} = tagMesh;
+                  item.instancing = true;
+                  item.metadata.exists = false;
+                });
+
+                moduleElement.item = null;
+                item.instance = null;
+
+                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === item.id);
+                if (tagMesh) { // removed manually
+                  tagsApi.emit('mutateRemoveModule', {
+                    id: item.id,
+                  });
+                }
+              }
+            };
+
+            for (let i = 0; i < mutations.length; i++) {
+              const mutation = mutations[i];
+              const {type} = mutation;
+
+              if (type === 'childList') {
+                const {addedNodes} = mutation;
+
+                for (let j = 0; j < addedNodes.length; j++) {
+                  const addedNode = addedNodes[j];
+
+                  if (addedNode.tagName === MODULE_TAG_NAME) {
+                    const moduleElement = addedNode;
+                    const name = moduleElement.getAttribute('src');
+                    
+                    if (name) { // adding
+                      _reifyModule(moduleElement);
+                    }
+                  }
+                }
+
+                const {removedNodes} = mutation;
+                for (let j = 0; j < removedNodes.length; j++) {
+                  const removedNode = removedNodes[j];
+
+                  if (removedNode.tagName === MODULE_TAG_NAME) {
+                    const moduleElement = removedNode;
+                    const name = moduleElement.getAttribute('src');
+                    
+                    if (name) { // removing
+                      _unreifyModule(moduleElement);
+                    }
+                  }
+                }
+              } else if (type === 'attributes') {
+                const {target} = mutation;
+
+                if (target.nodeType === Node.ELEMENT_NODE) {
+                  const moduleElement = target;
+                  const {attributeName} = mutation;
+
+                  if (attributeName === 'src') {
+                    const {oldValue: oldValueString} = mutation;
+                    const newValueString = moduleElement.getAttribute('src');
+
+                    if (!oldValueString && newValueString) { // adding
+                      _reifyModule(moduleElement);
+                    } else if (oldValueString && !newValueString) { // removing
+                      _unreifyModule(moduleElement);
+                    } else if (oldValueString && newValueString) { // changing
+                      _unreifyModule(moduleElement);
+                      _reifyModule(moduleElement);
+                    }
+                  }
+                }
+              }
+            }
+          });
+          rootModulesObserver.observe(rootModulesElement, {
+            childList: true,
+            attributes: true,
+            subtree: true,
+            attributeOldValue: true,
+          });
+
+          const rootComponentsElement = document.createElement('components');
+          // rootWorldElement.appendChild(rootComponentsElement);
+          const rootComponentsObserver = new MutationObserver(mutations => {
+            for (let i = 0; i < mutations.length; i++) {
+              const mutation = mutations[i];
+              const {type} = mutation;
+
+              if (type === 'childList') {
+                const {addedNodes} = mutation;
+
+                for (let j = 0; j < addedNodes.length; j++) {
+                  const addedNode = addedNodes[j];
+                  const componentElement = addedNode;
+                  const {componentApi} = componentElement;
+                  const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+                  const boundEntitySpecs = _getBoundEntitySpecs(componentSelector, componentAttributes);
+
+                  for (let k = 0; k < boundEntitySpecs.length; k++) {
+                    const boundEntitySpec = boundEntitySpecs[k];
+                    const {tagMesh, matchingAttributes} = boundEntitySpec;
+                    const {item: entityItem} = tagMesh;
+                    const {instance: entityElement} = entityItem;
+
+                    componentElement.entityAddedCallback(entityElement);
+
+                    for (let l = 0; l < matchingAttributes.length; l++) {
+                      const matchingAttribute = matchingAttributes[l];
+                      const {attributes: entityAttributes} = entityItem;
+                      const entityAttribute = entityAttributes[matchingAttribute];
+                      const {value: attributeValueJson} = entityAttribute;
+                      const componentAttribute = componentAttributes[matchingAttribute];
+                      const {type: attributeType} = componentAttribute;
+                      const attributeValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
+
+                      componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                    }
+                  }
+                }
+
+                const {removedNodes} = mutation;
+                for (let j = 0; j < removedNodes.length; j++) {
+                  const removedNode = removedNodes[j];
+                  const componentElement = removedNode;
+                  const {componentApi} = componentElement;
+                  const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+                  const boundEntitySpecs = _getBoundEntitySpecs(componentSelector, componentAttributes);
+
+                  for (let k = 0; k < boundEntitySpecs.length; k++) {
+                    const boundEntitySpec = boundEntitySpecs[k];
+                    const {tagMesh, matchingAttributes} = boundEntitySpec;
+                    const {item: entityItem} = tagMesh;
+                    const {instance: entityElement} = entityItem;
+
+                    componentElement.entityRemovedCallback(entityElement);
+                  }
+                }
+              // } else if (type === 'attributes') {
+              }
+            }
+          });
+          rootComponentsObserver.observe(rootComponentsElement, {
+            childList: true,
+            // attributes: true,
+            subtree: true,
+            // attributeOldValue: true,
+          });
+
+          const _getElementJsonAttributes = element => {
+            const result = {};
+
+            const {attributes} = element;
+            for (let i = 0; i < attributes.length; i++) {
+              const attribute = attributes[i];
+              const {name, value: valueString} = attribute;
+              const value = _parseAttribute(valueString);
+
+              result[name] = {
+                value: value,
+              };
+            }
+
+            return result;
+          };
+          const _parseAttribute = attributeString => {
+            if (attributeString !== null) {
+              return _jsonParse(attributeString);
+            } else {
+              return undefined;
+            }
+          };
+          const _stringifyAttribute = attributeValue => {
+            if (attributeValue !== undefined) {
+              return JSON.stringify(attributeValue);
+            } else {
+              return '';
+            }
+          };
+
+          const rootEntitiesElement = document.createElement('entities');
+          rootWorldElement.appendChild(rootEntitiesElement);
+          const rootEntitiesObserver = new MutationObserver(mutations => {
+            for (let i = 0; i < mutations.length; i++) {
+              const mutation = mutations[i];
+              const {type} = mutation;
+
+              if (type === 'childList') {
+                const {addedNodes} = mutation;
+                for (let j = 0; j < addedNodes.length; j++) {
+                  const addedNode = addedNodes[j];
+
+                  if (addedNode.nodeType === Node.ELEMENT_NODE) {
+                    const entityElement = addedNode;
+                    const {item: initialEntityItem} = entityElement;
+                    const entityAttributes = _getElementJsonAttributes(entityElement);
+                    if (!initialEntityItem) { // element added manually
+                      tagsApi.emit('mutateAddEntity', {
+                        element: entityElement,
+                        attributes: entityAttributes,
+                      });
+                    }
+
+                    const entitySelector = _getElementSelector(entityElement);
+                    const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
+                    for (let k = 0; k < boundComponentSpecs.length; k++) {
+                      const boundComponentSpec = boundComponentSpecs[k];
+                      const {componentElement, matchingAttributes} = boundComponentSpec;
+                      const {componentApi} = componentElement;
+                      const {attributes: componentAttributes = {}} = componentApi;
+
+                      componentElement.entityAddedCallback(entityElement);
+
+                      for (let l = 0; l < matchingAttributes.length; l++) {
+                        const matchingAttribute = matchingAttributes[l];
+                        const entityAttribute = entityAttributes[matchingAttribute];
+                        const {value: attributeValueJson} = entityAttribute;
+                        const componentAttribute = componentAttributes[matchingAttribute];
+                        const {type: attributeType} = componentAttribute;
+                        const attributeValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
+
+                        componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                      }
+                    }
+                  }
+                }
+
+                const {removedNodes} = mutation;
+                for (let k = 0; k < removedNodes.length; k++) {
+                  const removedNode = removedNodes[k];
+
+                  if (removedNode.nodeType === Node.ELEMENT_NODE) {
+                    const entityElement = removedNode;
+                    const {item: initialEntityItem} = entityElement;
+                    if (initialEntityItem) { // element removed manually
+                      const {id: entityId} = initialEntityItem;
+                      tagsApi.emit('mutateRemoveEntity', {
+                        id: entityId,
+                      });
+                    }
+
+                    const entitySelector = _getElementSelector(entityElement);
+                    const entityAttributes = _getElementJsonAttributes(entityElement);
+                    const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
+                    for (let l = 0; l < boundComponentSpecs.length; l++) {
+                      const boundComponentSpec = boundComponentSpecs[l];
+                      const {componentElement} = boundComponentSpec;
+
+                      componentElement.entityRemovedCallback(entityElement);
+                    }
+                  }
+                }
+              } else if (type === 'attributes') {
+                const {target} = mutation;
+
+                if (target.nodeType === Node.ELEMENT_NODE) {
+                  const entityElement = target;
+                  const {attributeName, oldValue: oldValueString} = mutation;
+                  const newValueString = entityElement.getAttribute(attributeName);
+                  const oldValueJson = _parseAttribute(oldValueString);
+                  const newValueJson = _parseAttribute(newValueString);
+
+                  const {item: entityItem} = entityElement;
+                  const {id: entityId} = entityItem;
+                  tagsApi.emit('mutateSetAttribute', {
+                    id: entityId,
+                    name: attributeName,
+                    value: newValueJson,
+                  });
+
+                  const oldEntityElement = (() => {
+                    const oldEntityElement = entityElement.cloneNode(false);
+                    if (oldValueString === null && newValueString !== null) {
+                      oldEntityElement.removeAttribute(attributeName);
+                    } else if (oldValueString !== null && newValueString === null) {
+                      oldEntityElement.setAttribute(attributeName, oldValueString);
+                    }
+                    return oldEntityElement;
+                  })();
+
+                  const boundComponentSpecs = _getBoundComponentAttributeSpecs({[attributeName]: true});
+                  for (let i = 0; i < boundComponentSpecs.length; i++) {
+                    const boundComponentSpec = boundComponentSpecs[i];
+                    const {componentElement, matchingAttributes} = boundComponentSpec;
+                    const {componentApi} = componentElement;
+                    const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+                    const oldElementMatches = oldEntityElement.webkitMatchesSelector(componentSelector);
+                    const newElementMatches = entityElement.webkitMatchesSelector(componentSelector);
+
+                    for (let j = 0; j < matchingAttributes.length; j++) {
+                      const attributeName = matchingAttributes[j];
+                      const componentAttribute = componentAttributes[attributeName];
+                      const {type: attributeType} = componentAttribute;
+                      const oldAttributeValue = menuUtils.castValueToCallbackValue(oldValueJson, attributeType);
+                      const newAttributeValue = menuUtils.castValueToCallbackValue(newValueJson, attributeType);
+
+                      if (newValueString !== null) { // adding attribute
+                        if (!oldElementMatches && newElementMatches) { // if no matching attributes were previously applied, mount the component on the entity
+                          componentElement.entityAddedCallback(entityElement);
+                        }
+                        if (newElementMatches) {
+                          componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                        }
+                      } else { // removing attribute
+                        if (oldElementMatches && !newElementMatches) { // if this is the last attribute that applied, unmount the component from the entity
+                          componentElement.entityRemovedCallback(entityElement);
+                        } else {
+                          componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          });
+          rootEntitiesObserver.observe(rootEntitiesElement, {
+            childList: true,
+            attributes: true,
+            subtree: true,
+            attributeOldValue: true,
+          });
 
           class UiManager {
             constructor({width, height, color, metadata}) {
@@ -110,8 +553,6 @@ class Tags {
               this.height = height;
               this.color = color;
               this.metadata = metadata;
-
-              this.uis = [];
             }
 
             addPage(pageSpec, options) {
@@ -122,18 +563,8 @@ class Tags {
                 height: height,
                 color,
               });
-              uis.push(ui);
-
-              return ui.addPage(pageSpec, options);
-            }
-
-            update() {
-              const {uis} = this;
-
-              for (let i = 0; i < uis.length; i++) {
-                const ui = uis[i];
-                ui.update();
-              }
+              const pageMesh = ui.addPage(pageSpec, options);
+              return pageMesh;
             }
           }
           const uiManager = new UiManager({
@@ -160,23 +591,48 @@ class Tags {
               open: false,
             },
           });
+          const uiAttributeManager = new UiManager({
+            width: WIDTH,
+            height: HEIGHT,
+            color: [1, 1, 1, 1],
+          });
 
           const hoverStates = {
             left: biolumi.makeMenuHoverState(),
             right: biolumi.makeMenuHoverState(),
           };
+
           const dotMeshes = {
             left: biolumi.makeMenuDotMesh(),
             right: biolumi.makeMenuDotMesh(),
           };
           scene.add(dotMeshes.left);
           scene.add(dotMeshes.right);
-          const boxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
+
+          const _makeDragState = () => ({
+            src: null,
+            dst: null,
+          });
+          const dragStates = {
+            left: _makeDragState(),
+            right: _makeDragState(),
           };
-          scene.add(boxMeshes.left);
-          scene.add(boxMeshes.right);
+
+          const _makeDragLine = () => {
+            const geometry = new THREE.BufferGeometry();
+            geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 2), 3));
+            const material = lineMaterial;
+
+            const line = new THREE.Line(geometry, material);
+            line.visible = false;
+            return line;
+          };
+          const dragLines = {
+            left: _makeDragLine(),
+            right: _makeDragLine(),
+          };
+          scene.add(dragLines.left);
+          scene.add(dragLines.right);
 
           const _makeGrabBoxMesh = () => {
             const width = WORLD_WIDTH;
@@ -201,7 +657,14 @@ class Tags {
           scene.add(grabBoxMeshes.left);
           scene.add(grabBoxMeshes.right);
 
-          const _makePositioningMesh = ({opacity = 1} = {}) => {
+          const boxMeshes = {
+            left: biolumi.makeMenuBoxMesh(),
+            right: biolumi.makeMenuBoxMesh(),
+          };
+          scene.add(boxMeshes.left);
+          scene.add(boxMeshes.right);
+
+          const positioningMesh = (() => {
             const geometry = (() => {
               const result = new THREE.BufferGeometry();
               const positions = Float32Array.from([
@@ -228,19 +691,13 @@ class Tags {
               // color: 0xFFFFFF,
               // color: 0x333333,
               vertexColors: THREE.VertexColors,
-              opacity: opacity,
             });
 
             const mesh = new THREE.LineSegments(geometry, material);
             mesh.visible = false;
             return mesh;
-          };
-          const positioningMesh = _makePositioningMesh();
+          })();
           scene.add(positioningMesh);
-          const oldPositioningMesh = _makePositioningMesh({
-            opacity: 0.5,
-          });
-          scene.add(oldPositioningMesh);
 
           const detailsState = {
             inputText: '',
@@ -289,17 +746,17 @@ class Tags {
                 16
               );
 
-              const img = new Image();
-              img.src = '/archae/fs/' + item.id;
-              img.onload = () => {
-                const boxImg = imageUtils.boxizeImage(img);
+              fs.makeFile('/fs/' + item.id + item.name)
+                .read({type: 'image'})
+                .then(img => {
+                  const boxImg = imageUtils.boxizeImage(img);
 
-                texture.image = boxImg;
-                texture.needsUpdate = true;
-              };
-              img.onerror = err => {
-                console.warn(err);
-              };
+                  texture.image = boxImg;
+                  texture.needsUpdate = true;
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
 
               const material = new THREE.MeshBasicMaterial({
                 map: texture,
@@ -318,30 +775,30 @@ class Tags {
 
             const mesh = new THREE.Object3D();
 
-            const audio = document.createElement('audio');
-            audio.src = '/archae/fs/' + item.id;
-            audio.oncanplay = () => {
-              soundBody.setInputElement(audio);
+            fs.makeFile('/fs/' + item.id + item.name)
+              .read({type: 'audio'})
+              .then(audio => {
+                soundBody.setInputElement(audio);
 
-              audio.currentTime = item.value * audio.duration;
+                audio.currentTime = item.value * audio.duration;
 
-              if (!item.paused) {
-                audio.play();
-              }
+                if (!item.paused) {
+                  audio.play();
+                }
 
-              localUpdates.push(localUpdate);
+                mesh.audio = audio;
 
-              audio.oncanplay = null;
-            };
-            audio.onerror = err => {
-              console.warn(err);
-            };
-            mesh.audio = audio;
+                localUpdates.push(localUpdate);
+              })
+              .catch(err => {
+                console.warn(err);
+              });
 
             const soundBody = new sound.Body();
             soundBody.setObject(mesh);
 
             const localUpdate = () => {
+              const {audio} = mesh;
               const {value: prevValue} = item;
               const nextValue = audio.currentTime / audio.duration;
               if (Math.abs(nextValue - prevValue) >= (1 / 1000)) { // to reduce the frequency of texture updates
@@ -353,7 +810,8 @@ class Tags {
             };
 
             mesh.destroy = () => {
-              if (!audio.paused) {
+              const {audio} = mesh;
+              if (audio && !audio.paused) {
                 audio.pause();
               }
 
@@ -392,31 +850,32 @@ class Tags {
             })();
             const mesh = new THREE.Mesh(geometry, material);
 
-            const video = document.createElement('video');
-            video.src = '/archae/fs/' + item.id;
-            video.width = OPEN_WIDTH;
-            video.height = (OPEN_HEIGHT - HEIGHT) - 100;
-            video.oncanplay = () => {
-              const {map: texture} = material;
+            fs.makeFile('/fs/' + item.id + item.name)
+              .read({type: 'video'})
+              .then(video => {
+                video.width = OPEN_WIDTH;
+                video.height = (OPEN_HEIGHT - HEIGHT) - 100;
 
-              texture.image = video;
-              texture.needsUpdate = true;
+                const {map: texture} = material;
 
-              soundBody.setInputElement(video);
+                texture.image = video;
+                texture.needsUpdate = true;
 
-              video.currentTime = item.value * video.duration;
+                soundBody.setInputElement(video);
 
-              if (!item.paused) {
-                video.play();
-              }
+                video.currentTime = item.value * video.duration;
 
-              localUpdates.push(localUpdate);
+                if (!item.paused) {
+                  video.play();
+                }
 
-              video.oncanplay = null;
-            };
-            video.onerror = err => {
-              console.warn(err);
-            };
+                mesh.video = video;
+
+                localUpdates.push(localUpdate);
+              })
+              .catch(err => {
+                console.warn(err);
+              });
 
             const soundBody = new sound.Body();
             soundBody.setObject(mesh);
@@ -438,7 +897,8 @@ class Tags {
             };
 
             mesh.destroy = () => {
-              if (!video.paused) {
+              const {video} = mesh;
+              if (video && !video.paused) {
                 video.pause();
               }
 
@@ -450,17 +910,8 @@ class Tags {
 
             accept(mesh);
           });
-          const _requestFileItemModelMesh = tagMesh => fetch('/archae/fs/' + tagMesh.item.id)
-            .then(res => res.text()
-              .then(modelText => new Promise((accept, reject) => {
-                const loader = new THREEOBJLoader();
-
-                // XXX this texture path needs to actually be fetchable from /archae/fs/ by path, since that's what the model will be referencing
-                loader.setPath('/archae/fs/');
-                const modelMesh = loader.parse(modelText);
-                accept(modelMesh);
-              }))
-            );
+          const _requestFileItemModelMesh = tagMesh => fs.makeFile('/fs/' + tagMesh.item.id + tagMesh.item.name)
+            .read({type: 'model'});
 
           const _trigger = e => {
             const {side} = e;
@@ -474,7 +925,32 @@ class Tags {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
-                if (match = onclick.match(/^tag:open:(.+)$/)) {
+                if (match = onclick.match(/^entity:addAttribute:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                  const {item} = tagMesh;
+                  const {attributes} = item;
+                  const newAtrributeName = (() => {
+                    for (let i = 1;; i++) {
+                      const attributeName = 'attribute-' + i;
+                      if (!(attributeName in attributes)) {
+                        return attributeName;
+                      }
+                    }
+
+                    return null;
+                  })();
+
+                  tagsApi.emit('setAttribute', {
+                    id: id,
+                    name: newAtrributeName,
+                    value: 'value',
+                  });
+
+                  e.stopImmediatePropagation();
+
+                  return true;
+                } else if (match = onclick.match(/^tag:open:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
@@ -569,12 +1045,28 @@ class Tags {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
-                  const {name} = item;
+                  const {name, metadata: {paths}} = item;
 
-                  tagsApi.emit('download', {
+                  const downloadEvent = {
                     id,
-                    name,
+                  };
+                  if (paths.length === 1) {
+                    downloadEvent.name = name;
+                  }
+                  tagsApi.emit('download', downloadEvent);
+
+                  return true;
+                } else if (match = onclick.match(/^attribute:remove:(.+?):(.+?)$/)) {
+                  const id = match[1];
+                  const name = match[2];
+
+                  tagsApi.emit('setAttribute', {
+                    id: id,
+                    name: name,
+                    value: undefined,
                   });
+
+                  return true;
                 } else if (match = onclick.match(/^media:(play|pause):(.+)$/)) {
                   const action = match[1];
                   const id = match[2];
@@ -588,6 +1080,8 @@ class Tags {
                   }
 
                   openPage.update();
+
+                  return true;
                 } else if (match = onclick.match(/^media:seek:(.+)$/)) {
                   const id = match[1];
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
@@ -597,6 +1091,8 @@ class Tags {
                   item.seek(value);
 
                   openPage.update();
+
+                  return true;
                 } else {
                   return false;
                 }
@@ -616,7 +1112,7 @@ class Tags {
                 })();
                 tagsApi.emit('setAttribute', {
                   id: positioningId,
-                  attribute: positioningName,
+                  name: positioningName,
                   value: newValue,
                 });
 
@@ -652,80 +1148,89 @@ class Tags {
                   const {item} = tagMesh;
                   const {attributes} = item;
                   const attribute = attributes[attributeName];
-                  const {value: attributeValue, type: attributeType} = attribute;
+                  const {value: attributeValue} = attribute;
+
+                  const _updateAttributes = () => {
+                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
+                    const {attributesMesh} = tagMesh;
+                    attributesMesh.update();
+                  };
 
                   if (action === 'position') {
-                    oldPositioningMesh.position.set(attributeValue[0], attributeValue[1], attributeValue[2]);
-                    oldPositioningMesh.quaternion.set(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
-                    oldPositioningMesh.scale.set(attributeValue[7], attributeValue[8], attributeValue[9]);
-
                     detailsState.positioningId = tagId;
                     detailsState.positioningName = attributeName;
                     detailsState.positioningSide = side;
 
                     focusState.type = '';
                   } else if (action === 'focus') {
-                    const {value} = hoverState;
+                    const {value: hoverValue} = hoverState;
+                    const {type} = _getAttributeSpec(attributeName);
 
                     const textProperties = (() => {
-                      if (attributeType === 'text') {
-                        const valuePx = value * 400; // XXX update these
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                      } else if (attributeType === 'number') {
-                        const valuePx = value * 100;
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                      } else if (attributeType === 'color') {
-                        const valuePx = value * (400 - (40 + 4));
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
-                      } else if (attributeType === 'file') {
-                        const valuePx = value * 260;
-                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, attributeType), subcontentFontSpec, valuePx);
+                      if (type === 'text') {
+                        const hoverValuePx = hoverValue * 400; // XXX update these
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
+                      } else if (type === 'number') {
+                        const hoverValuePx = hoverValue * 100;
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
+                      } else if (type === 'color') {
+                        const hoverValuePx = hoverValue * (400 - (40 + 4));
+                        return biolumi.getTextPropertiesFromCoord(menuUtils.castValueValueToString(attributeValue, type), subcontentFontSpec, hoverValuePx);
                       } else {
                         return null;
                       }
                     })();
                     if (textProperties) {
-                      detailsState.inputText = menuUtils.castValueValueToString(attributeValue, attributeType);
+                      detailsState.inputText = menuUtils.castValueValueToString(attributeValue, type);
                       const {index, px} = textProperties;
                       detailsState.inputIndex = index;
                       detailsState.inputValue = px;
                     }
 
                     focusState.type = 'attribute:' + tagId + ':' + attributeName;
+
+                    _updateAttributes();
                   } else if (action === 'set') {
+                    focusState.type = '';
+
                     tagsApi.emit('setAttribute', {
                       id: tagId,
-                      attribute: attributeName,
+                      name: attributeName,
                       value: value,
                     });
 
-                    focusState.type = '';
+                    // _updateAttributes();
                   } else if (action === 'tweak') {
-                    const {value} = hoverState;
-                    const {min, max, step} = attribute;
-
                     const newValue = (() => {
+                      const {value} = hoverState;
+                      const {min, max, step} = _getAttributeSpec(attributeName);
+
                       let n = min + (value * (max - min));
                       if (step > 0) {
-                        n = Math.floor(n / step) * step;
+                        n = Math.round(n / step) * step;
                       }
                       return n;
                     })();
+
+                    focusState.type = '';
+
                     tagsApi.emit('setAttribute', {
                       id: tagId,
-                      attribute: attributeName,
+                      name: attributeName,
                       value: newValue,
                     });
 
-                    focusState.type = '';
+                    // _updateAttributes();
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
 
                     tagsApi.emit('setAttribute', {
                       id: tagId,
-                      attribute: attributeName,
+                      name: attributeName,
                       value: newValue,
                     });
+
+                    _updateAttributes();
                   } else if (action === 'choose') {
                     /* elementsState.choosingName = attributeName;
 
@@ -756,8 +1261,8 @@ class Tags {
                     }); */
                   }
 
-                  const {planeOpenMesh: {page: openPage}} = tagMesh;
-                  openPage.update();
+                  /* const {planeOpenMesh: {page: openPage}} = tagMesh;
+                  openPage.update(); */
 
                   return true;
                 } else {
@@ -771,6 +1276,155 @@ class Tags {
             _doClickOpen() || _doSetPosition() || _doClickAttribute();
           };
           input.on('trigger', _trigger);
+          const _triggerdown = e => {
+            const {side} = e;
+
+            const _doClickTag = () => {
+              const hoverState = hoverStates[side];
+              const {intersectionPoint} = hoverState;
+
+              if (intersectionPoint) {
+                const {anchor} = hoverState;
+                const onclick = (anchor && anchor.onclick) || '';
+
+                let match;
+                if (match = onclick.match(/^module:link:(.+)$/)) {
+                  const id = match[1];
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                  const dragState = dragStates[side];
+                  dragState.src = {
+                    type: 'module',
+                    tagMesh: tagMesh,
+                  };
+
+                  return true;
+                } else if (match = onclick.match(/^attribute:(.+?):(.+?):link$/)) {
+                  const id = match[1];
+                  const attributeName = match[2];
+
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+
+                  const dragState = dragStates[side];
+                  dragState.src = {
+                    type: 'attribute',
+                    tagMesh: tagMesh,
+                    attributeName: attributeName,
+                  };
+
+                  return true;
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
+
+            _doClickTag();
+          };
+          input.on('triggerdown', _triggerdown);
+          const _triggerup = e => {
+            const {side} = e;
+
+            const _doClickTag = () => {
+              const dragState = dragStates[side];
+              const {src, dst} = dragState;
+
+              if (src && dst) {
+                const {type} = src;
+
+                if (type === 'module') {
+                  const {tagMesh: srcTagMesh} = src;
+                  const {tagMesh: dstTagMesh} = dst;
+
+                  if (srcTagMesh === dstTagMesh) {
+                    tagsApi.emit('linkModule', {
+                      side,
+                      srcTagMesh,
+                      dstTagMesh: null,
+                    });
+
+                    dragState.src = null;
+                    dragState.dst = null;
+
+                    return true;
+                  } else {
+                    tagsApi.emit('linkModule', {
+                      side,
+                      srcTagMesh,
+                      dstTagMesh,
+                    });
+
+                    dragState.src = null;
+                    dragState.dst = null;
+
+                    return true;
+                  }
+                } else if (type === 'attribute') {
+                  const {tagMesh: srcTagMesh, attributeName} = src;
+                  const {tagMesh: dstTagMesh} = dst;
+
+                  tagsApi.emit('linkAttribute', {
+                    side,
+                    srcTagMesh,
+                    attributeName,
+                    dstTagMesh,
+                  });
+
+                  dragState.src = null;
+                  dragState.dst = null;
+
+                  return true;
+                } else {
+                  dragState.src = null;
+                  dragState.dst = null;
+
+                  return false;
+                }
+              } else {
+                dragState.src = null;
+                dragState.dst = null;
+
+                return false;
+              }
+            };
+
+            _doClickTag();
+          };
+          input.on('triggerup', _triggerup);
+
+          const _keydown = e => {
+            const {type} = focusState;
+
+            let match;
+            if (match = focusState.type.match(/^attribute:(.+?):(.+?)$/)) {
+              const tagId = match[1];
+              const attributeName = match[2];
+
+              const applySpec = biolumi.applyStateKeyEvent(detailsState, subcontentFontSpec, e);
+              if (applySpec) {
+                const {commit} = applySpec;
+                if (commit) {
+                  focusState.type = '';
+                }
+
+                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
+                const {inputText} = detailsState;
+                tagMesh.setAttribute(attributeName, inputText);
+
+                e.stopImmediatePropagation();
+              }
+            }
+          };
+          input.on('keydown', _keydown, {
+            priority: 1,
+          });
+          const _keyboarddown = _keydown;
+          input.on('keyboarddown', _keyboarddown, {
+            priority: 1,
+          });
+
           const _update = () => {
             const _updateControllers = () => {
               const _updateElementAnchors = () => {
@@ -788,20 +1442,25 @@ class Tags {
                       const dotMesh = dotMeshes[side];
                       const boxMesh = boxMeshes[side];
 
-                      biolumi.updateAnchors({
-                        objects: tagMeshes.map(tagMesh => {
+                      const objects = (() => {
+                        const result = [];
+
+                        for (let i = 0; i < tagMeshes.length; i++) {
+                          const tagMesh = tagMeshes[i];
+
                           if (
                             (tagMesh.parent === scene) ||
                             controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh)
                           ) {
-                            const {item: {open}} = tagMesh;
+                            const {item} = tagMesh;
+                            const {type, open} = item;
 
                             if (!open) {
                               const {planeMesh} = tagMesh;
                               const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
                               const {page} = planeMesh;
 
-                              return {
+                              result.push({
                                 matrixObject: matrixObject,
                                 page: page,
                                 width: WIDTH,
@@ -809,14 +1468,42 @@ class Tags {
                                 worldWidth: WORLD_WIDTH,
                                 worldHeight: WORLD_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
-                                metadata: tagMesh,
-                              };
+                                metadata: {
+                                  type,
+                                  tagMesh,
+                                },
+                              });
+
+                              if (type === 'entity') {
+                                const {attributesMesh} = tagMesh;
+                                const {attributeMeshes} = attributesMesh;
+
+                                for (let j = 0; j < attributeMeshes.length; j++) {
+                                  const attributeMesh = attributeMeshes[j];
+                                  const matrixObject = _decomposeObjectMatrixWorld(attributeMesh);
+                                  const {page} = attributeMesh;
+
+                                  result.push({
+                                    matrixObject: matrixObject,
+                                    page: page,
+                                    width: WIDTH,
+                                    height: HEIGHT,
+                                    worldWidth: WORLD_WIDTH,
+                                    worldHeight: WORLD_HEIGHT,
+                                    worldDepth: WORLD_DEPTH,
+                                    metadata: {
+                                      type: 'attribute',
+                                      tagMesh: attributeMesh,
+                                    },
+                                  });
+                                }
+                              }
                             } else {
                               const {planeOpenMesh} = tagMesh;
                               const matrixObject = _decomposeObjectMatrixWorld(planeOpenMesh);
                               const {page} = planeOpenMesh;
 
-                              return {
+                              result.push({
                                 matrixObject: matrixObject,
                                 page: page,
                                 width: OPEN_WIDTH,
@@ -824,19 +1511,121 @@ class Tags {
                                 worldWidth: WORLD_OPEN_WIDTH,
                                 worldHeight: WORLD_OPEN_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
-                                metadata: tagMesh,
-                              };
+                                metadata: {
+                                  type,
+                                  tagMesh,
+                                },
+                              });
                             }
-                          } else {
-                            return null;
                           }
-                        }).filter(object => object !== null),
+                        }
+
+                        return result;
+                      })();
+                      biolumi.updateAnchors({
+                        objects: objects,
                         hoverState: hoverState,
                         dotMesh: dotMesh,
                         boxMesh: boxMesh,
                         controllerPosition,
                         controllerRotation,
                       });
+                    }
+                  });
+                }
+              }
+              const _updateDragStates = () => {
+                if (rend.isOpen() || hubEnabled) {
+                  SIDES.forEach(side => {
+                    const dragState = dragStates[side];
+                    const {src} = dragState;
+
+                    if (src) {
+                      const hoverState = hoverStates[side];
+                      const {intersectionPoint} = hoverState;
+
+                      if (intersectionPoint) {
+                        const {type: srcType, tagMesh: srcTagMesh} = src;
+                        const {metadata} = hoverState;
+                        const {type: hoverType, tagMesh: hoverTagMesh} = metadata;
+
+                        if (srcType === 'module' && hoverType === 'module' && srcTagMesh === hoverTagMesh) {
+                          dragState.dst = {
+                            type: 'module',
+                            tagMesh: hoverTagMesh,
+                          };
+                        } else if (srcType === 'module' && hoverType === 'entity') {
+                          dragState.dst = {
+                            type: 'entity',
+                            tagMesh: hoverTagMesh,
+                          };
+                        } else if (srcType === 'attribute' && hoverType === 'file') {
+                          dragState.dst = {
+                            type: 'file',
+                            tagMesh: hoverTagMesh,
+                          };
+                        } else {
+                          dragState.dst = null;
+                        }
+                      } else {
+                        dragState.dst = null;
+                      }
+                    }
+                  });
+                }
+              };
+              const _updateDragLines = () => {
+                if (rend.isOpen() || hubEnabled) {
+                  const {gamepads} = webvr.getStatus();
+                  const controllers = cyborg.getControllers();
+                  const controllerMeshes = SIDES.map(side => controllers[side].mesh);
+
+                  SIDES.forEach(side => {
+                    const gamepad = gamepads[side];
+                    const dragState = dragStates[side];
+                    const {src} = dragState;
+                    const dragLine = dragLines[side];
+
+                    if (gamepad && src) {
+                      const {geometry} = dragLine;
+                      const positionsAttribute = geometry.getAttribute('position');
+                      const {array: positions} = positionsAttribute;
+
+                      const {tagMesh: srcTagMesh} = src;
+                      const {position: srcPosition} = srcTagMesh;
+
+                      const dstPosition = (() => {
+                        const {dst} = dragState;
+
+                        const _getControllerPosition = () => gamepad.position;
+
+                        if (dst) {
+                          const {tagMesh: dstTagMesh} = dst;
+
+                          if (dstTagMesh !== srcTagMesh) {
+                            return _decomposeObjectMatrixWorld(dstTagMesh).position;
+                          } else {
+                            return _getControllerPosition();
+                          }
+                        } else {
+                          return _getControllerPosition();
+                        }
+                      })();
+
+                      positions.set(Float32Array.from([
+                        srcPosition.x, srcPosition.y, srcPosition.z,
+                        dstPosition.x, dstPosition.y, dstPosition.z,
+                      ]));
+
+                      positionsAttribute.needsUpdate = true;
+
+                      if (!dragLine.visible) {
+                        dragLine.visible = true;
+                      }
+                    } else {
+                      if (dragLine.visible) {
+                        dragLine.visible = false;
+                      }
                     }
                   });
                 }
@@ -854,28 +1643,21 @@ class Tags {
                     positioningMesh.position.copy(controllerPosition);
                     positioningMesh.quaternion.copy(controllerRotation);
                     positioningMesh.scale.copy(controllerScale);
-
-                    const newValue = controllerPosition.toArray().concat(controllerRotation.toArray()).concat(controllerScale.toArray());
-                    item.setAttribute(positioningName, newValue); // XXX figure out what to do with this live update
                   }
 
                   if (!positioningMesh.visible) {
                     positioningMesh.visible = true;
                   }
-                  if (!oldPositioningMesh.visible) {
-                    oldPositioningMesh.visible = true;
-                  }
                 } else {
                   if (positioningMesh.visible) {
                     positioningMesh.visible = false;
-                  }
-                  if (oldPositioningMesh.visible) {
-                    oldPositioningMesh.visible = false;
                   }
                 }
               };
 
               _updateElementAnchors();
+              _updateDragStates();
+              _updateDragLines();
               _updatePositioningMesh();
             };
             const _updateLocal = () => {
@@ -898,6 +1680,7 @@ class Tags {
             SIDES.forEach(side => {
               scene.remove(dotMeshes[side]);
               scene.remove(boxMeshes[side]);
+              scene.remove(dragLines[side]);
 
               scene.remove(grabBoxMeshes[side]);
 
@@ -906,6 +1689,11 @@ class Tags {
             });
 
             input.removeListener('trigger', _trigger);
+            input.removeListener('triggerdown', _triggerdown);
+            input.removeListener('triggerup', _triggerup);
+            input.removeListener('keydown', _keydown);
+            input.removeListener('keyboarddown', _keyboarddown);
+
             rend.removeListener('update', _update);
           };
 
@@ -917,9 +1705,11 @@ class Tags {
               displayName,
               description,
               version,
+              tagName,
               attributes,
               mimeType,
-              matrix
+              matrix,
+              metadata
             ) {
               this.type = type;
               this.id = id;
@@ -927,7 +1717,9 @@ class Tags {
               this.displayName = displayName;
               this.description = description;
               this.version = version;
-              this.attributes = (() => {
+              this.tagName = tagName;
+              this.attributes = attributes;
+              /* this.attributes = (() => {
                 const result = {};
 
                 for (const k in attributes) {
@@ -986,9 +1778,10 @@ class Tags {
                 }
 
                 return result;
-              })();
+              })(); */
               this.mimeType = mimeType;
               this.matrix = matrix;
+              this.metadata = metadata;
 
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
@@ -1037,14 +1830,25 @@ class Tags {
               this[itemPreviewSymbol] = preview;
             }
 
-            setAttribute(name, value) {
+            setAttribute(attributeName, newValue) {
               const {attributes} = this;
-              const attribute = attributes[name];
-              attribute.value = value;
+              if (newValue !== undefined) {
+                attributes[attributeName] = {
+                  value: newValue,
+                };
+              } else {
+                delete attributes[attributeName];
+              }
 
-              const instance = this.instance;
+              const {instance} = this;
               if (instance) {
-                instance.setAttributeRaw(name, JSON.stringify(value));
+                const entityElement = instance;
+
+                if (newValue !== undefined) {
+                  entityElement.setAttribute(attributeName, _stringifyAttribute(newValue));
+                } else {
+                  entityElement.removeAttribute(attributeName);
+                }
               }
             }
 
@@ -1163,7 +1967,127 @@ class Tags {
           const tagMeshes = [];
           rend.registerAuxObject('tagMeshes', tagMeshes);
 
-          const modElementApis = {};
+          let componentApis = []; // [ component api ]
+          let componentApiInstances = []; // [ component element ]
+          const tagComponentApis = {}; // plugin name -> [ component api ]
+          // const elementApis = {};
+
+          const _getElementSelector = element => {
+            const {tagName, attributes, classList} = element;
+
+            let result = tagName.toLowerCase();
+
+            for (let i = 0; i < attributes.length; i++) {
+              const attribute = attributes[i];
+              const {name} = attribute;
+              result += '[' + name + ']';
+            }
+
+            for (let i = 0; i < classList.length; i++) {
+              const className = classList[i];
+              result += '.' + className;
+            }
+
+            return result;
+          };
+          const _isSelectorSubset = (a, b) => {
+            const {rule: {tagName: aTagName = null, attrs: aAttributes = [], classNames: aClasses = []}} = cssSelectorParser.parse(a);
+            const {rule: {tagName: bTagName = null, attrs: bAttributes = [], classNames: bClasses = []}} = cssSelectorParser.parse(b);
+
+            if (aTagName && bTagName !== aTagName) {
+              return false;
+            }
+            if (aAttributes.some(({name: aAttributeName}) => !bAttributes.some(({name: bAttributeName}) => bAttributeName === aAttributeName))) {
+              return false;
+            }
+            if (aClasses.some(aClass => !bClasses.includes(aClass))) {
+              return false;
+            }
+
+            return true;
+          };
+          const _getBoundComponentSpecs = (entitySelector, entityAttributes) => {
+            const result = [];
+
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
+              const componentApiInstance = componentApiInstances[i];
+              const {selector: componentSelector = 'div'} = componentApi;
+
+              if (_isSelectorSubset(componentSelector, entitySelector)) {
+                const componentElement = componentApiInstance;
+                const {attributes: componentAttributes = {}} = componentApi;
+                const matchingAttributes = Object.keys(componentAttributes).filter(attributeName => (attributeName in entityAttributes));
+
+                result.push({
+                  componentElement,
+                  matchingAttributes,
+                });
+              }
+            }
+
+            return result;
+          };
+          const _getBoundEntitySpecs = (componentSelector, componentAttributes) => {
+            const result = [];
+
+            for (let i = 0; i < tagMeshes.length; i++) {
+              const tagMesh = tagMeshes[i];
+              const {item} = tagMesh;
+              const {type} = item;
+
+              if (type === 'entity' && !(item.metadata && item.metadata.isStatic)) {
+                const {instance: entityElement} = item;
+
+                if (entityElement.webkitMatchesSelector(componentSelector)) {
+                  const {attributes: entityAttributes} = item;
+                  const matchingAttributes = Object.keys(entityAttributes).filter(attributeName => (attributeName in componentAttributes));
+
+                  result.push({
+                    tagMesh,
+                    matchingAttributes,
+                  });
+                }
+              }
+            }
+
+            return result;
+          };
+          const _getBoundComponentAttributeSpecs = entityAttributes => {
+            const result = [];
+
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
+              const componentApiInstance = componentApiInstances[i];
+              const {attributes: componentAttributes = {}} = componentApi;
+
+              const matchingAttributes = Object.keys(entityAttributes).filter(attributeName => (attributeName in componentAttributes));
+              if (matchingAttributes.length > 0) {
+                const componentElement = componentApiInstance;
+
+                result.push({
+                  componentElement,
+                  matchingAttributes,
+                });
+              }
+            }
+
+            return result;
+          };
+          const _getAttributeSpec = attributeName => {
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
+              const {attributes: componentAttributes = {}} = componentApi;
+              const componentAttribute = componentAttributes[attributeName];
+
+              if (componentAttribute) {
+                return componentAttribute;
+              }
+            }
+
+            return null;
+          };
+
           class TagsApi extends EventEmitter {
             constructor() {
               super();
@@ -1171,17 +2095,77 @@ class Tags {
               this.listen();
             }
 
-            registerElement(pluginInstance, elementApi) {
+            registerComponent(pluginInstance, componentApi) {
+              const name = archae.getPath(pluginInstance);
+              let tagComponentApiComponents = tagComponentApis[name];
+              if (!tagComponentApiComponents) {
+                tagComponentApiComponents = [];
+                tagComponentApis[name] = tagComponentApiComponents;
+              }
+              tagComponentApiComponents.push(componentApi);
+
+              const baseObject = componentApi;
+              const componentElement = menuUtils.makeZeoComponentElement({
+                baseObject,
+              });
+              componentElement.componentApi = componentApi;
+              rootComponentsElement.appendChild(componentElement);
+
+              componentApis.push(componentApi);
+              componentApiInstances.push(componentElement);
+
+              for (let i = 0; i < tagMeshes.length; i++) {
+                const tagMesh = tagMeshes[i];
+                const {item} = tagMesh;
+                const {type} = item;
+
+                if (type === 'entity') {
+                  const {attributesMesh} = tagMesh;
+                  attributesMesh.update();
+                }
+              }
+            }
+
+            unregisterComponent(pluginInstance, componentApiToRemove) {
+              const name = archae.getPath(pluginInstance);
+              const tagComponentApiComponents = tagComponentApis[name];
+              tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(componentApiToRemove), 1);
+              if (tagComponentApiComponents.length === 0) {
+                tagComponentApis[name] = null;
+              }
+
+              const removeComponentApisIndex = {};
+              for (let i = 0; i < componentApis.length; i++) {
+                const componentApi = componentApis[i];
+
+                if (componentApi === componentApiToRemove) {
+                  removeComponentApisIndex[i] = true;
+                }
+              }
+
+              componentApis = componentApis.filter((componentApi, index) => !removeComponentApisIndex[index]);
+              componentApiInstances = componentApiInstances.filter((componentApiInstance, index) => {
+                if (removeComponentApisIndex[index]) {
+                  rootComponentsElement.removeChild(componentApiInstance);
+
+                  return false;
+                } else {
+                  return true;
+                }
+              });
+            }
+
+            /* registerElement(pluginInstance, elementApi) {
               const tag = archae.getName(pluginInstance);
 
-              modElementApis[tag] = elementApi;
+              elementApis[tag] = elementApi;
             }
 
             unregisterElement(pluginInstance) {
               const tag = archae.getName(pluginInstance);
 
-              delete modElementApis[tag];
-            }
+              delete elementApis[tag];
+            } */
 
             makeTag(itemSpec) {
               const object = new THREE.Object3D();
@@ -1194,13 +2178,13 @@ class Tags {
                 itemSpec.displayName,
                 itemSpec.description,
                 itemSpec.version,
+                itemSpec.tagName, // XXX get rid of these
                 itemSpec.attributes,
                 itemSpec.mimeType,
-                itemSpec.matrix
+                itemSpec.matrix,
+                itemSpec.metadata
               );
               object.item = item;
-
-              const {isStatic} = itemSpec;
 
               object.position.set(item.matrix[0], item.matrix[1], item.matrix[2]);
               object.quaternion.set(item.matrix[3], item.matrix[4], item.matrix[5], item.matrix[6]);
@@ -1230,13 +2214,24 @@ class Tags {
                     };
                   })();
                   const mode = _getItemPreviewMode(item);
+                  const src = (() => {
+                    switch (type) {
+                      case 'module':
+                        return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open});
+                      /* case 'element':
+                        return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open}); */
+                      case 'entity':
+                        return tagsRenderer.getEntitySrc({item});
+                      case 'file':
+                        return tagsRenderer.getFileSrc({item, mode, open});
+                      default:
+                        return null;
+                    }
+                  })();
 
                   return {
                     type: 'html',
-                    src: type === 'element' ?
-                      tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic})
-                    :
-                      tagsRenderer.getFileSrc({item, mode, open}),
+                    src: src,
                     w: !open ? WIDTH : OPEN_WIDTH,
                     h: !open ? HEIGHT : OPEN_HEIGHT,
                   };
@@ -1255,6 +2250,7 @@ class Tags {
                 return mesh;
               };
 
+              const isStatic = Boolean(itemSpec.metadata && itemSpec.metadata.isStatic);
               if (!isStatic) { 
                 const planeMesh = _addUiManagerPage(uiManager);
                 object.add(planeMesh);
@@ -1272,13 +2268,146 @@ class Tags {
                 object.planeMesh = planeMesh;
               }
 
-              const _setAttribute = (attribute, value) => {
-                item.setAttribute(attribute, value);
+              if (itemSpec.type === 'entity') {
+                const attributesMesh = (() => {
+                  const attributesMesh = new THREE.Object3D();
+                  attributesMesh.attributeMeshes = [];
 
-                const {planeMesh: {page}} = object;
-                page.update();
-              };
-              object.setAttribute = _setAttribute;
+                  const _update = () => {
+                    const attributesArray = (() => {
+                      const {attributes} = item;
+                      return Object.keys(attributes).map(name => {
+                        const attribute = attributes[name];
+                        const {value} = attribute;
+                        const attributeSpec = _getAttributeSpec(name);
+
+                        const result = _shallowClone(attributeSpec);
+                        result.name = name;
+                        result.value = value;
+                        return result;
+                      }).sort((a, b) => a.name.localeCompare(b.name));
+                    })();
+
+                    const attributesIndex = (() => {
+                      const index = {};
+
+                      for (let i = 0; i < attributesArray.length; i++) {
+                        const attribute = attributesArray[i];
+                        const {name} = attribute;
+                        index[name] = attribute;
+                      }
+
+                      return index;
+                    })();
+
+                    const oldAttributesIndex = (() => {
+                      const index = {};
+
+                      const {attributeMeshes: oldAttributeMeshes} = attributesMesh;
+                      for (let i = 0; i < oldAttributeMeshes.length; i++) {
+                        const attributeMesh = oldAttributeMeshes[i];
+                        const {attributeName} = attributeMesh;
+                        const attribute = attributesIndex[attributeName];
+
+                        if (!attribute) {
+                          attributesMesh.remove(attributeMesh);
+                        } else {
+                          index[attributeName] = attributeMesh;
+                        }
+                      }
+
+                      return index;
+                    })();
+
+                    const newAttributeMeshes = attributesArray.map((attribute, i) => {
+                      const mesh = (() => {
+                        const {name: attributeName} = attribute;
+                        const oldAttributeMesh = oldAttributesIndex[attributeName];
+
+                        if (oldAttributeMesh) {
+                          const {page, lastStateJson} = oldAttributeMesh;
+                          const {state} = page;
+                          state.attribute = attribute;
+                          const currentStateJson = JSON.stringify(state);
+
+                          if (currentStateJson !== lastStateJson) {
+                            page.update();
+
+                            oldAttributeMesh.lastStateJson = currentStateJson;
+                          }
+
+                          return oldAttributeMesh;
+                        } else {
+                          const state = {
+                            attribute: attribute,
+                            focus: focusState,
+                            details: detailsState,
+                          };
+                          const newAttributeMesh = uiAttributeManager.addPage(({
+                            attribute,
+                            focus: {
+                              type: focusType,
+                            },
+                            details: {
+                              inputText,
+                              inputValue,
+                            },
+                          }) => {
+                            const focusAttributeSpec = (() => {
+                              const match = focusType.match(/^attribute:(.+?):(.+?)$/);
+                              return match && {
+                                tagId: match[1],
+                                attributeName: match[2],
+                              };
+                            })();
+
+                            return {
+                              type: 'html',
+                              src: tagsRenderer.getAttributeSrc({item, attribute, inputText, inputValue, focusAttributeSpec}),
+                              w: WIDTH,
+                              h: HEIGHT,
+                            };
+                          }, {
+                            type: 'attribute',
+                            state: state,
+                            worldWidth: WORLD_WIDTH,
+                            worldHeight: WORLD_HEIGHT,
+                          });
+                          newAttributeMesh.receiveShadow = true;
+
+                          newAttributeMesh.attributeName = attributeName;
+                          newAttributeMesh.lastStateJson = JSON.stringify(state);
+
+                          attributesMesh.add(newAttributeMesh);
+
+                          return newAttributeMesh;
+                        }
+                      })();
+                      mesh.position.x = WORLD_WIDTH;
+                      mesh.position.y = (attributesArray.length * WORLD_HEIGHT / 2) - (0.5 * WORLD_HEIGHT) - (i * WORLD_HEIGHT);
+
+                      return mesh;
+                    });
+                    attributesMesh.attributeMeshes = newAttributeMeshes;
+                  };
+                  attributesMesh.update = _update;
+                  _update();
+
+                  return attributesMesh;
+                })();
+                object.add(attributesMesh);
+                object.attributesMesh = attributesMesh;
+
+                const _setAttribute = (attribute, value) => {
+                  item.setAttribute(attribute, value);
+
+                  attributesMesh.update();
+
+                  const {planeMesh: {page}} = object;
+                  page.update();
+                };
+                object.setAttribute = _setAttribute;
+              }
 
               tagMeshes.push(object);
 
@@ -1296,7 +2425,64 @@ class Tags {
               }
             }
 
-            reifyTag(tagMesh) {
+            reifyModule(tagMesh) {
+              const {item} = tagMesh;
+              const {name} = item;
+
+              const moduleElement = document.createElement('module');
+              moduleElement.setAttribute('src', name);
+              moduleElement.item = item;
+              item.instance = moduleElement;
+              rootModulesElement.appendChild(moduleElement);
+            }
+
+            unreifyModule(tagMesh) {
+              const {item} = tagMesh;
+              const {instance} = item;
+
+              if (instance) {
+                rootModulesElement.removeChild(instance);
+              }
+            }
+
+            reifyEntity(tagMesh) {
+              const {item} = tagMesh;
+              const {instance} = item;
+
+              if (!instance) {
+                const {tagName: entityTagName, attributes: entityAttributes} = item;
+                const entityElement = document.createElement(entityTagName);
+
+                for (const attributeName in entityAttributes) {
+                  const attribute = entityAttributes[attributeName];
+                  const {value: attributeValue} = attribute;
+                  const attributeValueString = _stringifyAttribute(attributeValue);
+                  entityElement.setAttribute(attributeName, attributeValueString);
+                }
+                entityElement.item = item;
+                item.instance = entityElement;
+
+                rootEntitiesElement.appendChild(entityElement);
+              }
+            }
+
+            unreifyEntity(tagMesh) {
+              const {item} = tagMesh;
+              const {instance} = item;
+
+              if (instance) {
+                const entityElement = instance;
+                entityElement.item = null;
+                item.instance = null;
+
+                const {parentNode} = entityElement;
+                if (parentNode) {
+                  parentNode.removeChild(entityElement);
+                }
+              }
+            }
+
+            /* reifyTag(tagMesh) {
               const {item} = tagMesh;
               const {instance, instancing} = item;
 
@@ -1310,26 +2496,26 @@ class Tags {
                         const name = archae.getName(pluginInstance);
 
                         const tag = name;
-                        let elementApi = modElementApis[tag];
+                        let elementApi = elementApis[tag];
                         if (!HTMLElement.isPrototypeOf(elementApi)) {
                           elementApi = HTMLElement;
                         }
                         const {id, attributes} = item;
                         const baseClass = elementApi;
 
-                        const element = menuUtils.makeZeoElement({
+                        const element = menuUtils.makeZeoEntityElement({
                           tag,
                           attributes,
                           baseClass,
                         });
-                        element.onsetattribute = (attribute, value) => {
-                          tagsApi.emit('setAttribute', {id, attribute, value});
+                        element.onsetattribute = (name, value) => {
+                          tagsApi.emit('setAttribute', {id, name, value});
                         };
                         item.instance = element;
-                        rootElement.appendChild(element);
+                        rootEntitiesElement.appendChild(element);
 
                         item.instancing = false;
-                        item.attributes = _clone(attributes);
+                        item.attributes = _shallowClone(attributes);
 
                         const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
                         page.update();
@@ -1365,15 +2551,23 @@ class Tags {
                     }
                     item.instance = null;
 
-                    rootElement.removeChild(instance);
+                    rootEntitiesElement.removeChild(instance);
                   }
 
                   unlock();
                 });
+            } */
+
+            getRootComponentsmElement() {
+              return rootComponentsElement;
             }
 
-            getRootElement() {
-              return rootElement;
+            getRootEntitiesElement() {
+              return rootEntitiesElement;
+            }
+
+            getTagComponentApis(tag) {
+              return tagComponentApis[tag];
             }
 
             getPointedTagMesh(side) {
@@ -1383,10 +2577,10 @@ class Tags {
             listen() {
               this.on('setAttribute', setAttrbuteSpec => {
                 if (this.listeners('setAttribute').length === 1) { // if this is the only listener, we need to set the attribute on ourselves
-                  const {id, attribute, value} = setAttrbuteSpec;
+                  const {id, name, value} = setAttrbuteSpec;
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
-                  item.setAttribute(attribute, value);
+                  item.setAttribute(name, value);
                 }
               });
             }
@@ -1403,6 +2597,30 @@ class Tags {
   }
 }
 
-const _clone = o => JSON.parse(JSON.stringify(o));
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return undefined;
+  }
+};
+const _shallowClone = o => {
+  const result = {};
+
+  for (const k in o) {
+    const v = o[k];
+    result[k] = v;
+  }
+
+  return result;
+};
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = Tags;

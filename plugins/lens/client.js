@@ -39,6 +39,8 @@ const LENS_SHADER = {
   ].join("\n")
 };
 
+const symbol = Symbol();
+
 class Lens {
   mount() {
     const {three: {THREE, scene, camera, renderer}, elements, render} = zeo;
@@ -52,8 +54,29 @@ class Lens {
       color: 0x000000,
     });
 
-    class LensElement extends HTMLElement {
-      createdCallback() {
+    const lensComponent = {
+      selector: 'lens[position][type]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+        type: {
+          type: 'select',
+          value: 'blur',
+          options: [
+            'blur',
+            'pixel',
+          ]
+        }
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
+
         const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
           minFilter: THREE.NearestFilter,
           magFilter: THREE.NearestFilter,
@@ -198,14 +221,14 @@ class Lens {
           blur: _makeBlurLensMesh,
           pixel: _makePixelLensMesh,
         };
-        this.meshConstructors = meshConstructors;
+        entityApi.meshConstructors = meshConstructors;
 
         const mesh = _makeBlurLensMesh();
         scene.add(mesh);
-        this.mesh = mesh;
+        entityApi.mesh = mesh;
 
         const updateEye = eyeCamera => {
-          const {mesh} = this;
+          const {mesh} = entityApi;
           const {planeMesh, lineMesh} = mesh;
           planeMesh.visible = false;
           lineMesh.visible = false;
@@ -217,23 +240,27 @@ class Lens {
         };
         updateEyes.push(updateEye);
 
-        this._cleanup = () => {
-          const {mesh} = this;
+        entityApi._cleanup = () => {
+          const {mesh} = entityApi;
 
           scene.remove(mesh);
 
           updateEyes.splice(updateEyes.indexOf(updateEye), 1);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh} = this;
+            const {mesh} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -242,20 +269,20 @@ class Lens {
             break;
           }
           case 'type': {
-            const {mesh: oldMesh, meshConstructors} = this;
+            const {mesh: oldMesh, meshConstructors} = entityApi;
             scene.remove(oldMesh);
 
             const meshConstructor = meshConstructors[newValue];
             const newMesh = meshConstructor();
             scene.add(newMesh);
-            this.mesh = newMesh;
+            entityApi.mesh = newMesh;
 
             break;
           }
         }
-      }
-    }
-    elements.registerElement(this, LensElement);
+      },
+    };
+    elements.registerComponent(this, lensComponent);
 
     const updateEyes = [];
     const _updateEye = camera => {
@@ -267,7 +294,7 @@ class Lens {
     render.on('updateEye', _updateEye);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.registerComponent(this, lensComponent);
 
       render.removeListener('updateEye', _updateEye);
     };

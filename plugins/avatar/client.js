@@ -1,5 +1,7 @@
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
+const symbol = Symbol();
+
 class Avatar {
   mount() {
     const {three: {THREE, scene}, elements} = zeo;
@@ -27,8 +29,21 @@ class Avatar {
       return new THREEConvexGeometry(points);
     })();
 
-    class AvatarElement extends HTMLElement {
-      createdCallback() {
+    const avatarComponent = {
+      selector: 'avatar[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
+
         const mesh = (() => {
           const result = new THREE.Object3D();
 
@@ -111,20 +126,43 @@ class Avatar {
           return result;
         })();
         scene.add(mesh);
+        entityApi.mesh = mesh;
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(mesh);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
-    }
-    elements.registerElement(this, AvatarElement);
+        entityElement[symbol] = entityApi;
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
+        switch (name) {
+          case 'position': {
+            const position = newValue;
+
+            if (position) {
+              const {mesh} = entityApi;
+
+              mesh.position.set(position[0], position[1], position[2]);
+              mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+              mesh.scale.set(position[7], position[8], position[9]);
+            }
+
+            break;
+          }
+        }
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
+
+        entityApi._cleanup();
+      },
+    };
+    elements.registerComponent(this, avatarComponent);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, avatarComponent);
     };
   }
 

@@ -2,6 +2,8 @@ const MAX_NUM_POINTS = 4 * 1024;
 const POINT_FRAME_RATE = 20;
 const SIZE = 0.02;
 
+const symbol = Symbol();
+
 const SIDES = ['left', 'right'];
 
 class Paint {
@@ -29,8 +31,17 @@ class Paint {
     return _requestImage('/archae/paint/brushes/brush.png')
       .then(brushImg => {
         if (live) {
-          class PaintElement extends HTMLElement {
-            createdCallback() {
+          const paintComponent = {
+            selector: 'paint[color]',
+            attributes: {
+              color: {
+                type: 'color',
+                value: '#F44336',
+              },
+            },
+            entityAddedCallback(entityElement) {
+              const entityApi = {};
+
               const mesh = (() => {
                 const geometry = new THREE.BufferGeometry();
                 const positions = new Float32Array(MAX_NUM_POINTS * 6 * 3);
@@ -70,11 +81,10 @@ class Paint {
                 mesh.frustumCulled = false;
                 return mesh;
               })();
-              this.mesh = mesh;
               scene.add(mesh);
 
               const color = new THREE.Color(0xF44336);
-              this.color = color;
+              entityApi.color = color;
 
               let lastPoint = 0;
 
@@ -220,7 +230,7 @@ class Paint {
                       })();
 
                       // colors
-                      const {color} = this;
+                      const {color} = entityApi;
                       for (let i = 0; i < 2; i++) {
                         const baseColorIndex = basePositionIndex + (i * 3);
 
@@ -256,7 +266,7 @@ class Paint {
               };
               render.on('update', _update);
 
-              this._cleanup = () => {
+              entityApi._cleanup = () => {
                 scene.remove(mesh);
 
                 input.removeListener('triggerdown', _triggerdown);
@@ -264,26 +274,30 @@ class Paint {
 
                 render.removeListener('update', _update);
               };
-            }
 
-            destructor() {
-              this._cleanup();
-            }
+              entityElement[symbol] = entityApi;
+            },
+            entityRemovedCallback(entityElement) {
+              const {[symbol]: entityApi} = entityElement;
 
-            attributeValueChangedCallback(name, oldValue, newValue) {
+              entityApi._cleanup();
+            },
+            entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+              const {[symbol]: entityApi} = entityElement;
+
               switch (name) {
                 case 'color': {
-                  this.color = new THREE.Color(newValue);
+                  entityApi.color = new THREE.Color(newValue);
 
                   break;
                 }
               }
-            }
-          }
-          elements.registerElement(this, PaintElement);
+            },
+          };
+          elements.registerComponent(this, paintComponent);
 
           this._cleanup = () => {
-            elements.unregisterElement(this);
+            elements.unregisterComponent(this, paintComponent);
           };
         }
       });

@@ -20,16 +20,21 @@ class Cloud {
       fog: false,
     });
 
-    const updates = [];
-    const _update = () => {
-      for (let i = 0; i < updates.length; i++) {
-        const update = updates[i];
-        update();
-      }
-    };
+    const cloudComponent = {
+      selector: 'cloud[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
 
-    class CloudElement extends HTMLElement {
-      createdCallback() {
         const rng = new alea();
         const generator = indev({
           random: rng,
@@ -45,7 +50,6 @@ class Cloud {
           return result;
         })();
         scene.add(cloudsMesh);
-        this.cloudsMesh = cloudsMesh;
 
         const _getWorldTime = () => world.getWorldTime();
         const _getPosition = () => {
@@ -179,21 +183,25 @@ class Cloud {
         };
         updates.push(update);
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(cloudsMesh);
 
           updates.splice(updates.indexOf(update), 1);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {cloudsMesh} = this;
+            const {cloudsMesh} = entityApi;
 
             cloudsMesh.position.set(newValue[0], newValue[1], newValue[2]);
             cloudsMesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
@@ -202,14 +210,21 @@ class Cloud {
             break;
           }
         }
-      }
-    }
-    elements.registerElement(this, CloudElement);
+      },
+    };
+    elements.registerComponent(this, cloudComponent);
 
+    const updates = [];
+    const _update = () => {
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        update();
+      }
+    };
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, cloudComponent);
 
       render.removeListener('update', _update);
     };

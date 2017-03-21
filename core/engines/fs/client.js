@@ -1,29 +1,4 @@
-import menuUtils from './lib/utils/menu';
-
-import {
-  WIDTH,
-  HEIGHT,
-  OPEN_WIDTH,
-  OPEN_HEIGHT,
-
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
-  WORLD_DEPTH,
-  WORLD_OPEN_WIDTH,
-  WORLD_OPEN_HEIGHT,
-} from './lib/constants/fs';
-import fsRenderer from './lib/render/fs';
-
-const fileFlagSymbol = Symbol();
-
-const SIDES = ['left', 'right'];
-
-const DEFAULT_GRAB_RADIUS = 0.1;
-const DEFAULT_FILE_MATRIX = [
-  0, 0, 0,
-  0, 0, 0, 1,
-  1, 1, 1,
-];
+import OBJLoader from './lib/three-extra/OBJLoader';
 
 class Fs {
   constructor(archae) {
@@ -56,66 +31,192 @@ class Fs {
       creatureUtils,
     ]) => {
       if (live) {
-        const {THREE, scene, camera, renderer} = three;
-        const {domElement} = renderer;
+        const {THREE} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+
+        const THREEOBJLoader = OBJLoader(THREE);
 
         const dragover = e => {
           e.preventDefault();
         };
-        domElement.addEventListener('dragover', dragover);
+        document.addEventListener('dragover', dragover);
         const drop = e => {
           e.preventDefault();
 
-          const {dataTransfer: {files}} = e;
-          if (files.length > 0) {
-            const file = files[0];
+          const {dataTransfer: {items}} = e;
+          if (items.length > 0) {
+            const _getFiles = entries => {
+              const result = [];
 
-            fsApi.emit('upload', file);
+              const _recurseEntries = entries => Promise.all(entries.map(_recurseEntry));
+              const _recurseEntry = entry => new Promise((accept, reject) => {
+                if (entry.isFile) {
+                  entry.file(file => {
+                    file.path = entry.fullPath;
+
+                    result.push(file);
+
+                    accept();
+                  });
+                } else if (entry.isDirectory) {
+                  const directoryReader = entry.createReader();
+                  directoryReader.readEntries(entries => {
+                    _recurseEntries(Array.from(entries))
+                      .then(() => {
+                        accept();
+                      });
+                  });
+                } else {
+                  accept();
+                }
+              });
+              return _recurseEntries(entries)
+                .then(() => result);
+            };
+            const entries = Array.from(items).map(item => item.webkitGetAsEntry());
+            _getFiles(entries)
+              .then(files => {
+                fsApi.emit('upload', files);
+              });
           }
         };
-        domElement.addEventListener('drop', drop);
+        document.addEventListener('drop', drop);
 
         this._cleanup = () => {
-          domElement.removeEventListener('dragover', dragover);
-          domElement.removeEventListener('drop', drop);
+          document.removeEventListener('dragover', dragover);
+          document.removeEventListener('drop', drop);
         };
 
-        /* class FsFile {
-          constructor(id, name, mimeType, matrix) {
-            this.id = id;
-            this.name = name;
-            this.mimeType = mimeType;
-            this.matrix = matrix;
-
-            this.instancing = false;
-
-            this.open = false;
+        class FsFile {
+          constructor(url) {
+            this.url = url;
           }
-        } */
+
+          read({type = null} = {}) {
+            const {url} = this;
+
+            switch (type) {
+              case 'image': {
+                return new Promise((accept, reject) => {
+                  const img = new Image();
+                  img.src = url;
+                  img.onload = () => {
+                    accept(img);
+                  };
+                  img.onerror = err => {
+                    reject(err);
+                  };
+                });
+              }
+              case 'audio': {
+                return new Promise((accept, reject) => {
+                  const audio = document.createElement('audio');
+                  audio.src = url;
+                  audio.oncanplay = () => {
+                    accept(audio);
+                  };
+                  audio.onerror = err => {
+                    reject(err);
+                  };
+                });
+              }
+              case 'video': {
+                return new Promise((accept, reject) => {
+                  const video = document.createElement('video');
+                  video.src = url;
+                  video.oncanplay = () => {
+                    accept(video);
+                  };
+                  video.onerror = err => {
+                    reject(err);
+                  };
+                });
+              }
+              case 'model': {
+                const ext = (() => {
+                  const match = url.match(/\.([^\/]*)$/);
+                  return match ? match[1] : '';
+                })();
+
+                return fetch(url)
+                  .then(res => {
+                    if (ext === 'json') {
+                      return res.json();
+                    } else {
+                      return res.text();
+                    }
+                  })
+                  .then(modelData => new Promise((accept, reject) => {
+                    const loader = (() => {
+                      switch (ext) {
+                        case 'obj':
+                          return new THREEOBJLoader();
+                        case 'json':
+                          return new THREE.ObjectLoader();
+                        default:
+                          return null;
+                      }
+                    })();
+
+                    if (loader) {
+                      loader.crossOrigin = true;
+                    }
+
+                    const baseUrl = url.match(/^(.*?\/?)[^\/]*$/)[1];
+                    if (loader instanceof THREEOBJLoader) {
+                      loader.setPath(baseUrl);
+                    } else if (loader instanceof THREE.ObjectLoader) {
+                      loader.setTexturePath(baseUrl);
+                    }
+
+                    const _parse = () => {
+                      if (loader instanceof THREEOBJLoader) {
+                        const modelMesh = loader.parse(modelData);
+                        accept(modelMesh);
+                      } else if (loader instanceof THREE.ObjectLoader) {
+                        loader.parse(modelData, accept);
+                      } else {
+                        const err = new Error('unknown model type: ' + JSON.stringify(ext));
+                        reject(err);
+                      }
+                    };
+                    _parse();
+                  }));
+              }
+              default: {
+                return fetch(url)
+                  .then(res => res.blob());
+              }
+            }
+          }
+        }
 
         class FsApi extends EventEmitter {
-          getFileUrl(id) {
-            return '/archae/fs/' + id;
+          makeFile(url) {
+            return new FsFile(url);
           }
 
-          readFile(id) {
-            const fileUrl = this.getFileUrl(id);
-
-            return fetch(fileUrl)
-              .then(res => res.blob());
+          getFileUrl(id, path) {
+            if (path) {
+              return '/fs/' + id + path;
+            } else {
+              return '/fs/' + id + '.zip';
+            }
           }
 
-          writeFile(id, blob) {
-            const fileUrl = this.getFileUrl(id);
+          writeFiles(id, files) {
+            return Promise.all(files.map(file => {
+              const {path} = file;
+              const fileUrl = this.getFileUrl(id, path);
 
-            return fetch(fileUrl, {
-              method: 'PUT',
-              body: blob,
-            }).then(res => res.blob()
-              .then(() => {})
-            );
+              return fetch(fileUrl, {
+                method: 'PUT',
+                body: file,
+              }).then(res => res.blob()
+                .then(() => {})
+              );
+            }));
           }
 
           dragover(e) {

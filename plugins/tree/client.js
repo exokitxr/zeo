@@ -1,9 +1,24 @@
+const symbol = Symbol();
+
 export default class Tree {
   mount() {
     const {three: {THREE, scene}, elements, utils: {random: {alea}}} = zeo;
 
-    class TreeElement extends HTMLElement {
-      createdCallback() {
+    const treeComponent = {
+      selector: 'tree[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
+
         const trunkColors = [
           '#337346',
           '#0e6525',
@@ -536,20 +551,22 @@ export default class Tree {
         })();
         scene.add(mesh);
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(mesh);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
-    }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-    elements.registerElement(this, TreeElement);
+        entityApi._cleanup();
+      },
+    };
+    elements.registerComponent(this, treeComponent);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, treeComponent);
     };
   }
 

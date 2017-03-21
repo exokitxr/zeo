@@ -16,6 +16,8 @@ const BOX_MESH_COLOR = 0x808080;
 const BOX_MESH_HOVER_COLOR = 0x0000FF;
 const BOX_MESH_FOCUS_COLOR = 0x00FF00;
 
+const symbol = Symbol();
+
 const SIDES = ['left', 'right'];
 
 class Shell {
@@ -40,10 +42,23 @@ class Shell {
       }
     };
 
-    class ShellElement extends HTMLElement {
-      createdCallback() {
+    const shellComponent = {
+      selector: 'shell[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElenent) {
+        const entityApi = {};
+
         const cleanups = [];
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           for (let i = 0; i < cleanups.length; i++) {
             const cleanup = cleanups[i];
             cleanup();
@@ -352,7 +367,7 @@ class Shell {
           return object;
         })();
         scene.add(mesh);
-        this.mesh = mesh;
+        entityApi.mesh = mesh;
 
         const _makeHoveredState = () => ({
           hovered: false,
@@ -445,30 +460,34 @@ class Shell {
 
           updates.splice(updates.indexOf(update), 1);
         });
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh} = this;
+            const {mesh} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
             mesh.scale.set(newValue[7], newValue[8], newValue[9]);
           }
         };
-      }
-    }
-    elements.registerElement(this, ShellElement);
+      },
+    };
+    elements.registerComponent(this, shellComponent);
 
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, shellComponent);
 
       render.removeListener('update', _update);
     };

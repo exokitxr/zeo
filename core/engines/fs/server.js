@@ -1,10 +1,8 @@
 const path = require('path');
 const fs = require('fs');
+const child_process = require('child_process');
 
 const mkdirp = require('mkdirp');
-// const ncp = require('ncp');
-const mv = require('mv');
-const rimraf = require('rimraf');
 
 class Fs {
   constructor(archae) {
@@ -41,190 +39,86 @@ class Fs {
     return _ensureFsDirectory()
       .then(() => {
         if (live) {
-          /* function serveFsList(req, res, next) {
-            const p = req.params[0];
-
-            if (req.get('Accept') === 'application/json') {
-              const requestPath = path.join(fsPath, p);
-
-              fs.readdir(requestPath, (err, files) => {
-                if (!err) {
-                  if (files.length > 0) {
-                    const result = files.map(name => ({
-                      name,
-                      type: null,
-                      size: null,
-                    }));
-
-                    let pending = files.length;
-                    function pend() {
-                      if (--pending === 0) {
-                        const sortedResult = result.sort((a, b) => {
-                          const diff = +(b.type === 'directory') - (a.type === 'directory');
-                          if (diff !== 0) {
-                            return diff;
-                          } else {
-                            return a.name.localeCompare(b.name);
-                          }
-                        });
-                        res.json(sortedResult);
-                      }
-                    }
-
-                    files.forEach((file, i) => {
-                      fs.lstat(path.join(requestPath, file), (err, stats) => {
-                        if (!err) {
-                          const type = (() => {
-                            if (stats.isFile()) {
-                              return 'file';
-                            } else if (stats.isDirectory()) {
-                              return 'directory';
-                            } else {
-                              return null;
-                            }
-                          })();
-                          const {size} = stats;
-
-                          const fileSpec = result[i];
-                          fileSpec.type = type;
-                          fileSpec.size = size;
-                        } else {
-                          console.warn(err);
-                        }
-
-                        pend();
-                      });
-                    });
-                  } else {
-                    res.json([]);
-                  }
-                } else if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-                  res.json([]);
-                } else {
-                  res.status(500);
-                  res.send(err.stack);
-                }
-              });
-            } else {
-              next();
-            }
-          }
-          app.get(/^\/archae\/fs(\/.*)$/, serveFsList); */
-
-          const _sliceUrl = url => {
-            const match = url.match(/^([a-f0-9]{32})$/);
-
-            if (match) {
-              return match[1].match(/.{2}/g).join('/');
-            } else {
-              return null;
-            }
-          };
           const fsStatic = express.static(fsPath);
           function serveFsStatic(req, res, next) {
-            const slicedUrl = _sliceUrl(req.params[0]);
+            const dirname = req.params[0];
+            const filePath = req.params[1];
 
-            if (slicedUrl) {
-              req.url = '/' + slicedUrl;
+            req.url = '/' + dirname + filePath;
 
-              fsStatic(req, res, next);
-            } else {
-              next();
-            }
+            fsStatic(req, res, next);
           }
-          app.get(/^\/archae\/fs\/(.+)$/, serveFsStatic);
-          function serveFsUpload(req, res, next) {
-            const slicedUrl = _sliceUrl(req.params[0]);
+          app.get(/^\/fs\/([^\/]+)(\/.+)$/, serveFsStatic);
+          function serveFsZip(req, res, next) {
+            const dirname = req.params[0];
+            const filePath = req.params[1];
 
-            if (slicedUrl) {
-              mkdirp(path.join(fsPath, path.dirname(slicedUrl)), err => {
-                if (!err) {
-                  const ws = fs.createWriteStream(path.join(fsPath, slicedUrl));
-
-                  req.pipe(ws);
-
-                  ws.on('finish', () => {
-                    res.send();
+            const fullPath = path.join(fsPath, dirname);
+            fs.lstat(fullPath, (err, stats) => {
+              if (!err) {
+                if (stats.isDirectory()) {
+                  const zipProcess = child_process.spawn('zip', [
+                    '-r',
+                    '-',
+                    '.',
+                  ], {
+                    cwd: fullPath,
                   });
-                  ws.on('error', err => {
-                    res.status(500);
-                    res.send(err.stack);
+
+                  zipProcess.stdout.pipe(res);
+                  zipProcess.stderr.pipe(process.stderr);
+                  zipProcess.on('exit', code => {
+                    if (code !== 0) {
+                      res.status(500);
+                      res.send('zip returned non-zero status code: ' + code);
+                    }
                   });
                 } else {
+                  res.status(404);
+                  res.send();
+                }
+              } else if (err.code === 'ENOENT') {
+                res.status(404);
+                res.send();
+              } else {
+                res.status(500);
+                res.send(err.stack);
+              }
+            });
+          }
+          app.get(/^\/fs\/([^\/]+)\.zip$/, serveFsZip);
+          function serveFsUpload(req, res, next) {
+            const dirname = req.params[0];
+            const filePath = req.params[1];
+
+            const fullPath = path.join(fsPath, dirname, filePath);
+            mkdirp(path.dirname(fullPath), err => {
+              if (!err) {
+                const ws = fs.createWriteStream(fullPath);
+
+                req.pipe(ws);
+
+                ws.on('finish', () => {
+                  res.send();
+                });
+                ws.on('error', err => {
                   res.status(500);
                   res.send(err.stack);
-                }
-              });
-            } else {
-              next();
-            }
-          }
-          app.put(/^\/archae\/fs\/(.+)$/, serveFsUpload);
-          /* function serveFsCreate(req, res, next) {
-            const p = req.params[0];
-
-            mkdirp(path.join(fsPath, p), err => {
-              if (!err) {
-                res.send();
+                });
               } else {
                 res.status(500);
                 res.send(err.stack);
               }
             });
           }
-          app.post(/^\/archae\/fs(\/.*)$/, serveFsCreate);
-          function serveFsCopy(req, res, next) {
-            const src = req.params[0];
-            const dst = req.get('To');
-
-            ncp(path.join(fsPath, src), path.join(fsPath, dst), err => {
-              if (!err) {
-                res.send();
-              } else {
-                res.status(500);
-                res.send(err.stack);
-              }
-            });
-          }
-          app.copy(/^\/archae\/fs(\/.*)$/, serveFsCopy);
-          function serveFsMove(req, res, next) {
-            const src = req.params[0];
-            const dst = req.get('To');
-
-            mv(path.join(fsPath, src), path.join(fsPath, dst), err => {
-              if (!err) {
-                res.send();
-              } else {
-                res.status(500);
-                res.send(err.stack);
-              }
-            });
-          }
-          app.move(/^\/archae\/fs(\/.*)$/, serveFsMove);
-          function serveFsDelete(req, res, next) {
-            const p = req.params[0];
-
-            rimraf(path.join(fsPath, p), err => {
-              if (!err) {
-                res.send();
-              } else {
-                res.status(500);
-                res.send(err.stack);
-              }
-            });
-          }
-          app.delete(/^\/archae\/fs(\/.*)$/, serveFsDelete); */
+          app.put(/^\/fs\/([^\/]+)(\/.+)$/, serveFsUpload);
 
           cleanups.push(() => {
             function removeMiddlewares(route, i, routes) {
               if (
-                // route.handle.name === 'serveFsList' ||
                 route.handle.name === 'serveFsStatic' ||
-                route.handle.name === 'serveFsUpload'/* ||
-                route.handle.name === 'serveFsCreate' ||
-                route.handle.name === 'serveFsCopy' ||
-                route.handle.name === 'serveFsMove' ||
-                route.handle.name === 'serveFsDelete' */
+                route.handle.name === 'serveFsZip' ||
+                route.handle.name === 'serveFsUpload'
               ) {
                 routes.splice(i, 1);
               }

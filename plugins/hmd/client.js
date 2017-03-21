@@ -85,12 +85,6 @@ class Hmd {
     this._cleanup = () => {
       hmd.destroy();
     };
-
-    return {
-      update() {
-        hmd.update();
-      },
-    };
   }
 
   unount() {

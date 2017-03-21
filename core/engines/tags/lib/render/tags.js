@@ -1,4 +1,3 @@
-const menuUtils = require('../utils/menu');
 const {
   HEIGHT,
   WIDTH,
@@ -6,6 +5,8 @@ const {
   OPEN_HEIGHT,
 } = require('../constants/tags');
 
+const vectorPolygonImg = require('../img/vector-polygon');
+const vectorPolygonImgSrc = 'data:image/svg+xml;base64,' + btoa(vectorPolygonImg);
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 const barsWhiteImg = require('../img/bars-white');
@@ -14,17 +15,61 @@ const playBlackImg = require('../img/play-black');
 const playBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(playBlackImg);
 const playWhiteImg = require('../img/play-white');
 const playWhiteImgSrc = 'data:image/svg+xml;base64,' + btoa(playWhiteImg);
+const closeBoxImg = require('../img/close-box');
+const closeBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxImg);
+const plusBoxImg = require('../img/plus-box');
+const plusBoxImgSrc = 'data:image/svg+xml;base64,' + btoa(plusBoxImg);
+const idImg = require('../img/id');
+const idImgSrc = 'data:image/svg+xml;base64,' + btoa(idImg);
+const targetImg = require('../img/target');
+const targetImgSrc = 'data:image/svg+xml;base64,' + btoa(targetImg);
+const linkImg = require('../img/link');
+const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
 
-const makeRenderer = ({creatureUtils}) => {
-  const getElementSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open, isStatic}) => {
-    const {id, displayName, description, version, instancing} = item;
+const makeRenderer = ({menuUtils, creatureUtils}) => {
+  const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
+    const {id, name, displayName, description, instancing, metadata: {isStatic, exists}} = item;
+    const tagName = isStatic ? 'a' : 'div';
+    const linkTagName = isStatic ? 'div' : 'a';
+    const staticExists = isStatic && exists;
+
+    const headerSrc = `\
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
+        <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #4CAF50; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Module</div>
+        <img src="${creatureUtils.makeStaticCreature('element:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+        <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
+          <div style="display: flex; height: 150px; flex-direction: column;">
+            <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
+            <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
+            ${staticExists ?
+              `<div style="margin-bottom: 20px; font-size: 16px; font-weight: 400;">Exists</div>`
+            : ''}
+          </div>
+        </div>
+        <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
+          <img src="${vectorPolygonImgSrc}" width="50" height="50">
+        </${linkTagName}>
+        }
+      </div>
+    `;
+
+    return `\
+      <${tagName} style="display: block; text-decoration: none;" onclick="module:${id}">
+        ${headerSrc}
+      </${tagName}>
+    `;
+  };
+
+  const getElementSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open}) => {
+    const {id, name, displayName, description, instancing} = item;
+    const isStatic = false; // XXX get rid of this
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #2196F3; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Mod</div>
-        <img src="${creatureUtils.makeStaticCreature('element:' + displayName)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+        <img src="${creatureUtils.makeStaticCreature('element:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
         <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
           <div style="height: 100px;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
@@ -56,7 +101,61 @@ const makeRenderer = ({creatureUtils}) => {
     `;
   };
 
+  const getEntitySrc = ({item}) => {
+    const {id, name, displayName, instancing, metadata: {isStatic}} = item;
+    const tagName = isStatic ? 'a' : 'div';
+    const linkTagName = isStatic ? 'div' : 'a';
+
+    const headerSrc = `\
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden;">
+        <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #03A9F4; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Entity</div>
+        <img src="${creatureUtils.makeStaticCreature('entity:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+        <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 100}px; margin-right: 10px;">
+          <div style="height: 100px;">
+            <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
+          </div>
+        </div>
+        <${linkTagName} style="display: flex; width: 100px; justify-content: center; align-items: center;" onclick="entity:addAttribute:${id}">
+          <img src="${plusBoxImgSrc}" width="40" height="40">
+        </${linkTagName}>
+      </div>
+    `;
+
+    return `\
+      <${tagName} style="display: block; text-decoration: none;" onclick="entity:${id}">
+        ${headerSrc}
+      </${tagName}>
+    `;
+  };
+
+  const getAttributeSrc = ({item, attribute, inputText, inputValue, focusAttributeSpec}) => {
+    const {id} = item;
+    const {name, type, value, min, max, step, options} = attribute;
+    const focus = focusAttributeSpec ? (id === focusAttributeSpec.tagId && name === focusAttributeSpec.attributeName) : false;
+
+    const headerSrc = `\
+      <div style="display: flex; background-color: #000; color: #FFF; font-size: 28px; line-height: 2;">
+        <div style="margin-left: 20px; margin-right: auto;">${name}</div>
+        <a style="display: flex; padding: 0 15px; text-decoration: none; justify-content: center; align-items: center;" onclick="attribute:remove:${id}:${name}">
+          <img src="${closeBoxImgSrc}" width="24" height="24" />
+        </a>
+      </div>
+    `;
+    const bodySrc = `\
+      ${getAttributeInputSrc(id, name, type, value, min, max, step, options, inputText, inputValue, focus)}
+    `;
+
+    return `\
+      <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; flex-direction: column;">
+        ${headerSrc}
+        ${bodySrc}
+      </div>
+    `;
+  };
+
   const getAttributesSrc = (item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec) => {
+    return ''; // XXX remove this call entirely
+
     let acc = '';
 
     const {attributes} = item;
@@ -92,25 +191,26 @@ const makeRenderer = ({creatureUtils}) => {
     }
   };
 
-  const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus, positioning) => {
+  const getAttributeInputSrc = (id, name, type, value, min, max, step, options, inputText, inputValue, focus) => {
     const focusValue = !focus ? value : menuUtils.castValueStringToValue(inputText, type, min, max, step, options);
 
-    const width = 400 - (20 + 120 + 20);
     switch (type) {
       case 'matrix': {
         return `\
-  <div style="display: flex; width: ${width}px; height: 40px; justify-content: flex-end;">
-    <a style="display: flex; padding: 5px 10px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">${!positioning ? 'Set' : 'Setting...'}</a>
-  </div>
-  `;
+          <div style="display: flex; width: ${WIDTH}px; justify-content: flex-end;">
+            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:position" onmousedown="attribute:${name}:position">
+              <img src="${targetImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
+            </a>
+          </div>
+        `;
       }
       case 'text': {
         return `\
-  <a style="position: relative; width: ${width}px; height: 40px; border: 2px solid #333; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
-    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-    <div>${focusValue}</div>
-  </a>
-  `;
+          <a style="display: flex; position: relative; margin: 20px; border: 2px solid #333; font-size: 24px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+            ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+            <div>${focusValue}</div>
+          </a>
+        `;
       }
       case 'number': {
         if (min === undefined) {
@@ -124,16 +224,18 @@ const makeRenderer = ({creatureUtils}) => {
         const string = focusValue !== null ? String(focusValue) : inputText;
 
         return `\
-  <a style="position: relative; width: ${width - (100 + 20)}px; height: 40px; margin-right: 20px;" onclick="attribute:${id}:${name}:tweak" onmousedown="attribute:${id}:${name}:tweak">
-    <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
-      <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
-    </div>
-  </a>
-  <a style="position: relative; width: 100px; height: 40px; background-color: #EEE; border-radius: 5px; text-decoration: none; overflow: hidden;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
-    ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-    <div>${string}</div>
-  </a>
-  `;
+          <a style="display: flex; position: relative; margin: 5px 20px; height: 40px; margin-right: 20px;" onclick="attribute:${id}:${name}:tweak" onmousedown="attribute:${id}:${name}:tweak">
+            <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
+              <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
+            </div>
+          </a>
+          <div style="display: flex; justify-content: center; text-align: center;">
+            <a style="display: flex; position: relative; width: 100px; height: 40px; border: 2px solid; font-size: 24px; font-weight: 400; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+              ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 0; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+              <div>${string}</div>
+            </a>
+          </div>
+        `;
       }
       case 'select': {
         if (options === undefined) {
@@ -142,36 +244,36 @@ const makeRenderer = ({creatureUtils}) => {
 
         if (!focus) {
           return `\
-  <a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
-    <div style="width: ${400 - 30}px; text-overflow: ellipsis; overflow: hidden;">${focusValue}</div>
-    <div style="display: flex; width: 30px; font-size: 16px; justify-content: center;">${unescape(encodeURIComponent('▼'))}</div>
-  </a>
-  `;
+            <a style="display: flex; height: 40px; margin: 20px; padding: 5px; border: 2px solid #333; font-size: 20px; text-decoration: none; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+              <div style="text-overflow: ellipsis; flex-grow: 1; overflow: hidden;">${focusValue}</div>
+              <div style="display: flex; padding: 0 10px; font-size: 16px; justify-content: center;">${unescape(encodeURIComponent('▼'))}</div>
+            </a>
+          `;
         } else {
           return `\
-  <div style="position: relative; width: ${width}px; height: 40px; z-index: 1;">
-    <div style="display: flex; flex-direction: column; background-color: #FFF;">
-      ${options.map((option, i, a) => {
-        const style = (() => {
-          let result = '';
-          if (i !== 0) {
-            result += 'padding-top: 2px; border-top: 0;';
-          }
-          if (i !== (a.length - 1)) {
-            result += 'padding-bottom: 2px; border-bottom: 0;';
-          }
-          if (option === focusValue) {
-            result += 'background-color: #EEE;';
-          }
-          return result;
-        })();
-        return `<a style="display: flex; width: ${width}px; height: 40px; border: 2px solid #333; ${style}; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:set:${option}" onmousedown="attribute:${id}:${name}:set:${option}">
-          ${option}
-        </a>`;
-      }).join('\n')}
-    </div>
-  </div>
-  `;
+            <div style="position: relative; height: 40px; margin: 20px; z-index: 1;">
+              <div style="display: flex; flex-direction: column; background-color: #FFF;">
+                ${options.map((option, i, a) => {
+                  const style = (() => {
+                    let result = '';
+                    if (i !== 0) {
+                      result += 'padding-top: 2px; border-top: 0;';
+                    }
+                    if (i !== (a.length - 1)) {
+                      result += 'padding-bottom: 2px; border-bottom: 0;';
+                    }
+                    if (option === focusValue) {
+                      result += 'background-color: #EEE;';
+                    }
+                    return result;
+                  })();
+                  return `<a style="display: flex; height: 40px; padding: 5px; border: 2px solid #333; ${style}; font-size: 20px; text-decoration: none; align-items: center; text-overflow: ellipsis; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:set:${option}" onmousedown="attribute:${id}:${name}:set:${option}">
+                    ${option}
+                  </a>`;
+                }).join('\n')}
+              </div>
+            </div>
+          `;
         }
       }
       case 'color': {
@@ -179,44 +281,43 @@ const makeRenderer = ({creatureUtils}) => {
         const string = focusValue !== null ? focusValue : inputText;
 
         return `\
-  <div style="display: flex; width: ${width}px; height: 40px; align-items: center;">
-    <div style="width: 40px; height: 40px; margin-right: 4px; background-color: ${color};"></div>
-    <a style="position: relative; width: ${400 - (40 + 4)}px; height: 40px; border: 2px solid #333; text-decoration: none; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
-      ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-      <div>${string}</div>
-    </a>
-  </div>
-  `;
+          <div style="display: flex; padding: 20px; justify-content: center; align-items: center;">
+            <div style="width: 40px; height: 40px; margin-right: 10px; background-color: ${color};"></div>
+            <a style="display: flex; position: relative; height: 40px; border: 2px solid #333; font-size: 24px; text-decoration: none; flex-grow: 1; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
+              ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
+              <div>${string}</div>
+            </a>
+          </div>
+        `;
       }
       case 'checkbox': {
         return `\
-  <div style="display: flex; width: ${width}px; height: 40px; justify-content: flex-end; align-items: center;">
-    ${focusValue ?
-      `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:toggle" onmousedown="attribute:${id}:${name}:toggle">
-        <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
-          <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #333;"></div>
-        </div>
-      </a>`
-    :
-      `<a style="display: flex; width: 40px; height: 40px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:toggle" onmousedown="attribute:${id}:${name}:toggle">
-        <div style="display: flex; width: ${(20 * 2) - (3 * 2)}px; height: 20px; padding: 1px; border: 3px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
-          <div style="width: ${20 - ((3 * 2) + (1 * 2))}px; height: ${20 - ((3 * 2) + (1 * 2))}px; background-color: #CCC;"></div>
-        </div>
-      </a>`
-    }
-  </div>
-  `;
+          <div style="display: flex; justify-content: center; align-items: center;">
+            ${focusValue ?
+              `<a style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:toggle" onmousedown="attribute:${id}:${name}:toggle">
+                <div style="display: flex; width: ${(40 * 2) - (3 * 2)}px; height: 40px; padding: 2px; border: 4px solid #333; justify-content: flex-end; align-items: center; box-sizing: border-box;">
+                  <div style="width: ${40 - ((4 * 2) + (2 * 2))}px; height: ${40 - ((4 * 2) + (2 * 2))}px; background-color: #333;"></div>
+                </div>
+              </a>`
+            :
+              `<a style="display: flex; width: 80px; height: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:toggle" onmousedown="attribute:${id}:${name}:toggle">
+                <div style="display: flex; width: ${(40 * 2) - (3 * 2)}px; height: 40px; padding: 2px; border: 4px solid #CCC; justify-content: flex-start; align-items: center; box-sizing: border-box;">
+                  <div style="width: ${40 - ((4 * 2) + (2 * 2))}px; height: ${40 - ((4 * 2) + (2 * 2))}px; background-color: #CCC;"></div>
+                </div>
+              </a>`
+            }
+          </div>
+        `;
       }
       case 'file': {
         return `\
-  <div style="display: flex; width: ${width}px; height: 40px;">
-    <a style="display: flex; position: relative; width: ${width - 100}px; height: 40px; margin-right: 20px; border: 2px solid #333; align-items: center; text-decoration: none; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
-      ${focus ? `<div style="position: absolute; width: 2px; top: 0; bottom: 10px; left: ${inputValue}px; background-color: #333;"></div>` : ''}
-      <div style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${focusValue}</div>
-    </a>
-    <a style="display: flex; width: 100px; border: 2px solid #d9534f; border-radius: 5px; color: #d9534f; text-decoration: none; justify-content: center; align-items: center; box-sizing: border-box;" onclick="attribute:${id}:${name}:choose" onmousedown="attribute:${id}:${name}:choose">Choose</a>
-  </div>
-  `;
+          <div style="display: flex; width: ${WIDTH}px;">
+            <div style="display: flex; position: relative; margin: 20px; font-size: 24px; align-items: center; flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${focusValue}</div>
+            <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="attribute:${id}:${name}:link" onmousedown="attribute:${id}:${name}:link">
+              <img src="${linkImgSrc}" width="50" height="50" style="margin: 10px; image-rendering: pixelated;" />
+            </a>
+          </div>
+        `;
       }
       default: {
         return '';
@@ -225,12 +326,12 @@ const makeRenderer = ({creatureUtils}) => {
   };
 
   const getFileSrc = ({item, mode, open}) => {
-    const {id, name, mimeType, instancing, paused, value} = item;
+    const {id, name, displayName, mimeType, instancing, paused, value} = item;
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${instancing ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #E91E63; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">File</div>
-        <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="mwidth: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+        <img src="${creatureUtils.makeStaticCreature('file:' + displayName)}" width="80" height="80" style="margin: 10px; image-rendering: pixelated;" />
         <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
           <div style="height: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${name}</h1>
@@ -331,9 +432,12 @@ const makeRenderer = ({creatureUtils}) => {
   };
 
   return {
-    getElementSrc,
-    getAttributesSrc,
-    getAttributeInputSrc,
+    getModuleSrc,
+    // getElementSrc,
+    getEntitySrc,
+    getAttributeSrc,
+    // getAttributesSrc,
+    // getAttributeInputSrc,
     getFileSrc,
   };
 };

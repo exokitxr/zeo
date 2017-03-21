@@ -113,8 +113,16 @@ class Draw {
         brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_SIZE);
 
         if (live) {
-          class DrawElement extends HTMLElement {
+          const drawComponent = {
+            attributes: {
+              color: {
+                type: "color",
+                value: "2196F3",
+              },
+            },
             createdCallback() {
+              const entityApi = {};
+
               const mesh = (() => {
                 const object = new THREE.Object3D();
                 object.position.y = 1.2;
@@ -196,11 +204,10 @@ class Draw {
 
                 return object;
               })();
-              this.mesh = mesh;
               scene.add(mesh);
 
               const color = new THREE.Color(0x000000);
-              this.color = color;
+              entityApi.color = color;
 
               const _makeDrawState = () => ({
                 drawing: false,
@@ -296,7 +303,7 @@ class Draw {
                           })();
 
                           if (lastPoint.distanceTo(currentPoint) > 0) {
-                            const {color} = this;
+                            const {color} = entityApi;
                             const colorBrushImg = _getColorImg(brushImg, color);
 
                             const halfBrushW = colorBrushImg.width / 2;
@@ -330,7 +337,7 @@ class Draw {
               };
               render.on('update', _update);
 
-              this._cleanup = () => {
+              entityApi._cleanup = () => {
                 scene.remove(mesh);
 
                 input.removeListener('triggerdown', _triggerdown);
@@ -338,26 +345,30 @@ class Draw {
 
                 render.removeListener('update', _update);
               };
-            }
 
-            destructor() {
-              this._cleanup();
-            }
+              entityElement[symbol] = entityApi;
+            },
+            entityRemovedCallback(entityElement) {
+              const {[symbol]: entityApi} = entityElement;
 
-            attributeValueChangedCallback(name, oldValue, newValue) {
+              entityApi._cleanup();
+            },
+            attributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+              const {[symbol]: entityApi} = entityElement;
+
               switch (name) {
                 case 'color': {
-                  this.color = new THREE.Color(newValue);
+                  entityApi.color = new THREE.Color(newValue);
 
                   break;
                 }
               }
-            }
-          }
-          elements.registerElement(this, DrawElement);
+            },
+          };
+          elements.registerComponent(this, drawComponent);
 
           this._cleanup = () => {
-            elements.unregisterElement(this);
+            elements.unregisterComponent(this, drawComponent);
           };
         }
       });

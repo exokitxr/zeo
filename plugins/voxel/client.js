@@ -1,3 +1,5 @@
+const symbol = Symbol();
+
 export default class Voxel {
   mount() {
     const {three: {THREE, scene}, elements} = zeo;
@@ -325,8 +327,21 @@ export default class Voxel {
       return texture;
     })();
 
-    class VoxelElement extends HTMLElement {
-      createdCallback() {
+    const voxelComponent = {
+      selector: 'voxel[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0.5, 1, -0.5,
+            0, 0, 0, 1,
+            0.03125, 0.03125, 0.03125,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
+
         const mesh = (() => {
           const chunkSize = 32;
           const dims = [chunkSize, chunkSize, chunkSize];
@@ -424,33 +439,37 @@ export default class Voxel {
           return mesh;
         })();
         scene.add(mesh);
-        this.mesh = mesh;
+        entityApi.mesh = mesh;
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(mesh);
         };
-      }
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback() {
+        const {[symbol]: entityApi} = entityElement;
+
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            const {mesh} = this;
+            const {mesh} = entityApi;
 
             mesh.position.set(newValue[0], newValue[1], newValue[2]);
             mesh.quaternion.set(newValue[3], newValue[4], newValue[5], newValue[6]);
             mesh.scale.set(newValue[7], newValue[8], newValue[9]);
           }
         }
-      }
-
-      destructor() {
-        this._cleanup();
-      }
-    }
-    elements.registerElement(this, VoxelElement);
+      },
+    };
+    elements.registerComponent(this, voxelComponent);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, voxelComponent);
     };
   }  
 

@@ -73,8 +73,37 @@ class Portal {
           }
         };
 
-        class PortalElement extends HTMLElement {
-          createdCallback() {
+        const portalComponent = {
+          selector: 'portal[position1][color1][position2][color2]',
+          attributes: {
+            position1: {
+              type: 'matrix',
+              value: [
+                0, 1, 1,
+                0, 1, 0, 6.123233995736766e-17,
+                1, 1, 1,
+              ],
+            },
+            color1: {
+              type: 'color',
+              value: '#FDA232',
+            },
+            position2: {
+              type: 'matrix',
+              value: [
+                1, 1.5, -1,
+                0, -0.3826834323650898, 0, 0.9238795325112867,
+                1, 1, 1,
+              ],
+            },
+            color2: {
+              type: 'color',
+              value: '#188EFA',
+            }
+          },
+          entityAddedCallback(entityElement) {
+            const entityApi = {};
+
             const mesh = (() => {
               const result = new THREE.Object3D();
 
@@ -215,7 +244,7 @@ class Portal {
               return result;
             })();
             scene.add(mesh);
-            this.mesh = mesh;
+            entityApi.mesh = mesh;
 
             const sourcePortalCamera = (() => {
               const result = new THREE.PerspectiveCamera();
@@ -223,7 +252,6 @@ class Portal {
               return result;
             })();
             scene.add(sourcePortalCamera);
-            this.sourcePortalCamera = sourcePortalCamera;
 
             let {position: lastCameraPosition} = _decomposeObjectMatrixWorld(camera);
 
@@ -372,23 +400,27 @@ class Portal {
             };
             updateEyes.push(updateEye);
 
-            this._cleanup = () => {
+            entityApi._cleanup = () => {
               scene.remove(mesh);
               scene.remove(sourcePortalCamera);
 
               updates.splice(updates.indexOf(update), 1);
               updateEyes.splice(updateEyes.indexOf(updateEye), 1);
             };
-          }
 
-          destructor() {
-            this._cleanup();
-          }
+            entityElement[symbol] = entityApi;
+          },
+          entityRemovedCallback(entityElement) {
+            const {[symbol]: entityApi} = entityElement;
 
-          attributeValueChangedCallback(name, oldValue, newValue) {
+            entityApi._cleanup();
+          },
+          entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+            const {[symbol]: entityApi} = entityElement;
+
             switch (name) {
               case 'position1': {
-                const {mesh} = this;
+                const {mesh} = entityApi;
                 const {meshes} = mesh;
                 const {red: redPortalMesh} = meshes;
 
@@ -399,7 +431,7 @@ class Portal {
                 break;
               }
               case 'color1': {
-                const {mesh} = this;
+                const {mesh} = entityApi;
                 const {meshes} = mesh;
                 const {red: redPortalMesh} = meshes;
                 const {outer} = redPortalMesh;
@@ -410,7 +442,7 @@ class Portal {
                 break;
               }
               case 'position2': {
-                const {mesh} = this;
+                const {mesh} = entityApi;
                 const {meshes} = mesh;
                 const {blue: bluePortalMesh} = meshes;
 
@@ -421,7 +453,7 @@ class Portal {
                 break;
               }
               case 'color2': {
-                const {mesh} = this;
+                const {mesh} = entityApi;
                 const {meshes} = mesh;
                 const {blue: bluePortalMesh} = meshes;
                 const {outer} = bluePortalMesh;
@@ -433,14 +465,14 @@ class Portal {
               }
             }
           }
-        }
-        elements.registerElement(this, PortalElement);
+        };
+        elements.registerComponent(this, portalComponent);
 
         render.on('update', _update);
         render.on('updateEye', _updateEye);
 
         this._cleanup = () => {
-          elements.unregisterElement(this);
+          elements.unregisterComponent(this, portalComponent);
 
           render.removeListener('update', _update);
           render.removeListener('updateEye', _updateEye);

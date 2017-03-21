@@ -1,9 +1,22 @@
+const symbol = Symbol();
+
 export default class Grass {
   mount() {
     const {three: {THREE, scene}, elements, utils: {function: functionUtils, random: {alea}}} = zeo;
 
-    class GrassElement extends HTMLElement {
-      createdCallback() {
+    const grassComponent = {
+      selector: 'grass[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
         const grassColors = [
           '#337346',
           '#0e6525',
@@ -844,19 +857,22 @@ export default class Grass {
         })();
         scene.add(mesh);
 
-        this._cleanup = () => {
+        entityApi._cleanup = () => {
           scene.remove(mesh);
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
-    }
-    elements.registerElement(this, GrassElement);
+        entityElement[symbol] = entityApi;
+      },
+      destructor(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
+
+        entityApi._cleanup();
+      },
+    };
+    elements.registerComponent(this, grassComponent);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, grassComponent);
     };
   }
 

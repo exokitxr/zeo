@@ -1,3 +1,5 @@
+const symbol = Symbol();
+
 class Sprite {
   mount() {
     const {three: {THREE, scene}, elements, utils: {sprite: spriteUtils}} = zeo;
@@ -27,15 +29,42 @@ class Sprite {
           };
         }));
 
-    class SpriteElement extends HTMLElement {
-      createdCallback() {
-        this.position = null;
-        this.mesh = null;
+    const spriteComponent = {
+      selector: 'sprite[position][image]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            -0.5, 1, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+        image: {
+          type: 'file',
+          value: 'https://cdn.rawgit.com/modulesio/zeo-data/29412380b29e98b18c746a373bdb73aeff59e27a/img/icons/katana.png',
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const entityApi = {};
 
-        this._cancelRequest = null;
+        entityApi.position = null;
+        entityApi.mesh = null;
 
-        this._cleanup = () => {
-          const {mesh, _cancelRequest: cancelRequest} = this;
+        entityApi._cancelRequest = null;
+
+        entityApi._updateMesh = () => {
+          const {position} = entityApi;
+
+          if (position) {
+            mesh.position.set(position[0], position[1], position[2]);
+            mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+            mesh.scale.set(position[7], position[8], position[9]);
+          }
+        };
+
+        entityApi._cleanup = () => {
+          const {mesh, _cancelRequest: cancelRequest} = entityApi;
           if (mesh) {
             scene.remove(mesh);
           }
@@ -43,18 +72,22 @@ class Sprite {
             cancelRequest();
           }
         };
-      }
 
-      destructor() {
-        this._cleanup();
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
+        entityApi._cleanup();
+      },
+      entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
+
         switch (name) {
           case 'position': {
-            this.position = newValue;
+            entityApi.position = newValue;
 
-            this._updateMesh();
+            entityApi._updateMesh();
 
             break;
           }
@@ -62,14 +95,14 @@ class Sprite {
             const file = newValue;
 
             let live = true;
-            this._cancelRequest = () => {
+            entityApi._cancelRequest = () => {
               live = false;
             };
 
             _requestFileImage(file)
               .then(img => {
                 if (live) {
-                  const {mesh: oldMesh} = this;
+                  const {mesh: oldMesh} = entityApi;
                   if (oldMesh) {
                     scene.remove(oldMesh);
                   }
@@ -88,11 +121,11 @@ class Sprite {
                   })();
 
                   scene.add(newMesh);
-                  this.mesh = newMesh;
+                  entityApi.mesh = newMesh;
 
-                  this._updateMesh();
+                  entityApi._updateMesh();
 
-                  this._cancelRequest = null;
+                  entityApi._cancelRequest = null;
                 }
               })
               .catch(err => {
@@ -102,22 +135,12 @@ class Sprite {
             break;
           }
         }
-      }
-
-      _updateMesh() {
-        const {mesh, position} = this;
-
-        if (mesh && position) {
-          mesh.position.set(position[0], position[1], position[2]);
-          mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-          mesh.scale.set(position[7], position[8], position[9]);
-        }
-      }
-    }
-    elements.registerElement(this, SpriteElement);
+      },
+    };
+    elements.registerComponent(this, spriteComponent);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, spriteComponent);
     };
   }
 

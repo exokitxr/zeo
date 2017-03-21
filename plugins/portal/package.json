@@ -3,31 +3,5 @@
   "description": "Create 3D portals that you can walk through.",
   "version": "0.0.1",
   "client": "client.js",
-  "attributes": {
-    "position1": {
-      "type": "matrix",
-      "value": [
-        0, 1, 1,
-        0, 1, 0, 6.123233995736766e-17,
-        1, 1, 1
-      ]
-    },
-    "color1": {
-      "type": "color",
-      "value": "#FDA232"
-    },
-    "position2": {
-      "type": "matrix",
-      "value": [
-        1, 1.5, -1,
-        0, -0.3826834323650898, 0, 0.9238795325112867,
-        1, 1, 1
-      ]
-    },
-    "color2": {
-      "type": "color",
-      "value": "#188EFA"
-    }
-  },
   "dependencies": {}
 }

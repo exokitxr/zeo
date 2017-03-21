@@ -1,61 +1,40 @@
-const zeoElementClasses = new Map();
-const _makeZeoElementClass = ({tag, attributes, baseClass}) => {
-  const attributeNames = Object.keys(attributes);
+const makeUtils = ({fs}) => {
 
-  class ZeoElement extends baseClass {
-    get observedAttributes() {
-      return attributeNames;
-    }
+const zeoComponentElementClasses = new Map();
+const zeoComponentElementConstructor = (() => {
+  class ZeoComponentElement extends HTMLElement {
+    entityAddedCallback(entityElement) {
+      const {baseObject} = this;
 
-    setAttribute(name, value) {
-      this.onsetattribute(name, value);
-    }
-
-    setAttributeRaw(name, value) {
-      super.setAttribute(name, value);
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-      if (typeof super.attributeChangedCallback === 'function') {
-        super.attributeChangedCallback(name, oldValue, newValue);
+      if (baseObject.entityAddedCallback) {
+        baseObject.entityAddedCallback.call(this, entityElement);
       }
+    }
 
-      if (typeof super.attributeValueChangedCallback === 'function') {
-        const attribute = attributes[name];
-        const {type, min, max, step, options} = attribute;
+    entityRemovedCallback(entityElement) {
+      const {baseObject} = this;
 
-        const _castValue = s => {
-          if (s !== null) {
-            return castValueStringToCallbackValue(s.replace(/^"([\s\S]*)"$/, '$1'), type, min, max, step, options);
-          } else {
-            return null;
-          }
-        }
+      if (baseObject.entityRemovedCallback) {
+        baseObject.entityRemovedCallback.call(this, entityElement);
+      }
+    }
 
-        super.attributeValueChangedCallback(name, _castValue(oldValue), _castValue(newValue));
+    entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue) {
+      const {baseObject} = this;
+
+      if (baseObject.entityAttributeValueChangedCallback) {
+        baseObject.entityAttributeValueChangedCallback.call(this, entityElement, attribute, oldValue, newValue);
       }
     }
   }
 
-  const ZeoElementConstructor = document.registerElement('z-' + tag, ZeoElement);
-  return ZeoElementConstructor;
-};
-const makeZeoElement = ({tag, attributes, baseClass}) => {
-  let zeoElementClass = zeoElementClasses.get(tag);
-  if (!zeoElementClass) {
-    zeoElementClass = _makeZeoElementClass({tag, attributes, baseClass});
-    zeoElementClasses.set(tag, zeoElementClass);
-  }
-
-  const zeoElement = new zeoElementClass();
-
-  for (const attributeName in attributes) {
-    const attribute = attributes[attributeName];
-    const {value: attributeValue} = attribute;
-    zeoElement.setAttributeRaw(attributeName, JSON.stringify(attributeValue));
-  }
-
-  return zeoElement;
+  const ZeoComponentElementConstructor = document.registerElement('z-component', ZeoComponentElement);
+  return ZeoComponentElementConstructor;
+})();
+const makeZeoComponentElement = ({baseObject}) => {
+  const zeoComponentElement = new zeoComponentElementConstructor();
+  zeoComponentElement.baseObject = baseObject;
+  return zeoComponentElement;
 };
 
 const castValueStringToValue = (s, type, min, max, step, options) => {
@@ -104,21 +83,19 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
       }
     }
     case 'file': {
-      return s;
+      return fs.makeFile(s);
     }
     default: {
       return s;
     }
   }
 };
-const castValueStringToCallbackValue = (s, type, min, max, step, options) => {
+const castValueToCallbackValue = (value, type) => {
   switch (type) {
-    case 'file': {
-      const url = /^\//.test(s) ? ('/archae/fs' + s) : s;
-      return new FakeFile(url);
-    }
+    case 'file':
+      return fs.makeFile(value);
     default:
-      return castValueStringToValue(s, type, min, max, step, options);
+      return value;
   }
 };
 const castValueValueToString = (s, type) => {
@@ -128,27 +105,6 @@ const castValueValueToString = (s, type) => {
     return JSON.stringify(s);
   }
 };
-
-class FakeFile {
-  constructor(url) {
-    this.url = url;
-  }
-
-  fetch({type} = {}) {
-    const {url} = this;
-
-    return fetch(url)
-      .then(res => {
-        switch (type) {
-          case 'text': return res.text();
-          case 'json': return res.json();
-          case 'arrayBuffer': return res.arrayBuffer();
-          case 'blob': return res.blob();
-          default: return res.blob();
-        }
-      });
-  }
-}
 
 const debounce = fn => {
   let running = false;
@@ -189,10 +145,16 @@ const _jsonParse = s => {
   }
 };
 
-module.exports = {
-  makeZeoElement,
+return {
+  makeZeoComponentElement,
   castValueStringToValue,
-  castValueStringToCallbackValue,
+  castValueToCallbackValue,
   castValueValueToString,
   debounce,
+};
+
+};
+
+module.exports = {
+  makeUtils,
 };

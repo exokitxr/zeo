@@ -112,7 +112,6 @@ class Rend {
               }
             });
           });
-          const _cleanName = name => name.match(/([^\/]*)$/)[1];
           /* const _getModSpec = mod => Promise.all([
             _getPluginPackageJson(mod),
             _getPluginReadmeMd(mod),
@@ -124,7 +123,7 @@ class Rend {
               type: 'element',
               id: mod,
               name: mod,
-              displayName: _cleanName(mod),
+              displayName: packageJson.name,
               version: packageJson.version,
               description: packageJson.description || null,
               readme: readmeMd || '',
@@ -132,23 +131,22 @@ class Rend {
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
-              attributes: packageJson.attributes || {},
               matrix: DEFAULT_TAG_MATRIX,
             })); */
           const _getModSpec = mod => _getPluginPackageJson(mod)
             .then(packageJson => ({
-              type: 'element',
+              type: 'module',
               id: mod,
               name: mod,
-              displayName: _cleanName(mod),
+              displayName: packageJson.name,
               version: packageJson.version,
               description: packageJson.description || null,
               hasClient: Boolean(packageJson.client),
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
               local: path.isAbsolute(mod),
-              attributes: packageJson.attributes || {},
               matrix: DEFAULT_TAG_MATRIX,
+              metadata: {},
             }));
           const _getModSpecs = mods => Promise.all(mods.map(mod => _getModSpec(mod)));
 

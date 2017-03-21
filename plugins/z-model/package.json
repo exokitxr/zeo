@@ -1,6 +1,6 @@
 {
-  "name": "z-cake",
-  "description": "Virtual cake that you can eat. Made with Zeo VR.",
+  "name": "z-model",
+  "description": "Load 3D models from various formats and place them in the world scene.",
   "version": "0.0.4",
   "keywords": [
     "zeo-module"

@@ -2,34 +2,30 @@ const aspectRatio = 16 / 9;
 const videoWidth = 1;
 const videoHeight = videoWidth / aspectRatio;
 
+const symbol = Symbol();
+
 class Ar {
   mount() {
     const {three: {THREE, scene, camera}, elements, render, ui} = zeo;
 
     const transparentImg = ui.getTransparentImg();
 
-    class ArElement extends HTMLElement {
-      createdCallback() {
-        this.position = null;
+    const arComponent = {
+      selector: 'ar[position]',
+      attributes: {
+        position: {
+          type: 'matrix',
+          value: [
+            0, 0, 0,
+            0, 0, 0, 1,
+            1, 1, 1,
+          ],
+        },
+      },
+      entityAddedCallback(entityElement) {
+        const elementApi = {};
 
-        this._cancelRequest = null;
-
-        let live = true;
-        this._cleanup = () => {
-          const {mesh, audio, _cancelRequest: cancelRequest} = this;
-
-          if (mesh) {
-            scene.remove(mesh);
-          }
-          if (audio) {
-            audio.destroy();
-          }
-          if (cancelRequest) {
-            cancelRequest();
-          }
-
-          live = false;
-        };
+        elementApi.position = null;
 
         const mesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(videoWidth, videoHeight, 1, 1);
@@ -87,7 +83,6 @@ class Ar {
           return new THREE.Mesh(geometry, material);
         })();
         scene.add(mesh);
-        this.mesh = mesh;
 
         const update = () => {
           const {material: {map}} = mesh;
@@ -97,7 +92,16 @@ class Ar {
         };
         updates.push(update);
 
-        this._cleanup = () => {
+        entityApi._updateMesh = () => {
+          const {position} = this;
+
+          if (position) {
+            mesh.position.set(position[0], position[1], position[2]);
+            mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+            mesh.scale.set(position[7], position[8], position[9]);
+          }
+        };
+        entityApi._cleanup = () => {
           scene.remove(mesh);
 
           const {material: {map}} = mesh;
@@ -108,37 +112,27 @@ class Ar {
           updates.splice(updates.indexOf(update), 1);
         };
 
-        this.audio = null;
-        this._cancelRequest = null;
-      }
+        entityElement[symbol] = entityApi;
+      },
+      entityRemovedCallback(entityElement) {
+        const {[symbol]: entityApi} = entityElement;
 
-      destructor() {
-        this._cleanup();
-      }
+        entityApi._cleanup();
+      },
+      attributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+        const {[symbol]: entityApi} = entityElement;
 
-      attributeValueChangedCallback(name, oldValue, newValue) {
         switch (name) {
           case 'position': {
-            this.position = newValue;
-
-            this._updateMesh();
+            entityApi.position = newValue;
+            entityApi._updateMesh();
 
             break;
           }
         }
-      }
-
-      _updateMesh() {
-        const {mesh, position} = this;
-
-        if (mesh && position) {
-          mesh.position.set(position[0], position[1], position[2]);
-          mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-          mesh.scale.set(position[7], position[8], position[9]);
-        }
-      }
-    }
-    elements.registerElement(this, ArElement);
+      },
+    },
+    elements.registerComponent(this, arComponent);
 
     const updates = [];
     const _update = () => {
@@ -150,7 +144,7 @@ class Ar {
     render.on('update', _update);
 
     this._cleanup = () => {
-      elements.unregisterElement(this);
+      elements.unregisterComponent(this, arComponent);
 
       render.removeListener('update', _update);
     };

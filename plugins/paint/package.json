@@ -5,11 +5,5 @@
   "keywords": [],
   "client": "client.js",
   "server": "server.js",
-  "attributes": {
-    "color": {
-      "type": "color",
-      "value": "#F44336"
-    }
-  },
   "dependencies": {}
 }
