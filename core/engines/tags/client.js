@@ -2544,7 +2544,7 @@ class Tags {
               const {instance} = item;
 
               if (!instance) {
-                const {tagName: entityTagName, attributes: entityAttributes} = item;
+                const {tagName: entityTagName, attributes: entityAttributes, data: entityData} = item;
                 const entityElement = document.createElement(entityTagName);
                 const object = new THREE.Object3D();
                 scene.add(object);
@@ -2556,6 +2556,10 @@ class Tags {
                   const attributeValueString = _stringifyAttribute(attributeValue);
                   entityElement.setAttribute(attributeName, attributeValueString);
                 }
+                if (entityData !== undefined) {
+                  entityElement.innerText = JSON.stringify(entityData);
+                }
+
                 entityElement.item = item;
                 item.instance = entityElement;
 
