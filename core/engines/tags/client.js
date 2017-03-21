@@ -2452,6 +2452,9 @@ class Tags {
               if (!instance) {
                 const {tagName: entityTagName, attributes: entityAttributes} = item;
                 const entityElement = document.createElement(entityTagName);
+                const object = new THREE.Object3D();
+                scene.add(object);
+                entityElement._object = object;
 
                 for (const attributeName in entityAttributes) {
                   const attribute = entityAttributes[attributeName];

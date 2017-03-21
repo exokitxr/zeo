@@ -2,28 +2,46 @@ const makeUtils = ({fs}) => {
 
 const zeoComponentElementClasses = new Map();
 const zeoComponentElementConstructor = (() => {
+  const entityApis = new Map();
+
   class ZeoComponentElement extends HTMLElement {
     entityAddedCallback(entityElement) {
-      const {baseObject} = this;
+      let entityApi = entityApis.get(entityElement);
+      if (!entityApi) {
+        const entityApiData = {};
+        entityApi = Object.create(entityElement, {
+          getComponentApi: {
+            value: () => entityApiData,
+          },
+          getObject: {
+            value: () => entityElement._object,
+          },
+        });
+        entityApis.set(entityElement, entityApi);
+      }
 
+      const {_baseObject: baseObject} = this;
       if (baseObject.entityAddedCallback) {
-        baseObject.entityAddedCallback.call(this, entityElement);
+        baseObject.entityAddedCallback.call(this, entityApi);
       }
     }
 
     entityRemovedCallback(entityElement) {
-      const {baseObject} = this;
+      const entityApi = entityApis.get(entityElement);
+      entityApis.delete(entityElement);
 
+      const {_baseObject: baseObject} = this;
       if (baseObject.entityRemovedCallback) {
-        baseObject.entityRemovedCallback.call(this, entityElement);
+        baseObject.entityRemovedCallback.call(this, entityApi);
       }
     }
 
     entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue) {
-      const {baseObject} = this;
+      const entityApi = entityApis.get(entityElement);
 
+      const {_baseObject: baseObject} = this;
       if (baseObject.entityAttributeValueChangedCallback) {
-        baseObject.entityAttributeValueChangedCallback.call(this, entityElement, attribute, oldValue, newValue);
+        baseObject.entityAttributeValueChangedCallback.call(this, entityApi, attribute, oldValue, newValue);
       }
     }
   }
@@ -33,7 +51,7 @@ const zeoComponentElementConstructor = (() => {
 })();
 const makeZeoComponentElement = ({baseObject}) => {
   const zeoComponentElement = new zeoComponentElementConstructor();
-  zeoComponentElement.baseObject = baseObject;
+  zeoComponentElement._baseObject = baseObject;
   return zeoComponentElement;
 };
 
