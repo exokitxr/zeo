@@ -16,17 +16,13 @@ class ZGrabbable {
     };
 
     return archae.requestPlugins([
-      '/core/engines/webvr',
       '/core/engines/cyborg',
-      '/core/plugins/js-utils',
     ])
       .then(([
-        webvr,
         cyborg,
-        jsUtils,
       ]) => {
         if (live) {
-          const {three: {THREE}, elements, input} = zeo;
+          const {three: {THREE}, elements, pose, input, utils: {js: {events: {EventEmitter}}}} = zeo;
           const player = cyborg.getPlayer();
 
           const {events} = jsUtils;
@@ -81,7 +77,7 @@ class ZGrabbable {
 
               if (!globalGrabbable) {
                 const {side} = grabState;
-                const {gamepads} = webvr.getStatus();
+                const {gamepads} = pose.getStatus();
                 const gamepad = gamepads[side];
 
                 if (gamepad) {
