@@ -1,6 +1,11 @@
 const CakeModel = require('./lib/models/cake');
 
 const GRAB_RADIUS = 0.2;
+const DEFAULT_MATRIX = [
+  0, 1, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 const SIDES = ['left', 'right'];
 
@@ -29,41 +34,24 @@ class ZCake {
         eatAudio,
       }) => {
         if (live) {
-          const {three: {THREE}, elements, input, render, hands} = zeo;
+          const {three: {THREE, scene}, elements, input, render, hands} = zeo;
 
-          const cakeComponent = {
-            selector: 'cake[position][slices]',
-            attributes: {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 0, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
-              slices: {
-                type: 'number',
-                value: 8,
-                min: 0,
-                max: 8,
-                step: 1,
-              }
-            },
-            entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
-              const entityObject = entityElement.getObject();
+          class Cake {
+            constructor(object) {
+              this.object = object;
 
-              entityApi.position = null;
-              entityApi.slices = 0;
+              this.position = DEFAULT_MATRIX;
+              this.slices = 8;
 
-              entityApi.mesh = null;
-              entityApi.sliceSide = null;
-              entityApi.sliceMesh = null;
+              this.mesh = null;
+              this.sliceSide = null;
+              this.sliceMesh = null;
+
+              this.render();
 
               const _gripdown = e => {
                 const {side} = e;
-                const {mesh} = entityApi;
+                const {mesh} = this;
 
                 const canGrab = hands.canGrab(side, mesh, {
                   radius: GRAB_RADIUS,
@@ -77,10 +65,10 @@ class ZCake {
                   sliceMesh.rotation.y = -(1/8 * Math.PI);
                   sliceMesh.position.z = -0.2;
                   hands.grab(side, sliceMesh);
-                  entityApi.sliceSide = side;
-                  entityApi.sliceMesh = sliceMesh;
+                  this.sliceSide = side;
+                  this.sliceMesh = sliceMesh;
 
-                  this.setAttribute('slices', entityApi.slices - 1);
+                  this.setAttribute('slices', this.slices - 1);
 
                   e.stopImmediatePropagation();
                 }
@@ -90,11 +78,11 @@ class ZCake {
               });
               const _release = e => {
                 const {side, object} = e;
-                const {sliceSide, sliceMesh} = entityApi;
+                const {sliceSide, sliceMesh} = this;
 
                 if (side === sliceSide && object === sliceMesh) {
-                  entityApi.sliceSide = null;
-                  entityApi.sliceMesh = null;
+                  this.sliceSide = null;
+                  this.sliceMesh = null;
 
                   eatAudio.currentTime = 0;
                   if (eatAudio.paused) {
@@ -104,37 +92,11 @@ class ZCake {
               };
               input.on('release', _release);
 
-              entityApi._render = () => {
-                const {mesh: oldMesh} = entityApi;
-                if (oldMesh) {
-                  entityObject.remove(oldMesh);
-                }
+              this._cleanup = () => {
+                const {object, mesh} = this;
+                object.remove(mesh);
 
-                const {slices} = entityApi;
-                const newMesh = new CakeModel({
-                  THREE,
-                  slices,
-                });
-                entityObject.add(newMesh);
-                entityApi.mesh = newMesh;
-
-                entityApi._updateMesh();
-              };
-              entityApi._updateMesh = () => {
-                const {mesh, position} = entityApi;
-
-                if (mesh && position) {
-                  mesh.position.set(position[0], position[1], position[2]);
-                  mesh.quaternion.set(position[3], position[4], position[5], position[6]);
-                  mesh.scale.set(position[7], position[8], position[9]);
-                }
-              };
-
-              entityApi._cleanup = () =>0 {
-                const {mesh} = entityApi;
-                entityObject.remove(mesh);
-
-                const {sliceSide, sliceMesh} = entityApi;
+                const {sliceSide, sliceMesh} = this;
                 if (sliceSide && sliceMesh) {
                   hands.release(sliceSide, sliceMesh);
                 }
@@ -143,27 +105,104 @@ class ZCake {
 
                 hands.removeListener('release', _release);
               };
+            }
+
+            render() {
+              const {object, mesh: oldMesh} = this;
+              if (oldMesh) {
+                object.remove(oldMesh);
+              }
+
+              const {slices} = this;
+              const newMesh = new CakeModel({
+                THREE,
+                slices,
+              });
+              object.add(newMesh);
+              this.mesh = newMesh;
+
+              this.updateMesh();
+            }
+
+            updateMesh() {
+              const {mesh, position} = this;
+
+              mesh.position.set(position[0], position[1], position[2]);
+              mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+              mesh.scale.set(position[7], position[8], position[9]);
+            }
+
+            setPosition(newValue) {
+              this.position = newValue;
+
+              this.updateMesh();
+            }
+
+            setSlices(newValue) {
+              this.slices = newValue;
+
+              this.render();
+            }
+
+            destroy() {
+              this._cleanup();
+            }
+          }
+
+          const _makeFakeCake = () => new Cake(scene);
+
+          let fakeCake = _makeFakeCake();
+          const cakes = [];
+
+          const cakeComponent = {
+            selector: 'cake[position][slices]',
+            attributes: {
+              position: {
+                type: 'matrix',
+                value: DEFAULT_MATRIX,
+              },
+              slices: {
+                type: 'number',
+                value: 8,
+                min: 0,
+                max: 8,
+                step: 1,
+              }
+            },
+            entityAddedCallback(entityElement) {
+              const entityObject = entityElement.getObject();
+
+              const cake = new Cake(entityObject);
+              cakes.push(cake);
+
+              entityElement.setComponentApi(cake);
+
+              if (cakes.length === 1) {
+                fakeCake.destroy();
+                fakeCake = null;
+              }
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getComponentApi();
+              const cake = entityElement.getComponentApi();
+              cake.destroy();
 
-              entityApi._cleanup();
+              cakes.splice(cakes.indexOf(cake), 1);
+
+              if (cakes.length === 0) {
+                fakeCake = _makeFakeCake();
+              }
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
               const entityApi = entityElement.getComponentApi();
 
               switch (name) {
                 case 'position': {
-                  entityApi.position = newValue;
-
-                  entityApi._updateMesh();
+                  entityApi.setPosition(newValue);
 
                   break;
                 }
                 case 'slices': {
-                  entityApi.slices = newValue;
-
-                  entityApi._render();
+                  entityApi.setSlices(newValue);
 
                   break;
                 }
@@ -183,6 +222,10 @@ class ZCake {
 
           this._cleanup = () => {
             elements.unregisterComponent(this, cakeComponent);
+
+            if (fakeCake) {
+              fakeCake.destroy();
+            }
 
             render.removeListener('update', _update);
           };

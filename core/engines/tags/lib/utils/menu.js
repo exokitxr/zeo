@@ -8,10 +8,15 @@ const zeoComponentElementConstructor = (() => {
     entityAddedCallback(entityElement) {
       let entityApi = entityApis.get(entityElement);
       if (!entityApi) {
-        const entityApiData = {};
+        let entityApiData = {};
         entityApi = Object.create(entityElement, {
           getComponentApi: {
             value: () => entityApiData,
+          },
+          setComponentApi: {
+            value: newEntityApiData => {
+              entityApiData = newEntityApiData;
+            },
           },
           getObject: {
             value: () => entityElement._object,
