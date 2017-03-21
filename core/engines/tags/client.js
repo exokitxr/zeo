@@ -2273,6 +2273,7 @@ class Tags {
                 itemSpec.version,
                 itemSpec.tagName, // XXX get rid of these
                 itemSpec.attributes,
+                itemSpec.data,
                 itemSpec.mimeType,
                 itemSpec.matrix,
                 itemSpec.metadata
