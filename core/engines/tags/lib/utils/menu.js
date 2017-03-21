@@ -16,6 +16,14 @@ const zeoComponentElementConstructor = (() => {
           getObject: {
             value: () => entityElement._object,
           },
+          getData: {
+            value: () => _jsonParse(entityElement.innerHTML),
+          },
+          setData: {
+            value: data => {
+              entityElement.innerHTML = JSON.stringify(data, null, 2);
+            },
+          },
         });
         entityApis.set(entityElement, entityApi);
       }
@@ -42,6 +50,15 @@ const zeoComponentElementConstructor = (() => {
       const {_baseObject: baseObject} = this;
       if (baseObject.entityAttributeValueChangedCallback) {
         baseObject.entityAttributeValueChangedCallback.call(this, entityApi, attribute, oldValue, newValue);
+      }
+    }
+
+    entityDataChangedCallback(entityElement, oldValue, newValue) {
+      const entityApi = entityApis.get(entityElement);
+
+      const {_baseObject: baseObject} = this;
+      if (baseObject.entityDataChangedCallback) {
+        baseObject.entityDataChangedCallback.call(this, entityApi, oldValue, newValue);
       }
     }
   }
@@ -159,7 +176,7 @@ const _jsonParse = s => {
   if (!error) {
     return result;
   } else {
-    return null;
+    return undefined;
   }
 };
 

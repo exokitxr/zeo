@@ -5,7 +5,7 @@ class Test {
     console.log('mount');
 
     const testComponent = {
-      selector: 'test'
+      selector: 'test[position]',
       attributes: {
         position: {
           type: 'matrix',
@@ -55,6 +55,9 @@ class Test {
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
         console.log('entityAttributeValueChangedCallback', {entityElement, name, oldValue, newValue});
+      },
+      entityDataChangedCallback(entityElement, oldValue, newValue) {
+        console.log('entityDataChangedCallback', {entityElement, oldValue, newValue});
       },
     };
     elements.registerComponent(this, testComponent);

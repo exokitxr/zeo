@@ -452,6 +452,22 @@ class Tags {
                         componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                       }
                     }
+                  } else if (addedNode.nodeType === Node.TEXT_NODE) {
+                    const {parentNode: entityElement} = addedNode;
+
+                    if (entityElement.nodeType === Node.ELEMENT_NODE) {
+                      const entitySelector = _getElementSelector(entityElement);
+                      const entityAttributes = _getElementJsonAttributes(entityElement);
+                      const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
+
+                      for (let k = 0; k < boundComponentSpecs.length; k++) {
+                        const boundComponentSpec = boundComponentSpecs[k];
+                        const {componentElement} = boundComponentSpec;
+                        const {nodeValue: newValue} = addedNode;
+
+                        componentElement.entityDataChangedCallback(entityElement, null, newValue); // XXX broadcast these through the world engine
+                      }
+                    }
                   }
                 }
 
@@ -477,6 +493,22 @@ class Tags {
                       const {componentElement} = boundComponentSpec;
 
                       componentElement.entityRemovedCallback(entityElement);
+                    }
+                  } else if (removedNode.nodeType === Node.TEXT_NODE) {
+                    const {target: entityElement} = mutation;
+
+                    if (entityElement.nodeType === Node.ELEMENT_NODE) {
+                      const entitySelector = _getElementSelector(entityElement);
+                      const entityAttributes = _getElementJsonAttributes(entityElement);
+                      const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
+
+                      for (let k = 0; k < boundComponentSpecs.length; k++) {
+                        const boundComponentSpec = boundComponentSpecs[k];
+                        const {componentElement} = boundComponentSpec;
+                        const {nodeValue: oldValue} = removedNode;
+
+                        componentElement.entityDataChangedCallback(entityElement, oldValue, null);
+                      }
                     }
                   }
                 }
@@ -541,14 +573,34 @@ class Tags {
                     }
                   }
                 }
+              } else if (type === 'characterData') {
+                const {target} = mutation;
+                const {parentNode: entityElement} = target;
+
+                if (entityElement.nodeType === Node.ELEMENT_NODE) {
+                  const {oldValue} = mutation;
+                  const {nodeValue: newValue} = target;
+                  const entitySelector = _getElementSelector(entityElement);
+                  const entityAttributes = _getElementJsonAttributes(entityElement);
+                  const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
+
+                  for (let i = 0; i < boundComponentSpecs.length; i++) {
+                    const boundComponentSpec = boundComponentSpecs[i];
+                    const {componentElement} = boundComponentSpec;
+
+                    componentElement.entityDataChangedCallback(entityElement, oldValue, newValue);
+                  }
+                }
               }
             }
           });
           rootEntitiesObserver.observe(rootEntitiesElement, {
             childList: true,
             attributes: true,
+            characterData: true,
             subtree: true,
             attributeOldValue: true,
+            characterDataOldValue: true,
           });
 
           class UiManager {
