@@ -2569,12 +2569,8 @@ class Tags {
                 });
             } */
 
-            getRootComponentsmElement() {
-              return rootComponentsElement;
-            }
-
-            getRootEntitiesElement() {
-              return rootEntitiesElement;
+            getWorldElement() {
+              return rootWorldElement;
             }
 
             getTagComponentApis(tag) {

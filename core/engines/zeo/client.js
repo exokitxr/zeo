@@ -504,8 +504,8 @@ class Zeo {
                         tags.unregisterComponent(pluginInstance, componentApi);
                       }
 
-                      getRootElement() {
-                        return tags.getRootElement();
+                      getWorldElement() {
+                        return tags.getWorldElement();
                       }
                     }
 
