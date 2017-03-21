@@ -26,9 +26,7 @@ const itemOpenSymbol = Symbol();
 const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
-const itemMutexSymbol = Symbol();
 const MODULE_TAG_NAME = 'module'.toUpperCase();
-const ITEM_LOCK_KEY = 'key';
 
 class Tags {
   constructor(archae) {
@@ -109,6 +107,8 @@ class Tags {
             fontStyle: biolumi.getFontStyle(),
           };
 
+          const modulesMutex = new MultiMutex();
+
           const rootWorldElement = document.createElement('world');
           const localEventSymbol = Symbol();
           rootWorldElement.addEventListener('broadcast', e => {
@@ -148,7 +148,7 @@ class Tags {
                 }
               };
 
-              item.lock() // XXX globalize these locks
+              modulesMutex.lock(name)
                 .then(unlock => {
                   archae.requestPlugin(name)
                     .then(pluginInstance => {
@@ -207,10 +207,9 @@ class Tags {
                   }
                 };
 
-                item.lock()
+                const name = moduleElement.getAttribute('src');
+                modulesMutex.lock(name)
                   .then(unlock => {
-                    const name = moduleElement.getAttribute('src');
-
                     archae.releasePlugin(name)
                       .then(() => {
                         _updateNpmUi(tagMesh => {
@@ -1845,8 +1844,6 @@ class Tags {
               this[itemPausedSymbol] = true;
               this[itemValueSymbol] = 0;
               this[itemPreviewSymbol] = false;
-
-              this[itemMutexSymbol] = new MultiMutex();
             }
 
             get instance() {
@@ -1906,10 +1903,6 @@ class Tags {
                   entityElement.removeAttribute(attributeName);
                 }
               }
-            }
-
-            lock() {
-              return this[itemMutexSymbol].lock(ITEM_LOCK_KEY);
             }
 
             play() {
