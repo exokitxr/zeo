@@ -236,7 +236,7 @@ class World {
 
                 _handleSetTagAttribute(userId, src, {name, value});
               } else if (type === 'message') {
-                const {args: [detail}]} = m;
+                const {args: [detail]} = m;
 
                 _handleMessage(detail);
               } else if (type === 'response') {
