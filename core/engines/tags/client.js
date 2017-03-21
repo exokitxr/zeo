@@ -2668,6 +2668,14 @@ class Tags {
               return rootWorldElement;
             }
 
+            getModulesElement() {
+              return rootModulesElement;
+            }
+
+            getEntitiesElement() {
+              return rootEntitiesElement;
+            }
+
             getTagComponentApis(tag) {
               return tagComponentApis[tag];
             }

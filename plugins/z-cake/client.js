@@ -37,38 +37,46 @@ class ZCake {
           const {three: {THREE, scene}, elements, input, render, hands} = zeo;
 
           class Cake {
-            constructor(object) {
+            constructor(element, object) {
+              this.element = element;
               this.object = object;
 
               this.position = DEFAULT_MATRIX;
               this.slices = 8;
 
               this.mesh = null;
-              this.sliceSide = null;
-              this.sliceMesh = null;
 
               this.render();
 
-              const _gripdown = e => {
+              /* const _gripdown = e => { // XXX refactor all of this to be handled by z-grabbable trygrab -> grab -> release custom events
                 const {side} = e;
-                const {mesh} = this;
+                const {element, mesh} = this;
 
                 const canGrab = hands.canGrab(side, mesh, {
                   radius: GRAB_RADIUS,
                 });
 
                 if (canGrab) {
-                  const sliceMesh = new CakeModel({
-                    THREE,
-                    slices: 1,
-                  });
-                  sliceMesh.rotation.y = -(1/8 * Math.PI);
-                  sliceMesh.position.z = -0.2;
-                  hands.grab(side, sliceMesh);
-                  this.sliceSide = side;
-                  this.sliceMesh = sliceMesh;
+                  const sliceCakeEntity = document.createElement('cake');
+                  sliceCakeEntity.setAttribute('position', JSON.stringify(
+                    mesh.position.toArray().concat(mesh.quaternion.toArray()).concat(mesh.scale.toArray())
+                  ));
+                  sliceCakeEntity.setAttribute('slices', JSON.stringify(1));
+                  elements.getModulesElement().appendChild(sliceCakeEntity);
 
-                  this.setAttribute('slices', this.slices - 1);
+                  const grabEvent = new CustomEvent('grab', {
+                    detail: {
+                      side: side,
+                    },
+                  });
+                  sliceCakeEntity.dispatchEvent(grabEvent);
+
+                  const newSlices = this.slices - 1;
+                  if (element) {
+                    element.setAttribute('slices', newSlices);
+                  } else {
+                    this.setSlices(newSlices);
+                  }
 
                   e.stopImmediatePropagation();
                 }
@@ -90,20 +98,19 @@ class ZCake {
                   }
                 }
               };
-              input.on('release', _release);
+              input.on('release', _release); */
 
               this._cleanup = () => {
                 const {object, mesh} = this;
                 object.remove(mesh);
 
-                const {sliceSide, sliceMesh} = this;
+                /* const {sliceSide, sliceMesh} = this;
                 if (sliceSide && sliceMesh) {
                   hands.release(sliceSide, sliceMesh);
                 }
 
                 input.removeListener('gripdown', _gripdown);
-
-                hands.removeListener('release', _release);
+                hands.removeListener('release', _release); */
               };
             }
 
@@ -149,7 +156,7 @@ class ZCake {
             }
           }
 
-          const _makeFakeCake = () => new Cake(scene);
+          const _makeFakeCake = () => new Cake(null, scene);
 
           let fakeCake = _makeFakeCake();
           const cakes = [];
@@ -167,12 +174,14 @@ class ZCake {
                 min: 0,
                 max: 8,
                 step: 1,
-              }
+              },
+              grabbable: {
+                type: checkbox,
+                value: true,
+              },
             },
             entityAddedCallback(entityElement) {
-              const entityObject = entityElement.getObject();
-
-              const cake = new Cake(entityObject);
+              const cake = new Cake(entityElement, entityElement.getObject());
               cakes.push(cake);
 
               entityElement.setComponentApi(cake);

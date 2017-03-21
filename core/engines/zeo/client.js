@@ -507,6 +507,14 @@ class Zeo {
                       getWorldElement() {
                         return tags.getWorldElement();
                       }
+
+                      getModulesElement() {
+                        return tags.getModulesElement();
+                      }
+
+                      getEntitiesElement() {
+                        return tags.getEntitiesElement();
+                      }
                     }
 
                     class ZeoWorldApi {
