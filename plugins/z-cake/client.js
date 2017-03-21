@@ -176,7 +176,7 @@ class ZCake {
                 step: 1,
               },
               grabbable: {
-                type: checkbox,
+                type: 'checkbox',
                 value: true,
               },
             },
@@ -202,16 +202,16 @@ class ZCake {
               }
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getComponentApi();
+              const cake = entityElement.getComponentApi();
 
               switch (name) {
                 case 'position': {
-                  entityApi.setPosition(newValue);
+                  cake.setPosition(newValue);
 
                   break;
                 }
                 case 'slices': {
-                  entityApi.setSlices(newValue);
+                  cake.setSlices(newValue);
 
                   break;
                 }

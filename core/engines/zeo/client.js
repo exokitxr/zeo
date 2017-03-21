@@ -88,7 +88,6 @@ class Zeo {
             '/core/engines/biolumi',
             '/core/engines/airlock',
             '/core/engines/teleport',
-            '/core/engines/hands',
             '/core/engines/tags',
             '/core/engines/world',
             '/core/engines/mail',
@@ -124,7 +123,6 @@ class Zeo {
             biolumi,
             airlock,
             teleport,
-            hands,
             tags,
             world,
             mail,
@@ -549,29 +547,6 @@ class Zeo {
                       }
                     }
 
-                    class ZeoHandsApi extends EventEmitter {
-                      constructor() {
-                        super();
-
-                        hands.on('release', e => {
-                          this.emit('release', e);
-                        });
-                      }
-
-                      canGrab(side, object, options) {
-                        return hands.canGrab(side, object, options);
-                      }
-                      grab(side, object) {
-                        return hands.grab(side, object);
-                      }
-                      release(side, object) {
-                        return hands.release(side, object);
-                      }
-                      peek(side) {
-                        return hands.peek(side);
-                      }
-                    }
-
                     class ZeoAnimationApi {
                       makeAnimation(duration) {
                         return anima.makeAnimation(duration);
@@ -609,7 +584,6 @@ class Zeo {
                         this.ui = new ZeoUiApi();
                         this.sound = new ZeoSoundApi();
                         this.physics = new ZeoPhysicsApi();
-                        this.hands = new ZeoHandsApi();
                         this.animation = new ZeoAnimationApi();
                         this.utils = new ZeoUtilsApi();
                       }
