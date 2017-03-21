@@ -8,18 +8,36 @@ const zeoComponentElementConstructor = (() => {
     entityAddedCallback(entityElement) {
       let entityApi = entityApis.get(entityElement);
       if (!entityApi) {
-        let entityApiData = {};
+        const entityApiState = {};
+        let entityApiComponentApi = {};
         entityApi = Object.create(entityElement, {
           getComponentApi: {
-            value: () => entityApiData,
+            value: () => entityApiComponentApi,
           },
           setComponentApi: {
-            value: newEntityApiData => {
-              entityApiData = newEntityApiData;
+            value: newEntityApiComponentApi => {
+              entityApiComponentApi = newEntityApiComponentApi;
             },
           },
           getObject: {
             value: () => entityElement._object,
+          },
+          getState: {
+            value: () => entityApiState,
+          },
+          setState: {
+            value: o => {
+              const oldValue = _shallowClone(entityApiState);
+
+              for (const k in o) {
+                const v = o[k];
+                entityApiState[k] = v;
+              }
+
+              const newValue = _shallowClone(entityApiState);
+
+              this.entityStateChangedCallback(entityApi, oldValue, newValue);
+            },
           },
           getData: {
             value: () => _jsonParse(entityElement.innerHTML),
@@ -55,6 +73,15 @@ const zeoComponentElementConstructor = (() => {
       const {_baseObject: baseObject} = this;
       if (baseObject.entityAttributeValueChangedCallback) {
         baseObject.entityAttributeValueChangedCallback.call(this, entityApi, attribute, oldValue, newValue);
+      }
+    }
+
+    entityStateChangedCallback(entityElement, oldValue, newValue) {
+      const entityApi = entityApis.get(entityElement);
+
+      const {_baseObject: baseObject} = this;
+      if (baseObject.entityStateChangedCallback) {
+        baseObject.entityStateChangedCallback.call(this, entityApi, oldValue, newValue);
       }
     }
 
@@ -183,6 +210,14 @@ const _jsonParse = s => {
   } else {
     return undefined;
   }
+};
+const _shallowClone = o => {
+  const result = {};
+  for (const k in o) {
+    const v = o[k];
+    result[k] = v;
+  }
+  return result;
 };
 
 return {

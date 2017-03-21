@@ -71,7 +71,7 @@ class ZPhysics {
             dynamicsWorld.addRigidBody(body);
           })();
 
-          const bodies = [];
+          const activePhysicsBodies = [];
 
           let lastUpdateTime = Date.now();
           const trans = new Ammo.btTransform();
@@ -80,18 +80,9 @@ class ZPhysics {
             const timeDiff = now - lastUpdateTime;
             dynamicsWorld.stepSimulation(timeDiff, RESOLUTION, STEP_SECONDS / RESOLUTION);
 
-            for (let i = 0; i < bodies.length; i++) {
-              const body = bodies[i];
-
-              if (body.getMotionState()) {
-                body.getMotionState().getWorldTransform(trans);
-                const origin = trans.getOrigin();
-                const rotation = trans.getRotation();
-
-                const position = new THREE.Vector3(origin.x(), origin.y(), origin.z());
-                const quaternion = new THREE.Quaternion(rotation.x(), rotation.y(), rotation.z(), rotation.w());
-                console.log("world pos = " + position.toArray().concat(quaternion.toArray()).join('.'));
-              }
+            for (let i = 0; i < activePhysicsBodies.length; i++) {
+              const physicsBody = activePhysicsBodies[i];
+              physicsBody.update();
             }
 
             lastUpdateTime = now;
@@ -128,18 +119,36 @@ class ZPhysics {
 
                   dynamicsWorld.addRigidBody(body);
 
-                  bodies.push(body);
-
                   return body;
                 })();
                 this.body = body;
+
+                activePhysicsBodies.push(this);
               } else {
                 const {body} = this;
                 dynamicsWorld.removeRigidBody(body);
 
-                bodies.splice(bodies.indexOf(body), 1);
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
 
                 this.body = null;
+              }
+            }
+
+            update() {
+              const {element, body} = this;
+
+              if (body.getMotionState()) {
+                body.getMotionState().getWorldTransform(trans);
+                const btOrigin = trans.getOrigin();
+                const btRotation = trans.getRotation();
+
+                const position = new THREE.Vector3(btOrigin.x(), btOrigin.y(), btOrigin.z());
+                const quaternion = new THREE.Quaternion(btRotation.x(), btRotation.y(), btRotation.z(), btRotation.w());
+
+                element.setState({
+                  position,
+                  quaternion,
+                });
               }
             }
 
@@ -149,7 +158,7 @@ class ZPhysics {
               if (body) {
                 dynamicsWorld.removeRigidBody(body);
 
-                bodies.splice(bodies.indexOf(body), 1);
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
 
                 this.body = null;
               }
@@ -184,7 +193,13 @@ class ZPhysics {
                   break;
                 }
               }
-            }
+            },
+            entityStateChangedCallback(entityElement, oldValue, newValue) {
+              // const physicsBody = entityElement.getComponentApi();
+              const {position, quaternion} = newValue;
+
+              console.log("world pos = " + position.toArray().concat(quaternion.toArray()).join('.'));
+            },
           };
           elements.registerComponent(this, spPhysicsComponent);
 
