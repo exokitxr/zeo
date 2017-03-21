@@ -455,7 +455,8 @@ class Tags {
                     const {parentNode: entityElement} = addedNode;
 
                     if (entityElement.nodeType === Node.ELEMENT_NODE) {
-                      const {nodeValue: newValue} = addedNode; // XXX parse these as JSON before emitting or calling back
+                      const {nodeValue: newValueString} = addedNode;
+                      const newValue = _jsonParse(newValueString);
 
                       const {item: entityItem} = entityElement;
                       const {id: entityId} = entityItem;
@@ -519,7 +520,8 @@ class Tags {
                       for (let k = 0; k < boundComponentSpecs.length; k++) {
                         const boundComponentSpec = boundComponentSpecs[k];
                         const {componentElement} = boundComponentSpec;
-                        const {nodeValue: oldValue} = removedNode;
+                        const {nodeValue: oldValueString} = removedNode;
+                        const oldValue = _jsonParse(oldValueString);
 
                         componentElement.entityDataChangedCallback(entityElement, oldValue, null);
                       }
@@ -592,8 +594,10 @@ class Tags {
                 const {parentNode: entityElement} = target;
 
                 if (entityElement.nodeType === Node.ELEMENT_NODE) {
-                  const {oldValue} = mutation;
-                  const {nodeValue: newValue} = target; // XXX parse these as JSON before emitting or calling back
+                  const {oldValue: oldValueString} = mutation;
+                  const {nodeValue: newValueString} = target;
+                  const oldValue = _jsonParse(oldValueString);
+                  const newValue = _jsonParse(newValueString);
 
                   const {item: entityItem} = entityElement;
                   const {id: entityId} = entityItem;
