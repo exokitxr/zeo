@@ -2475,8 +2475,12 @@ class Tags {
 
               if (instance) {
                 const entityElement = instance;
+
                 entityElement.item = null;
                 item.instance = null;
+
+                const {_object: object} = entityElement;
+                scene.remove(object);
 
                 const {parentNode} = entityElement;
                 if (parentNode) {
