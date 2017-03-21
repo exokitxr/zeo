@@ -121,18 +121,6 @@ small,
   letter-spacing:0;
   }
 
-.sidebar {
-  width: 250px !important;
-  overflow: hidden !important;
-}
-
-.sidebar > .small {
-  width: 267px;
-  height: 100%;
-  padding-right: 17px;
-  overflow-y: scroll;
-}
-
 small { display:block; }
 
 .micro,
@@ -254,13 +242,13 @@ a.quiet > code {
 a.quiet.active, a.quiet:hover { color:rgba(0,0,0,0.75); }
 
 .dark a.quiet,
-a.quiet.dark { color:white; margin: 0 -15px; padding: 4px 21px; font-size: 13px; font-weight: 600; color: #000; }
+a.quiet.dark { color:white; margin-left: -15px; padding-left: 21px; font-size: 13px; line-height: 1.6; font-weight: 400; color: #CCC; }
 
 .dark .space-left1 > a.quiet,
 .space-left1 > a.quiet.dark { margin-left: -25px; padding-left: 35px; }
 
 .dark a.quiet:hover,
-a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); color: white; background-color: #000; }
+a.quiet.dark.active, a.quiet.dark:hover { color:rgba(255,255,255,0.5); color: #E91E63; }
 
 /* Buttons */
 .button {
@@ -3114,7 +3102,7 @@ Alternate exists for:
 
 /* Fills
 -------------------------------------------------------- */
-.fill-dark        { background-color:#000; background-color:#FFF; }
+.fill-dark        { background-color:#000; }
 .fill-gray,
 .fill-grey        { background:#eee; }
 .fill-grey-dark,
@@ -3147,7 +3135,7 @@ Alternate exists for:
 .fill-darken3 { background:rgba(0,0,0,0.75); }
 
 .fill-lighten0 { background:rgba(255,255,255,0.10); }
-.fixed-left .fill-lighten0 { background: #000; color: #FFF !important; }
+.fixed-left .fill-lighten0 { color: #E91E63 !important; }
 .fill-lighten1 { background:rgba(255,255,255,0.25); }
 .fill-lighten2 { background:rgba(255,255,255,0.50); }
 .fill-lighten3 { background:rgba(255,255,255,0.75); }
@@ -3437,7 +3425,7 @@ Details: http://www.positioniseverything.net/easyclearing.html
 .unfloat                      { float:none; }
 .dot                          { border-radius:50%; }
 .quiet                        { color:#7f7f7f; }
-.dark .quiet                  { color: #000; font-weight: 700;}
+.dark .quiet                  { color: #FFF; font-weight: 600;}
 .center                       { text-align:center; }
 .contain                      { position:relative; }
 .clip                         { overflow:hidden; }
