@@ -455,6 +455,15 @@ class Tags {
                     const {parentNode: entityElement} = addedNode;
 
                     if (entityElement.nodeType === Node.ELEMENT_NODE) {
+                      const {nodeValue: newValue} = addedNode; // XXX parse these as JSON before emitting or calling back
+
+                      const {item: entityItem} = entityElement;
+                      const {id: entityId} = entityItem;
+                      tagsApi.emit('mutateSetData', {
+                        id: entityId,
+                        value: newValue,
+                      });
+
                       const entitySelector = _getElementSelector(entityElement);
                       const entityAttributes = _getElementJsonAttributes(entityElement);
                       const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
@@ -462,9 +471,8 @@ class Tags {
                       for (let k = 0; k < boundComponentSpecs.length; k++) {
                         const boundComponentSpec = boundComponentSpecs[k];
                         const {componentElement} = boundComponentSpec;
-                        const {nodeValue: newValue} = addedNode;
 
-                        componentElement.entityDataChangedCallback(entityElement, null, newValue); // XXX broadcast these through the world engine
+                        componentElement.entityDataChangedCallback(entityElement, null, newValue);
                       }
                     }
                   }
@@ -497,6 +505,13 @@ class Tags {
                     const {target: entityElement} = mutation;
 
                     if (entityElement.nodeType === Node.ELEMENT_NODE) {
+                      const {item: entityItem} = entityElement;
+                      const {id: entityId} = entityItem;
+                      tagsApi.emit('mutateSetData', {
+                        id: entityId,
+                        value: undefined,
+                      });
+
                       const entitySelector = _getElementSelector(entityElement);
                       const entityAttributes = _getElementJsonAttributes(entityElement);
                       const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
@@ -578,7 +593,15 @@ class Tags {
 
                 if (entityElement.nodeType === Node.ELEMENT_NODE) {
                   const {oldValue} = mutation;
-                  const {nodeValue: newValue} = target;
+                  const {nodeValue: newValue} = target; // XXX parse these as JSON before emitting or calling back
+
+                  const {item: entityItem} = entityElement;
+                  const {id: entityId} = entityItem;
+                  tagsApi.emit('mutateSetData', {
+                    id: entityId,
+                    value: newValue,
+                  });
+
                   const entitySelector = _getElementSelector(entityElement);
                   const entityAttributes = _getElementJsonAttributes(entityElement);
                   const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
@@ -1762,6 +1785,7 @@ class Tags {
               version,
               tagName,
               attributes,
+              data,
               mimeType,
               matrix,
               metadata
@@ -1774,6 +1798,7 @@ class Tags {
               this.version = version;
               this.tagName = tagName;
               this.attributes = attributes;
+              this.data = data;
               /* this.attributes = (() => {
                 const result = {};
 
@@ -1901,6 +1926,21 @@ class Tags {
                   entityElement.setAttribute(attributeName, _stringifyAttribute(newValue));
                 } else {
                   entityElement.removeAttribute(attributeName);
+                }
+              }
+            }
+
+            setData(value) {
+              this.data = value;
+
+              const {instance} = this;
+              if (instance) {
+                const entityElement = instance;
+
+                if (value !== undefined) {
+                  entityElement.innerText = JSON.stringify(value, null, 2);
+                } else {
+                  entityElement.innerText = '';
                 }
               }
             }
