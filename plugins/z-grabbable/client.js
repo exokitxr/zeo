@@ -151,6 +151,8 @@ class ZGrabbable {
             }
           }
 
+          // XXX add gripdown where we iterate over the grabbables and emit trygrab on the best one
+
           const _gripup = e => {
             const {side} = e;
             const globalGrabState = globalGrabStates[side];
