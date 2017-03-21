@@ -9,7 +9,7 @@ const NUM_CELLS = 64;
 
 class Cloud {
   mount() {
-    const {three: {THREE, scene}, elements, pose, render, world, utils: {random: {alea}}} = zeo;
+    const {three: {THREE}, elements, pose, render, world, utils: {random: {alea}}} = zeo;
 
     const THREEConvexGeometry = ConvexGeometry(THREE);
 
@@ -33,7 +33,8 @@ class Cloud {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const rng = new alea();
         const generator = indev({
@@ -49,7 +50,7 @@ class Cloud {
           result.cloudMeshes = [];
           return result;
         })();
-        scene.add(cloudsMesh);
+        entityObject.add(cloudsMesh);
 
         const _getWorldTime = () => world.getWorldTime();
         const _getPosition = () => {
@@ -184,20 +185,18 @@ class Cloud {
         updates.push(update);
 
         entityApi._cleanup = () => {
-          scene.remove(cloudsMesh);
+          entityObject.remove(cloudsMesh);
 
           updates.splice(updates.indexOf(update), 1);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

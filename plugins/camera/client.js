@@ -1,5 +1,3 @@
-const symbol = Symbol();
-
 const cameraWidth = 0.2;
 const cameraHeight = 0.15;
 const cameraAspectRatio = cameraWidth / cameraHeight;
@@ -31,7 +29,8 @@ class Camera {
         },
       },
       entityAddedCallback(entityElement, attribute, value) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const renderTarget = (() => {
           const width = 1024;
@@ -109,7 +108,7 @@ class Camera {
 
           return result;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
         entityApi.mesh = mesh;
 
         cameraElements.push(entityApi);
@@ -133,24 +132,21 @@ class Camera {
         };
         updates.push(update);
 
-        entityApi.cleanup = () => {
-          scene.remove(mesh);
+        entityApi._cleanup = () => {
+          entityObject.remove(mesh);
 
           cameraElements.splice(cameraElements.indexOf(entityApi), 1);
 
           updates.splice(updates.indexOf(update), 1);
         };
-        
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
-        entityApi.cleanup();
+        const entityApi = entityElement.getComponentApi();
 
-        entityApi[symbol] = null;
+        entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

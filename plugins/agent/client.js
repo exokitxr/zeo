@@ -1,6 +1,5 @@
 const WatsonSpeech = require('./lib/watson-speech/watson-speech.js');
 
-const symbol = Symbol();
 const SIDES = ['left', 'right'];
 
 class Agent {
@@ -16,7 +15,7 @@ class Agent {
     return _requestTokens()
       .then(({tokens}) => {
         if (live) {
-          const {three: {THREE, scene, camera}, elements, pose, input, render, world, sound, utils: {js: {events: {EventEmitter}}}} = zeo;
+          const {three: {THREE}, elements, pose, input, render, world, sound, utils: {js: {events: {EventEmitter}}}} = zeo;
           const {tts: ttsToken, stt: sttToken} = tokens;
 
           const COLORS = {
@@ -98,7 +97,8 @@ class Agent {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = {};
+              const entityApi = entityElement.getComponentApi();
+              const entityObject = entityElement.getObject();
 
               entityApi.position = null;
               entityApi.text = null;
@@ -128,7 +128,7 @@ class Agent {
                 mesh.visible = false;
                 return mesh;
               })();
-              scene.add(box);
+              entityObject.add(box);
 
               const mesh = (() => {
                 const geometry = new THREE.OctahedronBufferGeometry(0.1, 0);
@@ -152,7 +152,7 @@ class Agent {
 
                 return mesh;
               })();
-              scene.add(mesh);
+              entityObject.add(mesh);
 
               const soundBody = (() => {
                 const result = sound.makeBody();
@@ -314,19 +314,17 @@ class Agent {
                 }
               };
               entityApi._cleanup = () => {
-                scene.remove(box);
-                scene.remove(mesh);
+                entityObject.remove(box);
+                entityObject.remove(mesh);
 
                 updates.splice(updates.indexOf(update), 1);
 
                 input.removeListener('trigger', trigger);
                 input.removeListener('grip', grip);
               };
-
-              entityElement[symbol] = entityApi;
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               switch (name) {
                 case 'position': {

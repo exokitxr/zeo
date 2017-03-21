@@ -13,7 +13,7 @@ const SIDES = ['left', 'right'];
 
 class Draw {
   mount() {
-    const {three: {THREE, scene}, input, elements, render, pose, world, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE}, input, elements, render, pose, world, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this._cleanup = () => {
@@ -120,8 +120,9 @@ class Draw {
                 value: "2196F3",
               },
             },
-            createdCallback() {
-              const entityApi = {};
+            entityAddedCallback(entityElement) {
+              const entityApi = entityElement.getComponentApi();
+              const entityObject = entityElement.getObject();
 
               const mesh = (() => {
                 const object = new THREE.Object3D();
@@ -204,7 +205,7 @@ class Draw {
 
                 return object;
               })();
-              scene.add(mesh);
+              entityObject.add(mesh);
 
               const color = new THREE.Color(0x000000);
               entityApi.color = color;
@@ -338,23 +339,21 @@ class Draw {
               render.on('update', _update);
 
               entityApi._cleanup = () => {
-                scene.remove(mesh);
+                entityObject.remove(mesh);
 
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('triggerup', _triggerup);
 
                 render.removeListener('update', _update);
               };
-
-              entityElement[symbol] = entityApi;
             },
             entityRemovedCallback(entityElement) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               entityApi._cleanup();
             },
             attributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               switch (name) {
                 case 'color': {

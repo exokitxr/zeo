@@ -1,7 +1,5 @@
 const FOG_DENSITY = 0.05;
 
-const symbol = Symbol();
-
 class Fog {
   mount() {
     const {three: {scene}, elements, render} = zeo;
@@ -16,7 +14,7 @@ class Fog {
 
     const fogElement = {
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
 
         /* const update = () => { // XXX fix this walk to work with the new skybox module
           const skybox = (() => {
@@ -43,11 +41,9 @@ class Fog {
 
           scene.fog.density = 0;
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },

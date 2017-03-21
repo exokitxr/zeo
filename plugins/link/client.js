@@ -1,5 +1,3 @@
-const symbol = Symbol();
-
 class Link {
   mount() {
     const {three: {THREE, scene, camera, renderer}, elements, render} = zeo;
@@ -37,10 +35,11 @@ class Link {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const cubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
-        scene.add(cubeCamera);
+        entityObject.add(cubeCamera);
 
         const mesh = (() => {
           const geometry = new THREE.SphereBufferGeometry(0.5, 32, 32);
@@ -53,26 +52,24 @@ class Link {
           mesh.cubeCamera = cubeCamera;
           return mesh;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
         meshes.push(mesh);
         entityApi.mesh = mesh;
 
         entityApi._cleanup = () => {
-          scene.remove(cubeCamera);
-          scene.remove(mesh);
+          entityObject.remove(cubeCamera);
+          entityObject.remove(mesh);
 
           meshes.splice(meshes.indexOf(mesh), 1);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

@@ -9,11 +9,9 @@ const trackbarWidth = videoResolutionWidth - trackbarStart - (16);
 
 const videoUrl = 'https://www.youtube.com/watch?v=AOZtqDhQP44';
 
-const symbol = Symbol();
-
 class Youtube {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, render, ui, sound} = zeo;
+    const {three: {THREE, camera}, elements, input, render, ui, sound} = zeo;
 
     const transparentImg = ui.getTransparentImg();
 
@@ -44,7 +42,8 @@ class Youtube {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const mesh = (() => {
           const object = new THREE.Object3D();
@@ -342,7 +341,7 @@ class Youtube {
 
           return object;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
         entityApi.mesh = mesh;
 
         const trigger = e => {
@@ -392,22 +391,20 @@ class Youtube {
         updates.push(update);
 
         entityApi._cleanup = () => {
-          scene.remove(mesh);
+          entityObject.remove(mesh);
 
           input.removeListener('trigger', trigger);
 
           updates.splice(updates.indexOf(update), 1);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

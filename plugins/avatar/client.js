@@ -1,10 +1,8 @@
 const ConvexGeometry = require('./lib/three-extra/ConvexGeometry');
 
-const symbol = Symbol();
-
 class Avatar {
   mount() {
-    const {three: {THREE, scene}, elements} = zeo;
+    const {three: {THREE}, elements} = zeo;
 
     const THREEConvexGeometry = ConvexGeometry(THREE);
 
@@ -42,7 +40,8 @@ class Avatar {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const mesh = (() => {
           const result = new THREE.Object3D();
@@ -125,17 +124,15 @@ class Avatar {
 
           return result;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
         entityApi.mesh = mesh;
 
         entityApi._cleanup = () => {
-          scene.remove(mesh);
+          entityObject.remove(mesh);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {
@@ -154,7 +151,7 @@ class Avatar {
         }
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },

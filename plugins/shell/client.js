@@ -16,13 +16,11 @@ const BOX_MESH_COLOR = 0x808080;
 const BOX_MESH_HOVER_COLOR = 0x0000FF;
 const BOX_MESH_FOCUS_COLOR = 0x00FF00;
 
-const symbol = Symbol();
-
 const SIDES = ['left', 'right'];
 
 class Shell {
   mount() {
-    const {three: {THREE, scene}, elements, pose, input, render, ui} = zeo;
+    const {three: {THREE}, elements, pose, input, render, ui} = zeo;
 
     const transparentImg = ui.getTransparentImg();
 
@@ -55,7 +53,8 @@ class Shell {
         },
       },
       entityAddedCallback(entityElenent) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const cleanups = [];
         entityApi._cleanup = () => {
@@ -366,7 +365,7 @@ class Shell {
 
           return object;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
         entityApi.mesh = mesh;
 
         const _makeHoveredState = () => ({
@@ -456,20 +455,18 @@ class Shell {
         updates.push(update);
 
         cleanups.push(() => {
-          scene.remove(mesh);
+          entityObject.remove(mesh);
 
           updates.splice(updates.indexOf(update), 1);
         });
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

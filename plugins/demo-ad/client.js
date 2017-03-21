@@ -26,7 +26,6 @@ const STARS_FRAME_SKIP = 4;
 const HIGHLIGHT_LOOP_FRAMES = 20;
 const HIGHLIGHT_FRAME_RATIO = 1 / 3;
 
-const symbol = Symbol();
 const SIDES = ['left', 'right'];
 
 module.exports = archae => ({
@@ -104,7 +103,7 @@ module.exports = archae => ({
         audio,
       }) => {
         if (live) {
-          const {three: {THREE, scene, camera, sound}, elements, pose, input, render, world, animation, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
+          const {three: {THREE, sound}, elements, pose, input, render, world, animation, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
 
           const starGeometries = starImgs.map(starImg => spriteUtils.makeImageGeometry(starImg, PIXEL_SIZE));
           const textMaterialDark = new THREE.MeshPhongMaterial({
@@ -161,7 +160,8 @@ module.exports = archae => ({
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = {};
+              const entityApi = entityElement.getComponentApi();
+              const entityObject = entityElement.getObject();
 
               const adState = {
                 open: true,
@@ -347,7 +347,7 @@ module.exports = archae => ({
 
                 return object;
               })();
-              scene.add(mesh);
+              entityObject.add(mesh);
 
               const _makeDotMesh = () => {
                 const geometry = new THREE.BufferGeometry();
@@ -363,7 +363,7 @@ module.exports = archae => ({
                 right: _makeDotMesh(),
               };
               SIDES.forEach(side => {
-                scene.add(dotMeshes[side]);
+                entityObject.add(dotMeshes[side]);
               });
 
               let audio = null;
@@ -525,9 +525,9 @@ module.exports = archae => ({
               render.on('update', _update);
 
               entityApi._cleanup = () => {
-                scene.remove(mesh);
+                entityObject.remove(mesh);
                 SIDES.forEach(side => {
-                  scene.remove(dotMeshes[side]);
+                  entityObject.remove(dotMeshes[side]);
                 });
 
                 input.removeListener('trigger', _trigger);
@@ -537,16 +537,14 @@ module.exports = archae => ({
                   audio.pause();
                 }
               };
-
-              entityElement[symbol] = entityApi;
             },
             entityRemovedCallback(entityElement) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               switch (name) {
                 case 'position': {

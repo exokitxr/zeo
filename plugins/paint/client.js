@@ -2,8 +2,6 @@ const MAX_NUM_POINTS = 4 * 1024;
 const POINT_FRAME_RATE = 20;
 const SIZE = 0.02;
 
-const symbol = Symbol();
-
 const SIDES = ['left', 'right'];
 
 class Paint {
@@ -40,7 +38,8 @@ class Paint {
               },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = {};
+              const entityApi = entityElement.getComponentApi();
+              const entityObject = entityElement.getObject();
 
               const mesh = (() => {
                 const geometry = new THREE.BufferGeometry();
@@ -274,16 +273,14 @@ class Paint {
 
                 render.removeListener('update', _update);
               };
-
-              entityElement[symbol] = entityApi;
             },
             entityRemovedCallback(entityElement) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               switch (name) {
                 case 'color': {

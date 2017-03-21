@@ -2,8 +2,6 @@ const CakeModel = require('./lib/models/cake');
 
 const GRAB_RADIUS = 0.2;
 
-const symbol = Symbol();
-
 const SIDES = ['left', 'right'];
 
 class ZCake {
@@ -31,7 +29,7 @@ class ZCake {
         eatAudio,
       }) => {
         if (live) {
-          const {three: {THREE, scene}, elements, input, render, hands} = zeo;
+          const {three: {THREE}, elements, input, render, hands} = zeo;
 
           const cakeComponent = {
             selector: 'cake[position][slices]',
@@ -53,7 +51,8 @@ class ZCake {
               }
             },
             entityAddedCallback(entityElement) {
-              const entityApi = {};
+              const entityApi = entityElement.getComponentApi();
+              const entityObject = entityElement.getObject();
 
               entityApi.position = null;
               entityApi.slices = 0;
@@ -108,7 +107,7 @@ class ZCake {
               entityApi._render = () => {
                 const {mesh: oldMesh} = entityApi;
                 if (oldMesh) {
-                  scene.remove(oldMesh);
+                  entityObject.remove(oldMesh);
                 }
 
                 const {slices} = entityApi;
@@ -116,7 +115,7 @@ class ZCake {
                   THREE,
                   slices,
                 });
-                scene.add(newMesh);
+                entityObject.add(newMesh);
                 entityApi.mesh = newMesh;
 
                 entityApi._updateMesh();
@@ -133,7 +132,7 @@ class ZCake {
 
               entityApi._cleanup = () =>0 {
                 const {mesh} = entityApi;
-                scene.remove(mesh);
+                entityObject.remove(mesh);
 
                 const {sliceSide, sliceMesh} = entityApi;
                 if (sliceSide && sliceMesh) {
@@ -144,16 +143,14 @@ class ZCake {
 
                 hands.removeListener('release', _release);
               };
-
-              entityElement[symbol] = entityApi;
             },
             entityRemovedCallback(entityElement) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               switch (name) {
                 case 'position': {

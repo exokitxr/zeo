@@ -12,7 +12,7 @@ const ATTRIBUTE_DEFAULTS = {
 
 class Rain {
   mount() {
-    const {three: {THREE, scene}, elements, render, world} = zeo;
+    const {three: {THREE}, elements, render, world} = zeo;
 
     const rainShader = {
       uniforms: THREE.UniformsUtils.merge( [
@@ -197,7 +197,8 @@ class Rain {
         }
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const {drops, range, length} = ATTRIBUTE_DEFAULTS;
         entityApi.drops = drops;
@@ -236,7 +237,7 @@ class Rain {
           result.frustumCulled = false;
           return result;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
         entityApi.mesh = mesh;
 
         const update = () => {
@@ -261,20 +262,18 @@ class Rain {
         };
 
         entityApi._cleanup = () => {
-          scene.remove(mesh);
+          entityObject.remove(mesh);
 
           updates.splice(updates.indexOf(update), 1);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

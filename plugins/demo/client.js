@@ -1,21 +1,20 @@
 module.exports = archae => ({ // `archae` is the Zeo plugin loader
   mount() { // `mount` gets called when our plugin loads
     // grab the APIs we need
-    const {three: {THREE, scene}, elements, pose, render, world} = zeo;
+    const {three: {THREE}, elements, pose, render, world} = zeo;
 
     // declare some contants
     const COLORS = {
       GREEN: new THREE.Color(0x4CAF50),
       RED: new THREE.Color(0xE91E63),
     };
-    const symbol = Symbol();
 
     // declare the element representing our plugin
     const demoElement = {
       selector: 'demo',
       attributes: {},
       entityCreatedCallback(entityElement) { // `entityCreatedCallback` gets called an applicable attrbute is added to the world
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
 
         // create the sphere and add it to the scene
         const sphere = new THREE.Mesh(
@@ -29,7 +28,7 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
         const startY = 1.2;
         sphere.position.y = startY;
         sphere.castShadow = true;
-        scene.add(sphere);
+        entityObject.add(sphere);
 
         // declare some state
         const position = new THREE.Vector3(0, 0, 0);
@@ -91,15 +90,13 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
 
         // set up a callback to call when we want to clean up after the plugin
         entityApi._cleanup = () => {
-          scene.remove(sphere);
+          entityObject.remove(sphere);
 
           render.removeListener('update', _update);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) { // `destructor` gets called when our element is removed from the scene
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },

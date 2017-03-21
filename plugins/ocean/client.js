@@ -30,11 +30,9 @@ const DATA = {
   speedVariance: 2,
 };
 
-const symbol = Symbol();
-
 class Ocean {
   mount() {
-    const {three: {THREE, scene}, render, elements, world} = zeo;
+    const {three: {THREE}, render, elements, world} = zeo;
 
     const updates = [];
     const _update = () => {
@@ -57,7 +55,8 @@ class Ocean {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const mesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(200, 200, 200 / 2, 200 / 2);
@@ -101,7 +100,7 @@ class Ocean {
           result.renderOrder = -1;
           return result;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
 
         const {material: meshMaterial} = mesh;
         const update = () => {
@@ -111,20 +110,18 @@ class Ocean {
         updates.push(update);
       
         entityApi._cleanup = () => {
-          scene.remove(mesh);
+          entityObject.remove(mesh);
 
           updates.splice(updates.indexOf(update), 1);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

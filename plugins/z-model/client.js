@@ -1,10 +1,8 @@
 const modelsPath = '/archae/models/models/';
 
-const symbol = Symbol();
-
 class Model {
   mount() {
-    const {three: {THREE, scene}, elements} = zeo;
+    const {three: {THREE}, elements} = zeo;
 
     const modelComponent = {
       selector: 'model[position][src]',
@@ -23,7 +21,8 @@ class Model {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         entityApi.position = null;
         entityApi.mesh = null;
@@ -43,22 +42,21 @@ class Model {
         entityApi._cleanup = () => {
           const {mesh, _cancelRequest: cancelRequest} = entityApi;
           if (mesh) {
-            scene.remove(mesh);
+            entityObject.remove(mesh);
           }
           if (cancelRequest) {
             cancelRequest();
           }
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         switch (name) {
           case 'position': {
@@ -71,7 +69,7 @@ class Model {
           case 'src': {
             const {mesh: oldMesh, _cancelRequest: cancelRequest} = entityApi;
             if (oldMesh) {
-              scene.remove(oldMesh);
+              entityObject.remove(oldMesh);
               this.mesh = null;
             }
             if (cancelRequest) {
@@ -87,7 +85,7 @@ class Model {
             file.read({type: 'model'})
               .then(mesh => {
                 if (live) {
-                  scene.add(mesh);
+                  entityObject.add(mesh);
                   entityApi.mesh = mesh;
 
                   entityApi._updateMesh();

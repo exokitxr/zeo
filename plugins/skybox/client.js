@@ -1,10 +1,8 @@
 const SkyShader = require('./lib/three-extra/SkyShader');
 
-const symbol = Symbol();
-
 class Skybox {
   mount() {
-    const {three: {THREE, scene}, elements, render, world, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE}, elements, render, world, utils: {geometry: geometryUtils}} = zeo;
 
     const THREESky = SkyShader(THREE);
 
@@ -48,7 +46,8 @@ class Skybox {
         }
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const mesh = (() => {
           const object = new THREE.Object3D();
@@ -142,7 +141,7 @@ class Skybox {
 
           return object;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
         entityApi.mesh = mesh;
 
         const update = () => {
@@ -206,16 +205,14 @@ class Skybox {
 
           updates.splice(updates.indexOf(update), 1);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        c0onst entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

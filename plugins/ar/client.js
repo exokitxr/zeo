@@ -2,11 +2,9 @@ const aspectRatio = 16 / 9;
 const videoWidth = 1;
 const videoHeight = videoWidth / aspectRatio;
 
-const symbol = Symbol();
-
 class Ar {
   mount() {
-    const {three: {THREE, scene, camera}, elements, render, ui} = zeo;
+    const {three: {THREE}, elements, render, ui} = zeo;
 
     const transparentImg = ui.getTransparentImg();
 
@@ -23,7 +21,8 @@ class Ar {
         },
       },
       entityAddedCallback(entityElement) {
-        const elementApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         elementApi.position = null;
 
@@ -82,7 +81,7 @@ class Ar {
 
           return new THREE.Mesh(geometry, material);
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
 
         const update = () => {
           const {material: {map}} = mesh;
@@ -102,7 +101,7 @@ class Ar {
           }
         };
         entityApi._cleanup = () => {
-          scene.remove(mesh);
+          entityObject.remove(mesh);
 
           const {material: {map}} = mesh;
           if (map.image.tagName === 'VIDEO') {
@@ -111,16 +110,14 @@ class Ar {
 
           updates.splice(updates.indexOf(update), 1);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       attributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

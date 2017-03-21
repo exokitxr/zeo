@@ -1,8 +1,6 @@
-const symbol = Symbol();
-
 export default class Tree {
   mount() {
-    const {three: {THREE, scene}, elements, utils: {random: {alea}}} = zeo;
+    const {three: {THREE}, elements, utils: {random: {alea}}} = zeo;
 
     const treeComponent = {
       selector: 'tree[position]',
@@ -17,7 +15,8 @@ export default class Tree {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const trunkColors = [
           '#337346',
@@ -549,16 +548,14 @@ export default class Tree {
 
           return object;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
 
         entityApi._cleanup = () => {
-          scene.remove(mesh);
+          entityObject.remove(mesh);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },

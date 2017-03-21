@@ -1,8 +1,6 @@
-const symbol = Symbol();
-
 class Sprite {
   mount() {
-    const {three: {THREE, scene}, elements, utils: {sprite: spriteUtils}} = zeo;
+    const {three: {THREE}, elements, utils: {sprite: spriteUtils}} = zeo;
 
     const pixelMaterial = new THREE.MeshPhongMaterial({
       vertexColors: THREE.FaceColors,
@@ -46,7 +44,8 @@ class Sprite {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         entityApi.position = null;
         entityApi.mesh = null;
@@ -66,22 +65,20 @@ class Sprite {
         entityApi._cleanup = () => {
           const {mesh, _cancelRequest: cancelRequest} = entityApi;
           if (mesh) {
-            scene.remove(mesh);
+            entityObject.remove(mesh);
           }
           if (cancelRequest) {
             cancelRequest();
           }
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {
@@ -104,7 +101,7 @@ class Sprite {
                 if (live) {
                   const {mesh: oldMesh} = entityApi;
                   if (oldMesh) {
-                    scene.remove(oldMesh);
+                    entityObject.remove(oldMesh);
                   }
 
                   const newMesh = (() => {
@@ -120,7 +117,7 @@ class Sprite {
                     return mesh;
                   })();
 
-                  scene.add(newMesh);
+                  entityObject.add(newMesh);
                   entityApi.mesh = newMesh;
 
                   entityApi._updateMesh();

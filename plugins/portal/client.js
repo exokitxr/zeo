@@ -102,7 +102,8 @@ class Portal {
             }
           },
           entityAddedCallback(entityElement) {
-            const entityApi = {};
+            const entityApi = entityElement.getComponentApi();
+            const entityObject = entityElement.getObject();
 
             const mesh = (() => {
               const result = new THREE.Object3D();
@@ -243,7 +244,7 @@ class Portal {
 
               return result;
             })();
-            scene.add(mesh);
+            entityObject.add(mesh);
             entityApi.mesh = mesh;
 
             const sourcePortalCamera = (() => {
@@ -401,22 +402,21 @@ class Portal {
             updateEyes.push(updateEye);
 
             entityApi._cleanup = () => {
-              scene.remove(mesh);
+              entityObject.remove(mesh);
+
               scene.remove(sourcePortalCamera);
 
               updates.splice(updates.indexOf(update), 1);
               updateEyes.splice(updateEyes.indexOf(updateEye), 1);
             };
-
-            entityElement[symbol] = entityApi;
           },
           entityRemovedCallback(entityElement) {
-            const {[symbol]: entityApi} = entityElement;
+            const entityApi = entityElement.getComponentApi();
 
             entityApi._cleanup();
           },
           entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-            const {[symbol]: entityApi} = entityElement;
+            const entityApi = entityElement.getComponentApi();
 
             switch (name) {
               case 'position1': {

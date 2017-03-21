@@ -39,8 +39,6 @@ const LENS_SHADER = {
   ].join("\n")
 };
 
-const symbol = Symbol();
-
 class Lens {
   mount() {
     const {three: {THREE, scene, camera, renderer}, elements, render} = zeo;
@@ -75,7 +73,8 @@ class Lens {
         }
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
           minFilter: THREE.NearestFilter,
@@ -224,7 +223,7 @@ class Lens {
         entityApi.meshConstructors = meshConstructors;
 
         const mesh = _makeBlurLensMesh();
-        scene.add(mesh);
+        entityObject.add(mesh);
         entityApi.mesh = mesh;
 
         const updateEye = eyeCamera => {
@@ -243,20 +242,18 @@ class Lens {
         entityApi._cleanup = () => {
           const {mesh} = entityApi;
 
-          scene.remove(mesh);
+          entityObject.remove(mesh);
 
           updateEyes.splice(updateEyes.indexOf(updateEye), 1);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback(entityElement) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {
@@ -270,11 +267,11 @@ class Lens {
           }
           case 'type': {
             const {mesh: oldMesh, meshConstructors} = entityApi;
-            scene.remove(oldMesh);
+            entityObject.remove(oldMesh);
 
             const meshConstructor = meshConstructors[newValue];
             const newMesh = meshConstructor();
-            scene.add(newMesh);
+            entityObject.add(newMesh);
             entityApi.mesh = newMesh;
 
             break;

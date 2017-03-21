@@ -1,8 +1,6 @@
-const symbol = Symbol();
-
 export default class Voxel {
   mount() {
-    const {three: {THREE, scene}, elements} = zeo;
+    const {three: {THREE}, elements} = zeo;
 
     const voxelBlockGenerator = (() => {
       const MASK_SIZE = 4096;
@@ -340,7 +338,8 @@ export default class Voxel {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = {};
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         const mesh = (() => {
           const chunkSize = 32;
@@ -438,22 +437,21 @@ export default class Voxel {
           mesh.scale.set(1 / dims[0], 1 / dims[1], 1 / dims[2]);
           return mesh;
         })();
-        scene.add(mesh);
+        entityObject.add(mesh);
         entityApi.mesh = mesh;
 
         entityApi._cleanup = () => {
-          scene.remove(mesh);
+          entityObject.remove(mesh);
         };
-
-        entityElement[symbol] = entityApi;
       },
       entityRemovedCallback() {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
+        const entityObject = entityElement.getObject();
 
         entityApi._cleanup();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const {[symbol]: entityApi} = entityElement;
+        const entityApi = entityElement.getComponentApi();
 
         switch (name) {
           case 'position': {

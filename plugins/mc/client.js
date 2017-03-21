@@ -21,13 +21,11 @@ const INITIAL_ATLAS_SIZE = 128;
 const ITEM_SIZE = 16;
 const ITEM_PIXEL_SIZE = 1 / 32;
 
-const symbol = Symbol();
-
 const SIDES = ['left', 'right'];
 
 class Mc {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, physics, hands, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
+    const {three: {THREE, camera}, elements, input, pose, physics, hands, utils: {geometry: geometryUtils, sprite: spriteUtils, random: {alea}}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -135,7 +133,8 @@ class Mc {
           const mcComponent = {
             selector: 'mc',
             entityAddedCallback(entityElement) {
-              const entityApi = {};
+              const entityApi = entityElement.getComponentApi();
+              const entityObject = entityElement.getObject();
 
               const _makeGrabState = () => ({
                 grabber: null,
@@ -186,7 +185,7 @@ class Mc {
                 mesh.receiveShadow = true;
                 return mesh;
               })();
-              scene.add(floorMesh);
+              entityObject.add(floorMesh);
 
               const blockTypeUvs = (() => {
                 const grassTopUvs = uvs['grass-top'];
@@ -283,7 +282,7 @@ class Mc {
               ];
               const blockMeshes = blockMeshSpecs.map(_makeBlockMesh);
               blockMeshes.forEach(blockMesh => {
-                scene.add(blockMesh);
+                entityObject.add(blockMesh);
               });
 
               const itemMeshes = (() => {
@@ -314,7 +313,7 @@ class Mc {
                 return result;
               })();
               itemMeshes.forEach(itemMesh => {
-                scene.add(itemMesh);
+                entityObject.add(itemMesh);
               });
 
               const floorPhysicsBody = new physicsWorld.Plane({
@@ -428,17 +427,17 @@ class Mc {
               input.on('gripup', gripup);
 
               entityApi._cleanup = () => {
-                scene.remove(floorMesh);
+                entityObject.remove(floorMesh);
 
                 blockMeshes.forEach(blockMesh => {
-                  scene.remove(blockMesh);
+                  entityObject.remove(blockMesh);
                 });
                 blockPhysicsBodies.forEach(physicsBody => {
                   physicsWorld.remove(physicsBody);
                 });
 
                 itemMeshes.forEach(itemMesh => {
-                  scene.remove(itemMesh);
+                  entityObject.remove(itemMesh);
                 });
                 itemPhysicsBodies.forEach(physicsBody => {
                   physicsWorld.remove(physicsBody);
@@ -447,11 +446,9 @@ class Mc {
                 input.removeListener('gripdown', gripdown);
                 input.removeListener('gripup', gripup);
               };
-
-              entityElement[symbol] = entityApi;
             },
             entityRemovedCallback() {
-              const {[symbol]: entityApi} = entityElement;
+              const entityApi = entityElement.getComponentApi();
 
               entityApi._cleanup();
             },
