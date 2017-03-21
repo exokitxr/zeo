@@ -288,13 +288,13 @@ class Zeo {
 
                     const siteContent = document.createElement('div');
                     siteContent.innerHTML = `\
-                      <div style="margin-bottom: 10px; padding: 0 30px; padding-bottom: 20px; background-color: #000; color: #FFF; font-size: 60px; line-height: 1.4; font-weight: 300;">Multiplayer VR worlds<br>in your browser<br>powered by npm</div>
-                      <div style="display: flex; margin-bottom: 10px;">
-                        <button style="display: inline-flex; position: relative; margin-right: 10px; padding: 4px 8px; background-color: #000; border: 0; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; justify-content: center; align-items: center; box-sizing: border-box;" class=headset-button>
+                      <div style="height: 272px; margin-bottom: 10px; padding: 0 30px; padding-bottom: 20px; background-color: #000; color: #FFF; font-size: 60px; line-height: 1.4; font-weight: 300; box-sizing: border-box;">Multiplayer VR worlds<br>in your browser<br>powered by npm</div>
+                      <div style="display: flex; height: 42px; margin-bottom: 10px;">
+                        <button style="display: inline-flex; position: relative; height: inherit; margin-right: 10px; padding: 4px 8px; background-color: #000; border: 0; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; justify-content: center; align-items: center; box-sizing: border-box;" class=headset-button>
                           <img src="/img/headset.svg" style="margin-right: 5px; padding: 5px;" />
                           Headset
                         </button>
-                        <button style="display: inline-flex; position: relative; padding: 4px 8px; background-color: #000; border: 0; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; justify-content: center; align-items: center; box-sizing: border-box;" class=keyboard-button>
+                        <button style="display: inline-flex; position: relative; height: inherit; padding: 4px 8px; background-color: #000; border: 0; color: #FFF; font-family: ${fonts}; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; justify-content: center; align-items: center; box-sizing: border-box;" class=keyboard-button>
                           <img src="/img/mouse.svg" style="margin-right: 5px; padding: 5px;" />
                           Mouse + keyboard
                         </button>

@@ -203,25 +203,35 @@
     }
     .hero .hero-wrap {
       display: flex;
+      position: relative;
       width: 100%;
       height: 100%;
-      margin-bottom: 100px;
+      background-color: #FFF;
       flex-direction: column;
       justify-content: center;
       align-items: center;
     }
-
     .hero .hero-heading {
       position: relative;
+      height: 272px;
+      margin-bottom: 10px;
       padding: 0 30px;
       padding-bottom: 20px;
       background-color: #000;
       color: #FFF;
+      box-sizing: border-box;
     }
-    .hero h1 {
+    .hero .hero-heading h1 {
       font-size: 60px;
       font-weight: 300;
     }
+    .hero .loader-wrap {
+      display: flex;
+      height: 132px;
+      justify-content: center;
+      align-items: center;
+    }
+
     .button {
       display: inline-flex;
       height: 38px;
@@ -1166,10 +1176,10 @@
       border-radius: 50%;
     }
     .loader {
-      color: #ffffff;
+      margin-bottom: -20px;
+      color: #000;
       font-size: 11px;
       text-indent: -99999em;
-      margin: 40px auto;
       position: relative;
       width: 10em;
       height: 10em;
@@ -1186,7 +1196,7 @@
     .loader:before {
       width: 5.2em;
       height: 10.2em;
-      background: #000;
+      background: #fff;
       border-radius: 10.2em 0 0 10.2em;
       top: -0.1em;
       left: -0.1em;
@@ -1198,7 +1208,7 @@
     .loader:after {
       width: 5.2em;
       height: 10.2em;
-      background: #000;
+      background: #fff;
       border-radius: 0 10.2em 10.2em 0;
       top: -0.1em;
       left: 5.1em;
@@ -1314,8 +1324,9 @@
       <div class=hero-wrap id=hero-wrap>
         <div class=hero-heading>
           <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
-          <!-- <button class="button primary"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
-          <button class="button secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
+        </div>
+        <div class=loader-wrap>
+          <div class=loader></div>
         </div>
       </div>
     </section>
