@@ -110,6 +110,10 @@ class Tags {
           };
 
           const rootWorldElement = document.createElement('world');
+          const localEventSymbol = Symbol();
+          rootWorldElement.addEventListener('broadcast', e => {
+            tagsApi.emit('broadcast', e.detail);
+          });
           document.body.appendChild(rootWorldElement);
 
           const rootModulesElement = document.createElement('modules');
@@ -2579,6 +2583,13 @@ class Tags {
 
             getPointedTagMesh(side) {
               return hoverStates[side].metadata;
+            }
+
+            message(detail) {
+              const e = new CustomEvent('message', {
+                detail: detail,
+              });
+              rootWorldElement.dispatchEvent(e);
             }
 
             listen() {

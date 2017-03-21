@@ -235,6 +235,10 @@ class World {
                 const {args: [userId, src, {name, value}]} = m;
 
                 _handleSetTagAttribute(userId, src, {name, value});
+              } else if (type === 'message') {
+                const {args: [detail}]} = m;
+
+                _handleMessage(detail);
               } else if (type === 'response') {
                 const {id} = m;
 
@@ -988,6 +992,9 @@ class World {
             } else {
               console.warn('invalid set tag attribute arguments', {src, name, value});
             }
+          };
+          const _handleMessage = detail => {
+            tags.message(detail);
           };
 
           const _searchNpm = (q = '') => fetch('https://' + bootstrap.getCurrentServer().url + '/archae/rend/search?q=' + encodeURIComponent(q))
@@ -2311,6 +2318,10 @@ class World {
             _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
           };
           tags.on('mutateSetAttribute', _mutateSetAttribute);
+          const _broadcast = detail => {
+            _request('broadcast', [detail], _warnError);
+          };
+          tags.on('broadcast', _broadcast);
 
           const _download = ({id, name}) => {
             const a = document.createElement('a');
@@ -2662,6 +2673,7 @@ class World {
             tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
             tags.removeListener('setAttribute', _setAttribute);
             tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
+            tags.removeListener('broadcast', _broadcast);
 
             fs.removeListener('upload', _upload);
 
