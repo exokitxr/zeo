@@ -11,6 +11,24 @@ const zeoComponentElementConstructor = (() => {
         const entityApiState = {};
         let entityApiComponentApi = {};
         entityApi = Object.create(entityElement, {
+          // bind old methods
+          setAttribute: {
+            value: entityElement.setAttribute.bind(entityElement),
+          },
+          removeAttribute: {
+            value: entityElement.removeAttribute.bind(entityElement),
+          },
+          addEventListener: {
+            value: entityElement.addEventListener.bind(entityElement),
+          },
+          removeEventListener: {
+            value: entityElement.removeEventListener.bind(entityElement),
+          },
+          dispatchEvent: {
+            value: entityElement.dispatchEvent.bind(entityElement),
+          },
+
+          // extensions
           getComponentApi: {
             value: () => entityApiComponentApi,
           },

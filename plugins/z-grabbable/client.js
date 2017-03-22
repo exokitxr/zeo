@@ -49,6 +49,9 @@ class ZGrabbable {
               this.entityElement = entityElement;
               this.object = object;
 
+              this.grabbable = false;
+              this.holdable = false;
+
               this.grabState = null;
 
               this.trygrab = this.trygrab.bind(this);
@@ -57,12 +60,24 @@ class ZGrabbable {
             }
 
             setGrabbable(newValue) {
-              const {element, trygrab} = this;
+              this.grabbable = newValue;
 
-              if (newValue) {
-                element.addEventListener('trygrab', trygrab);
+              this.render();
+            }
+
+            setHoldable(newValue) {
+              this.holdable = newValue;
+
+              this.render();
+            }
+
+            render() {
+              const {entityElement, grabbable, holdable, trygrab} = this;
+
+              if (grabbable && holdable) {
+                entityElement.addEventListener('trygrab', trygrab);
               } else {
-                element.removeEventListener('trygrab', trygrab);
+                entityElement.removeEventListener('trygrab', trygrab);
 
                 const {grabState} = this;
                 if (grabState) {
@@ -115,7 +130,7 @@ class ZGrabbable {
             }
 
             release() {
-              const {entityElement. object, grabState: {side, originalParent}} = this;
+              const {entityElement, object, grabState: {side, originalParent}} = this;
 
               this.grabState = null;
 
@@ -187,7 +202,8 @@ class ZGrabbable {
                       side,
                     },
                   });
-                  bestGrabbable.dispatchEvent(trygrabEvent);
+                  const {entityElement} = bestGrabbable;
+                  entityElement.dispatchEvent(trygrabEvent);
 
                   e.stopImmediatePropagation();
                 }
@@ -233,9 +249,13 @@ class ZGrabbable {
 
                   break;
                 }
+                case 'holdable': {
+                  grabbable.setHoldable(newValue);
+
+                  break;
+                }
               }
             }
-          };
           };
           elements.registerComponent(this, grabbableComponent);
 
