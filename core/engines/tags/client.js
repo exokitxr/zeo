@@ -311,6 +311,21 @@ class Tags {
             attributeOldValue: true,
           });
 
+          const _addEntityCallback = (componentElement, entityElement) => {
+            const object = new THREE.Object3D();
+            scene.add(object);
+            entityElement._object = object;
+
+            componentElement.entityAddedCallback(entityElement);
+          };
+          const _removeEntityCallback = (componentElement, entityElement) => {
+            const {_object: oldObject} = entityElement;
+            scene.remove(oldObject);
+            entityElement._object = null;
+
+            componentElement.entityRemovedCallback(entityElement);
+          };
+
           const rootComponentsElement = document.createElement('components');
           // rootWorldElement.appendChild(rootComponentsElement);
           const rootComponentsObserver = new MutationObserver(mutations => {
@@ -334,7 +349,7 @@ class Tags {
                     const {item: entityItem} = tagMesh;
                     const {instance: entityElement} = entityItem;
 
-                    componentElement.entityAddedCallback(entityElement);
+                    _addEntityCallback(componentElement, entityElement);
 
                     for (let l = 0; l < matchingAttributes.length; l++) {
                       const matchingAttribute = matchingAttributes[l];
@@ -364,7 +379,7 @@ class Tags {
                     const {item: entityItem} = tagMesh;
                     const {instance: entityElement} = entityItem;
 
-                    componentElement.entityRemovedCallback(entityElement);
+                    _removeEntityCallback(componentElement, entityElement);
                   }
                 }
               // } else if (type === 'attributes') {
@@ -440,7 +455,7 @@ class Tags {
                       const {componentApi} = componentElement;
                       const {attributes: componentAttributes = {}} = componentApi;
 
-                      componentElement.entityAddedCallback(entityElement);
+                      _addEntityCallback(componentElement, entityElement);
 
                       for (let l = 0; l < matchingAttributes.length; l++) {
                         const matchingAttribute = matchingAttributes[l];
@@ -502,7 +517,7 @@ class Tags {
                       const boundComponentSpec = boundComponentSpecs[l];
                       const {componentElement} = boundComponentSpec;
 
-                      componentElement.entityRemovedCallback(entityElement);
+                      _removeEntityCallback(componentElement, entityElement);
                     }
                   } else if (removedNode.nodeType === Node.TEXT_NODE) {
                     const {target: entityElement} = mutation;
@@ -576,14 +591,14 @@ class Tags {
 
                       if (newValueString !== null) { // adding attribute
                         if (!oldElementMatches && newElementMatches) { // if no matching attributes were previously applied, mount the component on the entity
-                          componentElement.entityAddedCallback(entityElement);
+                          _addEntityCallback(componentElement, entityElement);
                         }
                         if (newElementMatches) {
                           componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                         }
                       } else { // removing attribute
                         if (oldElementMatches && !newElementMatches) { // if this is the last attribute that applied, unmount the component from the entity
-                          componentElement.entityRemovedCallback(entityElement);
+                          _removeEntityCallback(componentElement, entityElement);
                         } else {
                           componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                         }
@@ -2565,9 +2580,6 @@ class Tags {
               if (!instance) {
                 const {tagName: entityTagName, attributes: entityAttributes, data: entityData} = item;
                 const entityElement = document.createElement(entityTagName);
-                const object = new THREE.Object3D();
-                scene.add(object);
-                entityElement._object = object;
 
                 for (const attributeName in entityAttributes) {
                   const attribute = entityAttributes[attributeName];
@@ -2595,9 +2607,6 @@ class Tags {
 
                 entityElement.item = null;
                 item.instance = null;
-
-                const {_object: object} = entityElement;
-                scene.remove(object);
 
                 const {parentNode} = entityElement;
                 if (parentNode) {
