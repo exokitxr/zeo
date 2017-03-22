@@ -628,7 +628,8 @@ class World {
             if (dst === 'world') {
               const tagMesh = tags.makeTag(itemSpec);
               if (element) { // manually added
-                tagMesh.instance = element;
+                const {item} = tagMesh;
+                item.instance = element;
               }
 
               const {item: {type}} = tagMesh;
@@ -644,7 +645,8 @@ class World {
 
               const tagMesh = tags.makeTag(itemSpec);
               if (element) { // manually added
-                tagMesh.instance = element;
+                const {item} = tagMesh;
+                item.instance = element;
               }
 
               const {item: {type}} = tagMesh;
