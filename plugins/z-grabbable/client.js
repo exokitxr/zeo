@@ -173,7 +173,10 @@ class ZGrabbable {
 
               object.position.copy(position);
               object.quaternion.copy(rotation);
+              object.scale.copy(scale);
               originalParent.add(object);
+
+              entityElement.setAttribute('position', JSON.stringify(position.toArray().concat(rotation.toArray()).concat(scale.toArray())));
 
               entityElement.dispatchEvent(releaseEvent);
             }
