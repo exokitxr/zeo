@@ -453,8 +453,10 @@ class Tags {
                     const {item: initialEntityItem} = entityElement;
                     const entityAttributes = _getElementJsonAttributes(entityElement);
                     if (!initialEntityItem) { // element added manually
+                      const tagName = entityElement.tagName.toLowerCase();
                       tagsApi.emit('mutateAddEntity', {
                         element: entityElement,
+                        tagName: tagName,
                         attributes: entityAttributes,
                       });
                     }

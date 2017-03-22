@@ -2306,13 +2306,14 @@ class World {
             _removeTag(src);
           };
           tags.on('mutateRemoveModule', _mutateRemoveModule);
-          const _mutateAddEntity = ({element, attributes}) => {
+          const _mutateAddEntity = ({element, tagName, attributes}) => {
             const itemSpec = {
               type: 'entity',
               id: _makeId(),
               name: 'Manual entity',
               displayName: 'Manual entity',
               version: '0.0.1',
+              tagName: tagName,
               attributes: attributes,
               matrix: DEFAULT_MATRIX,
               metadata: {},
