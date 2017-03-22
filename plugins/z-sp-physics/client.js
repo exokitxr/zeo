@@ -33,6 +33,12 @@ class ZPhysics {
         if (live) {
           const {three: {THREE, camera}, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
 
+          const wireframeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0000FF,
+            wireframe: true,
+            // shading: THREE.FlatShading,
+          });
+
           const _decomposeObjectMatrixWorld = object => {
             const {matrixWorld} = object;
             const position = new THREE.Vector3();
@@ -96,8 +102,10 @@ class ZPhysics {
 
               this.enabled = false;
               this.size = null;
+              this.debug = false;
 
               this.body = null;
+              this.debugMesh = null;
             }
 
             setEnabled(newValue) {
@@ -110,6 +118,13 @@ class ZPhysics {
               this.size = newValue.map(v => v * 0.5);;
 
               this.render();
+              this.renderDebug();
+            }
+
+            setDebug(newValue) {
+              this.debug = newValue;
+
+              this.renderDebug();
             }
 
             render() {
@@ -155,6 +170,28 @@ class ZPhysics {
                 this.body = body;
 
                 activePhysicsBodies.push(this);
+              }
+            }
+
+            renderDebug() {
+              const {object, debugMesh: oldDebugMesh} = this;
+
+              if (oldDebugMesh) {
+                object.remove(oldDebugMesh);
+                object.debugMesh = null;
+              }
+
+              const {debug, size} = this;
+              if (debug && size) {
+                const newDebugMesh = (() => {
+                  const geometry = new THREE.BoxBufferGeometry(size[0], size[1], size[2]);
+                  const material = wireframeMaterial;
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  return mesh;
+                })();
+                object.add(newDebugMesh);
+                this.debugMesh = newDebugMesh;
               }
             }
 
@@ -205,28 +242,18 @@ class ZPhysics {
                 max: 4,
                 step: 0.1,
               },
+              'physics-debug': {
+                type: 'checkbox',
+                value: false,
+              },
             },
             entityAddedCallback(entityElement) {
               const entityObject = entityElement.getObject();
 
-              // XXX
-              const debugMesh = (() => {
-                const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-                const material = new THREE.MeshPhongMaterial({
-                  color: 0xFF0000,
-                  // shading: THREE.FlatShading,
-                });
-
-                const mesh = new THREE.Mesh(geometry, material);
-                return mesh;
-              })();
-              entityObject.add(debugMesh);
-              entityObject.position.set(0, 15, 0);
-              entityObject.quaternion.setFromEuler(new THREE.Euler(Math.PI / 4, 0, Math.PI / 4, camera.rotation.order));
-              entityObject.updateMatrixWorld();
-
-              const physicsBody = _makeBoxBody(entityObject, new THREE.Vector3(1, 1, 1));
+              const physicsBody = _makeBoxBody(entityObject);
               entityElement.setComponentApi(physicsBody);
+
+              physicsBody.debugMesh = null;
 
               physicsBody.on('update', ({position, quaternion}) => {
                 entityElement.setState({
@@ -250,6 +277,11 @@ class ZPhysics {
                 }
                 case 'size': {
                   physicsBody.setSize(newValue);
+
+                  break;
+                }
+                case 'physics-debug': {
+                  physicsBody.setDebug(newValue);
 
                   break;
                 }
