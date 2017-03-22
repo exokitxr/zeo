@@ -312,16 +312,28 @@ class Tags {
           });
 
           const _addEntityCallback = (componentElement, entityElement) => {
-            const object = new THREE.Object3D();
-            scene.add(object);
-            entityElement._object = object;
+            let {_numComponents: numComponents = 0} = entityElement;
+            numComponents++;
+            entityElement._numComponents = numComponents;
+
+            if (numComponents === 1) {
+              const object = new THREE.Object3D();
+              scene.add(object);
+              entityElement._object = object;
+            }
 
             componentElement.entityAddedCallback(entityElement);
           };
           const _removeEntityCallback = (componentElement, entityElement) => {
-            const {_object: oldObject} = entityElement;
-            scene.remove(oldObject);
-            entityElement._object = null;
+            let {_numComponents: numComponents = 0} = entityElement;
+            numComponents--;
+            entityElement._numComponents = numComponents;
+
+            if (numComponents === 0) {
+              const {_object: oldObject} = entityElement;
+              scene.remove(oldObject);
+              entityElement._object = null;
+            }
 
             componentElement.entityRemovedCallback(entityElement);
           };
