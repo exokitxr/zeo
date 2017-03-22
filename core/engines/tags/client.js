@@ -2157,7 +2157,7 @@ class Tags {
               const {item} = tagMesh;
               const {type} = item;
 
-              if (type === 'entity' && !(item.metadata && item.metadata.isStatic)) {
+              if (type === 'entity' && !(item.metadata && item.metadata.isStatic) && item.instance) {
                 const {instance: entityElement} = item;
 
                 if (entityElement.webkitMatchesSelector(componentSelector)) {
