@@ -2,10 +2,13 @@ const makeUtils = ({fs}) => {
 
 const zeoComponentElementClasses = new Map();
 const zeoComponentElementConstructor = (() => {
-  const entityApis = new Map();
-
   class ZeoComponentElement extends HTMLElement {
+    createdCallback() {
+      this.entityApis = new Map();
+    }
+
     entityAddedCallback(entityElement) {
+      const {entityApis} = this;
       let entityApi = entityApis.get(entityElement);
       if (!entityApi) {
         const entityApiState = {};
@@ -76,6 +79,7 @@ const zeoComponentElementConstructor = (() => {
     }
 
     entityRemovedCallback(entityElement) {
+      const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
       entityApis.delete(entityElement);
 
@@ -86,6 +90,7 @@ const zeoComponentElementConstructor = (() => {
     }
 
     entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue) {
+      const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
 
       const {_baseObject: baseObject} = this;
@@ -95,6 +100,7 @@ const zeoComponentElementConstructor = (() => {
     }
 
     entityStateChangedCallback(entityElement, oldValue, newValue) {
+      const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
 
       const {_baseObject: baseObject} = this;
@@ -104,6 +110,7 @@ const zeoComponentElementConstructor = (() => {
     }
 
     entityDataChangedCallback(entityElement, oldValue, newValue) {
+      const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
 
       const {_baseObject: baseObject} = this;
