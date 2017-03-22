@@ -31,7 +31,7 @@ class ZPhysics {
     return _requestAmmo()
       .then(Ammo => {
         if (live) {
-          const {three: {THREE}, elements} = zeo;
+          const {three: {THREE, camera}, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
 
           const _decomposeObjectMatrixWorld = object => {
             const {matrixWorld} = object;
@@ -52,10 +52,10 @@ class ZPhysics {
 
           // ground
           (() => {
-            const groundShape = new Ammo.btBoxShape(new Ammo.btVector3(50, 50, 50));
+            const groundShape = new Ammo.btBoxShape(new Ammo.btVector3(1024, 1024, 1024));
             const groundTransform = new Ammo.btTransform();
             groundTransform.setIdentity();
-            groundTransform.setOrigin(new Ammo.btVector3(0, -56, 0));
+            groundTransform.setOrigin(new Ammo.btVector3(0, -1024, 0));
 
             const mass = 0;
             const isDynamic = (mass !== 0);
@@ -88,10 +88,12 @@ class ZPhysics {
             lastUpdateTime = now;
           }, STEP_MILLISECONDS);
 
-          class BoxPhysicsBody {
-            constructor(element, object) {
-              this.element = element;
+          class BoxPhysicsBody extends EventEmitter {
+            constructor(object, size) {
+              super();
+
               this.object = object;
+              this.size = size;
 
               this.body = null;
             }
@@ -99,21 +101,26 @@ class ZPhysics {
             setSpPhysics(newValue) {
               if (newValue) {
                 const body = (() => {
-                  const colShape = new Ammo.btSphereShape(1);
+                  const {object, size} = this;
+                  const {position, rotation} = _decomposeObjectMatrixWorld(object);
+                  const boundingBox = new THREE.Box3()
+                    .setFromObject(object);
+
+                  const colShape = new Ammo.btBoxShape(new Ammo.btVector3(size.x, size.y, size.z));
                   const startTransform = new Ammo.btTransform();
                   startTransform.setIdentity();
+                  startTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+                  startTransform.setRotation(new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
 
                   const mass = 1;
                   const isDynamic = (mass !== 0);
                   const localInertia = new Ammo.btVector3(0, 0, 0);
 
                   if (isDynamic) {
-                    colShape.calculateLocalInertia(mass,localInertia);
+                    colShape.calculateLocalInertia(mass, localInertia);
                   }
 
-                  startTransform.setOrigin(new Ammo.btVector3(2, 10, 0));
-
-                  const  myMotionState = new Ammo.btDefaultMotionState(startTransform);
+                  const myMotionState = new Ammo.btDefaultMotionState(startTransform);
                   const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
                   const body = new Ammo.btRigidBody(rbInfo);
 
@@ -135,7 +142,7 @@ class ZPhysics {
             }
 
             update() {
-              const {element, body} = this;
+              const {body, size} = this;
 
               if (body.getMotionState()) {
                 body.getMotionState().getWorldTransform(trans);
@@ -145,7 +152,7 @@ class ZPhysics {
                 const position = new THREE.Vector3(btOrigin.x(), btOrigin.y(), btOrigin.z());
                 const quaternion = new THREE.Quaternion(btRotation.x(), btRotation.y(), btRotation.z(), btRotation.w());
 
-                element.setState({
+                this.emit('update', {
                   position,
                   quaternion,
                 });
@@ -165,7 +172,7 @@ class ZPhysics {
             }
           }
 
-          const _makeBody = (element, object) => new BoxPhysicsBody(element, object);
+          const _makeBoxBody = (object, size) => new BoxPhysicsBody(object, size.clone().multiplyScalar(0.5));
 
           const spPhysicsComponent = {
             selector: '[sp-physics]',
@@ -176,8 +183,33 @@ class ZPhysics {
               },
             },
             entityAddedCallback(entityElement) {
-              const physicsBody = _makeBody(entityElement, entityElement.getObject());
+              const entityObject = entityElement.getObject();
+
+              // XXX
+              const debugMesh = (() => {
+                const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+                const material = new THREE.MeshPhongMaterial({
+                  color: 0xFF0000,
+                  // shading: THREE.FlatShading,
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                return mesh;
+              })();
+              entityObject.add(debugMesh);
+              entityObject.position.set(0, 15, 0);
+              entityObject.quaternion.setFromEuler(new THREE.Euler(Math.PI / 4, 0, Math.PI / 4, camera.rotation.order));
+              entityObject.updateMatrixWorld();
+
+              const physicsBody = _makeBoxBody(entityObject, new THREE.Vector3(1, 1, 1));
               entityElement.setComponentApi(physicsBody);
+
+              physicsBody.on('update', ({position, quaternion}) => {
+                entityElement.setState({
+                  position,
+                  quaternion,
+                });
+              });
             },
             entityRemovedCallback(entityElement) {
               const physicsBody = entityElement.getComponentApi();
@@ -195,10 +227,11 @@ class ZPhysics {
               }
             },
             entityStateChangedCallback(entityElement, oldValue, newValue) {
-              // const physicsBody = entityElement.getComponentApi();
               const {position, quaternion} = newValue;
+              const entityObject = entityElement.getObject();
 
-              console.log("world pos = " + position.toArray().concat(quaternion.toArray()).join('.'));
+              entityObject.position.copy(position);
+              entityObject.quaternion.copy(quaternion);
             },
           };
           elements.registerComponent(this, spPhysicsComponent);

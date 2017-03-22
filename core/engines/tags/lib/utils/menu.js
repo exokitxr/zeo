@@ -36,7 +36,7 @@ const zeoComponentElementConstructor = (() => {
 
               const newValue = _shallowClone(entityApiState);
 
-              this.entityStateChangedCallback(entityApi, oldValue, newValue);
+              this.entityStateChangedCallback(entityElement, oldValue, newValue);
             },
           },
           getData: {
