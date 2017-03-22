@@ -1578,10 +1578,7 @@ class Tags {
                                 worldWidth: WORLD_WIDTH,
                                 worldHeight: WORLD_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
-                                metadata: {
-                                  type,
-                                  tagMesh,
-                                },
+                                metadata: tagMesh,
                               });
 
                               if (type === 'entity') {
@@ -1601,10 +1598,7 @@ class Tags {
                                     worldWidth: WORLD_WIDTH,
                                     worldHeight: WORLD_HEIGHT,
                                     worldDepth: WORLD_DEPTH,
-                                    metadata: {
-                                      type: 'attribute',
-                                      tagMesh: attributeMesh,
-                                    },
+                                    metadata: attributeMesh,
                                   });
                                 }
                               }
@@ -1621,10 +1615,7 @@ class Tags {
                                 worldWidth: WORLD_OPEN_WIDTH,
                                 worldHeight: WORLD_OPEN_HEIGHT,
                                 worldDepth: WORLD_DEPTH,
-                                metadata: {
-                                  type,
-                                  tagMesh,
-                                },
+                                metadata: tagMesh,
                               });
                             }
                           }
