@@ -25,9 +25,6 @@ class ZGrabbable {
           const {three: {THREE}, elements, pose, input, utils: {js: {events: {EventEmitter}}}} = zeo;
           const player = cyborg.getPlayer();
 
-          const {events} = jsUtils;
-          const {EventEmitter} = events;
-
           const _decomposeObjectMatrixWorld = object => {
             const {matrixWorld} = object;
             const position = new THREE.Vector3();
@@ -45,14 +42,18 @@ class ZGrabbable {
             right: _makeGlobalGrabState(),
           };
 
+          const grabbables = [];
+
           class Grabbable {
-            constructor(element, object) {
-              this.element = element;
+            constructor(entityElement, object) {
+              this.entityElement = entityElement;
               this.object = object;
 
               this.grabState = null;
 
               this.trygrab = this.trygrab.bind(this);
+
+              grabbables.push(this);
             }
 
             setGrabbable(newValue) {
@@ -71,7 +72,7 @@ class ZGrabbable {
             }
 
             trygrab(e) {
-              const {detail: {side, entityElement}} = e;
+              const {detail: {side}} = e;
               const globalGrabState = globalGrabStates[side];
               const {grabbable: globalGrabbable} = globalGrabState;
 
@@ -85,12 +86,11 @@ class ZGrabbable {
                   const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
 
                   if (controllerPosition.distanceTo(objectPosition) <= DEFAULT_GRAB_RADIUS) {
-                    const object = entityElement.getObject();
-                    const {parent: originalParent} = object; // XXX use this during release
+                    const {entityElement, object} = this;
+                    const {parent: originalParent} = object;
                     const grabState = {
-                      side: side,
-                      entityElement: entityElement,
-                      originalParent: originalParent,
+                      side,
+                      originalParent,
                     };
                     this.grabState = grabState;
 
@@ -105,25 +105,23 @@ class ZGrabbable {
                       detail: {
                         side,
                         entityElement,
+                        object,
                       },
                     });
-                    entityElement.dispatchEvent(grabEvent);
+                    element.dispatchEvent(grabEvent);
                   }
                 }
               }
             }
 
             release() {
-              const {grabState: {side, entityElement}} = this;
+              const {entityElement. object, grabState: {side, originalParent}} = this;
 
               this.grabState = null;
 
               const globalGrabState = globalGrabStates[side];
               globalGrabState.grabbable = null;
 
-              // XXX put the object back onto the originalParent here
-
-              const object = entityElement.getObject();
               const {position, rotation, scale} = _decomposeObjectMatrixWorld(object);
               const linearVelocity = player.getControllerLinearVelocity(side);
               const angularVelocity = player.getControllerAngularVelocity(side);
@@ -139,6 +137,11 @@ class ZGrabbable {
                   angularVelocity,
                 },
               });
+
+              object.position.copy(position);
+              object.quaternion.copy(rotation);
+              originalParent.add(object);
+
               entityElement.dispatchEvent(releaseEvent);
             }
 
@@ -148,11 +151,50 @@ class ZGrabbable {
               if (grabState) {
                 this.release();
               }
+
+              grabbables.splice(grabbables.indexOf(this), 1);
             }
           }
 
-          // XXX add gripdown where we iterate over the grabbables and emit trygrab on the best one
+          const _gripdown = e => {
+            const {side} = e;
+            const globalGrabState = globalGrabStates[side];
+            const {grabbable: globalGrabbable} = globalGrabState;
 
+            if (!globalGrabbable) {
+              const {gamepads} = pose.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {position: controllerPosition} = gamepad;
+
+                const grabbableDistanceSpecs = grabbables.map(grabbable => {
+                  const {object} = grabbable;
+                  const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
+                  const distance = controllerPosition.distanceTo(objectPosition);
+
+                  return {
+                    grabbable,
+                    distance,
+                  };
+                }).filter(({distance}) => distance <= DEFAULT_GRAB_RADIUS);
+
+                if (grabbableDistanceSpecs.length > 0) {
+                  const {grabbable: bestGrabbable} = grabbableDistanceSpecs.sort((a, b) => a.distance - b.distance)[0];
+
+                  const trygrabEvent = new CustomEvent('trygrab', {
+                    detail: {
+                      side,
+                    },
+                  });
+                  bestGrabbable.dispatchEvent(trygrabEvent);
+
+                  e.stopImmediatePropagation();
+                }
+              }
+            }
+          };
+          input.on('gripdown', _gripdown);
           const _gripup = e => {
             const {side} = e;
             const globalGrabState = globalGrabStates[side];
@@ -160,6 +202,8 @@ class ZGrabbable {
 
             if (globalGrabbable) {
               globalGrabbable.release();
+
+              e.stopImmediatePropagation();
             }
           };
           input.on('gripup', _gripup);
@@ -198,6 +242,7 @@ class ZGrabbable {
           this._cleanup = () => {
             elements.unregisterComponent(this, grabbableComponent);
 
+            input.removeListener('gripdown', _gripdown);
             input.removeListener('gripup', _gripup);
           };
         }
