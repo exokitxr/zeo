@@ -25,6 +25,10 @@ class ZGrabbable {
           const {three: {THREE}, elements, pose, input, utils: {js: {events: {EventEmitter}}}} = zeo;
           const player = cyborg.getPlayer();
 
+          const zeroVector = new THREE.Vector3();
+          const zeroQuaternion = new THREE.Quaternion();
+          const oneVector = new THREE.Vector3(1, 1, 1);
+
           const _decomposeObjectMatrixWorld = object => {
             const {matrixWorld} = object;
             const position = new THREE.Vector3();
@@ -95,12 +99,12 @@ class ZGrabbable {
               const {grabbable: globalGrabbable} = globalGrabState;
 
               if (!globalGrabbable) {
-                const {side} = grabState;
                 const {gamepads} = pose.getStatus();
                 const gamepad = gamepads[side];
 
                 if (gamepad) {
                   const {position: controllerPosition} = gamepad;
+                  const {object} = this;
                   const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
 
                   if (controllerPosition.distanceTo(objectPosition) <= DEFAULT_GRAB_RADIUS) {
@@ -135,6 +139,9 @@ class ZGrabbable {
                 const controller = controllers[side];
                 const {mesh: controllerMesh} = controller;
                 controllerMesh.add(object);
+                object.position.copy(zeroVector);
+                object.quaternion.copy(zeroQuaternion);
+                object.scale.copy(oneVector);
 
                 globalGrabState.grabbable = this;
               }
@@ -239,6 +246,10 @@ class ZGrabbable {
             selector: '[grabbable]',
             attributes: {
               grabbable: {
+                type: 'checkbox',
+                value: true,
+              },
+              holdable: {
                 type: 'checkbox',
                 value: true,
               },

@@ -490,6 +490,9 @@ class Zeo {
                         rend.on('updateEye', camera => {
                           this.emit('updateEye', camera);
                         });
+                        tags.on('mutate', () => {
+                          this.emit('mutate');
+                        });
                       }
                     }
 

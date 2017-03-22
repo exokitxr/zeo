@@ -60,12 +60,14 @@ class ZCake {
                 sliceCakeEntity.setAttribute('holdable', JSON.stringify(true));
                 elements.getEntitiesElement().appendChild(sliceCakeEntity);
 
-                const grabEvent = new CustomEvent('grab', {
-                  detail: {
-                    side: side,
-                  },
+                render.once('mutate', () => {
+                  const grabEvent = new CustomEvent('grab', {
+                    detail: {
+                      side: side,
+                    },
+                  });
+                  sliceCakeEntity.dispatchEvent(grabEvent);
                 });
-                sliceCakeEntity.dispatchEvent(grabEvent);
 
                 const newSlices = this.slices - 1;
                 if (entityElement) {

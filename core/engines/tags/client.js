@@ -303,6 +303,8 @@ class Tags {
                 }
               }
             }
+
+            tagsApi.emit('mutate');
           });
           rootModulesObserver.observe(rootModulesElement, {
             childList: true,
@@ -397,6 +399,8 @@ class Tags {
               // } else if (type === 'attributes') {
               }
             }
+
+            tagsApi.emit('mutate');
           });
           rootComponentsObserver.observe(rootComponentsElement, {
             childList: true,
@@ -650,6 +654,8 @@ class Tags {
                 }
               }
             }
+
+            tagsApi.emit('mutate');
           });
           rootEntitiesObserver.observe(rootEntitiesElement, {
             childList: true,
