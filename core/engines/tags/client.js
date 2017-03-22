@@ -2717,7 +2717,9 @@ class Tags {
             }
 
             getPointedTagMesh(side) {
-              return hoverStates[side].metadata;
+              const hoverState = hoverStates[side];
+              const {metadata} = hoverState;
+              return metadata ? metadata.tagMesh : null;
             }
 
             message(detail) {
