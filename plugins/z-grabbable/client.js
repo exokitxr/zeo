@@ -55,6 +55,7 @@ class ZGrabbable {
               this.grabState = null;
 
               this.trygrab = this.trygrab.bind(this);
+              this.grab = this.grab.bind(this);
 
               grabbables.push(this);
             }
@@ -72,12 +73,14 @@ class ZGrabbable {
             }
 
             render() {
-              const {entityElement, grabbable, holdable, trygrab} = this;
+              const {entityElement, grabbable, holdable, trygrab, grab} = this;
 
               if (grabbable && holdable) {
                 entityElement.addEventListener('trygrab', trygrab);
+                entityElement.addEventListener('grab', grab);
               } else {
                 entityElement.removeEventListener('trygrab', trygrab);
+                entityElement.removeEventListener('grab', grab);
 
                 const {grabState} = this;
                 if (grabState) {
@@ -101,31 +104,39 @@ class ZGrabbable {
                   const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
 
                   if (controllerPosition.distanceTo(objectPosition) <= DEFAULT_GRAB_RADIUS) {
-                    const {entityElement, object} = this;
-                    const {parent: originalParent} = object;
-                    const grabState = {
-                      side,
-                      originalParent,
-                    };
-                    this.grabState = grabState;
-
-                    globalGrabState.grabbable = this;
-
-                    const controllers = cyborg.getControllers();
-                    const controller = controllers[side];
-                    const {mesh: controllerMesh} = controller;
-                    controllerMesh.add(object);
-
                     const grabEvent = new CustomEvent('grab', {
                       detail: {
                         side,
-                        entityElement,
-                        object,
                       },
                     });
-                    element.dispatchEvent(grabEvent);
+                    const {entityElement} = this;
+                    entityElement.dispatchEvent(grabEvent);
                   }
                 }
+              }
+            }
+
+            grab(e) {
+              const {detail: {side}} = e;
+              const globalGrabState = globalGrabStates[side];
+              const {grabbable: globalGrabbable} = globalGrabState;
+
+              if (!globalGrabbable) {
+                const {object} = this;
+                const {parent: originalParent} = object;
+
+                const grabState = {
+                  side,
+                  originalParent,
+                };
+                this.grabState = grabState;
+
+                const controllers = cyborg.getControllers();
+                const controller = controllers[side];
+                const {mesh: controllerMesh} = controller;
+                controllerMesh.add(object);
+
+                globalGrabState.grabbable = this;
               }
             }
 

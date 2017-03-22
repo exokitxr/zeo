@@ -50,7 +50,7 @@ class ZCake {
               this.render();
 
               const _trygrab = e => {
-                const {side} = e;
+                const {detail: {side}} = e;
 
                 const sliceCakeEntity = document.createElement('cake');
                 const {position} = this;
