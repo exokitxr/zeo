@@ -1,4 +1,9 @@
 const DEFAULT_GRAB_RADIUS = 0.2;
+const DEFAULT_MATRIX = [
+  0, 1, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 const SIDES = ['left', 'right'];
 
@@ -255,6 +260,10 @@ class ZGrabbable {
               holdable: {
                 type: 'checkbox',
                 value: true,
+              },
+              position: {
+                type: 'matrix',
+                value: DEFAULT_MATRIX,
               },
             },
             entityAddedCallback(entityElement) {
