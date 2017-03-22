@@ -51,29 +51,32 @@ class ZCake {
 
               const _trygrab = e => {
                 const {detail: {side}} = e;
+                const {holdable} = this;
 
-                const sliceCakeEntity = document.createElement('cake');
-                const {position} = this;
-                sliceCakeEntity.setAttribute('position', JSON.stringify(position));
-                sliceCakeEntity.setAttribute('slices', JSON.stringify(1));
-                sliceCakeEntity.setAttribute('grabbable', JSON.stringify(true));
-                sliceCakeEntity.setAttribute('holdable', JSON.stringify(true));
-                elements.getEntitiesElement().appendChild(sliceCakeEntity);
+                if (!holdable) {
+                  const sliceCakeEntity = document.createElement('cake');
+                  const {position} = this;
+                  sliceCakeEntity.setAttribute('position', JSON.stringify(position));
+                  sliceCakeEntity.setAttribute('slices', JSON.stringify(1));
+                  sliceCakeEntity.setAttribute('grabbable', JSON.stringify(true));
+                  sliceCakeEntity.setAttribute('holdable', JSON.stringify(true));
+                  elements.getEntitiesElement().appendChild(sliceCakeEntity);
 
-                render.once('mutate', () => {
-                  const grabEvent = new CustomEvent('grab', {
-                    detail: {
-                      side: side,
-                    },
+                  render.once('mutate', () => {
+                    const grabEvent = new CustomEvent('grab', {
+                      detail: {
+                        side: side,
+                      },
+                    });
+                    sliceCakeEntity.dispatchEvent(grabEvent);
                   });
-                  sliceCakeEntity.dispatchEvent(grabEvent);
-                });
 
-                const newSlices = this.slices - 1;
-                if (entityElement) {
-                  entityElement.setAttribute('slices', newSlices); // XXX bug: this needs to update the entity UI
-                } else {
-                  this.setSlices(newSlices);
+                  const newSlices = this.slices - 1;
+                  if (entityElement) {
+                    entityElement.setAttribute('slices', newSlices); // XXX bug: this needs to update the entity UI
+                  } else {
+                    this.setSlices(newSlices);
+                  }
                 }
               };
               if (entityElement) {
