@@ -34,7 +34,7 @@ const zeoComponentElementConstructor = (() => {
                 entityApiState[k] = v;
               }
 
-              const newValue = _shallowClone(entityApiState);
+              const newValue = entityApiState;
 
               this.entityStateChangedCallback(entityElement, oldValue, newValue);
             },
@@ -107,6 +107,9 @@ const makeZeoComponentElement = ({baseObject}) => {
 const castValueStringToValue = (s, type, min, max, step, options) => {
   switch (type) {
     case 'matrix': {
+      return _jsonParse(s);
+    }
+    case 'vector': {
       return _jsonParse(s);
     }
     case 'text': {

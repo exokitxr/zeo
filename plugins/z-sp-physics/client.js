@@ -89,24 +89,48 @@ class ZPhysics {
           }, STEP_MILLISECONDS);
 
           class BoxPhysicsBody extends EventEmitter {
-            constructor(object, size) {
+            constructor(object) {
               super();
 
               this.object = object;
-              this.size = size;
+
+              this.enabled = false;
+              this.size = null;
 
               this.body = null;
             }
 
-            setSpPhysics(newValue) {
-              if (newValue) {
+            setEnabled(newValue) {
+              this.enabled = newValue;
+
+              this.render();
+            }
+
+            setSize(newValue) {
+              this.size = newValue.map(v => v * 0.5);;
+
+              this.render();
+            }
+
+            render() {
+              const {body} = this;
+              if (body) {
+                dynamicsWorld.removeRigidBody(body);
+
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+
+                this.body = null;
+              }
+
+              const {enabled, size} = this;
+              if (enabled && size) {
                 const body = (() => {
-                  const {object, size} = this;
+                  const {object} = this;
                   const {position, rotation} = _decomposeObjectMatrixWorld(object);
                   const boundingBox = new THREE.Box3()
                     .setFromObject(object);
 
-                  const colShape = new Ammo.btBoxShape(new Ammo.btVector3(size.x, size.y, size.z));
+                  const colShape = new Ammo.btBoxShape(new Ammo.btVector3(size[0], size[1], size[2]));
                   const startTransform = new Ammo.btTransform();
                   startTransform.setIdentity();
                   startTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
@@ -131,13 +155,6 @@ class ZPhysics {
                 this.body = body;
 
                 activePhysicsBodies.push(this);
-              } else {
-                const {body} = this;
-                dynamicsWorld.removeRigidBody(body);
-
-                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
-
-                this.body = null;
               }
             }
 
@@ -172,14 +189,21 @@ class ZPhysics {
             }
           }
 
-          const _makeBoxBody = (object, size) => new BoxPhysicsBody(object, size.clone().multiplyScalar(0.5));
+          const _makeBoxBody = object => new BoxPhysicsBody(object);
 
           const spPhysicsComponent = {
-            selector: '[sp-physics]',
+            selector: '[sp-physics][size]',
             attributes: {
               'sp-physics': {
                 type: 'checkbox',
                 value: true,
+              },
+              'size': {
+                type: 'vector',
+                value: [1, 1, 1],
+                min: 0.1,
+                max: 4,
+                step: 0.1,
               },
             },
             entityAddedCallback(entityElement) {
@@ -220,7 +244,12 @@ class ZPhysics {
 
               switch (name) {
                 case 'sp-physics': {
-                  physicsBody.setSpPhysics(newValue);
+                  physicsBody.setEnabled(newValue);
+
+                  break;
+                }
+                case 'size': {
+                  physicsBody.setSize(newValue);
 
                   break;
                 }

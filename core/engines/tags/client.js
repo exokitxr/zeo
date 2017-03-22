@@ -18,6 +18,7 @@ import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
 
 const SIDES = ['left', 'right'];
+const AXES = ['x', 'y', 'z'];
 
 const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
@@ -1221,11 +1222,12 @@ class Tags {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
-                if (match = onclick.match(/^attribute:(.+?):(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
+                if (match = onclick.match(/^attribute:([^:]+):([^:]+)(?::([^:]+))?:(position|focus|set|tweak|toggle|choose)(?::([^:]+))?$/)) {
                   const tagId = match[1];
                   const attributeName = match[2];
-                  const action = match[3];
-                  const value = match[4];
+                  const key = match[3];
+                  const action = match[4];
+                  const value = match[5];
 
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
                   const {item} = tagMesh;
@@ -1284,26 +1286,51 @@ class Tags {
 
                     // _updateAttributes();
                   } else if (action === 'tweak') {
-                    const newValue = (() => {
-                      const {value} = hoverState;
-                      const {min, max, step} = _getAttributeSpec(attributeName);
+                    const {type} = _getAttributeSpec(attributeName);
 
-                      let n = min + (value * (max - min));
-                      if (step > 0) {
-                        n = Math.round(n / step) * step;
-                      }
-                      return n;
-                    })();
+                    if (type === 'number') {
+                      const newValue = (() => {
+                        const {value} = hoverState;
+                        const {min, max, step} = _getAttributeSpec(attributeName);
 
-                    focusState.type = '';
+                        let n = min + (value * (max - min));
+                        if (step > 0) {
+                          n = _roundToDecimals(Math.round(n / step) * step, 8);
+                        }
+                        return n;
+                      })();
 
-                    tagsApi.emit('setAttribute', {
-                      id: tagId,
-                      name: attributeName,
-                      value: newValue,
-                    });
+                      focusState.type = '';
 
-                    // _updateAttributes();
+                      tagsApi.emit('setAttribute', {
+                        id: tagId,
+                        name: attributeName,
+                        value: newValue,
+                      });
+
+                      // _updateAttributes();
+                    } else if (type ==='vector') {
+                      const newKeyValue = (() => {
+                        const {value} = hoverState;
+                        const {min, max, step} = _getAttributeSpec(attributeName);
+
+                        let n = min + (value * (max - min));
+                        if (step > 0) {
+                          n = _roundToDecimals(Math.round(n / step) * step, 8);
+                        }
+                        return n;
+                      })();
+                      const newValue = attributeValue.slice();
+                      newValue[AXES.indexOf(key)] = newKeyValue;
+
+                      focusState.type = '';
+
+                      tagsApi.emit('setAttribute', {
+                        id: tagId,
+                        name: attributeName,
+                        value: newValue,
+                      });
+                    }
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
 
@@ -2739,5 +2766,6 @@ const _shallowClone = o => {
   return result;
 };
 const _makeId = () => Math.random().toString(36).substring(7);
+const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Tags;

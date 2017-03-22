@@ -26,6 +26,8 @@ const targetImgSrc = 'data:image/svg+xml;base64,' + btoa(targetImg);
 const linkImg = require('../img/link');
 const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
 
+const AXES = ['x', 'y', 'z'];
+
 const makeRenderer = ({menuUtils, creatureUtils}) => {
   const getModuleSrc = ({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec}) => {
     const {id, name, displayName, description, instancing, metadata: {isStatic, exists}} = item;
@@ -204,6 +206,34 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           </div>
         `;
       }
+      case 'vector': {
+        if (min === undefined) {
+          min = 0;
+        }
+        if (max === undefined) {
+          max = 10;
+        }
+
+        let result = '';
+
+        AXES.forEach((axis, index) => {
+          const axisValue = value[index];
+          const factor = (axisValue - min) / (max - min);
+
+          result += `\
+            <div style="display: flex; height: 30px; margin: 2px 20px;">
+              <a style="display: flex; position: relative; height: inherit; width: ${WIDTH - (20 * 2) - 50}px;" onclick="attribute:${id}:${name}:${axis}:tweak" onmousedown="attribute:${id}:${name}:${axis}:tweak">
+                <div style="position: absolute; top: 14px; left: 0; right: 0; height: 2px; background-color: #CCC;">
+                  <div style="position: absolute; top: -9px; bottom: -9px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
+                </div>
+              </a>
+              <div style="display: flex; width: 50px; height: inherit; color: #000; font-size: 20px; justify-content: center; align-items: center;">${axisValue}</div>
+            </div>
+          `;
+        });
+
+        return result;
+      }
       case 'text': {
         return `\
           <a style="display: flex; position: relative; margin: 20px; border: 2px solid #333; font-size: 24px; text-decoration: none; align-items: center; overflow: hidden; box-sizing: border-box;" onclick="attribute:${id}:${name}:focus" onmousedown="attribute:${id}:${name}:focus">
@@ -224,7 +254,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
         const string = focusValue !== null ? String(focusValue) : inputText;
 
         return `\
-          <a style="display: flex; position: relative; margin: 5px 20px; height: 40px; margin-right: 20px;" onclick="attribute:${id}:${name}:tweak" onmousedown="attribute:${id}:${name}:tweak">
+          <a style="display: flex; position: relative; margin: 5px 20px; height: 40px;" onclick="attribute:${id}:${name}:tweak" onmousedown="attribute:${id}:${name}:tweak">
             <div style="position: absolute; top: 19px; left: 0; right: 0; height: 2px; background-color: #CCC;">
               <div style="position: absolute; top: -14px; bottom: -14px; left: ${factor * 100}%; margin-left: -1px; width: 2px; background-color: #F00;"></div>
             </div>
