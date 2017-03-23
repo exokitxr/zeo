@@ -1,4 +1,3 @@
-const DEFAULT_GRAB_RADIUS = 0.2;
 const DEFAULT_MATRIX = [
   0, 1, 0,
   0, 0, 0, 1,
@@ -59,6 +58,7 @@ class ZGrabbable {
               this.object = object;
 
               this.grabbable = false;
+              this.size = null;
               this.holdable = false;
 
               this.grabState = null;
@@ -75,6 +75,12 @@ class ZGrabbable {
               this.render();
             }
 
+            setSize(newValue) {
+              this.size = newValue;
+
+              this.render();
+            }
+
             setHoldable(newValue) {
               this.holdable = newValue;
 
@@ -82,9 +88,9 @@ class ZGrabbable {
             }
 
             render() {
-              const {entityElement, grabbable, holdable, trygrab, grab} = this;
+              const {entityElement, grabbable, size, holdable, trygrab, grab} = this;
 
-              if (grabbable && holdable) {
+              if (grabbable && size && holdable) {
                 entityElement.addEventListener('trygrab', trygrab);
                 entityElement.addEventListener('grab', grab);
               } else {
@@ -109,10 +115,12 @@ class ZGrabbable {
 
                 if (gamepad) {
                   const {position: controllerPosition} = gamepad;
-                  const {object} = this;
+                  const {object, size} = this;
                   const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
+                  const radius = Math.max.apply(Math, size) / 2;
+                  const sphere = new THREE.Sphere(objectPosition, radius);
 
-                  if (controllerPosition.distanceTo(objectPosition) <= DEFAULT_GRAB_RADIUS) {
+                  if (sphere.containsPoint(controllerPosition)) {
                     const grabEvent = new CustomEvent('grab', {
                       detail: {
                         side,
@@ -223,15 +231,22 @@ class ZGrabbable {
                 const {position: controllerPosition} = gamepad;
 
                 const grabbableDistanceSpecs = grabbables.map(grabbable => {
-                  const {object} = grabbable;
+                  const {object, size} = grabbable;
                   const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
-                  const distance = controllerPosition.distanceTo(objectPosition);
+                  const radius = Math.max.apply(Math, size) / 2;
+                  const sphere = new THREE.Sphere(objectPosition, radius);
 
-                  return {
-                    grabbable,
-                    distance,
-                  };
-                }).filter(({distance}) => distance <= DEFAULT_GRAB_RADIUS);
+                  if (sphere.containsPoint(controllerPosition)) {
+                    const distance = controllerPosition.distanceTo(objectPosition);
+
+                    return {
+                      grabbable,
+                      distance,
+                    };
+                  } else {
+                    return null;
+                  }
+                }).filter(spec => spec !== null);
 
                 if (grabbableDistanceSpecs.length > 0) {
                   const {grabbable: bestGrabbable} = grabbableDistanceSpecs.sort((a, b) => a.distance - b.distance)[0];
@@ -264,11 +279,18 @@ class ZGrabbable {
           input.on('gripup', _gripup);
 
           const grabbableComponent = {
-            selector: '[grabbable]',
+            selector: '[grabbable][size]',
             attributes: {
               grabbable: {
                 type: 'checkbox',
                 value: true,
+              },
+              size: {
+                type: 'vector',
+                value: [1, 1, 1],
+                min: 0.1,
+                max: 1,
+                step: 0.1,
               },
               holdable: {
                 type: 'checkbox',
@@ -293,6 +315,11 @@ class ZGrabbable {
               switch (name) {
                 case 'grabbable': {
                   grabbable.setGrabbable(newValue);
+
+                  break;
+                }
+                case 'size': {
+                  grabbable.setSize(newValue);
 
                   break;
                 }
