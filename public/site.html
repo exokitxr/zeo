@@ -734,7 +734,7 @@
       position: relative;
       width: 100%;
       justify-content: center;
-      background-color : #3F51B5;
+      // background-color : #3F51B5;
     }
     .grid-item-wrap:nth-child(1) {
       background-color : #3F51B5;
@@ -746,6 +746,10 @@
       border-top: 1px solid #000;
       background-image: linear-gradient(to right, #000000 , #222);
       // background-image: linear-gradient(to left, #000000 , #222);
+    }
+    .grid-item-wrap:nth-child(4) {
+      border-top: 1px solid #000;
+      background-image: linear-gradient(to right, #000000 , #222);
     }
     .grid-item {
       display: flex;
@@ -790,11 +794,12 @@
     .grid-item h4 {
       width: 100%;
       margin: 15px 0;
+      font-size: 24px;
     }
     .grid-item p {
       width: 100%;
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.8;
     }
     .grid-item .grid-button {
       display: inline-block;
@@ -1117,28 +1122,40 @@
                   <div class=icon>three.js</div>
                   <div class=icon>WebVR</div>
                 </div>
-                <h4>Powered by npm.</h4>
                 <p>
-                  You know Javascript. Now meet Javascript face-to-face.<br/>
-                  Publish to NPM and experience your creations in your headset.<br/>
-                  The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
+                  Build persistent muiltiplayer VR worlds with Javascript.<br/>
+                  Start the <code>node</code> server and drag 'n drop <code>npm</code> modules in the browser. Anyone can join with a URL.<br/>
+                  You don't even need a headset! It works with mouse + keyboard.<br/>
+                </p>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>Read getting started</a>
+              </div>
+            </div>
+            <div class=grid-item-wrap>
+              <div class="grid-item grid-item-2">
+                <img src="/img/nodejs.svg" class=icon>
+                <h4>Made for full-stack web developers</h4>
+                <p>
+                  Build entity-component worlds without taking off your headset.<br/>
+                  Code and debug with vanilla <code>node</code> and <code>DevTools</code>.<br/>
+                  The API is <a href="https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model" class=link>DOM</a> + <a href="https://threejs.org" class=link>THREE.js</a> on the front and <a href="https://nodejs.org" class=link>node</a> on the back, so it works with pretty much everything.<br/>
                 </p>
                 <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
               </div>
             </div>
             <div class=grid-item-wrap>
-              <div class="grid-item grid-item-2">
-                <i class="icon octicon octicon-circuit-board"></i>
-                <h4>Persistent multiverse tech.</h4>
+              <div class="grid-item grid-item-3">
+                <i class="icon octicon octicon-mark-github"></i>
+                <h4>Open source. Or hosted.</h4>
                 <p>
-                  World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
-                  We did the hard work so you don't have to.<br/>
+                  Run your own server or join us on the public Zeo Hub.<br/>
+                  Test it out with just your browser.<br/>
+                  And if you want us to host your world, we have a plan for that.<br/>
                 </p>
-                <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
               </div>
             </div>
             <div class=grid-item-wrap>
-              <div class="grid-item grid-item-3">
+              <div class="grid-item grid-item-4">
                 <i class="icon octicon octicon-mark-github"></i>
                 <h4>Open source. Or hosted.</h4>
                 <p>
