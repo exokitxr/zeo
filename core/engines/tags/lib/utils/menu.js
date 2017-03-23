@@ -47,20 +47,15 @@ const zeoComponentElementConstructor = (() => {
             value: () => entityElement._object,
           },
           getState: {
-            value: () => entityApiState,
+            value: key => entityApiState[key],
           },
           setState: {
-            value: o => {
-              const oldValue = _shallowClone(entityApiState);
+            value: (key, newValue) => {
+              const oldValue = (key in entityApiState) ? entityApiState[key] : null;
 
-              for (const k in o) {
-                const v = o[k];
-                entityApiState[k] = v;
-              }
+              entityApiState[key] = newValue;
 
-              const newValue = entityApiState;
-
-              this.entityStateChangedCallback(entityElement, oldValue, newValue);
+              this.entityStateChangedCallback(entityElement, key, oldValue, newValue);
             },
           },
           getData: {
@@ -102,13 +97,13 @@ const zeoComponentElementConstructor = (() => {
       }
     }
 
-    entityStateChangedCallback(entityElement, oldValue, newValue) {
+    entityStateChangedCallback(entityElement, key, oldValue, newValue) {
       const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
 
       const {_baseObject: baseObject} = this;
       if (baseObject.entityStateChangedCallback) {
-        baseObject.entityStateChangedCallback.call(this, entityApi, oldValue, newValue);
+        baseObject.entityStateChangedCallback.call(this, entityApi, key, oldValue, newValue);
       }
     }
 

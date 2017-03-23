@@ -257,10 +257,8 @@ class ZPhysics {
               physicsBody.debugMesh = null;
 
               physicsBody.on('update', ({position, quaternion}) => {
-                entityElement.setState({
-                  position,
-                  quaternion,
-                });
+                entityElement.setState('position', position);
+                entityElement.setState('quaternion', quaternion);
               });
             },
             entityRemovedCallback(entityElement) {
@@ -288,12 +286,21 @@ class ZPhysics {
                 }
               }
             },
-            entityStateChangedCallback(entityElement, oldValue, newValue) {
-              const {position, quaternion} = newValue;
+            entityStateChangedCallback(entityElement, key, oldValue, newValue) {
               const entityObject = entityElement.getObject();
 
-              entityObject.position.copy(position);
-              entityObject.quaternion.copy(quaternion);
+              switch (key) {
+                case 'position': {
+                  entityObject.position.copy(newValue);
+
+                  break;
+                }
+                case 'quaternion': {
+                  entityObject.quaternion.copy(newValue);
+
+                  break;
+                }
+              }
             },
           };
           elements.registerComponent(this, spPhysicsComponent);
