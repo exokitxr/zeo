@@ -15,6 +15,9 @@ const zeoComponentElementConstructor = (() => {
         let entityApiComponentApi = {};
         entityApi = Object.create(entityElement, {
           // bind old methods
+          getAttribute: {
+            value: entityElement.getAttribute.bind(entityElement),
+          },
           setAttribute: {
             value: entityElement.setAttribute.bind(entityElement),
           },

@@ -131,29 +131,35 @@ class ZGrabbable {
               const {grabbable: globalGrabbable} = globalGrabState;
 
               if (!globalGrabbable) {
-                const {object} = this;
+                const {entityElement, object} = this;
                 const {parent: originalParent} = object;
+                const originalSpPhysics = entityElement.getAttribute('sp-physics');
 
                 const grabState = {
                   side,
                   originalParent,
+                  originalSpPhysics,
                 };
                 this.grabState = grabState;
 
                 const controllers = cyborg.getControllers();
                 const controller = controllers[side];
                 const {mesh: controllerMesh} = controller;
-                controllerMesh.add(object);
                 object.position.copy(zeroVector);
                 object.quaternion.copy(zeroQuaternion);
                 object.scale.copy(oneVector);
+                controllerMesh.add(object);
+
+                if (originalSpPhysics) {
+                  entityElement.setAttribute('sp-physics', JSON.stringify(false));
+                }
 
                 globalGrabState.grabbable = this;
               }
             }
 
             release() {
-              const {entityElement, object, grabState: {side, originalParent}} = this;
+              const {entityElement, object, grabState: {side, originalParent, originalSpPhysics}} = this;
 
               this.grabState = null;
 
@@ -182,6 +188,9 @@ class ZGrabbable {
               originalParent.add(object);
 
               entityElement.setAttribute('position', JSON.stringify(position.toArray().concat(rotation.toArray()).concat(scale.toArray())));
+              if (originalSpPhysics) {
+                entityElement.setAttribute('sp-physics', JSON.stringify(true));
+              }
 
               entityElement.dispatchEvent(releaseEvent);
             }
