@@ -133,11 +133,13 @@ class ZGrabbable {
               if (!globalGrabbable) {
                 const {entityElement, object} = this;
                 const {parent: originalParent} = object;
-                const originalSpPhysics = entityElement.getAttribute('sp-physics');
+                const originalPosition = entityElement.hasAttribute('sp-physics');
+                const originalSpPhysics = entityElement.hasAttribute('sp-physics');
 
                 const grabState = {
                   side,
                   originalParent,
+                  originalPosition,
                   originalSpPhysics,
                 };
                 this.grabState = grabState;
@@ -159,7 +161,7 @@ class ZGrabbable {
             }
 
             release() {
-              const {entityElement, object, grabState: {side, originalParent, originalSpPhysics}} = this;
+              const {entityElement, object, grabState: {side, originalParent, originalPosition, originalSpPhysics}} = this;
 
               this.grabState = null;
 
@@ -187,7 +189,9 @@ class ZGrabbable {
               object.scale.copy(scale);
               originalParent.add(object);
 
-              entityElement.setAttribute('position', JSON.stringify(position.toArray().concat(rotation.toArray()).concat(scale.toArray())));
+              if (originalPosition) {
+                entityElement.setAttribute('position', JSON.stringify(position.toArray().concat(rotation.toArray()).concat(scale.toArray())));
+              }
               if (originalSpPhysics) {
                 entityElement.setAttribute('sp-physics', JSON.stringify(true));
               }

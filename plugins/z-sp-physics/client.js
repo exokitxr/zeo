@@ -39,6 +39,8 @@ class ZPhysics {
             // shading: THREE.FlatShading,
           });
 
+          const oneVector = new THREE.Vector3(1, 1, 1);
+
           const _decomposeObjectMatrixWorld = object => {
             const {matrixWorld} = object;
             const position = new THREE.Vector3();
@@ -206,10 +208,12 @@ class ZPhysics {
 
                 const position = new THREE.Vector3(btOrigin.x(), btOrigin.y(), btOrigin.z());
                 const quaternion = new THREE.Quaternion(btRotation.x(), btRotation.y(), btRotation.z(), btRotation.w());
+                const scale = oneVector;
 
                 this.emit('update', {
                   position,
                   quaternion,
+                  scale,
                 });
               }
             }
@@ -256,9 +260,10 @@ class ZPhysics {
 
               physicsBody.debugMesh = null;
 
-              physicsBody.on('update', ({position, quaternion}) => {
+              physicsBody.on('update', ({position, quaternion, scale}) => {
                 entityElement.setState('position', position);
                 entityElement.setState('quaternion', quaternion);
+                entityElement.setState('scale', scale);
               });
             },
             entityRemovedCallback(entityElement) {
@@ -297,6 +302,11 @@ class ZPhysics {
                 }
                 case 'quaternion': {
                   entityObject.quaternion.copy(newValue);
+
+                  break;
+                }
+                case 'scale': {
+                  entityObject.scale.copy(newValue);
 
                   break;
                 }

@@ -24,6 +24,9 @@ const zeoComponentElementConstructor = (() => {
           removeAttribute: {
             value: entityElement.removeAttribute.bind(entityElement),
           },
+          hasAttribute: {
+            value: entityElement.hasAttribute.bind(entityElement),
+          },
           addEventListener: {
             value: entityElement.addEventListener.bind(entityElement),
           },
