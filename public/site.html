@@ -13,11 +13,13 @@
       position: relative;
       min-width: 1024px;
       min-height: 720px;
+      max-width: 100vw;
       margin: 0;
       background-color: #000;
       font-family: var(--fonts);
       color: #FFF;
       flex-direction: column;
+      overflow-x: hidden;
     }
     a {
       color: inherit;
@@ -39,11 +41,13 @@
       display: flex;
       position: sticky;
       top: 0;
+      width: 100vw;
       height: 80px;
       padding: 0 30px;
       // background-color: #000;
       background: linear-gradient(to left, #FF512F , #DD2476);
       align-items: center;
+      box-sizing: border-box;
       z-index: 1;
     }
     .header-left, .header-right {
@@ -67,6 +71,7 @@
       padding-top: 80px;
       padding-bottom: 100px; */
       flex-grow: 1;
+      flex-direction: column;
       // box-sizing: border-box;
     }
     .api-body {
@@ -164,7 +169,6 @@
       font-size: 17px;
     }
     .slide-wrap p {
-
       font-size: 12px;
     }
 
@@ -176,6 +180,10 @@
       flex-direction: column;
     }
 
+    .hub-iframe {
+      position: absolute;
+      top: 0;
+    }
     .hub-iframe, .hero {
       width: calc(100vw);
       height: calc(100vh - 80px);
@@ -183,10 +191,6 @@
     .hub-iframe, .docs-iframe {
       background-color: #FFF;
       border: 0;
-    }
-    .hub-iframe {
-      position: absolute;
-      top: 0;
     }
     .docs-iframe {
       width: 100vw;
@@ -1067,10 +1071,6 @@
           </div>
         </div>
       </div>
-      <div class=footer>
-        <div><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
-        <div>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></div>
-      </div>
     </aside> -->
     <iframe class=hub-iframe id=hub-iframe></iframe>
     <section class=hero>
@@ -1083,191 +1083,60 @@
         </div>
       </div>
     </section>
+    <section class=details>
+      <div class=details-wrapper id=demographics-details-2>
+        <h1>WebVR made easy. Everything is an NPM module. Multiplayer, server-side physics, controllers, and more.</h1>
+        <div class=details-card>
+          <div class=grid>
+            <div class=grid-item-wrap>
+              <div class="grid-item grid-item-1">
+                <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
+                <h4>Powered by npm.</h4>
+                <p>
+                  You know Javascript. Now meet Javascript face-to-face.<br/>
+                  Publish to NPM and experience your creations in your headset.<br/>
+                  The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
+                </p>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
+              </div>
+            </div>
+            <div class=grid-item-wrap>
+              <div class="grid-item grid-item-2">
+                <i class="icon octicon octicon-circuit-board"></i>
+                <h4>Persistent multiverse tech.</h4>
+                <p>
+                  World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
+                  We did the hard work so you don't have to.<br/>
+                </p>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
+              </div>
+            </div>
+            <div class=grid-item-wrap>
+              <div class="grid-item grid-item-3">
+                <i class="icon octicon octicon-mark-github"></i>
+                <h4>Open source. Or hosted.</h4>
+                <p>
+                  Run your own server or join us on the public Zeo Hub.<br/>
+                  Test it out with just your browser.<br/>
+                  And if you want us to host your world, we have a plan for that.<br/>
+                </p>
+                <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <footer class=footer>
+      <div><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
+      <div>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></div>
+    </footer>
   </div>
   <div class="body api-body" id=api-body style="display: none;">
     <iframe class=docs-iframe id=docs-iframe></iframe>
   </div>
-  <div class="body modules-body" id=modules-body style="display: none;">
-    <div class=module>
-      <img class=module-image />
-      <div class=header>
-        <div class=name>Module</div>
-        <div class=version>0.3.26</div>
-      </div>
-      <div class=description>This is a fake module for demonstration purposes</div>
-    </div>
-    <div class=module>
-      <img class=module-image />
-      <div class=header>
-        <div class=name>Module</div>
-        <div class=version>0.3.26</div>
-      </div>
-      <div class=description>This is a fake module for demonstration purposes</div>
-    </div>
-    <div class=module>
-      <img class=module-image />
-      <div class=header>
-        <div class=name>Module</div>
-        <div class=version>0.3.26</div>
-      </div>
-      <div class=description>This is a fake module for demonstration purposes</div>
-    </div>
-    <div class=module>
-      <img class=module-image />
-      <div class=header>
-        <div class=name>Module</div>
-        <div class=version>0.3.26</div>
-      </div>
-      <div class=description>This is a fake module for demonstration purposes</div>
-    </div>
-  </div>
-  <!-- <section class=details>
-    <div class=details-wrapper id=demographics-details-1>
-      <div class=details-card>
-        <div class=grid>
-          <div class=grid-item-wrap>
-            <div class="grid-item grid-item-1">
-              <img src="https://placehold.it/1280x300" class=screenshot />
-              <h4>In-browser VR worlds.</h4>
-              <p>
-                Build a whole new world by dragging and dropping plugins; literally.<br/>
-                Conjure planets, paint a picture, or DJ your favorite track; there's a plugin for that.<br/>
-                Do it together: multiplayer comes in the box. And it all runs in your browser, headset or not.<br/>
-              </p>
-              <a href="https://github.com/modulesio/zeo" class=grid-button>More about Zeo VR tech</a>
-            </div>
-          </div>
-          <div class=grid-item-wrap>
-            <div class="grid-item grid-item-2">
-              <i class="icon octicon octicon-telescope"></i>
-              <h4>Looking for adventure? We need adventurers!</h4>
-              <p>
-                Zeo Adventures are bite-sized experiences posted by your fellow VRnauts.<br>
-                Complete Adventures to earn Karma, which you can use to create your own adventures!<br>
-                Here are some adventures you missed out on:<br>
-              </p>
-              <div class=adventures>
-                <div class=adventures-wrapper>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>Scavenger hunt around the city</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>Build a log cabin</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>3D paint charades</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>DJ booth dance party</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>Phychoanalyse my picture</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>Scavenger hunt around the city</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>Build a log cabin</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>3D paint charades</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>DJ booth dance party</div>
-                    <div class=adventure-background></div>
-                  </div>
-                  <div class=adventure>
-                    <img src="https://placehold.it/300x100" />
-                    <div class=adventure-header>Phychoanalyse my picture</div>
-                    <div class=adventure-background></div>
-                  </div>
-                </div>
-                <div class=adventures-center-wrapper>
-                  <a href="https://github.com/modulesio/zeo" class=grid-button>Learn about Zeo Adventures</a>
-                </div>
-              </div>
-              <div class=adventures-placeholder></div>
-            </div>
-          </div>
-          <div class=grid-item-wrap>
-            <div class="grid-item grid-item-3">
-              <div class=icons>
-                <i class="icon octicon octicon-cloud-upload"></i>
-                <i class="icon octicon octicon-device-desktop"></i>
-                <img src="/assets/icons/google-cardboard-green.svg" class="icon" />
-              </div>
-              <h4>We'll hold the fort. Virtually.</h4>
-              <p>
-                Join us on Zeo Hub, the hosted version of Zeo.<br/>
-                Jack in with any WebVR-enabled web browser, headset or not. Do it now. It's free.<br/>
-                When you're ready to keep your stuff, upgrade to an <a href="#" class=link>Admin account</a>.<br/>
-              </p>
-              <a href="https://github.com/modulesio/zeo" class=grid-button>Sign up for Zeo Hub</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class=details-wrapper style="display: none;" id=demographics-details-2>
-      <h1>WebVR made easy. Everything is an NPM module. Multiplayer, server-side physics, controllers, and more.</h1>
-      <div class=details-card>
-        <div class=grid>
-          <div class=grid-item-wrap>
-            <div class="grid-item grid-item-1">
-              <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
-              <h4>Powered by npm.</h4>
-              <p>
-                You know Javascript. Now meet Javascript face-to-face.<br/>
-                Publish to NPM and experience your creations in your headset.<br/>
-                The API is plain THREE.js. There are <a href="https://github.com/modulesio/zeo" class=link>examples</a>.<br/>
-              </p>
-              <a href="https://github.com/modulesio/zeo" class=grid-button>Read API docs</a>
-            </div>
-          </div>
-          <div class=grid-item-wrap>
-            <div class="grid-item grid-item-2">
-              <i class="icon octicon octicon-circuit-board"></i>
-              <h4>Persistent multiverse tech.</h4>
-              <p>
-                World persistence, multiplayer networking, physics server, voice chat, plugin management. It's all in the box, and all Javascript.<br/>
-                We did the hard work so you don't have to.<br/>
-              </p>
-              <a href="https://github.com/modulesio/zeo" class=grid-button>See all features</a>
-            </div>
-          </div>
-          <div class=grid-item-wrap>
-            <div class="grid-item grid-item-3">
-              <i class="icon octicon octicon-mark-github"></i>
-              <h4>Open source. Or hosted.</h4>
-              <p>
-                Run your own server or join us on the public Zeo Hub.<br/>
-                Test it out with just your browser.<br/>
-                And if you want us to host your world, we have a plan for that.<br/>
-              </p>
-              <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class=details-wrapper style="display: none;" id=demographics-details-3>
+  <div class="body modules-body" id=modules-body style="display: none;"></div>
+  <!-- <div class=details-wrapper style="display: none;" id=demographics-details-3>
       <div class=faq>
         <div class=toc>
           <a class="toc-item selected">Zeo VR</a>
