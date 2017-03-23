@@ -1,0 +1,8 @@
+{
+  "name": "z-backpack",
+  "description": "Provides a back-mounted backpack for storing items.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}

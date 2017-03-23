@@ -1,0 +1,7 @@
+{
+  "name": "z-bag",
+  "description": "Provides a chest-mounted bag for storing items.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {}
+}
