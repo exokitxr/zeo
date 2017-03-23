@@ -8,10 +8,34 @@ const zeoComponentElementConstructor = (() => {
     }
 
     entityAddedCallback(entityElement) {
+      // per-entity properties
+      const {_bound: bound} = entityElement;
+      if (!bound) {
+        const entityApiState = {};
+        const boundComponents = [];
+
+        entityElement.getState = key => entityApiState[key];
+        entityElement.setState = (key, newValue) => {
+          const oldValue = (key in entityApiState) ? entityApiState[key] : null;
+
+          entityApiState[key] = newValue;
+
+          for (let i = 0; i < boundComponents.length; i++) {
+            const boundComponent = boundComponents[i];
+
+            boundComponent.entityStateChangedCallback(entityElement, key, oldValue, newValue);
+          }
+        };
+        entityElement.boundComponents = boundComponents;
+        entityElement._bound = true;
+      }
+      const {boundComponents} = entityElement;
+      boundComponents.push(this);
+
+      // per-component properties
       const {entityApis} = this;
       let entityApi = entityApis.get(entityElement);
       if (!entityApi) {
-        const entityApiState = {};
         let entityApiComponentApi = {};
         entityApi = Object.create(entityElement, {
           // bind old methods
@@ -49,18 +73,6 @@ const zeoComponentElementConstructor = (() => {
           getObject: {
             value: () => entityElement._object,
           },
-          getState: {
-            value: key => entityApiState[key],
-          },
-          setState: {
-            value: (key, newValue) => {
-              const oldValue = (key in entityApiState) ? entityApiState[key] : null;
-
-              entityApiState[key] = newValue;
-
-              this.entityStateChangedCallback(entityElement, key, oldValue, newValue);
-            },
-          },
           getData: {
             value: () => _jsonParse(entityElement.innerHTML),
           },
@@ -83,6 +95,9 @@ const zeoComponentElementConstructor = (() => {
       const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
       entityApis.delete(entityElement);
+
+      const {boundComponents} = entityElement;
+      boundComponents.splice(boundComponents.indexOf(this), 1);
 
       const {_baseObject: baseObject} = this;
       if (baseObject.entityRemovedCallback) {

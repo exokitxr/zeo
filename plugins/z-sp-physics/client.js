@@ -104,6 +104,8 @@ class ZPhysics {
 
               this.enabled = false;
               this.size = null;
+              this.linearVelocity = null;
+              this.angularVelocity = null;
               this.debug = false;
 
               this.body = null;
@@ -127,6 +129,24 @@ class ZPhysics {
               this.debug = newValue;
 
               this.renderDebug();
+            }
+
+            setLinearVelocity(linearVelocity) {
+              this.linearVelocity = linearVelocity;
+
+              const {body} = this;
+              if (body) {
+                body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+              }
+            }
+
+            setAngularVelocity(angularVelocity) {
+              this.angularVelocity = angularVelocity;
+
+              const {body} = this;
+              if (body) {
+                body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+              }
             }
 
             render() {
@@ -165,6 +185,14 @@ class ZPhysics {
                   const myMotionState = new Ammo.btDefaultMotionState(startTransform);
                   const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
                   const body = new Ammo.btRigidBody(rbInfo);
+
+                  const {linearVelocity, angularVelocity} = this;
+                  if (linearVelocity) {
+                    body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+                  }
+                  if (angularVelocity) {
+                    body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+                  }
 
                   dynamicsWorld.addRigidBody(body);
 
@@ -265,6 +293,20 @@ class ZPhysics {
                 entityElement.setState('quaternion', quaternion);
                 entityElement.setState('scale', scale);
               });
+
+              const _release = e => {
+                const {detail: {linearVelocity, angularVelocity}} = e;
+
+                physicsBody.setLinearVelocity(linearVelocity);
+                physicsBody.setAngularVelocity(angularVelocity);
+              };
+              entityElement.addEventListener('release', _release);
+
+              physicsBody.destroy = (destroy => () => {
+                destroy();
+
+                entityElement.removeEventListener('release', _release);
+              })(physicsBody.destroy.bind(physicsBody));
             },
             entityRemovedCallback(entityElement) {
               const physicsBody = entityElement.getComponentApi();
