@@ -1,35 +1,35 @@
+const numSlices = 8;
+const layerSpecs = [
+  {
+    color: 0x333333,
+  },
+  {
+    color: 0xFFFFFF,
+  },
+  {
+    color: 0x333333,
+  },
+  {
+    color: 0xFFFFFF,
+  },
+  {
+    color: 0x333333,
+  },
+];
+const numLayers = layerSpecs.length;
+const layerSize = 0.2;
+const layerHeight = 0.03;
+
 function CakeModel({
   THREE,
   slices = 0,
 }) {
   const object = new THREE.Object3D();
 
-  const numSlices = 8;
-
-  const layerSpecs = [
-    {
-      color: 0x333333,
-    },
-    {
-      color: 0xFFFFFF,
-    },
-    {
-      color: 0x333333,
-    },
-    {
-      color: 0xFFFFFF,
-    },
-    {
-      color: 0x333333,
-    },
-  ];
-  const layerSize = 0.2;
-  const layerHeight = 0.03;
-
   const layersMesh = (() => {
     const object = new THREE.Object3D();
 
-    for (let i = 0; i < layerSpecs.length; i++) {
+    for (let i = 0; i < numLayers; i++) {
       const layerSpec = layerSpecs[i];
       const {color} = layerSpec;
       
@@ -85,5 +85,11 @@ function CakeModel({
 
   return object;
 }
+
+CakeModel.numSlices = numSlices;
+CakeModel.layerSpecs = layerSpecs;
+CakeModel.numLayers = numLayers;
+CakeModel.layerSize = layerSize;
+CakeModel.layerHeight = layerHeight;
 
 module.exports = CakeModel;

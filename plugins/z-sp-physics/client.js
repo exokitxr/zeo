@@ -115,7 +115,7 @@ class ZPhysics {
             }
 
             setSize(newValue) {
-              this.size = newValue.map(v => v * 0.5);;
+              this.size = newValue;
 
               this.render();
               this.renderDebug();
@@ -145,7 +145,8 @@ class ZPhysics {
                   const boundingBox = new THREE.Box3()
                     .setFromObject(object);
 
-                  const colShape = new Ammo.btBoxShape(new Ammo.btVector3(size[0], size[1], size[2]));
+                  const halfSize = size.map(v => v * 0.5);
+                  const colShape = new Ammo.btBoxShape(new Ammo.btVector3(halfSize[0], halfSize[1], halfSize[2]));
                   const startTransform = new Ammo.btTransform();
                   startTransform.setIdentity();
                   startTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
@@ -239,7 +240,7 @@ class ZPhysics {
                 type: 'vector',
                 value: [1, 1, 1],
                 min: 0.1,
-                max: 4,
+                max: 1,
                 step: 0.1,
               },
               'physics-debug': {

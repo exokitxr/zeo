@@ -6,6 +6,11 @@ const DEFAULT_MATRIX = [
   0, 0, 0, 1,
   1, 1, 1,
 ];
+const DEFAULT_SIZE = [
+  CakeModel.layerSize * 2,
+  CakeModel.numLayers * CakeModel.layerHeight,
+  CakeModel.layerSize * 2,
+];
 
 const SIDES = ['left', 'right'];
 
@@ -60,6 +65,8 @@ class ZCake {
                   sliceCakeEntity.setAttribute('slices', JSON.stringify(1));
                   sliceCakeEntity.setAttribute('grabbable', JSON.stringify(true));
                   sliceCakeEntity.setAttribute('holdable', JSON.stringify(true));
+                  sliceCakeEntity.setAttribute('sp-physics', JSON.stringify(true));
+                  sliceCakeEntity.setAttribute('size', JSON.stringify(DEFAULT_SIZE));
                   elements.getEntitiesElement().appendChild(sliceCakeEntity);
 
                   render.once('mutate', () => {
@@ -168,6 +175,14 @@ class ZCake {
                 type: 'checkbox',
                 value: false,
               },
+              'sp-physics': {
+                type: 'checkbox',
+                value: true,
+              },
+              size: {
+                type: 'vector',
+                value: DEFAULT_SIZE,
+              },
             },
             entityAddedCallback(entityElement) {
               const cake = new Cake(entityElement, entityElement.getObject());
@@ -210,7 +225,7 @@ class ZCake {
                   break;
                 }
               }
-            }
+            },
           };
           elements.registerComponent(this, cakeComponent);
 
