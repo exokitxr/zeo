@@ -25,8 +25,6 @@ class Multiplayer {
         '/core/engines/login',
         '/core/engines/servers',
         '/core/engines/rend',
-        '/core/engines/bag',
-        '/core/engines/backpack',
         '/core/plugins/js-utils',
       ]).then(([
         bootstrap,
@@ -35,8 +33,6 @@ class Multiplayer {
         login,
         servers,
         rend,
-        bag,
-        backpack,
         jsUtils,
       ]) => {
         if (live) {
@@ -160,14 +156,6 @@ class Multiplayer {
                 object.add(controllers.right);
                 object.controllers = controllers;
 
-                const bagMesh = bag.makeBagMesh();
-                object.add(bagMesh);
-                object.bagMesh = bagMesh;
-
-                const backpackMesh = backpack.makeBackpackMesh();
-                object.add(backpackMesh);
-                object.backpackMesh = backpackMesh;
-
                 _updateRemotePlayerMesh(object, status);
 
                 return object;
@@ -194,19 +182,9 @@ class Multiplayer {
                   rightController.position.fromArray(rightControllerStatus.position);
                   rightController.quaternion.fromArray(rightControllerStatus.rotation);
                 };
-                const _updateBagMesh = () => {
-                  const {hmd: hmdStatus} = status;
-
-                  const {bagMesh} = remotePlayerMesh;
-
-                  bagMesh.position.fromArray(hmdStatus.position);
-                  const hmdRotation = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(hmdStatus.rotation), camera.rotation.order);
-                  bagMesh.rotation.y = hmdRotation.y;
-                };
 
                 _updateHmd();
                 _updateControllers();
-                _updateBagMesh();
               };
 
               const playerStatuses = multiplayerApi.getPlayerStatuses();
