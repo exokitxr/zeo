@@ -1,4 +1,4 @@
-const FPS = 60;
+const FPS = 90;
 const RESOLUTION = 4;
 const STEP_SECONDS = 1 / FPS;
 const STEP_MILLISECONDS = 1000 / FPS;
