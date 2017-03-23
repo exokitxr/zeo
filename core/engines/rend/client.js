@@ -129,7 +129,6 @@ class Rend {
 
         // main state
         const auxObjects = {
-          bagMesh: null,
           tagMeshes: null,
         };
 
@@ -464,33 +463,11 @@ class Rend {
                   const factor = animation.getValue();
                   const value = ((1 - factor) * startValue) + (factor * endValue);
 
-                  const {bagMesh: {headMesh, bodyMesh, armMeshes}, tagMeshes} = auxObjects;
-                  const animatedMeshSpecs = [
-                    {
-                      mesh: menuMesh,
-                      direction: 'y',
-                    },
-                    {
-                      mesh: keyboardMesh,
-                      direction: 'x',
-                    },
-                    {
-                      mesh: headMesh,
-                      direction: 'x',
-                    },
-                    {
-                      mesh: bodyMesh,
-                      direction: 'x',
-                    },
-                  ]
-                    .concat(armMeshes.map(armMesh => ({
-                      mesh: armMesh,
-                      direction: 'x',
-                    })))
-                    .concat(tagMeshes.map(tagMesh => ({
-                      mesh: tagMesh,
-                      direction: 'y',
-                    })));
+                  const {tagMeshes} = auxObjects;
+                  const animatedMeshSpecs = tagMeshes.map(tagMesh => ({
+                    mesh: tagMesh,
+                    direction: 'y',
+                  }));
 
                   if (factor < 1) {
                     if (value > 0.001) {
