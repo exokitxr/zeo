@@ -186,7 +186,7 @@
     }
     .hub-iframe, .hero {
       width: calc(100vw);
-      height: calc(100vh - 80px);
+      height: calc(100vh - 80px - 200px);
     }
     .hub-iframe, .docs-iframe {
       background-color: #FFF;
@@ -578,7 +578,6 @@
       border-color: #E91E63 transparent transparent transparent;
     }
     .demographics > navbar > a.green.selected, .demographics > navbar > a:hover {
-      background-color: rgba(0, 0, 0, 0.1);
       border-bottom-color: #03A9F4;
     }
     .demographics > navbar > a.green.selected {
@@ -735,10 +734,18 @@
       position: relative;
       width: 100%;
       justify-content: center;
-      background-image: linear-gradient(to left, #000000 , #222);
+      background-color : #3F51B5;
     }
-    .grid-item-wrap:nth-child(even) {
-       background-image: linear-gradient(to right, #000000 , #222);
+    .grid-item-wrap:nth-child(1) {
+      background-color : #3F51B5;
+    }
+    .grid-item-wrap:nth-child(2) {
+      background-image: linear-gradient(to right, #000000 , #222);
+    }
+    .grid-item-wrap:nth-child(3) {
+      border-top: 1px solid #000;
+      background-image: linear-gradient(to right, #000000 , #222);
+      // background-image: linear-gradient(to left, #000000 , #222);
     }
     .grid-item {
       display: flex;
@@ -760,9 +767,14 @@
       display: flex;
       width: 200px;
       height: 120px;
-      font-size: 100px;
+      font-size: 50px;
+      font-weight: 300;
       justify-content: center;
       align-items: center;
+    }
+    .grid-item .icon.small {
+      width: 50px;
+      height: 50px;
     }
     .grid-item-1 .icon {
     }
@@ -1006,6 +1018,7 @@
         <a href="/" class="green selected" id=nav-button-1>Try it</a>
         <a href="/docs" class=green id=nav-button-2>API Docs</a>
         <a href="/modules" class=green id=nav-button-3>Modules</a>
+        <a href="/servers" class=green id=nav-button-4>Servers</a>
       </navbar>
     </div>
     <div class=header-right>
@@ -1083,14 +1096,27 @@
         </div>
       </div>
     </section>
+    <!-- <section class=details>
+      <div class="grid-item grid-item-1">
+        <div class=icons>
+          <img src="/img/chevron-double-down.svg" class="icon small">
+        </div>
+      </div>
+    </section> -->
     <section class=details>
       <div class=details-wrapper id=demographics-details-2>
-        <h1>WebVR made easy. Everything is an NPM module. Multiplayer, server-side physics, controllers, and more.</h1>
         <div class=details-card>
           <div class=grid>
             <div class=grid-item-wrap>
               <div class="grid-item grid-item-1">
-                <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
+                <div class=icons>
+                  <img src="/img/chevron-double-down.svg" class="icon small">
+                </div>
+                <div class=icons>
+                  <img src="https://cdn.rawgit.com/npm/logos/ebb99a82/%22npm%22%20lockup/npm-logo-simplifed-with-white-space.png" class=icon>
+                  <div class=icon>three.js</div>
+                  <div class=icon>WebVR</div>
+                </div>
                 <h4>Powered by npm.</h4>
                 <p>
                   You know Javascript. Now meet Javascript face-to-face.<br/>
@@ -1452,7 +1478,8 @@ const modulesBody = $('#modules-body')[0];
 const navButton1 = $('#nav-button-1')[0];
 const navButton2 = $('#nav-button-2')[0];
 const navButton3 = $('#nav-button-3')[0];
-const navButtons = [navButton1, navButton2, navButton3];
+const navButton4 = $('#nav-button-4')[0];
+const navButtons = [navButton1, navButton2, navButton3, navButton4];
 const hubIframe = $('#hub-iframe')[0];
 const docsIframe = $('#docs-iframe')[0];
 
