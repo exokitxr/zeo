@@ -1,0 +1,8 @@
+{
+  "name": "z-sp-physics",
+  "description": "Provides single-player phyiscs.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {}
+}

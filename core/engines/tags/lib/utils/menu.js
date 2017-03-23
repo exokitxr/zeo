@@ -2,20 +2,72 @@ const makeUtils = ({fs}) => {
 
 const zeoComponentElementClasses = new Map();
 const zeoComponentElementConstructor = (() => {
-  const entityApis = new Map();
-
   class ZeoComponentElement extends HTMLElement {
+    createdCallback() {
+      this.entityApis = new Map();
+    }
+
     entityAddedCallback(entityElement) {
+      // per-entity properties
+      const {_bound: bound} = entityElement;
+      if (!bound) {
+        const entityApiState = {};
+        const boundComponents = [];
+
+        entityElement.getState = key => entityApiState[key];
+        entityElement.setState = (key, newValue) => {
+          const oldValue = (key in entityApiState) ? entityApiState[key] : null;
+
+          entityApiState[key] = newValue;
+
+          for (let i = 0; i < boundComponents.length; i++) {
+            const boundComponent = boundComponents[i];
+
+            boundComponent.entityStateChangedCallback(entityElement, key, oldValue, newValue);
+          }
+        };
+        entityElement.boundComponents = boundComponents;
+        entityElement._bound = true;
+      }
+      const {boundComponents} = entityElement;
+      boundComponents.push(this);
+
+      // per-component properties
+      const {entityApis} = this;
       let entityApi = entityApis.get(entityElement);
       if (!entityApi) {
-        let entityApiData = {};
+        let entityApiComponentApi = {};
         entityApi = Object.create(entityElement, {
+          // bind old methods
+          getAttribute: {
+            value: entityElement.getAttribute.bind(entityElement),
+          },
+          setAttribute: {
+            value: entityElement.setAttribute.bind(entityElement),
+          },
+          removeAttribute: {
+            value: entityElement.removeAttribute.bind(entityElement),
+          },
+          hasAttribute: {
+            value: entityElement.hasAttribute.bind(entityElement),
+          },
+          addEventListener: {
+            value: entityElement.addEventListener.bind(entityElement),
+          },
+          removeEventListener: {
+            value: entityElement.removeEventListener.bind(entityElement),
+          },
+          dispatchEvent: {
+            value: entityElement.dispatchEvent.bind(entityElement),
+          },
+
+          // extensions
           getComponentApi: {
-            value: () => entityApiData,
+            value: () => entityApiComponentApi,
           },
           setComponentApi: {
-            value: newEntityApiData => {
-              entityApiData = newEntityApiData;
+            value: newEntityApiComponentApi => {
+              entityApiComponentApi = newEntityApiComponentApi;
             },
           },
           getObject: {
@@ -40,8 +92,12 @@ const zeoComponentElementConstructor = (() => {
     }
 
     entityRemovedCallback(entityElement) {
+      const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
       entityApis.delete(entityElement);
+
+      const {boundComponents} = entityElement;
+      boundComponents.splice(boundComponents.indexOf(this), 1);
 
       const {_baseObject: baseObject} = this;
       if (baseObject.entityRemovedCallback) {
@@ -50,6 +106,7 @@ const zeoComponentElementConstructor = (() => {
     }
 
     entityAttributeValueChangedCallback(entityElement, attribute, oldValue, newValue) {
+      const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
 
       const {_baseObject: baseObject} = this;
@@ -58,7 +115,18 @@ const zeoComponentElementConstructor = (() => {
       }
     }
 
+    entityStateChangedCallback(entityElement, key, oldValue, newValue) {
+      const {entityApis} = this;
+      const entityApi = entityApis.get(entityElement);
+
+      const {_baseObject: baseObject} = this;
+      if (baseObject.entityStateChangedCallback) {
+        baseObject.entityStateChangedCallback.call(this, entityApi, key, oldValue, newValue);
+      }
+    }
+
     entityDataChangedCallback(entityElement, oldValue, newValue) {
+      const {entityApis} = this;
       const entityApi = entityApis.get(entityElement);
 
       const {_baseObject: baseObject} = this;
@@ -80,6 +148,9 @@ const makeZeoComponentElement = ({baseObject}) => {
 const castValueStringToValue = (s, type, min, max, step, options) => {
   switch (type) {
     case 'matrix': {
+      return _jsonParse(s);
+    }
+    case 'vector': {
       return _jsonParse(s);
     }
     case 'text': {
@@ -183,6 +254,14 @@ const _jsonParse = s => {
   } else {
     return undefined;
   }
+};
+const _shallowClone = o => {
+  const result = {};
+  for (const k in o) {
+    const v = o[k];
+    result[k] = v;
+  }
+  return result;
 };
 
 return {

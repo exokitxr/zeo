@@ -306,11 +306,6 @@ class World {
               tagMeshes[id] = tagMesh;
 
               scene.add(tagMesh);
-
-              const {type} = item;
-              if (type === 'entity') {
-                tags.reifyEntity(tagMesh);
-              }
             }
 
             remove(tagMesh) {
@@ -320,15 +315,6 @@ class World {
               delete tagMeshes[id];
 
               tagMesh.parent.remove(tagMesh);
-
-              const {instance} = item;
-              if (instance) {
-                const {type} = item;
-                
-                if (type === 'entity') {
-                  tags.unreifyEntity(tagMesh);
-                }
-              }
             }
           }
           const elementManager = new ElementManager();
@@ -432,21 +418,11 @@ class World {
 
             set(index, tagMesh) {
               this.tagMeshes[index] = tagMesh;
-
-              const {item: {type}} = tagMesh;
-              if (type === 'entity') {
-                tags.reifyEntity(tagMesh);
-              }
             }
 
             unset(index) {
               const tagMesh = this.tagMeshes[index];
               this.tagMeshes[index] = null;
-
-              const {item: {type}} = tagMesh;
-              if (type === 'entity') {
-                tags.unreifyEntity(tagMesh);
-              }
             }
 
             move(oldIndex, newIndex) {
@@ -629,8 +605,8 @@ class World {
             };
             requestHandlers.set(id, requestHandler);
           };
-          const _addTag = (itemSpec, dst) => {
-            _handleAddTag(localUserId, itemSpec, dst);
+          const _addTag = (itemSpec, dst, {element = null} = {}) => {
+            _handleAddTag(localUserId, itemSpec, dst, {element});
 
             _request('addTag', [localUserId, itemSpec, dst], _warnError);
           };
@@ -645,16 +621,23 @@ class World {
             _request('moveTag', [localUserId, src, dst], _warnError);
           };
 
-          const _handleAddTag = (userId, itemSpec, dst) => {
+          const _handleAddTag = (userId, itemSpec, dst, {element = null} = {}) => {
             const isMe = userId === localUserId;
 
             let match;
             if (dst === 'world') {
               const tagMesh = tags.makeTag(itemSpec);
+              if (element) { // manually added
+                const {item} = tagMesh;
+                element.item = item;
+                item.instance = element;
+              }
 
               const {item: {type}} = tagMesh;
               if (type === 'module') {
                 tags.reifyModule(tagMesh);
+              } else if (type === 'entity') {
+                tags.reifyEntity(tagMesh);
               }
 
               elementManager.add(tagMesh);
@@ -662,10 +645,17 @@ class World {
               const side = match[1];
 
               const tagMesh = tags.makeTag(itemSpec);
+              if (element) { // manually added
+                const {item} = tagMesh;
+                element.item = item;
+                item.instance = element;
+              }
 
               const {item: {type}} = tagMesh;
               if (type === 'module') {
                 tags.reifyModule(tagMesh);
+              } else if (type === 'entity') {
+                tags.reifyEntity(tagMesh);
               }
 
               const userGrabManager = isMe ? grabManager : remoteGrabManager.getManager(userId);
@@ -747,6 +737,8 @@ class World {
               const {item: {type}} = tagMesh;
               if (type === 'module') {
                 tags.unreifyModule(tagMesh);
+              } else if (type === 'entity') {
+                tags.unreifyEntity(tagMesh);
               }
 
               elementManager.remove(tagMesh);
@@ -761,6 +753,8 @@ class World {
               const {item: {type}} = tagMesh;
               if (type === 'module') {
                 tags.unreifyModule(tagMesh);
+              } else if (type === 'entity') {
+                tags.unreifyEntity(tagMesh);
               }
 
               elementManager.remove(tagMesh);
@@ -805,11 +799,6 @@ class World {
                 tagMesh.position.copy(controllerMeshOffset);
                 tagMesh.quaternion.copy(controllerMeshQuaternion);
                 tagMesh.scale.copy(oneVector)
-
-                const {item: {type}} = tagMesh;
-                if (type === 'entity') {
-                  tags.unreifyEntity(tagMesh);
-                }
               } else {
                 console.warn('invalid move tag arguments', {src, dst});
               }
@@ -2113,7 +2102,9 @@ class World {
 
             _grabInventoryTagMesh() || _grabEquipmentTagMesh() || _grabEquipmentMesh() || _grabWorldTagMesh() || _startHighlight();
           };
-          input.on('gripdown', _gripdown);
+          input.on('gripdown', _gripdown, {
+            priority: -1,
+          });
 
           const _endHighlight = side => {
             const highlightState = highlightStates[side];
@@ -2222,7 +2213,9 @@ class World {
 
             _endHighlight(side);
           };
-          input.on('gripup', _gripup);
+          input.on('gripup', _gripup, {
+            priority: -1,
+          });
 
           const _keydown = e => {
             const tab = rend.getTab();
@@ -2302,18 +2295,19 @@ class World {
             _removeTag(src);
           };
           tags.on('mutateRemoveModule', _mutateRemoveModule);
-          const _mutateAddEntity = ({element, attributes}) => {
+          const _mutateAddEntity = ({element, tagName, attributes}) => {
             const itemSpec = {
               type: 'entity',
               id: _makeId(),
               name: 'Manual entity',
               displayName: 'Manual entity',
               version: '0.0.1',
+              tagName: tagName,
               attributes: attributes,
               matrix: DEFAULT_MATRIX,
               metadata: {},
             };
-            _addTag(itemSpec, 'world');
+            _addTag(itemSpec, 'world', {element});
           };
           tags.on('mutateAddEntity', _mutateAddEntity);
           const _mutateRemoveEntity = ({id}) => {

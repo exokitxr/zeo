@@ -18,6 +18,7 @@ import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
 
 const SIDES = ['left', 'right'];
+const AXES = ['x', 'y', 'z'];
 
 const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
@@ -302,6 +303,8 @@ class Tags {
                 }
               }
             }
+
+            tagsApi.emit('mutate');
           });
           rootModulesObserver.observe(rootModulesElement, {
             childList: true,
@@ -309,6 +312,33 @@ class Tags {
             subtree: true,
             attributeOldValue: true,
           });
+
+          const _addEntityCallback = (componentElement, entityElement) => {
+            let {_numComponents: numComponents = 0} = entityElement;
+            numComponents++;
+            entityElement._numComponents = numComponents;
+
+            if (numComponents === 1) {
+              const object = new THREE.Object3D();
+              scene.add(object);
+              entityElement._object = object;
+            }
+
+            componentElement.entityAddedCallback(entityElement);
+          };
+          const _removeEntityCallback = (componentElement, entityElement) => {
+            let {_numComponents: numComponents = 0} = entityElement;
+            numComponents--;
+            entityElement._numComponents = numComponents;
+
+            if (numComponents === 0) {
+              const {_object: oldObject} = entityElement;
+              scene.remove(oldObject);
+              entityElement._object = null;
+            }
+
+            componentElement.entityRemovedCallback(entityElement);
+          };
 
           const rootComponentsElement = document.createElement('components');
           // rootWorldElement.appendChild(rootComponentsElement);
@@ -333,7 +363,7 @@ class Tags {
                     const {item: entityItem} = tagMesh;
                     const {instance: entityElement} = entityItem;
 
-                    componentElement.entityAddedCallback(entityElement);
+                    _addEntityCallback(componentElement, entityElement);
 
                     for (let l = 0; l < matchingAttributes.length; l++) {
                       const matchingAttribute = matchingAttributes[l];
@@ -363,12 +393,14 @@ class Tags {
                     const {item: entityItem} = tagMesh;
                     const {instance: entityElement} = entityItem;
 
-                    componentElement.entityRemovedCallback(entityElement);
+                    _removeEntityCallback(componentElement, entityElement);
                   }
                 }
               // } else if (type === 'attributes') {
               }
             }
+
+            tagsApi.emit('mutate');
           });
           rootComponentsObserver.observe(rootComponentsElement, {
             childList: true,
@@ -425,8 +457,10 @@ class Tags {
                     const {item: initialEntityItem} = entityElement;
                     const entityAttributes = _getElementJsonAttributes(entityElement);
                     if (!initialEntityItem) { // element added manually
+                      const tagName = entityElement.tagName.toLowerCase();
                       tagsApi.emit('mutateAddEntity', {
                         element: entityElement,
+                        tagName: tagName,
                         attributes: entityAttributes,
                       });
                     }
@@ -439,7 +473,7 @@ class Tags {
                       const {componentApi} = componentElement;
                       const {attributes: componentAttributes = {}} = componentApi;
 
-                      componentElement.entityAddedCallback(entityElement);
+                      _addEntityCallback(componentElement, entityElement);
 
                       for (let l = 0; l < matchingAttributes.length; l++) {
                         const matchingAttribute = matchingAttributes[l];
@@ -501,7 +535,7 @@ class Tags {
                       const boundComponentSpec = boundComponentSpecs[l];
                       const {componentElement} = boundComponentSpec;
 
-                      componentElement.entityRemovedCallback(entityElement);
+                      _removeEntityCallback(componentElement, entityElement);
                     }
                   } else if (removedNode.nodeType === Node.TEXT_NODE) {
                     const {target: entityElement} = mutation;
@@ -575,14 +609,14 @@ class Tags {
 
                       if (newValueString !== null) { // adding attribute
                         if (!oldElementMatches && newElementMatches) { // if no matching attributes were previously applied, mount the component on the entity
-                          componentElement.entityAddedCallback(entityElement);
+                          _addEntityCallback(componentElement, entityElement);
                         }
                         if (newElementMatches) {
                           componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                         }
                       } else { // removing attribute
                         if (oldElementMatches && !newElementMatches) { // if this is the last attribute that applied, unmount the component from the entity
-                          componentElement.entityRemovedCallback(entityElement);
+                          _removeEntityCallback(componentElement, entityElement);
                         } else {
                           componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                         }
@@ -620,6 +654,8 @@ class Tags {
                 }
               }
             }
+
+            tagsApi.emit('mutate');
           });
           rootEntitiesObserver.observe(rootEntitiesElement, {
             childList: true,
@@ -1221,11 +1257,12 @@ class Tags {
                 const onclick = (anchor && anchor.onclick) || '';
 
                 let match;
-                if (match = onclick.match(/^attribute:(.+?):(.+?):(position|focus|set|tweak|toggle|choose)(?::(.+?))?$/)) {
+                if (match = onclick.match(/^attribute:([^:]+):([^:]+)(?::([^:]+))?:(position|focus|set|tweak|toggle|choose)(?::([^:]+))?$/)) {
                   const tagId = match[1];
                   const attributeName = match[2];
-                  const action = match[3];
-                  const value = match[4];
+                  const key = match[3];
+                  const action = match[4];
+                  const value = match[5];
 
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === tagId);
                   const {item} = tagMesh;
@@ -1284,26 +1321,51 @@ class Tags {
 
                     // _updateAttributes();
                   } else if (action === 'tweak') {
-                    const newValue = (() => {
-                      const {value} = hoverState;
-                      const {min, max, step} = _getAttributeSpec(attributeName);
+                    const {type} = _getAttributeSpec(attributeName);
 
-                      let n = min + (value * (max - min));
-                      if (step > 0) {
-                        n = Math.round(n / step) * step;
-                      }
-                      return n;
-                    })();
+                    if (type === 'number') {
+                      const newValue = (() => {
+                        const {value} = hoverState;
+                        const {min, max, step} = _getAttributeSpec(attributeName);
 
-                    focusState.type = '';
+                        let n = min + (value * (max - min));
+                        if (step > 0) {
+                          n = _roundToDecimals(Math.round(n / step) * step, 8);
+                        }
+                        return n;
+                      })();
 
-                    tagsApi.emit('setAttribute', {
-                      id: tagId,
-                      name: attributeName,
-                      value: newValue,
-                    });
+                      focusState.type = '';
 
-                    // _updateAttributes();
+                      tagsApi.emit('setAttribute', {
+                        id: tagId,
+                        name: attributeName,
+                        value: newValue,
+                      });
+
+                      // _updateAttributes();
+                    } else if (type ==='vector') {
+                      const newKeyValue = (() => {
+                        const {value} = hoverState;
+                        const {min, max, step} = _getAttributeSpec(attributeName);
+
+                        let n = min + (value * (max - min));
+                        if (step > 0) {
+                          n = _roundToDecimals(Math.round(n / step) * step, 8);
+                        }
+                        return n;
+                      })();
+                      const newValue = attributeValue.slice();
+                      newValue[AXES.indexOf(key)] = newKeyValue;
+
+                      focusState.type = '';
+
+                      tagsApi.emit('setAttribute', {
+                        id: tagId,
+                        name: attributeName,
+                        value: newValue,
+                      });
+                    }
                   } else if (action === 'toggle') {
                     const newValue = !attributeValue;
 
@@ -2130,7 +2192,7 @@ class Tags {
               const {item} = tagMesh;
               const {type} = item;
 
-              if (type === 'entity' && !(item.metadata && item.metadata.isStatic)) {
+              if (type === 'entity' && !(item.metadata && item.metadata.isStatic) && item.instance) {
                 const {instance: entityElement} = item;
 
                 if (entityElement.webkitMatchesSelector(componentSelector)) {
@@ -2547,9 +2609,6 @@ class Tags {
               if (!instance) {
                 const {tagName: entityTagName, attributes: entityAttributes, data: entityData} = item;
                 const entityElement = document.createElement(entityTagName);
-                const object = new THREE.Object3D();
-                scene.add(object);
-                entityElement._object = object;
 
                 for (const attributeName in entityAttributes) {
                   const attribute = entityAttributes[attributeName];
@@ -2577,9 +2636,6 @@ class Tags {
 
                 entityElement.item = null;
                 item.instance = null;
-
-                const {_object: object} = entityElement;
-                scene.remove(object);
 
                 const {parentNode} = entityElement;
                 if (parentNode) {
@@ -2668,12 +2724,22 @@ class Tags {
               return rootWorldElement;
             }
 
+            getModulesElement() {
+              return rootModulesElement;
+            }
+
+            getEntitiesElement() {
+              return rootEntitiesElement;
+            }
+
             getTagComponentApis(tag) {
               return tagComponentApis[tag];
             }
 
             getPointedTagMesh(side) {
-              return hoverStates[side].metadata;
+              const hoverState = hoverStates[side];
+              const {metadata} = hoverState;
+              return metadata ? metadata.tagMesh : null;
             }
 
             message(detail) {
@@ -2731,5 +2797,6 @@ const _shallowClone = o => {
   return result;
 };
 const _makeId = () => Math.random().toString(36).substring(7);
+const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Tags;
