@@ -41,7 +41,8 @@
       top: 0;
       height: 80px;
       padding: 0 30px;
-      background-color: #000;
+      // background-color: #000;
+      background: linear-gradient(to left, #FF512F , #DD2476);
       align-items: center;
       z-index: 1;
     }
@@ -176,7 +177,7 @@
     }
 
     .hub-iframe, .hero {
-      width: calc(100vw - 250px);
+      width: calc(100vw);
       height: calc(100vh - 80px);
     }
     .hub-iframe, .docs-iframe {
@@ -186,7 +187,6 @@
     .hub-iframe {
       position: absolute;
       top: 0;
-      left: 250px;
     }
     .docs-iframe {
       width: 100vw;
@@ -353,43 +353,6 @@
       font-size: 13px;
     }
 
-    .logged-in header {
-      background-color: #333;
-    }
-    .logged-in header > .header-github-anchor {
-      display: none;
-    }
-    body:not(.logged-in) header > .header-login-bar {
-      display: none;
-    }
-    .signing-up .header-details {
-      display: flex;
-      padding: 30px 0;
-      background-color: #333;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .header-details {
-      display: none;
-      position: absolute;
-      top: 80px;
-      left: 0;
-      right: 0;
-      justify-content: center;
-      z-index: 3;
-    }
-    .signing-up .signing-up-overlay {
-      display: block;
-    }
-    .signing-up-overlay {
-      display: none;
-      background-color: rgba(0, 0, 0, 0.9);
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 2;
-    }
     .details-wrap {}
     .details-wrap h4 {
       margin-left: 115px;
@@ -611,8 +574,11 @@
       border-color: #E91E63 transparent transparent transparent;
     }
     .demographics > navbar > a.green.selected, .demographics > navbar > a:hover {
-      color: #4CAF50;
-      border-bottom-color: #4CAF50;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-bottom-color: #03A9F4;
+    }
+    .demographics > navbar > a.green.selected {
+      background-color: #000;
     }
     .demographics > navbar > a.green.selected::after {
       border-color: #4CAF50 transparent transparent transparent;
@@ -675,133 +641,6 @@
       font-size: 14px;
       line-height: 1.6;
     }
-    .sign-up-form {
-      display: flex;
-      width: 640px;
-      margin: 20px auto;
-      padding: 20px;
-      border: 1px solid #222;
-      border-radius: 5px;
-      box-sizing: border-box;
-    }
-    .sign-up-form input[type=email], .sign-up-form input[type=password] {
-      width: 230px;
-      margin-bottom: 15px;
-      padding: 7px;
-      background-color: transparent;
-      border: 1px solid #808080;
-      border-radius: 3px;
-      font-family: var(--fonts);
-      font-weight: 300;
-      color: #FFF;
-      outline: none;
-    }
-    .sign-up-form input[type=email]:focus, .sign-up-form input[type=password]:focus {
-      border-color: #FFF;
-    }
-    .form-left, .form-right {
-      display: flex;
-      width: 50%;
-      flex-direction: column;
-      flex-grow: 1;
-      align-items: flex-start;
-    }
-    .sign-up-form .buttons {
-      position: relative;
-      width: 100%;
-    }
-    .sign-up-form .buttons > .button {
-      position: relative;
-      width: 50%;
-      height: 32px;
-      color: #808080;
-      background-color: #333;
-      color: #FFF;
-      font-size: 12px;
-      font-weight: 400;
-      border: 0;
-      border-radius: 0;
-      box-sizing: border-box;
-    }
-    .sign-up-form .buttons > .button.left {
-      border-top-left-radius: 5px;
-    }
-    .sign-up-form .buttons > .button.right {
-      position: absolute;
-      top: -32px;
-      right: 0;
-      border-top-right-radius: 5px;
-    }
-    .sign-up-form .buttons > .button.blue:hover, .sign-up-form .buttons > .button.blue.selected {
-      background-color: #03A9F4;
-    }
-    .admin-account-button {
-      cursor: pointer;
-    }
-    .admin-account-button:hover .button, .admin-account-button:hover .price, .admin-account-button:hover .sub,
-    .admin-account-button.selected .button, .admin-account-button.selected .price, .admin-account-button.selected .sub {
-      background-color: #673AB7;
-      color: #FFF;
-    }
-    .sign-up-form .sub {
-      margin-top: 10px;
-      margin-bottom: 15px;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 12px;
-      font-style: italic;
-    }
-    .account-details {
-      width: 100%;
-      font-size: 12px;
-      font-weight: 400;
-      box-sizing: border-box;
-    }
-    .price {
-      padding: 0 20px;
-      background-color: #333;
-      font-size: 24px;
-      line-height: 2;
-      text-align: center;
-    }
-    .price > .sub {
-      margin-left: 5px;
-      font-size: 12px;
-    }
-    .account-details > .account-details-content {
-      background-color: #222;
-      padding: 10px 20px;
-    }
-    .account-details > .account-details-content .buttons {
-      background-color: #222;
-      padding: 0 20px;
-      padding-top: 10px;
-    }
-    .account-details ul {
-      list-style-type: none;
-      margin: 10px 0;
-      padding: 0;
-    }
-    .account-details ul > li {
-      display: inline-block;
-      margin-bottom: 1px;
-      padding: 0 10px;
-      background-color: #333;
-      color: #CCC;
-      border-radius: 100px;
-      line-height: 1.8;
-      font-weight: 600;
-    }
-    .account-details .icon {
-      position: relative;
-      top: 2px;
-      margin-right: 3px;
-    }
-    /* .account-details ul > li:nth-child(odd) {
-      background-color: #333;
-    }
-    .account-details ul > li:nth-child(even) {
-      background-color: #000;
-    } */
     .faq {
       width: 640px;
       margin: 0 auto;
@@ -956,72 +795,6 @@
       background-color: #03A9F4;
       justify-content: center;
     }
-    .adventures {
-      display: flex;
-      position: absolute;
-      top: 300px;
-      width: 100%;
-      padding: 20px 0;
-      background-color: #FFF;
-      // background-image: linear-gradient(to top, #EEE 0%, #111 0%, #FFF 20%, #FFF 100%);
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    .adventures .adventures-wrapper {
-      display: flex;
-      width: 100vw;
-      overflow: hidden;
-    }
-    .adventures .adventures-center-wrapper {
-      display: flex;
-      width: 640px;
-    }
-    .adventures .adventure {
-      position: relative;
-      display: flex;
-      width: 150px;
-      padding-bottom: 10px;
-      font-size: 11px;
-      font-weight: 600;
-      flex-direction: column;
-    }
-    .adventures .adventure:first-child {
-      margin-left: -50px;
-    }
-    .adventures .adventure + .adventure {
-      margin-left: 10px;
-    }
-    .adventure-background {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: #DDD;
-      transform: skewX(45deg) scaleY(0.5);
-      transform-origin: 50% 100%;
-    }
-    .adventures .adventure > .adventure-header {
-      padding: 10px;
-      background-color: #000;
-      flex-grow: 1;
-      z-index: 1;
-    }
-    .adventures .adventure > img {
-      width: 150px;
-      height: 50px;
-      z-index: 1;
-    }
-    .adventures-placeholder {
-      width: 100%;
-      height: 250px;
-    }
-    .adventures .adventures-center-wrapper > .grid-button {
-      color: #000;
-      border: 2px solid;
-      font-weight: 600;
-    }
     .pricing {
       padding: 40px 0;
     }
@@ -1125,34 +898,14 @@
       font-weight: 400;
       line-height: 1.4;
     }
-    /* h1 {
-      font-size: 32px;
-    }
-    h2 {
-      font-size: 18px;
-    }
-    h3 {
-      margin-bottom: 20px;
-      font-size: 40px;
-    }
-    h4 {
-      margin-bottom: 15px;
-      font-size: 20px;
-    } */
     .login-loader {
       display: flex;
       width: 350px;
       height: 230px;
       flex-direction: column;
     }
-    form {
-      margin-bottom: 20px;
-      padding: 20px;
-      box-sizing: border-box;
-      z-index: 1;
-    }
 
-     footer {
+    footer {
       position: relative;
       display: flex;
       height: 50px;
@@ -1257,9 +1010,9 @@
       <a class=header-sign-up-button id=sign-up-button>
         <div class=title>Sign up</div>
       </a> -->
-      <a href="https://hub.zeovr.io">
+      <!-- <a href="https://hub.zeovr.io">
         <button class="button invert"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
-      </a>
+      </a> -->
       <!-- <button class="button invert secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
       <a href="https://github.com/modulesio/zeo" class=header-github-anchor>
         <div class=header-github-anchor-notch></div>
@@ -1268,7 +1021,7 @@
     </div>
   </header>
   <div class="body home-body" id=home-body>
-    <aside class=sidebar>
+    <!-- <aside class=sidebar>
       <div class=slides>
         <div class=slides-navbar>
           <nav class="slides-nav green selected" id=slides-nav-1>Javscript</nav>
@@ -1282,11 +1035,11 @@
             <p>Drag-and-drop NPM modules into the world. Clients sync automagically.</p>
             <p>The API is <a href="https://threejs.org" class=link>THREE.js</a> bundled by <a href="http://rollupjs.org" class=link>rollup.js</a>, so you can use any NPM module.</p>
             <p>Modules also run on the server. Voice chat and multiplayer physics come in the box.</p>
-            <!-- <div class=icons>
+            <div class=icons>
               <img src="/img/npm-logo.png" width=80 height=48 class=icon />
               <div class=icon>three.js</div>
               <div class=icon>WebVR</div>
-            </div> -->
+            </div>
             <a href="https://github.com/modulesio/zeo" class="button invert small">Read API docs</a>
           </div>
         </div>
@@ -1318,12 +1071,12 @@
         <div><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
         <div>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></div>
       </div>
-    </aside>
+    </aside> -->
     <iframe class=hub-iframe id=hub-iframe></iframe>
     <section class=hero>
       <div class=hero-wrap id=hero-wrap>
         <div class=hero-heading>
-          <h1>Multiplayer VR worlds<br/>in your browser<br/>powered by npm</h1>
+          <h1>Multiplayer VR<br/>in your browser<br/>powered by npm</h1>
         </div>
         <div class=loader-wrap>
           <div class=loader></div>
@@ -1737,32 +1490,6 @@
   <script>
 const $ = s => document.querySelectorAll(s);
 const $$ = (e, s) => e.querySelectorAll(s);
-
-const demographicsButtons = [
-  $('#slides-nav-1')[0],
-  $('#slides-nav-2')[0],
-  $('#slides-nav-3')[0],
-];
-const demographicsDetails = [
-  $('#slide-1')[0],
-  $('#slide-2')[0],
-  $('#slide-3')[0],
-];
-demographicsButtons.forEach((demographicsButton, index) => {
-  demographicsButton.addEventListener('click', () => {
-    demographicsButtons.forEach((demographicsButton, index2) => {
-      if (index2 === index) {
-        demographicsButton.classList.add('selected');
-      } else {
-        demographicsButton.classList.remove('selected');
-      }
-    });
-
-    demographicsDetails.forEach((demographicsDetail, index2) => {
-      demographicsDetail.style.display = index2 === index ? null : 'none';
-    });
-  });
-});
 
 const _drawCanvasGrid = canvas => {
   const renderer = new THREE.WebGLRenderer({
