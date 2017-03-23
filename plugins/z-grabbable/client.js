@@ -207,6 +207,31 @@ class ZGrabbable {
               entityElement.dispatchEvent(releaseEvent);
             }
 
+            swap() {
+              const {entityElement, object, grabState} = this;
+              const {side} = grabState;
+              const otherSide = side === 'left' ? 'right' : 'left';
+
+              grabState.side = otherSide;
+
+              const globalGrabState = globalGrabStates[side];
+              globalGrabState.grabbable = null;
+              const otherGlobalGrabState = globalGrabStates[otherSide];
+              otherGlobalGrabState.grabbable = this;
+
+              const controllers = cyborg.getControllers();
+              const otherController = controllers[otherSide];
+              const {mesh: otherControllerMesh} = otherController;
+              otherControllerMesh.add(object);
+
+              const swapEvent = new CustomEvent('swap', {
+                detail: {
+                  side: otherSide,
+                },
+              });
+              entityElement.dispatchEvent(swapEvent);
+            }
+
             destroy() {
               const {grabState} = this;
 
@@ -230,34 +255,74 @@ class ZGrabbable {
               if (gamepad) {
                 const {position: controllerPosition} = gamepad;
 
+                const otherSide = side === 'left' ? 'right' : 'left';
+                const otherGlobalGrabState = globalGrabStates[otherSide];
+                const {grabbable: otherGlobalGrabbable} = otherGlobalGrabState;
+
                 const grabbableDistanceSpecs = grabbables.map(grabbable => {
-                  const {object, size} = grabbable;
-                  const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
-                  const radius = Math.max.apply(Math, size) / 2;
-                  const sphere = new THREE.Sphere(objectPosition, radius);
+                  if (grabbable !== otherGlobalGrabbable) {
+                    const {object, size} = grabbable;
+                    const {position: objectPosition} = _decomposeObjectMatrixWorld(object);
+                    const radius = Math.max.apply(Math, size) / 2;
+                    const sphere = new THREE.Sphere(objectPosition, radius);
 
-                  if (sphere.containsPoint(controllerPosition)) {
-                    const distance = controllerPosition.distanceTo(objectPosition);
+                    if (sphere.containsPoint(controllerPosition)) {
+                      const distance = controllerPosition.distanceTo(objectPosition);
 
-                    return {
-                      grabbable,
-                      distance,
-                    };
+                      return {
+                        grabbable,
+                        side: null,
+                        distance,
+                      };
+                    } else {
+                      return null;
+                    }
                   } else {
                     return null;
                   }
-                }).filter(spec => spec !== null);
+                })
+                  .concat([
+                    (() => {
+                      if (otherGlobalGrabbable) {
+                        const otherGamepad = gamepads[otherSide];
+
+                        if (otherGamepad) {
+                          const {position: otherControllerPosition} = otherGamepad;
+                          const distance = controllerPosition.distanceTo(otherControllerPosition);
+
+                          if (distance < 0.2) {
+                            return {
+                              grabbable: otherGlobalGrabbable,
+                              side: otherSide,
+                              distance,
+                            };
+                          } else {
+                            return null;
+                          }
+                        } else {
+                          return null;
+                        }
+                      } else {
+                        return null;
+                      }
+                    })()
+                  ])
+                  .filter(spec => spec !== null);
 
                 if (grabbableDistanceSpecs.length > 0) {
-                  const {grabbable: bestGrabbable} = grabbableDistanceSpecs.sort((a, b) => a.distance - b.distance)[0];
+                  const {side: bestGrabbableSide, grabbable: bestGrabbable} = grabbableDistanceSpecs.sort((a, b) => a.distance - b.distance)[0];
 
-                  const trygrabEvent = new CustomEvent('trygrab', {
-                    detail: {
-                      side,
-                    },
-                  });
-                  const {entityElement} = bestGrabbable;
-                  entityElement.dispatchEvent(trygrabEvent);
+                  if (bestGrabbableSide) {
+                    bestGrabbable.swap();
+                  } else {
+                    const trygrabEvent = new CustomEvent('trygrab', {
+                      detail: {
+                        side,
+                      },
+                    });
+                    const {entityElement} = bestGrabbable;
+                    entityElement.dispatchEvent(trygrabEvent);
+                  }
 
                   e.stopImmediatePropagation();
                 }
