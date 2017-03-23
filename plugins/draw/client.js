@@ -116,8 +116,8 @@ class Draw {
           const drawComponent = {
             attributes: {
               color: {
-                type: "color",
-                value: "2196F3",
+                type: 'color',
+                value: '#2196F3',
               },
             },
             entityAddedCallback(entityElement) {
@@ -169,7 +169,7 @@ class Draw {
                     // shininess: 10,
                     // shininess: 0,
                     side: THREE.DoubleSide,
-                    transparent: true,
+                    // transparent: true,
                   });
                   // const materials = [solidMaterial, canvasMaterial];
 
