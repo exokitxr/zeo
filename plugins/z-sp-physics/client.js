@@ -362,11 +362,13 @@ class ZPhysics {
 
             clearInterval(interval);
 
-            Ammo.destroy(dynamicsWorld);
-            Ammo.destroy(solver);
-            Ammo.destroy(overlappingPairCache);
-            Ammo.destroy(dispatcher);
-            Ammo.destroy(collisionConfiguration);
+            setTimeout(() => { // destroy physics bodies first
+              Ammo.destroy(dynamicsWorld);
+              Ammo.destroy(solver);
+              Ammo.destroy(overlappingPairCache);
+              Ammo.destroy(dispatcher);
+              Ammo.destroy(collisionConfiguration)
+            });;
           };
         }
       });
