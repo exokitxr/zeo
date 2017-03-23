@@ -104,7 +104,7 @@ class ZGrabbable {
               }
             }
 
-            trygrab(e) {
+            trygrab(e) { // XXX make this work in multiplayer
               const {detail: {side}} = e;
               const globalGrabState = globalGrabStates[side];
               const {grabbable: globalGrabbable} = globalGrabState;
