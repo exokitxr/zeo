@@ -18,7 +18,7 @@
     font-family: var(--fonts);
     flex-direction: column;
     justify-content: center;
-    overflow-x: hidden;
+    overflow: hidden;
   }
 
   .header {
@@ -32,6 +32,7 @@
     color: #FFF;
     align-items: center;
     box-sizing: border-box;
+    overflow: hidden;
     z-index: 1;
   }
   .header a {
@@ -143,10 +144,11 @@
 
   .markdown-body {
     display: flex;
-    width: 900px;
+    width: 100vw;
+    height: calc(100vh - 80px);
   }
   .markdown-body a {
-    color: #4CAF50;
+    color: #F44336;
   }
 
   .toc {
@@ -154,7 +156,7 @@
     top: 80px;
     width: 250px;
     max-height: calc(100vh - 80px);
-    margin-left: 10px;
+    padding-left: 15px;
     margin-right: 30px;
     padding-top: 24px;
     padding-right: 30px;
@@ -174,6 +176,7 @@
     margin-left: 10px;
   }
   .toc a {
+    position: relative;
     display: block;
     color: inherit;
   }
@@ -190,15 +193,33 @@
   .toc > ul > li > ul >li {
     margin-left: 0;
   }
+  .toc > ul > li > ul > li > ul > li {
+    margin-left: 0;
+    color: #AAA;
+    border-radius: 3px;
+    font-size: 12px;
+  }
   .toc > ul > li > ul > li > ul > li > ul {
     display: none;
   }
   .toc a:hover, .toc a.active {
-    color: #E91E63;
+    color: #F44336;
     text-decoration: none;
   }
+  .toc a.active::after {
+    position: absolute;
+    left: -25px;
+    top: 0;
+    bottom: 0;
+    border-left: 5px solid #F44336;
+    content: '';
+  }
   .body {
-    width: calc(900px - (250px + 10px + 30px));
+    flex-grow: 1;
+    overflow-y: scroll;
+  }
+  .body-wrap {
+    width: calc(900px - (250px + 30px));
   }
 </style>
 </head>

@@ -16,7 +16,9 @@ const content = `\
 ${toc}
 </div>
 <div class=body>
-${md}
+  <div class=body-wrap>
+    ${md}
+  </div>
 </div>
 `;
 const result = template.replace('<!-- CONTENT -->', content);
