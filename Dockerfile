@@ -6,6 +6,7 @@ RUN bash -c 'NVM_DIR="/root/.nvm"; . "$NVM_DIR/nvm.sh"; nvm install 7.7.2;'
 ENV PATH $PATH:/root/.nvm/versions/node/v7.7.2/bin/
 ADD . /root/zeo
 RUN bash -c 'cd /root/zeo && npm install'
+RUN bash -c 'cd /root/zeo && npm start -- install'
 
 WORKDIR /root/zeo/
 ENTRYPOINT ["npm", "start"]
