@@ -37,7 +37,7 @@
       background-color: rgba(255, 255, 255, 0.15);
       border-radius: 3px;
     }
-    header {
+    .header {
       display: flex;
       position: sticky;
       top: 0;
@@ -61,6 +61,40 @@
     .header-right {
       margin-left: auto;
       justify-content: flex-end;
+    }
+    .header .header-github-anchor {
+      display: flex;
+      width: 50px;
+      height: 50px;
+      margin-left: 100px;
+      color: #FFF;
+      justify-content: center;
+      align-items: center;
+    }
+    .header .header-github-anchor i {
+      display: block;
+      position: relative;
+      font-size: 30px !important;
+    }
+    .header .header-github-anchor .header-github-anchor-notch {
+      position: absolute;
+      top: 0;
+      right: 0;
+      border-width: 0 150px 150px 0;
+      border-style: solid;
+      border-color: transparent #2196F3 transparent transparent;
+    }
+    .header-icon {
+      margin-right: 10px;
+    }
+    .header-logo-anchor {
+      display: flex;
+      font-size: 20px;
+      font-weight: 300;
+      align-items: center;
+    }
+    .header-logo-anchor:hover {
+      color: #66BB6A;
     }
 
     .body {
@@ -273,29 +307,6 @@
       font-size: 13px;
     }
 
-    header .header-github-anchor {
-      display: flex;
-      width: 50px;
-      height: 50px;
-      margin-left: 100px;
-      color: #FFF;
-      justify-content: center;
-      align-items: center;
-    }
-    header .header-github-anchor i {
-      display: block;
-      position: relative;
-      font-size: 30px !important;
-    }
-    header .header-github-anchor .header-github-anchor-notch {
-      position: absolute;
-      top: 0;
-      right: 0;
-      border-width: 0 150px 150px 0;
-      border-style: solid;
-      border-color: transparent #2196F3 transparent transparent;
-    }
-
     .modules-body {
       margin: 20px;
       margin-right: 0;
@@ -356,10 +367,6 @@
       margin-top: 10px;
       color: #FFF;
     }
-    .details-wrap .header-button:hover, .details-wrap .header-button:focus {
-      background-color: #2196F3;
-      color: #FFF;
-    }
     .details-wrap label {
       display: flex;
     }
@@ -377,111 +384,6 @@
     }
     .details-wrap input[type=text].cvc {
       width: 50px;
-    }
-    .header-button {
-      margin-right: 10px;
-      padding: 8px 20px;
-      background-color: transparent;
-      border: 1px solid;
-      border-radius: 100px;
-      font-family: var(--fonts);
-      font-size: 15px;
-      font-weight: 300;
-      color: #4CAF50;
-      cursor: pointer;
-    }
-    .header-button:hover, .header-button:focus {
-      background-color: #4CAF50;
-      border-color: transparent;
-      color: #333;
-      outline: none;
-    }
-    .header-icon {
-      margin-right: 10px;
-    }
-    .header-logo-anchor {
-      display: flex;
-      font-size: 20px;
-      font-weight: 300;
-      align-items: center;
-    }
-    .header-logo-anchor:hover {
-      color: #66BB6A;
-    }
-    .header-log-in-input, .header-log-in-button {
-      padding: 7px;
-      border: 1px solid #808080;
-      border-radius: 3px;
-    }
-    .header-log-in-input {
-      background: none;
-      border-right: 0;
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-      font-family: var(--fonts);
-      font-weight: 300;
-      color: #FFF;
-      outline: none;
-    }
-    .header-log-in-input:focus {
-      border-color: #FFF;
-    }
-    .header-log-in-input::-webkit-input-placeholder {
-      color: #444;
-    }
-    .header-log-in-button {
-      border: 1px solid #FFF;
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-      color: #FFF;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-    .header-log-in-button:hover {
-      background-color: #03A9F4;
-      border-color: transparent;
-      color: #FFF;
-    }
-    .header-log-in-button, .header-sign-up-button {
-      margin-right: 15px;
-    }
-    .header-sign-up-button {
-      height: auto;
-      padding: 7px 15px;
-      margin-top: 10px;
-      margin-bottom: 10px;
-      margin-left: auto;
-      background-color: #4CAF50;
-      border-bottom: 0;
-      border-radius: 3px;
-      color: #FFF;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-    .header-sign-up-button:hover {
-      background-color: #388E3C;
-    }
-    .header-login-bar {
-      display: flex;
-      align-items: center;
-    }
-    .header-login-bar > h2 {
-      margin-right: 15px;
-      color: #4CAF50;
-    }
-    .header-login-bar > .plan-nagger {
-      margin-right: 10px;
-      pad<F4>ding: 5px 10px;
-      background-color: #E91E63;
-      border-radius: 5px;
-      font-size: 10px;
-      cursor: pointer;
-    }
-    .header-login-bar > .plan-nagger:hover {
-      background-color: #AD1457;
-    }
-    .logged-in .canvas-login-arrow, .logged-in .canvas-login-arrow-tail {
-      display: none;
     }
     .canvas-login-arrow {
       position: absolute;
@@ -1011,7 +913,7 @@
   </style>
 </head>
 <body>
-  <header id=header>
+  <header class=header>
     <div class=header-left>
       <a href="https://zeovr.io" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
     </div>
@@ -1024,15 +926,6 @@
       </navbar>
     </div>
     <div class=header-right>
-      <!-- <input type=text class=header-log-in-input placeholder="your@email.com" />
-      <a class=header-log-in-button>Log in</a>
-      <a class=header-sign-up-button id=sign-up-button>
-        <div class=title>Sign up</div>
-      </a> -->
-      <!-- <a href="https://hub.zeovr.io">
-        <button class="button invert"><img src="/img/earth-box.svg" class=icon /> Go to hub</button>
-      </a> -->
-      <!-- <button class="button invert secondary"><img src="/img/minecraft.svg" class=icon /> Buy server</button> -->
       <a href="https://github.com/modulesio/zeo" class=header-github-anchor>
         <div class=header-github-anchor-notch></div>
         <i class="octicon octicon-mark-github"></i>
