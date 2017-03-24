@@ -193,7 +193,7 @@
   .toc > ul > li > ul > li > ul > li > ul {
     display: none;
   }
-  .toc a:hover, .toc a:target {
+  .toc a:hover, .toc a.active {
     color: #E91E63;
     text-decoration: none;
   }
@@ -225,5 +225,24 @@
   <div class=markdown-body>
     <!-- CONTENT -->
   </div>
+<script>
+const $ = s => document.querySelectorAll(s);
+
+const _updateHash = () => {
+  $('a').forEach(a => {
+    a.classList.remove('active');
+  });
+
+  const {hash} = window.location;
+  $('a[href="' + hash + '"').forEach(a => {
+    a.classList.add('active');
+  });
+};
+_updateHash();
+
+window.addEventListener('hashchange', e => {
+  _updateHash();
+});
+</script>
 </body>
 </html>
