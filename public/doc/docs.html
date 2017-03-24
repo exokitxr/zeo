@@ -1,0 +1,1404 @@
+<!doctype html>
+<html>
+<head>
+<title>API Docs - zeo vr</title>
+<link href="/css/octicons.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="css/github-markdown.css">
+<style>
+  body {
+    --fonts: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  }
+  body {
+    position: relative;
+    display: flex;
+    min-width: 1024px;
+    min-height: 720px;
+    max-width: 100vw;
+    margin: 0;
+    font-family: var(--fonts);
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .header {
+    display: flex;
+    position: sticky;
+    top: 0;
+    width: 100vw;
+    height: 80px;
+    padding: 0 30px;
+    background: linear-gradient(to left, #FF512F , #DD2476);
+    color: #FFF;
+    align-items: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    z-index: 1;
+  }
+  .header a {
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+    cursor: pointer;
+  }
+  .header-left, .header-right {
+    display: flex;
+    width: 100px;
+    align-items: center;
+  }
+  .header-left {
+    margin-right: 120px;
+  }
+  .header-right {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+  .header .header-github-anchor {
+    display: flex;
+    width: 50px;
+    height: 50px;
+    margin-left: 100px;
+    color: #FFF;
+    justify-content: center;
+    align-items: center;
+  }
+  .header .header-github-anchor i {
+    display: block;
+    position: relative;
+    font-size: 30px !important;
+  }
+  .header .header-github-anchor .header-github-anchor-notch {
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-width: 0 150px 150px 0;
+    border-style: solid;
+    border-color: transparent #2196F3 transparent transparent;
+  }
+  .header-icon {
+    margin-right: 10px;
+  }
+  .header-logo-anchor {
+    display: flex;
+    font-size: 20px;
+    font-weight: 300;
+    align-items: center;
+  }
+  .header-logo-anchor:hover {
+    color: #000;
+  }
+
+  .demographics > navbar {
+    display: flex;
+    width: 640px;
+    height: 80px;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 400;
+  }
+  .demographics > navbar > a {
+    display: flex;
+    position: relative;
+    height: 100%;
+    padding: 0 20px;
+    padding-top: 15px;
+    border-bottom: 5px solid transparent;
+    align-items: center;
+    box-sizing: border-box;
+    cursor: pointer;
+  }
+  .demographics > navbar > a.selected::after {
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    margin-left: -11px;
+    border-style: solid;
+    border-width: 12px 12px 0 12px;
+  }
+  .demographics > navbar > a.red.selected {
+    color: #E91E63;
+    border-bottom-color: #E91E63;
+  }
+  .demographics > navbar > a.red.selected::after {
+    border-color: #E91E63 transparent transparent transparent;
+  }
+  .demographics > navbar > a.green.selected, .demographics > navbar > a:hover {
+    border-bottom-color: #03A9F4;
+  }
+  .demographics > navbar > a.green.selected {
+    background-color: #000;
+  }
+  .demographics > navbar > a.green.selected::after {
+    border-color: #4CAF50 transparent transparent transparent;
+  }
+  .demographics > navbar > a.purple.selected {
+    color: #7E57C2;
+    border-bottom-color: #7E57C2;
+  }
+  .demographics > navbar > a.purple.selected::after {
+    border-color: #7E57C2 transparent transparent transparent;
+  }
+  .demographics > navbar > a > i {
+    margin-right: 10px;
+  }
+
+  .markdown-body {
+    display: flex;
+    width: 100vw;
+    height: calc(100vh - 80px);
+  }
+  .markdown-body a {
+    color: #F44336;
+  }
+  .markdown-body iframe {
+    margin: 16px 0;
+  }
+
+  .toc {
+    position: sticky;
+    top: 80px;
+    width: 250px;
+    max-height: calc(100vh - 80px);
+    padding-left: 15px;
+    margin-right: 30px;
+    padding-top: 24px;
+    padding-right: 30px;
+    color: #333;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.8;
+    box-sizing: border-box;
+    overflow-y: scroll;
+  }
+  .toc ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  .toc ul > li {
+    margin: 0;
+    margin-left: 10px;
+  }
+  .toc a {
+    position: relative;
+    display: block;
+    color: inherit;
+  }
+  .toc > ul > li > ul {
+    margin-bottom: 40px;
+  }
+  .toc > ul > li > a {
+    color: #000;
+    font-size: 14px;
+    line-height: 2;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .toc > ul > li > ul >li {
+    margin-left: 0;
+  }
+  .toc > ul > li > ul > li > ul > li {
+    margin-left: 0;
+    color: #AAA;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .toc > ul > li > ul > li > ul > li > ul {
+    display: none;
+  }
+  .toc a:hover, .toc a.active {
+    color: #F44336;
+    text-decoration: none;
+  }
+  .toc a.active::after {
+    position: absolute;
+    left: -25px;
+    top: 0;
+    bottom: 0;
+    border-left: 5px solid #F44336;
+    content: '';
+  }
+  .body {
+    flex-grow: 1;
+    overflow-y: scroll;
+  }
+  .body-wrap {
+    width: calc(900px - (250px + 30px));
+  }
+</style>
+</head>
+<body>
+  <header class=header>
+    <div class=header-left>
+      <a href="https://zeovr.io" class=header-logo-anchor><img width=32 height=51 src="/img/logo.png" class=header-icon>zeo vr</a>
+    </div>
+    <div class=demographics>
+      <navbar>
+        <a href="/" class=green id=nav-button-1>Try it</a>
+        <a href="/docs" class="green selected" id=nav-button-2>API Docs</a>
+        <a href="/modules" class=green id=nav-button-3>Modules</a>
+        <a href="/servers" class=green id=nav-button-4>Servers</a>
+      </navbar>
+    </div>
+    <div class=header-right>
+      <a href="https://github.com/modulesio/zeo" class=header-github-anchor>
+        <div class=header-github-anchor-notch></div>
+        <i class="octicon octicon-mark-github"></i>
+      </a>
+    </div>
+  </header>
+  <div class=markdown-body>
+    <div class=toc>
+<ul>
+<li><a href="#introduction">Introduction</a><ul>
+<li><a href="#what-is-zeo-vr">What is Zeo VR?</a></li>
+<li><a href="#install-zeo-vr">Install Zeo VR</a><ul>
+<li><a href="#install-depencencies-ubuntu">Install depencencies: Ubuntu</a></li>
+<li><a href="#install-depencencies-debian">Install depencencies: Debian</a></li>
+<li><a href="#install-depencencies-other">Install depencencies: Other</a></li>
+</ul>
+</li>
+<li><a href="#highlights">Highlights</a></li>
+<li><a href="#recommended-modules">Recommended modules</a><ul>
+<li><a href="#z-sp-physics">z-sp-physics</a></li>
+<li><a href="#z-mp-physics">z-mp-physics</a></li>
+<li><a href="#z-paint">z-paint</a></li>
+<li><a href="#z-camera">z-camera</a></li>
+<li><a href="#z-whiteboard">z-whiteboard</a></li>
+</ul>
+</li>
+<li><a href="#browser-requirements">Browser requirements</a></li>
+<li><a href="#server-requirements">Server requirements</a></li>
+<li><a href="#headset-support">Headset support</a></li>
+</ul>
+</li>
+<li><a href="#user-manual">User manual</a><ul>
+<li><a href="#getting-started">Getting started</a></li>
+<li><a href="#server-setup-docker">Server setup: Docker</a><ul>
+<li><a href="#step-1-get-docker">Step 1: Get Docker</a></li>
+<li><a href="#step-2-pull-image">Step 2: Pull image</a><ul>
+<li><a href="#pull-modulesiozeo-with-docker">Pull modulesio/zeo with docker</a></li>
+</ul>
+</li>
+<li><a href="#step-3-run-container">Step 3: Run container</a><ul>
+<li><a href="#run-modulesiozeo-with-docker">Run modulesio/zeo with docker</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#server-setup-standard">Server setup: Standard</a><ul>
+<li><a href="#step-1-get-linux">Step 1: Get Linux</a></li>
+<li><a href="#step-2-get-node">Step 2: Get node</a></li>
+<li><a href="#step-3-install-dependencies">Step 3: Install dependencies</a><ul>
+<li><a href="#install-dependencies-ubuntu">Install dependencies (Ubuntu)</a></li>
+<li><a href="#install-dependencies-debian">Install dependencies (Debian)</a></li>
+</ul>
+</li>
+<li><a href="#step-4-npm-install">Step 4: Npm install</a><ul>
+<li><a href="#install-zeo-module">Install zeo module</a></li>
+</ul>
+</li>
+<li><a href="#step-5-start-server">Step 5: Start server</a><ul>
+<li><a href="#start-zeo-vr-server">Start Zeo VR server</a></li>
+<li><a href="#after-a-while-you-should-see">After a while you should see</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#server-setup-addendum">Server setup: Addendum</a><ul>
+<li><a href="#optional-1-hosts-file">Optional 1: Hosts file</a></li>
+<li><a href="#optional-2-tls-certificate">Optional 2: TLS certificate</a><ul>
+<li><a href="#place-your-tls-certificate-here">Place your TLS certificate here</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#getting-help">Getting help</a></li>
+<li><a href="#reference">Reference</a><ul>
+<li><a href="#command-line">Command line</a></li>
+<li><a href="#key-bindings">Key bindings</a></li>
+<li><a href="#data-directories">Data directories</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#module-specification">Module specification</a><ul>
+<li><a href="#modules-overview">Modules overview</a></li>
+<li><a href="#writing-modules">Writing modules</a><ul>
+<li><a href="#packagejson">package.json</a><ul>
+<li><a href="#packagejson-1">package.json</a></li>
+<li><a href="#clientjs">client.js</a></li>
+</ul>
+</li>
+<li><a href="#client--server--worker">client / server / worker</a></li>
+<li><a href="#mount--unmount">mount / unmount</a><ul>
+<li><a href="#example-module-file">Example module file</a></li>
+<li><a href="#getting-at-the-zeo-object">Getting at the zeo object</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#loading-modules">Loading modules</a><ul>
+<li><a href="#option-1-local-install">Option 1: Local install</a></li>
+<li><a href="#option-2-publish-to-npm">Option 2: Publish to npm</a><ul>
+<li><a href="#packagejson-2">package.json</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#api-docs">API docs</a><ul>
+<li><a href="#api-introduction">API introduction</a></li>
+<li><a href="#elements-api">Elements API</a><ul>
+<li><a href="#registerelement">registerElement()</a></li>
+<li><a href="#getrootelement">getRootElement()</a><ul>
+<li><a href="#example-cross-module-events">Example: cross-module events</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#pose-api">Pose API</a><ul>
+<li><a href="#getstatus">getStatus()</a><ul>
+<li><a href="#get-hmd-pose">Get HMD pose</a></li>
+<li><a href="#get-gamepads-pose">Get gamepads pose</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#input-api">Input API</a><ul>
+<li><a href="#event-side">Event side</a><ul>
+<li><a href="#track-controller-grip">Track controller grip</a></li>
+</ul>
+</li>
+<li><a href="#vr-events">VR events</a></li>
+<li><a href="#browser-events">Browser events</a></li>
+</ul>
+</li>
+<li><a href="#ui-api">UI API</a><ul>
+<li><a href="#makeui">makeUi()</a></li>
+<li><a href="#uiaddpage">Ui.addPage()</a></li>
+</ul>
+</li>
+<li><a href="#render-api">Render API</a><ul>
+<li><a href="#render-events">Render events</a></li>
+</ul>
+</li>
+<li><a href="#file-api">File API</a></li>
+<li><a href="#hands-api">Hands API</a></li>
+<li><a href="#multiplayer-api">Multiplayer API</a></li>
+<li><a href="#sound-api">Sound API</a></li>
+<li><a href="#physics-api">Physics API</a></li>
+<li><a href="#zeo-api">Zeo API</a><ul>
+<li><a href="#exported-objects">Exported objects</a></li>
+<li><a href="#frame-events">Frame Events</a><ul>
+<li><a href="#update"><code>update</code></a></li>
+<li><a href="#updateeyecamera"><code>updateEye(camera)</code></a></li>
+<li><a href="#input-events">Input events</a></li>
+</ul>
+</li>
+<li><a href="#status-api">Status API</a></li>
+<li><a href="#engine-api">Engine API</a></li>
+<li><a href="#scene-api">Scene API</a></li>
+<li><a href="#zeo-update-callbacks-api">Zeo update callbacks API</a><ul>
+<li><a href="#update-1"><code>update</code></a></li>
+<li><a href="#updateeye"><code>updateEye</code></a></li>
+</ul>
+</li>
+<li><a href="#zeo-status-api">Zeo status API</a></li>
+<li><a href="#zeo-world-api">Zeo world API</a></li>
+<li><a href="#zeo-elements-api">Zeo elements API</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<div class=body>
+  <div class=body-wrap>
+    <h1 id="introduction">Introduction</h1>
+<h2 id="what-is-zeo-vr-">What is Zeo VR?</h2>
+<p><strong>Zeo VR</strong> is a <a href="https://nodejs.org"><code>node.js</code></a> web server that runs virtual worlds built out of <a href="https://npmjs.org"><code>npm</code></a> modules.</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+<p>You can access the VR world from any modern web browser. Most headsets and controllers are supported via <a href="https://webvr.info/"><code>WebVR</code></a>. You don&#39;t need a headset, though; there&#39;s mouse and keyboard emulation.</p>
+<p>Worlds are <i>persistent</i> and <i>multiplayer</i> out of the box, and you can <i>drag and drop</i> and configure <a href="">npm modules</a> to add objects, behaviors, and entire features like physics engines -- without taking off your headset.</p>
+<p>You can also write and publish your own modules: it&#39;s all Javascript, DOM, <code>THREE.js</code>, and <code>node</code>. <a href="#api-docs">Read the API docs</a>.</p>
+<h2 id="install-zeo-vr">Install Zeo VR</h2>
+<p>Install from the Github repository:</p>
+<pre><code class="lang-bash">npm install git+ssh://git@github.com/modulesio/zeo.git
+</code></pre>
+<p>Note that you will need some dependencies on your system for the build to work. This is mainly for the physics engine, audio streaming, and avatar generation.</p>
+<h3 id="install-depencencies-ubuntu">Install depencencies: Ubuntu</h3>
+<pre><code class="lang-bash">sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
+</code></pre>
+<h3 id="install-depencencies-debian">Install depencencies: Debian</h3>
+<pre><code class="lang-bash">sudo apt-get install build-essential cmake python libav-tools libcairo2-dev
+</code></pre>
+<h3 id="install-depencencies-other">Install depencencies: Other</h3>
+<p>You&#39;ll almost certainly find the above packages in your operating system&#39;s package manager. However, they might be listed under different names.</p>
+<h2 id="highlights">Highlights</h2>
+<ul>
+<li>Multiplayer out of the box</li>
+<li>Voice chat support</li>
+<li>Worlds persist when you leave</li>
+<li>In-VR module configurator</li>
+<li>Vanilla <code>DevTools</code> and <code>node</code> development and debugging</li>
+<li>Entity-component system via the DOM</li>
+<li><a href="https://threejs.org">THREE.js</a> API</li>
+<li>Use any <a href="https://npmjs.org"><code>npm</code></a> module</li>
+<li>Run code on the front- and back- end</li>
+<li>Hot module loading</li>
+<li>Normalized DOM event API for headset and controllers</li>
+<li>Per-frame, per-eye render callbacks</li>
+<li>Positional audio API</li>
+<li>First class media file and model uploads</li>
+<li>Support all major model formats</li>
+<li>HMD + controller emulation with keyboard + mouse</li>
+<li>It&#39;s all just Javascript</li>
+<li><a href="https://github.com/modulesio/zeo">Open source on Github</a></li>
+</ul>
+<h2 id="recommended-modules">Recommended modules</h2>
+<h4 id="z-sp-physics">z-sp-physics</h4>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+<h4 id="z-mp-physics">z-mp-physics</h4>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+<h4 id="z-paint">z-paint</h4>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+<h4 id="z-camera">z-camera</h4>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+<h4 id="z-whiteboard">z-whiteboard</h4>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+<h2 id="browser-requirements">Browser requirements</h2>
+<p>Zeo VR works on every modern web browser. The only hard requirement is <a href="https://en.wikipedia.org/wiki/WebGL"><code>WebGL</code></a>, which is <a href="http://caniuse.com/#feat=webgl">broadly supported</a>.</p>
+<p>Note that <a href="https://webvr.info/"><code>WebVR</code></a> itself is <em>not</em> required, nor do you need VR hardware: there is mouse + keyboard emulation of VR controls (keybindings are <a href="#key-bindings">here</a>). That said, the main point of Zeo VR is that it works in virtual reality, so you&#39;re missing out without a headset. But the option of working without gear is there, and enjoys first-class support.</p>
+<p>If you want to use <code>WebVR</code>, you&#39;ll need a browser that supports it. For desktop, that means either <a href="https://webvr.info/get-chrome/">Chromium Experimental</a> or <a href="https://www.mozilla.org/en-US/firefox/channel/desktop/#nightly">Firefox Nightly</a>. This requirement will go away when WebVR makes it to to the stable release.</p>
+<h2 id="server-requirements">Server requirements</h2>
+<p>The main requirement for running your own Zeo VR server is <strong>Linux</strong>.</p>
+<p>Technically all you need is <code>node.js</code>, but some native C++ modules require a build step and a native C++ compiler.</p>
+<p><em>Windows</em> (via Windows Subsystem for Linux) and <em>OSX</em> might work, but are not tested. It&#39;s recommended that you simply use a Linux virtual machine.</p>
+<h2 id="headset-support">Headset support</h2>
+<p>Only <a href="https://en.wikipedia.org/wiki/HTC_Vive">HTC Vive</a> is supported at the moment.</p>
+<p>Most other headsets (including mobile platforms like Daydream) <em>will probably work</em> but are not tested.</p>
+<p>The main problem you&#39;ll run into is that models, tutorials, and documentation assume you&#39;re using a Vive. The other potential problem is performance.</p>
+<p>Support for more devices is on the roadmap.</p>
+<h1 id="user-manual">User manual</h1>
+<h2 id="getting-started">Getting started</h2>
+<p>Here&#39;s how to get started running your own Zeo VR server.</p>
+<h2 id="server-setup-docker">Server setup: Docker</h2>
+<p>The recommended (and easiest) way to run Zeo VR is with <a href="https://docker.com">Docker</a>. That way you won&#39;t have to install anything else or worry about versions.</p>
+<p>Unless you need to hack on Zeo VR itself, this is your best option.</p>
+<h3 id="step-1-get-docker">Step 1: Get Docker</h3>
+<p>If you don&#39;t have Docker yet, follow <a href="https://docs.docker.com/engine/getstarted/step_one/">these instructions</a>.</p>
+<h3 id="step-2-pull-image">Step 2: Pull image</h3>
+<p>The <a href="https://hub.docker.com/r/modulesio/zeo/">latest Zeo VR image</a> is on Docker hub. The build is automated from the Github <code>master</code> branch.</p>
+<h4 id="pull-modulesio-zeo-with-docker">Pull modulesio/zeo with docker</h4>
+<pre><code class="lang-javascript">docker pull modulesio/zeo
+</code></pre>
+<p>You can repeat this anytime to get the latest Zeo VR image, but note that you will also need to follow the rest of the steps to create a new container for the the image.</p>
+<h3 id="step-3-run-container">Step 3: Run container</h3>
+<p>Once you have the Zeo VR Docker image, you&#39;ll need to start it in a container:</p>
+<pre><code class="lang-bash">docker run -it \
+  -v ~/.zeo/data:/root/zeo/data \
+  -v ~/.zeo/crypto:/root/zeo/crypto \
+  -p 8000:8000 \
+  modulesio/zeo
+</code></pre>
+<p>The interesting parts of this command are:</p>
+<ul>
+<li>we are storing world data and certificates in <code>~/.zeo</code> on the host, and</li>
+<li>we are using host TCP port <code>8000</code></li>
+</ul>
+<p>To run on the traditional HTTPS port (<code>443</code>), we could instead use:</p>
+<pre><code class="lang-bash">docker run -it \
+  -v ~/.zeo/data:/root/zeo/data \
+  -v ~/.zeo/crypto:/root/zeo/crypto \
+  -p 443:8000 \
+  modulesio/zeo
+</code></pre>
+<p>See the <a href="https://docs.docker.com/engine/reference/run/"><code>docker run</code> documentation</a> for all of the options available here.</p>
+<h4 id="run-modulesio-zeo-with-docker">Run modulesio/zeo with docker</h4>
+<pre><code class="lang-javascript">docker run modulesio/zeo
+</code></pre>
+<p>If you did everything right, the autput should be a URL that you can access from your browser.</p>
+<p>However, you might also want to (or need to) clean up your configuration to get your browser pointed at the right place and fix browser warnings:</p>
+<ul>
+<li><a href="#step-6-hosts-file-optional">Update your /etc/hosts</a></li>
+<li><a href="#step-7-tls-certificate-optional">Configure a TLS certificate</a></li>
+</ul>
+<p><a href="#command-line">See here</a> for the command line arguments you can use when starting your container. They&#39;re passed through directly to the server start script.</p>
+<h2 id="server-setup-standard">Server setup: Standard</h2>
+<p>Here&#39;s how to set up Zeo VR on a bare server.</p>
+<p>It&#39;s more involved than the <a href="#server-setup-docker">Docker install</a> route, without any advantages for typical users, so it&#39;s really only recommended if you want to hack on Zeo VR itself. In particular, note that you can install and develop modules without having to do any of this.</p>
+<h3 id="step-1-get-linux">Step 1: Get Linux</h3>
+<p>Get yourself a Linux machine.</p>
+<p>It can be raw Linux or a virtual machine, but it needs to be Linux. It doesn&#39;t matter which distribution.</p>
+<h3 id="step-2-get-node">Step 2: Get node</h3>
+<p><a href="https://nodejs.org/en/download/">Install node.js</a>, version <code>7+</code>.</p>
+<p>You have many options here: install the binaries, use your distribution&#39;s package manager, or use <a href="https://github.com/creationix/nvm"><code>nvm</code></a> (recommended).</p>
+<h3 id="step-3-install-dependencies">Step 3: Install dependencies</h3>
+<p>Zeo VR requires some native modules to be built for server-side physics, audio/video processing, and such. These should be built automatically when you <code>npm install zeo</code>, but for that to work you&#39;ll need a compiler, build system, and a few libraries on your system.</p>
+<p>These are:</p>
+<ul>
+<li><code>build-essential</code></li>
+<li><code>cmake</code></li>
+<li><code>python</code></li>
+<li><code>ffmpeg</code></li>
+<li><code>libcairo2-dev</code></li>
+</ul>
+<p>You&#39;ll find these in your package manager of choice.</p>
+<h4 id="install-dependencies-ubuntu-">Install dependencies (Ubuntu)</h4>
+<pre><code class="lang-javascript">sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
+</code></pre>
+<h4 id="install-dependencies-debian-">Install dependencies (Debian)</h4>
+<pre><code class="lang-javascript">sudo apt-get install build-essential cmake python libav-tools libcairo2-dev
+</code></pre>
+<h3 id="step-4-npm-install">Step 4: Npm install</h3>
+<p>This one is fairly straightforward. Just make sure there are no build errors.</p>
+<h4 id="install-zeo-module">Install zeo module</h4>
+<pre><code class="lang-javascript">npm install zeo
+</code></pre>
+<h3 id="step-5-start-server">Step 5: Start server</h3>
+<p>If everything worked, you should be able to start your server now. The first run will need to generate some stuff like SSL certificates, signing keys, and a server identity (procedurally generated icons and skyboxes), so it might take a minute.</p>
+<h4 id="start-zeo-vr-server">Start Zeo VR server</h4>
+<pre><code class="lang-javascript">./scripts/start.sh
+</code></pre>
+<p>Once everything&#39;s up and running, you&#39;ll get a URL and access token you can use to connect to your server from your browser.</p>
+<p>Note that since you&#39;re using a self-signed SSL certificate, your browser will complain that the connection is insecure. The fix is to use your own SSL certificate (see below).</p>
+<p><a href="#command-line">See here</a> for the command line arguments you can use.</p>
+<h4 id="after-a-while-you-should-see">After a while you should see</h4>
+<pre><code class="lang-javascript">https://local.zeovr.io:8000?t=ZU1TVgYyUAlDCnJgDVNDRHlrCmhAGDvCgHRhexoD
+</code></pre>
+<h2 id="server-setup-addendum">Server setup: Addendum</h2>
+<p>Here are some additional notes and steps that apply regardless of how you run your server.</p>
+<h3 id="optional-1-hosts-file">Optional 1: Hosts file</h3>
+<p>Since by default you&#39;re running a server under the <code>local.zeovr.io</code> domain, and you probably don&#39;t control that domain, you&#39;ll need to teach your computer how to reach it.</p>
+<p>That is, you&#39;ll need to add a line to your <a href="https://en.wikipedia.org/wiki/Hosts_(file">hosts file</a>).</p>
+<p>Once you&#39;ve done that, you should be able to connect to your server by opening the URL from the previous step in your browser.</p>
+<pre><code class="lang-javascript"># /etc/hosts
+127.0.0.1 local.zeovr.io
+</code></pre>
+<h3 id="optional-2-tls-certificate">Optional 2: TLS certificate</h3>
+<p>Zeo VR uses <strong>HTTP/2</strong>, for both security and performance. This requires using a TLS certificate. By default the server will generate a self-signed certificate for a fake domain (<code>local.zeovr.io</code>) and use that.</p>
+<p>Although this &quot;works&quot;, browsers will complain about it, it&#39;s insecure, and will impact load performance (due to lack of caching). Unfortunately Zeo VR cannot fix this for you -- that would defeat the point of TLS.</p>
+<p>The good news is that if you have a domain, you can easily fix this with a <a href="https://certbot.eff.org/">free TLS certificate from Let&#39;s Encrypt</a>. If you don&#39;t have a domain, you&#39;ll need to either get a domain or accept these caveats.</p>
+<p>If you have a certificate, just drop <code>cert.pem</code> and <code>private.pem</code> it into the <code>crypto/cert</code> directory and restart your server with the <code>serverHost=yourdomain.com</code> argument. <code>yourdomain.com</code> can be any domain covered by your certificate. You can overwrite the self-signed certificate in <code>crypto/cert</code>.</p>
+<h4 id="place-your-tls-certificate-here">Place your TLS certificate here</h4>
+<pre><code class="lang-javascript">./crypto/cert/cert.pem
+./crypto/cert/private.pem
+</code></pre>
+<h2 id="getting-help">Getting help</h2>
+<p>Found a bug? <a href="https://github.com/modulesio/zeo/issues">File an issue on Github</a>.</p>
+<p>Need help? <a href="https://twitter.com/modulesio">Reach out on Twitter</a>.</p>
+<h2 id="reference">Reference</h2>
+<p>Here are some useful reference pages.</p>
+<h3 id="command-line">Command line</h3>
+<p>// XXX</p>
+<h3 id="key-bindings">Key bindings</h3>
+<p>Zeo VR works best with a headset, but here are the mouse + keyboard key bindings in case you missed them in the Hub tutorial:</p>
+<ul>
+<li><strong>WASD</strong> Move around</li>
+<li><strong>Z or C</strong> Focus left or right controller (<em>required</em> to use the buttons below)</li>
+<li><strong>Click</strong> Trigger</li>
+<li><strong>E</strong> Menu</li>
+<li><strong>F</strong> Grip</li>
+<li><strong>Q</strong> Touchpad</li>
+<li><strong>Mousewheel</strong> Move controller x/y axis</li>
+<li><strong>Ctrl + Mousewheel</strong> Move controller x/z axis</li>
+<li><strong>Shift + Mousewheel</strong> Rotate controller</li>
+</ul>
+<h3 id="data-directories">Data directories</h3>
+<p>XXX</p>
+<h1 id="module-specification">Module specification</h1>
+<p>This document specifies what you need to do to write your own VR <code>npm</code> modules.</p>
+<p>These are self-contained units of Javascript code you can add to your worlds, and they can be anything from <a href="https://github.com/modulesio/z-cake">an edible cake</a> to a <a href="https://github.com/modulesio/z-primitives">physics toolbox</a>.</p>
+<p>It is assumed that you already have a Zeo VR server. If not, see <a href="https://github.com/modulesio/zeo/tree/master/docs/getting-started.md">Getting started</a>.</p>
+<h2 id="modules-overview">Modules overview</h2>
+<p>A Zeo module is just an <a href="https://www.npmjs.com/"><code>npm</code></a> module that follows this standard.</p>
+<p>Basically, to make your module VR-compatible, you add some extra keys in the <a href="https://docs.npmjs.com/files/package.json"><code>package.json</code></a>. These keys reference your Javascript VR code so we know how to load your module. Then you add the <code>zeo-module</code> <code>keyword</code> to make your module discoverable on <code>npm</code>.</p>
+<p>When you publish such a module to the <code>npm</code> registry, it will automagically become available on any Zeo VR server.</p>
+<p>If you&#39;re a hands-on learner and you already know Javascript, you might want to simply dive into the <a href="https://github.com/modulesio/zeo/tree/master/plugins/demo"><code>Bouncy ball</code> demo plugin on Github</a>.</p>
+<p>Otherwise, read on for the full Zeo VR module specification.</p>
+<h2 id="writing-modules">Writing modules</h2>
+<p>Under the hood, Zeo uses the <a href="https://github.com/modulesio/archae"><code>archae</code></a> module loader. It&#39;s just a way of writing client/server <code>npm</code> modules that can be started and stopped dynamically.</p>
+<h3 id="package-json">package.json</h3>
+<p>The main thing that makes an <code>npm</code> module runnable in VR is that its <code>package.json</code> includes the keys <code>client</code>, <code>server</code>, or <code>worker</code> (all of which are optional). These should point to the (package-relative) <code>.js</code> files you want to run in the corresponding environments:</p>
+<h4 id="package-json">package.json</h4>
+<pre><code class="lang-javascript">{
+  &quot;name&quot;: &quot;my-vr-plugin&quot;,
+  &quot;client&quot;: &quot;client.js&quot;,
+  &quot;server&quot;: &quot;server.js&quot;,
+  &quot;worker&quot;: &quot;worker.js&quot;
+  &quot;keywords&quot;: [&quot;zeo-module&quot;],
+}
+</code></pre>
+<p>We&#39;ll go into the structure of each of these files below.</p>
+<p>Also note the <code>&quot;keywords&quot;: [&quot;zeo-module&quot;]</code>. This is used to discover your module when searching <code>npm</code>, but it&#39;s not required for loading a <a href="#option-1-local-module">local module</a> that you don&#39;t intend to publish.</p>
+<h4 id="client-js">client.js</h4>
+<pre><code class="lang-javascript">module.exports = {
+  mount() {
+    console.log(&#39;module loaded&#39;);
+  },
+  unmount() {
+    console.log(&#39;module unloaded&#39;);
+  },
+};
+</code></pre>
+<h3 id="client-server-worker">client / server / worker</h3>
+<p>Zeo VR handles all of the details of installing, building, bundling, loading, and unloading your modules in the correct environment (<code>client</code>, <code>server</code>, or <code>worker</code>).</p>
+<p>The environment in which your Javascript file is loaded depends on which key you use to reference the entry point file in your <code>package.json</code>:</p>
+<ul>
+<li><code>client</code> files are loaded in the browser</li>
+<li><code>server</code> files are loaded on the server</li>
+<li><code>worker</code> files are loaded in the browser <a href="#worker-api">via the API</a></li>
+</ul>
+<p>Regardless of environment, your code can <code>require()</code> any NPM module or file in the usual way.</p>
+<p>Your <code>client</code> and <code>worker</code> files will be automatically bundled with <a href="https://rollupjs.org/"><code>rollup.js</code></a> and loaded in the browser. Likewise, the <code>server</code> file can require any <code>node</code> module, including native modules.</p>
+<p>Although you can only have one of each <code>client</code>, <code>server</code>, and <code>worker</code> Javascript file entrypoints, these can do anything -- including loading additional files and starting parallel processes. Just make sur that whatever you do in your <code>mount</code> function <a href="#writing-a-module">gets cleaned up in <code>unmount</code></a>.</p>
+<p>Just make sure any npm modules you&#39;re using appear in your <a href="https://docs.npmjs.com/files/package.json#dependencies"><code>package.json</code> <code>dependencies</code></a> (i.e. you did <a href="https://docs.npmjs.com/cli/install"><code>npm install --save</code></a>).</p>
+<p>Note that although can use ES6 <code>import</code>/<code>export</code> for frontend files, <code>server</code> files are run bare in <code>node</code> and must use <code>require()</code> and <code>module.exports</code>. Also, note that there is no compilation step -- you must ensure that you&#39;re only using Javascript features supported by your environment.</p>
+<h3 id="mount-unmount">mount / unmount</h3>
+<p>The only requirement for making this work is that your Javascript files <code>export</code> a <code>mount</code> function to run when your module is loaded, and (optionally) an <code>unmount</code> function to run when your module is unloaded.</p>
+<p>The only requirement on these functions is that:</p>
+<ol>
+<li><code>mount</code> ensures everything you need is loaded, and either does so synchronously or returns a <code>Promise</code> that will resolve when loading is finished, and</li>
+<li><code>unmount</code> undoes everything that <code>mount</code> did, and either does so synchronously or returns a <code>Promise</code> that will resovle when unloading is finished</li>
+</ol>
+<p>(Under the hood, this is just the <a href="https://github.com/modulesio/archae"><code>archae</code></a> plugin format).</p>
+<h4 id="example-module-file">Example module file</h4>
+<pre><code class="lang-javascript">// a valid VR module
+module.exports = {
+  mount() {
+    console.log(&#39;module loaded&#39;);
+  },
+  unmount() {
+    console.log(&#39;module unloaded&#39;);
+  },
+};
+</code></pre>
+<p>If all you do is this, your module will be loadable in Zeo VR.</p>
+<p>However, to do meaningful VR things, such as add content to the scene, make your module configurable, or interact with other modules, you&#39;ll want to use the <code>zeo</code> API.</p>
+<p><code>zeo</code> is available as a global variable. The full API specification is <a href="#api-introduction">here</a>.</p>
+<h4 id="getting-at-the-zeo-object">Getting at the zeo object</h4>
+<pre><code class="lang-javascript">module.exports = {
+  mount() {
+    console.log(&#39;here is the THREE object&#39;, zeo.THREE);
+  },
+};
+</code></pre>
+<h2 id="loading-modules">Loading modules</h2>
+<p>Once you&#39;ve written a module that meets the specification, you have two options for loading it into Zeo VR:</p>
+<ul>
+<li>put the module files on your server (<a href="#option-1-local-install">Option 1</a>)</li>
+<li>publish to <code>npm</code> (<a href="#option-2-publish-to-npm">Option 2</a>)</li>
+</ul>
+<p>These are functionally equivalent. The only difference is that your module will not be available on other Zeo VR servers unless you publish to <code>npm</code> (option 2).</p>
+<h3 id="option-1-local-install">Option 1: Local install</h3>
+<p>This method is most useful for testing plugins as you develop them, without the overhead of publishing and downloading from <code>npm</code>.</p>
+<p>To use a plugin locally, simply drop your <code>npm</code> module&#39;s directory (which otherwise meets the same module specification) into <code>/plugins</code> in the <code>zeo</code> project root. For example, <code>/plugins/my-vr-module</code> would be the right place to put a <code>zeo</code> plugin named <code>my-vr-module</code>.</p>
+<p>Once you&#39;ve done this, you&#39;ll be able to add your plugin to your world the normal way in Zeo VR, by choosing it from <code>World</code> tab. Note that you can only do this on the server where you dropped your plugin.</p>
+<h3 id="option-2-publish-to-npm">Option 2: Publish to npm</h3>
+<p>Publishing your plugin to <code>npm</code> is the best way to make your module available on any Zeo VR server.</p>
+<p>To do this, just do a regular <a href="https://docs.npmjs.com/cli/publish"><code>npm publish</code></a> for any module after adding <code>&quot;zeo-module&quot;</code> to the <code>&quot;keywords&quot;</code> array in your <code>package.json</code> so Zeo VR can find it on <code>npm</code>.</p>
+<h4 id="package-json">package.json</h4>
+<pre><code class="lang-js">{
+  &quot;name&quot;: &quot;my-vr-module&quot;,
+  &quot;version&quot;: &quot;0.0.1&quot;,
+  &quot;keywords&quot;: [
+    &quot;zeo-mod&quot;
+  ],
+  &quot;client&quot;: &quot;client.js&quot;
+}
+</code></pre>
+<p>To add a published module to your world, search for it in the <code>World</code> tab. Anyone on any Zeo VR server will be able to search for your module and add it to their world.</p>
+<h1 id="api-docs">API docs</h1>
+<h2 id="api-introduction">API introduction</h2>
+<p>Zeo VR exposes a collection of APIs (including <code>THREE.js</code>, DOM elements, and input events) for your VR module to interact with the world, the user, and other modules.</p>
+<p>These APIs live on the <code>zeo</code> global variable. You don&#39;t need to do anything special to access these APIs -- </p>
+<p>It is assumed that you already have a working Zeo VR server, and you&#39;re ready to write a VR module. If not, see <a href="#getting-started">Getting started</a> and/or <a href="#writing-modules">Writing modules</a>.</p>
+<h2 id="elements-api">Elements API</h2>
+<p>The <code>elements</code> API is used to integrate your module into the DOM that keeps track of all modules in the VR world.</p>
+<h3 id="registerelement-">registerElement()</h3>
+<p><code>zeo.elements.registerElement()</code> lets you describe your module as a DOM <a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements">Custom element</a> with user-configurable attributes.</p>
+<h3 id="getrootelement-">getRootElement()</h3>
+<p><code>zeo.elements.getRootElement()</code> lets you access the root DOM node that contains all currently instantiated modules (represented as Custom DOM elements) in the VR world.</p>
+<p>This is a regular <code>div</code> that lives in the DOM. However, should should not rely on it having any particular properties. Always access it via <code>elements.getRootElement</code>.</p>
+<p>You can walk this DOM node to find which modules are currently live (including your own) and communicate with them via standard DOM events.</p>
+<h4 id="example-cross-module-events">Example: cross-module events</h4>
+<pre><code class="lang-javascript">// my-plugin/client.js
+class MyPlugin {
+  mount() {
+    class MyPluginElement extends HTMLElement {
+      createdCallback() {
+        this.addEventListener(&#39;somethingHappened&#39;, e =&gt; {
+          console.log(&#39;something happened: &#39; + e.what);
+        });
+      }
+    }
+
+    zeo.elements.registerElement(MyPluginElement);
+  }
+}
+</code></pre>
+<pre><code class="lang-javascript">// my-other-plugin/client.js
+class MyOtherPlugin {
+  mount() {
+    setInterval(() =&gt; {
+      const rootElement = zeo.elements.getRootElement();
+      const myPluginInstances = rootElement.querySelectorAll(&#39;z-my-plugin&#39;);
+
+      const somethingHappenedEvent = new CustomEvent(&#39;somethingHappened&#39;, {
+        what: &#39;something&#39;,
+      });
+
+      myPluginInstances.forEach(myPluginInstance =&gt; {
+        myPluginInstance.dispatchEvent(somethingHappenedEvent);
+      });
+    }, 1000);
+  }
+}
+</code></pre>
+<h2 id="pose-api">Pose API</h2>
+<p>The <code>pose</code> API lets you inspect the state of the user&#39;s VR pose.</p>
+<p>This includes getting the position/orientation of the headset and controllers, the controller button state, and eye and stage matrices.</p>
+<p>The Pose API is particularly useful for scenarios where you would like to instantaneously react to what the user is doing. For example, you might want to trigger an action based on the user&#39;s gaze target -- in which case you could cast a ray from the headset to some target object and react if an intersection is detected.</p>
+<p>This API works the same way for all control modes, including mouse and keyboard, sit/stand, and room scale.</p>
+<p>Use <a href="#render-api">Render API</a> to synchronize your pose queries to the world frame rate.</p>
+<h3 id="getstatus-">getStatus()</h3>
+<p><code>zeo.vr.getStatus()</code> returns an object containing the current instantaneous headset and controllers state.</p>
+<h4 id="get-hmd-pose">Get HMD pose</h4>
+<pre><code class="lang-javascript">const status = zeo.pose.getStatus();
+const {hmd: {position, quaternion, scale}} = status;
+
+console.log(&#39;current headset pose:&#39;, {
+  position, // THREE.Vector3
+  quaternion, // THREE.Quaternion
+  scale, // THREE.Vector3
+});
+</code></pre>
+<h4 id="get-gamepads-pose">Get gamepads pose</h4>
+<pre><code class="lang-javascript">const status = zeo.pose.getStatus();
+const {gamepads} = status;
+
+[&#39;left&#39;, &#39;right&#39;].forEach(side =&gt; {
+  const gamepad = gamepads[side];
+  const {position, quaternion, scale} = gamepad;
+
+  console.log(`current ${side} controller pose:&#39;, {
+    position, // THREE.Vector3
+    quaternion, // THREE.Quaternion
+    scale, // THREE.Vector3
+  });
+});
+</code></pre>
+<h2 id="input-api">Input API</h2>
+<p>The <code>input</code> API is used to access normalized DOM input events from the user.</p>
+<p>This includes gamepad, mouse, and keyboard input (real and virtual) under a single normalized event system.</p>
+<p>When possible,  prefer this API for detecting user input -- although it is technically possible to detect these events in other ways, such as native browser events or the <a href="#pose-api">Pose API</a>, this API abstracts away differences in browser behavior, hardware, and control schemes.</p>
+<p>Note that when you add event listeners for the input events, you&#39;ll need to make sure the event listeners are removed when your element is destroyed (if added on element creation), or otherwise in your module&#39;s <code>unmount</code> function (if added in your module&#39;s <code>mount</code> function).</p>
+<h3 id="event-side">Event side</h3>
+<p>All <code>input</code> API events have a <code>side</code> property equal to either <code>&#39;left&#39;</code> or <code>&#39;right&#39;</code>, depending on which hand corresponds to the controller that fired the event.</p>
+<p>The <code>side</code> property exists for all input events, regardless of the actual control scheme being used -- even with mouse + keyboard controls there are two controllers with distinct <code>side</code>s.</p>
+<p>Note that whether this might not correspond to the actual hand that the user is holding the controller in. The accuracy of this depends entirely on the browser API and user behavior. The main purpose of <code>side</code> is to distinguish and correlate controllers across multiple events. For example, if you do something on <code>gripdown</code> you might want to do something else on <code>gripup</code>, but you&#39;ll need to know <em>which</em> controller fired the event so your code doesn&#39;t get confused when the user decides to grip both controllers simultaneously.</p>
+<h4 id="track-controller-grip">Track controller grip</h4>
+<pre><code class="lang-javascript">zeo.input.on(&#39;gripdown&#39;, e =&gt; {
+  const {side} = e;
+  console.log(`grip down on ${side} side`);
+});
+
+zeo.input.on(&#39;gripup&#39;, e =&gt; {
+  const {side} = e;
+  console.log(`grip up on ${side} side`);
+});
+</code></pre>
+<h3 id="vr-events">VR events</h3>
+<p>The <code>input</code> api emits the following virtual events.</p>
+<p>You should prefer these over the browser-native events, since they work regardless of control scheme: for example, if the user is using the virtual keyboard, you will get <code>keyboardpress</code> but not <code>keypress</code> events..</p>
+<table>
+<thead>
+<tr>
+<th>event</th>
+<th>schema</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>trigger</code></td>
+<td><code>{side: String}</code></td>
+<td>Trigger button pressed.</td>
+</tr>
+<tr>
+<td><code>triggerdown</code></td>
+<td><code>{side: String}</code></td>
+<td>Trigger button held.</td>
+</tr>
+<tr>
+<td><code>triggerup</code></td>
+<td><code>{side: String}</code></td>
+<td>Trigger button released.</td>
+</tr>
+<tr>
+<td><code>pad</code></td>
+<td><code>{side: String}</code></td>
+<td>Pad button pressed.</td>
+</tr>
+<tr>
+<td><code>paddown</code></td>
+<td><code>{side: String}</code></td>
+<td>Pad button held.</td>
+</tr>
+<tr>
+<td><code>padup</code></td>
+<td><code>{side: String}</code></td>
+<td>Pad button released.</td>
+</tr>
+<tr>
+<td><code>grip</code></td>
+<td><code>{side: String}</code></td>
+<td>Grip button pressed.</td>
+</tr>
+<tr>
+<td><code>gripdown</code></td>
+<td><code>{side: String}</code></td>
+<td>Grip button held.</td>
+</tr>
+<tr>
+<td><code>gripup</code></td>
+<td><code>{side: String}</code></td>
+<td>Grip button released.</td>
+</tr>
+<tr>
+<td><code>menu</code></td>
+<td><code>{side: String}</code></td>
+<td>Menu button pressed.</td>
+</tr>
+<tr>
+<td><code>menudown</code></td>
+<td><code>{side: String}</code></td>
+<td>Menu button held.</td>
+</tr>
+<tr>
+<td><code>menuup</code></td>
+<td><code>{side: String}</code></td>
+<td>Menu button released.</td>
+</tr>
+<tr>
+<td><code>keyboardpress</code></td>
+<td><code>{side: String, keyCode: Number}</code></td>
+<td>Virtual keyboard key pressed. <code>keyCode</code> is the Javascript keycode for the corresponding key.</td>
+</tr>
+<tr>
+<td><code>keyboarddown</code></td>
+<td><code>{side: String, keyCode: Number}</code></td>
+<td>Virtual keyboard key held. <code>keyCode</code> is the Javascript keycode for the corresponding key.</td>
+</tr>
+<tr>
+<td><code>keyboardup</code></td>
+<td><code>{side: String, keyCode: Number}</code></td>
+<td>Virtual keyboard key released. <code>keyCode</code> is the Javascript keycode for the corresponding key.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="browser-events">Browser events</h3>
+<p>The <code>input</code> api proxies the following browser events.</p>
+<p>Prefer to listen for these instead of adding native browser event listeners, which might have unexpected differences in capture, bubbling, and focus. Also note that you should prefer to use the <a href="#vr-events">VR events</a> instead, so your code does not make assumptions about the user&#39;s control scheme.</p>
+<table>
+<thead>
+<tr>
+<th>event</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>click</code></td>
+<td>Browser native.</td>
+</tr>
+<tr>
+<td><code>mousedown</code></td>
+<td>Browser native.</td>
+</tr>
+<tr>
+<td><code>mouseup</code></td>
+<td>Browser native.</td>
+</tr>
+<tr>
+<td><code>mousewheel</code></td>
+<td>Browser native.</td>
+</tr>
+<tr>
+<td><code>keypress</code></td>
+<td>Browser native.</td>
+</tr>
+<tr>
+<td><code>keyup</code></td>
+<td>Browser native.</td>
+</tr>
+<tr>
+<td><code>paste</code></td>
+<td>Browser native.</td>
+</tr>
+</tbody>
+</table>
+<p>These are emitted exactly as reported by the browser.</p>
+<h2 id="ui-api">UI API</h2>
+<p>The UI API includes utilities for rendering interactive <em>2D</em> HTML interfaces in the 3D scene.</p>
+<p>This is useful for implementing displays and menu interfaces, and works out of the box with most static HTML, includng inline images.</p>
+<p>The architecture is designed for VR-scale (90 FPS) performance, and implements fiber-like cooperative multitasking that prefers to yield instead of locking up the render loop and missing frames. The end result is a powerful UI rendering model that works for most use cases without too many caveats.</p>
+<h4 id="makeui-">makeUi()</h4>
+<p>Use <code>zeo.ui.makeUi()</code> to create a <code>Ui</code> instance, which implements a single UI plane. This plane can contain an arbitrary <code>image</code>, <code>canvas</code>, or <code>html</code>.</p>
+<h4 id="ui-addpage-">Ui.addPage()</h4>
+<p>XXX</p>
+<h2 id="render-api">Render API</h2>
+<p>The Render API emits events that you can listen for to be notified when we are about to render scene frames, as well as separate eye cameras.</p>
+<p>This is particularly useful when you need to perform frame-accurate updates, such as an auxiliary camera render, or update something based on the user&#39;s VR pose (see the <a href="#pose-api">Post API</a>).</p>
+<h3 id="render-events">Render events</h3>
+<table>
+<thead>
+<tr>
+<th>event</th>
+<th>schema</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>update</code></td>
+<td><code>null</code></td>
+<td>Emitted when we are about to render a VR frame. This event is emitted <em>before</em> rendering starts, so any changes you make to the scene will be immediately reflected in the next frame.</td>
+</tr>
+<tr>
+<td><code>updateEye</code></td>
+<td><code>THREE.PerspectiveCamera</code></td>
+<td>Emitted when we are about to render a single eye of a VR frame. For VR rendering modes you will get two of these events per frame, while for monoscoping rendering you will get one. The emitted camera is positioned and oriented for the target eye. This event is separate from <code>update</code> because there are cases for which you need different math per eye -- such as rendering a stereoscopic texture. This event is emitted <em>before</em> rendering starts, so any changes you make to the scene will be immediately reflected in the rendering of the eye camera.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="file-api">File API</h2>
+<p>The File API lets you access and decode files that have been added to the world.</p>
+<p>This includes functionality such as finding files uploaded by the user, detecting the type of media they represent (e.g. image, audio, video, model), and translating these into a form usable by the rest of the APIs (such as DOM images and THREE.js models).</p>
+<p>XXX</p>
+<h2 id="hands-api">Hands API</h2>
+<p>The Hands API is used to manage grabbing of objects in the scene. It includes utilities and events for handling targeting</p>
+<p>XXX</p>
+<h2 id="multiplayer-api">Multiplayer API</h2>
+<p>The Multiplayer API gives you access to the current state of all users connected to the server. This includes pose data and avatar meshes, as well as events that you can listen for when interesting things happen, such as users joining or leaving teh server.</p>
+<p>XXX</p>
+<h2 id="sound-api">Sound API</h2>
+<p>The Sound API implements a positional audio subsystem that you can use to play audio media (<code>audio</code> and <code>video</code> tags) bound to specific objects in the scene, with realistic panning and gain attenuation.</p>
+<p>XXX</p>
+<h2 id="physics-api">Physics API</h2>
+<p>The Physics API is a frontend interface to the server-side multiplayer physics engine (powered by Bullet).</p>
+<p>This includes facilities for querying, constructing, adding, and removing physics bodies from the scene, binding them to THREE.js objects such as meshes, and helper utilities for things like debug box rendering and shaping physics bodies to your geometries.</p>
+<p>The physics subsystem works out of the box and is automatically synchronized to multiplayer clients.</p>
+<p>XXX</p>
+<h2 id="zeo-api">Zeo API</h2>
+<p>The above describes how to write and load Zeo plugins that do nothing. To interact with the user and the Zeo world you&#39;ll want to use the API exported by <code>/core/engines/zeo</code>.</p>
+<p>This lets you get at the THREE.js <code>THREE</code>, <code>scene</code>, <code>camera</code>, and <code>renderer</code> objects, listen for frame updates, and get user poses:</p>
+<pre><code class="lang-js">module.exports = archae =&gt; ({
+  mount() {
+    return archae.requestPlugin(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        const {THREE, scene} = zeo;
+
+        const COLORS = {
+          GREEN: new THREE.Color(0x4CAF50),
+          RED: new THREE.Color(0xE91E63),
+          BLUE: new THREE.Color(0x2196F3),
+        };
+
+        const startY = 1.2;
+        const radius = 0.1;
+
+        const sphere = new THREE.Mesh(
+          new THREE.SphereBufferGeometry(radius, 7, 5),
+          new THREE.MeshPhongMaterial({
+            color: COLORS.GREEN,
+            shading: THREE.FlatShading,
+            shininess: 0,
+          })
+        );
+        sphere.position.y = startY;
+        scene.add(sphere);
+
+        const _update = () =&gt; {
+          // update sphere position
+          const currentTime = world.getWorldTime();
+          sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+          sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
+
+          // update sphere color when touched or looked at
+          const {hmd, gamepads: gamepadsStatus} = zeo.getStatus();
+          const touched = [&#39;left&#39;, &#39;right&#39;].some(side =&gt; {
+            const gamepadStatus = gamepadsStatus[side];
+            if (gamepadStatus) {
+              const {position: controllerPosition} = gamepadStatus;
+              return controllerPosition.distanceTo(sphere.position) &lt; radius;
+            } else {
+              return false;
+            }
+          });
+          const lookedAt = (() =&gt; {
+            const ray = new THREE.Ray(hmd.position, new THREE.Vector3(0, 0, -1).applyQuaternion(hmd.rotation));
+            const box = new THREE.Box3().setFromCenterAndSize(camera.position, radius * 2);
+            const intersectPoint = ray.intersectBox(box);
+            return Boolean(intersectPoint);
+          })();
+          sphere.material.color = (() =&gt; {
+            if (touched) {
+              return COLORS.RED;
+            } else if (lookedAt) {
+              return COLOR.BLUE;
+            } else {
+              return COLORS.GREEN;
+            }
+          })();
+        };
+        zeo.on(&#39;update&#39;, _update);
+
+        this._cleanup = () =&gt; {
+          scene.remove(sphere);
+
+          zeo.removeListener(&#39;update&#39;, _update);
+        };
+      });
+  },
+  unmount() {
+    this._cleanup();
+  },
+});
+</code></pre>
+<p>This plugin uses the Zeo API to add a sphere to the <code>scene</code> that Zeo has created for us, makes it float up and down in the scene, and colors it <code>BLUE</code> when we&#39;re looking directly at it or <code>RED</code> when we&#39;re touching it with tracked controllers.</p>
+<p>We update the scene every frame on by listening for <code>zeo.on(&#39;update&#39;, _update)</code> and get the HMD and controllers status via <code>zeo.getStatus()</code>. These APIs are documented below.</p>
+<h3 id="exported-objects">Exported objects</h3>
+<p>The Zeo API exports some standard THREE.js primitives as seen above. These include:</p>
+<ul>
+<li><code>THREE</code>, the raw THREE.js API</li>
+<li><code>scene</code>, the <code>THREE.Scene</code> for the current world</li>
+<li><code>camera</code>, the <code>THREE.PerspectiveCamera</code> for viewing the current world</li>
+<li><code>render</code>, the <code>THREE.WebGLRenderer</code> for rendering the current world</li>
+</ul>
+<p>You can use these freely, as you would in any THREE.js app, but note that your plugin should conform to the module loader requirement that whatever you do in the <code>mount</code> step (such as adding objects to the <code>scene</code>) should be undone un the <code>unmount</code> step (such as removing the objects you added to the <code>scene</code>). If you don&#39;t this, your plugin will not behave correctly: it might leak resources, impact performance, or crash.</p>
+<h3 id="frame-events">Frame Events</h3>
+<p>The Zeo API doubles as an <a href="https://nodejs.org/api/events.html"><code>EventEmitter</code></a> that you can listen to for events relating to frame timing and and input.</p>
+<p>The API is inherited from <code>node</code>: <code>zeo.on(&#39;eventName&#39;, eventHandler)</code> registers <code>eventHandler</code> to listen for <code>&#39;eventName&#39;</code> events and <code>zeo.removeListener(&#39;eventName&#39;, eventHandler)</code> unregisters it. The events you can subscribe to are:</p>
+<h4 id="-update-"><code>update</code></h4>
+<p>The <code>update</code> event fires <em>before</em> every frame is rendered. It&#39;s intended to let plugins perform update that need to happen on every frame, such as applying velocities to positions.</p>
+<pre><code class="lang-js">module.exports = archae =&gt; ({
+  mount() {
+    return archae.requestPlugin(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        zeo.on(&#39;update&#39;, () =&gt; {
+          console.log(&#39;about to render a frame!&#39;);
+          // time to update stuff...
+        });
+      });
+  },
+</code></pre>
+<p>Note that since listeners for the <code>update</code> event run on every frame, they need to be fast.</p>
+<p>That is, you shouldn&#39;t be iterating over large arrays, adding materials or textures, and other expensive things in your <code>update</code> function. If you need to do these, you should prefer:</p>
+<ul>
+<li>precomputation in <code>mount</code></li>
+<li>asynchronous computation in a worker</li>
+<li>doing the work in a vertex/fragment shader</li>
+</ul>
+<h4 id="-updateeye-camera-"><code>updateEye(camera)</code></h4>
+<p>The <code>updateEye</code> event fires before each eye is rendered, and receives the eye&#39;s <code>camera</code> as an argument.</p>
+<pre><code class="lang-js">{
+module.exports = archae =&gt; ({
+  mount() {
+    return archae.requestPlugin(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        zeo.on(&#39;updateEye&#39;, camera =&gt; {
+          console.log(&#39;about to render with eye camera!&#39;, camera);
+          // time to update stuff...
+        });
+      });
+  },
+};
+</code></pre>
+<p>The <code>camera</code> argument is the <code>THREE.PerspectiveCamera</code> for the eye being rendered. <code>updateEye</code> is most useful for cases where you want to render something that <em>depends on the eye camera</em> but <em>is not accounted for by the camera&#39;s transform matrix</em>. An example is rendering to a texture that depends on the camera, if you want the texture to be stereoscopic (such as a portal).</p>
+<p>Note that <code>updateEye</code> and <code>update</code> are <em>not</em> interchangeable. In the stereoscopic rendering case you will get <em>two</em> <code>updateEye</code> events per frame, so you&#39;d be doing double the work ad double the rate.</p>
+<p>For consistency, <code>updateEye</code> will fire even if the renderering is monoscopic. In that case there will be a single <code>updateEye</code> event and a single <code>update</code> event fired.</p>
+<p>In general, prefer to use <code>update</code> instead of <code>updateEye</code>.</p>
+<h4 id="input-events">Input events</h4>
+<p>Interacting with the VR world is a bit different than interacting with a regular browser page. For example, you want to be able to take input events from tracked controllers, which have buttons that do not correspond to anything on a standard keyboard or mouse. You&#39;ll want to know <em>which</em> controller your events are coming from. And with features such as virtual keyboards, some logical events do not correspond to any native event in the browser.</p>
+<p>For this reason, Zeo abstracts input events for you. It listens to the hardware and passes events to you through the regular <code>EventEmitter</code> interface. For example, listening to tracked controller events:</p>
+<pre><code class="lang-js">module.exports = archae =&gt; ({
+  mount() {
+    return archae.requestPlugin(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        const _trigger = event =&gt; {
+          const {side} = event;
+          console.log(&#39;trigger pressed on &#39; + side + &#39; controller!&#39;);
+        };
+        zeo.on(&#39;trigger&#39;, _trigger);
+      });
+  },
+};
+</code></pre>
+<p>The full list of available events is:</p>
+<ul>
+<li><code>trigger</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>trigger</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
+</ul>
+</li>
+<li><code>triggerdown</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>trigger</code> button is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li><code>triggerup</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>trigger</code> button is released <em>up</em>.</li>
+</ul>
+</li>
+<li><code>pad</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>pad</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
+</ul>
+</li>
+<li><code>paddown</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>pad</code> button is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li><code>padup</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>pad</code> button is released <em>up</em>.</li>
+</ul>
+</li>
+<li><code>grip</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>grip</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
+</ul>
+</li>
+<li><code>gripdown</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>grip</code> button is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li><code>gripup</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>grip</code> button is released <em>up</em>.</li>
+</ul>
+</li>
+<li><code>menu</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>menu</code> button is pressed. The <code>side</code> argument tells you whether the <code>left</code> or <code>right</code> controller was pressed.</li>
+</ul>
+</li>
+<li><code>menudown</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>menu</code> button is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li><code>menuup</code> <code>{side: &#39;left&#39;}</code><ul>
+<li>Fired when the controller&#39;s <code>menu</code> button is released <em>up</em>.</li>
+</ul>
+</li>
+<li><code>keyboardpress</code> <code>{ key: &#39;a&#39;, keyCode: 65, side: &#39;left&#39; }</code><ul>
+<li>Fired when a virtual keyboard key is pressed.</li>
+<li><code>key</code> is the textual representation of the key. <code>keyCode</code> is the corresponding Javascript-compatible key code. <code>side</code> is whether the <code>left</code> or <code>right</code> controller was used to press the key.</li>
+</ul>
+</li>
+<li><code>keyboarddown</code> <code>{ key: &#39;a&#39;, keyCode: 65, side: &#39;left&#39; }</code><ul>
+<li>Fired when a virtual keyboard key is pushed <em>down</em>.</li>
+</ul>
+</li>
+<li><code>keyboardup</code> <code>{ key: &#39;a&#39;, keyCode: 65, side: &#39;left&#39; }</code><ul>
+<li>Fired when a virtual keyboard key is released <em>up</em>.</li>
+</ul>
+</li>
+</ul>
+<p>// XXX describe event priorities and how event.stopImmediatePropagation() short-circuits</p>
+<h3 id="status-api">Status API</h3>
+<p>// XXX finish this</p>
+<h3 id="engine-api">Engine API</h3>
+<p>The first thing you&#39;ll need to do to get access to the rest of Zeo&#39;s APIs is to request the Zeo engine with <code>archae.requestEngine()</code>. Per the Archae specification, you can get the <code>archae</code> loader instance by grabbing it in the top-level function that&#39;s exported from your module:</p>
+<pre><code class="lang-js">module.exports = archae =&gt; { // here
+  mount() {
+    console.log(&#39;got archae loader!&#39;, {archae});
+  },
+};
+</code></pre>
+<p>Once you&#39;ve done that, you get the Zeo engine instance with <code>archae.requestEngine(&#39;/core/engines/zeo&#39;)</code>. This returns a <code>Promise</code> that will resolve to the Zeo API root:</p>
+<pre><code class="lang-js">module.exports = archae =&gt; {
+  mount() {
+    return archae.requestEngine(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        console.log(&#39;got Zeo API!&#39;, {zeo});
+      });
+  },
+};
+</code></pre>
+<p>Note the <code>return archae.requestEngine()</code>: per the Archae specification, the <code>mount</code> function can return a Promise that will resolve once the mod completes its loading. Since our mod technically depends on loading the Zeo engine API, <code>return archae.requestEngine()</code> magically does the correct thing. We could load multiple things with <code>Promise.all</code>, or continue the <code>Promise</code> chain if we wanted to load more stuff here and it would &quot;just work&quot;, but we&#39;ll stick with the simple example for now.</p>
+<p>The rest of what your module does communicates with Zeo through the API you get out of the resolved <code>archae.requestEngine(&#39;/core/engines/zeo&#39;)</code>.</p>
+<h3 id="scene-api">Scene API</h3>
+<p>Zeo loads <code>THREE.js</code> and sets up the <code>scene</code> rendering for you, and exposes these at the root of the Zeo API.</p>
+<pre><code class="lang-js">module.exports = archae =&gt; {
+  mount() {
+    return archae.requestEngine(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        const {THREE, scene, camera, renderer} = zeo;
+
+        console.log(&quot;got Zeo&#39;s THREE and scene!&quot;, {THREE, scene, camera, renderer});
+      });
+  },
+};
+</code></pre>
+<p>These objects (<code>THREE</code>, <code>scene</code>, <code>camera</code>, <code>renderer</code>) are the bare THREE.js APIs and you can immediately use them to add meshes and other objects to the THREE.js scene graph. There&#39;s no magic here and you have the full THREE.js API at your disposal.</p>
+<p>Here we add a green sphere floating in the middle of the scene:</p>
+<pre><code class="lang-js">module.exports = archae =&gt; {
+  mount() {
+    return archae.requestEngine(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        const {THREE, scene} = zeo;
+
+        const sphere = new THREE.Mesh(
+          new THREE.SphereBufferGeometry(0.1, 5, 4),
+          new THREE.MeshPhongMaterial({
+            color: 0x4CAF50,
+            shading: THREE.FlatShading,
+            shininess: 0,
+          })
+        );
+        scene.add(sphere);
+
+        this._cleanup = () =&gt; {
+          scene.remove(sphere);
+        };
+      });
+  },
+  unmount() {
+    this._cleanup();
+  },
+};
+</code></pre>
+<p>Note that a full example of this mod is available as a demo plugin in the <a href="/plugins/demo/">plugins/demo/</a>.</p>
+<h3 id="zeo-update-callbacks-api">Zeo update callbacks API</h3>
+<p>Since Zeo is fundamentally about interactive VR, you will probably want a way to &quot;do something on every frame&quot;, or &quot;do something for each eye camera&quot; -- such as advance an animation or render something stereoscopically.</p>
+<p>The Zeo framework is the &quot;owner&quot; of the VR camera, the rendering pipeline, and timing, so to be able to do stuff (like updating animations), you&#39;ll need to be able to hook in your code at the right time in a frame. That&#39;s what the update callbacks are for.</p>
+<p>All callbacks are declared by your mod via the <a href="https://github.com/modulesio/archae">Archae specification</a>. That is, your mount function should return (a <code>Promise</code> that resolves to) an object with the callback key mapping to the callback handler:</p>
+<pre><code class="lang-js">module.exports = archae =&gt; {
+  mount() {
+    return archae.requestEngine(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        return {
+          update() {
+            console.log(&#39;about to render a frame&#39;);
+          },
+        };
+      });
+  },
+};
+</code></pre>
+<h4 id="-update-"><code>update</code></h4>
+<p>The <code>update</code> callback will fire <em>before</em> Zeo renders every frame. This lets you do additional work that needs to be done per frame, such as updating animations.</p>
+<pre><code class="lang-js">module.exports = archae =&gt; {
+  mount() {
+    return archae.requestEngines(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        const {THREE, scene} = zeo;
+
+        const object = new THREE.Object3D(); // or new THREE.Mesh() etc.
+        const y = 5;
+        object.position.set(0, y, 0);
+        scene.add(object);
+        this.object = object;
+
+        this._cleanup = () =&gt; {
+          scene.remove(object);
+        };
+
+        let i = 0;
+
+        return {
+          update() {
+            object.position.y = y + Math.sin(Math.PI * i * 0.001); // a hacky version of gravity in which time flows in lockstep with your framerate
+
+            i++;
+          },
+        };
+      });
+  },
+  unmount() {
+    this._cleanup &amp;&amp; this._cleanup();
+  },
+};
+</code></pre>
+<p>Note that whatever your <code>update</code> callback runs once per frame, so it needs to be fast.</p>
+<p>This means your <code>update</code> callback should not add or remove objects from the scene, construct new materials (<code>new THREE.Material()</code>), or do heavy math.</p>
+<p>If you need to do these things, the right place to do them is in the <code>mount</code> function; if this setup needs to be asynchronous (such as needing to fetch resources), your <code>mount</code> function can return the appropriate <code>Promise</code>.</p>
+<h4 id="-updateeye-"><code>updateEye</code></h4>
+<p>The <code>updateEye</code> callback is similar to <code>update</code>, only it will get called once <em>per eye</em> being rendered (generally, twice per frame).</p>
+<p>Additionally, it gets passed the <code>camera</code> that correponds to the eye being rendered. You can use the <code>camera</code> object to perform additional computation or set up shader parameters for more complicated rendering passes. For example, if you want to render a stereoscopic portal texture, <code>updateEye</code> is the way you&#39;d do it.</p>
+<p>Note that <code>update</code> and <code>updateEye</code> are <em>not</em> mutually exclusive. You can use both, in which case <code>updateEye</code> will be called for each eye, followed by <code>update</code>.</p>
+<h3 id="zeo-status-api">Zeo status API</h3>
+<p>The Zeo status API lets you get details about the current user state -- their Head Mounted Display (HMD) pose, controller poses, and button states.</p>
+<p>// XXX</p>
+<h3 id="zeo-world-api">Zeo world API</h3>
+<p>The Zeo world API lets your mod get details about the currently loaded VR world -- such as accurate world timing information for animations. For this, the Zeo engine exports a <code>getCurrentWorld()</code> function:</p>
+<pre><code class="lang-js">module.exports = archae =&gt; {
+  mount() {
+    return archae.requestEngines(&#39;/core/engines/zeo&#39;)
+      .then(zeo =&gt; {
+        const {THREE, scene} = zeo;
+
+        const object = new THREE.Object3D(); // or new THREE.Mesh() etc.
+        object.position.set(0, 5, 0);
+        scene.add(object);
+        this.object = object;
+
+        this._cleanup = () =&gt; {
+          scene.remove(object);
+        };
+
+        let lastWorldTime = zeo.getCurrentWorldTime();
+
+        return {
+          update() {
+            const currentWorldTime = zeo.getCurrentWorldTime();
+            const timeDiff = currentWorldTime - lastWorldTime;
+            object.position.y = Math.sin(Math.PI * timeDiff * 0.001); // a less hacky version of gravity that is synchronized to the world rather than your framerate
+
+            lastWorldTime = zeo.getCurrentWorldTime();
+          },
+        };
+      });
+  },
+  unmount() {
+    this._cleanup &amp;&amp; this._cleanup();
+  },
+};
+</code></pre>
+<p>The API behind the <code>World</code> object exported from is still settling, but you can rely on <code>getWorldTime()</code> being available, for getting the current number of milliseconds that the world has been executing.</p>
+<h3 id="zeo-elements-api">Zeo elements API</h3>
+<p>The Zeo elements API is a way for mods to comunicate -- with the user (via configuration in the menu interface), and with each other (via a DOM object model and event system). The key idea is that a Zeo mod can export a specification for custom DOM elements, and these can be added to the world and configured by the user.</p>
+<p>Here&#39;s a simple example of a mod that allows user-configurable placement of a cube:</p>
+<pre><code class="lang-js">// XXX
+</code></pre>
+<p>There are basically three parts to the elements API: <code>element declarations</code>, <code>attrbute declarations</code>, and <code>template declarations</code>. We&#39;ll tackle them individually.</p>
+<p>// XXX</p>
+
+  </div>
+</div>
+
+  </div>
+<script>
+const $ = s => document.querySelectorAll(s);
+
+const _updateHash = () => {
+  $('a').forEach(a => {
+    a.classList.remove('active');
+  });
+
+  const {hash} = window.location;
+  $('a[href="' + hash + '"').forEach(a => {
+    a.classList.add('active');
+  });
+};
+_updateHash();
+
+window.addEventListener('hashchange', e => {
+  _updateHash();
+});
+</script>
+</body>
+</html>
