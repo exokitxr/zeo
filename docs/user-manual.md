@@ -4,7 +4,7 @@
 
 Here's how to get started running your own Zeo VR server.
 
-## Server setup (Docker)
+## Server setup: Docker
 
 The recommended (and easiest) way to run Zeo VR is with [Docker](https://docker.com). That way you won't have to install anything else or worry about versions.
 
@@ -47,7 +47,7 @@ However, you might also want to (or need to) clean up your configuration to get 
 
 [See here](#command-line) for the command line arguments you can use when starting your container. They're passed through directly to the server start script.
 
-## Server setup (bare)
+## Server setup: Bare
 
 Here's how to set up Zeo VR on a bare server.
 

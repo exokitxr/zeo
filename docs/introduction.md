@@ -14,45 +14,76 @@ You can also write and publish your own modules: it's all Javascript, DOM, `THRE
 
 ## Install Zeo VR
 
-```javascript
-npm install zeo
+Install from the Github repository:
+
+```bash
+npm install git+ssh://git@github.com/modulesio/zeo.git
 ```
 
-### Install depencencies (Ubuntu)
+Note that you will need some dependencies on your system for the build to work. This is mainly for the physics engine, audio streaming, and avatar generation.
 
-```javascript
+### Install depencencies: Ubuntu
+
+```bash
 sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
 ```
 
-### Install depencencies (Debian)
+### Install depencencies: Debian
 
-```javascript
+```bash
 sudo apt-get install build-essential cmake python libav-tools libcairo2-dev
 ```
 
+### Install depencencies: Other
+
+You'll almost certainly find the above packages in your operating system's package manager. However, they might be listed under different names.
+
 ## Highlights
 
-- Multiplayer
-- Voice chat
-- Server-side physics
-- World persistence
+- Multiplayer out of the box
+- Voice chat support
+- Worlds persist when you leave
 - In-VR module configurator
-- Positional audio
-- Plain [THREE.js](https://threejs.org) API
-- Use any [NPM](https://npmjs.org) module
-- Run modules on both frontend or backend via [`archae`](https://github.com/modulesio/archae)
-- Hot code loading
-- Normalized event API for headset and controllers
+- Vanilla `DevTools` and `node` development and debugging
+- Entity-component system via the DOM
+- [THREE.js](https://threejs.org) API
+- Use any [`npm`](https://npmjs.org) module
+- Run code on the front- and back- end
+- Hot module loading
+- Normalized DOM event API for headset and controllers
 - Per-frame, per-eye render callbacks
+- Positional audio API
 - First class media file and model uploads
 - Support all major model formats
 - HMD + controller emulation with keyboard + mouse
-- Mostly just Javascript
+- It's all just Javascript
 - [Open source on Github](https://github.com/modulesio/zeo)
+
+## Recommended modules
+
+#### z-sp-physics
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+#### z-mp-physics
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+#### z-paint
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+#### z-camera
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
+
+#### z-whiteboard
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
 
 ## Browser requirements
 
-The only browser requirement is [`WebGL`](https://en.wikipedia.org/wiki/WebGL). This includes virtually [every modern web browser](http://caniuse.com/#feat=webgl), including mobile ones.
+Zeo VR works on every modern web browser. The only hard requirement is [`WebGL`](https://en.wikipedia.org/wiki/WebGL), which is [broadly supported](http://caniuse.com/#feat=webgl).
 
 Note that [`WebVR`](https://webvr.info/) itself is _not_ required, nor do you need VR hardware: there is mouse + keyboard emulation of VR controls (keybindings are [here](#key-bindings)). That said, the main point of Zeo VR is that it works in virtual reality, so you're missing out without a headset. But the option of working without gear is there, and enjoys first-class support.
 
@@ -60,11 +91,11 @@ If you want to use `WebVR`, you'll need a browser that supports it. For desktop,
 
 ## Server requirements
 
-The main requirement for running your own Zeo VR server is _Linux_.
+The main requirement for running your own Zeo VR server is __Linux__.
 
 Technically all you need is `node.js`, but some native C++ modules require a build step and a native C++ compiler.
 
-_Windows_ and _OSX_ might work, but are not tested. It's recommended that you simply use a Linux virtual machine.
+_Windows_ (via Windows Subsystem for Linux) and _OSX_ might work, but are not tested. It's recommended that you simply use a Linux virtual machine.
 
 ## Headset support
 
