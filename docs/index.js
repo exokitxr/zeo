@@ -1,7 +1,11 @@
 const fs = require('fs');
 
 module.exports = {
-  getMarkdown: function() {
+  getTemplate() {
+    return '' +
+      fs.readFileSync(__dirname + '/template.html');
+  },
+  getMarkdown() {
     return '' +
       fs.readFileSync(__dirname + '/introduction.md') + '\n' +
       fs.readFileSync(__dirname + '/user-manual.md') + '\n' +
