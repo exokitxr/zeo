@@ -2,35 +2,35 @@
 
 ## What is Zeo VR?
 
-**Zeo VR** is a [`node.js`](https://nodejs.org) web server that runs [`npm`](https://npmjs.org) modules in [`WebVR`](https://webvr.info/).
+**Zeo VR** is a [`node.js`](https://nodejs.org) web server that runs virtual worlds built out of [`npm`](https://npmjs.org) modules.
 
-There is a [`package.json` spec](#module-specification) for making your own VR NPM modules and a [THREE.js DOM API](#api-docs) for presenting 3D content.
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AOZtqDhQP44" frameborder="0" allowfullscreen></iframe>
 
-There's also an in-VR world builder, mutiplayer, and server-side physics.
+You can access the VR world from any modern web browser. Most headsets and controllers are supported via [`WebVR`](https://webvr.info/). You don't need a headset, though; there's mouse and keyboard emulation.
 
-Basically, Zeo VR uses web technologies to run your Javascript modules in VR.
+Worlds are <i>persistent</i> and <i>multiplayer</i> out of the box, and you can <i>drag and drop</i> and configure <a href="">npm modules</a> to add objects, behaviors, and entire features like physics engines -- without taking off your headset.
 
-> ![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
+You can also write and publish your own modules: it's all Javascript, DOM, `THREE.js`, and `node`. [Read the API docs](#api-docs).
 
-#### Install Zeo VR
+## Install Zeo VR
 
 ```javascript
 npm install zeo
 ```
 
-#### Install depencencies (Ubuntu)
+### Install depencencies (Ubuntu)
 
 ```javascript
 sudo apt-get install build-essential cmake python ffmpeg libcairo2-dev
 ```
 
-#### Install depencencies (Debian)
+### Install depencencies (Debian)
 
 ```javascript
 sudo apt-get install build-essential cmake python libav-tools libcairo2-dev
 ```
 
-### Highlights
+## Highlights
 
 - Multiplayer
 - Voice chat
@@ -50,7 +50,7 @@ sudo apt-get install build-essential cmake python libav-tools libcairo2-dev
 - Mostly just Javascript
 - [Open source on Github](https://github.com/modulesio/zeo)
 
-### Browser requirements
+## Browser requirements
 
 The only browser requirement is [`WebGL`](https://en.wikipedia.org/wiki/WebGL). This includes virtually [every modern web browser](http://caniuse.com/#feat=webgl), including mobile ones.
 
@@ -58,7 +58,7 @@ Note that [`WebVR`](https://webvr.info/) itself is _not_ required, nor do you ne
 
 If you want to use `WebVR`, you'll need a browser that supports it. For desktop, that means either [Chromium Experimental](https://webvr.info/get-chrome/) or [Firefox Nightly](https://www.mozilla.org/en-US/firefox/channel/desktop/#nightly). This requirement will go away when WebVR makes it to to the stable release.
 
-### Server requirements
+## Server requirements
 
 The main requirement for running your own Zeo VR server is _Linux_.
 
@@ -66,7 +66,7 @@ Technically all you need is `node.js`, but some native C++ modules require a bui
 
 _Windows_ and _OSX_ might work, but are not tested. It's recommended that you simply use a Linux virtual machine.
 
-### Headset support
+## Headset support
 
 Only [HTC Vive](https://en.wikipedia.org/wiki/HTC_Vive) is supported at the moment.
 
