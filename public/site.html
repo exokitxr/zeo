@@ -76,18 +76,7 @@
     }
     .api-body {
       z-index: 1;
-    }
-
-    .sidebar {
-      display: flex;
-      position: relative;
-      width: 250px;
-      background-color: #111;
-      font-size: 13px;
-      flex-grow: 1;
-      flex-direction: column;
-      z-index: 1;
-    }
+    } 
 
     .slides {
       display: flex;
@@ -170,14 +159,6 @@
     }
     .slide-wrap p {
       font-size: 12px;
-    }
-
-    .sidebar .footer {
-      display: flex;
-      padding: 20px;
-      font-size: 12px;
-      line-height: 2;
-      flex-direction: column;
     }
 
     .hub-iframe {
@@ -751,6 +732,14 @@
       border-top: 1px solid #000;
       background-image: linear-gradient(to right, #000000 , #222);
     }
+    .grid-item-wrap:nth-child(5) {
+      // background: linear-gradient(to left, #134E5E , #71B280);
+      // background: linear-gradient(to left, #EB3349 , #F45C43);
+      background: linear-gradient(to left, #000000 , #53346D);
+    }
+    .grid-item-wrap:nth-child(5) h4 {
+      font-weight: 300;
+    }
     .grid-item {
       display: flex;
       width: 640px;
@@ -777,8 +766,9 @@
       align-items: center;
     }
     .grid-item .icon.small {
-      width: 80px;
-      height: 80px;
+      width: 60px;
+      height: 60px;
+      margin: 10px;
     }
     .grid-item-1 .icon {
     }
@@ -926,13 +916,20 @@
       flex-direction: column;
     }
 
-    footer {
+    .footer {
       position: relative;
       display: flex;
-      height: 50px;
+      height: 80px;
       padding: 0 30px;
       background-color: #000;
+      color: #808080;
       font-size: 13px;
+      justify-content: center;
+      align-items: center;
+    }
+    .footer-wrap {
+      display: flex;
+      width: 640px;
       justify-content: center;
       align-items: center;
     }
@@ -1132,7 +1129,10 @@
             </div>
             <div class=grid-item-wrap>
               <div class="grid-item grid-item-2">
-                <img src="/img/nodejs.svg" class="icon small">
+                <div class=icons>
+                  <img src="/img/google-chrome.svg" class="icon small">
+                  <img src="/img/nodejs.svg" class="icon small">
+                </div>
                 <h4>Made for full-stack web developers</h4>
                 <p>
                   Build entity-component worlds without taking off your headset.<br/>
@@ -1144,8 +1144,11 @@
             </div>
             <div class=grid-item-wrap>
               <div class="grid-item grid-item-3">
-                <img src="/img/github-circle.svg" class="icon small">
-                <h4>Persistent multiplayer physics? It's on npm.</h4>
+                <div class=icons>
+                  <img src="/img/package-variant.svg" class="icon small">
+                  <img src="/img/github-circle.svg" class="icon small">
+                </div>
+                <h4>Npm install multiplayer physics</h4>
                 <p>
                   Drag and drop <code>npm</code> modules to add magic to your world.<br/>
                   Paint in 3D, take VR pictures, and catch cake in your mouth with open source Javascript plugins.<br/>
@@ -1156,14 +1159,28 @@
             </div>
             <div class=grid-item-wrap>
               <div class="grid-item grid-item-4">
-                <i class="icon octicon octicon-mark-github"></i>
-                <h4>Open source. Or hosted.</h4>
+                <div class=icons>
+                  <img src="/img/twitter.svg" class="icon small">
+                  <img src="/img/youtube-play.svg" class="icon small">
+                  <img src="/img/map-marker-radius.svg" class="icon small">
+                </div>
+                <h4>Open source, open worlds</h4>
                 <p>
-                  Run your own server or join us on the public Zeo Hub.<br/>
-                  Test it out with just your browser.<br/>
-                  And if you want us to host your world, we have a plan for that.<br/>
+                  The code is <a href="https://github.com/modulesio/zeo" class=link>on Github</a><br/>
+                  Server are automatically indexed on <a href="/servers" class=link>the hub</a>.<br/>
+                  We're also on <a href="https://twitter.com/modulesio" class=link>Twitter</a>, <a href="https://www.youtube.com/channel/UCSNCMWhEojiVjUySdI7J_wg" class=link>Youtube</a>, and <a href="https://zeovr.slack.com/" class=link>Slack</a> and we <b>love</b> it when you come and say hi!<br/>
                 </p>
-                <a href="https://github.com/modulesio/zeo" class=grid-button>See pricing</a>
+                <a href="/servers" class=grid-button>See all servers</a>
+              </div>
+            </div>
+            <div class=grid-item-wrap>
+              <div class="grid-item grid-item-5">
+                <h4>
+                  Need hosting? Support? Custom multi-user VR solutions?<br/>
+                  We do that.<br/>
+                  Plans start at $100/mo.<br/>
+                  <a href="mailto:hello@zeovr.io" class=grid-button>Start the conversation</a>
+                </h4>
               </div>
             </div>
           </div>
@@ -1171,8 +1188,10 @@
       </div>
     </section>
     <footer class=footer>
-      <div><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
-      <div>&copy; 2017 <a href="mailto:a@zeovr.io">Avaer Kazmer</a></div>
+      <div class=footer-wrap>
+        <div class=footer-left><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
+        <div class=footer-right>&copy; 2017 <a href="mailto:a@zeovr.io">Zeo VR</a></div>
+      </div>
     </footer>
   </div>
   <div class="body api-body" id=api-body style="display: none;">
