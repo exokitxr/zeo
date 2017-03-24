@@ -8,7 +8,7 @@ Here's how to get started running your own Zeo VR server.
 
 The recommended (and easiest) way to run Zeo VR is with [Docker](https://docker.com). That way you won't have to install anything else or worry about versions.
 
-Unless you need to hack Zeo VR itself, this is your best option.
+Unless you need to hack on Zeo VR itself, this is your best option.
 
 ### Step 1: Get Docker
 
@@ -16,27 +16,50 @@ If you don't have Docker yet, follow [these instructions](https://docs.docker.co
 
 ### Step 2: Pull image
 
+The [latest Zeo VR image](https://hub.docker.com/r/modulesio/zeo/) is on Docker hub. The build is automated from the Github `master` branch.
+
 #### Pull modulesio/zeo with docker
 
 ```javascript
 docker pull modulesio/zeo
 ```
 
-The [latest Zeo VR image](https://hub.docker.com/r/modulesio/zeo/) is on Docker hub. The build is automated from the Github `master` branch.
-
-To pull the image locally, use `docker pull modulesio/zeo`.
-
 You can repeat this anytime to get the latest Zeo VR image, but note that you will also need to follow the rest of the steps to create a new container for the the image.
 
 ### Step 3: Run container
+
+Once you have the Zeo VR Docker image, you'll need to start it in a container:
+
+```bash
+docker run -it \
+  -v ~/.zeo/data:/root/zeo/data \
+  -v ~/.zeo/crypto:/root/zeo/crypto \
+  -p 8000:8000 \
+  modulesio/zeo
+```
+
+The interesting parts of this command are:
+
+- we are storing world data and certificates in `~/.zeo` on the host, and
+- we are using host TCP port `8000`
+
+To run on the traditional HTTPS port (`443`), we could instead use:
+
+```bash
+docker run -it \
+  -v ~/.zeo/data:/root/zeo/data \
+  -v ~/.zeo/crypto:/root/zeo/crypto \
+  -p 443:8000 \
+  modulesio/zeo
+```
+
+See the [`docker run` documentation](https://docs.docker.com/engine/reference/run/) for all of the options available here.
 
 #### Run modulesio/zeo with docker
 
 ```javascript
 docker run modulesio/zeo
 ```
-
-Once you have the Zeo VR Docker image, run it with `docker run modulesio/zeo`.
 
 If you did everything right, the autput should be a URL that you can access from your browser.
 
@@ -47,9 +70,11 @@ However, you might also want to (or need to) clean up your configuration to get 
 
 [See here](#command-line) for the command line arguments you can use when starting your container. They're passed through directly to the server start script.
 
-## Server setup: Bare
+## Server setup: Standard
 
 Here's how to set up Zeo VR on a bare server.
+
+It's more involved than the [Docker install](#server-setup-docker) route, without any advantages for typical users, so it's really only recommended if you want to hack on Zeo VR itself. In particular, note that you can install and develop modules without having to do any of this.
 
 ### Step 1: Get Linux
 
@@ -57,7 +82,7 @@ Get yourself a Linux machine.
 
 It can be raw Linux or a virtual machine, but it needs to be Linux. It doesn't matter which distribution.
 
-### Step 2: Get node.js
+### Step 2: Get node
 
 [Install node.js](https://nodejs.org/en/download/), version `7+`.
 
@@ -121,9 +146,13 @@ Note that since you're using a self-signed SSL certificate, your browser will co
 https://local.zeovr.io:8000?t=ZU1TVgYyUAlDCnJgDVNDRHlrCmhAGDvCgHRhexoD
 ```
 
-### Step 6: Hosts file (optional)
+## Server setup: Addendum
 
-Since you're running a server on your own domain (`local.zeovr.io`) and you (probably) don't own that domain, you'll need to teach your computer how to reach it.
+Here are some additional notes and steps that apply regardless of how you run your server.
+
+### Optional 1: Hosts file
+
+Since by default you're running a server under the `local.zeovr.io` domain, and you probably don't control that domain, you'll need to teach your computer how to reach it.
 
 That is, you'll need to add a line to your [hosts file](https://en.wikipedia.org/wiki/Hosts_(file)).
 
@@ -134,7 +163,7 @@ Once you've done that, you should be able to connect to your server by opening t
 127.0.0.1 local.zeovr.io
 ```
 
-### Step 7: TLS certificate (optional)
+### Optional 2: TLS certificate
 
 Zeo VR uses **HTTP/2**, for both security and performance. This requires using a TLS certificate. By default the server will generate a self-signed certificate for a fake domain (`local.zeovr.io`) and use that.
 
