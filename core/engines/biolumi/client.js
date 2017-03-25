@@ -45,7 +45,6 @@ class Biolumi {
           this.work = debounce(this.work.bind(this));
         }
 
-        
         add(thread) {
           const {threads} = this;
           threads.push(thread);
