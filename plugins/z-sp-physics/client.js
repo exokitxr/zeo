@@ -287,7 +287,7 @@ class ZSpPhysics {
 
               if (oldDebugMesh) {
                 object.remove(oldDebugMesh);
-                object.debugMesh = null;
+                this.debugMesh = null;
               }
 
               const {debug, size} = this;
@@ -337,9 +337,10 @@ class ZSpPhysics {
             }
           }
           class Compound extends EventEmitter {
-            constructor({children, mass}) {
+            constructor({object, children, mass}) {
               super();
 
+              this.object = object;
               this.children = children;
               this.mass = mass;
 
@@ -534,24 +535,55 @@ class ZSpPhysics {
             }
 
             renderDebug() {
-              const {object, debugMesh: oldDebugMesh} = this;
+              const {object, children, debugMesh: oldDebugMesh} = this;
 
               if (oldDebugMesh) {
                 object.remove(oldDebugMesh);
-                object.debugMesh = null;
+                this.debugMesh = null;
               }
 
               const {debug} = this;
               if (debug) {
-                /* const newDebugMesh = (() => { // XXX make this work with compound shapes
-                  const geometry = new THREE.BoxBufferGeometry(size[0], size[1], size[2]);
-                  const material = wireframeMaterial;
+                const newDebugMesh = (() => {
+                  const debugMesh = new THREE.Object3D();
 
-                  const mesh = new THREE.Mesh(geometry, material);
-                  return mesh;
+                  for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+
+                    const childMesh = (() => {
+                      const mesh = (() => {
+                        const {type} = child;
+
+                        switch (type) {
+                          case 'box': {
+                            const {dimensions} = child;
+
+                            const geometry = new THREE.BoxBufferGeometry(dimensions.x, dimensions.y, dimensions.z);
+                            const material = wireframeMaterial;
+
+                            const mesh = new THREE.Mesh(geometry, material);
+                            return mesh;
+                          }
+                          default: {
+                            return null;
+                          }
+                        }
+                      })();
+
+                      const {position = zeroVector, rotation = zeroQuaternion} = child;
+                      mesh.position.copy(position);
+                      mesh.rotation.copy(rotation);
+
+                      return mesh;
+                    })();
+
+                    debugMesh.add(childMesh);
+                  }
+
+                  return debugMesh;
                 })();
                 object.add(newDebugMesh);
-                this.debugMesh = newDebugMesh; */
+                this.debugMesh = newDebugMesh;
               }
             }
 
@@ -593,8 +625,10 @@ class ZSpPhysics {
 
           // controllers
           const controllerMeshes = player.getControllerMeshes();
-          SIDES.forEach(side => {
+          const controllerPhysicsBodies = SIDES.map(side => {
+            const controllerMesh = controllerMeshes[side];
             const controllerPhysicsBody = _makeCompoundBody({
+              object: controllerMesh,
               children: [
                 {
                   type: 'box',
@@ -611,7 +645,6 @@ class ZSpPhysics {
             controllerPhysicsBody.setActivationState(DISABLE_DEACTIVATION);
             controllerPhysicsBody.setEnabled(true);
 
-            const controllerMesh = controllerMeshes[side];
             const _update = () => {
               controllerPhysicsBody.setPosition(controllerMesh.position);
               controllerPhysicsBody.setRotation(controllerMesh.quaternion);
@@ -622,11 +655,7 @@ class ZSpPhysics {
               render.removeListener('update', _update)
             });
 
-            /* controllerPhysicsBody.on('update', ({position, quaternion, scale}) => {
-              entityElement.setState('position', position);
-              entityElement.setState('quaternion', quaternion);
-              entityElement.setState('scale', scale);
-            }); */
+            return controllerPhysicsBody;
           });
 
           const spPhysicsComponent = {
@@ -699,6 +728,23 @@ class ZSpPhysics {
                 }
                 case 'physics-debug': {
                   physicsBody.setDebug(newValue);
+
+                  const numPhysicsDebugs = (() => {
+                    let result = 0;
+
+                    for (let i = 0; i < activePhysicsBodies.length; i++) {
+                      const physicsBody = activePhysicsBodies[i];
+                      const {debug} = physicsBody;
+                      result += Number(debug);
+                    }
+
+                    return result;
+                  })();
+                  const controllerPhysicsDebug = numPhysicsDebugs > 0;
+                  for (let i = 0; i < controllerPhysicsBodies.length; i++) {
+                    const controllerPhysicsBody = controllerPhysicsBodies[i];
+                    controllerPhysicsBody.setDebug(controllerPhysicsDebug);
+                  }
 
                   break;
                 }
