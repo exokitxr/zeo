@@ -464,10 +464,19 @@ class Rend {
                   const value = ((1 - factor) * startValue) + (factor * endValue);
 
                   const {tagMeshes} = auxObjects;
-                  const animatedMeshSpecs = tagMeshes.map(tagMesh => ({
+                  const animatedMeshSpecs = [
+                    {
+                      mesh: menuMesh,
+                      direction: 'y',
+                    },
+                    {
+                      mesh: keyboardMesh,
+                      direction: 'x',
+                    },
+                  ].concat(tagMeshes.map(tagMesh => ({
                     mesh: tagMesh,
                     direction: 'y',
-                  }));
+                  })));
 
                   if (factor < 1) {
                     if (value > 0.001) {
