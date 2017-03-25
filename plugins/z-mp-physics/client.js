@@ -1,4 +1,4 @@
-const idUtils = require('./lib/idUtils');
+<F4>const idUtils = require('./lib/idUtils');
 
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
@@ -20,25 +20,19 @@ class ZMpPhysics {
     if (serverEnabled) {
       return archae.requestPlugins([
         '/core/engines/bootstrap',
-        '/core/engines/three',
         '/core/engines/login',
         '/core/engines/servers',
         '/core/engines/rend',
         '/core/engines/config',
-        '/core/plugins/js-utils',
       ]).then(([
         bootstrap,
-        three,
         login,
         servers,
         rend,
         config,
-        jsUtils,
       ]) => {
         if (live) {
-          const {THREE, scene} = three;
-          const {events} = jsUtils;
-          const {EventEmitter} = events;
+          const {three: {THREE, scene}, utils: {js: {events: {EventEmitter}}}} = zeo;
 
           const debugMaterial = new THREE.MeshBasicMaterial({
             color: 0xFF0000,
