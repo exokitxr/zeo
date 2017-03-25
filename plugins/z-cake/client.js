@@ -179,6 +179,10 @@ class ZCake {
                 type: 'checkbox',
                 value: true,
               },
+              'physics-debug': {
+                type: 'checkbox',
+                value: false,
+              },
               size: {
                 type: 'vector',
                 value: DEFAULT_SIZE,
