@@ -510,7 +510,7 @@ class Hub {
                     return mesh;
                   })();
 
-                  _requestCubeMapImgs(server) // load the actual cube map asynchronously
+                  _requestCubeMapImgs(server) // XXX this needs to be announced to the hub and served from there
                     .then(faceImgs => {
                       const images = [
                         'right',
@@ -541,7 +541,7 @@ class Hub {
                 const _makeServerMenuMesh = server => {
                   const object = new THREE.Object3D();
 
-                  const _requestServerIcon = server => fetch('https://' + hubUrl + '/servers/img/icon/' + encodeURIComponent(server.url))
+                  const _requestServerIcon = server => fetch('https://' + hubUrl + '/servers/img/icon/' + encodeURIComponent(server.url)) // XXX this needs to be announced to the hub and served from there
                     .then(res => res.blob()
                       .then(blob => _requestBlobDataUrl(blob))
                     );

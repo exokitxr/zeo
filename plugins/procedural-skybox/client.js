@@ -9,17 +9,16 @@ const DOT_COLOR = 0x808080;
 
 const SHADOW_MAP_SIZE = 2048;
 
-// const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
-const FACES = ['back', 'left', 'front', 'right', 'top', 'bottom'];
+const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
 
-class Airlock {
+class ProceduralSkybox {
   constructor(archae) {
     this._archae = archae;
   }
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -28,16 +27,7 @@ class Airlock {
 
     const _requestImage = p => new Promise((accept, reject) => {
       const img = new Image();
-      const url = (() => {
-        if (hubEnabled) {
-          return hubUrl;
-        } else if (serverEnabled) {
-          return serverUrl;
-        } else {
-          return null;
-        }
-      })();
-      img.src = 'https://' + url + p;
+      img.src = 'https://' + serverUrl + p;
       img.onload = () => {
         accept(img);
       };
@@ -45,7 +35,7 @@ class Airlock {
         reject(err);
       };
     });
-    /* const _requestCubeMapImgs = () => {
+    const _requestCubeMapImgs = () => { // XXX this needs to be fixed on the server
       if (serverEnabled) {
         return Promise.all(FACES.map(face => _requestImage('/servers/img/cubemap-' + face + '.png')))
           .then(cubeMapImgs => {
@@ -60,17 +50,7 @@ class Airlock {
       } else {
         return Promise.resolve();
       }
-    }; */
-    const _requestCubeMapImgs = () => Promise.all(FACES.map((face, index) => _requestImage('/archae/airlock/img/skybox-' + (index + 1) + '.png')))
-      .then(cubeMapImgs => {
-        const result = {};
-        for (let i = 0; i < cubeMapImgs.length; i++) {
-          const cubeMapImg = cubeMapImgs[i];
-          const face = FACES[i];
-          result[face] = cubeMapImg;
-        }
-        return result;
-      });
+    };
 
     return Promise.all([
       archae.requestPlugins([
@@ -239,45 +219,47 @@ class Airlock {
           })();
           object.add(domeMesh); */
 
-          const skyboxMesh = (() => {
-            const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
-            geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
+          if (serverEnabled) { // XXX figure out the hub skybox
+            const skyboxMesh = (() => {
+              const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
+              geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
 
-            const skyboxImgs = [
-              'right',
-              'left',
-              'top',
-              'bottom',
-              'front',
-              'back',
-            ].map(face => cubeMapImgs[face]);
-            const materials = skyboxImgs.map(skyboxImg => {
-              const texture = new THREE.Texture(
-                skyboxImg,
-                THREE.UVMapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.NearestFilter,
-                THREE.NearestFilter,
-                THREE.RGBAFormat,
-                THREE.UnsignedByteType,
-                1
-              );
-              texture.needsUpdate = true;
+              const skyboxImgs = [
+                'right',
+                'left',
+                'top',
+                'bottom',
+                'front',
+                'back',
+              ].map(face => cubeMapImgs[face]);
+              const materials = skyboxImgs.map(skyboxImg => {
+                const texture = new THREE.Texture(
+                  skyboxImg,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.NearestFilter,
+                  THREE.NearestFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  1
+                );
+                texture.needsUpdate = true;
 
-              const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                color: 0xFFFFFF,
-                side: THREE.BackSide,
+                const material = new THREE.MeshBasicMaterial({
+                  map: texture,
+                  color: 0xFFFFFF,
+                  side: THREE.BackSide,
+                });
+                return  material;
               });
-              return  material;
-            });
-            const material = new THREE.MultiMaterial(materials);
+              const material = new THREE.MultiMaterial(materials);
 
-            const mesh = new THREE.Mesh(geometry, material);
-            return mesh;
-          })();
-          object.add(skyboxMesh);
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(skyboxMesh);
+          }
 
           /* const starsMesh = (() => {
             const numStars = 128;
@@ -387,4 +369,4 @@ class Airlock {
   }
 }
 
-module.exports = Airlock;
+module.exports = ProceduralSkybox;
