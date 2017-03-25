@@ -10,6 +10,7 @@ class ZMpPhysics {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {server: {url: serverUrl}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -17,16 +18,8 @@ class ZMpPhysics {
     };
 
     return archae.requestPlugins([
-      '/core/engines/bootstrap',
-      '/core/engines/login',
-      '/core/engines/servers',
-      '/core/engines/rend',
       '/core/engines/config',
     ]).then(([
-      bootstrap,
-      login,
-      servers,
-      rend,
       config,
     ]) => {
       if (live) {
@@ -829,7 +822,7 @@ class ZMpPhysics {
           }
         };
 
-        const connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/bulletWs');
+        const connection = new WebSocket('wss://' + serverUrl + '/archae/bulletWs');
         connection.onopen = () => {
           world.requestInit()
             .then(objects => {
@@ -947,11 +940,6 @@ class ZMpPhysics {
           if (connection.readyState === WebSocket.OPEN) {
             connection.close();
           }
-
-          rend.removeListener('connectServer', _connectServer);
-          rend.removeListener('disconnectServer', _disconnectServer);
-          rend.removeListener('login', _login);
-          rend.removeListener('logout', _logout);
 
           config.removeListner('config', _config);
         };
