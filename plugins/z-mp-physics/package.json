@@ -1,5 +1,5 @@
 {
-  "name": "bullet",
+  "name": "z-mp-physics",
   "description": "Provides server-side physics powered by Bullet for the zeo core.",
   "version": "0.0.1",
   "main": "index.js",

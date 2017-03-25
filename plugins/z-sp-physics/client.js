@@ -3,14 +3,26 @@ const RESOLUTION = 4;
 const STEP_SECONDS = 1 / FPS;
 const STEP_MILLISECONDS = 1000 / FPS;
 
-class ZPhysics {
+const DISABLE_DEACTIVATION = 4;
+
+const SIDES = ['left', 'right'];
+
+class ZSpPhysics {
   mount() {
     const {_archae: archae} = this;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     const _requestAmmo = () => new Promise((accept, reject) => {
       const script = document.createElement('script');
@@ -31,7 +43,7 @@ class ZPhysics {
     return _requestAmmo()
       .then(Ammo => {
         if (live) {
-          const {three: {THREE, camera}, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
+          const {three: {THREE, camera}, player, render, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
 
           const wireframeMaterial = new THREE.MeshBasicMaterial({
             color: 0x0000FF,
@@ -39,7 +51,9 @@ class ZPhysics {
             // shading: THREE.FlatShading,
           });
 
+          const zeroVector = new THREE.Vector3();
           const oneVector = new THREE.Vector3(1, 1, 1);
+          const zeroQuaternion = new THREE.Quaternion();
 
           const _decomposeObjectMatrixWorld = object => {
             const {matrixWorld} = object;
@@ -96,16 +110,22 @@ class ZPhysics {
             lastUpdateTime = now;
           }, STEP_MILLISECONDS);
 
-          class BoxPhysicsBody extends EventEmitter {
-            constructor(object) {
+          class Box extends EventEmitter {
+            constructor({object, mass}) {
               super();
 
               this.object = object;
+              this.mass = mass;
 
               this.enabled = false;
               this.size = null;
+              this.position = null;
+              this.rotation = null;
               this.linearVelocity = null;
               this.angularVelocity = null;
+              this.linearFactor = null;
+              this.angularFactor = null;
+              this.activationState = null;
               this.debug = false;
 
               this.body = null;
@@ -116,6 +136,7 @@ class ZPhysics {
               this.enabled = newValue;
 
               this.render();
+              this.renderDebug();
             }
 
             setSize(newValue) {
@@ -129,6 +150,28 @@ class ZPhysics {
               this.debug = newValue;
 
               this.renderDebug();
+            }
+
+            setPosition(position) {
+              this.position = position;
+
+              const {body} = this;
+              if (body) {
+                body.getCenterOfMassTransform(trans);
+                trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+                body.setCenterOfMassTransform(trans);
+              }
+            }
+
+            setRotation(rotation) {
+              this.rotation = rotation;
+
+              const {body} = this;
+              if (body) {
+                body.getCenterOfMassTransform(trans);
+                trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
+                body.setCenterOfMassTransform(trans);
+              }
             }
 
             setLinearVelocity(linearVelocity) {
@@ -149,6 +192,33 @@ class ZPhysics {
               }
             }
 
+            setLinearFactor(linearFactor) {
+              this.linearFactor = linearFactor;
+
+              const {body} = this;
+              if (body) {
+                body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+              }
+            }
+
+            setAngularFactor(angularFactor) {
+              this.angularFactor = angularFactor;
+
+              const {body} = this;
+              if (body) {
+                body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+              }
+            }
+
+            setActivationState(activationState) {
+              this.activationState = activationState;
+
+              const {body} = this;
+              if (body) {
+                body.setActivationState(activationState);
+              }
+            }
+
             render() {
               const {body} = this;
               if (body) {
@@ -163,9 +233,10 @@ class ZPhysics {
               if (enabled && size) {
                 const body = (() => {
                   const {object} = this;
-                  const {position, rotation} = _decomposeObjectMatrixWorld(object);
-                  const boundingBox = new THREE.Box3()
-                    .setFromObject(object);
+                  const {position: objectPosition, rotation: objectRotation} = _decomposeObjectMatrixWorld(object);
+                  const {position: localPosition, rotation: localRotation} = this;
+                  const position = localPosition || objectPosition;
+                  const rotation = localRotation || objectRotation;
 
                   const halfSize = size.map(v => v * 0.5);
                   const colShape = new Ammo.btBoxShape(new Ammo.btVector3(halfSize[0], halfSize[1], halfSize[2]));
@@ -174,10 +245,9 @@ class ZPhysics {
                   startTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
                   startTransform.setRotation(new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
 
-                  const mass = 1;
+                  const {mass} = this;
                   const isDynamic = (mass !== 0);
                   const localInertia = new Ammo.btVector3(0, 0, 0);
-
                   if (isDynamic) {
                     colShape.calculateLocalInertia(mass, localInertia);
                   }
@@ -186,12 +256,21 @@ class ZPhysics {
                   const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
                   const body = new Ammo.btRigidBody(rbInfo);
 
-                  const {linearVelocity, angularVelocity} = this;
+                  const {linearVelocity, angularVelocity, linearFactor, angularFactor, activationState} = this;
                   if (linearVelocity) {
                     body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
                   }
                   if (angularVelocity) {
                     body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+                  }
+                  if (linearFactor) {
+                    body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+                  }
+                  if (angularFactor) {
+                    body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+                  }
+                  if (activationState !== null) {
+                    body.setActivationState(activationState);
                   }
 
                   dynamicsWorld.addRigidBody(body);
@@ -209,11 +288,11 @@ class ZPhysics {
 
               if (oldDebugMesh) {
                 object.remove(oldDebugMesh);
-                object.debugMesh = null;
+                this.debugMesh = null;
               }
 
-              const {debug, size} = this;
-              if (debug && size) {
+              const {enabled, debug, size} = this;
+              if (enabled && debug && size) {
                 const newDebugMesh = (() => {
                   const geometry = new THREE.BoxBufferGeometry(size[0], size[1], size[2]);
                   const material = wireframeMaterial;
@@ -258,8 +337,328 @@ class ZPhysics {
               }
             }
           }
+          class Compound extends EventEmitter {
+            constructor({object, children, mass}) {
+              super();
 
-          const _makeBoxBody = object => new BoxPhysicsBody(object);
+              this.object = object;
+              this.children = children;
+              this.mass = mass;
+
+              this.enabled = false;
+              this.position = null;
+              this.rotation = null;
+              this.linearVelocity = null;
+              this.angularVelocity = null;
+              this.linearFactor = null;
+              this.angularFactor = null;
+              this.activationState = null;
+              this.debug = false;
+
+              this.body = null;
+              this.debugMesh = null;
+            }
+
+            setEnabled(newValue) {
+              this.enabled = newValue;
+
+              this.render();
+              this.renderDebug();
+            }
+
+            setDebug(newValue) {
+              this.debug = newValue;
+
+              this.renderDebug();
+            }
+
+            setPosition(position) {
+              this.position = position;
+
+              const {body} = this;
+              if (body) {
+                body.getCenterOfMassTransform(trans);
+                trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+                body.setCenterOfMassTransform(trans);
+              }
+            }
+
+            setRotation(rotation) {
+              this.rotation = rotation;
+
+              const {body} = this;
+              if (body) {
+                body.getCenterOfMassTransform(trans);
+                trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
+                body.setCenterOfMassTransform(trans);
+              }
+            }
+
+            setLinearVelocity(linearVelocity) {
+              this.linearVelocity = linearVelocity;
+
+              const {body} = this;
+              if (body) {
+                body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+              }
+            }
+
+            setAngularVelocity(angularVelocity) {
+              this.angularVelocity = angularVelocity;
+
+              const {body} = this;
+              if (body) {
+                body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+              }
+            }
+
+            setLinearFactor(linearFactor) {
+              this.linearFactor = linearFactor;
+
+              const {body} = this;
+              if (body) {
+                body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+              }
+            }
+
+            setAngularFactor(angularFactor) {
+              this.angularFactor = angularFactor;
+
+              const {body} = this;
+              if (body) {
+                body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+              }
+            }
+
+            setActivationState(activationState) {
+              this.activationState = activationState;
+
+              const {body} = this;
+              if (body) {
+                body.setActivationState(activationState);
+              }
+            }
+
+            render() {
+              const {body} = this;
+              if (body) {
+                dynamicsWorld.removeRigidBody(body);
+
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+
+                this.body = null;
+              }
+
+              const {enabled} = this;
+              if (enabled) {
+                const body = (() => {
+                  const {children, position, rotation} = this;
+
+                  const compoundShape = (() => {
+                    const compoundShape = new Ammo.btCompoundShape();
+
+                    for (let i = 0; i < children.length; i++) {
+                      const child = children[i];
+
+                      const childTransform = (() => {
+                        const {position = zeroVector, rotation = zeroQuaternion} = child;
+
+                        const childTransform = new Ammo.btTransform();
+                        childTransform.setIdentity();
+                        childTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+                        childTransform.setRotation(new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+
+                        return childTransform;
+                      })();
+                      const childShape = (() => {
+                        const {type} = child;
+
+                        switch (type) {
+                          case 'box': {
+                            const {dimensions} = child;
+                            return new Ammo.btBoxShape(new Ammo.btVector3(dimensions.x, dimensions.y, dimensions.z));
+                          }
+                          default: {
+                            return null;
+                          }
+                        }
+                      })();
+                      compoundShape.addChildShape(childTransform, childShape);
+                    }
+
+                    return compoundShape;
+                  })();
+
+                  const startTransform = new Ammo.btTransform();
+                  startTransform.setIdentity();
+                  if (position) {
+                    startTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+                  }
+                  if (rotation) {
+                    startTransform.setRotation(new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+                  }
+
+                  const {mass} = this;
+                  const isDynamic = (mass !== 0);
+                  const localInertia = new Ammo.btVector3(0, 0, 0);
+                  if (isDynamic) {
+                    compoundShape.calculateLocalInertia(mass, localInertia);
+                  }
+
+                  const myMotionState = new Ammo.btDefaultMotionState(startTransform);
+                  const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, compoundShape, localInertia);
+                  const body = new Ammo.btRigidBody(rbInfo);
+
+                  const {linearVelocity, angularVelocity, linearFactor, angularFactor, activationState} = this;
+                  if (linearVelocity) {
+                    body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+                  }
+                  if (angularVelocity) {
+                    body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+                  }
+                  if (linearFactor) {
+                    body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+                  }
+                  if (angularFactor) {
+                    body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+                  }
+                  if (activationState !== null) {
+                    body.setActivationState(activationState);
+                  }
+
+                  dynamicsWorld.addRigidBody(body);
+
+                  return body;
+                })();
+                this.body = body;
+
+                activePhysicsBodies.push(this);
+              }
+            }
+
+            renderDebug() {
+              const {object, children, debugMesh: oldDebugMesh} = this;
+
+              if (oldDebugMesh) {
+                object.remove(oldDebugMesh);
+                this.debugMesh = null;
+              }
+
+              const {enabled, debug} = this;
+              if (enabled && debug) {
+                const newDebugMesh = (() => {
+                  const debugMesh = new THREE.Object3D();
+
+                  for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+
+                    const childMesh = (() => {
+                      const mesh = (() => {
+                        const {type} = child;
+
+                        switch (type) {
+                          case 'box': {
+                            const {dimensions} = child;
+
+                            const geometry = new THREE.BoxBufferGeometry(dimensions.x, dimensions.y, dimensions.z);
+                            const material = wireframeMaterial;
+
+                            const mesh = new THREE.Mesh(geometry, material);
+                            return mesh;
+                          }
+                          default: {
+                            return null;
+                          }
+                        }
+                      })();
+
+                      const {position = zeroVector, rotation = zeroQuaternion} = child;
+                      mesh.position.copy(position);
+                      mesh.rotation.copy(rotation);
+
+                      return mesh;
+                    })();
+
+                    debugMesh.add(childMesh);
+                  }
+
+                  return debugMesh;
+                })();
+                object.add(newDebugMesh);
+                this.debugMesh = newDebugMesh;
+              }
+            }
+
+            update() {
+              const {body, size} = this;
+
+              if (body.getMotionState()) {
+                body.getMotionState().getWorldTransform(trans);
+                const btOrigin = trans.getOrigin();
+                const btRotation = trans.getRotation();
+
+                const position = new THREE.Vector3(btOrigin.x(), btOrigin.y(), btOrigin.z());
+                const quaternion = new THREE.Quaternion(btRotation.x(), btRotation.y(), btRotation.z(), btRotation.w());
+                const scale = oneVector;
+
+                this.emit('update', {
+                  position,
+                  quaternion,
+                  scale,
+                });
+              }
+            }
+
+            destroy() {
+              const {body} = this;
+
+              if (body) {
+                dynamicsWorld.removeRigidBody(body);
+
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+
+                this.body = null;
+              }
+            }
+          }
+
+          const _makeBoxBody = spec => new Box(spec);
+          const _makeCompoundBody = spec => new Compound(spec);
+
+          // controllers
+          const controllerMeshes = player.getControllerMeshes();
+          const controllerPhysicsBodies = SIDES.map(side => {
+            const controllerMesh = controllerMeshes[side];
+            const controllerPhysicsBody = _makeCompoundBody({
+              object: controllerMesh,
+              children: [
+                {
+                  type: 'box',
+                  dimensions: new THREE.Vector3(0.115, 0.075, 0.215),
+                  position: new THREE.Vector3(0, -(0.075 / 2), (0.215 / 2) - 0.045),
+                },
+              ],
+              mass: 1,
+            });
+            controllerPhysicsBody.setLinearFactor(zeroVector);
+            controllerPhysicsBody.setAngularFactor(zeroVector);
+            controllerPhysicsBody.setLinearVelocity(zeroVector);
+            controllerPhysicsBody.setAngularVelocity(zeroVector);
+            controllerPhysicsBody.setActivationState(DISABLE_DEACTIVATION);
+            controllerPhysicsBody.setEnabled(true);
+
+            const _update = () => {
+              controllerPhysicsBody.setPosition(controllerMesh.position);
+              controllerPhysicsBody.setRotation(controllerMesh.quaternion);
+            };
+            render.on('update', _update)
+
+            cleanups.push(() => {
+              render.removeListener('update', _update)
+            });
+
+            return controllerPhysicsBody;
+          });
 
           const spPhysicsComponent = {
             selector: '[sp-physics][size]',
@@ -283,7 +682,10 @@ class ZPhysics {
             entityAddedCallback(entityElement) {
               const entityObject = entityElement.getObject();
 
-              const physicsBody = _makeBoxBody(entityObject);
+              const physicsBody = _makeBoxBody({
+                object: entityObject,
+                mass: 1,
+              });
               entityElement.setComponentApi(physicsBody);
 
               physicsBody.debugMesh = null;
@@ -329,6 +731,23 @@ class ZPhysics {
                 case 'physics-debug': {
                   physicsBody.setDebug(newValue);
 
+                  const numPhysicsDebugs = (() => {
+                    let result = 0;
+
+                    for (let i = 0; i < activePhysicsBodies.length; i++) {
+                      const physicsBody = activePhysicsBodies[i];
+                      const {debug} = physicsBody;
+                      result += Number(debug);
+                    }
+
+                    return result;
+                  })();
+                  const controllerPhysicsDebug = numPhysicsDebugs > 0;
+                  for (let i = 0; i < controllerPhysicsBodies.length; i++) {
+                    const controllerPhysicsBody = controllerPhysicsBodies[i];
+                    controllerPhysicsBody.setDebug(controllerPhysicsDebug);
+                  }
+
                   break;
                 }
               }
@@ -357,7 +776,7 @@ class ZPhysics {
           };
           elements.registerComponent(this, spPhysicsComponent);
 
-          this._cleanup = () => {
+          cleanups.push(() => {
             elements.unregisterComponent(this, spPhysicsComponent);
 
             clearInterval(interval);
@@ -368,8 +787,8 @@ class ZPhysics {
               Ammo.destroy(overlappingPairCache);
               Ammo.destroy(dispatcher);
               Ammo.destroy(collisionConfiguration)
-            });;
-          };
+            });
+          });
         }
       });
   }
@@ -379,4 +798,4 @@ class ZPhysics {
   }
 }
 
-module.exports = ZPhysics;
+module.exports = ZSpPhysics;
