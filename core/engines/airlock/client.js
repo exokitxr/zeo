@@ -19,7 +19,7 @@ class Airlock {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -28,7 +28,16 @@ class Airlock {
 
     const _requestImage = p => new Promise((accept, reject) => {
       const img = new Image();
-      img.src = 'https://' + serverUrl + p;
+      const url = (() => {
+        if (hubEnabled) {
+          return hubUrl;
+        } else if (serverEnabled) {
+          return serverUrl;
+        } else {
+          return null;
+        }
+      })();
+      img.src = 'https://' + url + p;
       img.onload = () => {
         accept(img);
       };
@@ -230,47 +239,45 @@ class Airlock {
           })();
           object.add(domeMesh); */
 
-          if (serverEnabled) { // XXX figure out the hub skybox
-            const skyboxMesh = (() => {
-              const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
-              geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
+          const skyboxMesh = (() => {
+            const geometry = new THREE.BoxBufferGeometry(200000, 200000, 200000)
+            geometry.applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI));
 
-              const skyboxImgs = [
-                'right',
-                'left',
-                'top',
-                'bottom',
-                'front',
-                'back',
-              ].map(face => cubeMapImgs[face]);
-              const materials = skyboxImgs.map(skyboxImg => {
-                const texture = new THREE.Texture(
-                  skyboxImg,
-                  THREE.UVMapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.NearestFilter,
-                  THREE.NearestFilter,
-                  THREE.RGBAFormat,
-                  THREE.UnsignedByteType,
-                  1
-                );
-                texture.needsUpdate = true;
+            const skyboxImgs = [
+              'right',
+              'left',
+              'top',
+              'bottom',
+              'front',
+              'back',
+            ].map(face => cubeMapImgs[face]);
+            const materials = skyboxImgs.map(skyboxImg => {
+              const texture = new THREE.Texture(
+                skyboxImg,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.NearestFilter,
+                THREE.NearestFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                1
+              );
+              texture.needsUpdate = true;
 
-                const material = new THREE.MeshBasicMaterial({
-                  map: texture,
-                  color: 0xFFFFFF,
-                  side: THREE.BackSide,
-                });
-                return  material;
+              const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                color: 0xFFFFFF,
+                side: THREE.BackSide,
               });
-              const material = new THREE.MultiMaterial(materials);
+              return  material;
+            });
+            const material = new THREE.MultiMaterial(materials);
 
-              const mesh = new THREE.Mesh(geometry, material);
-              return mesh;
-            })();
-            object.add(skyboxMesh);
-          }
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+          })();
+          object.add(skyboxMesh);
 
           /* const starsMesh = (() => {
             const numStars = 128;
