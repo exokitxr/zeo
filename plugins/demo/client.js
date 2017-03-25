@@ -10,7 +10,7 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
     };
 
     // declare the element representing our plugin
-    const demoElement = {
+    const demoComponent = {
       selector: 'demo',
       attributes: {},
       entityCreatedCallback(entityElement) { // `entityCreatedCallback` gets called an applicable attrbute is added to the world
@@ -105,7 +105,7 @@ module.exports = archae => ({ // `archae` is the Zeo plugin loader
 
     // set up a callback to call when we want to clean up after the plugin
     this._cleanup = () => {
-      elements.unregisterComponent(this, demoElement);
+      elements.unregisterComponent(this, demoComponent);
     };
   },
   unmount() { // `unmount` gets called when our plugin unloads
