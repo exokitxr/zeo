@@ -29,7 +29,6 @@ class Cyborg {
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/rend',
-      '/core/engines/bullet',
       '/core/engines/multiplayer',
       '/core/plugins/js-utils',
       '/core/plugins/geometry-utils',
@@ -38,7 +37,6 @@ class Cyborg {
         three,
         webvr,
         rend,
-        bullet,
         multiplayer,
         jsUtils,
         geometryUtils,
@@ -397,7 +395,7 @@ class Cyborg {
             cleanups.length = 0;
           };
 
-          if (serverEnabled) {
+          /* if (serverEnabled) {
             const physicsWorld = bullet.getPhysicsWorld();
 
             let physicsEnabled = false;
@@ -462,7 +460,7 @@ class Cyborg {
             bullet.on('disconnectServer', _disconnectServer);
 
             _updateEnabled();
-          }
+          } */
 
           this._cleanup = () => {
             cleanup();
