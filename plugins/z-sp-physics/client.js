@@ -3,7 +3,7 @@ const RESOLUTION = 4;
 const STEP_SECONDS = 1 / FPS;
 const STEP_MILLISECONDS = 1000 / FPS;
 
-class ZPhysics {
+class ZSpPhysics {
   mount() {
     const {_archae: archae} = this;
 
@@ -379,4 +379,4 @@ class ZPhysics {
   }
 }
 
-module.exports = ZPhysics;
+module.exports = ZSpPhysics;
