@@ -621,7 +621,20 @@ class Tags {
                           componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
                         }
                       }
+
+                      const {attributes: entityAttributes} = entityItem;
+                      if (newValueString !== null) {
+                        entityAttributes[attributeName] = {
+                          value: newValueJson,
+                        };
+                      } else {
+                        delete entityAttributes[attributeName];
+                      }
                     }
+
+                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === entityId);
+                    const {attributesMesh} = tagMesh;
+                    attributesMesh.update();
                   }
                 }
               } else if (type === 'characterData') {
@@ -1976,15 +1989,6 @@ class Tags {
             }
 
             setAttribute(attributeName, newValue) {
-              const {attributes} = this;
-              if (newValue !== undefined) {
-                attributes[attributeName] = {
-                  value: newValue,
-                };
-              } else {
-                delete attributes[attributeName];
-              }
-
               const {instance} = this;
               if (instance) {
                 const entityElement = instance;

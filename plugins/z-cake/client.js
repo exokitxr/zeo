@@ -80,7 +80,7 @@ class ZCake {
 
                   const newSlices = this.slices - 1;
                   if (entityElement) {
-                    entityElement.setAttribute('slices', newSlices); // XXX bug: this needs to update the entity UI
+                    entityElement.setAttribute('slices', newSlices);
                   } else {
                     this.setSlices(newSlices);
                   }
