@@ -802,7 +802,6 @@ class ZMpPhysics {
           const world = _makeWorld();
           const bodies = new Map();
 
-          let connection = null;
           const requestHandlers = new Map();
           const _request = (method, args, cb) => {
             if (bulletInstance.isConnected()) {
@@ -832,133 +831,88 @@ class ZMpPhysics {
             }
           };
 
-          const cleanups = [];
-          const cleanup = () => {
-            for (let i = 0; i < cleanups.length; i++) {
-              const cleanup = cleanups[i];
-              cleanup();
-            }
-            cleanups.length = 0;
-          };
+          const connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/bulletWs');
+          connection.onopen = () => {
+            world.requestInit()
+              .then(objects => {
+                for (let i = 0; i < objects.length; i++) {
+                  const object = objects[i];
+                  const {id} = object;
+                  const oldBody = world.bodies.get(id);
 
-          let enabled = false;
-          const _enable = () => {
-            enabled = true;
-            cleanups.push(() => {
-              enabled = false;
-            });
-
-            connection = new WebSocket('wss://' + bootstrap.getCurrentServer().url + '/archae/bulletWs');
-            connection.onopen = () => {
-              world.requestInit()
-                .then(objects => {
-                  for (let i = 0; i < objects.length; i++) {
-                    const object = objects[i];
-                    const {id} = object;
-                    const oldBody = world.bodies.get(id);
-
-                    if (oldBody) {
-                      const {position, rotation, linearVelocity, angularVelocity} = object;
-                      oldBody.update({position, rotation, linearVelocity, angularVelocity});
-                    } else {
-                      const newBody = world.makeBodyFromSpec(object);
-                      world.addBase(newBody);
-                    }
+                  if (oldBody) {
+                    const {position, rotation, linearVelocity, angularVelocity} = object;
+                    oldBody.update({position, rotation, linearVelocity, angularVelocity});
+                  } else {
+                    const newBody = world.makeBodyFromSpec(object);
+                    world.addBase(newBody);
                   }
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-
-              bulletInstance.emit('connectServer');
-            };
-            connection.onclose = () => {
-              bulletInstance.emit('disconnectServer');
-            };
-            connection.onerror = err => {
-              console.warn(err);
-            };
-            connection.onmessage = msg => {
-              const m = JSON.parse(msg.data);
-              const {type} = m;
-
-              if (type === 'response') {
-                const {id} = m;
-
-                const requestHandler = requestHandlers.get(id);
-                if (requestHandler) {
-                  const {error, result} = m;
-                  requestHandler(error, result);
-                } else {
-                  console.warn('unregistered response handler:', id);
                 }
-              } else if (type === 'create') {
-                const {args} = m;
-                const [type, id, opts] = args;
+              })
+              .catch(err => {
+                console.warn(err);
+              });
 
-                opts.type = type;
-                opts.id = id;
+            bulletInstance.emit('connectServer');
+          };
+          connection.onclose = () => {
+            bulletInstance.emit('disconnectServer');
+          };
+          connection.onerror = err => {
+            console.warn(err);
+          };
+          connection.onmessage = msg => {
+            const m = JSON.parse(msg.data);
+            const {type} = m;
 
-                world.makeBodyFromSpec(opts);
-              } else if (type === 'destroy') {
-                const {args} = m;
-                const [id] = args;
+            if (type === 'response') {
+              const {id} = m;
 
-                const physicsBody = bodies.get(id);
-                physicsBody.destroy();
-              } else if (type === 'add') {
-                const {args} = m;
-                const [parentId, childId] = args;
-
-                if (parentId === world.id) {
-                  const physicsBody = bodies.get(childId);
-                  world.addBase(physicsBody);
-                } else {
-                  console.warn('adding to non-world:', id);
-                }
-              } else if (type === 'remove') {
-                const {args} = m;
-                const [parentId, childId] = args;
-
-                if (parentId === world.id) {
-                  const physicsBody = bodies.get(childId);
-                  world.removeBase(physicsBody);
-                } else {
-                  console.warn('removing from non-world:', id);
-                }
+              const requestHandler = requestHandlers.get(id);
+              if (requestHandler) {
+                const {error, result} = m;
+                requestHandler(error, result);
               } else {
-                console.warn('invalid message type:', id);
+                console.warn('unregistered response handler:', id);
               }
-            };
+            } else if (type === 'create') {
+              const {args} = m;
+              const [type, id, opts] = args;
 
-            cleanups.push(() => {
-              connection.close();
-            });
-          };
-          const _disable = () => {
-            cleanup();
-          };
-          const _updateEnabled = () => {
-            const connected = servers.isConnected();
-            const loggedIn = !login.isOpen();
-            const shouldBeEnabled = connected && loggedIn;
+              opts.type = type;
+              opts.id = id;
 
-            if (shouldBeEnabled && !enabled) {
-              _enable();
-            } else if (!shouldBeEnabled && enabled) {
-              _disable();
-            };
-          };
-          const _connectServer = _updateEnabled;
-          rend.on('connectServer', _connectServer);
-          const _disconnectServer = _updateEnabled;
-          rend.on('disconnectServer', _disconnectServer);
-          const _login = _updateEnabled;
-          rend.on('login', _login);
-          const _logout = _updateEnabled;
-          rend.on('logout', _logout);
+              world.makeBodyFromSpec(opts);
+            } else if (type === 'destroy') {
+              const {args} = m;
+              const [id] = args;
 
-          _updateEnabled();
+              const physicsBody = bodies.get(id);
+              physicsBody.destroy();
+            } else if (type === 'add') {
+              const {args} = m;
+              const [parentId, childId] = args;
+
+              if (parentId === world.id) {
+                const physicsBody = bodies.get(childId);
+                world.addBase(physicsBody);
+              } else {
+                console.warn('adding to non-world:', id);
+              }
+            } else if (type === 'remove') {
+              const {args} = m;
+              const [parentId, childId] = args;
+
+              if (parentId === world.id) {
+                const physicsBody = bodies.get(childId);
+                world.removeBase(physicsBody);
+              } else {
+                console.warn('removing from non-world:', id);
+              }
+            } else {
+              console.warn('invalid message type:', id);
+            }
+          };
 
           let debugEnabled = false;
           const _enablePhysicsDebugMesh = () => {
@@ -992,7 +946,9 @@ class ZMpPhysics {
           }
 
           this._cleanup = () => {
-            cleanup();
+            if (connection.readyState === WebSocket.OPEN) {
+              connection.close();
+            }
 
             rend.removeListener('connectServer', _connectServer);
             rend.removeListener('disconnectServer', _disconnectServer);
@@ -1001,19 +957,6 @@ class ZMpPhysics {
 
             config.removeListner('config', _config);
           };
-
-          class BulletApi extends EventEmitter {
-            isConnected() {
-              return Boolean(connection) && connection.readyState === WebSocket.OPEN;
-            }
-
-            getPhysicsWorld() {
-              return world;
-            }
-          }
-          const bulletInstance = new BulletApi();
-
-          return bulletInstance;
         }
       });
     }
