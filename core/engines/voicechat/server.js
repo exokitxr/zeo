@@ -1,3 +1,4 @@
+const path = require('path');
 const events = require('events');
 const {EventEmitter} = events;
 const stream = require('stream');
@@ -6,6 +7,8 @@ const child_process = require('child_process');
 
 const MIN_BUFFER_LENGTH = 64 * 1024;
 const MAX_BUFFER_LENGTH = MIN_BUFFER_LENGTH * 2;
+
+const ffmpegBinPath = path.join(__dirname, 'lib', 'bin', 'ffmpeg');
 
 class VoiceChat {
   constructor(archae) {
@@ -27,7 +30,7 @@ class VoiceChat {
         this.buffers = [];
         this.length = 0;
 
-        const ffmpeg = child_process.spawn('ffmpeg', [
+        const ffmpeg = child_process.spawn(ffmpegBinPath, [
           '-loglevel', 'panic',
           // '-re',
           '-i', '-',
