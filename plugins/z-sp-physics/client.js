@@ -136,6 +136,7 @@ class ZSpPhysics {
               this.enabled = newValue;
 
               this.render();
+              this.renderDebug();
             }
 
             setSize(newValue) {
@@ -290,8 +291,8 @@ class ZSpPhysics {
                 this.debugMesh = null;
               }
 
-              const {debug, size} = this;
-              if (debug && size) {
+              const {enabled, debug, size} = this;
+              if (enabled && debug && size) {
                 const newDebugMesh = (() => {
                   const geometry = new THREE.BoxBufferGeometry(size[0], size[1], size[2]);
                   const material = wireframeMaterial;
@@ -362,6 +363,7 @@ class ZSpPhysics {
               this.enabled = newValue;
 
               this.render();
+              this.renderDebug();
             }
 
             setDebug(newValue) {
@@ -542,8 +544,8 @@ class ZSpPhysics {
                 this.debugMesh = null;
               }
 
-              const {debug} = this;
-              if (debug) {
+              const {enabled, debug} = this;
+              if (enabled && debug) {
                 const newDebugMesh = (() => {
                   const debugMesh = new THREE.Object3D();
 
