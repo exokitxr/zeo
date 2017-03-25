@@ -9,7 +9,8 @@ const DOT_COLOR = 0x808080;
 
 const SHADOW_MAP_SIZE = 2048;
 
-const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
+// const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
+const FACES = ['back', 'left', 'front', 'right', 'top', 'bottom'];
 
 class Airlock {
   constructor(archae) {
@@ -35,7 +36,7 @@ class Airlock {
         reject(err);
       };
     });
-    const _requestCubeMapImgs = () => {
+    /* const _requestCubeMapImgs = () => {
       if (serverEnabled) {
         return Promise.all(FACES.map(face => _requestImage('/servers/img/cubemap-' + face + '.png')))
           .then(cubeMapImgs => {
@@ -50,7 +51,17 @@ class Airlock {
       } else {
         return Promise.resolve();
       }
-    };
+    }; */
+    const _requestCubeMapImgs = () => Promise.all(FACES.map((face, index) => _requestImage('/archae/airlock/img/skybox-' + (index + 1) + '.png')))
+      .then(cubeMapImgs => {
+        const result = {};
+        for (let i = 0; i < cubeMapImgs.length; i++) {
+          const cubeMapImg = cubeMapImgs[i];
+          const face = FACES[i];
+          result[face] = cubeMapImg;
+        }
+        return result;
+      });
 
     return Promise.all([
       archae.requestPlugins([
@@ -206,7 +217,7 @@ class Airlock {
           })();
           object.add(targetMesh);
 
-          const domeMesh = (() => {
+          /* const domeMesh = (() => {
             const geometry = new THREE.SphereBufferGeometry(10 * 1024, 8, 3, 0, Math.PI * 2, 0, Math.PI / 2);
             const material = new THREE.MeshBasicMaterial({
               color: 0x808080,
@@ -217,7 +228,7 @@ class Airlock {
             const mesh = new THREE.Mesh(geometry, material);
             return mesh;
           })();
-          object.add(domeMesh);
+          object.add(domeMesh); */
 
           if (serverEnabled) { // XXX figure out the hub skybox
             const skyboxMesh = (() => {
