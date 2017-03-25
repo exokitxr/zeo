@@ -187,10 +187,10 @@ class Cyborg {
               const lastStatus = prevStatuses[prevStatuses.length - 1];
 
               if (!position.equals(lastStatus.status.controllers[side].position) || !rotation.equals(lastStatus.status.controllers[side].rotation)) {
-                const controllerPhysicsBody = controllerPhysicsBodies[side];
+                /* const controllerPhysicsBody = controllerPhysicsBodies[side];
                 if (controllerPhysicsBody) {
                   controllerPhysicsBody.syncUpstream();
-                }
+                } */
 
                 this.emit('controllerUpdate', {
                   side,

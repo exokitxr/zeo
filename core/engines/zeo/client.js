@@ -518,6 +518,19 @@ class Zeo {
                       }
                     }
 
+                    const controllerMeshes = (() => {
+                      const controllers = cyborg.getControllers();
+                      return {
+                        left: controllers['left'].mesh,
+                        right: controllers['right'].mesh,
+                      };
+                    })();
+                    class ZeoPlayerApi {
+                      getControllerMeshes() {
+                        return controllerMeshes;
+                      }
+                    }
+
                     class ZeoUiApi {
                       makeUi(options) {
                         return biolumi.makeUi(options);
@@ -531,16 +544,6 @@ class Zeo {
                     class ZeoSoundApi {
                       makeBody() {
                         return somnifer.makeBody();
-                      }
-                    }
-
-                    class ZeoPhysicsApi {
-                      getPhysicsWorld() {
-                        return bullet.getPhysicsWorld();
-                      }
-
-                      getControllerPhysicsBodies() {
-                        return cyborg.getControllerPhysicsBodies();
                       }
                     }
 
@@ -578,9 +581,9 @@ class Zeo {
                         this.render = new ZeoRenderApi();
                         this.elements = new ZeoElementsApi();
                         this.world = new ZeoWorldApi();
+                        this.player = new ZeoPlayerApi();
                         this.ui = new ZeoUiApi();
                         this.sound = new ZeoSoundApi();
-                        this.physics = new ZeoPhysicsApi();
                         this.animation = new ZeoAnimationApi();
                         this.utils = new ZeoUtilsApi();
                       }

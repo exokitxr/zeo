@@ -1,4 +1,4 @@
-<F4>const idUtils = require('./lib/idUtils');
+const idUtils = require('./lib/idUtils');
 
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;

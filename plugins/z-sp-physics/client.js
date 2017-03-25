@@ -3,14 +3,26 @@ const RESOLUTION = 4;
 const STEP_SECONDS = 1 / FPS;
 const STEP_MILLISECONDS = 1000 / FPS;
 
+const DISABLE_DEACTIVATION = 4;
+
+const SIDES = ['left', 'right'];
+
 class ZSpPhysics {
   mount() {
     const {_archae: archae} = this;
 
-    let live = true;
-    this._cleanup = () => {
-      live = false;
+    const cleanups = [];
+    this._cleanup = {
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
+
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
 
     const _requestAmmo = () => new Promise((accept, reject) => {
       const script = document.createElement('script');
@@ -39,6 +51,7 @@ class ZSpPhysics {
             // shading: THREE.FlatShading,
           });
 
+          const zeroVector = new THREE.Vector3();
           const oneVector = new THREE.Vector3(1, 1, 1);
 
           const _decomposeObjectMatrixWorld = object => {
@@ -96,16 +109,21 @@ class ZSpPhysics {
             lastUpdateTime = now;
           }, STEP_MILLISECONDS);
 
-          class BoxPhysicsBody extends EventEmitter {
-            constructor(object) {
+          class Box extends EventEmitter {
+            constructor({object, mass}) {
               super();
 
               this.object = object;
+              this.mass = mass;
 
               this.enabled = false;
               this.size = null;
+              this.position = null;
+              this.rotation = null;
               this.linearVelocity = null;
               this.angularVelocity = null;
+              this.linearFactor = null;
+              this.angularFactor = null;
               this.debug = false;
 
               this.body = null;
@@ -131,6 +149,28 @@ class ZSpPhysics {
               this.renderDebug();
             }
 
+            setPosition(position) {
+              this.position = position;
+
+              const {body} = this;
+              if (body) {
+                body.getMotionState().getWorldTransform(trans);
+                trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+                body.setWorldTransform(trans);
+              }
+            }
+
+            setRotation(rotation) {
+              this.rotation = rotation;
+
+              const {body} = this;
+              if (body) {
+                body.getMotionState().getWorldTransform(trans);
+                trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
+                body.setWorldTransform(trans);
+              }
+            }
+
             setLinearVelocity(linearVelocity) {
               this.linearVelocity = linearVelocity;
 
@@ -149,6 +189,24 @@ class ZSpPhysics {
               }
             }
 
+            setLinearFactor(linearFactor) {
+              this.linearFactor = linearFactor;
+
+              const {body} = this;
+              if (body) {
+                body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+              }
+            }
+
+            setAngularFactor(angularFactor) {
+              this.angularFactor = angularFactor;
+
+              const {body} = this;
+              if (body) {
+                body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+              }
+            }
+
             render() {
               const {body} = this;
               if (body) {
@@ -163,9 +221,10 @@ class ZSpPhysics {
               if (enabled && size) {
                 const body = (() => {
                   const {object} = this;
-                  const {position, rotation} = _decomposeObjectMatrixWorld(object);
-                  const boundingBox = new THREE.Box3()
-                    .setFromObject(object);
+                  const {position: objectPosition, rotation: objectRotation} = _decomposeObjectMatrixWorld(object);
+                  const {position: localPosition, rotation: localRotation} = this;
+                  const position = localPosition || objectPosition;
+                  const rotation = localRotation || objectRotation;
 
                   const halfSize = size.map(v => v * 0.5);
                   const colShape = new Ammo.btBoxShape(new Ammo.btVector3(halfSize[0], halfSize[1], halfSize[2]));
@@ -174,10 +233,9 @@ class ZSpPhysics {
                   startTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
                   startTransform.setRotation(new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
 
-                  const mass = 1;
+                  const {mass} = this;
                   const isDynamic = (mass !== 0);
                   const localInertia = new Ammo.btVector3(0, 0, 0);
-
                   if (isDynamic) {
                     colShape.calculateLocalInertia(mass, localInertia);
                   }
@@ -186,12 +244,239 @@ class ZSpPhysics {
                   const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
                   const body = new Ammo.btRigidBody(rbInfo);
 
-                  const {linearVelocity, angularVelocity} = this;
+                  const {linearVelocity, angularVelocity, linearFactor, angularFactor, activationState} = this;
                   if (linearVelocity) {
                     body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
                   }
                   if (angularVelocity) {
                     body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+                  }
+                  if (linearFactor) {
+                    body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+                  }
+                  if (angularFactor) {
+                    body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+                  }
+                  if (activationState !== null) {
+                    body.setActivationState(activationState);
+                  }
+
+                  dynamicsWorld.addRigidBody(body);
+
+                  return body;
+                })();
+                this.body = body;
+
+                activePhysicsBodies.push(this);
+              }
+            }
+
+            renderDebug() {
+              const {object, debugMesh: oldDebugMesh} = this;
+
+              if (oldDebugMesh) {
+                object.remove(oldDebugMesh);
+                object.debugMesh = null;
+              }
+
+              const {debug, size} = this;
+              if (debug && size) {
+                const newDebugMesh = (() => {
+                  const geometry = new THREE.BoxBufferGeometry(size[0], size[1], size[2]);
+                  const material = wireframeMaterial;
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  return mesh;
+                })();
+                object.add(newDebugMesh);
+                this.debugMesh = newDebugMesh;
+              }
+            }
+
+            update() {
+              const {body, size} = this;
+
+              if (body.getMotionState()) {
+                body.getMotionState().getWorldTransform(trans);
+                const btOrigin = trans.getOrigin();
+                const btRotation = trans.getRotation();
+
+                const position = new THREE.Vector3(btOrigin.x(), btOrigin.y(), btOrigin.z());
+                const quaternion = new THREE.Quaternion(btRotation.x(), btRotation.y(), btRotation.z(), btRotation.w());
+                const scale = oneVector;
+
+                this.emit('update', {
+                  position,
+                  quaternion,
+                  scale,
+                });
+              }
+            }
+
+            destroy() {
+              const {body} = this;
+
+              if (body) {
+                dynamicsWorld.removeRigidBody(body);
+
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+
+                this.body = null;
+              }
+            }
+          }
+          class Compound extends EventEmitter {
+            constructor({children, mass}) {
+              super();
+
+              this.children = children;
+              this.mass = mass;
+
+              this.enabled = false;
+              this.size = null;
+              this.position = null;
+              this.rotation = null;
+              this.linearVelocity = null;
+              this.angularVelocity = null;
+              this.linearFactor = null;
+              this.angularFactor = null;
+              this.debug = false;
+
+              this.body = null;
+              this.debugMesh = null;
+            }
+
+            setEnabled(newValue) {
+              this.enabled = newValue;
+
+              this.render();
+            }
+
+            setSize(newValue) {
+              this.size = newValue;
+
+              this.render();
+              this.renderDebug();
+            }
+
+            setDebug(newValue) {
+              this.debug = newValue;
+
+              this.renderDebug();
+            }
+
+            setPosition(position) {
+              this.position = position;
+
+              const {body} = this;
+              if (body) {
+                body.getMotionState().getWorldTransform(trans);
+                trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+                body.setWorldTransform(trans);
+              }
+            }
+
+            setRotation(rotation) {
+              this.rotation = rotation;
+
+              const {body} = this;
+              if (body) {
+                body.getMotionState().getWorldTransform(trans);
+                trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
+                body.setWorldTransform(trans);
+              }
+            }
+
+            setLinearVelocity(linearVelocity) {
+              this.linearVelocity = linearVelocity;
+
+              const {body} = this;
+              if (body) {
+                body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+              }
+            }
+
+            setAngularVelocity(angularVelocity) {
+              this.angularVelocity = angularVelocity;
+
+              const {body} = this;
+              if (body) {
+                body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+              }
+            }
+
+            setLinearFactor(linearFactor) {
+              this.linearFactor = linearFactor;
+
+              const {body} = this;
+              if (body) {
+                body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+              }
+            }
+
+            setAngularFactor(angularFactor) {
+              this.angularFactor = angularFactor;
+
+              const {body} = this;
+              if (body) {
+                body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+              }
+            }
+
+            render() {
+              const {body} = this;
+              if (body) {
+                dynamicsWorld.removeRigidBody(body);
+
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+
+                this.body = null;
+              }
+
+              const {enabled, size} = this;
+              if (enabled && size) {
+                const body = (() => {
+                  const {object} = this;
+                  const {position: objectPosition, rotation: objectRotation} = _decomposeObjectMatrixWorld(object);
+                  const {position: localPosition, rotation: localRotation} = this;
+                  const position = localPosition || objectPosition;
+                  const rotation = localRotation || objectRotation;
+
+                  // XXX this needs to actually create the children in the specc
+
+                  const halfSize = size.map(v => v * 0.5);
+                  const colShape = new Ammo.btBoxShape(new Ammo.btVector3(halfSize[0], halfSize[1], halfSize[2]));
+                  const startTransform = new Ammo.btTransform();
+                  startTransform.setIdentity();
+                  startTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+                  startTransform.setRotation(new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+
+                  const {mass} = this;
+                  const isDynamic = (mass !== 0);
+                  const localInertia = new Ammo.btVector3(0, 0, 0);
+                  if (isDynamic) {
+                    colShape.calculateLocalInertia(mass, localInertia);
+                  }
+
+                  const myMotionState = new Ammo.btDefaultMotionState(startTransform);
+                  const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
+                  const body = new Ammo.btRigidBody(rbInfo);
+
+                  const {linearVelocity, angularVelocity, linearFactor, angularFactor, activationState} = this;
+                  if (linearVelocity) {
+                    body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+                  }
+                  if (angularVelocity) {
+                    body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+                  }
+                  if (linearFactor) {
+                    body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+                  }
+                  if (angularFactor) {
+                    body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+                  }
+                  if (activationState !== null) {
+                    body.setActivationState(activationState);
                   }
 
                   dynamicsWorld.addRigidBody(body);
@@ -259,7 +544,54 @@ class ZSpPhysics {
             }
           }
 
-          const _makeBoxBody = object => new BoxPhysicsBody(object);
+          const _makeBoxBody = spec => new Box(spec);
+          const _makeCompoundBody = spec => new Compound(spec);
+
+          // controllers
+          const controllerMeshes = player.getControllerMeshes();
+          SIDES.forEach(side => {
+            const controllerPhysicsBody = _makeCompoundBody({
+              children: [
+                {
+                  type: 'box',
+                  dimensions: [0.115, 0.075, 0.215],
+                  position: [0, -(0.075 / 2), (0.215 / 2) - 0.045],
+                },
+              ],
+              mass: 1,
+            });
+            controllerPhysicsBody.setLinearFactor(zeroVector);
+            controllerPhysicsBody.setAngularFactor(zeroVector);
+            controllerPhysicsBody.setLinearVelocity(zeroVector);
+            controllerPhysicsBody.setAngularVelocity(zeroVector);
+            controllerPhysicsBody.setActivationState(DISABLE_DEACTIVATION);
+
+            const controllerMesh = controllerMeshes[side];
+            const _update = () => {
+              controllerPhysicsBody.setPosition(controllerMesh.position);
+              controllerPhysicsBody.setRotation(controllerMesh.quaternion);
+            };
+            render.on('update', _update)
+
+            cleanups.push(() => {
+              render.removeListener('update', _update)
+            });
+
+            /* controllerPhysicsBody.on('update', ({position, quaternion, scale}) => {
+              entityElement.setState('position', position);
+              entityElement.setState('quaternion', quaternion);
+              entityElement.setState('scale', scale);
+            }); */
+
+            /* const controller = controllers[side];
+            const {mesh} = controller;
+            controllerPhysicsBody.setObject(mesh);
+
+            physicsWorld.addConnectionBound(controllerPhysicsBody);
+            controllerPhysicsBody.syncUpstream();
+
+            controllerPhysicsBodies[side] = controllerPhysicsBody; */
+          });
 
           const spPhysicsComponent = {
             selector: '[sp-physics][size]',
@@ -283,7 +615,10 @@ class ZSpPhysics {
             entityAddedCallback(entityElement) {
               const entityObject = entityElement.getObject();
 
-              const physicsBody = _makeBoxBody(entityObject);
+              const physicsBody = _makeBoxBody({
+                object: entityObject,
+                mass: 1,
+              });
               entityElement.setComponentApi(physicsBody);
 
               physicsBody.debugMesh = null;
@@ -357,7 +692,7 @@ class ZSpPhysics {
           };
           elements.registerComponent(this, spPhysicsComponent);
 
-          this._cleanup = () => {
+          cleanups.push(() => {
             elements.unregisterComponent(this, spPhysicsComponent);
 
             clearInterval(interval);
@@ -368,8 +703,8 @@ class ZSpPhysics {
               Ammo.destroy(overlappingPairCache);
               Ammo.destroy(dispatcher);
               Ammo.destroy(collisionConfiguration)
-            });;
-          };
+            });
+          });
         }
       });
   }
