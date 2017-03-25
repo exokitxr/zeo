@@ -2,6 +2,56 @@ class Link {
   mount() {
     const {three: {THREE, scene, camera, renderer}, elements, render} = zeo;
 
+    /* const localRendererPromise = new Promise((accept, reject) => {
+      const localCanvas = document.createElement('canvas');
+      localCanvas.width = 256;
+      localCanvas.height = 256;
+
+      const localRenderer = new THREE.WebGLRenderer({
+        canvas: localCanvas,
+      });
+      localRenderer.render(scene, camera);
+
+      accept(localRenderer);
+    });
+    const localCubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
+    localCubeCamera.position.set(0, 1, 0);
+    scene.add(localCubeCamera);
+    window.requestOriginCubeMap = () => localRendererPromise
+      .then(localRenderer => {
+        const {domElement: localCanvas} = localRenderer;
+        const {children: cameras} = localCubeCamera;
+
+        const _renderCamera = index => {
+          const camera = cameras[index];
+
+          localRenderer.render(scene, camera);
+          const src = localCanvas.toDataURL('image/png');
+
+          return new Promise((accept, reject) => {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => {
+              accept(img);
+            };
+            img.onerror = err => {
+              reject(err);
+            };
+          });
+        };
+
+        const renderPromises = (() => {
+          const result = [];
+          for (let i = 0; i < cameras.length; i++) {
+            const promise = _renderCamera(i);
+            result.push(promise);
+          }
+          return result;
+        })();
+
+        return Promise.all(renderPromises);
+      }); */
+
     const meshes = [];
     const _update = () => {
       for (let i = 0; i < meshes.length; i++) {
