@@ -3,7 +3,7 @@ const idUtils = require('./lib/idUtils');
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
 
-class Bullet {
+class ZMpPhysics {
   constructor(archae) {
     this._archae = archae;
   }
@@ -1053,4 +1053,4 @@ const _warnError = err => {
   }
 };
 
-module.exports = Bullet;
+module.exports = ZMpPhysics;
