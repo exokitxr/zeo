@@ -17,19 +17,34 @@ class ZMpPhysics {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/config',
-    ]).then(([
-      config,
-    ]) => {
-      if (live) {
-        const {three: {THREE, scene}, utils: {js: {events: {EventEmitter}}}} = zeo;
+    const {three: {THREE, scene}, utils: {js: {events: {EventEmitter}}}} = zeo;
 
-        const debugMaterial = new THREE.MeshBasicMaterial({
-          color: 0xFF0000,
-          wireframe: true,
-        });
+    const _decomposeObjectMatrixWorld = object => {
+      const {matrixWorld} = object;
+      const position = new THREE.Vector3();
+      const rotation = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      matrixWorld.decompose(position, rotation, scale);
+      return {position, rotation, scale};
+    };
 
+    const debugMaterial = new THREE.MeshBasicMaterial({
+      color: 0xFF0000,
+      wireframe: true,
+    });
+
+    const _requestConnection = new Promise((accept, reject) => {
+      const connection = new WebSocket('wss://' + serverUrl + '/archae/bulletWs');
+      connection.onopen = () => {
+        accept(connection);
+      };
+      connection.onerror = err => {
+        reject(err);
+      };
+    });
+
+    _requestConnection()
+      .then(connection => {
         const _makePlaneDebugMesh = (dimensions, position, rotation, scale) => {
           const geometry = new THREE.PlaneBufferGeometry(1024, 1024);
           geometry.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
@@ -193,7 +208,6 @@ class ZMpPhysics {
             const {type, id} = this;
 
             this.bodies = new Map();
-            this.running = false;
             this.timeout = null;
           }
 
@@ -231,10 +245,6 @@ class ZMpPhysics {
               const {physicsDebug} = config.getConfig();
               if (physicsDebug) {
                 object.addDebug();
-              }
-
-              if (!this.running) {
-                this.start();
               }
             }
           }
@@ -283,30 +293,26 @@ class ZMpPhysics {
               })();
 
               const _requestUpdate = () => {
-                if (bulletInstance.isConnected()) {
-                  _request('requestUpdate', [this.id], (err, updates) => {
-                    if (!err) {
-                      for (let i = 0; i < updates.length; i++) {
-                        const update = updates[i];
-                        const {id} = update;
+                _request('requestUpdate', [this.id], (err, updates) => {
+                  if (!err) {
+                    for (let i = 0; i < updates.length; i++) {
+                      const update = updates[i];
+                      const {id} = update;
 
-                        const body = this.bodies.get(id);
-                        if (body) {
-                          const {position, rotation, linearVelocity, angularVelocity} = update;
-                          body.update({position, rotation, linearVelocity, angularVelocity});
-                        } else {
-                          console.warn('invalid body update:', id);
-                        }
+                      const body = this.bodies.get(id);
+                      if (body) {
+                        const {position, rotation, linearVelocity, angularVelocity} = update;
+                        body.update({position, rotation, linearVelocity, angularVelocity});
+                      } else {
+                        console.warn('invalid body update:', id);
                       }
-                    } else {
-                      console.warn(err);
                     }
+                  } else {
+                    console.warn(err);
+                  }
 
-                    _next();
-                  });
-                } else {
                   _next();
-                }
+                });
               };
               const _next = () => {
                 lastUpdateTime = Date.now();
@@ -325,8 +331,6 @@ class ZMpPhysics {
               }
             };
             _recurse();
-
-            this.running = true;
           }
 
           stop() {
@@ -334,14 +338,10 @@ class ZMpPhysics {
               clearTimeout(this.timeout);
               this.timeout = null;
             }
-
-            this.running = false;
           }
 
           destroy() {
-            if (this.running) {
-              this.stop();
-            }
+            this.stop();
           }
         }
 
@@ -790,8 +790,276 @@ class ZMpPhysics {
           world.makeTriangleMeshBody = _makeTriangleMeshBody;
           return world;
         };
-        const world = _makeWorld();
-        const bodies = new Map();
+
+        const activePhysicsEntities = [];
+
+        class BoxEntity extends EventEmitter {
+          constructor({position, rotation, mass}) {
+            super();
+
+            this.position = position;
+            this.rotation = rotation;
+            this.mass = mass;
+
+            this.enabled = null;
+            this.id = null;
+            this.size = null;
+            this.debug = null;
+
+            activePhysicsEntities.push(this);
+          }
+
+          setEnabled(newValue) {
+            this.enabled = newValue;
+
+            this.render();
+            this.renderDebug();
+          }
+
+          setId(newValue) {
+            this.id = id;
+
+            this.render();
+            this.renderDebug();
+          }
+
+          setSize(newValue) {
+            this.size = newValue;
+
+             this.render();
+            this.renderDebug();
+          }
+
+          setDebug(newValue) {
+            this.debug = newValue;
+
+            this.renderDebug();
+          }
+
+          setPosition(position) {
+            this.position = position;
+
+            const {body} = this;
+            if (body) {
+              body.getCenterOfMassTransform(trans);
+              trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+              body.setCenterOfMassTransform(trans);
+            }
+            const {debugMesh} = this;
+            if (debugMesh) {
+              debugMesh.position.copy(position);
+            }
+          }
+
+          setRotation(rotation) {
+            this.rotation = rotation;
+
+            const {body} = this;
+            if (body) {
+              body.getCenterOfMassTransform(trans);
+              trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
+              body.setCenterOfMassTransform(trans);
+            }
+            const {debugMesh} = this;
+            if (debugMesh) {
+              debugMesh.quaternion.copy(rotation);
+            }
+          }
+
+          setLinearVelocity(linearVelocity) {
+            this.linearVelocity = linearVelocity;
+
+            const {body} = this;
+            if (body) {
+              body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+            }
+          }
+
+          setAngularVelocity(angularVelocity) {
+            this.angularVelocity = angularVelocity;
+
+            const {body} = this;
+            if (body) {
+              body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+            }
+          }
+
+          setLinearFactor(linearFactor) {
+            this.linearFactor = linearFactor;
+
+            const {body} = this;
+            if (body) {
+              body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+            }
+          }
+
+          setAngularFactor(angularFactor) {
+            this.angularFactor = angularFactor;
+
+            const {body} = this;
+            if (body) {
+              body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+            }
+          }
+
+          setActivationState(activationState) {
+            this.activationState = activationState;
+
+            const {body} = this;
+            if (body) {
+              body.setActivationState(activationState);
+            }
+          }
+
+          render() {
+            // XXX
+          }
+
+          renderDebug() {
+            // XXX
+          }
+
+          destroy() {
+            activePhysicsEntities.splice(activePhysicsEntities.indexOf(this), 1);
+          }
+        }
+        class CompoundEntity extends EventEmitter {
+          constructor({position, rotation, children, mass}) {
+            super();
+
+            this.position = position;
+            this.rotation = rotation;
+            this.children = children;
+            this.mass = mass;
+
+            this.enabled = false;
+            this.id = false;
+            this.debug = false;
+
+            this.linearVelocity = null;
+            this.angularVelocity = null;
+            this.linearFactor = null;
+            this.angularFactor = null;
+            this.activationState = null;
+
+            this.body = null;
+            this.debugMesh = null;
+          }          
+
+          setEnabled(newValue) {
+            this.enabled = newValue;
+
+            this.render();
+            this.renderDebug();
+          }
+
+          setId(newValue) {
+            this.id = id;
+
+            this.render();
+            this.renderDebug();
+          }
+
+          setSize(newValue) {
+            this.size = newValue;
+
+             this.render();
+            this.renderDebug();
+          }
+
+          setDebug(newValue) {
+            this.debug = newValue;
+
+            this.renderDebug();
+          }
+
+          setPosition(position) {
+            this.position = position;
+
+            const {body} = this;
+            if (body) {
+              body.getCenterOfMassTransform(trans);
+              trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+              body.setCenterOfMassTransform(trans);
+            }
+            const {debugMesh} = this;
+            if (debugMesh) {
+              debugMesh.position.copy(position);
+            }
+          }
+
+          setRotation(rotation) {
+            this.rotation = rotation;
+
+            const {body} = this;
+            if (body) {
+              body.getCenterOfMassTransform(trans);
+              trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
+              body.setCenterOfMassTransform(trans);
+            }
+            const {debugMesh} = this;
+            if (debugMesh) {
+              debugMesh.quaternion.copy(rotation);
+            }
+          }
+
+          setLinearVelocity(linearVelocity) {
+            this.linearVelocity = linearVelocity;
+
+            const {body} = this;
+            if (body) {
+              body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+            }
+          }
+
+          setAngularVelocity(angularVelocity) {
+            this.angularVelocity = angularVelocity;
+
+            const {body} = this;
+            if (body) {
+              body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+            }
+          }
+
+          setLinearFactor(linearFactor) {
+            this.linearFactor = linearFactor;
+
+            const {body} = this;
+            if (body) {
+              body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+            }
+          }
+
+          setAngularFactor(angularFactor) {
+            this.angularFactor = angularFactor;
+
+            const {body} = this;
+            if (body) {
+              body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+            }
+          }
+
+          setActivationState(activationState) {
+            this.activationState = activationState;
+
+            const {body} = this;
+            if (body) {
+              body.setActivationState(activationState);
+            }
+          }
+
+          render() {
+            // XXX
+          }
+
+          renderDebug() {
+            // XXX
+          }
+
+          destroy() {
+            activePhysicsEntities.splice(activePhysicsEntities.indexOf(this), 1);
+          }
+        }
 
         const requestHandlers = new Map();
         const _request = (method, args, cb) => {
@@ -822,35 +1090,8 @@ class ZMpPhysics {
           }
         };
 
-        const connection = new WebSocket('wss://' + serverUrl + '/archae/bulletWs');
-        connection.onopen = () => {
-          world.requestInit()
-            .then(objects => {
-              for (let i = 0; i < objects.length; i++) {
-                const object = objects[i];
-                const {id} = object;
-                const oldBody = world.bodies.get(id);
-
-                if (oldBody) {
-                  const {position, rotation, linearVelocity, angularVelocity} = object;
-                  oldBody.update({position, rotation, linearVelocity, angularVelocity});
-                } else {
-                  const newBody = world.makeBodyFromSpec(object);
-                  world.addBase(newBody);
-                }
-              }
-            })
-            .catch(err => {
-              console.warn(err);
-            });
-
-          bulletInstance.emit('connectServer');
-        };
         connection.onclose = () => {
-          bulletInstance.emit('disconnectServer');
-        };
-        connection.onerror = err => {
-          console.warn(err);
+          console.warn('mp physics connection closed');
         };
         connection.onmessage = msg => {
           const m = JSON.parse(msg.data);
@@ -905,36 +1146,189 @@ class ZMpPhysics {
           }
         };
 
-        let debugEnabled = false;
-        const _enablePhysicsDebugMesh = () => {
-          world.bodies.forEach(body => {
-            body.addDebug();
+        const world = _makeWorld();
+        const bodies = new Map();
+        world.requestInit()
+          .then(objects => {
+            for (let i = 0; i < objects.length; i++) {
+              const object = objects[i];
+              const {id} = object;
+              const oldBody = world.bodies.get(id);
+
+              if (oldBody) {
+                const {position, rotation, linearVelocity, angularVelocity} = object;
+                oldBody.update({position, rotation, linearVelocity, angularVelocity});
+              } else {
+                const newBody = world.makeBodyFromSpec(object);
+                world.addBase(newBody);
+              }
+            }
+          })
+          .catch(err => {
+            console.warn(err);
           });
 
-          debugEnabled = true;
-        };
-        const _disablePhysicsDebugMesh = () => {
-          world.bodies.forEach(body => {
-            body.removeDebug();
+        // controllers
+        const controllerMeshes = player.getControllerMeshes();
+        const controllerPhysicsEntities = SIDES.map(side => {
+          const controllerMesh = controllerMeshes[side];
+          const {position, quaternion: rotation} = controllerMesh;
+          const controllerPhysicsEntity = new CompoundEntity({
+            position,
+            rotation,
+            children: [
+              {
+                type: 'box',
+                dimensions: new THREE.Vector3(0.115, 0.075, 0.215),
+                position: new THREE.Vector3(0, -(0.075 / 2), (0.215 / 2) - 0.045),
+              },
+            ],
+            mass: 1,
           });
+          controllerPhysicsEntity.setLinearFactor(zeroVector);
+          controllerPhysicsEntity.setAngularFactor(zeroVector);
+          controllerPhysicsEntity.setLinearVelocity(zeroVector);
+          controllerPhysicsEntity.setAngularVelocity(zeroVector);
+          controllerPhysicsEntity.setActivationState(DISABLE_DEACTIVATION);
+          controllerPhysicsEntity.setEnabled(true);
 
-          debugEnabled = false;
-        };
-        const _config = config => {
-          const {physicsDebug} = config;
-
-          if (physicsDebug && !debugEnabled) {
-            _enablePhysicsDebugMesh();
-          } else if (!physicsDebug && debugEnabled) {
-            _disablePhysicsDebugMesh();
+          const _update = () => {
+            controllerPhysicsEntity.setPosition(controllerMesh.position);
+            controllerPhysicsEntity.setRotation(controllerMesh.quaternion);
           };
-        };
-        config.on('config', _config);
+          render.on('update', _update)
 
-        const {physicsDebug} = config.getConfig();
-        if (physicsDebug) {
-          _enablePhysicsDebugMesh();
-        }
+          cleanups.push(() => {
+            render.removeListener('update', _update)
+          });
+
+          return controllerPhysicsEntity;
+        });
+
+        const mpPhysicsComponent = {
+          selector: '[mp-physics][size]',
+          attributes: {
+            'mp-physics': {
+              type: 'checkbox',
+              value: true,
+            },
+            'mp-physics-id': {
+              type: 'text',
+              value: _makeId,
+            },
+            'size': {
+              type: 'vector',
+              value: [1, 1, 1],
+              min: 0.1,
+              max: 1,
+              step: 0.1,
+            },
+            'physics-debug': {
+              type: 'checkbox',
+              value: false,
+            },
+          },
+          entityAddedCallback(entityElement) {
+            const entityObject = entityElement.getObject();
+
+            const {position, rotation} = _decomposeObjectMatrixWorld(entityObject);
+            const physicsEntity = new BoxEntity({
+              position,
+              rotation,
+              mass: 1,
+            });
+            entityElement.setComponentApi(physicsEntity);
+
+            physicsEntity.on('update', ({position, quaternion, scale}) => {
+              entityElement.setState('position', position);
+              entityElement.setState('quaternion', quaternion);
+              entityElement.setState('scale', scale);
+            });
+
+            const _release = e => {
+              const {detail: {linearVelocity, angularVelocity}} = e;
+
+              physicsEntity.setLinearVelocity(linearVelocity);
+              physicsEntity.setAngularVelocity(angularVelocity);
+            };
+            entityElement.addEventListener('release', _release);
+
+            physicsEntity.destroy = (destroy => () => {
+              destroy();
+
+              entityElement.removeEventListener('release', _release);
+            })(physicsEntity.destroy.bind(physicsEntity));
+          },
+          entityRemovedCallback(entityElement) {
+            const physicsEntity = entityElement.getComponentApi();
+            physicsEntity.destroy();
+          },
+          entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+            const physicsEntity = entityElement.getComponentApi();
+
+            switch (name) {
+              case 'mp-physics': {
+                physicsEntity.setEnabled(newValue);
+
+                break;
+              }
+              case 'mp-physics-id': {
+                physicsEntity.setId(newValue);
+
+                break;
+              }
+              case 'size': {
+                physicsEntity.setSize(newValue);
+
+                break;
+              }
+              case 'physics-debug': {
+                physicsEntity.setDebug(newValue);
+
+                const numPhysicsDebugs = (() => {
+                  let result = 0;
+
+                  for (let i = 0; i < activePhysicsEntities.length; i++) {
+                    const physicsEntity = activePhysicsEntities[i];
+                    const {debug} = physicsEntity;
+                    result += Number(debug);
+                  }
+
+                  return result;
+                })();
+                const controllerPhysicsDebug = numPhysicsDebugs > 0;
+                for (let i = 0; i < controllerPhysicsEntities.length; i++) {
+                  const controllerPhysicEntity = controllerPhysicsEntities[i];
+                  controllerPhysicEntity.setDebug(controllerPhysicsDebug);
+                }
+
+                break;
+              }
+            }
+          },
+          entityStateChangedCallback(entityElement, key, oldValue, newValue) {
+            const entityObject = entityElement.getObject();
+
+            switch (key) {
+              case 'position': {
+                entityObject.position.copy(newValue);
+
+                break;
+              }
+              case 'quaternion': {
+                entityObject.quaternion.copy(newValue);
+
+                break;
+              }
+              case 'scale': {
+                entityObject.scale.copy(newValue);
+
+                break;
+              }
+            }
+          },
+        };
+        elements.registerComponent(this, mpPhysicsComponent);
 
         this._cleanup = () => {
           if (connection.readyState === WebSocket.OPEN) {
@@ -942,7 +1336,11 @@ class ZMpPhysics {
           }
 
           config.removeListner('config', _config);
+
+          elements.unregisterComponent(this, mpPhysicsComponent);
         };
+      } else {
+        connection.close();
       }
     });
   }
