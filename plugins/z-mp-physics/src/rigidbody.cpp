@@ -524,7 +524,7 @@ NAN_METHOD(mox::physics::RigidBody::deactivate)
 NAN_METHOD(mox::physics::RigidBody::setActivationState)
 {
   GET_SELF(mox::physics::RigidBody, self);
-  CHECK_NUM_ARGUMENTS(info, 2);
+  CHECK_NUM_ARGUMENTS(info, 1);
 
   uint32_t activationState = (Nan::To<v8::Number>(info[0]).ToLocalChecked())->Uint32Value();
 
