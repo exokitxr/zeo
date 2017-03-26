@@ -44,7 +44,6 @@ class Config {
       airlockCheckboxValue: true,
       voiceChatCheckboxValue: false,
       statsCheckboxValue: false,
-      physicsDebugCheckboxValue: false,
     };
     const _makeConfigApi = ({EventEmitter}) => {
       class ConfigApi extends EventEmitter {
@@ -53,7 +52,6 @@ class Config {
             airlock: configState.airlockCheckboxValue,
             voiceChat: configState.voiceChatCheckboxValue,
             stats: configState.statsCheckboxValue,
-            physicsDebug: configState.physicsDebugCheckboxValue,
           };
         }
 
@@ -165,7 +163,6 @@ class Config {
                 configState.airlockCheckboxValue = configSpec.airlock;
                 configState.voiceChatCheckboxValue = configSpec.voiceChat;
                 configState.statsCheckboxValue = configSpec.stats;
-                configState.physicsDebugCheckboxValue = configSpec.physicsDebug;
 
                 const configMesh = (() => {
                   const object = new THREE.Object3D();
@@ -181,7 +178,6 @@ class Config {
                         airlockCheckboxValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
-                        physicsDebugCheckboxValue,
                       },
                       focus: {
                         type: focusType,
@@ -196,7 +192,6 @@ class Config {
                         airlockCheckboxValue,
                         voiceChatCheckboxValue,
                         statsCheckboxValue,
-                        physicsDebugCheckboxValue,
                       }),
                       x: 0,
                       y: 0,
@@ -372,19 +367,6 @@ class Config {
                         } else {
                           configState.statsCheckboxValue = false;
                           statsMesh.visible = false;
-                        }
-
-                        _saveConfig();
-                        configApi.updateConfig();
-
-                        _updatePages();
-                      } else if (onclick === 'config:physicsDebug') {
-                        const {physicsDebugCheckboxValue} = configState;
-
-                        if (!physicsDebugCheckboxValue) {
-                          configState.physicsDebugCheckboxValue = true;
-                        } else {
-                          configState.physicsDebugCheckboxValue = false;
                         }
 
                         _saveConfig();
