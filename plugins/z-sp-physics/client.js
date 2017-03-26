@@ -180,7 +180,7 @@ class ZSpPhysics {
               const {body} = this;
               if (body) {
                 body.getCenterOfMassTransform(trans);
-                trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
+                trans.setRotation(new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
                 body.setCenterOfMassTransform(trans);
               }
               const {debugMesh} = this;
@@ -318,8 +318,9 @@ class ZSpPhysics {
             update() {
               const {body} = this;
 
-              if (body.getMotionState()) {
-                body.getMotionState().getWorldTransform(trans);
+              const motionState = body.getMotionState();
+              if (motionState) {
+                motionState.getWorldTransform(trans);
                 const btOrigin = trans.getOrigin();
                 const btRotation = trans.getRotation();
 
@@ -418,7 +419,7 @@ class ZSpPhysics {
               const {body} = this;
               if (body) {
                 body.getCenterOfMassTransform(trans);
-                trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
+                trans.setRotation(new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
                 body.setCenterOfMassTransform(trans);
               }
               const {debugMesh} = this;
@@ -627,8 +628,9 @@ class ZSpPhysics {
             update() {
               const {body} = this;
 
-              if (body.getMotionState()) {
-                body.getMotionState().getWorldTransform(trans);
+              const motionState = body.getMotionState();
+              if (motionState) {
+                motionState.getWorldTransform(trans);
                 const btOrigin = trans.getOrigin();
                 const btRotation = trans.getRotation();
 
