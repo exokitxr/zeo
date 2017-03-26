@@ -66,6 +66,7 @@ class ZCake {
                   sliceCakeEntity.setAttribute('grabbable', JSON.stringify(true));
                   sliceCakeEntity.setAttribute('holdable', JSON.stringify(true));
                   sliceCakeEntity.setAttribute('sp-physics', JSON.stringify(true));
+                  sliceCakeEntity.setAttribute('mp-physics', JSON.stringify(true));
                   sliceCakeEntity.setAttribute('size', JSON.stringify(DEFAULT_SIZE));
                   elements.getEntitiesElement().appendChild(sliceCakeEntity);
 
