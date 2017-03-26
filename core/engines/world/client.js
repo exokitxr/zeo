@@ -1753,14 +1753,16 @@ class World {
                   _addTag(itemSpec, 'world');
                 } else {
                   const {item: dstItem} = dstTagMesh;
-                  const {id: dstId} = dstItem;
+                  const {id: dstId, instance: dstElement} = dstItem;
 
                   _forEachSrcTagAttribute((attributeName, attributeValue) => {
-                    _setAttribute({
-                      id: dstId,
-                      name: attributeName,
-                      value: attributeValue,
-                    });
+                    if (!dstElement.hasAttribute(attributeName)) {
+                      _setAttribute({
+                        id: dstId,
+                        name: attributeName,
+                        value: attributeValue,
+                      });
+                    }
                   });
                 }
               }
