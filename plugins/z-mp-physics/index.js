@@ -5,7 +5,7 @@ const child_process = require('child_process');
 
 const idUtils = require('./lib/idUtils');
 
-class Antikyth extends EventEmitter {
+class Bullet extends EventEmitter {
   constructor() {
     super();
 
@@ -276,8 +276,8 @@ class Antikyth extends EventEmitter {
     });
   }
 
-  setActivationState(world, body, activationState) {
-    this.send('setActivationState', {
+  setActivationStateWorldBody(world, body, activationState) {
+    this.send('setActivationStateBody', {
       id: body.id,
       activationState: activationState,
     });
@@ -588,7 +588,7 @@ class World extends EventEmitter {
     this.parent.requestWorldUpdate(this);
   }
 }
-Antikyth.World = World;
+Bullet.World = World;
 
 class Body extends EventEmitter {
   constructor() {
@@ -773,7 +773,7 @@ class Body extends EventEmitter {
     }
   }
 }
-Antikyth.Body = Body;
+Bullet.Body = Body;
 
 class Plane extends Body {
   constructor(opts) {
@@ -788,7 +788,7 @@ class Plane extends Body {
     this.mass = mass;
   }
 }
-Antikyth.Plane = Plane;
+Bullet.Plane = Plane;
 
 class Box extends Body {
   constructor(opts) {
@@ -803,7 +803,7 @@ class Box extends Body {
     this.mass = mass;
   }
 }
-Antikyth.Box = Box;
+Bullet.Box = Box;
 
 class Sphere extends Body {
   constructor(opts) {
@@ -818,7 +818,7 @@ class Sphere extends Body {
     this.mass = mass;
   }
 }
-Antikyth.Sphere = Sphere;
+Bullet.Sphere = Sphere;
 
 class ConvexHull extends Body {
   constructor(opts) {
@@ -833,7 +833,7 @@ class ConvexHull extends Body {
     this.mass = mass;
   }
 }
-Antikyth.ConvexHull = ConvexHull;
+Bullet.ConvexHull = ConvexHull;
 
 class TriangleMesh extends Body {
   constructor(opts) {
@@ -848,7 +848,7 @@ class TriangleMesh extends Body {
     this.mass = mass;
   }
 }
-Antikyth.TriangleMesh = TriangleMesh;
+Bullet.TriangleMesh = TriangleMesh;
 
 class Compound extends Body {
   constructor(opts) {
@@ -863,7 +863,7 @@ class Compound extends Body {
     this.mass = mass;
   }
 }
-Antikyth.Compound = Compound;
+Bullet.Compound = Compound;
 
 class Constraint {
   constructor(opts) {
@@ -896,7 +896,7 @@ class Constraint {
     }
   }
 }
-Antikyth.Constraint = Constraint;
+Bullet.Constraint = Constraint;
 
 const _isUpdateEqual = (a, b) => {
   const {position: [pax, pay, paz], rotation: [rax, ray, raz, raw]} = a;
@@ -925,4 +925,4 @@ const _getUpdateDiff = (prevUpdates, nextUpdates) => {
   });
 };
 
-module.exports = Antikyth;
+module.exports = Bullet;
