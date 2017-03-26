@@ -184,6 +184,10 @@ class ZCake {
                 type: 'checkbox',
                 value: true,
               },
+              'mp-physics-id': {
+                type: 'text',
+                value: _makeId,
+              },
               'physics-debug': {
                 type: 'checkbox',
                 value: false,
@@ -265,5 +269,7 @@ class ZCake {
     this._cleanup();
   }
 }
+
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = ZCake;
