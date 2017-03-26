@@ -225,7 +225,6 @@ class Rend {
 
               object.worldMesh = null;
               object.universeMesh = null;
-              object.serversMesh = null;
               object.configMesh = null;
               object.statsMesh = null;
               object.trashMesh = null;
@@ -324,7 +323,7 @@ class Rend {
                   const onclick = (anchor && anchor.onclick) || '';
 
                   let match;
-                  if (match = onclick.match(/^navbar:(status|world|worlds|servers|options)$/)) {
+                  if (match = onclick.match(/^navbar:(status|world|worlds|options)$/)) {
                     const newTab = match[1];
 
                     const _getTabMesh = tab => {
@@ -332,7 +331,6 @@ class Rend {
                         case 'status': return menuMesh.statusMesh;
                         case 'world': return menuMesh.worldMesh;
                         case 'worlds': return menuMesh.universeMesh;
-                        case 'servers': return menuMesh.serversMesh;
                         case 'options': return menuMesh.configMesh;
                         default: return null;
                       }
@@ -962,14 +960,6 @@ class Rend {
             keyboardMesh.visible = false;
 
             this.emit('logout');
-          }
-
-          connectServer() {
-            this.emit('connectServer');
-          }
-
-          disconnectServer() {
-            this.emit('disconnectServer');
           }
         }
         const rendApi = new RendApi();

@@ -91,7 +91,6 @@ class Zeo {
             '/core/engines/tags',
             '/core/engines/world',
             '/core/engines/universe',
-            '/core/engines/servers',
             '/core/engines/multiplayer',
             '/core/engines/voicechat',
             '/core/engines/npm',
@@ -122,7 +121,6 @@ class Zeo {
             tags,
             world,
             universe,
-            servers,
             multiplayer,
             voicechat,
             npm,
@@ -592,10 +590,6 @@ class Zeo {
                     }
                     const zeoApi = new ZeoApi();
                     window.zeo = zeoApi;
-
-                    if (serverEnabled) {
-                      servers.requestInitialConnect();
-                    }
 
                     return zeoApi;
                   }

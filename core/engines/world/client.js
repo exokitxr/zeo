@@ -52,7 +52,6 @@ class World {
         '/core/engines/cyborg',
         '/core/engines/multiplayer',
         '/core/engines/login',
-        '/core/engines/servers',
         '/core/engines/biolumi',
         '/core/engines/rend',
         '/core/engines/tags',
@@ -66,7 +65,6 @@ class World {
         cyborg,
         multiplayer,
         login,
-        servers,
         biolumi,
         rend,
         tags,
@@ -1860,42 +1858,27 @@ class World {
           fs.on('upload', _upload);
 
           let connection = null;
-          let connecting = false;
           const _connect = () => {
-            if (!connecting) {
-              connecting = true;
+            Promise.all([
+              _requestConnection(),
+              _requestStartTime(),
+            ])
+              .then(([
+                newConnection,
+                startTime,
+              ]) => {
+                connection = newConnection;
+                connection.onclose = () => {
+                  connection = null;
+                };
 
-              Promise.all([
-                _requestConnection(),
-                _requestStartTime(),
-              ])
-                .then(([
-                  newConnection,
-                  startTime,
-                ]) => {
-                  const shouldBeEnabled = servers.isConnected();
-
-                  if (shouldBeEnabled) {
-                    connection = newConnection;
-                    connection.onclose = () => {
-                      connection = null;
-                    };
-
-                    worldTimer.setStartTime(startTime);
-                  } else {
-                    connection.close();
-                  }
-
-                  connecting = false;
-                })
-                .catch(err => {
-                  console.warn(err);
-
-                  connecting = false;
-                });
-            }
+                worldTimer.setStartTime(startTime);
+              })
+              .catch(err => {
+                console.warn(err);
+              });
           };
-          const _disconnect = () => {
+          /* const _disconnect = () => {
             const _unintializeConnection = () => {
               if (connection) {
                 connection.close();
@@ -1923,24 +1906,9 @@ class World {
             _unintializeConnection();
             _uninitializeTags();
             _uninitializeTimer();
-          };
+          }; */
 
-          const _updateEnabled = () => {
-            const enabled = Boolean(connection);
-            const shouldBeEnabled = servers.isConnected();
-
-            if (shouldBeEnabled && !enabled) {
-              _connect();
-            } else if (!shouldBeEnabled && enabled) {
-              _disconnect();
-            }
-          };
-          const _connectServer = _updateEnabled;
-          rend.on('connectServer', _connectServer);
-          const _disconnectServer = _updateEnabled;
-          rend.on('disconnectServer', _disconnectServer);
-
-          _updateEnabled();
+          _connect();
 
           this._cleanup = () => {
             remoteGrabManager.destroy();
@@ -1979,9 +1947,6 @@ class World {
             tags.removeListener('broadcast', _broadcast);
 
             fs.removeListener('upload', _upload);
-
-            rend.removeListener('connectServer', _connectServer);
-            rend.removeListener('disconnectServer', _disconnectServer);
           };
 
           class WorldApi {

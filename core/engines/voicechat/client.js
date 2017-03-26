@@ -22,7 +22,6 @@ export default class VoiceChat {
         '/core/engines/three',
         '/core/engines/somnifer',
         '/core/engines/login',
-        '/core/engines/servers',
         '/core/engines/rend',
         '/core/engines/config',
         '/core/engines/multiplayer',
@@ -33,7 +32,6 @@ export default class VoiceChat {
           three,
           somnifer,
           login,
-          servers,
           rend,
           config,
           multiplayer,
@@ -246,10 +244,9 @@ export default class VoiceChat {
             };
 
             const _updateEnabled = () => {
-              const connected = servers.isConnected();
               const loggedIn = !login.isOpen();
               const {voiceChat} = config.getConfig();
-              const shouldBeEnabled = connected && loggedIn && voiceChat;
+              const shouldBeEnabled = loggedIn && voiceChat;
 
               if (shouldBeEnabled && !enabled) {
                 _enable();
@@ -257,10 +254,6 @@ export default class VoiceChat {
                 _disable();
               };
             };
-            const _connectServer = _updateEnabled;
-            rend.on('connectServer', _connectServer);
-            const _disconnectServer = _updateEnabled;
-            rend.on('disconnectServer', _disconnectServer);
             const _login = _updateEnabled;
             rend.on('login', _login);
             const _logout = _updateEnabled;
@@ -273,8 +266,6 @@ export default class VoiceChat {
             this._cleanup = () => {
               cleanup();
 
-              rend.removeListener('connectServer', _connectServer);
-              rend.removeListener('disconnectServer', _disconnectServer);
               rend.removeListener('login', _login);
               rend.removeListener('logout', _logout);
 
