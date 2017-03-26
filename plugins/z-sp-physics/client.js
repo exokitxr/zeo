@@ -712,6 +712,25 @@ class ZSpPhysics {
             return controllerPhysicsBody;
           });
 
+          const _updateControllersDebugMeshes = () => {
+            const numPhysicsDebugs = (() => {
+              let result = 0;
+
+              for (let i = 0; i < activePhysicsBodies.length; i++) {
+                const physicsBody = activePhysicsBodies[i];
+                const {debug} = physicsBody;
+                result += Number(debug);
+              }
+
+              return result;
+            })();
+            const controllerPhysicsDebug = numPhysicsDebugs > 0;
+            for (let i = 0; i < controllerPhysicsBodies.length; i++) {
+              const controllerPhysicsBody = controllerPhysicsBodies[i];
+              controllerPhysicsBody.setDebug(controllerPhysicsDebug);
+            }
+          };
+
           const spPhysicsComponent = {
             selector: '[sp-physics][size]',
             attributes: {
@@ -769,6 +788,8 @@ class ZSpPhysics {
             entityRemovedCallback(entityElement) {
               const physicsBody = entityElement.getComponentApi();
               physicsBody.destroy();
+
+              _updateControllersDebugMeshes();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
               const physicsBody = entityElement.getComponentApi();
@@ -793,22 +814,7 @@ class ZSpPhysics {
                 case 'physics-debug': {
                   physicsBody.setDebug(newValue);
 
-                  const numPhysicsDebugs = (() => {
-                    let result = 0;
-
-                    for (let i = 0; i < activePhysicsBodies.length; i++) {
-                      const physicsBody = activePhysicsBodies[i];
-                      const {debug} = physicsBody;
-                      result += Number(debug);
-                    }
-
-                    return result;
-                  })();
-                  const controllerPhysicsDebug = numPhysicsDebugs > 0;
-                  for (let i = 0; i < controllerPhysicsBodies.length; i++) {
-                    const controllerPhysicsBody = controllerPhysicsBodies[i];
-                    controllerPhysicsBody.setDebug(controllerPhysicsDebug);
-                  }
+                  _updateControllersDebugMeshes();
 
                   break;
                 }
