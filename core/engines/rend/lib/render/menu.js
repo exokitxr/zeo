@@ -76,9 +76,6 @@ const getNavbarSrc = ({tab}) => {
       <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'world' ? 'z-index: 1;' : ''}" onclick="navbar:world">
         ${tab === 'world' ? focusedContent('World') : unfocusedContent('World')}
       </a>
-      <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'mail' ? 'z-index: 1;' : ''}" onclick="navbar:mail">
-        ${tab === 'mail' ? focusedContent('Mail') : unfocusedContent('Mail')}
-      </a>
       <a style="display: flex; position: relative; width: 170px; height: 100%; margin-left: -25px; justify-content: center; align-items: stretch; font-size: 20px; text-decoration: none; box-sizing: border-box; ${tab === 'worlds' ? 'z-index: 1;' : ''}" onclick="navbar:worlds">
         ${tab === 'worlds' ? focusedContent('Worlds') : unfocusedContent('Worlds')}
       </a>

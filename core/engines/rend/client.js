@@ -324,14 +324,13 @@ class Rend {
                   const onclick = (anchor && anchor.onclick) || '';
 
                   let match;
-                  if (match = onclick.match(/^navbar:(status|world|mail|inventory|worlds|servers|options)$/)) {
+                  if (match = onclick.match(/^navbar:(status|world|worlds|servers|options)$/)) {
                     const newTab = match[1];
 
                     const _getTabMesh = tab => {
                       switch (tab) {
                         case 'status': return menuMesh.statusMesh;
                         case 'world': return menuMesh.worldMesh;
-                        case 'mail': return menuMesh.mailMesh;
                         case 'worlds': return menuMesh.universeMesh;
                         case 'servers': return menuMesh.serversMesh;
                         case 'options': return menuMesh.configMesh;

@@ -57,7 +57,6 @@ class World {
         '/core/engines/rend',
         '/core/engines/tags',
         '/core/engines/fs',
-        '/core/engines/mail',
         '/core/plugins/geometry-utils',
       ]).then(([
         bootstrap,
@@ -72,7 +71,6 @@ class World {
         rend,
         tags,
         fs,
-        mail,
         geometryUtils,
       ]) => {
         if (live) {
