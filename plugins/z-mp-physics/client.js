@@ -798,7 +798,7 @@ class ZMpPhysics {
               if (body) {
                 body.setPosition(position.toArray());
               }
-              const {debugMesh} = this;
+              const {debugMesh} = this; // XXX no need to set the debug mesh position here
               if (debugMesh) {
                 debugMesh.position.copy(position);
               }
@@ -893,6 +893,7 @@ class ZMpPhysics {
                   }
                 });
                 world.add(body);
+                this.body = body;
               }
             }
 
@@ -1049,7 +1050,38 @@ class ZMpPhysics {
             }
 
             render() {
-              // XXX
+              const {body} = this;
+              if (body) {
+                world.remove(body);
+                this.body = null;
+              }
+
+              const {mpPhysics, spPhysics, id, children} = this;
+              if (mpPhysics && !spPhysics && id && children) {
+                const body = (() => {
+                  const {id, position, rotation, mass} = this;
+
+                  return new Compound({
+                    id,
+                    position,
+                    rotation,
+                    children,
+                    mass,
+                  });
+                })();
+                body.on('update', ({position, rotation, scale}) => {
+                  this.emit('update', {position, rotation, scale});
+
+                  const {debugMesh} = this;
+                  if (debugMesh) {
+                    debugMesh.position.copy(position);
+                    debugMesh.quaternion.copy(rotation);
+                    debugMesh.scale.copy(scale);
+                  }
+                });
+                world.add(body);
+                this.body = body;
+              }
             }
 
             renderDebug() {
@@ -1059,8 +1091,8 @@ class ZMpPhysics {
                 this.debugMesh = null;
               }
 
-              const {mpPhysics, spPhysics, debug, children} = this;
-              if (mpPhysics && !spPhysics && debug && children) {
+              const {mpPhysics, spPhysics, debug, id, children} = this;
+              if (mpPhysics && !spPhysics && debug && id && children) {
                 const newDebugMesh = _makeCompoundDebugMesh(children);
                 const {position, rotation} = this;
                 newDebugMesh.position.copy(position);
@@ -1184,7 +1216,7 @@ class ZMpPhysics {
             .catch(err => {
               console.warn(err);
             });
-          // XXX floor
+
           const floorBody = new Box({
             id: 'floor',
             position: [0, -1024 / 2, 0],
@@ -1199,7 +1231,6 @@ class ZMpPhysics {
             const controllerMesh = controllerMeshes[side];
             const {position, quaternion: rotation} = controllerMesh;
             const controllerPhysicsEntity = new CompoundEntity({
-              id: player.getId() + '-controller-' + side,
               position,
               rotation,
               children: [
@@ -1217,6 +1248,7 @@ class ZMpPhysics {
             controllerPhysicsEntity.setAngularVelocity(zeroVector);
             controllerPhysicsEntity.setActivationState(DISABLE_DEACTIVATION);
             controllerPhysicsEntity.setMpPhysics(true);
+            controllerPhysicsEntity.setId(player.getId() + '-controller-' + side);
 
             const _update = () => {
               controllerPhysicsEntity.setPosition(controllerMesh.position);
