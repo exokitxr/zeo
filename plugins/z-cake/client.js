@@ -180,6 +180,10 @@ class ZCake {
                 type: 'checkbox',
                 value: true,
               },
+              'mp-physics': {
+                type: 'checkbox',
+                value: true,
+              },
               'physics-debug': {
                 type: 'checkbox',
                 value: false,
