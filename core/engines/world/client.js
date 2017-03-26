@@ -1699,7 +1699,10 @@ class World {
 
                     for (const attributeName in componentAttributes) {
                       const attribute = componentAttributes[attributeName];
-                      const {value: attributeValue} = attribute;
+                      let {value: attributeValue} = attribute;
+                      if (typeof attributeValue === 'function') {
+                        attributeValue = attributeValue();
+                      }
 
                       fn(attributeName, attributeValue);
                     }
