@@ -473,10 +473,10 @@ class Cyborg {
 
             rend.removeListener('update', _update);
 
-            if (serverEnabled) {
+            /* if (serverEnabled) {
               bullet.removeListener('connectServer', _connectServer);
               bullet.removeListener('disconnectServer', _disconnectServer);
-            }
+            } */
           };
 
           return {
