@@ -1,4 +1,4 @@
-const Bullet = require('bullet');
+const Bullet = require('.');
 
 const OPEN = 1; // ws.OPEN
 const engineKey = 'engine';
