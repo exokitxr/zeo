@@ -26,6 +26,10 @@ const zeoComponentElementConstructor = (() => {
             boundComponent.entityStateChangedCallback(entityElement, key, oldValue, newValue);
           }
         };
+        entityElement.removeState = key => {
+          delete entityApiState[key];
+        };
+        entityElement.hasState = key => (key in entityApiState);
         entityElement.boundComponents = boundComponents;
         entityElement._bound = true;
       }

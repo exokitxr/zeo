@@ -50,6 +50,8 @@ class ZCake {
               this.slices = 8;
               this.holdable = false;
 
+              this.alignable = false;
+
               this.mesh = null;
 
               this.render();
@@ -119,11 +121,15 @@ class ZCake {
             }
 
             align() {
-              const {object, position} = this;
+              const {alignable} = this;
 
-              object.position.set(position[0], position[1], position[2]);
-              object.quaternion.set(position[3], position[4], position[5], position[6]);
-              object.scale.set(position[7], position[8], position[9]);
+              if (alignable) {
+                const {object, position} = this;
+
+                object.position.set(position[0], position[1], position[2]);
+                object.quaternion.set(position[3], position[4], position[5], position[6]);
+                object.scale.set(position[7], position[8], position[9]);
+              }
             }
 
             setPosition(newValue) {
@@ -140,6 +146,10 @@ class ZCake {
 
             setHoldable(newValue) {
               this.holdable = newValue;
+            }
+
+            setAlignable(newValue) {
+              this.alignable = newValue;
             }
 
             destroy() {
@@ -223,7 +233,9 @@ class ZCake {
 
               switch (name) {
                 case 'position': {
-                  cake.setPosition(newValue);
+                  if (!entityElement.hasState('position') && !entityElement.hasState('rotation') && !entityElement.hasState('scale')) {
+                    cake.setPosition(newValue);
+                  }
 
                   break;
                 }
@@ -234,6 +246,20 @@ class ZCake {
                 }
                 case 'holdable': {
                   cake.setHoldable(newValue);
+
+                  break;
+                }
+              }
+            },
+            entityStateValueChangedCallback(entityElement, key, oldValue, newValue) {
+              const cake = entityElement.getComponentApi();
+
+              switch (key) {
+                case 'position':
+                case 'position':
+                case 'scale': {
+                  const alignable = !entityElement.hasState('position') && !entityElement.hasState('rotation') && !entityElement.hasState('scale');
+                  cake.setAlignable(alignable);
 
                   break;
                 }
