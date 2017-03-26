@@ -276,9 +276,10 @@ class Antikyth extends EventEmitter {
     });
   }
 
-  disableDeactivationWorldBody(world, body) {
-    this.send('disableDeactivationBody', {
+  setActivationState(world, body, activationState) {
+    this.send('setActivationState', {
       id: body.id,
+      activationState: activationState,
     });
   }
 
@@ -467,14 +468,15 @@ class World extends EventEmitter {
     }
   }
 
-  disableDeactivationBody(body) {
+  setActivationStateBody(body, activationState) {
     if (this.parent) {
-      this.parent.disableDeactivationWorldBody(this, body);
+      this.parent.setActivationStateWorldBody(this, body, activationState);
     } else {
       this.queue.push({
-        method: 'disableDeactivationBody',
+        method: 'setActivationStateBody',
         args: {
           body,
+          activationState,
         }
       });
     }
@@ -562,9 +564,9 @@ class World extends EventEmitter {
             this.parent.deactivateWorldBody(this, body);
             break;
           }
-          case 'disableDeactivationBody': {
-            const {body} = args;
-            this.parent.disableDeactivationWorldBody(this, body);
+          case 'setActivationStateBody': {
+            const {body, activationState} = args;
+            this.parent.setActivationStateWorldBody(this, body, activationState);
             break;
           }
           case 'setIgnoreCollisionCheckBody': {
@@ -683,12 +685,13 @@ class Body extends EventEmitter {
     }
   }
 
-  disableDeactivation() {
+  setActivationState(activationState) {
     if (this.parent) {
-      this.parent.disableDeactivationBody(this);
+      this.parent.setActivationStateBody(this, activationState);
     } else {
       this.queue.push({
-        method: 'disableDeactivation',
+        method: 'setActivationState',
+        args: [activationState],
       });
     }
   }
@@ -754,8 +757,9 @@ class Body extends EventEmitter {
             this.parent.deactivateBody(this);
             break;
           }
-          case 'disableDeactivation': {
-            this.parent.disableDeactivationBody(this);
+          case 'setActivationState': {
+            const [activationState] = args;
+            this.parent.setActivationStateBody(this, activationState);
             break;
           }
           case 'setIgnoreCollisionCheck': {

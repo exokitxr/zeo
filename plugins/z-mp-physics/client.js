@@ -147,7 +147,7 @@ class ZMpPhysics {
             this.type = type;
             this.id = id;
 
-            this.debugMesh = null;
+            // this.debugMesh = null;
           }
 
           add(child) {
@@ -175,7 +175,7 @@ class ZMpPhysics {
             // nothing
           }
 
-          addDebug() {
+          /* addDebug() {
             if (this.makeDebugMesh) {
               const debugMesh = this.makeDebugMesh();
               scene.add(debugMesh);
@@ -192,7 +192,7 @@ class ZMpPhysics {
 
               this.debugMesh = null;
             }
-          }
+          } */
         }
 
         /* class Engine extends Entity {
@@ -242,10 +242,10 @@ class ZMpPhysics {
             if (!bodies.has(objectId)) {
               bodies.set(objectId, object);
 
-              const {physicsDebug} = config.getConfig();
+              /* const {physicsDebug} = config.getConfig();
               if (physicsDebug) {
                 object.addDebug();
-              }
+              } */
             }
           }
 
@@ -268,14 +268,10 @@ class ZMpPhysics {
             if (bodies.has(objectId)) {
               bodies.delete(objectId);
 
-              const {physicsDebug} = config.getConfig();
+              /* const {physicsDebug} = config.getConfig();
               if (physicsDebug) {
                 object.removeDebug();
-              }
-
-              if (this.bodies.size === 0) {
-                this.stop();
-              }
+              } */
             }
           }
 
@@ -430,8 +426,8 @@ class ZMpPhysics {
             _request('deactivate', [this.id], _warnError);
           }
 
-          disableDeactivation() {
-            _request('disableDeactivation', [this.id], _warnError);
+          setActivationState(activationState) {
+            _request('setActivationState', [this.id, activationState], _warnError);
           }
 
           setIgnoreCollisionCheck(targetBody, ignore) {
@@ -801,16 +797,27 @@ class ZMpPhysics {
             this.rotation = rotation;
             this.mass = mass;
 
-            this.enabled = null;
+            this.mpPhysics = false;
+            this.spPhysics = false;
             this.id = null;
             this.size = null;
-            this.debug = null;
+            this.debug = false;
+
+            this.body = null;
+            this.debugMesh = null;
 
             activePhysicsEntities.push(this);
           }
 
-          setEnabled(newValue) {
-            this.enabled = newValue;
+          setMpPhysics(newValue) {
+            this.mpPhysics = newValue;
+
+            this.render();
+            this.renderDebug();
+          }
+
+          setSpPhysics(newValue) {
+            this.spPhysics = newValue;
 
             this.render();
             this.renderDebug();
@@ -826,7 +833,7 @@ class ZMpPhysics {
           setSize(newValue) {
             this.size = newValue;
 
-             this.render();
+            this.render();
             this.renderDebug();
           }
 
@@ -841,9 +848,7 @@ class ZMpPhysics {
 
             const {body} = this;
             if (body) {
-              body.getCenterOfMassTransform(trans);
-              trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
-              body.setCenterOfMassTransform(trans);
+              body.setPosition(position.toArray());
             }
             const {debugMesh} = this;
             if (debugMesh) {
@@ -856,9 +861,7 @@ class ZMpPhysics {
 
             const {body} = this;
             if (body) {
-              body.getCenterOfMassTransform(trans);
-              trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
-              body.setCenterOfMassTransform(trans);
+              body.setRotation(rotation.toArray());
             }
             const {debugMesh} = this;
             if (debugMesh) {
@@ -871,7 +874,7 @@ class ZMpPhysics {
 
             const {body} = this;
             if (body) {
-              body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+              body.setLinearVelocity(linearVelocity.toArray());
             }
           }
 
@@ -880,7 +883,7 @@ class ZMpPhysics {
 
             const {body} = this;
             if (body) {
-              body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+              body.setAngularVelocity(angularVelocity.toArray());
             }
           }
 
@@ -889,7 +892,7 @@ class ZMpPhysics {
 
             const {body} = this;
             if (body) {
-              body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+              body.setLinearFactor(linearFactor.toArray());
             }
           }
 
@@ -898,7 +901,7 @@ class ZMpPhysics {
 
             const {body} = this;
             if (body) {
-              body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+              body.setAngularFactor(angularFactor.toArray());
             }
           }
 
@@ -912,15 +915,57 @@ class ZMpPhysics {
           }
 
           render() {
-            // XXX
+            const {body} = this;
+            if (body) {
+              world.remove(body);
+              this.body = null;
+            }
+
+            const {mpPhysics, spPhysics, id, size} = this;
+            if (mpPhysics && !spPhysics && id && size) {
+              const body = (() => {
+                const {position, rotation} = this;
+
+                return new Box({
+                  id,
+                  position,
+                  rotation,
+                  dimensions: [width, height, depth],
+                  mass: 1,
+                });
+              })();
+              world.add(body);
+            }
           }
 
           renderDebug() {
-            // XXX
+            const {debugMesh: oldDebugMesh} = this;
+            if (oldDebugMesh) {
+              scene.remove(oldDebugMesh);
+              this.debugMesh = null;
+            }
+
+            const {mpPhysics, spPhysics, debug, size} = this;
+            if (mpPhysics && !spPhysics && debug && size) {
+              const newDebugMesh = _makeBoxDebugMesh({
+                dimensions: size,
+              });
+              const {position, rotation} = this;
+              newDebugMesh.position.copy(position);
+              newDebugMesh.quaternion.copy(rotation);
+
+              scene.add(newDebugMesh);
+              this.debugMesh = newDebugMesh;
+            }
           }
 
           destroy() {
             activePhysicsEntities.splice(activePhysicsEntities.indexOf(this), 1);
+
+            const {body} = this;
+            if (body) {
+              world.remove(body);
+            }
           }
         }
         class CompoundEntity extends EventEmitter {
@@ -932,8 +977,10 @@ class ZMpPhysics {
             this.children = children;
             this.mass = mass;
 
-            this.enabled = false;
+            this.mpPhysics = false;
+            this.spPhysics = false;
             this.id = false;
+            this.size = null;
             this.debug = false;
 
             this.linearVelocity = null;
@@ -946,8 +993,15 @@ class ZMpPhysics {
             this.debugMesh = null;
           }          
 
-          setEnabled(newValue) {
-            this.enabled = newValue;
+          setMpPhysics(newValue) {
+            this.mpPhysics = newValue;
+
+            this.render();
+            this.renderDebug();
+          }
+
+          setSpPhysics(newValue) {
+            this.spPhysics = newValue;
 
             this.render();
             this.renderDebug();
@@ -1169,7 +1223,7 @@ class ZMpPhysics {
           });
 
         // controllers
-        const controllerMeshes = player.getControllerMeshes();
+        /* const controllerMeshes = player.getControllerMeshes();
         const controllerPhysicsEntities = SIDES.map(side => {
           const controllerMesh = controllerMeshes[side];
           const {position, quaternion: rotation} = controllerMesh;
@@ -1203,10 +1257,10 @@ class ZMpPhysics {
           });
 
           return controllerPhysicsEntity;
-        });
+        }); */
 
         const mpPhysicsComponent = {
-          selector: '[mp-physics][size]',
+          selector: '[mp-physics][mp-physics-id][size]',
           attributes: {
             'mp-physics': {
               type: 'checkbox',
@@ -1224,6 +1278,10 @@ class ZMpPhysics {
               step: 0.1,
             },
             'physics-debug': {
+              type: 'checkbox',
+              value: false,
+            },
+            'sp-physics': {
               type: 'checkbox',
               value: false,
             },
@@ -1268,7 +1326,7 @@ class ZMpPhysics {
 
             switch (name) {
               case 'mp-physics': {
-                physicsEntity.setEnabled(newValue);
+                physicsEntity.setMpPhysics(newValue);
 
                 break;
               }
@@ -1279,6 +1337,11 @@ class ZMpPhysics {
               }
               case 'size': {
                 physicsEntity.setSize(newValue);
+
+                break;
+              }
+              case 'sp-physics': {
+                physicsEntity.setSpPhysics(newValue);
 
                 break;
               }
@@ -1350,6 +1413,7 @@ class ZMpPhysics {
   }
 }
 
+const _makeId = () => Math.random().toString(36).substring(7);
 const _except = (o, excepts) => {
   const result = {};
 

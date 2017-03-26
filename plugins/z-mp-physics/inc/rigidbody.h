@@ -53,7 +53,7 @@ namespace mox {
       static NAN_METHOD(setAngularFactor);
       static NAN_METHOD(activate);
       static NAN_METHOD(deactivate);
-      static NAN_METHOD(disableDeactivation);
+      static NAN_METHOD(setActivationState);
       static NAN_METHOD(setIgnoreCollisionCheck);
 
       static uint32_t getRigidBodyTypeEnum(const v8::Local<v8::Value> &val);

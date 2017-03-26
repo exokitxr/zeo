@@ -244,11 +244,11 @@ class Context {
     object.deactivate();
   }
 
-  disableDeactivation(id) {
+  setActivationState(id, activationState) {
     const {objects} = this;
 
     const object = objects.get(id);
-    object.disableDeactivation();
+    object.setActivationState(activationState);
   }
 
   setIgnoreCollisionCheck(sourceBodyId, targetBodyId, ignore) {
@@ -475,9 +475,9 @@ class BulletServer {
               cb();
 
               // no need to broadcast
-            } else if (method === 'disableDeactivation') {
-              const [id] = args;
-              context.disableDeactivation(id);
+            } else if (method === 'setActivationState') {
+              const [id, activationState] = args;
+              context.setActivationState(id, activationState);
 
               cb();
 

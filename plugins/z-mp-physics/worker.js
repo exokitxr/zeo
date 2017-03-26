@@ -213,9 +213,9 @@ const _deactivateBody = ({id}) => {
   const body = bodies.get(id);
   body.deactivate();
 };
-const _disableDeactivationBody = ({id}) => {
+const _setActivationStateBody = ({id, activationState}) => {
   const body = bodies.get(id);
-  body.disableDeactivation();
+  body.setActivationState(activationState);
 };
 const _setIgnoreCollisionCheck = ({sourceBodyId, targetBodyId, ignore}) => {
   const sourceBody = bodies.get(sourceBodyId);
@@ -473,9 +473,9 @@ process.on('message', m => {
       _deactivateBody({id});
       break;
     }
-    case 'disableDeactivationBody': {
-      const {args: {id}} = m;
-      _disableDeactivationBody({id});
+    case 'setActivationStateBody': {
+      const {args: {id, activationState}} = m;
+      _setActivationStateBody({id, activationState});
       break;
     }
     case 'setIgnoreCollisionCheck': {
