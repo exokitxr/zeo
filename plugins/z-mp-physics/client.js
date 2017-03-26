@@ -28,6 +28,8 @@ class ZMpPhysics {
       return {position, rotation, scale};
     };
 
+    const oneVector = new THREE.Vector3(1, 1, 1);
+
     const debugMaterial = new THREE.MeshBasicMaterial({
       color: 0xFF0000,
       wireframe: true,
@@ -193,6 +195,8 @@ class ZMpPhysics {
 
               this.bodies = new Map();
               this.timeout = null;
+
+              this.start();
             }
 
             requestInit() {
@@ -344,6 +348,7 @@ class ZMpPhysics {
               this.emit('update', {
                 position: this.position,
                 rotation: this.rotation,
+                scale: oneVector,
               });
             }
 
@@ -420,10 +425,10 @@ class ZMpPhysics {
               }
             }
 
-            makeDebugMesh() {
+            /* makeDebugMesh() {
               const {position, rotation, scale, dimensions} = this;
               return _makePlaneDebugMesh(dimensions, position, rotation, scale);
-            }
+            } */
           }
 
           class Box extends Body {
@@ -440,9 +445,9 @@ class ZMpPhysics {
               }
             }
 
-            makeDebugMesh() {
+            /* makeDebugMesh() {
               return _makeBoxDebugMesh(this.dimensions);
-            }
+            } */
           }
 
           class Sphere extends Body {
@@ -459,9 +464,9 @@ class ZMpPhysics {
               }
             }
 
-            makeDebugMesh() {
+            /* makeDebugMesh() {
               return _makeSphereDebugMesh(this.size);
-            }
+            } */
           }
 
           class ConvexHull extends Body {
@@ -478,9 +483,9 @@ class ZMpPhysics {
               }
             }
 
-            makeDebugMesh() {
+            /* makeDebugMesh() {
               return _makeConvexHullDebugMesh(this.points);
-            }
+            } */
           }
 
           class TriangleMesh extends Body {
@@ -498,10 +503,10 @@ class ZMpPhysics {
               };
             }
 
-            makeDebugMesh() {
+            /* makeDebugMesh() {
               const {position, rotation, scale, points} = this;
               return _makeTriangleMeshDebugMesh(points, position, rotation, scale);
-            }
+            } */
           }
 
           class Compound extends Body {
@@ -519,7 +524,7 @@ class ZMpPhysics {
               };
             }
 
-            makeDebugMesh() {
+            /* makeDebugMesh() {
               const {position, rotation, scale, children} = this;
 
               const mesh = _makeCompoundDebugMesh(children);
@@ -527,7 +532,7 @@ class ZMpPhysics {
               mesh.quaternion.copy(rotation);
               mesh.scale.fromArray(scale);
               return mesh;
-            }
+            } */
           }
 
           class Constraint extends Entity {
@@ -704,7 +709,7 @@ class ZMpPhysics {
             const world = new World({
               id: 'world',
             });
-            world.Plane = Plane;
+            /* world.Plane = Plane;
             world.Box = Box;
             world.Sphere = Sphere;
             world.ConvexHull = ConvexHull;
@@ -714,7 +719,7 @@ class ZMpPhysics {
             world.makeBodyFromMesh = _makeBodyFromMesh;
             world.makeBodyFromSpec = _makeBodyFromSpec;
             world.makeConvexHullBody = _makeConvexHullBody;
-            world.makeTriangleMeshBody = _makeTriangleMeshBody;
+            world.makeTriangleMeshBody = _makeTriangleMeshBody; */
             return world;
           };
 
@@ -859,9 +864,9 @@ class ZMpPhysics {
 
                   return new Box({
                     id,
-                    position,
-                    rotation,
-                    dimensions: [width, height, depth],
+                    position: position.toArray(),
+                    rotation: rotation.toArray(),
+                    dimensions: size,
                     mass: 1,
                   });
                 })();
@@ -881,9 +886,7 @@ class ZMpPhysics {
 
               const {mpPhysics, spPhysics, debug, size} = this;
               if (mpPhysics && !spPhysics && debug && size) {
-                const newDebugMesh = _makeBoxDebugMesh({
-                  dimensions: size,
-                });
+                const newDebugMesh = _makeBoxDebugMesh(size);
                 const {position, rotation} = this;
                 newDebugMesh.position.copy(position);
                 newDebugMesh.quaternion.copy(rotation);
@@ -968,9 +971,7 @@ class ZMpPhysics {
 
               const {body} = this;
               if (body) {
-                body.getCenterOfMassTransform(trans);
-                trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
-                body.setCenterOfMassTransform(trans);
+                body.setPosition(position.toArray());
               }
               const {debugMesh} = this;
               if (debugMesh) {
@@ -983,9 +984,7 @@ class ZMpPhysics {
 
               const {body} = this;
               if (body) {
-                body.getCenterOfMassTransform(trans);
-                trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
-                body.setCenterOfMassTransform(trans);
+                body.setRotation(rotation.toArray());
               }
               const {debugMesh} = this;
               if (debugMesh) {
@@ -998,7 +997,7 @@ class ZMpPhysics {
 
               const {body} = this;
               if (body) {
-                body.setLinearVelocity(new Ammo.btVector3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+                body.setLinearVelocity(linearVelocity.toArray());
               }
             }
 
@@ -1007,7 +1006,7 @@ class ZMpPhysics {
 
               const {body} = this;
               if (body) {
-                body.setAngularVelocity(new Ammo.btVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+                body.setAngularVelocity(angularVelocity.toArray());
               }
             }
 
@@ -1016,7 +1015,7 @@ class ZMpPhysics {
 
               const {body} = this;
               if (body) {
-                body.setLinearFactor(new Ammo.btVector3(linearFactor.x, linearFactor.y, linearFactor.z));
+                body.setLinearFactor(linearFactor.toArray());
               }
             }
 
@@ -1025,7 +1024,7 @@ class ZMpPhysics {
 
               const {body} = this;
               if (body) {
-                body.setAngularFactor(new Ammo.btVector3(angularFactor.x, angularFactor.y, angularFactor.z));
+                body.setAngularFactor(angularFactor.toArray());
               }
             }
 
@@ -1254,9 +1253,9 @@ class ZMpPhysics {
               });
               entityElement.setComponentApi(physicsEntity);
 
-              physicsEntity.on('update', ({position, quaternion, scale}) => {
+              physicsEntity.on('update', ({position, rotation, scale}) => {
                 entityElement.setState('position', position);
-                entityElement.setState('quaternion', quaternion);
+                entityElement.setState('rotation', rotation);
                 entityElement.setState('scale', scale);
               });
 
@@ -1322,7 +1321,7 @@ class ZMpPhysics {
 
                   break;
                 }
-                case 'quaternion': {
+                case 'rotation': {
                   entityObject.quaternion.copy(newValue);
 
                   break;

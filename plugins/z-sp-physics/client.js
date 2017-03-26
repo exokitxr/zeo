@@ -325,19 +325,19 @@ class ZSpPhysics {
                 const btRotation = trans.getRotation();
 
                 const position = new THREE.Vector3(btOrigin.x(), btOrigin.y(), btOrigin.z());
-                const quaternion = new THREE.Quaternion(btRotation.x(), btRotation.y(), btRotation.z(), btRotation.w());
+                const rotation = new THREE.Quaternion(btRotation.x(), btRotation.y(), btRotation.z(), btRotation.w());
                 const scale = oneVector;
 
                 this.emit('update', {
                   position,
-                  quaternion,
+                  rotation,
                   scale,
                 });
 
                 const {debugMesh} = this;
                 if (debugMesh) {
                   debugMesh.position.copy(position);
-                  debugMesh.quaternion.copy(quaternion);
+                  debugMesh.quaternion.copy(rotation);
                   debugMesh.scale.copy(scale);
                 }
               }
@@ -765,9 +765,9 @@ class ZSpPhysics {
               });
               entityElement.setComponentApi(physicsBody);
 
-              physicsBody.on('update', ({position, quaternion, scale}) => {
+              physicsBody.on('update', ({position, rotation, scale}) => {
                 entityElement.setState('position', position);
-                entityElement.setState('quaternion', quaternion);
+                entityElement.setState('rotation', rotation);
                 entityElement.setState('scale', scale);
               });
 
@@ -829,7 +829,7 @@ class ZSpPhysics {
 
                   break;
                 }
-                case 'quaternion': {
+                case 'rotation': {
                   entityObject.quaternion.copy(newValue);
 
                   break;
