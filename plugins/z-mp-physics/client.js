@@ -870,8 +870,15 @@ class ZMpPhysics {
                     mass: 1,
                   });
                 })();
-                body.on('update', updateSpec => {
-                  this.emit('update', updateSpec);
+                body.on('update', ({position, rotation, scale}) => {
+                  this.emit('update', {position, rotation, scale});
+
+                  const {debugMesh} = this;
+                  if (debugMesh) {
+                    debugMesh.position.copy(position);
+                    debugMesh.quaternion.copy(rotation);
+                    debugMesh.scale.copy(scale);
+                  }
                 });
                 world.add(body);
               }
