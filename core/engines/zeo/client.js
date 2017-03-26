@@ -526,6 +526,10 @@ class Zeo {
                       };
                     })();
                     class ZeoPlayerApi {
+                      getId() {
+                        return multiplayer.getId();
+                      }
+
                       getControllerMeshes() {
                         return controllerMeshes;
                       }

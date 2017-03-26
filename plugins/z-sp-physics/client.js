@@ -4,7 +4,6 @@ const STEP_SECONDS = 1 / FPS;
 const STEP_MILLISECONDS = 1000 / FPS;
 
 const DISABLE_DEACTIVATION = 4;
-
 const SIDES = ['left', 'right'];
 
 class ZSpPhysics {

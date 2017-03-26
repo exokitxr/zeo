@@ -3,6 +3,9 @@ const idUtils = require('./lib/idUtils');
 const FRAME_RATE = 60;
 const TICK_TIME = 1000 / FRAME_RATE;
 
+const DISABLE_DEACTIVATION = 4;
+const SIDES = ['left', 'right'];
+
 class ZMpPhysics {
   constructor(archae) {
     this._archae = archae;
@@ -12,12 +15,20 @@ class ZMpPhysics {
     const {_archae: archae} = this;
     const {metadata: {server: {url: serverUrl}}} = archae;
 
-    let live = true;
+    const cleanups = [];
     this._cleanup = () => {
-      live = false;
+      for (let i = 0; i < cleanups.length; i++) {
+        const cleanup = cleanups[i];
+        cleanup();
+      }
     };
 
-    const {three: {THREE, scene}, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
+    let live = true;
+    cleanups.push(() => {
+      live = false;
+    });
+
+    const {three: {THREE, scene}, render, player, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
 
     const _decomposeObjectMatrixWorld = object => {
       const {matrixWorld} = object;
@@ -28,6 +39,7 @@ class ZMpPhysics {
       return {position, rotation, scale};
     };
 
+    const zeroVector = new THREE.Vector3();
     const oneVector = new THREE.Vector3(1, 1, 1);
 
     const debugMaterial = new THREE.MeshBasicMaterial({
@@ -926,7 +938,6 @@ class ZMpPhysics {
               this.mpPhysics = false;
               this.spPhysics = false;
               this.id = false;
-              this.size = null;
               this.debug = false;
 
               this.linearVelocity = null;
@@ -957,13 +968,6 @@ class ZMpPhysics {
               this.id = newValue;
 
               this.render();
-              this.renderDebug();
-            }
-
-            setSize(newValue) {
-              this.size = newValue;
-
-               this.render();
               this.renderDebug();
             }
 
@@ -1049,7 +1053,22 @@ class ZMpPhysics {
             }
 
             renderDebug() {
-              // XXX
+              const {debugMesh: oldDebugMesh} = this;
+              if (oldDebugMesh) {
+                scene.remove(oldDebugMesh);
+                this.debugMesh = null;
+              }
+
+              const {mpPhysics, spPhysics, debug, children} = this;
+              if (mpPhysics && !spPhysics && debug && children) {
+                const newDebugMesh = _makeCompoundDebugMesh(children);
+                const {position, rotation} = this;
+                newDebugMesh.position.copy(position);
+                newDebugMesh.quaternion.copy(rotation);
+
+                scene.add(newDebugMesh);
+                this.debugMesh = newDebugMesh;
+              }
             }
 
             destroy() {
@@ -1165,20 +1184,29 @@ class ZMpPhysics {
             .catch(err => {
               console.warn(err);
             });
+          // XXX floor
+          const floorBody = new Box({
+            id: 'floor',
+            position: [0, -1024 / 2, 0],
+            dimensions: [1024, 1024, 1024],
+            mass: 0,
+          });
+          world.add(floorBody);
 
           // controllers
-          /* const controllerMeshes = player.getControllerMeshes(); // XXX enable this
+          const controllerMeshes = player.getControllerMeshes();
           const controllerPhysicsEntities = SIDES.map(side => {
             const controllerMesh = controllerMeshes[side];
             const {position, quaternion: rotation} = controllerMesh;
             const controllerPhysicsEntity = new CompoundEntity({
+              id: player.getId() + '-controller-' + side,
               position,
               rotation,
               children: [
                 {
                   type: 'box',
-                  dimensions: new THREE.Vector3(0.115, 0.075, 0.215),
-                  position: new THREE.Vector3(0, -(0.075 / 2), (0.215 / 2) - 0.045),
+                  dimensions: [0.115, 0.075, 0.215],
+                  position: [0, -(0.075 / 2), (0.215 / 2) - 0.045],
                 },
               ],
               mass: 1,
@@ -1188,7 +1216,7 @@ class ZMpPhysics {
             controllerPhysicsEntity.setLinearVelocity(zeroVector);
             controllerPhysicsEntity.setAngularVelocity(zeroVector);
             controllerPhysicsEntity.setActivationState(DISABLE_DEACTIVATION);
-            controllerPhysicsEntity.setEnabled(true);
+            controllerPhysicsEntity.setMpPhysics(true);
 
             const _update = () => {
               controllerPhysicsEntity.setPosition(controllerMesh.position);
@@ -1201,14 +1229,14 @@ class ZMpPhysics {
             });
 
             return controllerPhysicsEntity;
-          }); */
+          });
 
           const _updateControllersDebugMeshes = () => {
-            /* const numPhysicsDebugs = (() => { // XXX enabled this
+            const numPhysicsDebugs = (() => {
               let result = 0;
 
-              for (let i = 0; i < activePhysicsBodies.length; i++) {
-                const physicsBody = activePhysicsBodies[i];
+              for (let i = 0; i < activePhysicsEntities.length; i++) {
+                const physicsBody = activePhysicsEntities[i];
                 const {debug} = physicsBody;
                 result += Number(debug);
               }
@@ -1219,7 +1247,7 @@ class ZMpPhysics {
             for (let i = 0; i < controllerPhysicsEntities.length; i++) {
               const controllerPhysicEntity = controllerPhysicsEntities[i];
               controllerPhysicEntity.setDebug(controllerPhysicsDebug);
-            } */
+            }
           };
 
           const mpPhysicsComponent = {
@@ -1343,13 +1371,13 @@ class ZMpPhysics {
           };
           elements.registerComponent(this, mpPhysicsComponent);
 
-          this._cleanup = () => {
+          cleanups.push(() => {
             if (connection.readyState === WebSocket.OPEN) {
               connection.close();
             }
 
             elements.unregisterComponent(this, mpPhysicsComponent);
-          };
+          });
         } else {
           connection.close();
         }
