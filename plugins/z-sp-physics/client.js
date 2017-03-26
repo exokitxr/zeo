@@ -43,7 +43,7 @@ class ZSpPhysics {
     return _requestAmmo()
       .then(Ammo => {
         if (live) {
-          const {three: {THREE, camera, scene}, player, render, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
+          const {three: {THREE, scene}, player, render, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
 
           const wireframeMaterial = new THREE.MeshBasicMaterial({
             color: 0x0000FF,
