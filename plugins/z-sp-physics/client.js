@@ -118,7 +118,8 @@ class ZSpPhysics {
               this.rotation = rotation;
               this.mass = mass;
 
-              this.enabled = false;
+              this.spPhyiscs = false;
+              this.mpPhyiscs = false;
               this.size = null;
               this.linearVelocity = null;
               this.angularVelocity = null;
@@ -131,8 +132,15 @@ class ZSpPhysics {
               this.debugMesh = null;
             }
 
-            setEnabled(newValue) {
-              this.enabled = newValue;
+            setSpPhysics(newValue) {
+              this.spPhysics = newValue;
+
+              this.render();
+              this.renderDebug();
+            }
+
+            setMpPhysics(newValue) {
+              this.mpPhyiscs = newValue;
 
               this.render();
               this.renderDebug();
@@ -236,8 +244,8 @@ class ZSpPhysics {
                 this.body = null;
               }
 
-              const {enabled, size} = this;
-              if (enabled && size) {
+              const {spPhysics, mpPhysics, size} = this;
+              if (spPhysics && !mpPhysics && size) {
                 const body = (() => {
                   const {position, rotation} = this;
 
@@ -293,8 +301,8 @@ class ZSpPhysics {
                 this.debugMesh = null;
               }
 
-              const {enabled, debug, size} = this;
-              if (enabled && debug && size) {
+              const {spPhysics, mpPhysics, debug, size} = this;
+              if (spPhysics && mpPhysics && debug && size) {
                 const newDebugMesh = _makeBoxDebugMesh({
                   dimensions: size,
                 });
@@ -336,13 +344,14 @@ class ZSpPhysics {
 
             destroy() {
               const {body} = this;
-
               if (body) {
                 dynamicsWorld.removeRigidBody(body);
-
                 activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+              }
 
-                this.body = null;
+              const {debugMesh} = this;
+              if (debugMesh) {
+                scene.remove(debugMesh);
               }
             }
           }
@@ -355,7 +364,8 @@ class ZSpPhysics {
               this.children = children;
               this.mass = mass;
 
-              this.enabled = false;
+              this.spPhysics = false;
+              this.mpPhysics = false;
               this.linearVelocity = null;
               this.angularVelocity = null;
               this.linearFactor = null;
@@ -367,8 +377,15 @@ class ZSpPhysics {
               this.debugMesh = null;
             }
 
-            setEnabled(newValue) {
-              this.enabled = newValue;
+            setSpPhysics(newValue) {
+              this.spPhysics = newValue;
+
+              this.render();
+              this.renderDebug();
+            }
+
+            setMpPhysics(newValue) {
+              this.mpPhyiscs = newValue;
 
               this.render();
               this.renderDebug();
@@ -465,8 +482,8 @@ class ZSpPhysics {
                 this.body = null;
               }
 
-              const {enabled, position, rotation} = this;
-              if (enabled && position && rotation) {
+              const {spPhysics, mpPhysics, position, rotation} = this;
+              if (spPhysics && !mpPhysics && position && rotation) {
                 const body = (() => {
                   const {children, position, rotation} = this;
 
@@ -560,8 +577,8 @@ class ZSpPhysics {
                 this.debugMesh = null;
               }
 
-              const {enabled, debug} = this;
-              if (enabled && debug) {
+              const {spPhysics, mpPhysics, debug} = this;
+              if (spPhysics && !mpPhysics && debug) {
                 const newDebugMesh = (() => {
                   const debugMesh = new THREE.Object3D();
 
@@ -636,13 +653,14 @@ class ZSpPhysics {
 
             destroy() {
               const {body} = this;
-
               if (body) {
                 dynamicsWorld.removeRigidBody(body);
-
                 activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+              }
 
-                this.body = null;
+              const {debugMesh} = this;
+              if (debugMesh) {
+                scene.remove(debugMesh);
               }
             }
           }
@@ -677,7 +695,7 @@ class ZSpPhysics {
             controllerPhysicsBody.setLinearVelocity(zeroVector);
             controllerPhysicsBody.setAngularVelocity(zeroVector);
             controllerPhysicsBody.setActivationState(DISABLE_DEACTIVATION);
-            controllerPhysicsBody.setEnabled(true);
+            controllerPhysicsBody.setSpPhysics(true);
 
             const _update = () => {
               controllerPhysicsBody.setPosition(controllerMesh.position);
@@ -705,6 +723,10 @@ class ZSpPhysics {
                 min: 0.1,
                 max: 1,
                 step: 0.1,
+              },
+              'mp-physics': {
+                type: 'checkbox',
+                value: false,
               },
               'physics-debug': {
                 type: 'checkbox',
@@ -751,13 +773,18 @@ class ZSpPhysics {
 
               switch (name) {
                 case 'sp-physics': {
-                  physicsBody.setEnabled(newValue);
+                  physicsBody.setSpPhysics(newValue);
 
                   break;
                 }
                 case 'size': {
                   const size = new THREE.Vector3().fromArray(newValue);
                   physicsBody.setSize(size);
+
+                  break;
+                }
+                case 'mp-physics': {
+                  physicsBody.setMpPhysics(newValue);
 
                   break;
                 }
@@ -814,7 +841,7 @@ class ZSpPhysics {
 
             clearInterval(interval);
 
-            setTimeout(() => { // destroy physics bodies first
+            setTimeout(() => { // allow physics bodies to destory themselves first
               Ammo.destroy(dynamicsWorld);
               Ammo.destroy(solver);
               Ammo.destroy(overlappingPairCache);
