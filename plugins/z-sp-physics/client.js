@@ -293,13 +293,10 @@ class ZSpPhysics {
 
               const {enabled, debug, size} = this;
               if (enabled && debug && size) {
-                const newDebugMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(size[0], size[1], size[2]);
-                  const material = wireframeMaterial;
+                const newDebugMesh = _makeBoxDebugMesh({
+                  dimensions: new THREE.Vector3().fromArray(size),
+                });
 
-                  const mesh = new THREE.Mesh(geometry, material);
-                  return mesh;
-                })();
                 object.add(newDebugMesh);
                 this.debugMesh = newDebugMesh;
               }
@@ -558,13 +555,9 @@ class ZSpPhysics {
 
                         switch (type) {
                           case 'box': {
-                            const {dimensions} = child;
-
-                            const geometry = new THREE.BoxBufferGeometry(dimensions.x, dimensions.y, dimensions.z);
-                            const material = wireframeMaterial;
-
-                            const mesh = new THREE.Mesh(geometry, material);
-                            return mesh;
+                            return _makeBoxDebugMesh({
+                              dimensions,
+                            });
                           }
                           default: {
                             return null;
@@ -622,14 +615,19 @@ class ZSpPhysics {
             }
           }
 
-          const _makeBoxBody = spec => new Box(spec);
-          const _makeCompoundBody = spec => new Compound(spec);
+          const _makeBoxDebugMesh = ({dimensions}) => {
+            const geometry = new THREE.BoxBufferGeometry(dimensions.x, dimensions.y, dimensions.z);
+            const material = wireframeMaterial;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+          };
 
           // controllers
           const controllerMeshes = player.getControllerMeshes();
           const controllerPhysicsBodies = SIDES.map(side => {
             const controllerMesh = controllerMeshes[side];
-            const controllerPhysicsBody = _makeCompoundBody({
+            const controllerPhysicsBody = new Compound({
               object: controllerMesh,
               children: [
                 {
@@ -682,7 +680,7 @@ class ZSpPhysics {
             entityAddedCallback(entityElement) {
               const entityObject = entityElement.getObject();
 
-              const physicsBody = _makeBoxBody({
+              const physicsBody = new Box({
                 object: entityObject,
                 mass: 1,
               });
