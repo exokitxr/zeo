@@ -722,8 +722,6 @@ class ZSpPhysics {
               });
               entityElement.setComponentApi(physicsBody);
 
-              physicsBody.debugMesh = null;
-
               physicsBody.on('update', ({position, quaternion, scale}) => {
                 entityElement.setState('position', position);
                 entityElement.setState('quaternion', quaternion);
