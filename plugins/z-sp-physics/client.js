@@ -43,7 +43,7 @@ class ZSpPhysics {
     return _requestAmmo()
       .then(Ammo => {
         if (live) {
-          const {three: {THREE, camera}, player, render, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
+          const {three: {THREE, camera, scene}, player, render, elements, utils: {js: {events: {EventEmitter}}}} = zeo;
 
           const wireframeMaterial = new THREE.MeshBasicMaterial({
             color: 0x0000FF,
@@ -111,16 +111,15 @@ class ZSpPhysics {
           }, STEP_MILLISECONDS);
 
           class Box extends EventEmitter {
-            constructor({object, mass}) {
+            constructor({position, rotation, mass}) {
               super();
 
-              this.object = object;
+              this.position = position;
+              this.rotation = rotation;
               this.mass = mass;
 
               this.enabled = false;
               this.size = null;
-              this.position = null;
-              this.rotation = null;
               this.linearVelocity = null;
               this.angularVelocity = null;
               this.linearFactor = null;
@@ -161,6 +160,10 @@ class ZSpPhysics {
                 trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
                 body.setCenterOfMassTransform(trans);
               }
+              const {debugMesh} = this;
+              if (debugMesh) {
+                debugMesh.position.copy(position);
+              }
             }
 
             setRotation(rotation) {
@@ -171,6 +174,10 @@ class ZSpPhysics {
                 body.getCenterOfMassTransform(trans);
                 trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
                 body.setCenterOfMassTransform(trans);
+              }
+              const {debugMesh} = this;
+              if (debugMesh) {
+                debugMesh.quaternion.copy(rotation);
               }
             }
 
@@ -232,14 +239,10 @@ class ZSpPhysics {
               const {enabled, size} = this;
               if (enabled && size) {
                 const body = (() => {
-                  const {object} = this;
-                  const {position: objectPosition, rotation: objectRotation} = _decomposeObjectMatrixWorld(object);
-                  const {position: localPosition, rotation: localRotation} = this;
-                  const position = localPosition || objectPosition;
-                  const rotation = localRotation || objectRotation;
+                  const {position, rotation} = this;
 
-                  const halfSize = size.map(v => v * 0.5);
-                  const colShape = new Ammo.btBoxShape(new Ammo.btVector3(halfSize[0], halfSize[1], halfSize[2]));
+                  const halfSize = size.clone().multiplyScalar(0.5);
+                  const colShape = new Ammo.btBoxShape(new Ammo.btVector3(halfSize.x, halfSize.y, halfSize.z));
                   const startTransform = new Ammo.btTransform();
                   startTransform.setIdentity();
                   startTransform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
@@ -284,26 +287,28 @@ class ZSpPhysics {
             }
 
             renderDebug() {
-              const {object, debugMesh: oldDebugMesh} = this;
-
+              const {debugMesh: oldDebugMesh} = this;
               if (oldDebugMesh) {
-                object.remove(oldDebugMesh);
+                scene.remove(oldDebugMesh);
                 this.debugMesh = null;
               }
 
               const {enabled, debug, size} = this;
               if (enabled && debug && size) {
                 const newDebugMesh = _makeBoxDebugMesh({
-                  dimensions: new THREE.Vector3().fromArray(size),
+                  dimensions: size,
                 });
+                const {position, rotation} = this;
+                newDebugMesh.position.copy(position);
+                newDebugMesh.quaternion.copy(rotation);
 
-                object.add(newDebugMesh);
+                scene.add(newDebugMesh);
                 this.debugMesh = newDebugMesh;
               }
             }
 
             update() {
-              const {body, size} = this;
+              const {body} = this;
 
               if (body.getMotionState()) {
                 body.getMotionState().getWorldTransform(trans);
@@ -319,6 +324,13 @@ class ZSpPhysics {
                   quaternion,
                   scale,
                 });
+
+                const {debugMesh} = this;
+                if (debugMesh) {
+                  debugMesh.position.copy(position);
+                  debugMesh.quaternion.copy(quaternion);
+                  debugMesh.scale.copy(scale);
+                }
               }
             }
 
@@ -335,16 +347,15 @@ class ZSpPhysics {
             }
           }
           class Compound extends EventEmitter {
-            constructor({object, children, mass}) {
+            constructor({position, rotation, children, mass}) {
               super();
 
-              this.object = object;
+              this.position = position;
+              this.rotation = rotation;
               this.children = children;
               this.mass = mass;
 
               this.enabled = false;
-              this.position = null;
-              this.rotation = null;
               this.linearVelocity = null;
               this.angularVelocity = null;
               this.linearFactor = null;
@@ -378,6 +389,10 @@ class ZSpPhysics {
                 trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
                 body.setCenterOfMassTransform(trans);
               }
+              const {debugMesh} = this;
+              if (debugMesh) {
+                debugMesh.position.copy(position);
+              }
             }
 
             setRotation(rotation) {
@@ -388,6 +403,10 @@ class ZSpPhysics {
                 body.getCenterOfMassTransform(trans);
                 trans.setRotation(new Ammo.btVector3(rotation.x, rotation.y, rotation.z, rotation.w));
                 body.setCenterOfMassTransform(trans);
+              }
+              const {debugMesh} = this;
+              if (debugMesh) {
+                debugMesh.quaternion.copy(rotation);
               }
             }
 
@@ -446,8 +465,8 @@ class ZSpPhysics {
                 this.body = null;
               }
 
-              const {enabled} = this;
-              if (enabled) {
+              const {enabled, position, rotation} = this;
+              if (enabled && position && rotation) {
                 const body = (() => {
                   const {children, position, rotation} = this;
 
@@ -473,7 +492,8 @@ class ZSpPhysics {
                         switch (type) {
                           case 'box': {
                             const {dimensions} = child;
-                            return new Ammo.btBoxShape(new Ammo.btVector3(dimensions.x, dimensions.y, dimensions.z));
+                            const halfDimensions = dimensions.clone().multiplyScalar(0.5);
+                            return new Ammo.btBoxShape(new Ammo.btVector3(halfDimensions.x, halfDimensions.y, halfDimensions.z));
                           }
                           default: {
                             return null;
@@ -534,10 +554,9 @@ class ZSpPhysics {
             }
 
             renderDebug() {
-              const {object, children, debugMesh: oldDebugMesh} = this;
-
+              const {debugMesh: oldDebugMesh} = this;
               if (oldDebugMesh) {
-                object.remove(oldDebugMesh);
+                scene.remove(oldDebugMesh);
                 this.debugMesh = null;
               }
 
@@ -546,6 +565,7 @@ class ZSpPhysics {
                 const newDebugMesh = (() => {
                   const debugMesh = new THREE.Object3D();
 
+                  const {children} = this;
                   for (let i = 0; i < children.length; i++) {
                     const child = children[i];
 
@@ -555,6 +575,7 @@ class ZSpPhysics {
 
                         switch (type) {
                           case 'box': {
+                            const {dimensions} = child;
                             return _makeBoxDebugMesh({
                               dimensions,
                             });
@@ -575,15 +596,19 @@ class ZSpPhysics {
                     debugMesh.add(childMesh);
                   }
 
+                  const {position, rotation} = this;
+                  debugMesh.position.copy(position);
+                  debugMesh.quaternion.copy(rotation);
+
                   return debugMesh;
                 })();
-                object.add(newDebugMesh);
+                scene.add(newDebugMesh);
                 this.debugMesh = newDebugMesh;
               }
             }
 
             update() {
-              const {body, size} = this;
+              const {body} = this;
 
               if (body.getMotionState()) {
                 body.getMotionState().getWorldTransform(trans);
@@ -599,6 +624,13 @@ class ZSpPhysics {
                   quaternion,
                   scale,
                 });
+
+                const {debugMesh} = this;
+                if (debugMesh) {
+                  debugMesh.position.copy(position);
+                  debugMesh.quaternion.copy(quaternion);
+                  debugMesh.scale.copy(scale);
+                }
               }
             }
 
@@ -627,8 +659,10 @@ class ZSpPhysics {
           const controllerMeshes = player.getControllerMeshes();
           const controllerPhysicsBodies = SIDES.map(side => {
             const controllerMesh = controllerMeshes[side];
+            const {position, quaternion: rotation} = controllerMesh;
             const controllerPhysicsBody = new Compound({
-              object: controllerMesh,
+              position,
+              rotation,
               children: [
                 {
                   type: 'box',
@@ -680,8 +714,10 @@ class ZSpPhysics {
             entityAddedCallback(entityElement) {
               const entityObject = entityElement.getObject();
 
+              const {position, rotation} = _decomposeObjectMatrixWorld(entityObject);
               const physicsBody = new Box({
-                object: entityObject,
+                position,
+                rotation,
                 mass: 1,
               });
               entityElement.setComponentApi(physicsBody);
@@ -722,7 +758,8 @@ class ZSpPhysics {
                   break;
                 }
                 case 'size': {
-                  physicsBody.setSize(newValue);
+                  const size = new THREE.Vector3().fromArray(newValue);
+                  physicsBody.setSize(size);
 
                   break;
                 }
