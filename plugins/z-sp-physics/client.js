@@ -167,7 +167,7 @@ class ZSpPhysics {
                 trans.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
                 body.setCenterOfMassTransform(trans);
               }
-              const {debugMesh} = this;
+              const {debugMesh} = this; // XXX no need to set the debug mesh position here
               if (debugMesh) {
                 debugMesh.position.copy(position);
               }
