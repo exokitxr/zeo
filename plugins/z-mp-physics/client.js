@@ -759,7 +759,7 @@ class ZMpPhysics {
               this.renderDebug();
             }
 
-            setId(newValue) {
+            setId(newValue) { // XXX handle the case where this changes at runtime
               this.id = newValue;
 
               this.render();
