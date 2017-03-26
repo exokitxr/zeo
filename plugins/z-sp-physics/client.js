@@ -302,7 +302,7 @@ class ZSpPhysics {
               }
 
               const {spPhysics, mpPhysics, debug, size} = this;
-              if (spPhysics && mpPhysics && debug && size) {
+              if (spPhysics && !mpPhysics && debug && size) {
                 const newDebugMesh = _makeBoxDebugMesh({
                   dimensions: size,
                 });
