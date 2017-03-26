@@ -167,7 +167,7 @@ a.app.getHostname = req => {
 };
 
 const _install = () => {
-  if (flags.install || flags.server || flags.hub) {
+  if (flags.install) {
     console.log('Installing core modules...');
     const spinner = new Spinner();
     spinner.start();
