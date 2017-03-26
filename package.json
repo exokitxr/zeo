@@ -28,7 +28,7 @@
   "homepage": "https://github.com/modulesio/zeo#readme",
   "dependencies": {
     "archae": "0.0.46",
-    "base-x": "^3.0.0",
+    "base128": "^0.2.1",
     "body-parser": "^1.16.1",
     "cookie": "^0.3.1",
     "http-proxy": "^1.16.2",
@@ -38,6 +38,7 @@
     "node-fetch": "^1.6.3",
     "password-hash-and-salt": "^0.1.4",
     "rnd": "^1.0.10",
-    "sharp": "^0.17.2"
+    "sharp": "^0.17.2",
+    "urlsafe-base64": "^1.0.0"
   }
 }
