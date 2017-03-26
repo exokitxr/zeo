@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 
 const mkdirp = require('mkdirp');
+const Spinner = require('cli-spinner').Spinner;
 const archae = require('archae');
 const cryptoutils = require('cryptoutils');
 const rnd = require('rnd');
@@ -167,8 +168,24 @@ a.app.getHostname = req => {
 
 const _install = () => {
   if (flags.install || flags.server || flags.hub) {
+    console.log('Installing core modules...');
+    const spinner = new Spinner();
+    spinner.start();
+
     return _getAllPlugins()
-     .then(plugins => a.installPlugins(plugins));
+      .then(plugins => a.installPlugins(plugins))
+      .then(result => {
+        spinner.stop();
+        console.log();
+
+        return Promise.resolve(result);
+      })
+      .catch(err => {
+        spinner.stop();
+        console.log();
+
+        return Promise.reject(err);
+      });
   } else {
     return Promise.resolve();
   }

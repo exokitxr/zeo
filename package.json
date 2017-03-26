@@ -31,6 +31,7 @@
     "archae": "0.0.46",
     "base128": "^0.2.1",
     "body-parser": "^1.16.1",
+    "cli-spinner": "^0.2.6",
     "cookie": "^0.3.1",
     "http-proxy": "^1.16.2",
     "lru-cache": "^4.0.2",
