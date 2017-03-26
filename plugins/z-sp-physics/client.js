@@ -283,10 +283,9 @@ class ZSpPhysics {
                     body.setActivationState(activationState);
                   }
 
-                  dynamicsWorld.addRigidBody(body);
-
                   return body;
                 })();
+                dynamicsWorld.addRigidBody(body);
                 this.body = body;
 
                 activePhysicsBodies.push(this);
@@ -560,10 +559,9 @@ class ZSpPhysics {
                     body.setActivationState(activationState);
                   }
 
-                  dynamicsWorld.addRigidBody(body);
-
                   return body;
                 })();
+                dynamicsWorld.addRigidBody(body);
                 this.body = body;
 
                 activePhysicsBodies.push(this);
