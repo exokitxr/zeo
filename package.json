@@ -6,8 +6,7 @@
   "scripts": {
     "start": "node ./index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "rm -Rf ./data/modules ./installed",
-    "postinstall": "scripts/postinstall.sh"
+    "clean": "rm -Rf ./data/modules ./installed"
   },
   "repository": {
     "type": "git",
