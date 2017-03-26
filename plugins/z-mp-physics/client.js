@@ -856,46 +856,46 @@ class ZMpPhysics {
             }
 
             render() {
-              const {body} = this;
-              if (body) {
-                const {init} = this;
-                if (init) {
-                  world.remove(body);
-                }
-                this.body = null;
-              }
-
-              const {mpPhysics, spPhysics, id, size} = this;
-              if (mpPhysics && !spPhysics && id && size) {
+              const {mpPhysics, spPhysics, id, size, body} = this;
+              const shouldRender = Boolean(mpPhysics && !spPhysics && id && size);
+              if (shouldRender && !body) {
                 const body = (() => {
-                  const {position, rotation} = this;
+                  const existingBody = bodies.get(id);
 
-                  const body = new Box({
-                    id,
-                    position: position.toArray(),
-                    rotation: rotation.toArray(),
-                    dimensions: size,
-                    mass: 1,
-                  });
+                  if (existingBody) {
+                    return existingBody;
+                  } else {
+                    const {position, rotation} = this;
 
-                  const {linearVelocity, angularVelocity, linearFactor, angularFactor, activationState} = this;
-                  if (linearVelocity) {
-                    body.setLinearVelocity(linearVelocity.toArray());
-                  }
-                  if (angularVelocity) {
-                    body.setAngularVelocity(angularVelocity.toArray());
-                  }
-                  if (linearFactor) {
-                    body.setLinearFactor(linearFactor.toArray());
-                  }
-                  if (angularFactor) {
-                    body.setAngularFactor(angularFactor.toArray());
-                  }
-                  if (activationState !== null) {
-                    body.setActivationState(activationState);
-                  }
+                    const body = new Box({
+                      id,
+                      position: position.toArray(),
+                      rotation: rotation.toArray(),
+                      dimensions: size,
+                      mass: 1,
+                    });
 
-                  return body;
+                    const {linearVelocity, angularVelocity, linearFactor, angularFactor, activationState} = this;
+                    if (linearVelocity) {
+                      body.setLinearVelocity(linearVelocity.toArray());
+                    }
+                    if (angularVelocity) {
+                      body.setAngularVelocity(angularVelocity.toArray());
+                    }
+                    if (linearFactor) {
+                      body.setLinearFactor(linearFactor.toArray());
+                    }
+                    if (angularFactor) {
+                      body.setAngularFactor(angularFactor.toArray());
+                    }
+                    if (activationState !== null) {
+                      body.setActivationState(activationState);
+                    } else {
+                      body.activate();
+                    }
+
+                    return body;
+                  }
                 })();
                 body.on('update', ({position, rotation, scale}) => {
                   this.emit('update', {position, rotation, scale});
@@ -907,11 +907,24 @@ class ZMpPhysics {
                     debugMesh.scale.copy(scale);
                   }
                 });
+                const {position, rotation} = body;
+                this.emit('update', {
+                  position,
+                  rotation,
+                  scale: oneVector,
+                });
                 const {init} = this;
                 if (init) {
                   world.add(body);
                 }
                 this.body = body;
+              } else if (!shouldRender && body) {
+                const {init} = this;
+                if (init) {
+                  world.remove(body);
+                }
+                body.destroy();
+                this.body = null;
               }
             }
 
@@ -1061,46 +1074,46 @@ class ZMpPhysics {
             }
 
             render() {
-              const {body} = this;
-              if (body) {
-                const {init} = this;
-                if (init) {
-                  world.remove(body);
-                }
-                this.body = null;
-              }
-
-              const {mpPhysics, spPhysics, id, children} = this;
-              if (mpPhysics && !spPhysics && id && children) {
+              const {mpPhysics, spPhysics, id, children, body} = this;
+              const shouldRender = Boolean(mpPhysics && !spPhysics && id && children);
+              if (shouldRender && !body) {
                 const body = (() => {
-                  const {id, position, rotation, mass} = this;
+                  const existingBody = bodies.get(id);
 
-                  const body = new Compound({
-                    id,
-                    position,
-                    rotation,
-                    children,
-                    mass,
-                  });
+                  if (existingBody) {
+                    return existingBody;
+                  } else {
+                    const {position, rotation, mass} = this;
 
-                  const {linearVelocity, angularVelocity, linearFactor, angularFactor, activationState} = this;
-                  if (linearVelocity) {
-                    body.setLinearVelocity(linearVelocity.toArray());
-                  }
-                  if (angularVelocity) {
-                    body.setAngularVelocity(angularVelocity.toArray());
-                  }
-                  if (linearFactor) {
-                    body.setLinearFactor(linearFactor.toArray());
-                  }
-                  if (angularFactor) {
-                    body.setAngularFactor(angularFactor.toArray());
-                  }
-                  if (activationState !== null) {
-                    body.setActivationState(activationState);
-                  }
+                    const body = new Compound({
+                      id,
+                      position: position.toArray(),
+                      rotation: rotation.toArray(),
+                      children,
+                      mass,
+                    });
 
-                  return body;
+                    const {linearVelocity, angularVelocity, linearFactor, angularFactor, activationState} = this;
+                    if (linearVelocity) {
+                      body.setLinearVelocity(linearVelocity.toArray());
+                    }
+                    if (angularVelocity) {
+                      body.setAngularVelocity(angularVelocity.toArray());
+                    }
+                    if (linearFactor) {
+                      body.setLinearFactor(linearFactor.toArray());
+                    }
+                    if (angularFactor) {
+                      body.setAngularFactor(angularFactor.toArray());
+                    }
+                    if (activationState !== null) {
+                      body.setActivationState(activationState);
+                    } else {
+                      body.activate();
+                    }
+
+                    return body;
+                  }
                 })();
                 body.on('update', ({position, rotation, scale}) => {
                   this.emit('update', {position, rotation, scale});
@@ -1112,11 +1125,24 @@ class ZMpPhysics {
                     debugMesh.scale.copy(scale);
                   }
                 });
+                const {position, rotation} = body;
+                this.emit('update', {
+                  position,
+                  rotation,
+                  scale: oneVector,
+                });
                 const {init} = this;
                 if (init) {
                   world.add(body);
                 }
                 this.body = body;
+              } else if (!shouldRender && body) {
+                const {init} = this;
+                if (init) {
+                  world.remove(body);
+                }
+                body.destroy();
+                this.body = null;
               }
             }
 
