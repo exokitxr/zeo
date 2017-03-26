@@ -1177,6 +1177,9 @@ class ZMpPhysics {
 
           connection.onclose = () => {
             console.warn('mp physics connection closed');
+
+            world.stop();
+            cleanupControllersUpdate();
           };
           connection.onmessage = msg => {
             const m = JSON.parse(msg.data);
@@ -1289,18 +1292,27 @@ class ZMpPhysics {
             world.addConnectionBound(controllerPhysicsEntity.body);
             controllerPhysicsEntity.init = true;
 
-            const _update = () => {
-              controllerPhysicsEntity.setPosition(controllerMesh.position);
-              controllerPhysicsEntity.setRotation(controllerMesh.quaternion);
-            };
-            render.on('update', _update)
-
-            cleanups.push(() => {
-              render.removeListener('update', _update)
-            });
-
             return controllerPhysicsEntity;
           });
+          const _update = () => {
+            SIDES.forEach((side, index) => {
+              const controllerPhysicsEntity = controllerPhysicsEntities[index];
+              const controllerMesh = controllerMeshes[side];
+              controllerPhysicsEntity.setPosition(controllerMesh.position);
+              controllerPhysicsEntity.setRotation(controllerMesh.quaternion);
+            });
+          };
+          render.on('update', _update);
+
+          let controllersUpdateLive = true;
+          const cleanupControllersUpdate = () => {
+            if (controllersUpdateLive) {
+              render.removeListener('update', _update);
+
+              controllersUpdateLive = false;
+            }
+          };
+          cleanups.push(cleanupControllersUpdate);
 
           const _updateControllersDebugMeshes = () => {
             const numPhysicsDebugs = (() => {
@@ -1308,8 +1320,8 @@ class ZMpPhysics {
 
               for (let i = 0; i < activePhysicsEntities.length; i++) {
                 const physicsBody = activePhysicsEntities[i];
-                const {debug} = physicsBody;
-                result += Number(debug);
+                const {mpPhysics, spPhysics, debug} = physicsBody;
+                result += Number(mpPhysics && !spPhysics && debug);
               }
 
               return result;
@@ -1392,6 +1404,8 @@ class ZMpPhysics {
                 case 'mp-physics': {
                   physicsEntity.setMpPhysics(newValue);
 
+                  _updateControllersDebugMeshes();
+
                   break;
                 }
                 case 'mp-physics-id': {
@@ -1406,6 +1420,8 @@ class ZMpPhysics {
                 }
                 case 'sp-physics': {
                   physicsEntity.setSpPhysics(newValue);
+
+                  _updateControllersDebugMeshes();
 
                   break;
                 }

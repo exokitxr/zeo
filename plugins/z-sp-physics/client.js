@@ -696,18 +696,27 @@ class ZSpPhysics {
             controllerPhysicsBody.setActivationState(DISABLE_DEACTIVATION);
             controllerPhysicsBody.setSpPhysics(true);
 
-            const _update = () => {
-              controllerPhysicsBody.setPosition(controllerMesh.position);
-              controllerPhysicsBody.setRotation(controllerMesh.quaternion);
-            };
-            render.on('update', _update)
-
-            cleanups.push(() => {
-              render.removeListener('update', _update)
-            });
-
             return controllerPhysicsBody;
           });
+          const _update = () => {
+            SIDES.forEach((side, index) => {
+              const controllerPhysicsBody = controllerPhysicsBodies[index];
+              const controllerMesh = controllerMeshes[side];
+              controllerPhysicsBody.setPosition(controllerMesh.position);
+              controllerPhysicsBody.setRotation(controllerMesh.quaternion);
+            });
+          };
+          render.on('update', _update);
+
+          let controllersUpdateLive = true;
+          const cleanupControllersUpdate = () => {
+            if (controllersUpdateLive) {
+              render.removeListener('update', _update);
+
+              controllersUpdateLive = false;
+            }
+          };
+          cleanups.push(cleanupControllersUpdate);
 
           const _updateControllersDebugMeshes = () => {
             const numPhysicsDebugs = (() => {
@@ -715,8 +724,8 @@ class ZSpPhysics {
 
               for (let i = 0; i < activePhysicsBodies.length; i++) {
                 const physicsBody = activePhysicsBodies[i];
-                const {debug} = physicsBody;
-                result += Number(debug);
+                const {spPhysics, mpPhysics, debug} = physicsBody;
+                result += Number(spPhysics && !mpPhysics && debug);
               }
 
               return result;
@@ -795,6 +804,8 @@ class ZSpPhysics {
                 case 'sp-physics': {
                   physicsBody.setSpPhysics(newValue);
 
+                  _updateControllersDebugMeshes();
+
                   break;
                 }
                 case 'size': {
@@ -805,6 +816,8 @@ class ZSpPhysics {
                 }
                 case 'mp-physics': {
                   physicsBody.setMpPhysics(newValue);
+
+                  _updateControllersDebugMeshes();
 
                   break;
                 }
