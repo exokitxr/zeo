@@ -234,17 +234,9 @@ class ZSpPhysics {
             }
 
             render() {
-              const {body} = this;
-              if (body) {
-                dynamicsWorld.removeRigidBody(body);
-
-                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
-
-                this.body = null;
-              }
-
-              const {spPhysics, mpPhysics, size} = this;
-              if (spPhysics && !mpPhysics && size) {
+              const {spPhysics, mpPhysics, size, body} = this;
+              const shouldRender = Boolean(spPhysics && !mpPhysics && size);
+              if (shouldRender && !body) {
                 const body = (() => {
                   const {position, rotation} = this;
 
@@ -289,6 +281,12 @@ class ZSpPhysics {
                 this.body = body;
 
                 activePhysicsBodies.push(this);
+              } else if (!shouldRender && body) {
+                dynamicsWorld.removeRigidBody(body);
+
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+
+                this.body = null;
               }
             }
 
@@ -472,17 +470,9 @@ class ZSpPhysics {
             }
 
             render() {
-              const {body} = this;
-              if (body) {
-                dynamicsWorld.removeRigidBody(body);
-
-                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
-
-                this.body = null;
-              }
-
-              const {spPhysics, mpPhysics, position, rotation} = this;
-              if (spPhysics && !mpPhysics && position && rotation) {
+              const {spPhysics, mpPhysics, position, rotation, body} = this;
+              const shouldRender = Boolean(spPhysics && !mpPhysics && position && rotation);
+              if (shouldRender && !body) {
                 const body = (() => {
                   const {children, position, rotation} = this;
 
@@ -565,6 +555,12 @@ class ZSpPhysics {
                 this.body = body;
 
                 activePhysicsBodies.push(this);
+              } else if (!shouldRender && body) {
+                dynamicsWorld.removeRigidBody(body);
+
+                activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
+
+                this.body = null;
               }
             }
 
