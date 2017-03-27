@@ -1073,6 +1073,95 @@ class Tags {
                 return false;
               }
             };
+            const _doClickGrabNpmTag = () => {
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                if (gripPressed) {
+                  const hoverState = hoverStates[side];
+                  const {intersectionPoint} = hoverState;
+
+                  if (intersectionPoint) {
+                    const {anchor} = hoverState;
+                    const onclick = (anchor && anchor.onclick) || '';
+
+                    let match;
+                    if (match = onclick.match(/^(module|entity):main:(.+?)$/)) {
+                      const type = match[1];
+                      const id = match[2];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const canMakeTag =
+                        Boolean(tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
+                        !(type === 'module' && (tagMesh.item.metadata.exists || tagMesh.item.instancing));
+
+                      if (canMakeTag) {
+                        tagsApi.emit('grabNpmTag', { // XXX handle the multi-{user,controller} conflict cases
+                          side,
+                          tagMesh
+                        });
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
+            const _doClickGrabWorldTag = () => {
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                if (gripPressed) {
+                  const hoverState = hoverStates[side];
+                  const {intersectionPoint} = hoverState;
+
+                  if (intersectionPoint) {
+                    const {metadata} = hoverState;
+                    const {tagMesh} = metadata;
+                    const {item} = tagMesh;
+                    const {type} = item;
+
+                    if (
+                      (item.type === 'module' && !(item.metadata && item.metadata.isStatic)) || 
+                      (item.type === 'entity' && !(item.metadata && item.metadata.isStatic)) ||
+                      (item.type === 'file')
+                    ) {
+                      tagsApi.emit('grabWorldTag', {
+                        side,
+                        tagMesh
+                      });
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
             const _doClickOpen = () => {
               const hoverState = hoverStates[side];
               const {intersectionPoint} = hoverState;
@@ -1422,7 +1511,7 @@ class Tags {
               }
             };
 
-            _doClickDetails() || _doClickOpen() || _doSetPosition() || _doClickAttribute();
+            _doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doSetPosition() || _doClickAttribute();
 
             const hoverState = hoverStates[side];
             const {intersectionPoint} = hoverState;
