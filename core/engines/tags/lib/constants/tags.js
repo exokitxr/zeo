@@ -9,7 +9,7 @@ export const DETAILS_ASPECT_RATIO = DETAILS_WIDTH / DETAILS_HEIGHT;
 
 export const WORLD_WIDTH = 0.2;
 export const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
-export const WORLD_DEPTH = 0.01;
+export const WORLD_DEPTH = 0.005;
 
 export const WORLD_OPEN_WIDTH = WORLD_WIDTH;
 export const WORLD_OPEN_HEIGHT = WORLD_HEIGHT * 4;

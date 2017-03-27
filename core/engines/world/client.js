@@ -1214,7 +1214,9 @@ class World {
                 (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.2,
                 0
               );
-              newTagMesh.planeDetailsMesh.position.sub(newTagMesh.position);
+              newTagMesh.planeDetailsMesh.position.copy(
+                newTagMesh.planeDetailsMesh.initialOffset.clone().sub(newTagMesh.position)
+              );
 
               npmMesh.add(newTagMesh);
 
@@ -1394,7 +1396,7 @@ class World {
             _clickTrash() || _clickGrabNpmTag() ||  _clickGrabWorldTag() || _clickMenu();
           };
           input.on('trigger', _trigger, {
-            priority: 1,
+            priority: -1,
           });
           const _gripdown = e => {
             const {side} = e;

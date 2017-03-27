@@ -1404,6 +1404,12 @@ class Tags {
             };
 
             _doClickDetails() || _doClickOpen() || _doSetPosition() || _doClickAttribute();
+
+            const hoverState = hoverStates[side];
+            const {intersectionPoint} = hoverState;
+            if (intersectionPoint) {
+              e.stopImmediatePropagation();
+            }
           };
           input.on('trigger', _trigger);
           const _triggerdown = e => {
@@ -2450,6 +2456,8 @@ class Tags {
                   planeDetailsMesh.position.x = -((2 - WORLD_DETAILS_WIDTH) / 2);
                   // planeDetailsMesh.position.y = ((WORLD_DETAILS_WIDTH - WORLD_HEIGHT) / 2);
                   planeDetailsMesh.position.z = 0.01;
+
+                  planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
                 } else {
                   planeDetailsMesh.position.x = (WORLD_DETAILS_WIDTH - WORLD_WIDTH) / 2;
                   planeDetailsMesh.position.y = -(WORLD_DETAILS_WIDTH - WORLD_HEIGHT) / 2;
