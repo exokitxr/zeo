@@ -2299,8 +2299,6 @@ class Tags {
                     switch (type) {
                       case 'module':
                         return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open});
-                      /* case 'element':
-                        return tagsRenderer.getElementSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open}); */
                       case 'entity':
                         return tagsRenderer.getEntitySrc({item});
                       case 'file':
