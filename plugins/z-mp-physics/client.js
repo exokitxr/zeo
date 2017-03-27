@@ -1179,26 +1179,31 @@ class ZMpPhysics {
 
           const requestHandlers = new Map();
           const _request = (method, args, cb) => {
-            const id = idUtils.makeId();
+            if (connection.readyState === WebSocket.OPEN) {
+              const id = idUtils.makeId();
 
-            const e = {
-              method,
-              args,
-              id,
-            };
-            const es = JSON.stringify(e);
-            connection.send(es);
+              const e = {
+                method,
+                args,
+                id,
+              };
+              const es = JSON.stringify(e);
+              connection.send(es);
 
-            const requestHandler = (err, result) => {
-              if (!err) {
-                cb(null, result);
-              } else {
-                cb(err);
-              }
+              const requestHandler = (err, result) => {
+                if (!err) {
+                  cb(null, result);
+                } else {
+                  cb(err);
+                }
 
-              requestHandlers.delete(id);
-            };
-            requestHandlers.set(id, requestHandler);
+                requestHandlers.delete(id);
+              };
+              requestHandlers.set(id, requestHandler);
+            } else {
+              const err = new Error('mp physics connection is not open');
+              cb(err);
+            }
           };
 
           connection.onclose = () => {
@@ -1485,11 +1490,11 @@ class ZMpPhysics {
           elements.registerComponent(this, mpPhysicsComponent);
 
           cleanups.push(() => {
+            elements.unregisterComponent(this, mpPhysicsComponent);
+
             if (connection.readyState === WebSocket.OPEN) {
               connection.close();
             }
-
-            elements.unregisterComponent(this, mpPhysicsComponent);
           });
         } else {
           connection.close();
