@@ -3,10 +3,14 @@ const {
   WIDTH,
   OPEN_WIDTH,
   OPEN_HEIGHT,
+  DETAILS_WIDTH,
+  DETAILS_HEIGHT,
 } = require('../constants/tags');
 
 const vectorPolygonImg = require('../img/vector-polygon');
 const vectorPolygonImgSrc = 'data:image/svg+xml;base64,' + btoa(vectorPolygonImg);
+const closeBoxOutline = require('../img/close-box-outline');
+const closeBoxOutlineSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxOutline);
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 const barsWhiteImg = require('../img/bars-white');
@@ -38,7 +42,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #4CAF50; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Module</div>
-        <img src="${creatureUtils.makeStaticCreature('element:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+        <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
         <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
           <div style="display: flex; height: 150px; flex-direction: column;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
@@ -56,9 +60,43 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
 
     return `\
-      <${tagName} style="display: block; text-decoration: none;" onclick="module:${id}">
+      <${tagName} style="display: block; text-decoration: none;" onclick="module:main:${id}">
         ${headerSrc}
       </${tagName}>
+    `;
+  };
+
+  const getModuleDetailsSrc = ({item}) => {
+    const {id, name, displayName, version, description} = item;
+
+    const headerSrc = `\
+      <div style="display: flex; justify-content: center; align-items: center;">
+        <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+        <div style="display: flex; margin-right: auto; justify-content: center; align-items: center;">
+          <div style="display: flex; max-width: ${DETAILS_WIDTH - (10 * 2) - (80 * 3)}px; height: 50px; align-items: flex-end; overflow: hidden; text-overflow: ellipsis;">
+            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
+            <div style="color: #808080; font-size: 20px; font-weight: 400;">${version}</div>
+          </div>
+        </div>
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
+          <img src="${vectorPolygonImgSrc}" width="40" height="40">
+        </a>
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
+          <img src="${closeBoxOutlineSrc}" width="40" height="40">
+        </a>
+      </div>
+    `;
+    const bodySrc = `\
+      <div style="display: flex; padding: 0 30px;">
+        <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
+      </div>
+    `;
+
+    return `\
+      <div style="display: block; width: ${DETAILS_WIDTH}px; height: ${DETAILS_HEIGHT}px; background-color: #FFF; text-decoration: none;">
+        ${headerSrc}
+        ${bodySrc}
+      </div>
     `;
   };
 
@@ -83,7 +121,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
 
     return `\
-      <${tagName} style="display: block; text-decoration: none;" onclick="entity:${id}">
+      <${tagName} style="display: block; text-decoration: none;" onclick="entity:main:${id}">
         ${headerSrc}
       </${tagName}>
     `;
@@ -384,6 +422,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
 
   return {
     getModuleSrc,
+    getModuleDetailsSrc,
     getEntitySrc,
     getAttributeSrc,
     getAttributeInputSrc,

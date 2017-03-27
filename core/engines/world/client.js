@@ -20,6 +20,7 @@ import menuUtils from './lib/utils/menu';
 const TAGS_PER_ROW = 4;
 const TAGS_ROWS_PER_PAGE = 6;
 const TAGS_PER_PAGE = TAGS_PER_ROW * TAGS_ROWS_PER_PAGE;
+const NPM_TAG_MESH_SCALE = 1.5;
 const DEFAULT_USER_HEIGHT = 1.6;
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -639,7 +640,11 @@ class World {
                     tagMesh.item.name === itemSpec.name
                   );
 
-                return tags.makeTag(itemSpec);
+                const npmTagMesh = tags.makeTag(itemSpec);
+                npmTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
+                npmTagMesh.initialScale = npmTagMesh.planeMesh.scale.clone();
+
+                return npmTagMesh;
               }))
               .then(tagMeshes => {
                 npmState.loading = false;
@@ -697,18 +702,6 @@ class World {
             left: biolumi.makeMenuHoverState(),
             right: biolumi.makeMenuHoverState(),
           };
-          const npmDotMeshes = {
-            left: biolumi.makeMenuDotMesh(),
-            right: biolumi.makeMenuDotMesh(),
-          };
-          scene.add(npmDotMeshes.left);
-          scene.add(npmDotMeshes.right);
-          const npmBoxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
-          };
-          scene.add(npmBoxMeshes.left);
-          scene.add(npmBoxMeshes.right);
 
           const worldUi = biolumi.makeUi({
             width: WIDTH,
@@ -782,8 +775,6 @@ class World {
               object.position.z = -1.5 + 0.01;
 
               const newEntityTagMesh = (() => {
-                const scale = 1.5;
-
                 const newEntityTagMesh = tags.makeTag({
                   type: 'entity',
                   id: 'entity',
@@ -800,8 +791,8 @@ class World {
                   (WORLD_HEIGHT / 2) - 0.1,
                   0
                 );
-                newEntityTagMesh.scale.set(scale, scale, 1);
-                newEntityTagMesh.initialScale = newEntityTagMesh.scale.clone();
+                newEntityTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
+                newEntityTagMesh.initialScale = newEntityTagMesh.planeMesh.scale.clone();
 
                 return newEntityTagMesh;
               })();
@@ -1020,7 +1011,8 @@ class World {
                   grabbableState.pointerMesh = pointerMesh;
 
                   if (hoverMesh) {
-                    const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(hoverMesh);
+                    const {planeMesh} = hoverMesh;
+                    const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(planeMesh);
                     grabBoxMesh.position.copy(tagMeshPosition);
                     grabBoxMesh.quaternion.copy(tagMeshRotation);
                     grabBoxMesh.scale.copy(tagMeshScale);
@@ -1063,8 +1055,6 @@ class World {
                   if (gamepad) {
                     const {position: controllerPosition, rotation: controllerRotation} = gamepad;
                     const npmHoverState = npmHoverStates[side];
-                    const npmDotMesh = npmDotMeshes[side];
-                    const npmBoxMesh = npmBoxMeshes[side];
 
                     const {npmMesh} = worldMesh;
                     const {newEntityTagMesh} = npmMesh;
@@ -1086,8 +1076,6 @@ class World {
                         };
                       }),
                       hoverState: npmHoverState,
-                      dotMesh: npmDotMesh,
-                      boxMesh: npmBoxMesh,
                       controllerPosition,
                       controllerRotation,
                     });
@@ -1202,8 +1190,7 @@ class World {
             const {page} = npmState;
             const {tagMeshes} = npmCacheState;
             const aspectRatio = 400 / 150;
-            const scale = 1.5;
-            const width = TAGS_WORLD_WIDTH * scale;
+            const width = TAGS_WORLD_WIDTH * NPM_TAG_MESH_SCALE;
             const height = width / aspectRatio;
             const leftClip = ((30 / WIDTH) * WORLD_WIDTH);
             const rightClip = (((250 + 30) / WIDTH) * WORLD_WIDTH);
@@ -1222,8 +1209,6 @@ class World {
                 (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.2,
                 0
               );
-              newTagMesh.scale.set(scale, scale, 1);
-              newTagMesh.initialScale = newTagMesh.scale.clone();
 
               npmMesh.add(newTagMesh);
 
@@ -1285,7 +1270,7 @@ class World {
                     const onclick = (anchor && anchor.onclick) || '';
 
                     let match;
-                    if (match = onclick.match(/^(module|entity):(.+?)$/)) {
+                    if (match = onclick.match(/^(module|entity):main:(.+?)$/)) {
                       const type = match[1];
                       const id = match[2];
                       const npmTagMeshes = npmManager.getTagMeshes();
@@ -1916,9 +1901,6 @@ class World {
             SIDES.forEach(side => {
               scene.remove(menuDotMeshes[side]);
               scene.remove(menuBoxMeshes[side]);
-
-              scene.remove(npmDotMeshes[side]);
-              scene.remove(npmBoxMeshes[side]);
 
               scene.remove(grabBoxMeshes[side]);
             });
