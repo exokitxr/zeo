@@ -654,13 +654,20 @@ class World {
                 npmState.numTags = tagMeshes.length;
                 npmCacheState.tagMeshes = tagMeshes;
 
-                _updateNpmTagMeshContainer();
-                _updatePages();
-
+                const {npmMesh} = worldMesh;
                 for (let i = 0; i < oldTagMeshes.length; i++) {
                   const oldTagMesh = oldTagMeshes[i];
+                  npmMesh.remove(oldTagMesh);
                   tags.destroyTag(oldTagMesh);
                 }
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+                  tagMesh.visible = false;
+                  npmMesh.add(tagMesh);
+                }
+
+                _updateNpmTagMeshContainer();
+                _updatePages();
 
                 next();
               })
@@ -1183,14 +1190,14 @@ class World {
           rend.on('update', _update);
 
           const _updateNpmTagMeshContainer = () => {
-            // remove old
+            // hide old
             const oldTagMeshes = npmManager.getTagMeshes();
             for (let i = 0; i < oldTagMeshes.length; i++) {
               const oldTagMesh = oldTagMeshes[i];
-              oldTagMesh.parent.remove(oldTagMesh);
+              oldTagMesh.visible = false;
             }
 
-            // add new
+            // show new
             const {npmMesh} = worldMesh;
             const {page} = npmState;
             const {tagMeshes} = npmCacheState;
@@ -1217,8 +1224,7 @@ class World {
               newTagMesh.planeDetailsMesh.position.copy(
                 newTagMesh.planeDetailsMesh.initialOffset.clone().sub(newTagMesh.position)
               );
-
-              npmMesh.add(newTagMesh);
+              newTagMesh.visible = true;
 
               newTagMeshes.push(newTagMesh);
             }

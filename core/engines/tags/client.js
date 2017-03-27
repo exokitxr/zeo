@@ -1021,6 +1021,7 @@ class Tags {
                     let match;
                     if (match = onclick.match(/^module:main:(.+)$/)) {
                       const id = match[1];
+console.log('module id', {id});
 
                       const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                       const {planeMesh, planeDetailsMesh} = tagMesh;
@@ -1579,8 +1580,9 @@ class Tags {
 
                     for (let i = 0; i < tagMeshes.length; i++) {
                       const tagMesh = tagMeshes[i];
+                      const {visible} = tagMesh;
 
-                      if (isWorldTab || _isGlobalTagMesh(tagMesh)) {
+                      if (visible && (isWorldTab || _isGlobalTagMesh(tagMesh))) {
                         const {item} = tagMesh;
                         const {type} = item;
 
@@ -1867,6 +1869,7 @@ class Tags {
               displayName,
               description,
               version,
+              readme,
               tagName,
               attributes,
               data,
@@ -1880,6 +1883,7 @@ class Tags {
               this.displayName = displayName;
               this.description = description;
               this.version = version;
+              this.readme = readme;
               this.tagName = tagName;
               this.attributes = attributes;
               this.data = data;
@@ -2356,6 +2360,7 @@ class Tags {
                 itemSpec.displayName,
                 itemSpec.description,
                 itemSpec.version,
+                itemSpec.readme,
                 itemSpec.tagName, // XXX get rid of these
                 itemSpec.attributes,
                 itemSpec.data,

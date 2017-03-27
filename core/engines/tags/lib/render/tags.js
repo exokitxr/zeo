@@ -79,15 +79,20 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
 
   const getModuleDetailsSrc = ({item}) => {
-    const {id, name, displayName, version, description} = item;
+    const {id, name, displayName, version, description, readme} = item;
+
+    if (readme) {
+console.log('readme', {readme});
+    }
 
     const headerSrc = `\
       <div style="display: flex; justify-content: center; align-items: center;">
         <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
         <div style="display: flex; margin-right: auto; justify-content: center; align-items: center;">
-          <div style="display: flex; max-width: ${DETAILS_WIDTH - (10 * 2) - (80 * 3)}px; height: 50px; align-items: flex-end; overflow: hidden; text-overflow: ellipsis;">
+          <div style="display: flex; max-width: ${DETAILS_WIDTH - (10 * 2) - (80 * 3)}px; height: 50px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
-            <div style="color: #808080; font-size: 20px; font-weight: 400;">${version}</div>
+            <div style="margin-right: 15px; color: #808080; font-size: 20px; font-weight: 400;">${version}</div>
+            <div style="font-size: 20px; font-weight: 300;">${description}</div>
           </div>
         </div>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
@@ -99,8 +104,12 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
       </div>
     `;
     const bodySrc = `\
-      <div style="display: flex; padding: 0 30px;">
-        <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
+      <div style="padding: 0 30px;">
+        ${readme ?
+          readme
+        :
+          `<div style="padding: 15px; background-color: #EEE; border-radius: 5px; font-weight: 400;">No readme</div>`
+        }
       </div>
     `;
 
