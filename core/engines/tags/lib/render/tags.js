@@ -83,7 +83,14 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
   };
 
   const getModuleDetailsSrc = ({item}) => {
-    const {id, name, displayName, version, description, readme, page} = item;
+    const {id, name, displayName, version, description, readme, page, metadata: {exists}} = item;
+    const imgSrc = (() => {
+      if (exists) {
+        return packageVariantSrc;
+      } else {
+        return packageVariantClosedSrc;
+      }
+    })();
 
     const headerSrc = `\
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
@@ -96,7 +103,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           </div>
         </div>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
-          <img src="${packageVariantClosedSrc}" width="40" height="40">
+          <img src="${imgSrc}" width="40" height="40">
         </a>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
           <img src="${closeBoxOutlineSrc}" width="40" height="40">
