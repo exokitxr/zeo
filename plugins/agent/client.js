@@ -336,7 +336,7 @@ class Agent {
               }
             },
           };
-          elements.unregisterComponent(this, agentComponent);
+          elements.registerComponent(this, agentComponent);
 
           const updates = [];
           const _update = () => {
