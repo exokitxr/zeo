@@ -303,8 +303,9 @@ code {
   display: flex;
   width: calc(((100vw - 20px - 17px) / 3) - 20px);
   margin-right: 20px;
-  margin-bottom: 20px;
-  background-color: #E8E8E8;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #EEE;
 }
 .modules-body .module-image {
   width: 100px;
