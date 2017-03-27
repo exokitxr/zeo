@@ -47,9 +47,9 @@ const _makeServerElement = server => {
   div.innerHTML = `<div class=server>
     <img class=server-image />
     <div class=server-wrap>
-      <a href="${url}" class=name>${worldname}</a>
-      <a href="${url}" class=url>
-        <i>${url}</i>
+      <a href="https://${url}" class=name>${worldname}</a>
+      <a href="https://${url}" class=url>
+        <i>https://${url}</i>
       </a>
     </div>
     <div class=users>${users.map(user =>
