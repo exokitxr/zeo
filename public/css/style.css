@@ -296,7 +296,6 @@ code {
   min-height: calc(100vh - (80px * 2));
   padding: 20px;
   padding-right: 0;
-  flex-grow: 0;
   flex-wrap: wrap;
   box-sizing: border-box;
 }
@@ -346,6 +345,91 @@ code {
 }
 .modules-body .module-content .description {
   font-size: 13px;
+}
+
+.module-body {
+  display: flex;
+  min-height: calc(100vh - (80px * 2));
+}
+.readme {
+  display: flex;
+  width: 980px;
+  padding: 0 30px;
+  box-sizing: border-box;
+  align-items: flex-start;
+}
+.readme-content {
+  width: 600px;
+  margin-bottom: 80px;
+  padding-right: 80px;
+  box-sizing: border-box;
+}
+.readme-sidebar {
+  width: 300px;
+  margin-top: 30px;
+}
+.readme-sidebar .label {
+  display: flex;
+  height: 20px;
+  margin: 0;
+  align-items: center;
+}
+.readme-sidebar .code {
+  display: flex;
+  height: 38px;
+  margin: 15px 0;
+  padding: 15px;
+  border-radius: 3px;
+  align-items: center;
+  overflow: hidden;
+}
+.readme-sidebar .hint {
+  padding: 10px 15px;
+  background-color: #F7F7F7;
+  border: 2px solid #EEE;
+  font-size: 13px;
+}
+.readme-sidebar .hint ul {
+  list-style-type: square;
+  margin: 2px 0;
+}
+.readme-sidebar .hint ul li + li {
+  margin: 0;
+}
+.readme-header {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+.readme-header .readme-image {
+  width: 80px;
+  height: 80px;
+  margin-right: 15px;
+}
+.readme-header .readme-header-wrap {
+  display: flex;
+  flex-grow: 1;
+}
+.readme-header .readme-header-wrap .name {
+  margin-right: 15px;
+  font-size: 40px;
+  line-height: 1;
+  flex-grow: 1;
+}
+.readme-header .readme-header-wrap .version {
+  color: #808080;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 400;
+}
+.readme-header .readme-header-wrap {
+  display: flex;
+  align-items: flex-end;
+}
+.readme-placeholder {
+  color: #BBB;
+  font-size: 20px;
 }
 
 .details-wrap {}
