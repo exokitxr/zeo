@@ -340,15 +340,15 @@ class ZSpPhysics {
             }
 
             destroy() {
+              const {debugMesh} = this;
+              if (debugMesh) {
+                scene.remove(debugMesh);
+              }
+
               const {body} = this;
               if (body) {
                 dynamicsWorld.removeRigidBody(body);
                 activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
-              }
-
-              const {debugMesh} = this;
-              if (debugMesh) {
-                scene.remove(debugMesh);
               }
             }
           }
@@ -647,15 +647,15 @@ class ZSpPhysics {
             }
 
             destroy() {
+              const {debugMesh} = this;
+              if (debugMesh) {
+                scene.remove(debugMesh);
+              }
+
               const {body} = this;
               if (body) {
                 dynamicsWorld.removeRigidBody(body);
                 activePhysicsBodies.splice(activePhysicsBodies.indexOf(this), 1);
-              }
-
-              const {debugMesh} = this;
-              if (debugMesh) {
-                scene.remove(debugMesh);
               }
             }
           }
