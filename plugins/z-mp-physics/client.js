@@ -950,6 +950,11 @@ class ZMpPhysics {
             destroy() {
               activePhysicsEntities.splice(activePhysicsEntities.indexOf(this), 1);
 
+              const {debugMesh} = this;
+              if (debugMesh) {
+                scene.remove(debugMesh);
+              }
+
               const {body} = this;
               if (body) {
                 world.remove(body);
@@ -1167,6 +1172,11 @@ class ZMpPhysics {
 
             destroy() {
               activePhysicsEntities.splice(activePhysicsEntities.indexOf(this), 1);
+
+              const {debugMesh} = this;
+              if (debugMesh) {
+                scene.remove(debugMesh);
+              }
 
               const {body} = this;
               if (body) {
