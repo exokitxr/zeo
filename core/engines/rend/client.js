@@ -479,22 +479,21 @@ class Rend {
                     if (value > 0.001) {
                       animatedMeshSpecs.forEach(meshSpec => {
                         const {direction, mesh} = meshSpec;
-                        const {initialScale = oneVector} = mesh;
 
                         switch (direction) {
                           case 'x':
-                            mesh.scale.set(value * initialScale.x, initialScale.y, initialScale.z);
+                            mesh.scale.set(value, 1, 1);
                             break;
                           case 'y':
-                            mesh.scale.set(initialScale.x, value * initialScale.y, initialScale.z);
+                            mesh.scale.set(1, value, 1);
                             break;
                           case 'z':
-                            mesh.scale.set(initialScale.x, initialScale.y, value * initialScale.z);
+                            mesh.scale.set(1, 1, value);
                             break;
                         }
 
                         if (!mesh.visible) {
-                          mesh.visible = true;
+                          mesh.visible = (('initialVisible' in mesh) ? mesh.initialVisible : true);
                         }
                       });
                     } else {
@@ -507,12 +506,11 @@ class Rend {
                   } else {
                     animatedMeshSpecs.forEach(meshSpec => {
                       const {mesh} = meshSpec;
-                      const {initialScale = oneVector} = mesh;
 
-                      mesh.scale.copy(initialScale);
+                      mesh.scale.set(1, 1, 1);
 
                       if (open && !mesh.visible) {
-                        mesh.visible = true;
+                        mesh.visible = (('initialVisible' in mesh) ? mesh.initialVisible : true);
                       } else if (!open && mesh.visible) {
                         mesh.visible = false;
                       }

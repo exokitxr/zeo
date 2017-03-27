@@ -663,6 +663,7 @@ class World {
                 for (let i = 0; i < tagMeshes.length; i++) {
                   const tagMesh = tagMeshes[i];
                   tagMesh.visible = false;
+                  tagMesh.initialVisible = false;
                   npmMesh.add(tagMesh);
                 }
 
@@ -1195,6 +1196,7 @@ class World {
             for (let i = 0; i < oldTagMeshes.length; i++) {
               const oldTagMesh = oldTagMeshes[i];
               oldTagMesh.visible = false;
+              oldTagMesh.initialVisible = false;
             }
 
             // show new
@@ -1225,6 +1227,7 @@ class World {
                 newTagMesh.planeDetailsMesh.initialOffset.clone().sub(newTagMesh.position)
               );
               newTagMesh.visible = true;
+              newTagMesh.initialVisible = true;
 
               newTagMeshes.push(newTagMesh);
             }
