@@ -647,6 +647,8 @@ class World {
                 return npmTagMesh;
               }))
               .then(tagMeshes => {
+                const {tagMeshes: oldTagMeshes} = npmCacheState;
+
                 npmState.loading = false;
                 npmState.page = 0;
                 npmState.numTags = tagMeshes.length;
@@ -654,6 +656,11 @@ class World {
 
                 _updateNpmTagMeshContainer();
                 _updatePages();
+
+                for (let i = 0; i < oldTagMeshes.length; i++) {
+                  const oldTagMesh = oldTagMeshes[i];
+                  tags.destroyTag(oldTagMesh);
+                }
 
                 next();
               })
@@ -1181,8 +1188,6 @@ class World {
             for (let i = 0; i < oldTagMeshes.length; i++) {
               const oldTagMesh = oldTagMeshes[i];
               oldTagMesh.parent.remove(oldTagMesh);
-
-              tags.destroyTag(oldTagMesh);
             }
 
             // add new
