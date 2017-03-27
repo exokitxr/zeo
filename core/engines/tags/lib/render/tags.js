@@ -59,13 +59,15 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #4CAF50; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Module</div>
-        <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
-        <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
-          <div style="display: flex; height: 150px; flex-direction: column;">
-            <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
-            <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
+        <${linkTagName} style="display: flex; text-decoration: none;" onclick="module:main:${id}">
+          <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+          <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
+            <div style="display: flex; height: 150px; flex-direction: column;">
+              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
+              <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
+            </div>
           </div>
-        </div>
+        </${linkTagName}>
         <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
           <img src="${imgSrc}" width="50" height="50">
         </${linkTagName}>

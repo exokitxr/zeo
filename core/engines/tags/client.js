@@ -2577,10 +2577,10 @@ class Tags {
                   planeDetailsMesh.position.z = 0.01;
 
                   planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
-                } else {
-                  planeDetailsMesh.position.x = (WORLD_DETAILS_WIDTH - WORLD_WIDTH) / 2;
-                  planeDetailsMesh.position.y = -(WORLD_DETAILS_WIDTH - WORLD_HEIGHT) / 2;
-                }
+                } /* else {
+                  planeDetailsMesh.position.x = -(WORLD_DETAILS_WIDTH - WORLD_WIDTH) / 2;
+                  planeDetailsMesh.position.y = (WORLD_DETAILS_HEIGHT - WORLD_HEIGHT) / 2;
+                } */
                 planeDetailsMesh.visible = false;
                 object.add(planeDetailsMesh);
                 object.planeDetailsMesh = planeDetailsMesh;
