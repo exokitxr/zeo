@@ -7,12 +7,16 @@ import {
   HEIGHT,
   OPEN_WIDTH,
   OPEN_HEIGHT,
+  DETAILS_WIDTH,
+  DETAILS_HEIGHT,
 
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
   WORLD_OPEN_WIDTH,
   WORLD_OPEN_HEIGHT,
+  WORLD_DETAILS_WIDTH,
+  WORLD_DETAILS_HEIGHT
 } from './lib/constants/tags';
 import menuUtilser from './lib/utils/menu';
 import tagsRender from './lib/render/tags';
@@ -24,6 +28,7 @@ const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemOpenSymbol = Symbol();
+const itemPageSymbol = Symbol();
 const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
@@ -88,6 +93,8 @@ class Tags {
             matrix.decompose(position, rotation, scale);
             return {position, rotation, scale};
           };
+
+          const oneVector = new THREE.Vector3(1, 1, 1);
 
           const wireframeMaterial = new THREE.MeshBasicMaterial({
             color: 0x0000FF,
@@ -643,7 +650,7 @@ class Tags {
           const uiManager = new UiManager({
             width: WIDTH,
             height: HEIGHT,
-            color: [1, 1, 1, 0],
+            color: [1, 1, 1, 1],
             metadata: {
               open: false,
             },
@@ -654,6 +661,14 @@ class Tags {
             color: [1, 1, 1, 0],
             metadata: {
               open: true,
+            },
+          });
+          const uiDetailsManager = new UiManager({
+            width: DETAILS_WIDTH,
+            height: DETAILS_HEIGHT,
+            color: [1, 1, 1, 1],
+            metadata: {
+              details: true,
             },
           });
           const uiStaticManager = new UiManager({
@@ -774,12 +789,12 @@ class Tags {
 
           const detailsState = {
             inputText: '',
-            inputPlaceholder: 'Search npm',
             inputIndex: 0,
             inputValue: 0,
             positioningId: null,
             positioningName: null,
             positioningSide: null,
+            page: 0,
           };
           const focusState = {
             type: '',
@@ -989,6 +1004,164 @@ class Tags {
           const _trigger = e => {
             const {side} = e;
 
+            const _doClickDetails = () => {
+              const hoverState = hoverStates[side];
+              const {intersectionPoint} = hoverState;
+
+              if (intersectionPoint) {
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
+
+                if (gamepad) {
+                  const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                  if (!gripPressed) {
+                    const {anchor} = hoverState;
+                    const onclick = (anchor && anchor.onclick) || '';
+
+                    let match;
+                    if (match = onclick.match(/^module:main:(.+)$/)) {
+                      const id = match[1];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const {planeMesh, planeDetailsMesh} = tagMesh;
+                      planeMesh.visible = false;
+                      planeDetailsMesh.visible = true;
+
+                      return true;
+                    } else if (match = onclick.match(/^module:close:(.+)$/)) {
+                      const id = match[1];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const {planeMesh, planeDetailsMesh} = tagMesh;
+                      planeMesh.visible = true;
+                      planeDetailsMesh.visible = false;
+
+                      return true;
+                    } else if (match = onclick.match(/^module:up:(.+)$/)) {
+                      const id = match[1];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const {item, planeDetailsMesh} = tagMesh;
+                      const {page} = planeDetailsMesh;
+
+                      item.page--;
+                      page.update();
+
+                      return true;
+                    } else if (match = onclick.match(/^module:down:(.+)$/)) {
+                      const id = match[1];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const {item, planeDetailsMesh} = tagMesh;
+                      const {page} = planeDetailsMesh;
+
+                      item.page++;
+                      page.update();
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
+            const _doClickGrabNpmTag = () => {
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                if (gripPressed) {
+                  const hoverState = hoverStates[side];
+                  const {intersectionPoint} = hoverState;
+
+                  if (intersectionPoint) {
+                    const {anchor} = hoverState;
+                    const onclick = (anchor && anchor.onclick) || '';
+
+                    let match;
+                    if (match = onclick.match(/^(module|entity):main:(.+?)$/)) {
+                      const type = match[1];
+                      const id = match[2];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const canMakeTag =
+                        Boolean(tagMesh.item.metadata && tagMesh.item.metadata.isStatic)
+                        !(type === 'module' && (tagMesh.item.metadata.exists || tagMesh.item.instancing));
+
+                      if (canMakeTag) {
+                        tagsApi.emit('grabNpmTag', { // XXX handle the multi-{user,controller} conflict cases
+                          side,
+                          tagMesh
+                        });
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
+            const _doClickGrabWorldTag = () => {
+              const {gamepads} = webvr.getStatus();
+              const gamepad = gamepads[side];
+
+              if (gamepad) {
+                const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+
+                if (gripPressed) {
+                  const hoverState = hoverStates[side];
+                  const {intersectionPoint} = hoverState;
+
+                  if (intersectionPoint) {
+                    const {metadata} = hoverState;
+                    const {tagMesh} = metadata;
+                    const {item} = tagMesh;
+                    const {type} = item;
+
+                    if (
+                      (item.type === 'module' && !(item.metadata && item.metadata.isStatic)) || 
+                      (item.type === 'entity' && !(item.metadata && item.metadata.isStatic)) ||
+                      (item.type === 'file')
+                    ) {
+                      tagsApi.emit('grabWorldTag', {
+                        side,
+                        tagMesh
+                      });
+
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            };
             const _doClickOpen = () => {
               const hoverState = hoverStates[side];
               const {intersectionPoint} = hoverState;
@@ -1000,6 +1173,7 @@ class Tags {
                 let match;
                 if (match = onclick.match(/^entity:addAttribute:(.+)$/)) {
                   const id = match[1];
+
                   const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {item} = tagMesh;
                   const {attributes} = item;
@@ -1025,8 +1199,8 @@ class Tags {
                   return true;
                 } else if (match = onclick.match(/^tag:open:(.+)$/)) {
                   const id = match[1];
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
 
+                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                   const {planeMesh, planeOpenMesh, item} = tagMesh;
                   item.open = true;
                   planeMesh.visible = false;
@@ -1337,7 +1511,13 @@ class Tags {
               }
             };
 
-            _doClickOpen() || _doSetPosition() || _doClickAttribute();
+            _doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doSetPosition() || _doClickAttribute();
+
+            const hoverState = hoverStates[side];
+            const {intersectionPoint} = hoverState;
+            if (intersectionPoint) {
+              e.stopImmediatePropagation();
+            }
           };
           input.on('trigger', _trigger);
           const _triggerdown = e => {
@@ -1497,6 +1677,112 @@ class Tags {
                   const controllers = cyborg.getControllers();
                   const controllerMeshes = SIDES.map(side => controllers[side].mesh);
 
+                  const isWorldTab = rend.getTab() === 'world';
+                  const _isGlobalTagMesh = tagMesh =>
+                    (tagMesh.parent === scene) ||
+                    controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh);
+
+                  const objects = (() => {
+                    const result = [];
+
+                    for (let i = 0; i < tagMeshes.length; i++) {
+                      const tagMesh = tagMeshes[i];
+                      const {visible} = tagMesh;
+
+                      if (visible && (isWorldTab || _isGlobalTagMesh(tagMesh))) {
+                        const {item} = tagMesh;
+                        const {type} = item;
+
+                        const {planeMesh} = tagMesh;
+                        if (planeMesh.visible) {
+                          const {initialScale = oneVector} = tagMesh;
+                          const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
+                          const {page} = planeMesh;
+
+                          result.push({
+                            matrixObject: matrixObject,
+                            page: page,
+                            width: WIDTH,
+                            height: HEIGHT,
+                            worldWidth: WORLD_WIDTH * initialScale.x,
+                            worldHeight: WORLD_HEIGHT * initialScale.y,
+                            worldDepth: WORLD_DEPTH * initialScale.z,
+                            metadata: {
+                              type,
+                              tagMesh,
+                            },
+                          });
+                        }
+
+                        const {planeOpenMesh} = tagMesh;
+                        if (planeOpenMesh && planeOpenMesh.visible) {
+                          const matrixObject = _decomposeObjectMatrixWorld(planeOpenMesh);
+                          const {page} = planeOpenMesh;
+
+                          result.push({
+                            matrixObject: matrixObject,
+                            page: page,
+                            width: OPEN_WIDTH,
+                            height: OPEN_HEIGHT,
+                            worldWidth: WORLD_OPEN_WIDTH,
+                            worldHeight: WORLD_OPEN_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                            metadata: {
+                              type,
+                              tagMesh,
+                            },
+                          });
+                        }
+
+                        const {planeDetailsMesh} = tagMesh;
+                        if (planeDetailsMesh && planeDetailsMesh.visible) {
+                          const matrixObject = _decomposeObjectMatrixWorld(planeDetailsMesh);
+                          const {page} = planeDetailsMesh;
+
+                          result.push({
+                            matrixObject: matrixObject,
+                            page: page,
+                            width: DETAILS_WIDTH,
+                            height: DETAILS_HEIGHT,
+                            worldWidth: WORLD_DETAILS_WIDTH,
+                            worldHeight: WORLD_DETAILS_HEIGHT,
+                            worldDepth: WORLD_DEPTH,
+                            metadata: {
+                              type: 'details',
+                              tagMesh: planeDetailsMesh,
+                            },
+                          });
+                        }
+
+                        if (type === 'entity') {
+                          const {attributesMesh} = tagMesh;
+                          const {attributeMeshes} = attributesMesh;
+
+                          for (let j = 0; j < attributeMeshes.length; j++) {
+                            const attributeMesh = attributeMeshes[j];
+                            const matrixObject = _decomposeObjectMatrixWorld(attributeMesh);
+                            const {page} = attributeMesh;
+
+                            result.push({
+                              matrixObject: matrixObject,
+                              page: page,
+                              width: WIDTH,
+                              height: HEIGHT,
+                              worldWidth: WORLD_WIDTH,
+                              worldHeight: WORLD_HEIGHT,
+                              worldDepth: WORLD_DEPTH,
+                              metadata: {
+                                type: 'attribute',
+                                tagMesh: attributeMesh,
+                              },
+                            });
+                          }
+                        }
+                      }
+                    }
+
+                    return result;
+                  })();
                   SIDES.forEach(side => {
                     const gamepad = gamepads[side];
 
@@ -1506,88 +1792,9 @@ class Tags {
                       const dotMesh = dotMeshes[side];
                       const boxMesh = boxMeshes[side];
 
-                      const objects = (() => {
-                        const result = [];
-
-                        for (let i = 0; i < tagMeshes.length; i++) {
-                          const tagMesh = tagMeshes[i];
-
-                          if (
-                            (tagMesh.parent === scene) ||
-                            controllerMeshes.some(controllerMesh => tagMesh.parent === controllerMesh)
-                          ) {
-                            const {item} = tagMesh;
-                            const {type, open} = item;
-
-                            if (!open) {
-                              const {planeMesh} = tagMesh;
-                              const matrixObject = _decomposeObjectMatrixWorld(planeMesh);
-                              const {page} = planeMesh;
-
-                              result.push({
-                                matrixObject: matrixObject,
-                                page: page,
-                                width: WIDTH,
-                                height: HEIGHT,
-                                worldWidth: WORLD_WIDTH,
-                                worldHeight: WORLD_HEIGHT,
-                                worldDepth: WORLD_DEPTH,
-                                metadata: {
-                                  type,
-                                  tagMesh,
-                                },
-                              });
-
-                              if (type === 'entity') {
-                                const {attributesMesh} = tagMesh;
-                                const {attributeMeshes} = attributesMesh;
-
-                                for (let j = 0; j < attributeMeshes.length; j++) {
-                                  const attributeMesh = attributeMeshes[j];
-                                  const matrixObject = _decomposeObjectMatrixWorld(attributeMesh);
-                                  const {page} = attributeMesh;
-
-                                  result.push({
-                                    matrixObject: matrixObject,
-                                    page: page,
-                                    width: WIDTH,
-                                    height: HEIGHT,
-                                    worldWidth: WORLD_WIDTH,
-                                    worldHeight: WORLD_HEIGHT,
-                                    worldDepth: WORLD_DEPTH,
-                                    metadata: {
-                                      type: 'attribute',
-                                      tagMesh: attributeMesh,
-                                    },
-                                  });
-                                }
-                              }
-                            } else {
-                              const {planeOpenMesh} = tagMesh;
-                              const matrixObject = _decomposeObjectMatrixWorld(planeOpenMesh);
-                              const {page} = planeOpenMesh;
-
-                              result.push({
-                                matrixObject: matrixObject,
-                                page: page,
-                                width: OPEN_WIDTH,
-                                height: OPEN_HEIGHT,
-                                worldWidth: WORLD_OPEN_WIDTH,
-                                worldHeight: WORLD_OPEN_HEIGHT,
-                                worldDepth: WORLD_DEPTH,
-                                metadata: {
-                                  type,
-                                  tagMesh,
-                                },
-                              });
-                            }
-                          }
-                        }
-
-                        return result;
-                      })();
                       biolumi.updateAnchors({
                         objects: objects,
+                        side,
                         hoverState: hoverState,
                         dotMesh: dotMesh,
                         boxMesh: boxMesh,
@@ -1769,6 +1976,7 @@ class Tags {
               displayName,
               description,
               version,
+              readme,
               tagName,
               attributes,
               data,
@@ -1782,6 +1990,7 @@ class Tags {
               this.displayName = displayName;
               this.description = description;
               this.version = version;
+              this.readme = readme;
               this.tagName = tagName;
               this.attributes = attributes;
               this.data = data;
@@ -1852,6 +2061,7 @@ class Tags {
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
               this[itemOpenSymbol] = false;
+              this[itemPageSymbol] = 0;
               this[itemPausedSymbol] = true;
               this[itemValueSymbol] = 0;
               this[itemPreviewSymbol] = false;
@@ -1874,6 +2084,12 @@ class Tags {
             }
             set open(open) {
               this[itemOpenSymbol] = open;
+            }
+            get page() {
+              return this[itemPageSymbol];
+            }
+            set page(page) {
+              this[itemPageSymbol] = page;
             }
             get paused() {
               return this[itemPausedSymbol];
@@ -2258,6 +2474,7 @@ class Tags {
                 itemSpec.displayName,
                 itemSpec.description,
                 itemSpec.version,
+                itemSpec.readme,
                 itemSpec.tagName, // XXX get rid of these
                 itemSpec.attributes,
                 itemSpec.data,
@@ -2272,7 +2489,7 @@ class Tags {
               object.scale.set(item.matrix[7], item.matrix[8], item.matrix[9]);
 
               const _addUiManagerPage = uiManager => {
-                const {metadata: {open}} = uiManager;
+                const {metadata: {open, details}} = uiManager;
 
                 const mesh = uiManager.addPage(({
                   item,
@@ -2297,22 +2514,30 @@ class Tags {
                   const mode = _getItemPreviewMode(item);
                   const src = (() => {
                     switch (type) {
-                      case 'module':
-                        return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec, open});
-                      case 'entity':
+                      case 'module': {
+                        if (!details) {
+                          return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec});
+                        } else {
+                          return tagsRenderer.getModuleDetailsSrc({item});
+                        }
+                      }
+                      case 'entity': {
                         return tagsRenderer.getEntitySrc({item});
-                      case 'file':
+                      }
+                      case 'file': {
                         return tagsRenderer.getFileSrc({item, mode, open});
-                      default:
+                      }
+                      default: {
                         return null;
+                      }
                     }
                   })();
 
                   return {
                     type: 'html',
                     src: src,
-                    w: !open ? WIDTH : OPEN_WIDTH,
-                    h: !open ? HEIGHT : OPEN_HEIGHT,
+                    w: open ? OPEN_WIDTH : details ? DETAILS_WIDTH : WIDTH,
+                    h: open ? OPEN_HEIGHT : details ? DETAILS_HEIGHT : HEIGHT,
                   };
                 }, {
                   type: 'tag',
@@ -2321,8 +2546,8 @@ class Tags {
                     details: detailsState,
                     focus: focusState,
                   },
-                  worldWidth: !open ? WORLD_WIDTH : WORLD_OPEN_WIDTH,
-                  worldHeight: !open ? WORLD_HEIGHT : WORLD_OPEN_HEIGHT,
+                  worldWidth: open ? WORLD_OPEN_WIDTH : details ? WORLD_DETAILS_WIDTH : WORLD_WIDTH,
+                  worldHeight: open ? WORLD_OPEN_HEIGHT : details ? WORLD_DETAILS_HEIGHT : WORLD_HEIGHT,
                 });
                 mesh.receiveShadow = true;
 
@@ -2340,12 +2565,25 @@ class Tags {
                 planeOpenMesh.visible = false;
                 object.add(planeOpenMesh);
                 object.planeOpenMesh = planeOpenMesh;
-              } else if (itemSpec.type === 'module' && !(itemSpec.metadata && itemSpec.metadata.isStatic)) {
+              } else if (itemSpec.type === 'module') {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
-                // XXX add a new details/readme mesh here
+                const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
+                if (itemSpec.metadata && itemSpec.metadata.isStatic) {
+                  planeDetailsMesh.position.x = -((2 - WORLD_DETAILS_WIDTH) / 2);
+                  // planeDetailsMesh.position.y = ((WORLD_DETAILS_WIDTH - WORLD_HEIGHT) / 2);
+                  planeDetailsMesh.position.z = 0.01;
+
+                  planeDetailsMesh.initialOffset = planeDetailsMesh.position.clone();
+                } /* else {
+                  planeDetailsMesh.position.x = -(WORLD_DETAILS_WIDTH - WORLD_WIDTH) / 2;
+                  planeDetailsMesh.position.y = (WORLD_DETAILS_HEIGHT - WORLD_HEIGHT) / 2;
+                } */
+                planeDetailsMesh.visible = false;
+                object.add(planeDetailsMesh);
+                object.planeDetailsMesh = planeDetailsMesh;
               } else {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
                 object.add(planeMesh);

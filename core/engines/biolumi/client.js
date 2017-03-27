@@ -185,6 +185,7 @@ class Biolumi {
             update() {
               let cache = {
                 layerSpec: null,
+                htmlSrc: null,
                 innerSrc: null,
                 img: null,
               };
@@ -195,14 +196,14 @@ class Biolumi {
 
                 return Promise.resolve();
               };
-              const _requestInnerSrc = () => {
+              const _requestHtmlSrc = () => {
                 const {layerSpec} = cache;
                 const {type = 'html'} = layerSpec;
                 if (type === 'html') {
                   const {parent: {width, height}} = this;
                   const {src, x = 0, y = 0, w = width, h = height, pixelated = false} = layerSpec;
 
-                  cache.innerSrc = (() => {
+                  cache.htmlSrc = (() => {
                     const el = document.createElement('div');
                     el.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
                     el.setAttribute('style', rootCss);
@@ -234,6 +235,14 @@ class Biolumi {
 
                     return new XMLSerializer().serializeToString(el);
                   })();
+                }
+
+                return Promise.resolve();
+              };
+              const _requestInnerSrc = () => {
+                const {htmlSrc} = cache;
+                if (htmlSrc !== null) {
+                  cache.innerSrc = htmlSrc.replace(/([^\x00-\x7F])/g, (all, c) => ('&#' + c.charCodeAt(0) + ';'));
                 }
 
                 return Promise.resolve();
@@ -378,6 +387,7 @@ class Biolumi {
                 return Promise.resolve();
               };
               uiWorker.add(_requestLayerSpec);
+              uiWorker.add(_requestHtmlSrc);
               uiWorker.add(_requestInnerSrc);
               uiWorker.add(_requestImage);
               uiWorker.add(_requestTexture);

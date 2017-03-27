@@ -20,6 +20,7 @@ import menuUtils from './lib/utils/menu';
 const TAGS_PER_ROW = 4;
 const TAGS_ROWS_PER_PAGE = 6;
 const TAGS_PER_PAGE = TAGS_PER_ROW * TAGS_ROWS_PER_PAGE;
+const NPM_TAG_MESH_SCALE = 1.5;
 const DEFAULT_USER_HEIGHT = 1.6;
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -639,13 +640,31 @@ class World {
                     tagMesh.item.name === itemSpec.name
                   );
 
-                return tags.makeTag(itemSpec);
+                const npmTagMesh = tags.makeTag(itemSpec);
+                npmTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
+                npmTagMesh.initialScale = npmTagMesh.planeMesh.scale.clone();
+
+                return npmTagMesh;
               }))
               .then(tagMeshes => {
+                const {tagMeshes: oldTagMeshes} = npmCacheState;
+
                 npmState.loading = false;
                 npmState.page = 0;
                 npmState.numTags = tagMeshes.length;
                 npmCacheState.tagMeshes = tagMeshes;
+
+                const {npmMesh} = worldMesh;
+                for (let i = 0; i < oldTagMeshes.length; i++) {
+                  const oldTagMesh = oldTagMeshes[i];
+                  npmMesh.remove(oldTagMesh);
+                  tags.destroyTag(oldTagMesh);
+                }
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+                  tagMesh.visible = false;
+                  npmMesh.add(tagMesh);
+                }
 
                 _updateNpmTagMeshContainer();
                 _updatePages();
@@ -697,18 +716,6 @@ class World {
             left: biolumi.makeMenuHoverState(),
             right: biolumi.makeMenuHoverState(),
           };
-          const npmDotMeshes = {
-            left: biolumi.makeMenuDotMesh(),
-            right: biolumi.makeMenuDotMesh(),
-          };
-          scene.add(npmDotMeshes.left);
-          scene.add(npmDotMeshes.right);
-          const npmBoxMeshes = {
-            left: biolumi.makeMenuBoxMesh(),
-            right: biolumi.makeMenuBoxMesh(),
-          };
-          scene.add(npmBoxMeshes.left);
-          scene.add(npmBoxMeshes.right);
 
           const worldUi = biolumi.makeUi({
             width: WIDTH,
@@ -782,8 +789,6 @@ class World {
               object.position.z = -1.5 + 0.01;
 
               const newEntityTagMesh = (() => {
-                const scale = 1.5;
-
                 const newEntityTagMesh = tags.makeTag({
                   type: 'entity',
                   id: 'entity',
@@ -800,8 +805,8 @@ class World {
                   (WORLD_HEIGHT / 2) - 0.1,
                   0
                 );
-                newEntityTagMesh.scale.set(scale, scale, 1);
-                newEntityTagMesh.initialScale = newEntityTagMesh.scale.clone();
+                newEntityTagMesh.planeMesh.scale.set(NPM_TAG_MESH_SCALE, NPM_TAG_MESH_SCALE, 1);
+                newEntityTagMesh.initialScale = newEntityTagMesh.planeMesh.scale.clone();
 
                 return newEntityTagMesh;
               })();
@@ -1020,7 +1025,8 @@ class World {
                   grabbableState.pointerMesh = pointerMesh;
 
                   if (hoverMesh) {
-                    const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(hoverMesh);
+                    const {planeMesh} = hoverMesh;
+                    const {position: tagMeshPosition, rotation: tagMeshRotation, scale: tagMeshScale} = _decomposeObjectMatrixWorld(planeMesh);
                     grabBoxMesh.position.copy(tagMeshPosition);
                     grabBoxMesh.quaternion.copy(tagMeshRotation);
                     grabBoxMesh.scale.copy(tagMeshScale);
@@ -1063,8 +1069,6 @@ class World {
                   if (gamepad) {
                     const {position: controllerPosition, rotation: controllerRotation} = gamepad;
                     const npmHoverState = npmHoverStates[side];
-                    const npmDotMesh = npmDotMeshes[side];
-                    const npmBoxMesh = npmBoxMeshes[side];
 
                     const {npmMesh} = worldMesh;
                     const {newEntityTagMesh} = npmMesh;
@@ -1086,8 +1090,6 @@ class World {
                         };
                       }),
                       hoverState: npmHoverState,
-                      dotMesh: npmDotMesh,
-                      boxMesh: npmBoxMesh,
                       controllerPosition,
                       controllerRotation,
                     });
@@ -1188,22 +1190,19 @@ class World {
           rend.on('update', _update);
 
           const _updateNpmTagMeshContainer = () => {
-            // remove old
+            // hide old
             const oldTagMeshes = npmManager.getTagMeshes();
             for (let i = 0; i < oldTagMeshes.length; i++) {
               const oldTagMesh = oldTagMeshes[i];
-              oldTagMesh.parent.remove(oldTagMesh);
-
-              tags.destroyTag(oldTagMesh);
+              oldTagMesh.visible = false;
             }
 
-            // add new
+            // show new
             const {npmMesh} = worldMesh;
             const {page} = npmState;
             const {tagMeshes} = npmCacheState;
             const aspectRatio = 400 / 150;
-            const scale = 1.5;
-            const width = TAGS_WORLD_WIDTH * scale;
+            const width = TAGS_WORLD_WIDTH * NPM_TAG_MESH_SCALE;
             const height = width / aspectRatio;
             const leftClip = ((30 / WIDTH) * WORLD_WIDTH);
             const rightClip = (((250 + 30) / WIDTH) * WORLD_WIDTH);
@@ -1222,10 +1221,10 @@ class World {
                 (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.2,
                 0
               );
-              newTagMesh.scale.set(scale, scale, 1);
-              newTagMesh.initialScale = newTagMesh.scale.clone();
-
-              npmMesh.add(newTagMesh);
+              newTagMesh.planeDetailsMesh.position.copy(
+                newTagMesh.planeDetailsMesh.initialOffset.clone().sub(newTagMesh.position)
+              );
+              newTagMesh.visible = true;
 
               newTagMeshes.push(newTagMesh);
             }
@@ -1264,92 +1263,6 @@ class World {
                 _removeTag('hand:' + side);
 
                 return true;
-              } else {
-                return false;
-              }
-            };
-            const _clickGrabNpmTag = () => {
-              const {gamepads} = webvr.getStatus();
-              const gamepad = gamepads[side];
-
-              if (gamepad) {
-                const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
-
-                if (gripPressed) {
-                  const npmHoverState = npmHoverStates[side];
-                  const {intersectionPoint} = npmHoverState;
-                  const grabMesh = grabManager.getMesh(side);
-
-                  if (intersectionPoint && !grabMesh) {
-                    const {anchor} = npmHoverState;
-                    const onclick = (anchor && anchor.onclick) || '';
-
-                    let match;
-                    if (match = onclick.match(/^(module|entity):(.+?)$/)) {
-                      const type = match[1];
-                      const id = match[2];
-                      const npmTagMeshes = npmManager.getTagMeshes();
-                      const {npmMesh} = worldMesh;
-                      const {newEntityTagMesh} = npmMesh;
-                      const tagMesh = npmTagMeshes
-                        .concat([newEntityTagMesh])
-                        .find(tagMesh => tagMesh.item.id === id);
-
-                      const canMakeTag = !(type === 'module' && (tagMesh.item.metadata.exists || tagMesh.item.instancing)); // XXX handle the multi-{user,controller} conflict cases
-                      if (canMakeTag) {
-                        const item = _clone(tagMesh.item);
-                        item.id = _makeId();
-                        item.metadata.isStatic = false;
-                        _addTag(item, 'hand:' + side);
-
-                        const highlightState = highlightStates[side];
-                        highlightState.startPoint = null;
-
-                        return true;
-                      } else {
-                        return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  } else {
-                    return false;
-                  }
-                } else {
-                  return false;
-                }
-              } else {
-                return false;
-              }
-            };
-            const _clickGrabWorldTag = () => {
-              const {gamepads} = webvr.getStatus();
-              const gamepad = gamepads[side];
-
-              if (gamepad) {
-                const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
-
-                if (gripPressed) {
-                  const grabMesh = grabManager.getMesh(side);
-                  const grabbableState = grabbableStates[side];
-                  const {pointerMesh: pointerGrabMesh} = grabbableState;
-
-                  if (!grabMesh && pointerGrabMesh) {
-                    const tagMesh = pointerGrabMesh;
-                    const {item} = tagMesh;
-                    const {id} = item;
-
-                    _moveTag('world:' + id, 'hand:' + side);
-
-                    _endHighlight(side);
-
-                    return true;
-                  } else {
-                    return false;
-                  }
-                } else {
-                  return false;
-                }
               } else {
                 return false;
               }
@@ -1400,10 +1313,10 @@ class World {
               }
             };
 
-            _clickTrash() || _clickGrabNpmTag() ||  _clickGrabWorldTag() || _clickMenu();
+            _clickTrash() || _clickMenu();
           };
           input.on('trigger', _trigger, {
-            priority: 1,
+            priority: -1,
           });
           const _gripdown = e => {
             const {side} = e;
@@ -1592,6 +1505,33 @@ class World {
 
             return _getWorldSrc() || _getHandSrc() || null;
           };
+          const _grabNpmTag = ({side, tagMesh}) => {
+            const grabMesh = grabManager.getMesh(side);
+
+            if (!grabMesh) {
+              const item = _clone(tagMesh.item);
+              item.id = _makeId();
+              item.metadata.isStatic = false;
+              _addTag(item, 'hand:' + side);
+
+              const highlightState = highlightStates[side];
+              highlightState.startPoint = null;
+            }
+          };
+          tags.on('grabNpmTag', _grabNpmTag);
+          const _grabWorldTag = ({side, tagMesh}) => {
+            const grabMesh = grabManager.getMesh(side);
+
+            if (!grabMesh) {
+              const {item} = tagMesh;
+              const {id} = item;
+
+              _moveTag('world:' + id, 'hand:' + side);
+
+              _endHighlight(side);
+            }
+          };
+          tags.on('grabWorldTag', _grabWorldTag);
           const _mutateAddModule = ({element}) => {
             const name = element.getAttribute('name');
             const itemSpec = {
@@ -1917,9 +1857,6 @@ class World {
               scene.remove(menuDotMeshes[side]);
               scene.remove(menuBoxMeshes[side]);
 
-              scene.remove(npmDotMeshes[side]);
-              scene.remove(npmBoxMeshes[side]);
-
               scene.remove(grabBoxMeshes[side]);
             });
 
@@ -1938,6 +1875,8 @@ class World {
             tags.removeListener('download', _download);
             tags.removeListener('linkModule', _linkModule);
             tags.removeListener('linkAttribute', _linkAttribute);
+            tags.removeListener('grabNpmTag', _grabNpmTag);
+            tags.removeListener('grabWorldTag', _grabWorldTag);
             tags.removeListener('mutateAddModule', _mutateAddModule);
             tags.removeListener('mutateRemoveModule', _mutateRemoveModule);
             tags.removeListener('mutateAddEntity', _mutateAddEntity);

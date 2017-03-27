@@ -4,8 +4,7 @@ const fs = require('fs');
 const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
-const showdown = require('showdown');
-const showdownConverter = new showdown.Converter();
+const marked = require('marked');
 
 const DEFAULT_TAG_MATRIX = [
   0, 0, 0,
@@ -53,6 +52,23 @@ class Rend {
               });
             } else {
               npm.requestPackageJson(plugin)
+                .then(accept)
+                .catch(reject);
+            }
+          });
+          const _getPluginReadme = plugin => new Promise((accept, reject) => {
+            if (path.isAbsolute(plugin)) {
+              fs.readFile(path.join(dirname, plugin, 'README.md'), 'utf8', (err, s) => {
+                if (!err) {
+                  accept(s);
+                } else if (err.code === 'ENOENT') {
+                  accept(null);
+                } else {
+                  reject(err);
+                }
+              });
+            } else {
+              npm.requestReadme(plugin)
                 .then(accept)
                 .catch(reject);
             }
@@ -133,14 +149,21 @@ class Rend {
               local: path.isAbsolute(mod),
               matrix: DEFAULT_TAG_MATRIX,
             })); */
-          const _getModSpec = mod => _getPluginPackageJson(mod)
-            .then(packageJson => ({
+          const _getModSpec = mod => Promise.all([
+            _getPluginPackageJson(mod),
+            _getPluginReadme(mod),
+          ])
+            .then(([
+              packageJson,
+              readme,
+            ]) => ({
               type: 'module',
               id: mod,
               name: mod,
               displayName: packageJson.name,
               version: packageJson.version,
               description: packageJson.description || null,
+              readme: readme ? marked(readme) : null,
               hasClient: Boolean(packageJson.client),
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
@@ -253,10 +276,10 @@ const _jsonParse = s => {
     return null;
   }
 };
-const _renderMarkdown = s => showdownConverter
+/* const _renderMarkdown = s => showdownConverter
   .makeHtml(s)
   .replace(/&mdash;/g, '-')
   .replace(/(<code\s*[^>]*?>)([^>]*?)(<\/code>)/g, (all, start, mid, end) => start + mid.replace(/\n/g, '<br/>') + end)
-  .replace(/\n+/g, ' ');
+  .replace(/\n+/g, ' '); */
 
 module.exports = Rend;

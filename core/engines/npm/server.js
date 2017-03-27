@@ -76,6 +76,31 @@ class Npm {
       });
     });
 
+    const _requestReadme = module => new Promise((accept, reject) => {
+      const _sendApiError = _makeSendApiError(reject);
+
+      https.get({
+        hostname: 'unpkg.com',
+        path: '/' + module + '/README.md',
+      }, proxyRes => {
+        if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+          _getString(proxyRes, (err, s) => {
+            if (!err) {
+              accept(s);
+            } else {
+              _sendApiError(proxyRes.statusCode);
+            }
+          });
+        } else if (proxyRes.statusCode === 404) {
+          accept(null);
+        } else {
+          _sendApiError(proxyRes.statusCode);
+        }
+      }).on('error', err => {
+        _sendApiError(500, err.stack);
+      });
+    });
+
     const _requestReadmeMd = module => new Promise((accept, reject) => {
       const _sendApiError = _makeSendApiError(reject);
 
@@ -136,6 +161,7 @@ class Npm {
 
     return {
       requestPackageJson: _requestPackageJson,
+      requestReadme: _requestReadme,
       requestReadmeMd: _requestReadmeMd,
       requestSearch: _requestSearch,
     };

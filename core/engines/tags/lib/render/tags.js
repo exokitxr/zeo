@@ -3,10 +3,18 @@ const {
   WIDTH,
   OPEN_WIDTH,
   OPEN_HEIGHT,
+  DETAILS_WIDTH,
+  DETAILS_HEIGHT,
 } = require('../constants/tags');
 
 const vectorPolygonImg = require('../img/vector-polygon');
 const vectorPolygonImgSrc = 'data:image/svg+xml;base64,' + btoa(vectorPolygonImg);
+const closeBoxOutline = require('../img/close-box-outline');
+const closeBoxOutlineSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxOutline);
+const packageVariant = require('../img/package-variant');
+const packageVariantSrc = 'data:image/svg+xml;base64,' + btoa(packageVariant);
+const packageVariantClosed = require('../img/package-variant-closed');
+const packageVariantClosedSrc = 'data:image/svg+xml;base64,' + btoa(packageVariantClosed);
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 const barsWhiteImg = require('../img/bars-white');
@@ -25,6 +33,8 @@ const targetImg = require('../img/target');
 const targetImgSrc = 'data:image/svg+xml;base64,' + btoa(targetImg);
 const linkImg = require('../img/link');
 const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
+const upImg = require('../img/up');
+const downImg = require('../img/down');
 
 const AXES = ['x', 'y', 'z'];
 
@@ -34,31 +44,104 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
     const staticExists = isStatic && exists;
+    const imgSrc = (() => {
+      if (isStatic) {
+        if (exists) {
+          return packageVariantSrc;
+        } else {
+          return packageVariantClosedSrc;
+        }
+      } else {
+        return vectorPolygonImgSrc;
+      }
+    })();
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
         <div style="display: flex; position: absolute; top: -15px; right: -58px; width: 155px; padding-top: 30px; padding-bottom: 10px; background-color: #4CAF50; color: #FFF; justify-content: center; align-items: center; box-sizing: border-box; transform: rotate(45deg);">Module</div>
-        <img src="${creatureUtils.makeStaticCreature('element:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
-        <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
-          <div style="display: flex; height: 150px; flex-direction: column;">
-            <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
-            <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
-            ${staticExists ?
-              `<div style="margin-bottom: 20px; font-size: 16px; font-weight: 400;">Exists</div>`
-            : ''}
+        <${linkTagName} style="display: flex; text-decoration: none;" onclick="module:main:${id}">
+          <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+          <div style="width: ${WIDTH - (80 + (10 * 2)) - 10 - 80}px; margin-right: 10px;">
+            <div style="display: flex; height: 150px; flex-direction: column;">
+              <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
+              <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
+            </div>
           </div>
-        </div>
+        </${linkTagName}>
         <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
-          <img src="${vectorPolygonImgSrc}" width="50" height="50">
+          <img src="${imgSrc}" width="50" height="50">
         </${linkTagName}>
         }
       </div>
     `;
 
     return `\
-      <${tagName} style="display: block; text-decoration: none;" onclick="module:${id}">
+      <${tagName} style="display: block; text-decoration: none;" onclick="module:main:${id}">
         ${headerSrc}
       </${tagName}>
+    `;
+  };
+
+  const getModuleDetailsSrc = ({item}) => {
+    const {id, name, displayName, version, description, readme, page} = item;
+
+    const headerSrc = `\
+      <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
+        <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
+        <div style="display: flex; margin-right: auto; justify-content: center; align-items: center;">
+          <div style="display: flex; max-width: ${DETAILS_WIDTH - (10 * 2) - (80 * 3)}px; height: 50px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <div style="margin-right: 15px; font-size: 28px; font-weight: 400;">${displayName}</div>
+            <div style="margin-right: 15px; color: #808080; font-size: 20px; font-weight: 400;">${version}</div>
+            <div style="font-size: 20px; font-weight: 300;">${description}</div>
+          </div>
+        </div>
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
+          <img src="${packageVariantClosedSrc}" width="40" height="40">
+        </a>
+        <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
+          <img src="${closeBoxOutlineSrc}" width="40" height="40">
+        </a>
+      </div>
+    `;
+    const bodySrc = (() => {
+      const leftSrc = `\
+        <div style="position: relative; width: ${DETAILS_WIDTH - 250}px; top: ${-page * (DETAILS_HEIGHT - 100)}px; padding: 0 30px; box-sizing: border-box;">
+          ${readme ?
+            readme
+          :
+            `<div style="padding: 15px; background-color: #EEE; border-radius: 5px; font-weight: 400;">No readme</div>`
+          }
+        </div>
+      `;
+      const rightSrc = (() => {
+        const showUp = page !== 0;
+        const showDown = Boolean(readme);
+
+        return `\
+          <div style="display: flex; width: 250px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="module:up:${id}">
+              ${upImg}
+            </a>
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="module:down:${id}">
+              ${downImg}
+            </a>
+          </div>
+        `;
+      })();
+
+      return `\
+        <div style="display: flex; height: ${DETAILS_HEIGHT - 100}px; overflow: hidden;">
+          ${leftSrc}
+          ${rightSrc}
+        </div>
+      `;
+    })();
+
+    return `\
+      <div style="display: block; width: ${DETAILS_WIDTH}px; height: ${DETAILS_HEIGHT}px; background-color: #FFF; text-decoration: none;">
+        ${headerSrc}
+        ${bodySrc}
+      </div>
     `;
   };
 
@@ -83,7 +166,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
 
     return `\
-      <${tagName} style="display: block; text-decoration: none;" onclick="entity:${id}">
+      <${tagName} style="display: block; text-decoration: none;" onclick="entity:main:${id}">
         ${headerSrc}
       </${tagName}>
     `;
@@ -384,6 +467,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
 
   return {
     getModuleSrc,
+    getModuleDetailsSrc,
     getEntitySrc,
     getAttributeSrc,
     getAttributeInputSrc,
