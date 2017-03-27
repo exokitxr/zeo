@@ -788,12 +788,12 @@ class Tags {
 
           const detailsState = {
             inputText: '',
-            inputPlaceholder: 'Search npm',
             inputIndex: 0,
             inputValue: 0,
             positioningId: null,
             positioningName: null,
             positioningSide: null,
+            page: 0,
           };
           const focusState = {
             type: '',
@@ -2384,6 +2384,7 @@ console.log('module id', {id});
                     inputValue,
                     positioningId,
                     positioningName,
+                    page,
                   },
                   focus: {
                     type: focusType,
@@ -2404,7 +2405,7 @@ console.log('module id', {id});
                         if (!details) {
                           return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec});
                         } else {
-                          return tagsRenderer.getModuleDetailsSrc({item});
+                          return tagsRenderer.getModuleDetailsSrc({item, page});
                         }
                       }
                       case 'entity': {

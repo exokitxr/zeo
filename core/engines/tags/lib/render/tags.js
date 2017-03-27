@@ -33,6 +33,8 @@ const targetImg = require('../img/target');
 const targetImgSrc = 'data:image/svg+xml;base64,' + btoa(targetImg);
 const linkImg = require('../img/link');
 const linkImgSrc = 'data:image/svg+xml;base64,' + btoa(linkImg);
+const upImg = require('../img/up');
+const downImg = require('../img/down');
 
 const AXES = ['x', 'y', 'z'];
 
@@ -78,7 +80,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
   };
 
-  const getModuleDetailsSrc = ({item}) => {
+  const getModuleDetailsSrc = ({item, page}) => {
     const {id, name, displayName, version, description, readme} = item;
 
     if (readme) {
@@ -86,7 +88,7 @@ console.log('readme', {readme});
     }
 
     const headerSrc = `\
-      <div style="display: flex; justify-content: center; align-items: center;">
+      <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
         <img src="${creatureUtils.makeStaticCreature('module:' + name)}" width="80" height="80" style="width: 80px; height: 80px; margin: 10px; image-rendering: pixelated;" />
         <div style="display: flex; margin-right: auto; justify-content: center; align-items: center;">
           <div style="display: flex; max-width: ${DETAILS_WIDTH - (10 * 2) - (80 * 3)}px; height: 50px; align-items: flex-end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -103,15 +105,40 @@ console.log('readme', {readme});
         </a>
       </div>
     `;
-    const bodySrc = `\
-      <div style="padding: 0 30px;">
-        ${readme ?
-          readme
-        :
-          `<div style="padding: 15px; background-color: #EEE; border-radius: 5px; font-weight: 400;">No readme</div>`
-        }
-      </div>
-    `;
+    const bodySrc = (() => {
+      const leftSrc = `\
+        <div style="width: ${DETAILS_WIDTH - 250}px; padding: 0 30px; box-sizing: border-box;">
+          ${readme ?
+            readme
+          :
+            `<div style="padding: 15px; background-color: #EEE; border-radius: 5px; font-weight: 400;">No readme</div>`
+          }
+        </div>
+      `;
+      const rightSrc = (() => {
+        const showUp = page !== 0;
+        const showDown = Boolean(readme);
+
+        return `\
+          <div style="display: flex; width: 250px; height: ${DETAILS_HEIGHT - 100}px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
+            <div style="width: 1px; height: 80px;"></div>
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="npm:up">
+              ${upImg}
+            </a>
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="npm:down">
+              ${downImg}
+            </a>
+          </div>
+        `;
+      })();
+
+      return `\
+        <div style="display: flex;">
+          ${leftSrc}
+          ${rightSrc}
+        </div>
+      `;
+    })();
 
     return `\
       <div style="display: block; width: ${DETAILS_WIDTH}px; height: ${DETAILS_HEIGHT}px; background-color: #FFF; text-decoration: none;">
