@@ -80,12 +80,8 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     `;
   };
 
-  const getModuleDetailsSrc = ({item, page}) => {
-    const {id, name, displayName, version, description, readme} = item;
-
-    if (readme) {
-console.log('readme', {readme});
-    }
+  const getModuleDetailsSrc = ({item}) => {
+    const {id, name, displayName, version, description, readme, page} = item;
 
     const headerSrc = `\
       <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
@@ -107,7 +103,7 @@ console.log('readme', {readme});
     `;
     const bodySrc = (() => {
       const leftSrc = `\
-        <div style="width: ${DETAILS_WIDTH - 250}px; padding: 0 30px; box-sizing: border-box;">
+        <div style="position: relative; width: ${DETAILS_WIDTH - 250}px; top: ${-page * (DETAILS_HEIGHT - 100)}px; padding: 0 30px; box-sizing: border-box;">
           ${readme ?
             readme
           :
@@ -120,12 +116,11 @@ console.log('readme', {readme});
         const showDown = Boolean(readme);
 
         return `\
-          <div style="display: flex; width: 250px; height: ${DETAILS_HEIGHT - 100}px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
-            <div style="width: 1px; height: 80px;"></div>
-            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="npm:up">
+          <div style="display: flex; width: 250px; padding-top: 20px; flex-direction: column; box-sizing: border-box;">
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="module:up:${id}">
               ${upImg}
             </a>
-            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="npm:down">
+            <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="module:down:${id}">
               ${downImg}
             </a>
           </div>
@@ -133,7 +128,7 @@ console.log('readme', {readme});
       })();
 
       return `\
-        <div style="display: flex;">
+        <div style="display: flex; height: ${DETAILS_HEIGHT - 100}px; overflow: hidden;">
           ${leftSrc}
           ${rightSrc}
         </div>

@@ -28,6 +28,7 @@ const tagFlagSymbol = Symbol();
 const itemInstanceSymbol = Symbol();
 const itemInstancingSymbol = Symbol();
 const itemOpenSymbol = Symbol();
+const itemPageSymbol = Symbol();
 const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
@@ -1021,14 +1022,11 @@ class Tags {
                     let match;
                     if (match = onclick.match(/^module:main:(.+)$/)) {
                       const id = match[1];
-console.log('module id', {id});
 
                       const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
                       const {planeMesh, planeDetailsMesh} = tagMesh;
                       planeMesh.visible = false;
                       planeDetailsMesh.visible = true;
-
-                      // XXX finish this
 
                       return true;
                     } else if (match = onclick.match(/^module:close:(.+)$/)) {
@@ -1039,7 +1037,27 @@ console.log('module id', {id});
                       planeMesh.visible = true;
                       planeDetailsMesh.visible = false;
 
-                      // XXX finish this
+                      return true;
+                    } else if (match = onclick.match(/^module:up:(.+)$/)) {
+                      const id = match[1];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const {item, planeDetailsMesh} = tagMesh;
+                      const {page} = planeDetailsMesh;
+
+                      item.page--;
+                      page.update();
+
+                      return true;
+                    } else if (match = onclick.match(/^module:down:(.+)$/)) {
+                      const id = match[1];
+
+                      const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
+                      const {item, planeDetailsMesh} = tagMesh;
+                      const {page} = planeDetailsMesh;
+
+                      item.page++;
+                      page.update();
 
                       return true;
                     } else {
@@ -1954,6 +1972,7 @@ console.log('module id', {id});
               this[itemInstanceSymbol] = null;
               this[itemInstancingSymbol] = false;
               this[itemOpenSymbol] = false;
+              this[itemPageSymbol] = 0;
               this[itemPausedSymbol] = true;
               this[itemValueSymbol] = 0;
               this[itemPreviewSymbol] = false;
@@ -1976,6 +1995,12 @@ console.log('module id', {id});
             }
             set open(open) {
               this[itemOpenSymbol] = open;
+            }
+            get page() {
+              return this[itemPageSymbol];
+            }
+            set page(page) {
+              this[itemPageSymbol] = page;
             }
             get paused() {
               return this[itemPausedSymbol];
@@ -2384,7 +2409,6 @@ console.log('module id', {id});
                     inputValue,
                     positioningId,
                     positioningName,
-                    page,
                   },
                   focus: {
                     type: focusType,
@@ -2405,7 +2429,7 @@ console.log('module id', {id});
                         if (!details) {
                           return tagsRenderer.getModuleSrc({item, inputText, inputValue, positioningId, positioningName, focusAttributeSpec});
                         } else {
-                          return tagsRenderer.getModuleDetailsSrc({item, page});
+                          return tagsRenderer.getModuleDetailsSrc({item});
                         }
                       }
                       case 'entity': {
