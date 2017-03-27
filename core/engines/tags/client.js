@@ -158,9 +158,14 @@ class Tags {
                       item.instancing = false;
 
                       const _updateInstanceUi = () => {
-                        const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+                        const {planeMesh: {page}} = tagMesh;
                         page.update();
-                        openPage.update();
+
+                        const {planeOpenMesh} = tagMesh;
+                        if (planeOpenMesh) {
+                          const {page: openPage} = planeOpenMesh
+                          openPage.update();
+                        }
                       };
                       _updateInstanceUi();
 
@@ -181,9 +186,14 @@ class Tags {
 
               item.instancing = true;
 
-              const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
+              const {planeMesh: {page}} = tagMesh;
               page.update();
-              openPage.update();
+
+              const {planeOpenMesh} = tagMesh;
+              if (planeOpenMesh) {
+                const {page: openPage} = planeOpenMesh
+                openPage.update();
+              }
 
               _updateNpmUi(tagMesh => {
                 const {item} = tagMesh;
@@ -1183,10 +1193,6 @@ class Tags {
                 detailsState.positioningName = null;
                 detailsState.positioningSide = null;
 
-                const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === positioningId);
-                const {planeOpenMesh: {page: openPage}} = tagMesh;
-                openPage.update();
-
                 return true;
               } else {
                 return false;
@@ -1320,38 +1326,7 @@ class Tags {
                     });
 
                     _updateAttributes();
-                  } else if (action === 'choose') {
-                    /* elementsState.choosingName = attributeName;
-
-                    _ensureFilesLoaded(elementAttributeFilesState);
-
-                    // XXX needs to be rewritten to handle the new tags model
-                    menuUi.addPage(({elementAttributeFiles: {cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading}, focus: {type: focusType}}) => ([
-                      {
-                        type: 'html',
-                        src: menuRenderer.getFilesPageSrc({cwd, files, inputText, inputValue, selectedName, clipboardPath, loading, uploading, focusType, prefix: 'elementAttributeFile'}),
-                      },
-                      {
-                        type: 'image',
-                        img: creatureUtils.makeAnimatedCreature('files'),
-                        x: 150,
-                        y: 0,
-                        w: 150,
-                        h: 150,
-                        frameTime: FRAME_TIME,
-                        pixelated: true,
-                      }
-                    ]), {
-                      type: 'elementAttributeFiles',
-                      state: {
-                        elementAttributeFiles: elementAttributeFilesState,
-                        focus: focusState,
-                      },
-                    }); */
                   }
-
-                  /* const {planeOpenMesh: {page: openPage}} = tagMesh;
-                  openPage.update(); */
 
                   return true;
                 } else {
@@ -2369,8 +2344,7 @@ class Tags {
                 return mesh;
               };
 
-              const isStatic = Boolean(itemSpec.metadata && itemSpec.metadata.isStatic);
-              if (!isStatic) { 
+              if (itemSpec.type === 'file') { 
                 const planeMesh = _addUiManagerPage(uiManager);
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
@@ -2381,6 +2355,12 @@ class Tags {
                 planeOpenMesh.visible = false;
                 object.add(planeOpenMesh);
                 object.planeOpenMesh = planeOpenMesh;
+              } else if (itemSpec.type === 'module' && !(itemSpec.metadata && itemSpec.metadata.isStatic)) {
+                const planeMesh = _addUiManagerPage(uiStaticManager);
+                object.add(planeMesh);
+                object.planeMesh = planeMesh;
+
+                // XXX add a new details/readme mesh here
               } else {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
                 object.add(planeMesh);
