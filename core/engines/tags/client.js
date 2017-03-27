@@ -2036,7 +2036,6 @@ class Tags {
           let componentApis = []; // [ component api ]
           let componentApiInstances = []; // [ component element ]
           const tagComponentApis = {}; // plugin name -> [ component api ]
-          // const elementApis = {};
 
           const _getElementSelector = element => {
             const {tagName, attributes, classList} = element;
@@ -2247,18 +2246,6 @@ class Tags {
                 _removeEntityCallback(componentElement, entityElement);
               }
             }
-
-            /* registerElement(pluginInstance, elementApi) {
-              const tag = archae.getName(pluginInstance);
-
-              elementApis[tag] = elementApi;
-            }
-
-            unregisterElement(pluginInstance) {
-              const tag = archae.getName(pluginInstance);
-
-              delete elementApis[tag];
-            } */
 
             makeTag(itemSpec) {
               const object = new THREE.Object3D();
@@ -2585,82 +2572,6 @@ class Tags {
                 }
               }
             }
-
-            /* reifyTag(tagMesh) {
-              const {item} = tagMesh;
-              const {instance, instancing} = item;
-
-              if (!instance && !instancing) {
-                const {name} = item;
-
-                item.lock()
-                  .then(unlock => {
-                    archae.requestPlugin(name)
-                      .then(pluginInstance => {
-                        const name = archae.getName(pluginInstance);
-
-                        const tag = name;
-                        let elementApi = elementApis[tag];
-                        if (!HTMLElement.isPrototypeOf(elementApi)) {
-                          elementApi = HTMLElement;
-                        }
-                        const {id, attributes} = item;
-                        const baseClass = elementApi;
-
-                        const element = menuUtils.makeZeoEntityElement({
-                          tag,
-                          attributes,
-                          baseClass,
-                        });
-                        element.onsetattribute = (name, value) => {
-                          tagsApi.emit('setAttribute', {id, name, value});
-                        };
-                        item.instance = element;
-                        rootEntitiesElement.appendChild(element);
-
-                        item.instancing = false;
-                        item.attributes = _shallowClone(attributes);
-
-                        const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
-                        page.update();
-                        openPage.update();
-
-                        unlock();
-                      })
-                      .catch(err => {
-                        console.warn(err);
-
-                        unlock();
-                      });
-                  });
-
-                item.instancing = true;
-
-                const {planeMesh: {page}, planeOpenMesh: {page: openPage}} = tagMesh;
-                page.update();
-                openPage.update();
-              }
-            }
-
-            unreifyTag(tagMesh) {
-              const {item} = tagMesh;
-
-              item.lock()
-                .then(unlock => {
-                  const {instance} = item;
-
-                  if (instance) {
-                    if (typeof instance.destructor === 'function') {
-                      instance.destructor();
-                    }
-                    item.instance = null;
-
-                    rootEntitiesElement.removeChild(instance);
-                  }
-
-                  unlock();
-                });
-            } */
 
             getWorldElement() {
               return rootWorldElement;
