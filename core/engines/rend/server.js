@@ -57,6 +57,23 @@ class Rend {
                 .catch(reject);
             }
           });
+          const _getPluginReadme = plugin => new Promise((accept, reject) => {
+            if (path.isAbsolute(plugin)) {
+              fs.readFile(path.join(dirname, plugin, 'README.md'), 'utf8', (err, s) => {
+                if (!err) {
+                  accept(s);
+                } else if (err.code === 'ENOENT') {
+                  accept(null);
+                } else {
+                  reject(err);
+                }
+              });
+            } else {
+              npm.requestReadme(plugin)
+                .then(accept)
+                .catch(reject);
+            }
+          });
           /* const _getPluginReadmeMd = plugin => new Promise((accept, reject) => {
             if (path.isAbsolute(plugin)) {
               fs.readFile(path.join(dirname, plugin, 'README.md'), 'utf8', (err, s) => {
@@ -133,14 +150,21 @@ class Rend {
               local: path.isAbsolute(mod),
               matrix: DEFAULT_TAG_MATRIX,
             })); */
-          const _getModSpec = mod => _getPluginPackageJson(mod)
-            .then(packageJson => ({
+          const _getModSpec = mod => Promise.all([
+            _getPluginPackageJson(mod),
+            _getPluginReadme(mod),
+          ])
+            .then(([
+              packageJson,
+              readme,
+            ]) => ({
               type: 'module',
               id: mod,
               name: mod,
               displayName: packageJson.name,
               version: packageJson.version,
               description: packageJson.description || null,
+              readme: readme,
               hasClient: Boolean(packageJson.client),
               hasServer: Boolean(packageJson.server),
               hasWorker: Boolean(packageJson.worker),
