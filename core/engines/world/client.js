@@ -1214,6 +1214,7 @@ class World {
                 (WORLD_HEIGHT / 2) - (height / 2) - (y * (height + padding)) - 0.2,
                 0
               );
+              newTagMesh.planeDetailsMesh.position.sub(newTagMesh.position);
 
               npmMesh.add(newTagMesh);
 

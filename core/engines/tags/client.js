@@ -2440,15 +2440,20 @@ class Tags {
                 planeOpenMesh.visible = false;
                 object.add(planeOpenMesh);
                 object.planeOpenMesh = planeOpenMesh;
-              } else if (itemSpec.type === 'module' && itemSpec.metadata && itemSpec.metadata.isStatic) {
+              } else if (itemSpec.type === 'module') {
                 const planeMesh = _addUiManagerPage(uiStaticManager);
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
 
                 const planeDetailsMesh = _addUiManagerPage(uiDetailsManager);
-                planeDetailsMesh.position.x = (WORLD_DETAILS_WIDTH - WORLD_WIDTH) / 2;
-                planeDetailsMesh.position.y = -(WORLD_DETAILS_WIDTH - WORLD_HEIGHT) / 2;
-                planeDetailsMesh.position.z = 0.01;
+                if (itemSpec.metadata && itemSpec.metadata.isStatic) {
+                  planeDetailsMesh.position.x = -((2 - WORLD_DETAILS_WIDTH) / 2);
+                  // planeDetailsMesh.position.y = ((WORLD_DETAILS_WIDTH - WORLD_HEIGHT) / 2);
+                  planeDetailsMesh.position.z = 0.01;
+                } else {
+                  planeDetailsMesh.position.x = (WORLD_DETAILS_WIDTH - WORLD_WIDTH) / 2;
+                  planeDetailsMesh.position.y = -(WORLD_DETAILS_WIDTH - WORLD_HEIGHT) / 2;
+                }
                 planeDetailsMesh.visible = false;
                 object.add(planeDetailsMesh);
                 object.planeDetailsMesh = planeDetailsMesh;

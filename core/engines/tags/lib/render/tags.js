@@ -11,6 +11,10 @@ const vectorPolygonImg = require('../img/vector-polygon');
 const vectorPolygonImgSrc = 'data:image/svg+xml;base64,' + btoa(vectorPolygonImg);
 const closeBoxOutline = require('../img/close-box-outline');
 const closeBoxOutlineSrc = 'data:image/svg+xml;base64,' + btoa(closeBoxOutline);
+const packageVariant = require('../img/package-variant');
+const packageVariantSrc = 'data:image/svg+xml;base64,' + btoa(packageVariant);
+const packageVariantClosed = require('../img/package-variant-closed');
+const packageVariantClosedSrc = 'data:image/svg+xml;base64,' + btoa(packageVariantClosed);
 const barsBlackImg = require('../img/bars-black');
 const barsBlackImgSrc = 'data:image/svg+xml;base64,' + btoa(barsBlackImg);
 const barsWhiteImg = require('../img/bars-white');
@@ -38,6 +42,17 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
     const tagName = isStatic ? 'a' : 'div';
     const linkTagName = isStatic ? 'div' : 'a';
     const staticExists = isStatic && exists;
+    const imgSrc = (() => {
+      if (isStatic) {
+        if (exists) {
+          return packageVariantSrc;
+        } else {
+          return packageVariantClosedSrc;
+        }
+      } else {
+        return vectorPolygonImgSrc;
+      }
+    })();
 
     const headerSrc = `\
       <div style="position: relative; display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; background-color: #F0F0F0; text-decoration: none; overflow: hidden; ${(instancing || staticExists) ? 'filter: brightness(75%);' : ''}">
@@ -47,13 +62,10 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           <div style="display: flex; height: 150px; flex-direction: column;">
             <h1 style="margin: 0; margin-top: 10px; font-size: 28px; font-weight: 400; line-height: 1.4;">${displayName}</h1>
             <p style="margin: 0; font-size: 16px; line-height: 1.4; flex-grow: 1;">${description}</p>
-            ${staticExists ?
-              `<div style="margin-bottom: 20px; font-size: 16px; font-weight: 400;">Exists</div>`
-            : ''}
           </div>
         </div>
         <${linkTagName} style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
-          <img src="${vectorPolygonImgSrc}" width="50" height="50">
+          <img src="${imgSrc}" width="50" height="50">
         </${linkTagName}>
         }
       </div>
@@ -79,7 +91,7 @@ const makeRenderer = ({menuUtils, creatureUtils}) => {
           </div>
         </div>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:link:${id}">
-          <img src="${vectorPolygonImgSrc}" width="40" height="40">
+          <img src="${packageVariantClosedSrc}" width="40" height="40">
         </a>
         <a style="display: flex; width: 80px; justify-content: center; align-items: center;" onclick="module:close:${id}">
           <img src="${closeBoxOutlineSrc}" width="40" height="40">
