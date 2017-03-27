@@ -14,8 +14,8 @@
       <navbar>
         <a href="/" class=green>Try it</a>
         <a href="/docs" class=green>API Docs</a>
-        <a href="/modules" class="green selected">Modules</a>
-        <a href="/servers" class=green>Servers</a>
+        <a href="/modules" class=green>Modules</a>
+        <a href="/servers" class="green selected">Servers</a>
       </navbar>
     </div>
     <div class=header-right>
@@ -26,7 +26,7 @@
     </div>
   </header>
   <div class=content>
-    <div class=modules-body id=modules-body></div>
+    <div class=servers-body id=servers-body></div>
     <footer class=footer>
       <div class="footer-wrap full">
         <div class=footer-left><a href="/" class="link soft">Home</a> | <a href="https://github.com/modulesio/zeo" class="link soft">Github</a> | <a href="mailto:hello@zeovr.io" class="link soft">Contact</a></div>
@@ -38,30 +38,32 @@
 const $ = s => document.querySelectorAll(s);
 const $$ = (e, s) => e.querySelectorAll(s);
 
-const modulesBody = $('#modules-body')[0];
+const serversBody = $('#servers-body')[0];
 
-const _makeModuleElement = module => {
+const _makeServerElement = server => {
+  const {worldname, url, users} = server;
+
   const div = document.createElement('div');
-  div.innerHTML = `<div class=module>
-    <img class=module-image />
-    <div class=module-content>
-      <div class=module-header>
-        <div class=module-header-wrap>
-          <a href="/modules/${module.name}" class=name>${module.displayName}</a>
-          <div class=version>${module.version}</div>
-        </div>
-      </div>
-      <div class=description>${module.description}</div>
+  div.innerHTML = `<div class=server>
+    <img class=server-image />
+    <div class=server-wrap>
+      <a href="${url}" class=name>${worldname}</a>
+      <a href="${url}" class=url>
+        <i>${url}</i>
+      </a>
     </div>
+    <div class=users>${users.map(user =>
+      `<div class=user>${user}</div>`
+    ).join('')}</div>
   </div>`;
-  const moduleElement = div.childNodes[0];
+  const serverElement = div.childNodes[0];
 
   _getFakeImgUrl()
     .then(url => {
-      $$(moduleElement, '.module-image')[0].src = url;
+      $$(serverElement, '.server-image')[0].src = url;
     });
 
-  return moduleElement;
+  return serverElement;
 };
 const _getFakeImgUrl = () => fetch('https://www.reddit.com/r/wallpapers/.json')
   .then(res => res.json()
@@ -75,18 +77,18 @@ const _getFakeImgUrl = () => fetch('https://www.reddit.com/r/wallpapers/.json')
     })
   );
 const _update = () => {
-  while (modulesBody.hasChildNodes()) {
-    modulesBody.removeChild(modulesBody.lastChild);
+  while (serversBody.hasChildNodes()) {
+    serversBody.removeChild(serversBody.lastChild);
   }
 
-  fetch('/archae/rend/search')
+  fetch(window.location.protocol + '//hub.' + window.location.hostname + (window.location.port ? (':' + window.location.port) : '') + '/servers/servers.json')
     .then(res =>
       res.json()
-        .then(modules => {
-          for (let i = 0; i < modules.length; i++) {
-            const module = modules[i];
-            const moduleElement = _makeModuleElement(module);
-            modulesBody.appendChild(moduleElement);
+        .then(({servers}) => {
+          for (let i = 0; i < servers.length; i++) {
+            const server = servers[i];
+            const serverElement = _makeServerElement(server);
+            serversBody.appendChild(serverElement);
           }
         })
     );

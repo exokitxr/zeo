@@ -449,6 +449,58 @@ code {
   font-size: 20px;
 }
 
+.servers-body {
+  display: flex;
+  width: 980px;
+  min-height: calc(100vh - (80px * 2));
+  padding: 30px;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.servers-body .server {
+  display: flex;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #EEE;
+}
+.servers-body .server .server-image {
+  display: flex;
+  width: 80px;
+  height: 80px;
+  margin-right: 10px;
+}
+.servers-body .server .server-wrap {
+  display: flex;
+  padding: 5px;
+  flex-direction: column;
+  flex-grow: 1;
+}
+.servers-body .server .server-wrap .name {
+  font-size: 20px;
+  font-weight: 600;
+}
+.servers-body .server .server-wrap .url {
+  font-size: 13px;
+  font-weight: 400;
+}
+.servers-body .server .server-wrap .name:hover, .servers-body .server .server-wrap .url:hover {
+  color: #2196F3;
+  text-decoration: underline;
+}
+.servers-body .server .users {
+  width: 300px;
+  padding: 5px;
+  box-sizing: border-box;
+}
+.servers-body .server .user {
+  display: inline-block;
+  margin-right: 5px;
+  padding: 2px 10px;
+  background-color: #F7F7F7;
+  font-size: 13px;
+  font-weight: 400;
+}
+
 .details-wrap {}
 .details-wrap h4 {
   margin-left: 115px;
