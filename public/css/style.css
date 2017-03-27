@@ -471,9 +471,9 @@ code {
 }
 .servers-body .server .server-wrap {
   display: flex;
+  margin-right: auto;
   padding: 5px;
   flex-direction: column;
-  flex-grow: 1;
 }
 .servers-body .server .server-wrap .name {
   font-size: 20px;
