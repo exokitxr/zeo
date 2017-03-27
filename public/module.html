@@ -48,6 +48,11 @@ const _makeModuleElement = module => {
   div.innerHTML = `<div class=readme>
     <div class=readme-content>
       <h1 class=readme-header>
+        <a class=back-link href="/modules">
+          <div class=back-link-wrap>
+            <img class=back-image src="/img/chevron-left.svg" />
+          </div>
+        </a>
         <img class=readme-image />
         <div class=readme-header-wrap>
           <div href="/modules/${module.name}" class=name>${module.displayName}</div>
@@ -86,7 +91,7 @@ const _makeModuleElement = module => {
 
   _getFakeImgUrl()
     .then(url => {
-      $$(moduleElement, 'img')[0].src = url;
+      $$(moduleElement, '.readme-image')[0].src = url;
     });
 
   return moduleElement;

@@ -402,6 +402,23 @@ code {
   justify-content: center;
   align-items: center;
 }
+.readme-header .back-link {
+  display: flex;
+  position: relative;
+  width: 60px;
+  height: 80px;
+  overflow: hidden;
+}
+.readme-header .back-link-wrap {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  top: 10px;
+}
+.readme-header .back-image {
+  width: inherit;
+  height: inherit;
+}
 .readme-header .readme-image {
   width: 80px;
   height: 80px;
