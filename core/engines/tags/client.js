@@ -340,75 +340,6 @@ class Tags {
             componentElement.entityRemovedCallback(entityElement);
           };
 
-          const rootComponentsElement = document.createElement('components');
-          // rootWorldElement.appendChild(rootComponentsElement);
-          const rootComponentsObserver = new MutationObserver(mutations => {
-            for (let i = 0; i < mutations.length; i++) {
-              const mutation = mutations[i];
-              const {type} = mutation;
-
-              if (type === 'childList') {
-                const {addedNodes} = mutation;
-
-                for (let j = 0; j < addedNodes.length; j++) {
-                  const addedNode = addedNodes[j];
-                  const componentElement = addedNode;
-                  const {componentApi} = componentElement;
-                  const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
-                  const boundEntitySpecs = _getBoundEntitySpecs(componentSelector, componentAttributes);
-
-                  for (let k = 0; k < boundEntitySpecs.length; k++) {
-                    const boundEntitySpec = boundEntitySpecs[k];
-                    const {tagMesh, matchingAttributes} = boundEntitySpec;
-                    const {item: entityItem} = tagMesh;
-                    const {instance: entityElement} = entityItem;
-
-                    _addEntityCallback(componentElement, entityElement);
-
-                    for (let l = 0; l < matchingAttributes.length; l++) {
-                      const matchingAttribute = matchingAttributes[l];
-                      const {attributes: entityAttributes} = entityItem;
-                      const entityAttribute = entityAttributes[matchingAttribute];
-                      const {value: attributeValueJson} = entityAttribute;
-                      const componentAttribute = componentAttributes[matchingAttribute];
-                      const {type: attributeType} = componentAttribute;
-                      const attributeValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
-
-                      componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
-                    }
-                  }
-                }
-
-                const {removedNodes} = mutation;
-                for (let j = 0; j < removedNodes.length; j++) {
-                  const removedNode = removedNodes[j];
-                  const componentElement = removedNode;
-                  const {componentApi} = componentElement;
-                  const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
-                  const boundEntitySpecs = _getBoundEntitySpecs(componentSelector, componentAttributes);
-
-                  for (let k = 0; k < boundEntitySpecs.length; k++) {
-                    const boundEntitySpec = boundEntitySpecs[k];
-                    const {tagMesh, matchingAttributes} = boundEntitySpec;
-                    const {item: entityItem} = tagMesh;
-                    const {instance: entityElement} = entityItem;
-
-                    _removeEntityCallback(componentElement, entityElement);
-                  }
-                }
-              // } else if (type === 'attributes') {
-              }
-            }
-
-            tagsApi.emit('mutate');
-          });
-          rootComponentsObserver.observe(rootComponentsElement, {
-            childList: true,
-            // attributes: true,
-            subtree: true,
-            // attributeOldValue: true,
-          });
-
           const _getElementJsonAttributes = element => {
             const result = {};
 
@@ -2256,6 +2187,17 @@ class Tags {
             }
 
             registerComponent(pluginInstance, componentApi) {
+              // create element
+              const baseObject = componentApi;
+              const componentElement = menuUtils.makeZeoComponentElement({
+                baseObject,
+              });
+              componentElement.componentApi = componentApi;
+
+              // add to lists
+              componentApis.push(componentApi);
+              componentApiInstances.push(componentElement);
+
               const name = archae.getPath(pluginInstance);
               let tagComponentApiComponents = tagComponentApis[name];
               if (!tagComponentApiComponents) {
@@ -2264,16 +2206,32 @@ class Tags {
               }
               tagComponentApiComponents.push(componentApi);
 
-              const baseObject = componentApi;
-              const componentElement = menuUtils.makeZeoComponentElement({
-                baseObject,
-              });
-              componentElement.componentApi = componentApi;
-              rootComponentsElement.appendChild(componentElement);
+              // bind entities
+              const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+              const boundEntitySpecs = _getBoundEntitySpecs(componentSelector, componentAttributes);
 
-              componentApis.push(componentApi);
-              componentApiInstances.push(componentElement);
+              for (let k = 0; k < boundEntitySpecs.length; k++) {
+                const boundEntitySpec = boundEntitySpecs[k];
+                const {tagMesh, matchingAttributes} = boundEntitySpec;
+                const {item: entityItem} = tagMesh;
+                const {instance: entityElement} = entityItem;
 
+                _addEntityCallback(componentElement, entityElement);
+
+                for (let l = 0; l < matchingAttributes.length; l++) {
+                  const matchingAttribute = matchingAttributes[l];
+                  const {attributes: entityAttributes} = entityItem;
+                  const entityAttribute = entityAttributes[matchingAttribute];
+                  const {value: attributeValueJson} = entityAttribute;
+                  const componentAttribute = componentAttributes[matchingAttribute];
+                  const {type: attributeType} = componentAttribute;
+                  const attributeValue = menuUtils.castValueToCallbackValue(attributeValueJson, attributeType);
+
+                  componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
+                }
+              }
+
+              // update tag attribute meshes
               for (let i = 0; i < tagMeshes.length; i++) {
                 const tagMesh = tagMeshes[i];
                 const {item} = tagMesh;
@@ -2287,6 +2245,11 @@ class Tags {
             }
 
             unregisterComponent(pluginInstance, componentApiToRemove) {
+              // remove from lists
+              const removedComponentApiIndex = componentApis.indexOf(componentApiToRemove);
+              componentApis.splice(removedComponentApiIndex, 1);
+              const removedComponentApiInstance = componentApiInstances.splice(removedComponentApiIndex, 1)[0];
+
               const name = archae.getPath(pluginInstance);
               const tagComponentApiComponents = tagComponentApis[name];
               tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(componentApiToRemove), 1);
@@ -2294,25 +2257,20 @@ class Tags {
                 tagComponentApis[name] = null;
               }
 
-              const removeComponentApisIndex = {};
-              for (let i = 0; i < componentApis.length; i++) {
-                const componentApi = componentApis[i];
+              // unbind entities
+              const componentElement = removedComponentApiInstance;
+              const {componentApi} = componentElement;
+              const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+              const boundEntitySpecs = _getBoundEntitySpecs(componentSelector, componentAttributes);
 
-                if (componentApi === componentApiToRemove) {
-                  removeComponentApisIndex[i] = true;
-                }
+              for (let k = 0; k < boundEntitySpecs.length; k++) {
+                const boundEntitySpec = boundEntitySpecs[k];
+                const {tagMesh, matchingAttributes} = boundEntitySpec;
+                const {item: entityItem} = tagMesh;
+                const {instance: entityElement} = entityItem;
+
+                _removeEntityCallback(componentElement, entityElement);
               }
-
-              componentApis = componentApis.filter((componentApi, index) => !removeComponentApisIndex[index]);
-              componentApiInstances = componentApiInstances.filter((componentApiInstance, index) => {
-                if (removeComponentApisIndex[index]) {
-                  rootComponentsElement.removeChild(componentApiInstance);
-
-                  return false;
-                } else {
-                  return true;
-                }
-              });
             }
 
             /* registerElement(pluginInstance, elementApi) {
