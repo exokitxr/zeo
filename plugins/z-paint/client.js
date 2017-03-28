@@ -4,7 +4,7 @@ const SIZE = 0.02;
 
 const SIDES = ['left', 'right'];
 
-class Paint {
+class ZPaint {
   mount() {
     const {three: {THREE, scene}, elements, input, pose, world, render, utils: {geometry: geometryUtils}} = zeo;
 
@@ -305,4 +305,4 @@ class Paint {
   }
 }
 
-module.exports = Paint;
+module.exports = ZPaint;
