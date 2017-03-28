@@ -467,16 +467,16 @@ class World {
                               } else {
                                 cb(_makeInvalidArgsError());
                               }
+                            } else if (method === 'broadcast') {
+                              const [detail] = args;
+
+                              _broadcast('message', [detail]);
+
+                              cb();
                             } else {
                               const err = new Error('no such method:' + JSON.stringify(method));
                               cb(err.stack);
                             }
-                          } else if (method === 'broadcast') {
-                            const [detail] = args;
-
-                            _broadcast('message', [detail]);
-
-                            cb();
                           } else {
                             console.warn('invalid message', m);
                           }
