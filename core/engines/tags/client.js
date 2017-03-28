@@ -434,31 +434,6 @@ class Tags {
                         componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                       }
                     }
-                  } else if (addedNode.nodeType === Node.TEXT_NODE) {
-                    const {parentNode: entityElement} = addedNode;
-
-                    if (entityElement.nodeType === Node.ELEMENT_NODE) {
-                      const {nodeValue: newValueString} = addedNode;
-                      const newValue = _jsonParse(newValueString);
-
-                      const {item: entityItem} = entityElement;
-                      const {id: entityId} = entityItem;
-                      tagsApi.emit('mutateSetData', {
-                        id: entityId,
-                        value: newValue,
-                      });
-
-                      const entitySelector = _getElementSelector(entityElement);
-                      const entityAttributes = _getElementJsonAttributes(entityElement);
-                      const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
-
-                      for (let k = 0; k < boundComponentSpecs.length; k++) {
-                        const boundComponentSpec = boundComponentSpecs[k];
-                        const {componentElement} = boundComponentSpec;
-
-                        componentElement.entityDataChangedCallback(entityElement, null, newValue);
-                      }
-                    }
                   }
                 }
 
@@ -484,30 +459,6 @@ class Tags {
                       const {componentElement} = boundComponentSpec;
 
                       _removeEntityCallback(componentElement, entityElement);
-                    }
-                  } else if (removedNode.nodeType === Node.TEXT_NODE) {
-                    const {target: entityElement} = mutation;
-
-                    if (entityElement.nodeType === Node.ELEMENT_NODE) {
-                      const {item: entityItem} = entityElement;
-                      const {id: entityId} = entityItem;
-                      tagsApi.emit('mutateSetData', {
-                        id: entityId,
-                        value: undefined,
-                      });
-
-                      const entitySelector = _getElementSelector(entityElement);
-                      const entityAttributes = _getElementJsonAttributes(entityElement);
-                      const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
-
-                      for (let k = 0; k < boundComponentSpecs.length; k++) {
-                        const boundComponentSpec = boundComponentSpecs[k];
-                        const {componentElement} = boundComponentSpec;
-                        const {nodeValue: oldValueString} = removedNode;
-                        const oldValue = _jsonParse(oldValueString);
-
-                        componentElement.entityDataChangedCallback(entityElement, oldValue, null);
-                      }
                     }
                   }
                 }
@@ -585,34 +536,6 @@ class Tags {
                     attributesMesh.update();
                   }
                 }
-              } else if (type === 'characterData') {
-                const {target} = mutation;
-                const {parentNode: entityElement} = target;
-
-                if (entityElement.nodeType === Node.ELEMENT_NODE) {
-                  const {oldValue: oldValueString} = mutation;
-                  const {nodeValue: newValueString} = target;
-                  const oldValue = _jsonParse(oldValueString);
-                  const newValue = _jsonParse(newValueString);
-
-                  const {item: entityItem} = entityElement;
-                  const {id: entityId} = entityItem;
-                  tagsApi.emit('mutateSetData', {
-                    id: entityId,
-                    value: newValue,
-                  });
-
-                  const entitySelector = _getElementSelector(entityElement);
-                  const entityAttributes = _getElementJsonAttributes(entityElement);
-                  const boundComponentSpecs = _getBoundComponentSpecs(entitySelector, entityAttributes);
-
-                  for (let i = 0; i < boundComponentSpecs.length; i++) {
-                    const boundComponentSpec = boundComponentSpecs[i];
-                    const {componentElement} = boundComponentSpec;
-
-                    componentElement.entityDataChangedCallback(entityElement, oldValue, newValue);
-                  }
-                }
               }
             }
 
@@ -621,10 +544,10 @@ class Tags {
           rootEntitiesObserver.observe(rootEntitiesElement, {
             childList: true,
             attributes: true,
-            characterData: true,
+            // characterData: true,
             subtree: true,
             attributeOldValue: true,
-            characterDataOldValue: true,
+            // characterDataOldValue: true,
           });
 
           class UiManager {
@@ -1979,7 +1902,6 @@ class Tags {
               readme,
               tagName,
               attributes,
-              data,
               mimeType,
               matrix,
               metadata
@@ -2419,12 +2341,6 @@ class Tags {
 
                   componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                 }
-
-                const {innerText: dataString} = entityElement;
-                const dataValue = dataString ? _jsonParse(dataString) : undefined;
-                if (dataValue !== undefined) {
-                  componentElement.entityDataChangedCallback(entityElement, null, dataValue);
-                }
               }
 
               // update tag attribute meshes
@@ -2483,7 +2399,6 @@ class Tags {
                 itemSpec.readme,
                 itemSpec.tagName, // XXX get rid of these
                 itemSpec.attributes,
-                itemSpec.data,
                 itemSpec.mimeType,
                 itemSpec.matrix,
                 itemSpec.metadata
@@ -2778,7 +2693,7 @@ class Tags {
               const {instance} = item;
 
               if (!instance) {
-                const {tagName: entityTagName, attributes: entityAttributes, data: entityData} = item;
+                const {tagName: entityTagName, attributes: entityAttributes} = item;
                 const entityElement = document.createElement(entityTagName);
 
                 for (const attributeName in entityAttributes) {
@@ -2786,9 +2701,6 @@ class Tags {
                   const {value: attributeValue} = attribute;
                   const attributeValueString = _stringifyAttribute(attributeValue);
                   entityElement.setAttribute(attributeName, attributeValueString);
-                }
-                if (entityData !== undefined) {
-                  entityElement.innerText = JSON.stringify(entityData);
                 }
 
                 entityElement.getId = () => item.id;

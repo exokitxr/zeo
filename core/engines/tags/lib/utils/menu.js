@@ -128,16 +128,6 @@ const zeoComponentElementConstructor = (() => {
         baseObject.entityStateChangedCallback.call(this, entityApi, key, oldValue, newValue);
       }
     }
-
-    entityDataChangedCallback(entityElement, oldValue, newValue) {
-      const {entityApis} = this;
-      const entityApi = entityApis.get(entityElement);
-
-      const {_baseObject: baseObject} = this;
-      if (baseObject.entityDataChangedCallback) {
-        baseObject.entityDataChangedCallback.call(this, entityApi, oldValue, newValue);
-      }
-    }
   }
 
   const ZeoComponentElementConstructor = document.registerElement('z-component', ZeoComponentElement);

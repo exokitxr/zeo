@@ -212,10 +212,6 @@ class World {
                 const {args: [userId, src, {name, value}]} = m;
 
                 _handleSetTagAttribute(userId, src, {name, value});
-              } else if (type === 'setTagData') {
-                const {args: [userId, src, {value}]} = m;
-
-                _handleSetTagData(userId, src, {value});
               } else if (type === 'message') {
                 const {args: [detail]} = m;
 
@@ -608,18 +604,6 @@ class World {
               tagMesh.setAttribute(name, value);
             } else {
               console.warn('invalid set tag attribute arguments', {src, name, value});
-            }
-          };
-          const _handleSetTagData = (userId, src, {value}) => {
-            // same for local and remote user ids
-            let match;
-            if (match = src.match(/^world:(.+)$/)) {
-              const id = match[1];
-
-              const tagMesh = elementManager.getTagMesh(id);
-              tagMesh.setData(value);
-            } else {
-              console.warn('invalid set tag data arguments', {src, value});
             }
           };
           const _handleMessage = detail => {
@@ -1590,12 +1574,6 @@ class World {
             _request('setTagAttribute', [localUserId, src, {name, value}], _warnError);
           };
           tags.on('mutateSetAttribute', _mutateSetAttribute);
-          const _mutateSetData = ({id, value}) => {
-            const src = _getTagIdSrc(id);
-
-            _request('setTagData', [localUserId, src, {value}], _warnError);
-          };
-          tags.on('mutateSetData', _mutateSetData);
           const _broadcast = detail => {
             _request('broadcast', [detail], _warnError);
           };
