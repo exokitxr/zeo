@@ -1,5 +1,7 @@
 import OBJLoader from './lib/three-extra/OBJLoader';
 
+const CHUNK_SIZE = 32 * 1024;
+
 class Fs {
   constructor(archae) {
     this._archae = archae;
@@ -241,14 +243,31 @@ class Fs {
           }
 
           writeData(id, path, data) {
-            const fileUrl = this.getFileUrl(id, path);
+            return new Promise((accept, reject) => {
+              const fileUrl = this.getFileUrl(id, path);
 
-            return fetch(fileUrl, {
-              method: 'PUT',
-              body: data,
-            }).then(res => res.blob()
-              .then(() => {})
-            );
+              const _recurse = start => {
+                if (start < data.length) {
+                  const end = start + CHUNK_SIZE;
+                  const slice = data.slice(start, end);
+
+                  const headers = new Headers();
+                  headers.append('range', 'bytes=' + start + '-');
+
+                  return fetch(fileUrl, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: slice,
+                  }).then(res => {
+                    _recurse(end);
+                  })
+                  .catch(reject);
+                } else {
+                  accept();
+                }
+              };
+              _recurse(0);
+            });
           }
 
           dragover(e) {

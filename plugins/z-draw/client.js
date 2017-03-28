@@ -8,6 +8,7 @@ const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 
 const PAPER_DRAW_DISTANCE = 0.2;
 const BRUSH_SIZE = 8;
+const DIRTY_TIME = 1000;
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -272,37 +273,57 @@ class ZDraw {
                     }
                   });
               };
+              let uploading = false;
+              let dirtyFlag = false;
               entityApi.save = () => {
                 const {dirtyTimeout} = entityApi;
 
                 if (!dirtyTimeout) {
-                  entityApi.dirtyTimeout = setTimeout(() => {
-                    const {file} = entityApi;
+                  if (!uploading) {
+                    entityApi.dirtyTimeout = setTimeout(() => {
+                      const {file} = entityApi;
 
-                    const {
-                      planeMesh: {
-                        material: {
-                          map: {
-                            image: canvas,
+                      const {
+                        planeMesh: {
+                          material: {
+                            map: {
+                              image: canvas,
+                            },
                           },
                         },
-                      },
-                    } = mesh;
-                    const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const {data: imageDataData} = imageData;
+                      } = mesh;
+                      const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                      const {data: imageDataData} = imageData;
 
-                    file.write(imageDataData);
+                      file.write(imageDataData)
+                        .then(() => {
+                          if (live) {
+                            const broadcastEvent = new CustomEvent('broadcast', {
+                              detail: {
+                                type: 'paper.update',
+                                id: entityElement.getId(),
+                              },
+                            });
+                            worldElement.dispatchEvent(broadcastEvent)
 
-                    const broadcastEvent = new CustomEvent('broadcast', {
-                      detail: {
-                        type: 'paper.update',
-                        id: entityElement.getId(),
-                      },
-                    });
-                    worldElement.dispatchEvent(broadcastEvent);
+                            uploading = false;
 
-                    entityApi.dirtyTimeout = null;
-                  }, 1000);
+                            if (dirtyFlag) {
+                              dirtyFlag = false;
+
+                              entityApi.save();
+                            }
+                          }
+                        });
+
+                      entityApi.dirtyTimeout = null;
+
+                      uploading = true;
+                      dirtyFlag = false;
+                    }, DIRTY_TIME);
+                  } else {
+                    dirtyFlag = true;
+                  }
                 }
               };
               entityApi.dirtyTimeout = null;
@@ -319,6 +340,8 @@ class ZDraw {
               papers.push(entityApi);
 
               entityApi._cleanup = () => {
+                live = false;
+
                 entityObject.remove(mesh);
 
                 const {dirtyTimeout} = entityApi;
