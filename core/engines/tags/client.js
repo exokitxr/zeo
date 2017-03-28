@@ -1085,7 +1085,7 @@ class Tags {
                 return false;
               }
             };
-            const _doClickOpen = () => {
+            const _doClickAux = () => {
               const hoverState = hoverStates[side];
               const {intersectionPoint} = hoverState;
 
@@ -1434,7 +1434,7 @@ class Tags {
               }
             };
 
-            _doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doSetPosition() || _doClickAttribute();
+            _doClickDetails() || _doClickGrabNpmTag() || _doClickGrabWorldTag() || _doClickAux() || _doSetPosition() || _doClickAttribute();
 
             const hoverState = hoverStates[side];
             const {intersectionPoint} = hoverState;
