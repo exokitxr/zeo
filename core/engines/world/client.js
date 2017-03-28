@@ -1604,74 +1604,100 @@ class World {
             for (let i = 0; i < componentApis.length; i++) {
               const componentApi = componentApis[i];
 
-              const _forEachSrcTagAttribute = fn => {
+              const _requestSrcTagAttributes = fn => new Promise((accept, reject) => {
                 const componentApi = componentApis[i];
                 const {attributes: componentAttributes = {}} = componentApi;
+                const componentAttributeKeys = Object.keys(componentAttributes);
 
-                for (const attributeName in componentAttributes) {
-                  const attribute = componentAttributes[attributeName];
-                  let {value: attributeValue} = attribute;
-                  if (typeof attributeValue === 'function') {
-                    attributeValue = attributeValue();
+                const _recurse = i => {
+                  if (i < componentAttributeKeys.length) {
+                    const attributeName = componentAttributeKeys[i];
+                    const attribute = componentAttributes[attributeName];
+                    const _requestAttributeValue = () => {
+                      let {value: attributeValue} = attribute;
+                      if (typeof attributeValue === 'function') {
+                        attributeValue = attributeValue();
+                      }
+                      return Promise.resolve(attributeValue);
+                    };
+
+                    const result = fn(attributeName, _requestAttributeValue);
+                    Promise.resolve(result)
+                      .then(() => {
+                        _recurse(i + 1);
+                      });
+                  } else {
+                    accept();
                   }
-
-                  fn(attributeName, attributeValue);
-                }
-              };
+                };
+                _recurse(0);
+              });
 
               if (!dstTagMesh) {
                 const {item} = srcTagMesh;
 
-                const itemSpec = _clone(item);
-                itemSpec.id = _makeId();
-                itemSpec.type = 'entity';
-                const tagName = (() => {
-                  const {selector: componentSelector = 'div'} = componentApi;
-                  const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
-
-                  if (tagName) {
-                    return tagName;
-                  } else {
-                    return 'entity';
-                  }
-                })();
-                itemSpec.name = tagName;
-                itemSpec.displayName = tagName;
-                itemSpec.tagName = tagName;
-                const attributes = (() => {
+                const _requestAttributes = () => {
                   const result = {};
-                  _forEachSrcTagAttribute((attributeName, attributeValue) => {
-                    result[attributeName] = {
-                      value: attributeValue,
-                    };
+                  return _requestSrcTagAttributes((attributeName, getAttributeValue) =>
+                    getAttributeValue()
+                      .then(attributeValue => {
+                        result[attributeName] = {
+                          value: attributeValue,
+                        };
+                      })
+                  ).then(() => result);
+                };
+
+                _requestAttributes()
+                  .then(attributes => {
+                    const itemSpec = _clone(item);
+                    itemSpec.id = _makeId();
+                    itemSpec.type = 'entity';
+                    const tagName = (() => {
+                      const {selector: componentSelector = 'div'} = componentApi;
+                      const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
+
+                      if (tagName) {
+                        return tagName;
+                      } else {
+                        return 'entity';
+                      }
+                    })();
+                    itemSpec.name = tagName;
+                    itemSpec.displayName = tagName;
+                    itemSpec.tagName = tagName;
+                    itemSpec.attributes = attributes;
+                    const matrix = (() => { // XXX we should offset multiple tags here so they don't overlap
+                      const {matrix: oldMatrix} = itemSpec;
+                      const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
+                      const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
+                      const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
+
+                      position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
+
+                      return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                    })();
+                    itemSpec.matrix = matrix;
+
+                    _addTag(itemSpec, 'world');
+                  })
+                  .catch(err => {
+                    console.warn(err);
                   });
-                  return result;
-                })();
-                itemSpec.attributes = attributes;
-                const matrix = (() => { // XXX we should offset multiple tags here so they don't overlap
-                  const {matrix: oldMatrix} = itemSpec;
-                  const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
-                  const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
-                  const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
-
-                  position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
-
-                  return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                })();
-                itemSpec.matrix = matrix;
-
-                _addTag(itemSpec, 'world');
               } else {
                 const {item: dstItem} = dstTagMesh;
                 const {id: dstId, instance: dstElement} = dstItem;
 
-                _forEachSrcTagAttribute((attributeName, attributeValue) => {
+                _requestSrcTagAttributes((attributeName, requestAttributeValue) => {
                   if (!dstElement.hasAttribute(attributeName)) {
-                    _setAttribute({
-                      id: dstId,
-                      name: attributeName,
-                      value: attributeValue,
-                    });
+                    return requestAttributeValue()
+                      .then(attributeValue => {
+                        _setAttribute({
+                          id: dstId,
+                          name: attributeName,
+                          value: attributeValue,
+                        });
+                      });
                   }
                 });
               }
@@ -1686,22 +1712,74 @@ class World {
           };
           tags.on('linkAttribute', _linkAttribute);
 
+          const _makeFileFromSpec = fileSpec => {
+            const {
+              id,
+              name,
+              mimeType,
+              paths,
+              files,
+            } = fileSpec;
+            const itemSpec = {
+              type: 'file',
+              id,
+              name,
+              mimeType,
+              matrix: _getInFrontOfCameraMatrix(),
+              metadata: {
+                paths,
+              },
+              instancing: true,
+            };
+            _handleAddTag(localUserId, itemSpec, 'world');
+
+            const elementTagMeshes = elementManager.getTagMeshes();
+            const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+            if (!rend.isOpen()) {
+              tempTagMesh.visible = false;
+            }
+
+            const _cleanupTempTagMesh = () => {
+              elementManager.remove(tempTagMesh);
+
+              tags.destroyTag(tempTagMesh);
+            };
+
+            return fs.writeFiles(id, files)
+              .then(() => {
+                _cleanupTempTagMesh();
+
+                _addTag(itemSpec, 'world');
+
+                const elementTagMeshes = elementManager.getTagMeshes();
+                const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
+                if (!rend.isOpen()) {
+                  tagMesh.visible = false;
+                }
+
+                return Promise.resolve(tagMesh);
+              })
+              .catch(err => {
+                _cleanupTempTagMesh();
+
+                return Promise.reject(err);
+              });
+          };
           const _upload = files => {
             if (!login.isOpen()) {
-              const _getMainFile = files => {
-                const _isRoot = f => /^\/[^\/]+/.test(f.path);
-                const _isExt = f => /\.[^\/]+$/.test(f.path);
-                const _isCandidate = f => _isRoot(f) && _isExt(f);
-
-                return files.sort((a, b) => {
-                  const aIsCandidate = _isCandidate(a);
-                  const bIsCandidate = _isCandidate(b);
-                  return +bIsCandidate - +aIsCandidate;
-                })[0];
-              };
-              const _createFile = files => {
+              const _makeFileFromFiles = files => {
                 const id = _makeFileId();
-                const mainFile = _getMainFile(files);
+                const mainFile = (() => {
+                  const _isRoot = f => /^\/[^\/]+/.test(f.path);
+                  const _isExt = f => /\.[^\/]+$/.test(f.path);
+                  const _isCandidate = f => _isRoot(f) && _isExt(f);
+
+                  return files.sort((a, b) => {
+                    const aIsCandidate = _isCandidate(a);
+                    const bIsCandidate = _isCandidate(b);
+                    return +bIsCandidate - +aIsCandidate;
+                  })[0];
+                })();
                 const {path: name} = mainFile;
                 const mimeType = (() => {
                   const {type: mimeType} = mainFile;
@@ -1716,53 +1794,16 @@ class World {
                   }
                 })();
                 const paths = files.map(f => f.path);
-                const matrix = _getInFrontOfCameraMatrix();
-                const itemSpec = {
-                  type: 'file',
+
+                return _makeFileFromSpec({
                   id,
                   name,
                   mimeType,
-                  matrix,
-                  metadata: {
-                    paths,
-                  },
-                  instancing: true,
-                };
-                _handleAddTag(localUserId, itemSpec, 'world');
-
-                const elementTagMeshes = elementManager.getTagMeshes();
-                const tempTagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
-                if (!rend.isOpen()) {
-                  tempTagMesh.visible = false;
-                }
-
-                const _cleanupTempTagMesh = () => {
-                  elementManager.remove(tempTagMesh);
-
-                  tags.destroyTag(tempTagMesh);
-                };
-
-                return fs.writeFiles(id, files)
-                  .then(() => {
-                    _cleanupTempTagMesh();
-
-                    _addTag(itemSpec, 'world');
-
-                    const elementTagMeshes = elementManager.getTagMeshes();
-                    const tagMesh = elementTagMeshes.find(tagMesh => tagMesh.item.id === id);
-                    if (!rend.isOpen()) {
-                      tagMesh.visible = false;
-                    }
-
-                    return Promise.resolve(tagMesh);
-                  })
-                  .catch(err => {
-                    _cleanupTempTagMesh();
-
-                    return Promise.reject(err);
-                  });
+                  paths,
+                  files,
+                });
               };
-              _createFile(files)
+              _makeFileFromFiles(files)
                 .then(tagMesh => {
                   console.log('upoaded file', tagMesh);
                 });
@@ -1864,6 +1905,26 @@ class World {
           class WorldApi {
             getWorldTime() {
               return worldTimer.getWorldTime();
+            }
+
+            makeFile({ext = 'txt'} = {}) {
+              const id = _makeId();
+              const name = id + '.' + ext;
+              const mimeType = 'mime/' + ext;
+              const paths = ['/' + name];
+              const files = [
+                new Blob([], {
+                  type: mimeType,
+                }),
+              ];
+
+              return _makeFileFromSpec({
+                id,
+                name,
+                mimeType,
+                paths,
+                files,
+              });
             }
           }
           const worldApi = new WorldApi();

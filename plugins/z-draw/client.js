@@ -135,9 +135,9 @@ class ZDraw {
               },
               file: {
                 type: 'file',
-                value: { // XXX make this default to creating the appropriate file type
+                value: () => elements.makeFile({
                   ext: 'raw',
-                },
+                }),
               },
               grabbable: {
                 type: 'checkbox',
