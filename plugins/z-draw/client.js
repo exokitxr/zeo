@@ -371,8 +371,8 @@ class ZDraw {
                   const {gamepads} = pose.getStatus();
                   const gamepad = gamepads[side];
                   const {position: controllerPosition} = gamepad;
-                  const {position: paperPosition, quaternion: paperQuaternion} = _decomposeObjectMatrixWorld(mesh);
-                  const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperQuaternion, WORLD_WIDTH, WORLD_HEIGHT);
+                  const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+                  const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
                   const planePoint = planeTarget.projectPoint(controllerPosition);
 
                   if (planePoint) {
