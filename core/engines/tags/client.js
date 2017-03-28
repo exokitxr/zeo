@@ -2419,6 +2419,12 @@ class Tags {
 
                   componentElement.entityAttributeValueChangedCallback(entityElement, matchingAttribute, null, attributeValue);
                 }
+
+                const {innerText: dataString} = entityElement;
+                const dataValue = dataString ? _jsonParse(dataString) : undefined;
+                if (dataValue !== undefined) {
+                  componentElement.entityDataChangedCallback(entityElement, null, dataValue);
+                }
               }
 
               // update tag attribute meshes

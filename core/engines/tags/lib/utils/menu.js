@@ -82,7 +82,7 @@ const zeoComponentElementConstructor = (() => {
           },
           setData: {
             value: data => {
-              entityElement.innerHTML = JSON.stringify(data, null, 2);
+              entityElement.innerText = JSON.stringify(data, null, 2);
             },
           },
         });
