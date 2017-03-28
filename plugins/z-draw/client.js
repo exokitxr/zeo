@@ -118,7 +118,7 @@ class ZDraw {
         brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_SIZE);
 
         if (live) {
-          const rootWorldElement = elements.getRootWorldElement();
+          const worldElement = elements.getWorldElement();
 
           const papers = [];
 
@@ -137,7 +137,7 @@ class ZDraw {
                 type: 'file',
                 value: () => elements.makeFile({
                   ext: 'raw',
-                }),
+                }).then(file => file.url),
               },
               grabbable: {
                 type: 'checkbox',
@@ -238,22 +238,16 @@ class ZDraw {
                 entityObject.scale.set(position[7], position[8], position[9]);
               };
 
-              const _makePaperState = () => ({
-                lastPoint: null,
-              });
-              entityApi.dirtyTimeout = null;
-              const paperStates = {
-                left: _makePaperState(),
-                right: _makePaperState(),
-                load: () => {
-                  const {file} = entityApi;
+              entityApi.load = () => {
+                const {file} = entityApi;
 
-                  file.read({
-                    type: 'arrayBuffer',
-                  })
-                    .then(arrayBuffer => {
-                      const arrayValue = new Uint8ClampedArray(arrayBuffer);
+                file.read({
+                  type: 'arrayBuffer',
+                })
+                  .then(arrayBuffer => {
+                    const arrayValue = new Uint8ClampedArray(arrayBuffer);
 
+                    if (arrayValue.length > 0) {
                       const {
                         planeMesh: {
                           material: {
@@ -264,7 +258,8 @@ class ZDraw {
                       const {
                         image: canvas,
                       } = texture;
-                      const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                      const {ctx} = canvas;
+                      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                       const {data: imageDataData} = imageData;
 
                       if (arrayValue.length === imageDataData.length) {
@@ -274,41 +269,50 @@ class ZDraw {
                       } else {
                         console.warn('draw paper tried to load invalid file data');
                       }
-                    });
-                },
-                save: () => {
-                  const {dirtyTimeout} = entityApi;
+                    }
+                  });
+              };
+              entityApi.save = () => {
+                const {dirtyTimeout} = entityApi;
 
-                  if (!dirtyTimeout) {
-                    entityApi.dirtyTimeout = setTimeout(() => {
-                      const {file} = entityApi;
+                if (!dirtyTimeout) {
+                  entityApi.dirtyTimeout = setTimeout(() => {
+                    const {file} = entityApi;
 
-                      const {
-                        planeMesh: {
-                          material: {
-                            map: {
-                              image: canvas,
-                            },
+                    const {
+                      planeMesh: {
+                        material: {
+                          map: {
+                            image: canvas,
                           },
                         },
-                      } = mesh;
-                      const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                      const {data: imageDataData} = imageData;
+                      },
+                    } = mesh;
+                    const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const {data: imageDataData} = imageData;
 
-                      file.write(imageDataData);
+                    file.write(imageDataData);
 
-                      const broadcastEvent = new CustomEvent('broadcast', {
-                        detail: {
-                          type: 'paper.update',
-                          id: entityElement.getId(),
-                        },
-                      });
-                      rootWorldElement.dispatchEvent(broadcastEvent);
+                    const broadcastEvent = new CustomEvent('broadcast', {
+                      detail: {
+                        type: 'paper.update',
+                        id: entityElement.getId(),
+                      },
+                    });
+                    worldElement.dispatchEvent(broadcastEvent);
 
-                      entityApi.dirtyTimeout = null;
-                    }, 1000);
-                  }
-                },
+                    entityApi.dirtyTimeout = null;
+                  }, 1000);
+                }
+              };
+              entityApi.dirtyTimeout = null;
+
+              const _makePaperState = () => ({
+                lastPoint: null,
+              });
+              const paperStates = {
+                left: _makePaperState(),
+                right: _makePaperState(),
               };
               entityApi.paperStates = paperStates;
 
@@ -317,7 +321,7 @@ class ZDraw {
               entityApi._cleanup = () => {
                 entityObject.remove(mesh);
 
-                const {dirtyTimeout} = dirtyTimeout;
+                const {dirtyTimeout} = entityApi;
                 clearTimeout(dirtyTimeout);
 
                 papers.splice(papers.indexOf(entityApi), 1);
@@ -577,7 +581,7 @@ class ZDraw {
 
                                 texture.needsUpdate = true;
 
-                                paperStates.save();
+                                paper.save();
 
                                 paperState.lastPoint = currentPoint;
                               }
@@ -653,13 +657,13 @@ class ZDraw {
               }
             }
           };
-          rootWorldElement.addEventListener('message', _message);
+          worldElement.addEventListener('message', _message);
 
           this._cleanup = () => {
             elements.unregisterComponent(this, paperComponent);
             elements.unregisterComponent(this, pencilComponent);
 
-            rootWorldElement.removeEventListener('message', _message);
+            worldElement.removeEventListener('message', _message);
           };
         }
       });

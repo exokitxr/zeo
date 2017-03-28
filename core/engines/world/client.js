@@ -1712,7 +1712,7 @@ class World {
           };
           tags.on('linkAttribute', _linkAttribute);
 
-          const _makeFileFromSpec = fileSpec => {
+          const _makeFileTagFromSpec = fileSpec => {
             const {
               id,
               name,
@@ -1767,7 +1767,7 @@ class World {
           };
           const _upload = files => {
             if (!login.isOpen()) {
-              const _makeFileFromFiles = files => {
+              const _makeFileTagFromFiles = files => {
                 const id = _makeFileId();
                 const mainFile = (() => {
                   const _isRoot = f => /^\/[^\/]+/.test(f.path);
@@ -1795,7 +1795,7 @@ class World {
                 })();
                 const paths = files.map(f => f.path);
 
-                return _makeFileFromSpec({
+                return _makeFileTagFromSpec({
                   id,
                   name,
                   mimeType,
@@ -1803,7 +1803,7 @@ class World {
                   files,
                 });
               };
-              _makeFileFromFiles(files)
+              _makeFileTagFromFiles(files)
                 .then(tagMesh => {
                   console.log('upoaded file', tagMesh);
                 });
@@ -1911,19 +1911,25 @@ class World {
               const id = _makeId();
               const name = id + '.' + ext;
               const mimeType = 'mime/' + ext;
-              const paths = ['/' + name];
-              const files = [
-                new Blob([], {
-                  type: mimeType,
-                }),
-              ];
+              const path = '/' + name;
+              const paths = [path];
+              const file = new Blob([], {
+                type: mimeType,
+              });
+              file.path = path;
+              const files = [file];
 
-              return _makeFileFromSpec({
+              return _makeFileTagFromSpec({
                 id,
                 name,
                 mimeType,
                 paths,
                 files,
+              }).then(tagMesh => {
+                const {item} = tagMesh;
+                const {id, name} = item;
+
+                return fs.makeFile('/fs/' + id + '/' + name);
               });
             }
           }

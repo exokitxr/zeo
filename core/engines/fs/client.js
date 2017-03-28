@@ -196,12 +196,14 @@ class Fs {
           }
 
           write(data) {
-            const match = url.match(/^\/fs\/([^\/+)(\/.*)$/);
+            const {url} = this;
+            const match = url.match(/^\/fs\/([^\/]+)(\/.*)$/);
 
             if (match) {
               const id = match[1];
+              const path = match[2];
 
-              return writeFile(id, data);
+              return fsApi.writeData(id, path, data);
             } else {
               const err = new Error('cannot write to non-local files');
               reject(err);
@@ -222,6 +224,10 @@ class Fs {
             }
           }
 
+          writeFiles(id, files) {
+            return Promise.all(files.map(file => this.writeFile(id, file)));
+          }
+
           writeFile(id, file) {
             const {path} = file;
             const fileUrl = this.getFileUrl(id, path);
@@ -234,8 +240,15 @@ class Fs {
             );
           }
 
-          writeFiles(id, files) {
-            return Promise.all(files.map(file => this.writeFile(id, file)));
+          writeData(id, path, data) {
+            const fileUrl = this.getFileUrl(id, path);
+
+            return fetch(fileUrl, {
+              method: 'PUT',
+              body: data,
+            }).then(res => res.blob()
+              .then(() => {})
+            );
           }
 
           dragover(e) {

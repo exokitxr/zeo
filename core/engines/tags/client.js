@@ -1928,7 +1928,6 @@ class Tags {
               this.readme = readme;
               this.tagName = tagName;
               this.attributes = attributes;
-              this.data = data;
               /* this.attributes = (() => {
                 const result = {};
 
