@@ -197,11 +197,23 @@ class ZDraw {
                   });
 
                   const mesh = new THREE.Mesh(geometry, material);
-                  mesh.material = material;
+                  mesh.visible = false;
                   return mesh;
                 })();
                 object.add(planeMesh);
                 object.planeMesh = planeMesh;
+
+                const placeholderMesh = (() => {
+                  const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
+                  const material = new THREE.MeshBasicMaterial({
+                    color: 0x000000,
+                  });
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  return mesh;
+                })();
+                object.add(placeholderMesh);
+                object.placeholderMesh = placeholderMesh;
 
                 const lineMesh = (() => {
                   const geometry = new THREE.BufferGeometry();
@@ -237,6 +249,19 @@ class ZDraw {
                 entityObject.position.set(position[0], position[1], position[2]);
                 entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
                 entityObject.scale.set(position[7], position[8], position[9]);
+              };
+
+              entityApi.render = () => {
+                const {file} = entityApi;
+                const {planeMesh, placeholderMesh} = mesh;
+
+                if (file) {
+                  planeMesh.visible = true;
+                  placeholderMesh.visible = false;
+                } else {
+                  planeMesh.visible = false;
+                  placeholderMesh.visible = true;
+                }
               };
 
               entityApi.load = () => {
@@ -367,6 +392,8 @@ class ZDraw {
                 }
                 case 'file': {
                   entityApi.file = newValue;
+
+                  entityApi.render();
 
                   if (newValue) {
                     entityApi.load();
@@ -615,7 +642,7 @@ class ZDraw {
                   });
 
                   const {lineMesh: {material}} = mesh;
-                  material.color = new THREE.Color(drawable ? 0x0000FF : 0x808080)
+                  material.color = new THREE.Color(drawable ? 0x000000 : 0x808080)
                 };
               };
               render.on('update', _update);
