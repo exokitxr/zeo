@@ -1,5 +1,7 @@
 import OBJLoader from './lib/three-extra/OBJLoader';
 
+const CHUNK_SIZE = 32 * 1024;
+
 class Fs {
   constructor(archae) {
     this._archae = archae;
@@ -184,10 +186,29 @@ class Fs {
                     _parse();
                   }));
               }
+              case 'arrayBuffer': {
+                return fetch(url)
+                  .then(res => res.arrayBuffer());
+              }
               default: {
                 return fetch(url)
                   .then(res => res.blob());
               }
+            }
+          }
+
+          write(data) {
+            const {url} = this;
+            const match = url.match(/^\/fs\/([^\/]+)(\/.*)$/);
+
+            if (match) {
+              const id = match[1];
+              const path = match[2];
+
+              return fsApi.writeData(id, path, data);
+            } else {
+              const err = new Error('cannot write to non-local files');
+              reject(err);
             }
           }
         }
@@ -206,17 +227,47 @@ class Fs {
           }
 
           writeFiles(id, files) {
-            return Promise.all(files.map(file => {
-              const {path} = file;
+            return Promise.all(files.map(file => this.writeFile(id, file)));
+          }
+
+          writeFile(id, file) {
+            const {path} = file;
+            const fileUrl = this.getFileUrl(id, path);
+
+            return fetch(fileUrl, {
+              method: 'PUT',
+              body: file,
+            }).then(res => res.blob()
+              .then(() => {})
+            );
+          }
+
+          writeData(id, path, data) {
+            return new Promise((accept, reject) => {
               const fileUrl = this.getFileUrl(id, path);
 
-              return fetch(fileUrl, {
-                method: 'PUT',
-                body: file,
-              }).then(res => res.blob()
-                .then(() => {})
-              );
-            }));
+              const _recurse = start => {
+                if (start < data.length) {
+                  const end = start + CHUNK_SIZE;
+                  const slice = data.slice(start, end);
+
+                  const headers = new Headers();
+                  headers.append('range', 'bytes=' + start + '-');
+
+                  return fetch(fileUrl, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: slice,
+                  }).then(res => {
+                    _recurse(end);
+                  })
+                  .catch(reject);
+                } else {
+                  accept();
+                }
+              };
+              _recurse(0);
+            });
           }
 
           dragover(e) {

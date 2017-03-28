@@ -94,7 +94,32 @@ class Fs {
             const fullPath = path.join(fsPath, dirname, filePath);
             mkdirp(path.dirname(fullPath), err => {
               if (!err) {
-                const ws = fs.createWriteStream(fullPath);
+                const start = (() => {
+                  const rangeString = req.get('range');
+
+                  if (rangeString) {
+                    const match = rangeString.match(/^bytes=([0-9]+)-$/);
+
+                    if (match) {
+                      const rangeValue = parseInt(match[1], 10);
+
+                      if (!isNaN(rangeValue)) {
+                        return rangeValue;
+                      } else {
+                        return 0;
+                      }
+                    } else {
+                      return 0;
+                    }
+                  } else {
+                    return 0;
+                  }
+                })();
+
+                const ws = fs.createWriteStream(fullPath, {
+                  flags: 'r+',
+                  start: start,
+                });
 
                 req.pipe(ws);
 

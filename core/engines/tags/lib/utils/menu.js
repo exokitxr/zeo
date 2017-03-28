@@ -82,7 +82,7 @@ const zeoComponentElementConstructor = (() => {
           },
           setData: {
             value: data => {
-              entityElement.innerHTML = JSON.stringify(data, null, 2);
+              entityElement.innerText = JSON.stringify(data, null, 2);
             },
           },
         });
@@ -126,16 +126,6 @@ const zeoComponentElementConstructor = (() => {
       const {_baseObject: baseObject} = this;
       if (baseObject.entityStateChangedCallback) {
         baseObject.entityStateChangedCallback.call(this, entityApi, key, oldValue, newValue);
-      }
-    }
-
-    entityDataChangedCallback(entityElement, oldValue, newValue) {
-      const {entityApis} = this;
-      const entityApi = entityApis.get(entityElement);
-
-      const {_baseObject: baseObject} = this;
-      if (baseObject.entityDataChangedCallback) {
-        baseObject.entityDataChangedCallback.call(this, entityApi, oldValue, newValue);
       }
     }
   }

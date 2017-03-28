@@ -467,40 +467,16 @@ class World {
                               } else {
                                 cb(_makeInvalidArgsError());
                               }
-                            } else if (method === 'setTagData') {
-                              const [userId, src, {value}] = args;
+                            } else if (method === 'broadcast') {
+                              const [detail] = args;
 
-                              cb = (cb => err => {
-                                if (!err) {
-                                  _broadcast('setTagData', [userId, src, {value}]);
-                                }
+                              _broadcast('message', [detail]);
 
-                                cb(err);
-                              })(cb);
-
-                              let match;
-                              if (match = src.match(/^world:(.+)$/)) {
-                                const id = match[1];
-
-                                const itemSpec = tagsJson.tags[id];
-                                itemSpec.data = value;
-
-                                _saveTags();
-
-                                cb();
-                              } else {
-                                cb(_makeInvalidArgsError());
-                              }
+                              cb();
                             } else {
                               const err = new Error('no such method:' + JSON.stringify(method));
                               cb(err.stack);
                             }
-                          } else if (method === 'broadcast') {
-                            const [detail] = args;
-
-                            _broadcast('message', [detail]);
-
-                            cb();
                           } else {
                             console.warn('invalid message', m);
                           }

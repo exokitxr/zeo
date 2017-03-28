@@ -56,9 +56,6 @@ class Test {
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
         console.log('entityAttributeValueChangedCallback', {entityElement, name, oldValue, newValue});
       },
-      entityDataChangedCallback(entityElement, oldValue, newValue) {
-        console.log('entityDataChangedCallback', {entityElement, oldValue, newValue});
-      },
     };
     elements.registerComponent(this, testComponent);
 

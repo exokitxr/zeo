@@ -141,7 +141,7 @@ class ZGrabbable {
               if (!globalGrabbable) {
                 const {entityElement, object} = this;
                 const {parent: originalParent} = object;
-                const originalPosition = entityElement.hasAttribute('sp-physics');
+                const originalPosition = entityElement.hasAttribute('position');
                 const originalSpPhysics = entityElement.hasAttribute('sp-physics');
 
                 const grabState = {
