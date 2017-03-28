@@ -93,46 +93,66 @@ class Fs {
 
             const fullPath = path.join(fsPath, dirname, filePath);
             mkdirp(path.dirname(fullPath), err => {
+              const _ok = () => {
+                res.send();
+              };
+              const _error = err => {
+                res.status(500);
+                res.send(err.stack);
+              };
+
               if (!err) {
-                const start = (() => {
-                  const rangeString = req.get('range');
+                fs.lstat(fullPath, err => {
+                  const _write = () => {
+                    const start = (() => {
+                      const rangeString = req.get('range');
 
-                  if (rangeString) {
-                    const match = rangeString.match(/^bytes=([0-9]+)-$/);
+                      if (rangeString) {
+                        const match = rangeString.match(/^bytes=([0-9]+)-$/);
 
-                    if (match) {
-                      const rangeValue = parseInt(match[1], 10);
+                        if (match) {
+                          const rangeValue = parseInt(match[1], 10);
 
-                      if (!isNaN(rangeValue)) {
-                        return rangeValue;
+                          if (!isNaN(rangeValue)) {
+                            return rangeValue;
+                          } else {
+                            return 0;
+                          }
+                        } else {
+                          return 0;
+                        }
                       } else {
                         return 0;
                       }
-                    } else {
-                      return 0;
-                    }
+                    })();
+
+                    const ws = fs.createWriteStream(fullPath, {
+                      flags: 'r+',
+                      start: start,
+                    });
+
+                    req.pipe(ws);
+
+                    ws.on('finish', _ok);
+                    ws.on('error', _error);
+                  };
+
+                  if (!err) {
+                    _write();
+                  } else if (err.code === 'ENOENT') {
+                    fs.writeFile(fullPath, '', err => {
+                      if (!err) {
+                        _write();
+                      } else {
+                        _error(err);
+                      }
+                    });
                   } else {
-                    return 0;
+                    _error(err);
                   }
-                })();
-
-                const ws = fs.createWriteStream(fullPath, {
-                  flags: 'r+',
-                  start: start,
-                });
-
-                req.pipe(ws);
-
-                ws.on('finish', () => {
-                  res.send();
-                });
-                ws.on('error', err => {
-                  res.status(500);
-                  res.send(err.stack);
                 });
               } else {
-                res.status(500);
-                res.send(err.stack);
+                _error(err);
               }
             });
           }
