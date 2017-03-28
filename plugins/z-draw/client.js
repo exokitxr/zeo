@@ -423,64 +423,69 @@ class ZDraw {
 
                   let drawable = false;
                   SIDES.forEach(side => {
-                    const gamepad = gamepads[side];
+                    const pencilState = pencilStates[side];
+                    const {grabbed} = pencilState;
 
-                    if (gamepad) {
-                      const {position: controllerPosition} = gamepad;
-                      const planePoint = planeTarget.projectPoint(controllerPosition); // XXX make this based on grabbed pencil position, not controller position
+                    if (grabbed) {
+                      const gamepad = gamepads[side];
 
-                      if (planePoint) {
-                        drawable = true;
+                      if (gamepad) {
+                        const {position: controllerPosition} = gamepad;
+                        const pencilPosition = controllerPosition.clone().sub(new THREE.Vector3(0, 0, -(0.1 / 2) - (0.02 / 2)));
+                        const planePoint = planeTarget.projectPoint(pencilPosition);
 
-                        const pencilState = pencilStates[side];
-                        const {drawing} = pencilState;
+                        if (planePoint) {
+                          drawable = true;
 
-                        if (drawing) {
-                          const {z} = planePoint;
+                          const {drawing} = pencilState;
 
-                          if (z < PAPER_DRAW_DISTANCE) {
-                            const {paperStates} = paper;
-                            const paperState = paperStates[side];
+                          if (drawing) {
+                            const {z} = planePoint;
 
-                            const {x: xFactor, y: yFactor} = planePoint;
-                            const currentPoint = new THREE.Vector2(
-                              Math.round(xFactor * WIDTH),
-                              Math.round(yFactor * HEIGHT)
-                            );
-                            const lastPoint = (() => {
-                              const {lastPoint} = paperState;
-                              if (lastPoint) {
-                                return lastPoint;
-                              } else {
-                                const fakeLastPoint = currentPoint.clone();
-                                fakeLastPoint.y -= 10;
-                                return fakeLastPoint;
-                              }
-                            })();
+                            if (z < PAPER_DRAW_DISTANCE) {
+                              const {paperStates} = paper;
+                              const paperState = paperStates[side];
 
-                            if (lastPoint.distanceTo(currentPoint) > 0) {
-                              const {color} = entityApi;
-                              const colorBrushImg = _getColorImg(brushImg, color);
-
-                              const halfBrushW = colorBrushImg.width / 2;
-                              const halfBrushH = colorBrushImg.height / 2;
-                              const distance = lastPoint.distanceTo(currentPoint);
-                              const angle = (() => {
-                                const dy = currentPoint.y - lastPoint.y;
-                                const dx = currentPoint.x - lastPoint.x;
-                                return mod(Math.atan2(dy, dx), Math.PI * 2);
+                              const {x: xFactor, y: yFactor} = planePoint;
+                              const currentPoint = new THREE.Vector2(
+                                Math.round(xFactor * WIDTH),
+                                Math.round(yFactor * HEIGHT)
+                              );
+                              const lastPoint = (() => {
+                                const {lastPoint} = paperState;
+                                if (lastPoint) {
+                                  return lastPoint;
+                                } else {
+                                  const fakeLastPoint = currentPoint.clone();
+                                  fakeLastPoint.y -= 10;
+                                  return fakeLastPoint;
+                                }
                               })();
 
+                              if (lastPoint.distanceTo(currentPoint) > 0) {
+                                const {color} = entityApi;
+                                const colorBrushImg = _getColorImg(brushImg, color);
 
-                              for (let z = 0; z <= distance || z === 0; z++) {
-                                const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
-                                const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
-                                canvas.ctx.drawImage(colorBrushImg, x, y);
+                                const halfBrushW = colorBrushImg.width / 2;
+                                const halfBrushH = colorBrushImg.height / 2;
+                                const distance = lastPoint.distanceTo(currentPoint);
+                                const angle = (() => {
+                                  const dy = currentPoint.y - lastPoint.y;
+                                  const dx = currentPoint.x - lastPoint.x;
+                                  return mod(Math.atan2(dy, dx), Math.PI * 2);
+                                })();
+
+
+                                for (let z = 0; z <= distance || z === 0; z++) {
+                                  const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
+                                  const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
+                                  canvas.ctx.drawImage(colorBrushImg, x, y);
+                                }
+
+                                texture.needsUpdate = true;
+
+                                paperState.lastPoint = currentPoint;
                               }
-
-                              texture.needsUpdate = true;
-
-                              paperState.lastPoint = currentPoint;
                             }
                           }
                         }
