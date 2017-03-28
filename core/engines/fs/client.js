@@ -184,10 +184,27 @@ class Fs {
                     _parse();
                   }));
               }
+              case 'arrayBuffer': {
+                return fetch(url)
+                  .then(res => res.arrayBuffer());
+              }
               default: {
                 return fetch(url)
                   .then(res => res.blob());
               }
+            }
+          }
+
+          write(data) {
+            const match = url.match(/^\/fs\/([^\/+)(\/.*)$/);
+
+            if (match) {
+              const id = match[1];
+
+              return writeFile(id, data);
+            } else {
+              const err = new Error('cannot write to non-local files');
+              reject(err);
             }
           }
         }
@@ -205,18 +222,20 @@ class Fs {
             }
           }
 
-          writeFiles(id, files) {
-            return Promise.all(files.map(file => {
-              const {path} = file;
-              const fileUrl = this.getFileUrl(id, path);
+          writeFile(id, file) {
+            const {path} = file;
+            const fileUrl = this.getFileUrl(id, path);
 
-              return fetch(fileUrl, {
-                method: 'PUT',
-                body: file,
-              }).then(res => res.blob()
-                .then(() => {})
-              );
-            }));
+            return fetch(fileUrl, {
+              method: 'PUT',
+              body: file,
+            }).then(res => res.blob()
+              .then(() => {})
+            );
+          }
+
+          writeFiles(id, files) {
+            return Promise.all(files.map(file => this.writeFile(id, file)));
           }
 
           dragover(e) {

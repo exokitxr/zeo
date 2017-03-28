@@ -2791,6 +2791,8 @@ class Tags {
                   entityElement.innerText = JSON.stringify(entityData);
                 }
 
+                entityElement.getId = () => item.id;
+
                 entityElement.item = item;
                 item.instance = entityElement;
 
