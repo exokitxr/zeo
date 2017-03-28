@@ -29,17 +29,72 @@ class ZPaint {
     return _requestImage('/archae/paint/brushes/brush.png')
       .then(brushImg => {
         if (live) {
-          const paintComponent = {
-            selector: 'paint[color]',
+          const paintbrushComponent = {
+            selector: 'paintbrush[position][color]',
             attributes: {
+              position: {
+                type: 'matrix',
+                value: [
+                  0, 1.2, 0,
+                  0, 0, 0, 1,
+                  1, 1, 1,
+                ],
+              },
               color: {
                 type: 'color',
                 value: '#F44336',
+              },
+              file: {
+                type: 'file',
+                value: () => elements.makeFile({
+                  ext: 'raw',
+                }).then(file => file.url),
+              },
+              grabbable: {
+                type: 'checkbox',
+                value: true,
+              },
+              holdable: {
+                type: 'checkbox',
+                value: true,
+              },
+              size: {
+                type: 'vector',
+                value: [0.2, 0.2, 0.2],
               },
             },
             entityAddedCallback(entityElement) {
               const entityApi = entityElement.getComponentApi();
               const entityObject = entityElement.getObject();
+
+              const paintbrushMesh = (() => {
+                const geometry = (() => {
+                  const sq = n => Math.sqrt((n * n) + (n * n));
+
+                  const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.05);
+                  const jointGeometry = new THREE.BoxBufferGeometry(0.1, 0.03, 0.03)
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (0.03 / 2)));
+                  const brushGeometry = new THREE.BoxBufferGeometry(0.09, 0.02, 0.1)
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2)));
+
+                  return geometryUtils.concatBufferGeometry([coreGeometry, jointGeometry, brushGeometry]);
+                })();
+                const material = new THREE.MeshPhongMaterial({
+                  color: 0x808080,
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                return mesh;
+              })();
+              entityObject.add(paintbrushMesh);
+
+              entityApi.align = () => {
+                const {position} = entityApi;
+
+                entityObject.position.set(position[0], position[1], position[2]);
+                entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
+                entityObject.scale.set(position[7], position[8], position[9]);
+              };
 
               const mesh = (() => {
                 const geometry = new THREE.BufferGeometry();
@@ -88,6 +143,7 @@ class ZPaint {
               let lastPoint = 0;
 
               const _makePaintState = () => ({
+                grabbed: false,
                 painting: false,
                 lastPointTime: 0,
               });
@@ -96,16 +152,39 @@ class ZPaint {
                 right: _makePaintState(),
               };
 
+              const _grab = e => {
+                const {detail: {side}} = e;
+                const paintState = paintStates[side];
+
+                paintState.grabbed = true;
+              };
+              entityElement.addEventListener('grab', _grab);
+              const _release = e => {
+                const {detail: {side}} = e;
+                const paintState = paintStates[side];
+
+                paintState.grabbed = false;
+                paintState.painting = false;
+              };
+              entityElement.addEventListener('release', _release);
               const _triggerdown = e => {
                 const {side} = e;
                 const paintState = paintStates[side];
-                paintState.painting = true;
+                const {grabbed} = paintState;
+
+                if (grabbed) {
+                  paintState.painting = true;
+                }
               };
               input.on('triggerdown', _triggerdown);
               const _triggerup = e => {
                 const {side} = e;
                 const paintState = paintStates[side];
-                paintState.painting = false;
+                const {grabbed} = paintState;
+
+                if (grabbed) {
+                  paintState.painting = false;
+                }
               };
               input.on('triggerup', _triggerup);
 
@@ -137,14 +216,17 @@ class ZPaint {
                       const uvs = uvsAttribute.array;
 
                       const gamepad = gamepads[side];
-                      const {position: controllerPosition, quaternion: controllerQuaternion} = gamepad;
+                      const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+
+                      const paintbrushTipPosition = controllerPosition.clone()
+                        .add(new THREE.Vector3(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2)).applyQuaternion(controllerRotation));
 
                       const brushSize = 0.1;
                       const direction = new THREE.Vector3(1, 0, 0)
-                        .applyQuaternion(controllerQuaternion);
-                      const posA = controllerPosition.clone()
+                        .applyQuaternion(controllerRotation);
+                      const posA = paintbrushTipPosition.clone()
                         .add(direction.clone().multiplyScalar(brushSize / 2));
-                      const posB = controllerPosition.clone()
+                      const posB = paintbrushTipPosition.clone()
                         .add(direction.clone().multiplyScalar(-brushSize / 2));
 
                       // positions
@@ -239,7 +321,7 @@ class ZPaint {
                       }
 
                       // uvs
-                      for (i = 0; i <= lastPoint; i++) {
+                      for (let i = 0; i <= lastPoint; i++) {
                         const baseUvIndex = i * 2 * 2;
 
                         uvs[baseUvIndex + 0] = i / (lastPoint - 1);
@@ -268,6 +350,9 @@ class ZPaint {
               entityApi._cleanup = () => {
                 scene.remove(mesh);
 
+                entityElement.removeEventListener('grab', _grab);
+                entityElement.removeEventListener('release', _release);
+
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('triggerup', _triggerup);
 
@@ -283,6 +368,13 @@ class ZPaint {
               const entityApi = entityElement.getComponentApi();
 
               switch (name) {
+                case 'position': {
+                  entityApi.position = newValue;
+
+                  entityApi.align();
+
+                  break;
+                }
                 case 'color': {
                   entityApi.color = new THREE.Color(newValue);
 
@@ -291,10 +383,10 @@ class ZPaint {
               }
             },
           };
-          elements.registerComponent(this, paintComponent);
+          elements.registerComponent(this, paintbrushComponent);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, paintComponent);
+            elements.unregisterComponent(this, paintbrushComponent);
           };
         }
       });
