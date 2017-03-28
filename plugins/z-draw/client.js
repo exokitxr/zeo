@@ -369,7 +369,9 @@ class ZDraw {
                 entityObject.remove(mesh);
 
                 const {cancelSave} = entityApi;
-                cancelSave();
+                if (cancelSave) {
+                  cancelSave();
+                }
 
                 papers.splice(papers.indexOf(entityApi), 1);
               };
