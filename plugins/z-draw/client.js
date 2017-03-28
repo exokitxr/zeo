@@ -135,6 +135,10 @@ class ZDraw {
                 type: 'checkbox',
                 value: true,
               },
+              holdable: {
+                type: 'checkbox',
+                value: true,
+              },
               size: {
                 type: 'vector',
                 value: [WORLD_WIDTH, WORLD_HEIGHT, 0.1],
@@ -290,6 +294,10 @@ class ZDraw {
                 type: 'checkbox',
                 value: true,
               },
+              holdable: {
+                type: 'checkbox',
+                value: true,
+              },
               size: {
                 type: 'vector',
                 value: [0.2, 0.2, 0.2],
@@ -341,14 +349,14 @@ class ZDraw {
               };
 
               const _grab = e => {
-                const {side} = e;
+                const {detail: {side}} = e;
                 const pencilState = pencilStates[side];
 
                 pencilState.grabbed = true;
               };
               entityElement.addEventListener('grab', _grab);
               const _release = e => {
-                const {side} = e;
+                const {detail: {side}} = e;
                 const pencilState = pencilStates[side];
 
                 pencilState.grabbed = false;
