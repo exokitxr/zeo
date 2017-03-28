@@ -370,10 +370,11 @@ class ZDraw {
                 if (grabbed) {
                   const {gamepads} = pose.getStatus();
                   const gamepad = gamepads[side];
-                  const {position: controllerPosition} = gamepad;
+                  const {position: controllerPosition, rotation: controllerRotation} = gamepad;
                   const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
                   const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
-                  const planePoint = planeTarget.projectPoint(controllerPosition);
+                  const pencilLine = geometryUtils.makeControllerLine(controllerPosition, v);
+                  const planePoint = planeTarget.intersectLine(pencilLine);
 
                   if (planePoint) {
                     pencilState.drawing = true;
@@ -438,9 +439,9 @@ class ZDraw {
                       const gamepad = gamepads[side];
 
                       if (gamepad) {
-                        const {position: controllerPosition} = gamepad;
-                        const pencilPosition = controllerPosition.clone().sub(new THREE.Vector3(0, 0, -(0.1 / 2) - (0.02 / 2)));
-                        const planePoint = planeTarget.projectPoint(pencilPosition);
+                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                        const pencilLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+                        const planePoint = planeTarget.intersectLine(pencilLine);
 
                         if (planePoint) {
                           drawable = true;

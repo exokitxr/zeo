@@ -201,6 +201,31 @@ const geometryUtils = archae => ({
               return null;
             }
           }
+
+          intersectLine(line) {
+            const {width, height, plane, lines: {left, right, top, bottom}} = this;
+            const intersectionPoint = plane.intersectLine(line);
+
+            const leftPoint = left.closestPointToPoint(intersectionPoint, false);
+            const rightPoint = right.closestPointToPoint(intersectionPoint, false);
+            const topPoint = top.closestPointToPoint(intersectionPoint, false);
+            const bottomPoint = bottom.closestPointToPoint(intersectionPoint, false);
+
+            if (
+              intersectionPoint.distanceTo(leftPoint) <= width &&
+              intersectionPoint.distanceTo(rightPoint) <= width &&
+              intersectionPoint.distanceTo(topPoint) <= height &&
+              intersectionPoint.distanceTo(bottomPoint) <= height
+            ) {
+              return {
+                x: top.start.distanceTo(topPoint) / width,
+                y: left.end.distanceTo(leftPoint) / height,
+                z: line.start.distanceTo(intersectionPoint),
+              };
+            } else {
+              return null;
+            }
+          }
         }
 
         /* const VOXEL_VERTICES = (() => {
