@@ -1502,31 +1502,44 @@ class Tags {
                 const {type} = src;
 
                 if (type === 'module') {
-                  const {tagMesh: srcTagMesh} = src;
-                  const {tagMesh: dstTagMesh} = dst;
+                  const {gamepads} = webvr.getStatus();
+                  const gamepad = gamepads[side];
 
-                  if (srcTagMesh === dstTagMesh) {
-                    tagsApi.emit('linkModule', {
-                      side,
-                      srcTagMesh,
-                      dstTagMesh: null,
-                    });
+                  if (gamepad) {
+                    const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
 
-                    dragState.src = null;
-                    dragState.dst = null;
+                    if (!gripPressed) {
+                      const {tagMesh: srcTagMesh} = src;
+                      const {tagMesh: dstTagMesh} = dst;
 
-                    return true;
+                      if (srcTagMesh === dstTagMesh) {
+                        tagsApi.emit('linkModule', {
+                          side,
+                          srcTagMesh,
+                          dstTagMesh: null,
+                        });
+
+                        dragState.src = null;
+                        dragState.dst = null;
+
+                        return true;
+                      } else {
+                        tagsApi.emit('linkModule', {
+                          side,
+                          srcTagMesh,
+                          dstTagMesh,
+                        });
+
+                        dragState.src = null;
+                        dragState.dst = null;
+
+                        return true;
+                      }
+                    } else {
+                      return false;
+                    }
                   } else {
-                    tagsApi.emit('linkModule', {
-                      side,
-                      srcTagMesh,
-                      dstTagMesh,
-                    });
-
-                    dragState.src = null;
-                    dragState.dst = null;
-
-                    return true;
+                    return false;
                   }
                 } else if (type === 'attribute') {
                   const {tagMesh: srcTagMesh, attributeName} = src;

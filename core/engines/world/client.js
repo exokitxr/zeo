@@ -1596,94 +1596,84 @@ class World {
           tags.on('download', _download);
 
           const _linkModule = linkSpec => {
-            const {side} = linkSpec;
-            const {gamepads} = webvr.getStatus();
-            const gamepad = gamepads[side];
+            const {srcTagMesh, dstTagMesh} = linkSpec;
+            const {item: srcItem} = srcTagMesh;
+            const {name: srcName} = srcItem;
+            const componentApis = tags.getTagComponentApis(srcName);
 
-            if (gamepad) {
-              const {buttons: {grip: {pressed: gripPressed}}} = gamepad;
+            for (let i = 0; i < componentApis.length; i++) {
+              const componentApi = componentApis[i];
 
-              if (!gripPressed) {
-                const {srcTagMesh, dstTagMesh} = linkSpec;
-                const {item: srcItem} = srcTagMesh;
-                const {name: srcName} = srcItem;
-                const componentApis = tags.getTagComponentApis(srcName);
+              const _forEachSrcTagAttribute = fn => {
+                const componentApi = componentApis[i];
+                const {attributes: componentAttributes = {}} = componentApi;
 
-                for (let i = 0; i < componentApis.length; i++) {
-                  const componentApi = componentApis[i];
+                for (const attributeName in componentAttributes) {
+                  const attribute = componentAttributes[attributeName];
+                  let {value: attributeValue} = attribute;
+                  if (typeof attributeValue === 'function') {
+                    attributeValue = attributeValue();
+                  }
 
-                  const _forEachSrcTagAttribute = fn => {
-                    const componentApi = componentApis[i];
-                    const {attributes: componentAttributes = {}} = componentApi;
+                  fn(attributeName, attributeValue);
+                }
+              };
 
-                    for (const attributeName in componentAttributes) {
-                      const attribute = componentAttributes[attributeName];
-                      let {value: attributeValue} = attribute;
-                      if (typeof attributeValue === 'function') {
-                        attributeValue = attributeValue();
-                      }
+              if (!dstTagMesh) {
+                const {item} = srcTagMesh;
 
-                      fn(attributeName, attributeValue);
-                    }
-                  };
+                const itemSpec = _clone(item);
+                itemSpec.id = _makeId();
+                itemSpec.type = 'entity';
+                const tagName = (() => {
+                  const {selector: componentSelector = 'div'} = componentApi;
+                  const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
 
-                  if (!dstTagMesh) {
-                    const {item} = srcTagMesh;
-
-                    const itemSpec = _clone(item);
-                    itemSpec.id = _makeId();
-                    itemSpec.type = 'entity';
-                    const tagName = (() => {
-                      const {selector: componentSelector = 'div'} = componentApi;
-                      const {rule: {tagName}} = cssSelectorParser.parse(componentSelector);
-
-                      if (tagName) {
-                        return tagName;
-                      } else {
-                        return 'entity';
-                      }
-                    })();
-                    itemSpec.name = tagName;
-                    itemSpec.displayName = tagName;
-                    itemSpec.tagName = tagName;
-                    const attributes = (() => {
-                      const result = {};
-                      _forEachSrcTagAttribute((attributeName, attributeValue) => {
-                        result[attributeName] = {
-                          value: attributeValue,
-                        };
-                      });
-                      return result;
-                    })();
-                    itemSpec.attributes = attributes;
-                    const matrix = (() => { // XXX we should offset multiple tags here so they don't overlap
-                      const {matrix: oldMatrix} = itemSpec;
-                      const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
-                      const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
-                      const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
-
-                      position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
-
-                      return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
-                    })();
-                    itemSpec.matrix = matrix;
-
-                    _addTag(itemSpec, 'world');
+                  if (tagName) {
+                    return tagName;
                   } else {
-                    const {item: dstItem} = dstTagMesh;
-                    const {id: dstId, instance: dstElement} = dstItem;
+                    return 'entity';
+                  }
+                })();
+                itemSpec.name = tagName;
+                itemSpec.displayName = tagName;
+                itemSpec.tagName = tagName;
+                const attributes = (() => {
+                  const result = {};
+                  _forEachSrcTagAttribute((attributeName, attributeValue) => {
+                    result[attributeName] = {
+                      value: attributeValue,
+                    };
+                  });
+                  return result;
+                })();
+                itemSpec.attributes = attributes;
+                const matrix = (() => { // XXX we should offset multiple tags here so they don't overlap
+                  const {matrix: oldMatrix} = itemSpec;
+                  const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
+                  const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
+                  const scale = new THREE.Vector3().fromArray(oldMatrix.slice(3 + 4, 3 + 4 + 3));
 
-                    _forEachSrcTagAttribute((attributeName, attributeValue) => {
-                      if (!dstElement.hasAttribute(attributeName)) {
-                        _setAttribute({
-                          id: dstId,
-                          name: attributeName,
-                          value: attributeValue,
-                        });
-                      }
+                  position.add(new THREE.Vector3(0, 0, 0.1).applyQuaternion(rotation));
+
+                  return position.toArray().concat(rotation.toArray()).concat(scale.toArray());
+                })();
+                itemSpec.matrix = matrix;
+
+                _addTag(itemSpec, 'world');
+              } else {
+                const {item: dstItem} = dstTagMesh;
+                const {id: dstId, instance: dstElement} = dstItem;
+
+                _forEachSrcTagAttribute((attributeName, attributeValue) => {
+                  if (!dstElement.hasAttribute(attributeName)) {
+                    _setAttribute({
+                      id: dstId,
+                      name: attributeName,
+                      value: attributeValue,
                     });
                   }
-                }
+                });
               }
             }
           };
