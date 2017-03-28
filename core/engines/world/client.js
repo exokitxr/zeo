@@ -1678,7 +1678,7 @@ class World {
                       return result;
                     })();
                     itemSpec.attributes = attributes;
-                    const matrix = (() => {
+                    const matrix = (() => { // XXX we should offset multiple tags here so they don't overlap
                       const {matrix: oldMatrix} = itemSpec;
                       const position = new THREE.Vector3().fromArray(oldMatrix.slice(0, 3));
                       const rotation = new THREE.Quaternion().fromArray(oldMatrix.slice(3, 3 + 4));
