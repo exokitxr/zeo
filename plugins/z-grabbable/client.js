@@ -51,6 +51,7 @@ class ZGrabbable {
           };
 
           const grabbables = [];
+window.grabbables = grabbables;
 
           class Grabbable {
             constructor(entityElement, object) {

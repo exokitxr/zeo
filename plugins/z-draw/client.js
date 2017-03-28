@@ -9,6 +9,11 @@ const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 const PAPER_DRAW_DISTANCE = 0.2;
 const BRUSH_SIZE = 8;
 
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 const SIDES = ['left', 'right'];
 
 class ZDraw {
@@ -94,7 +99,7 @@ class ZDraw {
 
       return entry;
     };
-    const _getRotatedImg = (img, angle) => {
+    /* const _getRotatedImg = (img, angle) => {
       const canvas = document.createElement('canvas');
       const size = Math.max(img.width, img.height) * 2;
       canvas.width = size;
@@ -106,17 +111,17 @@ class ZDraw {
       ctx.drawImage(img, -(size / 4), -(size / 4));
 
       return canvas;
-    };
+    }; */
 
     return _requestImage('/archae/draw/brushes/brush.png')
       .then(brushImg => {
         brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_SIZE);
 
         if (live) {
-          const pages = [];
+          const papers = [];
 
-          const pageComponent = {
-            selector: 'page[position]',
+          const paperComponent = {
+            selector: 'paper[position]',
             attributes: {
               position: {
                 type: 'matrix',
@@ -129,6 +134,10 @@ class ZDraw {
               grabbable: {
                 type: 'checkbox',
                 value: true,
+              },
+              size: {
+                type: 'vector',
+                value: [WORLD_WIDTH, WORLD_HEIGHT, 0.1],
               },
             },
             entityAddedCallback(entityElement) {
@@ -149,15 +158,8 @@ class ZDraw {
                     const ctx = canvas.getContext('2d');
                     canvas.ctx = ctx;
 
-                    const imageData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
-                    const {data: imageDataData} = imageData;
-                    for (let i = 0; i < (WIDTH * HEIGHT); i++) {
-                      const baseIndex = i * 4;
-                      imageDataData[baseIndex + 0] = 255;
-                      imageDataData[baseIndex + 1] = 255;
-                      imageDataData[baseIndex + 2] = 255;
-                      imageDataData[baseIndex + 3] = 0;
-                    }
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
                     return canvas;
                   })();
@@ -173,13 +175,14 @@ class ZDraw {
                     16
                   );
                   texture.needsUpdate = true;
-                  const canvasMaterial = new THREE.MeshBasicMaterial({
+                  const material = new THREE.MeshBasicMaterial({
+                    color: 0xFFFFFF,
                     map: texture,
                     side: THREE.DoubleSide,
                   });
 
-                  const mesh = new THREE.Mesh(geometry, canvasMaterial);
-                  mesh.canvasMaterial = canvasMaterial;
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.material = material;
                   return mesh;
                 })();
                 object.add(planeMesh);
@@ -212,7 +215,7 @@ class ZDraw {
               entityObject.add(mesh);
               entityApi.mesh = mesh;
 
-              entityApi.position = new THREE.Vector3();
+              entityApi.position = DEFAULT_MATRIX;
               entityApi.align = () => {
                 const {position} = entityApi;
 
@@ -230,12 +233,12 @@ class ZDraw {
               };
               entityApi.paperStates = paperStates;
 
-              pages.push(entityApi);
+              papers.push(entityApi);
 
               entityApi._cleanup = () => {
                 entityObject.remove(mesh);
 
-                pages.splice(pages.indexOf(entityApi), 1);
+                papers.splice(papers.indexOf(entityApi), 1);
               };
             },
             entityRemovedCallback(entityElement) {
@@ -243,7 +246,7 @@ class ZDraw {
 
               entityApi._cleanup();
             },
-            attributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+            entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
               const entityApi = entityElement.getComponentApi();
 
               switch (name) {
@@ -267,7 +270,7 @@ class ZDraw {
               }
             },
           };
-          elements.registerComponent(this, pageComponent);
+          elements.registerComponent(this, paperComponent);
           const pencilComponent = {
             selector: 'pencil[position][color]',
             attributes: {
@@ -287,6 +290,10 @@ class ZDraw {
                 type: 'checkbox',
                 value: true,
               },
+              size: {
+                type: 'vector',
+                value: [0.2, 0.2, 0.2],
+              },
             },
             entityAddedCallback(entityElement) {
               const entityApi = entityElement.getComponentApi();
@@ -294,9 +301,13 @@ class ZDraw {
 
               const mesh = (() => {
                 const geometry = (() => {
+                  const sq = n => Math.sqrt((n * n) + (n * n));
+
                   const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
-                  const tipGeometry = new THREE.CylinderBufferGeometry(0, 0.01, 0.02, 4, 1)
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.1));
+                  const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.05 - (0.02 / 2)));
 
                   return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry]);
                 })();
@@ -304,12 +315,12 @@ class ZDraw {
                   color: 0x808080,
                 });
 
-                const pencilMesh = new THREE.Line(geometry, material);
+                const pencilMesh = new THREE.Mesh(geometry, material);
                 return pencilMesh;
               })();
               entityObject.add(mesh);
 
-              entityApi.position = new THREE.Vector3();
+              entityApi.position = DEFAULT_MATRIX;
               entityApi.align = () => {
                 const {position} = entityApi;
 
@@ -377,11 +388,11 @@ class ZDraw {
                   if (drawing) {
                     pencilState.drawing = false;
 
-                    for (let i = 0; i < pages.length; i++) {
-                      const page = pages[i];
-                      const {pageStates} = page;
-                      const pageState = pageStates[side];
-                      pageState.lastPoint = null;
+                    for (let i = 0; i < papers.length; i++) {
+                      const paper = papers[i];
+                      const {paperStates} = paper;
+                      const paperState = paperStates[side];
+                      paperState.lastPoint = null;
                     }
                   }
 
@@ -395,12 +406,12 @@ class ZDraw {
               const _update = () => {
                 const {gamepads} = pose.getStatus();
 
-                for (let i = 0; i < pages.length; i++) {
-                  const page = pages[i];
-                  const {mesh} = page;
+                for (let i = 0; i < papers.length; i++) {
+                  const paper = papers[i];
+                  const {mesh} = paper;
                   const {
                     planeMesh: {
-                      canvasMaterial: {
+                      material: {
                         map: texture,
                       },
                     },
@@ -416,7 +427,7 @@ class ZDraw {
 
                     if (gamepad) {
                       const {position: controllerPosition} = gamepad;
-                      const planePoint = planeTarget.projectPoint(controllerPosition);
+                      const planePoint = planeTarget.projectPoint(controllerPosition); // XXX make this based on grabbed pencil position, not controller position
 
                       if (planePoint) {
                         drawable = true;
@@ -428,8 +439,8 @@ class ZDraw {
                           const {z} = planePoint;
 
                           if (z < PAPER_DRAW_DISTANCE) {
-                            const {pageStates} = page;
-                            const pageState = pageStates[side];
+                            const {paperStates} = paper;
+                            const paperState = paperStates[side];
 
                             const {x: xFactor, y: yFactor} = planePoint;
                             const currentPoint = new THREE.Vector2(
@@ -437,7 +448,7 @@ class ZDraw {
                               Math.round(yFactor * HEIGHT)
                             );
                             const lastPoint = (() => {
-                              const {lastPoint} = pageState;
+                              const {lastPoint} = paperState;
                               if (lastPoint) {
                                 return lastPoint;
                               } else {
@@ -469,7 +480,7 @@ class ZDraw {
 
                               texture.needsUpdate = true;
 
-                              pageState.lastPoint = currentPoint;
+                              paperState.lastPoint = currentPoint;
                             }
                           }
                         }
@@ -499,7 +510,7 @@ class ZDraw {
 
               entityApi._cleanup();
             },
-            attributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+            entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
               const entityApi = entityElement.getComponentApi();
 
               switch (name) {
@@ -526,7 +537,7 @@ class ZDraw {
           elements.registerComponent(this, pencilComponent);
 
           this._cleanup = () => {
-            elements.unregisterComponent(this, pageComponent);
+            elements.unregisterComponent(this, paperComponent);
             elements.unregisterComponent(this, pencilComponent);
           };
         }
