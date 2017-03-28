@@ -268,65 +268,66 @@ class ZDraw {
                         ctx.putImageData(imageData, 0, 0);
                         texture.needsUpdate = true;
                       } else {
-                        console.warn('draw paper tried to load invalid file data');
+                        console.warn('draw paper tried to load invalid file data', {data: arrayValue});
                       }
                     }
                   });
               };
-              let uploading = false;
               let dirtyFlag = false;
+              entityApi.cancelSave = null;
               entityApi.save = () => {
-                const {dirtyTimeout} = entityApi;
+                const {cancelSave} = entityApi;
 
-                if (!dirtyTimeout) {
-                  if (!uploading) {
-                    entityApi.dirtyTimeout = setTimeout(() => {
-                      const {file} = entityApi;
+                if (!cancelSave) {
+                  const timeout = setTimeout(() => {
+                    const {file} = entityApi;
 
-                      const {
-                        planeMesh: {
-                          material: {
-                            map: {
-                              image: canvas,
-                            },
+                    const {
+                      planeMesh: {
+                        material: {
+                          map: {
+                            image: canvas,
                           },
                         },
-                      } = mesh;
-                      const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
-                      const {data: imageDataData} = imageData;
+                      },
+                    } = mesh;
+                    const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const {data: imageDataData} = imageData;
 
-                      file.write(imageDataData)
-                        .then(() => {
-                          if (live) {
-                            const broadcastEvent = new CustomEvent('broadcast', {
-                              detail: {
-                                type: 'paper.update',
-                                id: entityElement.getId(),
-                              },
-                            });
-                            worldElement.dispatchEvent(broadcastEvent)
+                    let live = true;
+                    file.write(imageDataData)
+                      .then(() => {
+                        if (live) {
+                          const broadcastEvent = new CustomEvent('broadcast', {
+                            detail: {
+                              type: 'paper.update',
+                              id: entityElement.getId(),
+                            },
+                          });
+                          worldElement.dispatchEvent(broadcastEvent)
 
-                            uploading = false;
+                          entityApi.cancelSave = null;
 
-                            if (dirtyFlag) {
-                              dirtyFlag = false;
+                          if (dirtyFlag) {
+                            dirtyFlag = false;
 
-                              entityApi.save();
-                            }
+                            entityApi.save();
                           }
-                        });
+                        }
+                      });
 
-                      entityApi.dirtyTimeout = null;
+                    entityApi.cancelSave = () => {
+                      live = false;
+                    };
 
-                      uploading = true;
-                      dirtyFlag = false;
-                    }, DIRTY_TIME);
-                  } else {
-                    dirtyFlag = true;
-                  }
+                    dirtyFlag = false;
+                  }, DIRTY_TIME);
+
+                  entityApi.cancelSave = () => {
+                    cancelTimeout(timeout);
+                  };
                 }
               };
-              entityApi.dirtyTimeout = null;
 
               const _makePaperState = () => ({
                 lastPoint: null,
@@ -340,12 +341,10 @@ class ZDraw {
               papers.push(entityApi);
 
               entityApi._cleanup = () => {
-                live = false;
-
                 entityObject.remove(mesh);
 
-                const {dirtyTimeout} = entityApi;
-                clearTimeout(dirtyTimeout);
+                const {cancelSave} = entityApi;
+                cancelSave();
 
                 papers.splice(papers.indexOf(entityApi), 1);
               };
@@ -372,11 +371,11 @@ class ZDraw {
                   if (newValue) {
                     entityApi.load();
                   } else {
-                    const {dirtyTimeout} = entityApi;
+                    const {cancelSave} = entityApi;
 
-                    if (dirtyTimeout) {
-                      clearTimeout(dirtyTimeout);
-                      entityApi.dirtyTimeout = null;
+                    if (cancelSave) {
+                      cancelSave();
+                      entityApi.cancelSave = null;
                     }
                   }
 
