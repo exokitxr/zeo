@@ -554,92 +554,95 @@ class ZDraw {
 
                 for (let i = 0; i < papers.length; i++) {
                   const paper = papers[i];
-                  const {mesh} = paper;
-                  const {
-                    planeMesh: {
-                      material: {
-                        map: texture,
-                      },
-                    },
-                  } = mesh;
-                  const {image: canvas} = texture;
-
-                  const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
-                  const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
+                  const {mesh, file} = paper;
 
                   let drawable = false;
-                  SIDES.forEach(side => {
-                    const pencilState = pencilStates[side];
-                    const {grabbed} = pencilState;
+                  if (file) {
+                    const {
+                      planeMesh: {
+                        material: {
+                          map: texture,
+                        },
+                      },
+                    } = mesh;
+                    const {image: canvas} = texture;
 
-                    if (grabbed) {
-                      const gamepad = gamepads[side];
+                    const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+                    const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
 
-                      if (gamepad) {
-                        const {position: controllerPosition, rotation: controllerRotation} = gamepad;
-                        const pencilLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
-                        const planePoint = planeTarget.intersectLine(pencilLine);
+                    SIDES.forEach(side => {
+                      const pencilState = pencilStates[side];
+                      const {grabbed} = pencilState;
 
-                        if (planePoint) {
-                          drawable = true;
+                      if (grabbed) {
+                        const gamepad = gamepads[side];
 
-                          const {drawing} = pencilState;
+                        if (gamepad) {
+                          const {position: controllerPosition, rotation: controllerRotation} = gamepad;
+                          const pencilLine = geometryUtils.makeControllerLine(controllerPosition, controllerRotation);
+                          const planePoint = planeTarget.intersectLine(pencilLine);
 
-                          if (drawing) {
-                            const {z} = planePoint;
+                          if (planePoint) {
+                            drawable = true;
 
-                            if (z < PAPER_DRAW_DISTANCE) {
-                              const {paperStates} = paper;
-                              const paperState = paperStates[side];
+                            const {drawing} = pencilState;
 
-                              const {x: xFactor, y: yFactor} = planePoint;
-                              const currentPoint = new THREE.Vector2(
-                                Math.round(xFactor * WIDTH),
-                                Math.round(yFactor * HEIGHT)
-                              );
-                              const lastPoint = (() => {
-                                const {lastPoint} = paperState;
-                                if (lastPoint) {
-                                  return lastPoint;
-                                } else {
-                                  const fakeLastPoint = currentPoint.clone();
-                                  fakeLastPoint.y -= 10;
-                                  return fakeLastPoint;
-                                }
-                              })();
+                            if (drawing) {
+                              const {z} = planePoint;
 
-                              if (lastPoint.distanceTo(currentPoint) > 0) {
-                                const {color} = entityApi;
-                                const colorBrushImg = _getColorImg(brushImg, color);
+                              if (z < PAPER_DRAW_DISTANCE) {
+                                const {paperStates} = paper;
+                                const paperState = paperStates[side];
 
-                                const halfBrushW = colorBrushImg.width / 2;
-                                const halfBrushH = colorBrushImg.height / 2;
-                                const distance = lastPoint.distanceTo(currentPoint);
-                                const angle = (() => {
-                                  const dy = currentPoint.y - lastPoint.y;
-                                  const dx = currentPoint.x - lastPoint.x;
-                                  return mod(Math.atan2(dy, dx), Math.PI * 2);
+                                const {x: xFactor, y: yFactor} = planePoint;
+                                const currentPoint = new THREE.Vector2(
+                                  Math.round(xFactor * WIDTH),
+                                  Math.round(yFactor * HEIGHT)
+                                );
+                                const lastPoint = (() => {
+                                  const {lastPoint} = paperState;
+                                  if (lastPoint) {
+                                    return lastPoint;
+                                  } else {
+                                    const fakeLastPoint = currentPoint.clone();
+                                    fakeLastPoint.y -= 10;
+                                    return fakeLastPoint;
+                                  }
                                 })();
 
+                                if (lastPoint.distanceTo(currentPoint) > 0) {
+                                  const {color} = entityApi;
+                                  const colorBrushImg = _getColorImg(brushImg, color);
 
-                                for (let z = 0; z <= distance || z === 0; z++) {
-                                  const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
-                                  const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
-                                  canvas.ctx.drawImage(colorBrushImg, x, y);
+                                  const halfBrushW = colorBrushImg.width / 2;
+                                  const halfBrushH = colorBrushImg.height / 2;
+                                  const distance = lastPoint.distanceTo(currentPoint);
+                                  const angle = (() => {
+                                    const dy = currentPoint.y - lastPoint.y;
+                                    const dx = currentPoint.x - lastPoint.x;
+                                    return mod(Math.atan2(dy, dx), Math.PI * 2);
+                                  })();
+
+
+                                  for (let z = 0; z <= distance || z === 0; z++) {
+                                    const x = lastPoint.x + (Math.cos(angle) * z) - halfBrushW;
+                                    const y = lastPoint.y + (Math.sin(angle) * z) - halfBrushH;
+                                    canvas.ctx.drawImage(colorBrushImg, x, y);
+                                  }
+
+                                  texture.needsUpdate = true;
+
+                                  paper.save();
+
+                                  paperState.lastPoint = currentPoint;
                                 }
-
-                                texture.needsUpdate = true;
-
-                                paper.save();
-
-                                paperState.lastPoint = currentPoint;
                               }
                             }
                           }
                         }
                       }
-                    }
-                  });
+                    });
+                  }
 
                   const {lineMesh: {material}} = mesh;
                   material.color = new THREE.Color(drawable ? 0x000000 : 0x808080)
