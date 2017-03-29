@@ -2172,6 +2172,37 @@ class Tags {
               if (preview && preview.destroy) {
                 preview.destroy();
               }
+
+              const {type, metadata} = this;
+              if (type === 'file' && !(metadata && metadata.isTemp)) {
+                const itemAttributeValue = '/fs/' + this.id + '/' + this.name;
+
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+                  const {item} = tagMesh;
+                  const {type} = item;
+
+                  if (type === 'entity') {
+                    const {attributes} = item;
+
+                    for (const attributeName in attributes) {
+                      const attributeSpec = _getAttributeSpec(attributeName);
+
+                      if (attributeSpec) {
+                        const {type} = attributeSpec;
+
+                        if (type === 'file') {
+                          const {value: attributeValue} = attributes[attributeName];
+
+                          if (attributeValue === itemAttributeValue) {
+                            tagMesh.setAttribute(attributeName, undefined);
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
 

@@ -1720,6 +1720,9 @@ class World {
               mimeType,
               matrix: _getInFrontOfCameraMatrix(),
               instancing: true,
+              metadata: {
+                isTemp: true,
+              },
             };
             _handleAddTag(localUserId, itemSpec, 'world');
 
