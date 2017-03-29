@@ -376,7 +376,7 @@ class Zeo {
                       _styleButton(keyboardButton);
 
                       keyboardButton.addEventListener('click', e => {
-                        if (!webvr.isPresenting) {
+                        if (!webvr.isPresenting()) {
                           _enterKeyboardVR();
                         }
                       });
