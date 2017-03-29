@@ -222,7 +222,7 @@ class Fs {
             if (path) {
               return '/fs/' + id + path;
             } else {
-              return '/fs/' + id + '.zip';
+              return '/fs/' + id;
             }
           }
 

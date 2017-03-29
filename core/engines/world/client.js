@@ -1579,15 +1579,9 @@ class World {
           };
           tags.on('broadcast', _broadcast);
 
-          const _download = ({id, name}) => {
+          const _download = ({id}) => {
             const a = document.createElement('a');
-            if (name) {
-              a.href = fs.getFileUrl(id, name);
-              a.download = name.match(/\/?([^\/]*)$/)[1];
-            } else {
-              a.href = fs.getFileUrl(id);
-              a.download = id + '.zip';
-            }
+            a.href = fs.getFileUrl(id);
             a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
@@ -1717,7 +1711,6 @@ class World {
               id,
               name,
               mimeType,
-              paths,
               files,
             } = fileSpec;
             const itemSpec = {
@@ -1726,9 +1719,6 @@ class World {
               name,
               mimeType,
               matrix: _getInFrontOfCameraMatrix(),
-              metadata: {
-                paths,
-              },
               instancing: true,
             };
             _handleAddTag(localUserId, itemSpec, 'world');
@@ -1793,13 +1783,11 @@ class World {
                     return 'mime/' + suffix;
                   }
                 })();
-                const paths = files.map(f => f.path);
 
                 return _makeFileTagFromSpec({
                   id,
                   name,
                   mimeType,
-                  paths,
                   files,
                 });
               };
@@ -1912,7 +1900,6 @@ class World {
               const name = id + '.' + ext;
               const mimeType = 'mime/' + ext;
               const path = '/' + name;
-              const paths = [path];
               const file = new Blob([], {
                 type: mimeType,
               });
@@ -1923,7 +1910,6 @@ class World {
                 id,
                 name,
                 mimeType,
-                paths,
                 files,
               }).then(tagMesh => {
                 const {item} = tagMesh;

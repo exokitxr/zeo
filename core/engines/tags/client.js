@@ -1213,16 +1213,10 @@ class Tags {
                   return true;
                 } else if (match = onclick.match(/^tag:download:(.+)$/)) {
                   const id = match[1];
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item} = tagMesh;
-                  const {name, metadata: {paths}} = item;
 
                   const downloadEvent = {
                     id,
                   };
-                  if (paths.length === 1) {
-                    downloadEvent.name = name;
-                  }
                   tagsApi.emit('download', downloadEvent);
 
                   return true;
