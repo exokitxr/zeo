@@ -292,6 +292,35 @@ class Zeo {
                     const strikethrough = document.createElement('div');
                     strikethrough.style.cssText = 'position: absolute; top: 50%; margin-top: -1px; left: -5px; right: -5px; height: 2px; background-color: #F44336;';
 
+                    const _enterHeadsetVR = () => {
+                      _enterVR({
+                        stereoscopic: true,
+                        onExit: () => {
+                          overlay.style.display = 'flex';
+
+                          bootstrap.setVrMode(null);
+                        },
+                      });
+
+                      bootstrap.setVrMode('hmd');
+
+                      overlay.style.display = 'none';
+                    };
+                    const _enterKeyboardVR = () => {
+                      _enterVR({
+                        stereoscopic: false,
+                        onExit: () => {
+                          overlay.style.display = 'flex';
+
+                          bootstrap.setVrMode(null);
+                        },
+                      });
+
+                      bootstrap.setVrMode('keyboard');
+
+                      overlay.style.display = 'none';
+                    };
+
                     const _styleButton = button => {
                       if (!isInIframe) {
                         button.addEventListener('mouseover', e => {
@@ -320,24 +349,22 @@ class Zeo {
                         _styleButton(headsetButton);
 
                         headsetButton.addEventListener('click', e => {
-                          if (!webvr.display) {
-                            _enterVR({
-                              stereoscopic: true,
-                              onExit: () => {
-                                overlay.style.display = 'flex';
-
-                                bootstrap.setVrMode(null);
-                              },
-                            });
-
-                            bootstrap.setVrMode('hmd');
-
-                            overlay.style.display = 'none';
+                          if (!webvr.isPresenting()) {
+                            _enterHeadsetVR();
                           }
                         });
                       });
 
                       errorMessage.style.display = 'none';
+
+                      window.onvrdisplayactivate = null;
+                      window.addEventListener('vrdisplayactivate', e => {
+                        _enterHeadsetVR();
+                      });
+
+                      if (webvr.shouldBePresenting()) {
+                        _enterHeadsetVR();
+                      }
                     } else {
                       headsetButtons.forEach(headsetButton => {
                         headsetButton.appendChild(strikethrough.cloneNode(true));
@@ -349,19 +376,8 @@ class Zeo {
                       _styleButton(keyboardButton);
 
                       keyboardButton.addEventListener('click', e => {
-                        if (!webvr.display) {
-                          _enterVR({
-                            stereoscopic: false,
-                            onExit: () => {
-                              overlay.style.display = 'flex';
-
-                              bootstrap.setVrMode(null);
-                            },
-                          });
-
-                          bootstrap.setVrMode('keyboard');
-
-                          overlay.style.display = 'none';
+                        if (!webvr.isPresenting) {
+                          _enterKeyboardVR();
                         }
                       });
                     });

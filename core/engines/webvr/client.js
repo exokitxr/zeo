@@ -236,6 +236,14 @@ class WebVR {
             this._frameData = null;
           }
 
+          isPresenting() {
+            return Boolean(this.display);
+          }
+
+          shouldBePresenting() {
+            return bestDisplay.isPresenting;
+          }
+
           supportsWebVR() {
             return _canPresent(bestDisplay);
           }
@@ -465,11 +473,19 @@ class WebVR {
                   }
                 })();
 
-                return display.requestPresent([
-                  {
-                    source: domElement,
+                const _requestPresent = () => {
+                  if (!display.isPresenting) {
+                    return display.requestPresent([
+                      {
+                        source: domElement,
+                      }
+                    ]);
+                  } else {
+                    return Promise.resolve();
                   }
-                ])
+                };
+
+                return _requestPresent()
                   .then(() => new Promise((accept, reject) => {
                     const _listen = () => {
                       if (display instanceof FakeVRDisplay) {

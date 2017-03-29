@@ -24,7 +24,9 @@ class Three {
       return result;
     })();
 
+    const canvas = document.querySelector('#canvas');
     const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
       antialias: true,
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -32,7 +34,6 @@ class Three {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.autoUpdate = false;
     // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.domElement.style.display = 'none'; // hide the canvas until everything is loaded
     window.document.body.appendChild(renderer.domElement);
 
     window.addEventListener('resize', () => {
