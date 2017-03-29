@@ -99,17 +99,19 @@ class ZPaint {
                 entityObject.scale.set(position[7], position[8], position[9]);
               };
 
-              const _makePaintMesh = () => {
+              const _makePaintMesh = ({
+                positions = new Float32Array(MAX_NUM_POINTS * 2 * 3),
+                normals = new Float32Array(MAX_NUM_POINTS * 2 * 3),
+                colors = new Float32Array(MAX_NUM_POINTS * 2 * 3),
+                uvs = new Float32Array(MAX_NUM_POINTS * 2 * 2),
+                numPoints = 0,
+              } = {}) => {
                 const geometry = new THREE.BufferGeometry();
-                const positions = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                const normals = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-                const colors = new Float32Array(MAX_NUM_POINTS * 2 * 3);
                 geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-                const uvs = new Float32Array(MAX_NUM_POINTS * 2 * 2);
                 geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-                geometry.setDrawRange(0, 0);
+                geometry.setDrawRange(0, numPoints * 2);
 
                 const texture = new THREE.Texture(
                   brushImg,
@@ -136,7 +138,7 @@ class ZPaint {
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.drawMode = THREE.TriangleStripDrawMode;
                 mesh.frustumCulled = false;
-                mesh.lastPoint = 0;
+                mesh.lastPoint = numPoints;
                 mesh.getBuffer = () => {
                   const {lastPoint} = mesh;
                   const positionSize = lastPoint * 2 * 3;
@@ -153,6 +155,7 @@ class ZPaint {
                   array.set(normals.slice(0, positionSize), 1 + positionSize); // normal
                   array.set(colors.slice(0, positionSize), 1 + (positionSize * 2)); // color
                   array.set(uvs.slice(0, uvSize), 1 + (positionSize * 3)); // uv
+console.log('save mesh', {lastPoint}); // XXX
 
                   return new Uint8Array(array.buffer);
                 };
@@ -173,6 +176,32 @@ class ZPaint {
                 })
                   .then(arrayBuffer => {
                     console.log('loaded paintbrush', arrayBuffer);
+                    const array = new Float32Array(arrayBuffer);
+                    let frameIndex = 0;
+                    while (frameIndex < array.length) {
+                      const numPoints = Math.floor(array[frameIndex]);
+                      const positionSize = numPoints * 2 * 3;
+                      const uvSize = numPoints * 2 * 2;
+
+                      const positions = array.slice(1, 1 + positionSize);
+                      const normals = array.slice(1 + positionSize, 1 + (positionSize * 2));
+                      const colors = array.slice(1 + (positionSize * 2), 1 + (positionSize * 3));
+                      const uvs = array.slice(1 + (positionSize * 3), 1 + (positionSize * 3) + uvSize);
+
+                      const mesh = _makePaintMesh({
+                        positions,
+                        normals,
+                        colors,
+                        uvs,
+                        numPoints,
+                      });
+                      scene.add(mesh);
+                      meshes.push(mesh);
+
+console.log('make mesh', {numPoints, positions, normals, colors, uvs, mesh}); // XXX
+
+                      frameIndex += 1 + (positionSize * 3) + uvSize;
+                    }
                     /* const arrayValue = new Uint8ClampedArray(arrayBuffer);
 
                     if (arrayValue.length > 0) {
