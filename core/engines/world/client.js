@@ -211,7 +211,19 @@ class World {
               } else if (type === 'setTagAttribute') {
                 const {args: [userId, src, {name, value}]} = m;
 
-                _handleSetTagAttribute(userId, src, {name, value});
+                const tagMesh = _handleSetTagAttribute(userId, src, {name, value});
+
+                // this prevents this mutation from triggering an infinite recursion multiplayer update
+                // we simply ignore this mutation during the next enmtity mutation tick
+                if (tagMesh) {
+                  const {item} = tagMesh;
+                  const {id} = item;
+
+                  tags.ignoreEntityMutation({
+                    type: 'setAttribute',
+                    args: [id, name, value],
+                  });
+                }
               } else if (type === 'message') {
                 const {args: [detail]} = m;
 
@@ -602,8 +614,12 @@ class World {
 
               const tagMesh = elementManager.getTagMesh(id);
               tagMesh.setAttribute(name, value);
+
+              return tagMesh;
             } else {
               console.warn('invalid set tag attribute arguments', {src, name, value});
+
+              return null;
             }
           };
           const _handleMessage = detail => {

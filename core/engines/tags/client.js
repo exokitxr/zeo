@@ -1,3 +1,4 @@
+import deepEqual from 'deep-equal';
 import MultiMutex from 'multimutex';
 import CssSelectorParser from 'css-selector-parser';
 const cssSelectorParser = new CssSelectorParser.CssSelectorParser();
@@ -390,6 +391,7 @@ class Tags {
 
           const rootEntitiesElement = document.createElement('entities');
           rootWorldElement.appendChild(rootEntitiesElement);
+          const entityMutationIgnores = [];
           const rootEntitiesObserver = new MutationObserver(mutations => {
             for (let i = 0; i < mutations.length; i++) {
               const mutation = mutations[i];
@@ -474,11 +476,18 @@ class Tags {
 
                   const {item: entityItem} = entityElement;
                   const {id: entityId} = entityItem;
-                  tagsApi.emit('mutateSetAttribute', {
-                    id: entityId,
-                    name: attributeName,
-                    value: newValueJson,
-                  });
+                  if (!entityMutationIgnores.some(({type, args: [id, name, value]}) =>
+                    type === 'setAttribute' &&
+                    id === entityId &&
+                    name === attributeName &&
+                    deepEqual(value, newValueJson)
+                  )) {
+                    tagsApi.emit('mutateSetAttribute', {
+                      id: entityId,
+                      name: attributeName,
+                      value: newValueJson,
+                    });
+                  }
 
                   const oldEntityElement = (() => {
                     const oldEntityElement = entityElement.cloneNode(false);
@@ -539,6 +548,8 @@ class Tags {
                 }
               }
             }
+
+            entityMutationIgnores.length = 0;
 
             tagsApi.emit('mutate');
           });
@@ -2796,6 +2807,10 @@ class Tags {
                 detail: detail,
               });
               rootWorldElement.dispatchEvent(e);
+            }
+
+            ignoreEntityMutation(entityMutationIgnoreSpec) {
+              entityMutationIgnores.push(entityMutationIgnoreSpec);
             }
 
             listen() {
