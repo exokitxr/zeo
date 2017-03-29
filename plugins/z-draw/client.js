@@ -19,7 +19,7 @@ const SIDES = ['left', 'right'];
 
 class ZDraw {
   mount() {
-    const {three: {THREE}, input, elements, render, pose, world, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE}, input, elements, render, pose, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this._cleanup = () => {
@@ -329,7 +329,7 @@ class ZDraw {
                               id: entityElement.getId(),
                             },
                           });
-                          worldElement.dispatchEvent(broadcastEvent)
+                          worldElement.dispatchEvent(broadcastEvent);
 
                           entityApi.cancelSave = null;
 
@@ -407,6 +407,11 @@ class ZDraw {
                       entityApi.cancelSave = null;
                     }
                   }
+
+                  break;
+                }
+                case 'color': {
+                  entityApi.color = new THREE.Color(newValue);
 
                   break;
                 }

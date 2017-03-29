@@ -186,6 +186,10 @@ class Fs {
                     _parse();
                   }));
               }
+              case 'json': {
+                return fetch(url)
+                  .then(res => res.json());
+              }
               case 'arrayBuffer': {
                 return fetch(url)
                   .then(res => res.arrayBuffer());
