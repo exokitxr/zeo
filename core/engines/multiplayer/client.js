@@ -110,7 +110,7 @@ class Multiplayer {
 
                 getRemotePlayerMesh(id) {
                   const {remotePlayerMeshes} = this;
-                  return remotePlayerMeshes.get(id);
+                  return remotePlayerMeshes.get(id) || null;
                 }
 
                 addRemotePlayerMesh(id, mesh) {

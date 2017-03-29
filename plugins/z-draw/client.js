@@ -695,22 +695,20 @@ class ZDraw {
           elements.registerComponent(this, pencilComponent);
 
           const _message = e => {
-            const {detail} = e;
+            const {detail: {type}} = e;
 
-            if (typeof detail === 'object' && detail !== null) {
-              const {type, id} = detail;
+            if (type === 'paper') {
+              const {id} = detail;
 
-              if (type === 'paper' && typeof id === 'string') {
-                for (let i = 0; i < papers.length; i++) {
-                  const paper = papers[i];
-                  const {entityElement} = paper;
+              for (let i = 0; i < papers.length; i++) {
+                const paper = papers[i];
+                const {entityElement} = paper;
 
-                  if (entityElement.getId() === id) {
-                    const {file} = entityElement;
+                if (entityElement.getId() === id) {
+                  const {file} = entityElement;
 
-                    if (file) {
-                      entityElement.load();
-                    }
+                  if (file) {
+                    entityElement.load();
                   }
                 }
               }

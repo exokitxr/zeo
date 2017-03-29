@@ -26,8 +26,10 @@ class ZGrabbable {
         cyborg,
       ]) => {
         if (live) {
-          const {three: {THREE}, elements, pose, input, utils: {js: {events: {EventEmitter}}}} = zeo;
-          const player = cyborg.getPlayer();
+          const {three: {THREE}, elements, pose, input, player, utils: {js: {events: {EventEmitter}}}} = zeo;
+
+          const worldElement = elements.getWorldElement();
+          const localUserId = player.getId();
 
           const zeroVector = new THREE.Vector3();
           const zeroQuaternion = new THREE.Quaternion();
@@ -48,6 +50,64 @@ class ZGrabbable {
           const globalGrabStates = {
             left: _makeGlobalGrabState(),
             right: _makeGlobalGrabState(),
+          };
+
+          const _grab = (userId, side, elementId) => {
+            const isMe = userId === localUserId;
+
+            const object = (() => {
+              const grabbable = grabbables.find(grabbable => grabbable.entityElement.getId() === elementId);
+              return grabbable ? grabbable.object : null;
+            })();
+            const controllerMeshes = (() => {
+              if (isMe) {
+                return player.getControllerMeshes();
+              } else {
+                return player.getRemoteControllerMeshes(userId);
+              }
+            })();
+
+            const controllerMesh = controllerMeshes[side];
+            object.originalParent = object.parent;
+            controllerMesh.add(object);
+            object.position.copy(zeroVector);
+            object.quaternion.copy(zeroQuaternion);
+            object.scale.copy(oneVector);
+
+            if (isMe) {
+              const broadcastEvent = new CustomEvent('broadcast', {
+                detail: {
+                  type: 'grabbable.grab',
+                  args: [userId, side, elementId],
+                },
+              });
+              worldElement.dispatchEvent(broadcastEvent);
+            }
+          };
+          const _release = (userId, side, elementId) => {
+            const isMe = userId === localUserId;
+
+            const object = (() => {
+              const grabbable = grabbables.find(grabbable => grabbable.entityElement.getId() === elementId);
+              return grabbable ? grabbable.object : null;
+            })();
+
+            const {position, rotation, scale} = _decomposeObjectMatrixWorld(object);
+            object.originalParent.add(object);
+            object.originalParent = null;
+            object.position.copy(position);
+            object.quaternion.copy(rotation);
+            object.scale.copy(scale);
+
+            if (isMe) {
+              const broadcastEvent = new CustomEvent('broadcast', {
+                detail: {
+                  type: 'grabbable.release',
+                  args: [userId, side, elementId],
+                },
+              });
+              worldElement.dispatchEvent(broadcastEvent);
+            }
           };
 
           const grabbables = [];
@@ -140,25 +200,17 @@ class ZGrabbable {
 
               if (!globalGrabbable) {
                 const {entityElement, object} = this;
-                const {parent: originalParent} = object;
                 const originalPosition = entityElement.hasAttribute('position');
                 const originalSpPhysics = entityElement.hasAttribute('sp-physics');
 
                 const grabState = {
                   side,
-                  originalParent,
                   originalPosition,
                   originalSpPhysics,
                 };
                 this.grabState = grabState;
 
-                const controllers = cyborg.getControllers();
-                const controller = controllers[side];
-                const {mesh: controllerMesh} = controller;
-                object.position.copy(zeroVector);
-                object.quaternion.copy(zeroQuaternion);
-                object.scale.copy(oneVector);
-                controllerMesh.add(object);
+                _grab(localUserId, side, entityElement.getId());
 
                 if (originalSpPhysics) {
                   entityElement.setAttribute('sp-physics', JSON.stringify(false));
@@ -169,7 +221,7 @@ class ZGrabbable {
             }
 
             release() {
-              const {entityElement, object, grabState: {side, originalParent, originalPosition, originalSpPhysics}} = this;
+              const {entityElement, object, grabState: {side, originalPosition, originalSpPhysics}} = this;
 
               this.grabState = null;
 
@@ -177,8 +229,8 @@ class ZGrabbable {
               globalGrabState.grabbable = null;
 
               const {position, rotation, scale} = _decomposeObjectMatrixWorld(object);
-              const linearVelocity = player.getControllerLinearVelocity(side);
-              const angularVelocity = player.getControllerAngularVelocity(side);
+              const linearVelocity = pose.getControllerLinearVelocity(side);
+              const angularVelocity = pose.getControllerAngularVelocity(side);
               const releaseEvent = new CustomEvent('release', {
                 detail: {
                   side,
@@ -192,10 +244,7 @@ class ZGrabbable {
                 },
               });
 
-              object.position.copy(position);
-              object.quaternion.copy(rotation);
-              object.scale.copy(scale);
-              originalParent.add(object);
+              _release(localUserId, side, entityElement.getId());
 
               if (originalPosition) {
                 entityElement.setAttribute('position', JSON.stringify(position.toArray().concat(rotation.toArray()).concat(scale.toArray())));
@@ -397,6 +446,20 @@ class ZGrabbable {
             }
           };
           elements.registerComponent(this, grabbableComponent);
+
+          worldElement.addEventListener('message', e => {
+            const {detail: {type}} = e;
+
+            if (type === 'grabbable.grab') {
+              const {detail: {args: [userId, side, elementId]}} = e;
+
+              _grab(userId, side, elementId);
+            } else if (type === 'grabbable.release') {
+              const {detail: {args: [userId, side, elementId]}} = e;
+
+              _release(userId, side, elementId);
+            }
+          });
 
           this._cleanup = () => {
             elements.unregisterComponent(this, grabbableComponent);

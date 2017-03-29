@@ -471,6 +471,16 @@ class Zeo {
                       resetPose() {
                         webvr.resetPose();
                       }
+
+                      getControllerLinearVelocity(side) {
+                        const player = cyborg.getPlayer();
+                        return player.getControllerLinearVelocity(side);
+                      }
+
+                      getControllerAngularVelocity(side) {
+                        const player = cyborg.getPlayer();
+                        return player.getControllerAngularVelocity(side);
+                      }
                     }
 
                     class ZeoInputApi extends EventEmitter {
@@ -548,6 +558,17 @@ class Zeo {
 
                       getControllerMeshes() {
                         return controllerMeshes;
+                      }
+
+                      getRemoteControllerMeshes(userId) {
+                        const remotePlayerMesh = multiplayer.getRemotePlayerMesh(userId);
+
+                        if (remotePlayerMesh) {
+                          const {controllers: controllerMeshes} = remotePlayerMesh;
+                          return controllerMeshes;
+                        } else {
+                          return null;
+                        }
                       }
                     }
 
