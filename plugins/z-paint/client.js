@@ -175,7 +175,6 @@ console.log('save mesh', {lastPoint}); // XXX
                   type: 'arrayBuffer',
                 })
                   .then(arrayBuffer => {
-                    console.log('loaded paintbrush', arrayBuffer);
                     const array = new Float32Array(arrayBuffer);
                     let frameIndex = 0;
                     while (frameIndex < array.length) {
@@ -183,10 +182,10 @@ console.log('save mesh', {lastPoint}); // XXX
                       const positionSize = numPoints * 2 * 3;
                       const uvSize = numPoints * 2 * 2;
 
-                      const positions = array.slice(1, 1 + positionSize);
-                      const normals = array.slice(1 + positionSize, 1 + (positionSize * 2));
-                      const colors = array.slice(1 + (positionSize * 2), 1 + (positionSize * 3));
-                      const uvs = array.slice(1 + (positionSize * 3), 1 + (positionSize * 3) + uvSize);
+                      const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
+                      const normals = array.slice(frameIndex + 1 + positionSize, frameIndex + 1 + (positionSize * 2));
+                      const colors = array.slice(frameIndex + 1 + (positionSize * 2), frameIndex + 1 + (positionSize * 3));
+                      const uvs = array.slice(frameIndex + 1 + (positionSize * 3), frameIndex + 1 + (positionSize * 3) + uvSize);
 
                       const mesh = _makePaintMesh({
                         positions,
@@ -198,35 +197,8 @@ console.log('save mesh', {lastPoint}); // XXX
                       scene.add(mesh);
                       meshes.push(mesh);
 
-console.log('make mesh', {numPoints, positions, normals, colors, uvs, mesh}); // XXX
-
                       frameIndex += 1 + (positionSize * 3) + uvSize;
                     }
-                    /* const arrayValue = new Uint8ClampedArray(arrayBuffer);
-
-                    if (arrayValue.length > 0) {
-                      const {
-                        planeMesh: {
-                          material: {
-                            map: texture,
-                          },
-                        },
-                      } = mesh;
-                      const {
-                        image: canvas,
-                      } = texture;
-                      const {ctx} = canvas;
-                      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                      const {data: imageDataData} = imageData;
-
-                      if (arrayValue.length === imageDataData.length) {
-                        imageDataData.set(arrayValue);
-                        ctx.putImageData(imageData, 0, 0);
-                        texture.needsUpdate = true;
-                      } else {
-                        console.warn('draw paper tried to load invalid file data', {data: arrayValue});
-                      }
-                    } */
                   });
               };
 
