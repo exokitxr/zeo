@@ -490,44 +490,45 @@ class Tags {
                     return oldEntityElement;
                   })();
 
-                  const boundComponentSpecs = _getBoundComponentAttributeSpecs({[attributeName]: true});
-                  for (let i = 0; i < boundComponentSpecs.length; i++) {
-                    const boundComponentSpec = boundComponentSpecs[i];
-                    const {componentElement, matchingAttributes} = boundComponentSpec;
-                    const {componentApi} = componentElement;
-                    const {selector: componentSelector = 'div', attributes: componentAttributes = {}} = componentApi;
+                  for (let i = 0; i < componentApis.length; i++) {
+                    const componentApi = componentApis[i];
+                    const {selector: componentSelector = 'div', attributes: componentAttributes = []} = componentApi;
                     const oldElementMatches = oldEntityElement.webkitMatchesSelector(componentSelector);
                     const newElementMatches = entityElement.webkitMatchesSelector(componentSelector);
 
-                    for (let j = 0; j < matchingAttributes.length; j++) {
-                      const attributeName = matchingAttributes[j];
+                    if (oldElementMatches || newElementMatches) {
+                      const componentApiInstance = componentApiInstances[i];
+                      const componentElement = componentApiInstance;
                       const componentAttribute = componentAttributes[attributeName];
-                      const {type: attributeType} = componentAttribute;
-                      const oldAttributeValue = menuUtils.castValueToCallbackValue(oldValueJson, attributeType);
-                      const newAttributeValue = menuUtils.castValueToCallbackValue(newValueJson, attributeType);
 
-                      if (newValueString !== null) { // adding attribute
-                        if (!oldElementMatches && newElementMatches) { // if no matching attributes were previously applied, mount the component on the entity
-                          _addEntityCallback(componentElement, entityElement);
+                      if (componentAttribute) {
+                        const {type: attributeType} = componentAttribute;
+                        const oldAttributeValue = menuUtils.castValueToCallbackValue(oldValueJson, attributeType);
+                        const newAttributeValue = menuUtils.castValueToCallbackValue(newValueJson, attributeType);
+
+                        if (newValueString !== null) { // adding attribute
+                          if (!oldElementMatches && newElementMatches) { // if no matching attributes were previously applied, mount the component on the entity
+                            _addEntityCallback(componentElement, entityElement);
+                          }
+                          if (newElementMatches) {
+                            componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                          }
+                        } else { // removing attribute
+                          if (oldElementMatches && !newElementMatches) { // if this is the last attribute that applied, unmount the component from the entity
+                            _removeEntityCallback(componentElement, entityElement);
+                          } else {
+                            componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                          }
                         }
-                        if (newElementMatches) {
-                          componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
-                        }
-                      } else { // removing attribute
-                        if (oldElementMatches && !newElementMatches) { // if this is the last attribute that applied, unmount the component from the entity
-                          _removeEntityCallback(componentElement, entityElement);
+
+                        const {attributes: entityAttributes} = entityItem;
+                        if (newValueString !== null) {
+                          entityAttributes[attributeName] = {
+                            value: newValueJson,
+                          };
                         } else {
-                          componentElement.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                          delete entityAttributes[attributeName];
                         }
-                      }
-
-                      const {attributes: entityAttributes} = entityItem;
-                      if (newValueString !== null) {
-                        entityAttributes[attributeName] = {
-                          value: newValueJson,
-                        };
-                      } else {
-                        delete entityAttributes[attributeName];
                       }
                     }
 
@@ -2262,17 +2263,19 @@ class Tags {
 
             return result;
           };
-          const _getBoundComponentAttributeSpecs = entityAttributes => {
+          const _getBoundComponentAttributeSpecs = entityAttribute => {
             const result = [];
 
             for (let i = 0; i < componentApis.length; i++) {
               const componentApi = componentApis[i];
-              const componentApiInstance = componentApiInstances[i];
-              const {attributes: componentAttributes = {}} = componentApi;
+              const {selector: componentSelector = 'div'} = componentApi;
+              const {rule: {attrs: cattrs = []}} = cssSelectorParser.parse(componentSelector);
+              const componentAttributes = cattrs.map(attr => attr.name);
 
-              const matchingAttributes = Object.keys(entityAttributes).filter(attributeName => (attributeName in componentAttributes));
-              if (matchingAttributes.length > 0) {
+              if (componentAttributes.indexOf(entityAttribute) !== -1) {
+                const componentApiInstance = componentApiInstances[i];
                 const componentElement = componentApiInstance;
+                const matchingAttributes = [entityAttribute];
 
                 result.push({
                   componentElement,
