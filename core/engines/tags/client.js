@@ -33,6 +33,7 @@ const itemPageSymbol = Symbol();
 const itemPausedSymbol = Symbol();
 const itemValueSymbol = Symbol();
 const itemPreviewSymbol = Symbol();
+const itemTempSymbol = Symbol();
 const MODULE_TAG_NAME = 'module'.toUpperCase();
 
 class Tags {
@@ -2005,6 +2006,7 @@ class Tags {
               this[itemPausedSymbol] = true;
               this[itemValueSymbol] = 0;
               this[itemPreviewSymbol] = false;
+              this[itemTempSymbol] = false;
             }
 
             get instance() {
@@ -2048,6 +2050,12 @@ class Tags {
             }
             set preview(preview) {
               this[itemPreviewSymbol] = preview;
+            }
+            get temp() {
+              return this[itemTempSymbol];
+            }
+            set temp(temp) {
+              this[itemTempSymbol] = temp;
             }
 
             setAttribute(attributeName, newValue) {
@@ -2184,8 +2192,8 @@ class Tags {
                 preview.destroy();
               }
 
-              const {type, metadata} = this;
-              if (type === 'file' && !(metadata && metadata.isTemp)) {
+              const {type, temp} = this;
+              if (type === 'file' && !temp) {
                 const itemAttributeValue = '/fs/' + this.id + '/' + this.name;
 
                 for (let i = 0; i < tagMeshes.length; i++) {

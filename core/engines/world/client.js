@@ -1735,10 +1735,6 @@ class World {
               name,
               mimeType,
               matrix: _getInFrontOfCameraMatrix(),
-              instancing: true,
-              metadata: {
-                isTemp: true,
-              },
             };
             _handleAddTag(localUserId, itemSpec, 'world');
 
@@ -1747,6 +1743,9 @@ class World {
             if (!rend.isOpen()) {
               tempTagMesh.visible = false;
             }
+            const {item: tempItem} = tempTagMesh;
+            tempItem.instancing = true;
+            tempItem.temp = true;
 
             const _cleanupTempTagMesh = () => {
               elementManager.remove(tempTagMesh);
