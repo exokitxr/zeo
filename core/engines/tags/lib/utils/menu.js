@@ -196,11 +196,15 @@ const castValueStringToValue = (s, type, min, max, step, options) => {
   }
 };
 const castValueToCallbackValue = (value, type) => {
-  switch (type) {
-    case 'file':
-      return fs.makeFile(value);
-    default:
-      return value;
+  if (value !== undefined) {
+    switch (type) {
+      case 'file':
+        return fs.makeFile(value);
+      default:
+        return value;
+    }
+  } else {
+    return value;
   }
 };
 const castValueValueToString = (s, type) => {

@@ -155,14 +155,13 @@ class ZPaint {
                   array.set(normals.slice(0, positionSize), 1 + positionSize); // normal
                   array.set(colors.slice(0, positionSize), 1 + (positionSize * 2)); // color
                   array.set(uvs.slice(0, uvSize), 1 + (positionSize * 3)); // uv
-console.log('save mesh', {lastPoint}); // XXX
 
                   return new Uint8Array(array.buffer);
                 };
 
                 return mesh;
               };
-              let mesh = [];
+              let mesh = null;
 
               const meshes = [];
 
@@ -171,35 +170,53 @@ console.log('save mesh', {lastPoint}); // XXX
               entityApi.load = () => {
                 const {file} = entityApi;
 
-                file.read({
-                  type: 'arrayBuffer',
-                })
-                  .then(arrayBuffer => {
-                    const array = new Float32Array(arrayBuffer);
-                    let frameIndex = 0;
-                    while (frameIndex < array.length) {
-                      const numPoints = Math.floor(array[frameIndex]);
-                      const positionSize = numPoints * 2 * 3;
-                      const uvSize = numPoints * 2 * 2;
+                if (file) {
+                  file.read({
+                    type: 'arrayBuffer',
+                  })
+                    .then(arrayBuffer => {
+                      const array = new Float32Array(arrayBuffer);
+                      let frameIndex = 0;
+                      while (frameIndex < array.length) {
+                        const numPoints = Math.floor(array[frameIndex]);
+                        const positionSize = numPoints * 2 * 3;
+                        const uvSize = numPoints * 2 * 2;
 
-                      const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
-                      const normals = array.slice(frameIndex + 1 + positionSize, frameIndex + 1 + (positionSize * 2));
-                      const colors = array.slice(frameIndex + 1 + (positionSize * 2), frameIndex + 1 + (positionSize * 3));
-                      const uvs = array.slice(frameIndex + 1 + (positionSize * 3), frameIndex + 1 + (positionSize * 3) + uvSize);
+                        const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
+                        const normals = array.slice(frameIndex + 1 + positionSize, frameIndex + 1 + (positionSize * 2));
+                        const colors = array.slice(frameIndex + 1 + (positionSize * 2), frameIndex + 1 + (positionSize * 3));
+                        const uvs = array.slice(frameIndex + 1 + (positionSize * 3), frameIndex + 1 + (positionSize * 3) + uvSize);
 
-                      const mesh = _makePaintMesh({
-                        positions,
-                        normals,
-                        colors,
-                        uvs,
-                        numPoints,
-                      });
-                      scene.add(mesh);
-                      meshes.push(mesh);
+                        const mesh = _makePaintMesh({
+                          positions,
+                          normals,
+                          colors,
+                          uvs,
+                          numPoints,
+                        });
+                        scene.add(mesh);
+                        meshes.push(mesh);
 
-                      frameIndex += 1 + (positionSize * 3) + uvSize;
-                    }
+                        frameIndex += 1 + (positionSize * 3) + uvSize;
+                      }
+                    });
+                } else {
+                  if (mesh) {
+                    scene.remove(mesh);
+                    mesh = null;
+                  }
+
+                  for (let i = 0; i < meshes.length; i++) {
+                    const mesh = meshes[i];
+                    scene.remove(mesh);
+                  }
+                  meshes.length = 0;
+
+                  SIDES.forEach(side => {
+                    const paintState = paintStates[side];
+                    paintState.painting = false;
                   });
+                }
               };
 
               let dirtyFlag = false;
@@ -276,35 +293,43 @@ console.log('save mesh', {lastPoint}); // XXX
               entityElement.addEventListener('release', _release);
               const _triggerdown = e => {
                 const {side} = e;
-                const paintState = paintStates[side];
-                const {grabbed} = paintState;
+                const {file} = entityApi;
 
-                if (grabbed) {
-                  paintState.painting = true;
-                }
+                if (file) {
+                  const paintState = paintStates[side];
+                  const {grabbed} = paintState;
 
-                const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
-                if (numPainting === 1) {
-                  mesh = _makePaintMesh();
+                  if (grabbed) {
+                    paintState.painting = true;
+                  }
 
-                  scene.add(mesh);
+                  const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                  if (numPainting === 1) {
+                    mesh = _makePaintMesh();
+
+                    scene.add(mesh);
+                  }
                 }
               };
               input.on('triggerdown', _triggerdown);
               const _triggerup = e => {
                 const {side} = e;
-                const paintState = paintStates[side];
-                const {grabbed} = paintState;
+                const {file} = entityApi;
 
-                if (grabbed) {
-                  paintState.painting = false;
-                }
+                if (file) {
+                  const paintState = paintStates[side];
+                  const {grabbed} = paintState;
 
-                const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
-                if (numPainting === 0) {
-                  meshes.push(mesh);
+                  if (grabbed) {
+                    paintState.painting = false;
+                  }
 
-                  mesh = null;
+                  const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                  if (numPainting === 0) {
+                    meshes.push(mesh);
+
+                    mesh = null;
+                  }
                 }
               };
               input.on('triggerup', _triggerup);
@@ -517,9 +542,9 @@ console.log('save mesh', {lastPoint}); // XXX
                 case 'file': {
                   entityApi.file = newValue;
 
-                  if (newValue) {
-                    entityApi.load();
-                  } else {
+                  entityApi.load();
+
+                  if (!newValue) {
                     const {cancelSave} = entityApi;
 
                     if (cancelSave) {
