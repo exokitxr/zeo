@@ -6,7 +6,7 @@ const SIDES = ['left', 'right'];
 
 class ZPaint {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -96,7 +96,7 @@ class ZPaint {
                 entityObject.scale.set(position[7], position[8], position[9]);
               };
 
-              const mesh = (() => {
+              const _makePaintMesh = () => {
                 const geometry = new THREE.BufferGeometry();
                 const positions = new Float32Array(MAX_NUM_POINTS * 6 * 3);
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -133,14 +133,15 @@ class ZPaint {
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.drawMode = THREE.TriangleStripDrawMode;
                 mesh.frustumCulled = false;
+                mesh.lastPoint = 0;
                 return mesh;
-              })();
-              scene.add(mesh);
+              };
+              let mesh = [];
+
+              const meshes = [];
 
               const color = new THREE.Color(0xF44336);
               entityApi.color = color;
-
-              let lastPoint = 0;
 
               const _makePaintState = () => ({
                 grabbed: false,
@@ -175,6 +176,13 @@ class ZPaint {
                 if (grabbed) {
                   paintState.painting = true;
                 }
+
+                const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                if (numPainting === 1) {
+                  mesh = _makePaintMesh();
+
+                  scene.add(mesh);
+                }
               };
               input.on('triggerdown', _triggerdown);
               const _triggerup = e => {
@@ -184,6 +192,13 @@ class ZPaint {
 
                 if (grabbed) {
                   paintState.painting = false;
+                }
+
+                const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                if (numPainting === 0) {
+                  meshes.push(mesh);
+
+                  mesh = null;
                 }
               };
               input.on('triggerup', _triggerup);
@@ -199,6 +214,7 @@ class ZPaint {
                   const {painting} = paintState;
 
                   if (painting) {
+                    let {lastPoint} = mesh;
                     const {lastPointTime} = paintState;
                     const lastFrame = _getFrame(lastPointTime);
                     const currentPointTime = worldTime;
@@ -336,6 +352,7 @@ class ZPaint {
                       uvsAttribute.needsUpdate = true;
 
                       lastPoint++;
+                      mesh.lastPoint = lastPoint;
 
                       const {geometry} = mesh;
                       geometry.setDrawRange(0, lastPoint * 2);
@@ -348,7 +365,13 @@ class ZPaint {
               render.on('update', _update);
 
               entityApi._cleanup = () => {
-                scene.remove(mesh);
+                if (mesh) {
+                  scene.remove(mesh);
+                }
+                for (let i = 0; i < meshes.length; i++) {
+                  const mesh = meshes[i];
+                  scene.remove(mesh);
+                }
 
                 entityElement.removeEventListener('grab', _grab);
                 entityElement.removeEventListener('release', _release);
