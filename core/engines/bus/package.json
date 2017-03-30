@@ -1,7 +1,0 @@
-{
-  "name": "bus",
-  "description": "Provides event publish/subscribe for the zeo core.",
-  "version": "0.0.1",
-  "client": "client.js",
-  "dependencies": {}
-}
