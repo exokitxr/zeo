@@ -320,7 +320,12 @@ const _getAllPlugins = () => {
     path.join(config.dirname, '/core/plugins'),
   ].map(_readdir))
     .then(files => _filterDirectories(_flatten(files))
-      .then(directories => directories.map(directory => directory.slice(config.dirname.length)))
+      .then(directories =>
+        directories.map(directory => directory.slice(config.dirname.length))
+          .concat([ // preinstalled plugins for hub tutorial
+            '/plugins/z-cake',
+          ])
+      )
     );
 };
 
