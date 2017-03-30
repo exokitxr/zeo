@@ -101,7 +101,7 @@ class Multiplayer {
                   playerStatuses.forEach(playerStatus => {
                     result[i++] = playerStatus.username;
                   });
-                  return result;
+                  return result.sort((a, b) => a.localeCompare(b));
                 }
 
                 updateStatus(status) {

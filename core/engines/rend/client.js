@@ -35,7 +35,7 @@ class Rend {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {server: {url: serverUrl, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
+    const {metadata: {server: {url: serverUrl, worldname: serverWorldname, enabled: serverEnabled}, hub: {url: hubUrl}}} = archae;
 
     let live = true;
     const cleanups = [];
@@ -139,7 +139,7 @@ class Rend {
         };
         const statusState = {
           username: null,
-          worldname: bootstrap.getCurrentServer().worldname,
+          worldname: serverWorldname,
           users: null,
           hasHub: Boolean(hubSpec),
           loading: true,
@@ -345,7 +345,7 @@ class Rend {
 
                     navbarState.tab = newTab;
 
-                    _updatePages();
+                    _updateNavbarPage();
 
                     rendApi.emit('tabchange', newTab);
 
@@ -756,13 +756,30 @@ class Rend {
           });
         });
 
-        const _updatePages = () => {
+        let lastMenuStatusJsonString = '';
+        let lastMenuIconImg = '';
+        const _updateMenuPage = () => {
           if (menuMesh) {
-            const {menuUi, navbarUi} = menuMesh;
+            const menuStatusJsonString = JSON.stringify(statusState);
 
-            menuUi.update();
+            if (menuStatusJsonString !== lastMenuStatusJsonString || iconImg !== lastMenuIconImg) {
+              const {menuUi} = menuMesh;
+              menuUi.update();
+
+              lastMenuStatusJsonString = menuStatusJsonString;
+              lastMenuIconImg = iconImg;
+            }
+          };
+        };
+        const _updateNavbarPage = () => {
+          if (menuMesh) {
+            const {navbarUi} = menuMesh;
             navbarUi.update()
           };
+        };
+        const _updatePages = () => {
+          _updateMenuPage();
+          _updateNavbarPage();
         };
         _updatePages();
 
@@ -905,7 +922,7 @@ class Rend {
               statusState.loading = false;
             }
 
-            _updatePages();
+            _updateMenuPage();
           }
 
           update() { // XXX move this
@@ -940,7 +957,7 @@ class Rend {
             menuState.open = true;
             menuState.loggedIn = true;
 
-            _updatePages();
+            _updateMenuPage();
 
             menuMesh.visible = true;
             keyboardMesh.visible = true;
@@ -952,7 +969,7 @@ class Rend {
             menuState.open = false;
             menuState.loggedIn = false;
 
-            _updatePages();
+            _updateMenuPage();
 
             menuMesh.visible = false;
             keyboardMesh.visible = false;
