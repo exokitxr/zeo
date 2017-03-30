@@ -286,7 +286,7 @@ class Config {
                   if (newFrame !== oldFrame) {
                     statsState.frame = newFrame;
 
-                    _updatePages();
+                    statsUi.update();
                   }
                 };
 
@@ -333,13 +333,13 @@ class Config {
                         configState.inputValue = px;
                         focusState.type = 'config';
 
-                        _updatePages();
+                        configUi.update();
                       } else if (onclick === 'config:resolution') {
                         const {value} = configHoverState;
 
                         configState.sliderValue = value;
 
-                        _updatePages();
+                        configUi.update();
                       } else if (onclick === 'config:airlock') {
                         const {airlockCheckboxValue} = configState;
 
@@ -348,7 +348,7 @@ class Config {
                         _saveConfig();
                         configApi.updateConfig();
 
-                        _updatePages();
+                        configUi.update();
                       } else if (onclick === 'config:voiceChat') {
                         const {voiceChatCheckboxValue} = configState;
 
@@ -357,7 +357,7 @@ class Config {
                         _saveConfig();
                         configApi.updateConfig();
 
-                        _updatePages();
+                        configUi.update();
                       } else if (onclick === 'config:stats') {
                         const {statsCheckboxValue} = configState;
 
@@ -372,7 +372,7 @@ class Config {
                         _saveConfig();
                         configApi.updateConfig();
 
-                        _updatePages();
+                        configUi.update();
                       } else if (onclick === 'config:logOut') {
                         _requestLogout()
                           .then(() => {
@@ -384,7 +384,7 @@ class Config {
                             });
                           });
                       } else {
-                        _updatePages();
+                        configUi.update();
                       }
                     }
                   }
@@ -407,7 +407,7 @@ class Config {
                           focusState.type = '';
                         }
 
-                        _updatePages();
+                        configUi.update();
 
                         e.stopImmediatePropagation();
                       }
