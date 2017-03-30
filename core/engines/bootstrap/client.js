@@ -49,9 +49,6 @@ class Bootstrap {
           const {events} = jsUtils;
           const {EventEmitter} = events;
 
-          const serversJson = { // XXX get rid of this
-            servers: [],
-          };
           const isInIframe = (() => {
             try {
               return window.self !== window.top;
@@ -76,10 +73,6 @@ class Bootstrap {
           class BootstrapApi extends EventEmitter {
             getInitialUrl() {
               return initialUrl;
-            }
-
-            getServers() {
-              return serversJson.servers;
             }
 
             getCurrentServer() {
