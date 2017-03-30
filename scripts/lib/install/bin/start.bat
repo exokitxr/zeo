@@ -1,0 +1,1 @@
+bash -c 'PATH="$(pwd)/pkg/node/bin:$PATH" ^&^& ./scripts/windows.sh ^&^& ./pkg/FirefoxNightlyPortable/FirefoxPortable.exe -url https://127.0.0.1:7777'
