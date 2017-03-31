@@ -23,9 +23,12 @@ import {
   DEFAULT_USER_HEIGHT,
 } from './lib/constants/menu';
 import menuRenderer from './lib/render/menu';
+import dataUrlToBlob from 'dataurl-to-blob';
 
 const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const NUM_INVENTORY_ITEMS = 4;
+const SERVER_CUBEMAP_INITIAL_ANNOUNCE_TIMEOUT = 2 * 1000;
+const SERVER_CUBEMAP_ANNOUNCE_INTERVAL = 5 * 60 * 1000;
 
 const SIDES = ['left', 'right'];
 const FACES = ['right', 'left', 'top', 'bottom', 'back', 'front']; // THREE.CubeCamera order
@@ -37,7 +40,7 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -1083,9 +1086,11 @@ class Hub {
     if (serverEnabled) {
       return archae.requestPlugins([
         '/core/engines/three',
+        '/core/engines/world', // wait for the world to load before snapshotting the cubemap
       ])
         .then(([
           three,
+          world,
         ]) => {
           if (live) {
             const {THREE, scene, camera} = three;
@@ -1112,16 +1117,7 @@ class Hub {
                 cubeRenderer.render(scene, camera);
                 const src = cubeCanvas.toDataURL('image/png');
 
-                return new Promise((accept, reject) => {
-                  const img = new Image();
-                  img.src = src;
-                  img.onload = () => {
-                    accept(img);
-                  };
-                  img.onerror = err => {
-                    reject(err);
-                  };
-                });
+                return Promise.resolve(src);
               };
 
               const renderPromises = (() => {
@@ -1134,6 +1130,57 @@ class Hub {
               })();
 
               return Promise.all(renderPromises);
+            };
+
+            const _announceServerCubemap = () => _requestOriginCubeMap()
+              .then(imgSrcs => {
+                const formData = new FormData();
+                for (let i = 0; i < imgSrcs.length; i++) {
+                  const imgSrc = imgSrcs[i];
+                  const face = FACES[i];
+                  const imgBlob = dataUrlToBlob(imgSrc);
+
+                  formData.append(face, imgBlob, face);
+                }
+
+                return fetch('https://' + hubUrl + '/servers/announceCubemap/' + serverUrl, {
+                  method: 'POST',
+                  body: formData,
+                });
+              });
+
+            const _makeTryAnnounce = announceFn => () => new Promise((accept, reject) => {
+              announceFn()
+                .then(() => {
+                  accept();
+                })
+                .catch(err => {
+                  console.warn('server announce cubemap failed:', err);
+
+                  accept();
+                });
+            });
+            const _tryServerCubemapAnnounce = _makeTryAnnounce(_announceServerCubemap);
+
+            const _makeQueueAnnounce = tryAnnounceFn => _debounce(next => {
+              tryAnnounceFn()
+                .then(() => {
+                  next();
+                });
+            });
+            const _queueServerCubemapAnnounce = _makeQueueAnnounce(_tryServerCubemapAnnounce);
+
+            const announceServerCubemapTimeout = setTimeout(() => {
+              _queueServerCubemapAnnounce();
+            }, SERVER_CUBEMAP_INITIAL_ANNOUNCE_TIMEOUT);
+
+            const announceServerCubemapInterval = setInterval(() => {
+              _queueServerCubemapAnnounce();
+            }, SERVER_CUBEMAP_ANNOUNCE_INTERVAL);
+
+            this._cleanup = () => {
+              clearTimeout(announceServerCubemapTimeout);
+              clearInterval(announceServerCubemapInterval);
             };
           }
         });
@@ -1160,6 +1207,29 @@ const _getQueryVariable = (url, variable) => {
     }
   }
   return null;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
 };
 
 module.exports = Hub;
