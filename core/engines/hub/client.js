@@ -82,7 +82,7 @@ class Hub {
           cake,
           server,
         }));
-      const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/core/plugins/z-cake'))
+      const _requestZCakeModSpec = () => fetch('/archae/rend/mods?q=' + encodeURIComponent('/plugins/z-cake'))
         .then(res => res.json()
           .then(itemSpec => {
             itemSpec.isStatic = true;

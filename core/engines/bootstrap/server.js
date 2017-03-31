@@ -2,7 +2,8 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 
-const SERVER_REFRESH_INTERVAL = 30 * 1000;
+const SERVER_ANNOUNCE_INTERVAL = 30 * 1000;
+const SERVER_ICON_ANNOUNCE_INTERVAL = 5 * 60 * 1000;
 
 class Bootstrap {
   constructor(archae) {
@@ -34,32 +35,6 @@ class Bootstrap {
       'khromix',
     ];
 
-    const _initialAnnounce = () => {
-      if (serverEnabled && hubSpec) {
-        return _tryRefreshServer();
-      } else {
-        return Promise.resolve();
-      }
-    };
-    const _queueRefreshServer = _debounce(next => {
-      _tryRefreshServer()
-        .then(() => {
-          next();
-        });
-    });
-    const _tryRefreshServer = () => new Promise((accept, reject) => {
-      Promise.all([
-        _announceServer(),
-      ])
-        .then(() => {
-          accept();
-        })
-        .catch(err => {
-          console.warn('server hub ping failed:', err);
-
-          accept();
-        });
-    });
     const _announceServer = () => new Promise((accept, reject) => {
       const options = {
         method: 'POST',
@@ -86,7 +61,49 @@ class Bootstrap {
           if (statusCode >= 200 && statusCode < 300) {
             accept();
           } else {
-            const err = 'server ping returned error status code: ' + JSON.stringify({
+            const err = 'server announce returned error status code: ' + JSON.stringify({
+              host: options.host,
+              port: options.port,
+              path: options.path,
+              statusCode: statusCode,
+            });
+            reject(err);
+          }
+        });
+        res.on('error', err => {
+          reject(err);
+        });
+      });
+      req.on('error', err => {
+        reject(err);
+      });
+    });
+    const _announceServerIcon = () => new Promise((accept, reject) => {
+      const options = {
+        method: 'POST',
+        host: hubSpec.host,
+        port: hubSpec.port,
+        path: '/servers/announceIcon/' + serverUrl,
+        headers: {
+          'Content-Type': 'image/png',
+        },
+      };
+      const req = https.request(options);
+
+      const serverImagePath = path.join(dirname, dataDirectory, 'img', 'server', 'icon', serverWorldname + '.png');
+      const rs = fs.createReadStream(serverImagePath);
+      rs.pipe(req);
+
+      req.on('response', res => {
+        res.resume();
+
+        res.on('end', () => {
+          const {statusCode} = res;
+
+          if (statusCode >= 200 && statusCode < 300) {
+            accept();
+          } else {
+            const err = 'server announce image returned error status code: ' + JSON.stringify({
               host: options.host,
               port: options.port,
               path: options.path,
@@ -104,6 +121,40 @@ class Bootstrap {
       });
     });
 
+    const _makeTryAnnounce = announceFn => () => new Promise((accept, reject) => {
+      announceFn()
+        .then(() => {
+          accept();
+        })
+        .catch(err => {
+          console.warn('server announce failed:', err);
+
+          accept();
+        });
+    });
+    const _tryServerAnnounce = _makeTryAnnounce(_announceServer);
+    const _tryServerIconAnnounce = _makeTryAnnounce(_announceServerIcon);
+
+    const _makeQueueAnnounce = tryAnnounceFn => _debounce(next => {
+      tryAnnounceFn()
+        .then(() => {
+          next();
+        });
+    });
+    const _queueServerAnnounce = _makeQueueAnnounce(_tryServerAnnounce);
+    const _queueServerIconAnnounce = _makeQueueAnnounce(_tryServerIconAnnounce);
+
+    const _initialAnnounce = () => {
+      if (serverEnabled && hubSpec) {
+        return Promise.all([
+          _tryServerAnnounce(),
+          _tryServerIconAnnounce(),
+        ]);
+      } else {
+        return Promise.resolve();
+      }
+    };
+
     return _initialAnnounce()
       .then(() => {
         if (live) {
@@ -116,12 +167,17 @@ class Bootstrap {
           };
 
           if (serverEnabled && hubSpec) {
-            const serverRefreshInterval = setInterval(() => {
-              _queueRefreshServer();
-            }, SERVER_REFRESH_INTERVAL);
+            const serverAnnounceInterval = setInterval(() => {
+              _queueServerAnnounce();
+            }, SERVER_ANNOUNCE_INTERVAL);
+
+            const serverIconAnnounceInterval = setInterval(() => {
+              _queueServerIconAnnounce();
+            }, SERVER_ICON_ANNOUNCE_INTERVAL);
 
             cleanups.push(() => {
-              clearInterval(serverRefreshInterval);
+              clearInterval(serverAnnounceInterval);
+              clearInterval(serverIconAnnounceInterval);
             });
           }
 
