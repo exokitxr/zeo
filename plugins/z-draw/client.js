@@ -131,10 +131,11 @@ class ZDraw {
       var canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      var context = canvas.getContext("2d");
+      var ctx = canvas.getContext("2d");
+      canvas.ctx = ctx;
 
       // grab the current ImageData (or use createImageData)
-      var bitmap = context.getImageData(0, 0, width, height);
+      var bitmap = ctx.getImageData(0, 0, width, height);
 
       for (var y = 0; y < height; y++) {
         for (var x = 0; x < width; x++) {
@@ -159,7 +160,7 @@ class ZDraw {
       }
 
       // update the canvas
-      context.putImageData(bitmap, 0, 0);
+      ctx.putImageData(bitmap, 0, 0);
 
       return Promise.resolve(canvas);
     };
@@ -604,6 +605,7 @@ class ZDraw {
                 grabbed: false,
                 drawing: false,
                 pressed: false,
+                color: '',
               });
               const pencilStates = {
                 left: _makePencilState(),
@@ -694,8 +696,8 @@ class ZDraw {
                   const {colorWheelMesh} = mesh;
                   colorWheelMesh.visible = false;
 
-                  const {axes} = e;
-                  console.log('would have set', {axes}); // XXX
+                  const {color} = pencilState;
+                  console.log('would have set', color.toString(16)); // XXX
 
                   e.stopImmediatePropagation();
                 }
@@ -809,6 +811,18 @@ class ZDraw {
 
                           notchMesh.position.x = -(size / 2) + (((axes[0] / 2) + 0.5) * size);
                           notchMesh.position.z = (size / 2) - (((axes[1] / 2) + 0.5) * size);
+
+                          const colorHex = (() => {
+                            const xPx = Math.floor(((axes[0] / 2) + 0.5) * colorWheelImg.width);
+                            const yPx = Math.floor(((-axes[1] / 2) + 0.5) * colorWheelImg.height);
+                            const imageData = colorWheelImg.ctx.getImageData(xPx, yPx, 1, 1);
+                            const {data: imageDataData} = imageData;
+                            const [r, g, b] = imageDataData;
+
+                            return (r << (8 * 2)) | (g << (8 * 1)) | (b << (8 * 0));
+                          })();
+                          pencilState.color = colorHex;
+                          notchMesh.material.color.setHex(colorHex);
                         }
                       }
                     });
