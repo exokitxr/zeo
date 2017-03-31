@@ -28,7 +28,7 @@ const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const NUM_INVENTORY_ITEMS = 4;
 
 const SIDES = ['left', 'right'];
-const FACES = ['top', 'bottom', 'left', 'right', 'front', 'back'];
+const FACES = ['right', 'left', 'top', 'bottom', 'back', 'front']; // THREE.CubeCamera order
 
 class Hub {
   constructor(archae) {
@@ -37,7 +37,7 @@ class Hub {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}}} = archae;
+    const {metadata: {hub: {url: hubUrl, enabled: hubEnabled}, server: {enabled: serverEnabled}}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -1075,6 +1075,65 @@ class Hub {
               input.removeListener('gripdown', _gripdown);
               input.removeListener('gripup', _gripup);
               rend.removeListener('update', _update);
+            };
+          }
+        });
+    }
+
+    if (serverEnabled) {
+      return archae.requestPlugins([
+        '/core/engines/three',
+      ])
+        .then(([
+          three,
+        ]) => {
+          if (live) {
+            const {THREE, scene, camera} = three;
+
+            const cubeCanvas = document.createElement('canvas');
+            cubeCanvas.width = 256;
+            cubeCanvas.height = 256;
+
+            const cubeRenderer = new THREE.WebGLRenderer({
+              canvas: cubeCanvas,
+            });
+            cubeRenderer.render(scene, camera);
+
+            const cubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
+            cubeCamera.position.set(0, 1, 0);
+            scene.add(cubeCamera);
+
+            const _requestOriginCubeMap = () => {
+              const {children: cameras} = cubeCamera;
+
+              const _renderCamera = index => {
+                const camera = cameras[index];
+
+                cubeRenderer.render(scene, camera);
+                const src = cubeCanvas.toDataURL('image/png');
+
+                return new Promise((accept, reject) => {
+                  const img = new Image();
+                  img.src = src;
+                  img.onload = () => {
+                    accept(img);
+                  };
+                  img.onerror = err => {
+                    reject(err);
+                  };
+                });
+              };
+
+              const renderPromises = (() => {
+                const result = [];
+                for (let i = 0; i < cameras.length; i++) {
+                  const promise = _renderCamera(i);
+                  result.push(promise);
+                }
+                return result;
+              })();
+
+              return Promise.all(renderPromises);
             };
           }
         });
