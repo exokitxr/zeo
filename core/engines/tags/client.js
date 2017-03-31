@@ -1503,30 +1503,36 @@ class Tags {
 
                     if (!gripPressed) {
                       const {tagMesh: srcTagMesh} = src;
-                      const {tagMesh: dstTagMesh} = dst;
+                      const {item} = srcTagMesh;
 
-                      if (srcTagMesh === dstTagMesh) {
-                        tagsApi.emit('linkModule', {
-                          side,
-                          srcTagMesh,
-                          dstTagMesh: null,
-                        });
+                      if (!item.instancing) {
+                        const {tagMesh: dstTagMesh} = dst;
 
-                        dragState.src = null;
-                        dragState.dst = null;
+                        if (srcTagMesh === dstTagMesh) {
+                          tagsApi.emit('linkModule', {
+                            side,
+                            srcTagMesh,
+                            dstTagMesh: null,
+                          });
 
-                        return true;
+                          dragState.src = null;
+                          dragState.dst = null;
+
+                          return true;
+                        } else {
+                          tagsApi.emit('linkModule', {
+                            side,
+                            srcTagMesh,
+                            dstTagMesh,
+                          });
+
+                          dragState.src = null;
+                          dragState.dst = null;
+
+                          return true;
+                        }
                       } else {
-                        tagsApi.emit('linkModule', {
-                          side,
-                          srcTagMesh,
-                          dstTagMesh,
-                        });
-
-                        dragState.src = null;
-                        dragState.dst = null;
-
-                        return true;
+                        return false;
                       }
                     } else {
                       return false;
