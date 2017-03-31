@@ -1779,39 +1779,46 @@ class World {
                 const id = _makeFileId();
                 const mainFile = (() => {
                   const _isRoot = f => /^\/[^\/]+/.test(f.path);
-                  const _isRecognizedMimeType = f => {
-                    const fileMode = (() => {
-                      const {type: autoMimeType} = f;
+                  const _getFileMode = f => {
+                    const {type: autoMimeType} = f;
 
-                      if (autoMimeType) {
-                        return fs.getFileMode(autoMimeType);
+                    if (autoMimeType) {
+                      return fs.getFileMode(autoMimeType);
+                    } else {
+                      const match = f.path.match(/\.([^\/]+)$/);
+
+                      if (match) {
+                        const ext = match[1];
+                        const fakeMimeType = 'mime/' + ext;
+
+                        return fs.getFileMode(fakeMimeType);
                       } else {
-                        const match = f.path.match(/\.([^\/]+)$/);
-
-                        if (match) {
-                          const ext = match[1];
-                          const fakeMimeType = 'mime/' + ext;
-
-                          return fs.getFileMode(fakeMimeType);
-                        } else {
-                          return null;
-                        }
+                        return null;
                       }
-                    })();
-
-                    return fileMode !== null;
+                    }
                   };
-                  const _isCandidate = f => _isRoot(f) && _isRecognizedMimeType(f);
+                  const _isRecognizedMimeType = f => _getFileMode(f) !== null;
+                  const _isModelMimeType = f => _getFileMode(f) === 'model';
 
                   return files.sort((a, b) => {
-                    const aIsCandidate = _isCandidate(a);
-                    const bIsCandidate = _isCandidate(b);
-                    const isCandidateDiff = +bIsCandidate - +aIsCandidate;
+                    const isRootDiff = +_isRoot(b) - +_isRoot(a);
 
-                    if (isCandidateDiff !== 0) {
-                      return isCandidateDiff;
+                    if (isRootDiff !== 0) {
+                      return isRootDiff;
                     } else {
-                      return a.path.localeCompare(b.path);
+                      const isRecognizedMimeTypeDiff = +_isRecognizedMimeType(b) - +_isRecognizedMimeType(a);
+
+                      if (isRecognizedMimeTypeDiff !== 0) {
+                        return isRecognizedMimeTypeDiff;
+                      } else {
+                        const isModelMimeTypeDiff = _isModelMimeType(b) - +_isModelMimeType(a);
+
+                        if (isModelMimeTypeDiff !== 0) {
+                          return isModelMimeTypeDiff;
+                        } else {
+                          return a.path.localeCompare(b.path);
+                        }
+                      }
                     }
                   })[0];
                 })();

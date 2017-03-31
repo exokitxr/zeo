@@ -1,5 +1,9 @@
-import OBJLoader from './lib/three-extra/OBJLoader'; // XXX these loaders could be loaded asynchronously to save bandwidth and parse time
+import NURBSUtils from './lib/three-extra/NURBSUtils'; // XXX these could be loaded asynchronously to save bandwidth and parse time
+import NURBSCurve from './lib/three-extra/NURBSCurve';
+
+import OBJLoader from './lib/three-extra/OBJLoader';
 import ColladaLoader from './lib/three-extra/ColladaLoader';
+import FBXLoader from './lib/three-extra/FBXLoader2';
 import GLTFLoader from './lib/three-extra/GLTFLoader';
 
 const CHUNK_SIZE = 32 * 1024;
@@ -39,8 +43,12 @@ class Fs {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
+        const THREENURBSUtils = NURBSUtils(THREE);
+        const THREENURBSCurve = NURBSCurve(THREE, THREENURBSUtils);
+
         const THREEOBJLoader = OBJLoader(THREE);
         const THREEColladaLoader = ColladaLoader(THREE);
+        const THREEFBXLoader = FBXLoader(THREE, THREENURBSCurve);
         const THREEGLTFLoader = GLTFLoader(THREE);
 
         const dragover = e => {
@@ -147,7 +155,7 @@ class Fs {
 
                 return fetch(url)
                   .then(res => {
-                    if (ext === 'obj' || ext === 'dae') {
+                    if (ext === 'obj' || ext === 'dae' || ext === 'fbx') {
                       return res.text();
                     } else if (ext === 'gltf') {
                       return res.arrayBuffer();
@@ -165,6 +173,8 @@ class Fs {
                             return new THREEOBJLoader();
                           case 'dae':
                             return new THREEColladaLoader();
+                          case 'fbx':
+                            return new THREEFBXLoader();
                           case 'gltf':
                             return new THREEGLTFLoader();
                           case 'json':
@@ -202,6 +212,9 @@ class Fs {
                           const {scene} = objects;
                           accept(scene);
                         }, url);
+                      } else if (loaderType === 'fbx') {
+                        const modelMesh = loader.parse(modelData, baseUrl);
+                        accept(modelMesh);
                       } else if (loaderType === 'gltf') {
                         loader.parse(modelData, objects => {
                           const {scene} = objects;
@@ -269,7 +282,7 @@ class Fs {
                 return 'audio';
               } else if (/^video\/(?:mp4|webm|ogg)$/.test(mimeType)) {
                 return 'video';
-              } else if (/^mime\/(?:obj|dae|gltf)$/.test(mimeType)) {
+              } else if (/^mime\/(?:obj|dae|fbx|gltf)$/.test(mimeType)) {
                 return 'model';
               } else {
                 return null;
