@@ -167,16 +167,26 @@ a.app.getHostname = req => {
 };
 
 const _install = () => {
-  if (flags.install) {
-    console.log('Installing core modules...');
-    const spinner = new Spinner();
-    spinner.start();
+  if (flags.install || flags.hub || flags.server) {
+    const spinner = (() => {
+      if (flags.install) {
+        console.log('Installing core modules...');
+        const spinner = new Spinner();
+        spinner.start();
+
+        return spinner;
+      } else {
+        return null;
+      }
+    })();
 
     return _getAllPlugins()
       .then(plugins => a.installPlugins(plugins))
       .then(result => {
-        spinner.stop();
-        console.log();
+        if (spinner) {
+          spinner.stop();
+          console.log();
+        }
 
         return Promise.resolve(result);
       })
