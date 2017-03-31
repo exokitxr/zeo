@@ -1056,21 +1056,27 @@ class Tags {
 
                   if (intersectionPoint) {
                     const {metadata} = hoverState;
-                    const {tagMesh} = metadata;
-                    const {item} = tagMesh;
-                    const {type} = item;
+                    const {type} = metadata;
 
-                    if (
-                      (item.type === 'module' && !(item.metadata && item.metadata.isStatic)) || 
-                      (item.type === 'entity' && !(item.metadata && item.metadata.isStatic)) ||
-                      (item.type === 'file')
-                    ) {
-                      tagsApi.emit('grabWorldTag', {
-                        side,
-                        tagMesh
-                      });
+                    if (type === 'module' || type === 'entity' || type === 'file') {
+                      const {tagMesh} = metadata;
+                      const {item} = tagMesh;
+                      const {type: itemType, metadata: itemMetadata} = item;
 
-                      return true;
+                      if (
+                        (itemType === 'module' && !(itemMetadata && itemMetadata.isStatic)) ||
+                        (itemType === 'entity' && !(itemMetadata && itemMetadata.isStatic)) ||
+                        (itemType === 'file')
+                      ) {
+                        tagsApi.emit('grabWorldTag', {
+                          side,
+                          tagMesh
+                        });
+
+                        return true;
+                      } else {
+                        return false;
+                      }
                     } else {
                       return false;
                     }
