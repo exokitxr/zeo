@@ -31,7 +31,8 @@ const SERVER_CUBEMAP_INITIAL_ANNOUNCE_TIMEOUT = 2 * 1000;
 const SERVER_CUBEMAP_ANNOUNCE_INTERVAL = 5 * 60 * 1000;
 
 const SIDES = ['left', 'right'];
-const FACES = ['right', 'left', 'top', 'bottom', 'back', 'front']; // THREE.CubeCamera order
+const FACES = ['left', 'right', 'top', 'bottom', 'front', 'back']; // envMap order
+const CUBE_CAMERA_FACES = ['right', 'left', 'top', 'bottom', 'back', 'front']; // THREE.CubeCamera order
 
 class Hub {
   constructor(archae) {
@@ -513,16 +514,9 @@ class Hub {
                     return mesh;
                   })();
 
-                  _requestCubeMapImgs(server) // XXX this needs to be announced to the hub and served from there
+                  _requestCubeMapImgs(server)
                     .then(faceImgs => {
-                      const images = [
-                        'right',
-                        'left',
-                        'top',
-                        'bottom',
-                        'front',
-                        'back',
-                      ].map(face => faceImgs[face]);
+                      const images = FACES.map(face => faceImgs[face]);
 
                       const {material: {envMap: texture}} = mesh;
                       texture.images = images;
@@ -1137,7 +1131,7 @@ class Hub {
                 const formData = new FormData();
                 for (let i = 0; i < imgSrcs.length; i++) {
                   const imgSrc = imgSrcs[i];
-                  const face = FACES[i];
+                  const face = CUBE_CAMERA_FACES[i];
                   const imgBlob = dataUrlToBlob(imgSrc);
 
                   formData.append(face, imgBlob, face);
