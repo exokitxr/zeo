@@ -1,4 +1,5 @@
-import OBJLoader from './lib/three-extra/OBJLoader';
+import OBJLoader from './lib/three-extra/OBJLoader'; // XXX these loaders could be loaded asynchronously to save bandwidth and parse time
+import ColladaLoader from './lib/three-extra/ColladaLoader';
 import GLTFLoader from './lib/three-extra/GLTFLoader';
 
 const CHUNK_SIZE = 32 * 1024;
@@ -39,6 +40,7 @@ class Fs {
         const {EventEmitter} = events;
 
         const THREEOBJLoader = OBJLoader(THREE);
+        const THREEColladaLoader = ColladaLoader(THREE);
         const THREEGLTFLoader = GLTFLoader(THREE);
 
         const dragover = e => {
@@ -145,7 +147,7 @@ class Fs {
 
                 return fetch(url)
                   .then(res => {
-                    if (ext === 'obj') {
+                    if (ext === 'obj' || ext === 'dae') {
                       return res.text();
                     } else if (ext === 'gltf') {
                       return res.arrayBuffer();
@@ -157,16 +159,26 @@ class Fs {
                   })
                   .then(modelData => new Promise((accept, reject) => {
                     const loader = (() => {
-                      switch (ext) {
-                        case 'obj':
-                          return new THREEOBJLoader();
-                        case 'gltf':
-                          return new THREEGLTFLoader();
-                        case 'json':
-                          return new THREE.ObjectLoader();
-                        default:
-                          return null;
+                      const loader = (() => {
+                        switch (ext) {
+                          case 'obj':
+                            return new THREEOBJLoader();
+                          case 'dae':
+                            return new THREEColladaLoader();
+                          case 'gltf':
+                            return new THREEGLTFLoader();
+                          case 'json':
+                            return new THREE.ObjectLoader();
+                          default:
+                            return null;
+                        }
+                      })();
+
+                      if (loader) {
+                        loader.type = ext;
                       }
+
+                      return loader;
                     })();
 
                     if (loader) {
@@ -174,25 +186,28 @@ class Fs {
                     }
 
                     const baseUrl = url.match(/^(.*?\/?)[^\/]*$/)[1];
-                    if (
-                      (loader instanceof THREEOBJLoader) ||
-                      (loader instanceof THREEGLTFLoader)
-                    ) {
+                    const loaderType = loader ? loader.type : null;
+                    if (loaderType === 'obj' || loaderType === 'gltf') {
                       loader.setPath(baseUrl);
-                    } else if (loader instanceof THREE.ObjectLoader) {
+                    } else if (loaderType === 'json') {
                       loader.setTexturePath(baseUrl);
                     }
 
                     const _parse = () => {
-                      if (loader instanceof THREEOBJLoader) {
+                      if (loaderType === 'obj') {
                         const modelMesh = loader.parse(modelData);
                         accept(modelMesh);
-                      } else if (loader instanceof THREEGLTFLoader) {
+                      } else if (loaderType === 'dae') {
+                        loader.parse(modelData, objects => {
+                          const {scene} = objects;
+                          accept(scene);
+                        }, url);
+                      } else if (loaderType === 'gltf') {
                         loader.parse(modelData, objects => {
                           const {scene} = objects;
                           accept(scene);
                         });
-                      } else if (loader instanceof THREE.ObjectLoader) {
+                      } else if (loaderType === 'json') {
                         loader.parse(modelData, accept);
                       } else {
                         const err = new Error('unknown model type: ' + JSON.stringify(ext));
@@ -254,7 +269,7 @@ class Fs {
                 return 'audio';
               } else if (/^video\/(?:mp4|webm|ogg)$/.test(mimeType)) {
                 return 'video';
-              } else if (/^mime\/(?:obj|gltf)$/.test(mimeType)) {
+              } else if (/^mime\/(?:obj|dae|gltf)$/.test(mimeType)) {
                 return 'model';
               } else {
                 return null;
