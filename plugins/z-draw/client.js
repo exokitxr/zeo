@@ -512,8 +512,6 @@ class ZDraw {
 
                 const coreMesh = (() => {
                   const geometry = (() => {
-                    const sq = n => Math.sqrt((n * n) + (n * n));
-
                     const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
                     const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
                       .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
@@ -532,31 +530,57 @@ class ZDraw {
                 object.add(coreMesh);
 
                 const colorWheelMesh = (() => {
-                  const geometry = new THREE.PlaneBufferGeometry(0.05, 0.05)
-                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+                  const size = 0.05;
 
-                  const texture = new THREE.Texture(
-                    colorWheelImg,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.NearestFilter,
-                    THREE.NearestFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    16
-                  );
-                  texture.needsUpdate = true;
-                  const material = new THREE.MeshBasicMaterial({
-                    color: 0xFFFFFF,
-                    map: texture,
-                    side: THREE.DoubleSide,
-                  });
+                  const object = new THREE.Object3D();
+                  object.position.y = 0.02;
+                  object.visible = false;
+                  object.size = size;
 
-                  const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.y = 0.02;
-                  mesh.visible = false;
-                  return mesh;
+                  const planeMesh = (() => {
+                    const geometry = new THREE.PlaneBufferGeometry(size, size)
+                      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+
+                    const texture = new THREE.Texture(
+                      colorWheelImg,
+                      THREE.UVMapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.NearestFilter,
+                      THREE.NearestFilter,
+                      THREE.RGBAFormat,
+                      THREE.UnsignedByteType,
+                      16
+                    );
+                    texture.needsUpdate = true;
+                    const material = new THREE.MeshBasicMaterial({
+                      color: 0xFFFFFF,
+                      map: texture,
+                      side: THREE.DoubleSide,
+                    });
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+
+                  const notchMesh = (() => {
+                    const geometry = new THREE.CylinderBufferGeometry(0, sq(0.002), 0.005, 4, 1)
+                      .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+                      .applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI));
+                    const material = new THREE.MeshPhongMaterial({
+                      color: 0xFF0000,
+                      shading: THREE.FlatShading,
+                    });
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.y = 0.005 / 2;
+                    return mesh;
+                  })();
+                  object.add(notchMesh);
+                  object.notchMesh = notchMesh;
+
+                  return object;
                 })();
                 object.add(colorWheelMesh);
                 object.colorWheelMesh = colorWheelMesh;
@@ -579,6 +603,7 @@ class ZDraw {
               const _makePencilState = () => ({
                 grabbed: false,
                 drawing: false,
+                pressed: false,
               });
               const pencilStates = {
                 left: _makePencilState(),
@@ -657,6 +682,8 @@ class ZDraw {
                 const {grabbed} = pencilState;
 
                 if (grabbed) {
+                  pencilState.pressed = true;
+
                   const {colorWheelMesh} = mesh;
                   colorWheelMesh.visible = true;
 
@@ -672,6 +699,8 @@ class ZDraw {
                 const {grabbed} = pencilState;
 
                 if (grabbed) {
+                  pencilState.pressed = false;
+
                   const {colorWheelMesh} = mesh;
                   colorWheelMesh.visible = false;
 
@@ -690,7 +719,7 @@ class ZDraw {
 
                 for (let i = 0; i < papers.length; i++) {
                   const paper = papers[i];
-                  const {mesh, file} = paper;
+                  const {mesh: paperMesh, file} = paper;
 
                   let drawable = false;
                   if (file) {
@@ -700,10 +729,10 @@ class ZDraw {
                           map: texture,
                         },
                       },
-                    } = mesh;
+                    } = paperMesh;
                     const {image: canvas} = texture;
 
-                    const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(mesh);
+                    const {position: paperPosition, rotation: paperRotation} = _decomposeObjectMatrixWorld(paperMesh);
                     const planeTarget = geometryUtils.makePlaneTarget(paperPosition, paperRotation, WORLD_WIDTH, WORLD_HEIGHT);
 
                     SIDES.forEach(side => {
@@ -777,10 +806,25 @@ class ZDraw {
                           }
                         }
                       }
+
+                      const {pressed} = pencilState;
+                      if (pressed) {
+                        const {gamepads} = pose.getStatus();
+                        const gamepad = gamepads[side];
+
+                        if (gamepad) {
+                          const {colorWheelMesh} = mesh;
+                          const {size, notchMesh} = colorWheelMesh;
+                          const {axes} = gamepad;
+
+                          notchMesh.position.x = -(size / 2) + (((axes[0] / 2) + 0.5) * size);
+                          notchMesh.position.z = (size / 2) - (((axes[1] / 2) + 0.5) * size);
+                        }
+                      }
                     });
                   }
 
-                  const {lineMesh: {material}} = mesh;
+                  const {lineMesh: {material}} = paperMesh;
                   material.color = new THREE.Color(drawable ? 0x000000 : 0x808080)
                 };
               };
@@ -861,5 +905,7 @@ class ZDraw {
     this._cleanup();
   }
 }
+
+const sq = n => Math.sqrt((n * n) + (n * n));
 
 module.exports = ZDraw;

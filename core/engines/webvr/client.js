@@ -677,7 +677,7 @@ class WebVR {
                     side,
                   };
                   if (rootName === 'pad') {
-                    eventSpec.axes = newGamepadStatus.axes.slice();
+                    eventSpec.axes = newGamepadStatus ? newGamepadStatus.axes.slice() : [0, 0];
                   }
                   return eventSpec;
                 };
