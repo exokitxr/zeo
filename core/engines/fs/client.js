@@ -1,4 +1,5 @@
 import OBJLoader from './lib/three-extra/OBJLoader';
+import GLTFLoader from './lib/three-extra/GLTFLoader';
 
 const CHUNK_SIZE = 32 * 1024;
 
@@ -38,6 +39,7 @@ class Fs {
         const {EventEmitter} = events;
 
         const THREEOBJLoader = OBJLoader(THREE);
+        const THREEGLTFLoader = GLTFLoader(THREE);
 
         const dragover = e => {
           e.preventDefault();
@@ -143,10 +145,14 @@ class Fs {
 
                 return fetch(url)
                   .then(res => {
-                    if (ext === 'json') {
+                    if (ext === 'obj') {
+                      return res.text();
+                    } else if (ext === 'gltf') {
+                      return res.arrayBuffer();
+                    } else if (ext === 'json') {
                       return res.json();
                     } else {
-                      return res.text();
+                      return Promise.resolve(null);
                     }
                   })
                   .then(modelData => new Promise((accept, reject) => {
@@ -154,6 +160,8 @@ class Fs {
                       switch (ext) {
                         case 'obj':
                           return new THREEOBJLoader();
+                        case 'gltf':
+                          return new THREEGLTFLoader();
                         case 'json':
                           return new THREE.ObjectLoader();
                         default:
@@ -166,7 +174,10 @@ class Fs {
                     }
 
                     const baseUrl = url.match(/^(.*?\/?)[^\/]*$/)[1];
-                    if (loader instanceof THREEOBJLoader) {
+                    if (
+                      (loader instanceof THREEOBJLoader) ||
+                      (loader instanceof THREEGLTFLoader)
+                    ) {
                       loader.setPath(baseUrl);
                     } else if (loader instanceof THREE.ObjectLoader) {
                       loader.setTexturePath(baseUrl);
@@ -176,6 +187,11 @@ class Fs {
                       if (loader instanceof THREEOBJLoader) {
                         const modelMesh = loader.parse(modelData);
                         accept(modelMesh);
+                      } else if (loader instanceof THREEGLTFLoader) {
+                        loader.parse(modelData, objects => {
+                          const {scene} = objects;
+                          accept(scene);
+                        });
                       } else if (loader instanceof THREE.ObjectLoader) {
                         loader.parse(modelData, accept);
                       } else {
@@ -230,6 +246,24 @@ class Fs {
             }
           }
 
+          getFileMode(mimeType) {
+            if (mimeType) {
+              if (/^image\/(?:png|jpeg|gif|file)$/.test(mimeType)) {
+                return 'image';
+              } else if (/^audio\/(?:wav|mp3|mpeg|ogg|vorbis|webm|x-flac)$/.test(mimeType)) {
+                return 'audio';
+              } else if (/^video\/(?:mp4|webm|ogg)$/.test(mimeType)) {
+                return 'video';
+              } else if (/^mime\/(?:obj|gltf)$/.test(mimeType)) {
+                return 'model';
+              } else {
+                return null;
+              }
+            } else {
+              return null;
+            }
+          }
+
           writeFiles(id, files) {
             return Promise.all(files.map(file => this.writeFile(id, file)));
           }
@@ -276,10 +310,6 @@ class Fs {
 
           dragover(e) {
             dragover(e);
-          }
-
-          drop(e) {
-            drop(e);
           }
         }
 

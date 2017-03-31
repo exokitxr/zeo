@@ -1779,13 +1779,40 @@ class World {
                 const id = _makeFileId();
                 const mainFile = (() => {
                   const _isRoot = f => /^\/[^\/]+/.test(f.path);
-                  const _isExt = f => /\.[^\/]+$/.test(f.path);
-                  const _isCandidate = f => _isRoot(f) && _isExt(f);
+                  const _isRecognizedMimeType = f => {
+                    const fileMode = (() => {
+                      const {type: autoMimeType} = f;
+
+                      if (autoMimeType) {
+                        return fs.getFileMode(autoMimeType);
+                      } else {
+                        const match = f.path.match(/\.([^\/]+)$/);
+
+                        if (match) {
+                          const ext = match[1];
+                          const fakeMimeType = 'mime/' + ext;
+
+                          return fs.getFileMode(fakeMimeType);
+                        } else {
+                          return null;
+                        }
+                      }
+                    })();
+
+                    return fileMode !== null;
+                  };
+                  const _isCandidate = f => _isRoot(f) && _isRecognizedMimeType(f);
 
                   return files.sort((a, b) => {
                     const aIsCandidate = _isCandidate(a);
                     const bIsCandidate = _isCandidate(b);
-                    return +bIsCandidate - +aIsCandidate;
+                    const isCandidateDiff = +bIsCandidate - +aIsCandidate;
+
+                    if (isCandidateDiff !== 0) {
+                      return isCandidateDiff;
+                    } else {
+                      return a.path.localeCompare(b.path);
+                    }
                   })[0];
                 })();
                 const {path: name} = mainFile;
@@ -1812,6 +1839,9 @@ class World {
               _makeFileTagFromFiles(files)
                 .then(tagMesh => {
                   console.log('upoaded file', tagMesh);
+                })
+                .catch(err => {
+                  console.warn(err);
                 });
             }
           };

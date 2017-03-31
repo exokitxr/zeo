@@ -738,21 +738,7 @@ class Tags {
 
           const localUpdates = [];
 
-          const _getItemPreviewMode = item => {
-            const {mimeType} = item;
-
-            if (mimeType && /^image\/(?:png|jpeg|gif|file)$/.test(mimeType)) {
-              return 'image';
-            } else if (/^audio\/(?:wav|mp3|mpeg|ogg|vorbis|webm|x-flac)$/.test(mimeType)) {
-              return 'audio';
-            } else if (/^video\/(?:mp4|webm|ogg)$/.test(mimeType)) {
-              return 'video';
-            } else if (/^mime\/(?:obj)$/.test(mimeType)) {
-              return 'model';
-            } else {
-              return null;
-            }
-          };
+          const _getItemPreviewMode = item => fs.getFileMode(item.mimeType);
           const _requestFileItemImageMesh = tagMesh => new Promise((accept, reject) => {
             const {item} = tagMesh;
 
