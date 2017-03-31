@@ -467,11 +467,6 @@ class ZDraw {
 
                   break;
                 }
-                case 'color': {
-                  entityApi.color = new THREE.Color(newValue);
-
-                  break;
-                }
               }
             },
           };
@@ -529,6 +524,7 @@ class ZDraw {
                   return mesh;
                 })();
                 object.add(coreMesh);
+                object.coreMesh = coreMesh;
 
                 const colorWheelMesh = (() => {
                   const size = 0.05;
@@ -600,6 +596,12 @@ class ZDraw {
               };
 
               entityApi.color = new THREE.Color(0x000000);
+              entityApi.render = () => {
+                const {color} = entityApi;
+                const {coreMesh} = mesh;
+
+                coreMesh.material.color.setHex(color);
+              };
 
               const _makePencilState = () => ({
                 grabbed: false,
@@ -697,7 +699,7 @@ class ZDraw {
                   colorWheelMesh.visible = false;
 
                   const {color} = pencilState;
-                  console.log('would have set', color.toString(16)); // XXX
+                  entityElement.setAttribute('color', JSON.stringify('#' + color.toString(16)));
 
                   e.stopImmediatePropagation();
                 }
@@ -864,7 +866,9 @@ class ZDraw {
                   break;
                 }
                 case 'color': {
-                  entityApi.color = new THREE.Color(newValue);
+                  entityApi.color.setStyle(newValue);
+
+                  entityApi.render();
 
                   break;
                 }
