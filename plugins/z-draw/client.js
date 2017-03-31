@@ -555,9 +555,11 @@ class ZDraw {
 
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.position.y = 0.02;
+                  mesh.visible = false;
                   return mesh;
                 })();
                 object.add(colorWheelMesh);
+                object.colorWheelMesh = colorWheelMesh;
 
                 return object;
               })();
@@ -595,6 +597,9 @@ class ZDraw {
                 const pencilState = pencilStates[side];
 
                 pencilState.grabbed = false;
+
+                const {colorWheelMesh} = mesh;
+                colorWheelMesh.visible = false;
               };
               entityElement.addEventListener('release', _release);
               const _triggerdown = e => {
@@ -644,6 +649,39 @@ class ZDraw {
                 }
               };
               input.on('triggerup', _triggerup, {
+                priority: 1,
+              });
+              const _paddown = e => {
+                const {side} = e;
+                const pencilState = pencilStates[side];
+                const {grabbed} = pencilState;
+
+                if (grabbed) {
+                  const {colorWheelMesh} = mesh;
+                  colorWheelMesh.visible = true;
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('paddown', _paddown, {
+                priority: 1,
+              });
+              const _padup = e => {
+                const {side} = e;
+                const pencilState = pencilStates[side];
+                const {grabbed} = pencilState;
+
+                if (grabbed) {
+                  const {colorWheelMesh} = mesh;
+                  colorWheelMesh.visible = false;
+
+                  const {axes} = e;
+                  console.log('would have set', {axes}); // XXX
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('padup', _padup, {
                 priority: 1,
               });
 
@@ -755,6 +793,8 @@ class ZDraw {
                 entityElement.removeEventListener('release', _release);
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('triggerup', _triggerup);
+                input.removeListener('paddown', _paddown);
+                input.removeListener('padup', _padup);
 
                 render.removeListener('update', _update);
               };

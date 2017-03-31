@@ -104,7 +104,6 @@ class Teleport {
           const {side} = e;
 
           const teleportState = teleportStates[side];
-
           teleportState.teleporting = true;
         };
         input.on('paddown', _paddown);
@@ -112,7 +111,6 @@ class Teleport {
           const {side} = e;
 
           const teleportState = teleportStates[side];
-
           teleportState.teleporting = false;
         };
         input.on('padup', _padup);

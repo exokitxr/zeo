@@ -484,16 +484,17 @@ class Zeo {
                       }
                     }
 
-                    class ZeoInputApi extends EventEmitter {
-                      constructor() {
-                        super();
+                    class ZeoInputApi {
+                      on(event, handler, options) {
+                        return input.on(event, handler, options);
+                      }
 
-                        for (let i = 0; i < INPUT_EVENTS.length; i++) {
-                          const eventName = INPUT_EVENTS[i];
-                          input.on(eventName, e => {
-                            this.emit(eventName, e);
-                          });
-                        }
+                      removeListener(event, handler) {
+                        return input.removeListener(event, handler);
+                      }
+
+                      removeAllListeners(event) {
+                        return input.removeAllListeners(event);
                       }
                     }
 

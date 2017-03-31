@@ -127,32 +127,40 @@ class Input {
       document.removeEventListener('paste', eventRouters.paste.handle);
     };
 
-    const _on = (event, handler, {priority = 0} = {}) => {
+    function _on(event, handler, {priority = 0} = {}) {
       const eventRouter = eventRouters[event];
       if (eventRouter) {
         eventRouter.add(handler, {
           priority,
         });
       }
-    };
-    const _removeListener = (event, handler) => {
+
+      return this;
+    }
+    function _removeListener(event, handler) {
       const eventRouter = eventRouters[event];
       if (eventRouter) {
         eventRouter.remove(handler);
       }
-    };
-    const _removeAllListeners = (event) => {
+
+      return this;
+    }
+    function _removeAllListeners(event) {
       const eventRouter = eventRouters[event];
       if (eventRouter) {
         eventRouter.removeAll();
       }
-    };
-    const _triggerEvent = (event, eventData) => {
+
+      return this;
+    }
+    function _triggerEvent(event, eventData) {
       const eventRouter = eventRouters[event];
       if (eventRouter) {
         eventRouter.handle(eventData);
       }
-    };
+
+      return this;
+    }
 
     return {
       EVENTS,

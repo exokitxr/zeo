@@ -672,11 +672,21 @@ class WebVR {
                 const oldPressed = Boolean(oldGamepadStatus) && oldGamepadStatus.buttons[buttonName].pressed;
                 const newPressed = Boolean(newGamepadStatus) && newGamepadStatus.buttons[buttonName].pressed;
 
+                const _makeEventSpec = () => {
+                  const eventSpec = {
+                    side,
+                  };
+                  if (rootName === 'pad') {
+                    eventSpec.axes = newGamepadStatus.axes.slice();
+                  }
+                  return eventSpec;
+                };
+
                 if (!oldPressed && newPressed) {
-                  input.triggerEvent(downName, {side});
+                  input.triggerEvent(downName, _makeEventSpec());
                 } else if (oldPressed && !newPressed) {
-                  input.triggerEvent(upName, {side});
-                  input.triggerEvent(rootName, {side});
+                  input.triggerEvent(upName, _makeEventSpec());
+                  input.triggerEvent(rootName, _makeEventSpec());
                 }
               });
             });
