@@ -100,22 +100,78 @@ class ZDraw {
 
       return entry;
     };
-    /* const _getRotatedImg = (img, angle) => {
-      const canvas = document.createElement('canvas');
-      const size = Math.max(img.width, img.height) * 2;
-      canvas.width = size;
-      canvas.height = size;
+    const _requestColorWheelImg = () => {
+      function hsv2rgb(h, s, v) {
+        var c = v * s;
+        var h1 = h / 60;
+        var x = c * (1 - Math.abs((h1 % 2) - 1));
+        var m = v - c;
+        var rgb;
 
-      const ctx = canvas.getContext('2d');
-      ctx.translate(size / 2, size / 2);
-      ctx.rotate(angle);
-      ctx.drawImage(img, -(size / 4), -(size / 4));
+        if (typeof h == 'undefined') rgb = [0, 0, 0];
+        else if (h1 < 1) rgb = [c, x, 0];
+        else if (h1 < 2) rgb = [x, c, 0];
+        else if (h1 < 3) rgb = [0, c, x];
+        else if (h1 < 4) rgb = [0, x, c];
+        else if (h1 < 5) rgb = [x, 0, c];
+        else if (h1 <= 6) rgb = [c, 0, x];
 
-      return canvas;
-    }; */
+        var r = 255 * (rgb[0] + m);
+        var g = 255 * (rgb[1] + m);
+        var b = 255 * (rgb[2] + m);
 
-    return _requestImage('/archae/draw/brushes/brush.png')
-      .then(brushImg => {
+        return [r, g, b];
+      }
+
+      const width = 256;
+      const height = width;
+      const halfWidth = width / 2;
+      const halfHeight = height / 2;
+
+      var canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      var context = canvas.getContext("2d");
+
+      // grab the current ImageData (or use createImageData)
+      var bitmap = context.getImageData(0, 0, width, height);
+
+      for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+          // offset for the 4 RGBA values in the data array
+          var offset = 4 * ((y * width) + x);
+
+          var hue = 180 + Math.atan2(y - halfHeight, x - halfWidth) * (180 / Math.PI);
+          var saturation = Math.sqrt(Math.pow(y - halfHeight, 2) + Math.pow(x - halfWidth, 2)) / halfWidth;
+          var value = 1;
+
+          saturation = Math.min(1, saturation);
+
+          var hsv = hsv2rgb(hue, saturation, value);
+
+          // fill RGBA values
+          bitmap.data[offset + 0] = hsv[0];
+          bitmap.data[offset + 1] = hsv[1];
+          bitmap.data[offset + 2] = hsv[2];
+          bitmap.data[offset + 3] = 255; // no transparency
+
+        }
+      }
+
+      // update the canvas
+      context.putImageData(bitmap, 0, 0);
+
+      return Promise.resolve(canvas);
+    };
+
+    return Promise.all([
+      _requestImage('/archae/draw/brushes/brush.png'),
+      _requestColorWheelImg(),
+    ])
+      .then(([
+        brushImg,
+        colorWheelImg,
+      ]) => {
         brushImg = _getScaledImg(brushImg, BRUSH_SIZE, BRUSH_SIZE);
 
         if (live) {
@@ -452,23 +508,58 @@ class ZDraw {
               const entityObject = entityElement.getObject();
 
               const mesh = (() => {
-                const geometry = (() => {
-                  const sq = n => Math.sqrt((n * n) + (n * n));
+                const object = new THREE.Object3D();
 
-                  const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
-                  const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
-                    .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
-                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.05 - (0.02 / 2)));
+                const coreMesh = (() => {
+                  const geometry = (() => {
+                    const sq = n => Math.sqrt((n * n) + (n * n));
 
-                  return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry]);
+                    const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
+                    const tipGeometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
+                      .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+                      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.05 - (0.02 / 2)));
+
+                    return geometryUtils.concatBufferGeometry([coreGeometry, tipGeometry]);
+                  })();
+                  const material = new THREE.MeshPhongMaterial({
+                    color: 0x808080,
+                  });
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  return mesh;
                 })();
-                const material = new THREE.MeshPhongMaterial({
-                  color: 0x808080,
-                });
+                object.add(coreMesh);
 
-                const pencilMesh = new THREE.Mesh(geometry, material);
-                return pencilMesh;
+                const colorWheelMesh = (() => {
+                  const geometry = new THREE.PlaneBufferGeometry(0.05, 0.05)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+
+                  const texture = new THREE.Texture(
+                    colorWheelImg,
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.NearestFilter,
+                    THREE.NearestFilter,
+                    THREE.RGBAFormat,
+                    THREE.UnsignedByteType,
+                    16
+                  );
+                  texture.needsUpdate = true;
+                  const material = new THREE.MeshBasicMaterial({
+                    color: 0xFFFFFF,
+                    map: texture,
+                    side: THREE.DoubleSide,
+                  });
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.position.y = 0.02;
+                  return mesh;
+                })();
+                object.add(colorWheelMesh);
+
+                return object;
               })();
               entityObject.add(mesh);
 
