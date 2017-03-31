@@ -255,8 +255,9 @@ class Zeo {
                       <img src="/img/logo-large.png" width=100 height=158 style="width: 100px; height: 158px; margin-bottom: 20px;">
                       <h1 style="display: flex; margin: 0; margin-bottom: 20px; font-size: 40px; font-weight: 300; justify-content: center;">Paused</span></h1>
                     `;
-                    helper.addEventListener('dragover', fs.dragover);
-                    helper.addEventListener('drop', fs.drop);
+                    helper.addEventListener('dragover', e => {
+                      e.preventDefault(); // needed to prevent browser drag-and-drop behavior
+                    });
 
                     const enterHelperContent = document.createElement('div');
                     enterHelperContent.innerHTML = `\
