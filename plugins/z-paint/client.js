@@ -7,7 +7,9 @@ const SIDES = ['left', 'right'];
 
 class ZPaint {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils, color: colorUtils}} = zeo;
+
+    const colorWheelImg = colorUtils.getColorWheelImg();
 
     let live = true;
     this.cleanup = () => {
@@ -71,23 +73,87 @@ class ZPaint {
               const entityObject = entityElement.getObject();
 
               const paintbrushMesh = (() => {
-                const geometry = (() => {
-                  const sq = n => Math.sqrt((n * n) + (n * n));
+                const object = new THREE.Object3D();
 
-                  const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.05);
-                  const jointGeometry = new THREE.BoxBufferGeometry(0.1, 0.03, 0.03)
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (0.03 / 2)));
-                  const brushGeometry = new THREE.BoxBufferGeometry(0.09, 0.02, 0.1)
-                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2)));
+                const coreMesh = (() => {
+                  const geometry = (() => {
+                    const sq = n => Math.sqrt((n * n) + (n * n));
 
-                  return geometryUtils.concatBufferGeometry([coreGeometry, jointGeometry, brushGeometry]);
+                    const coreGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.05);
+                    const jointGeometry = new THREE.BoxBufferGeometry(0.1, 0.03, 0.03)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (0.03 / 2)));
+                    const brushGeometry = new THREE.BoxBufferGeometry(0.09, 0.02, 0.1)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2)));
+
+                    return geometryUtils.concatBufferGeometry([coreGeometry, jointGeometry, brushGeometry]);
+                  })();
+                  const material = new THREE.MeshPhongMaterial({
+                    color: 0x808080,
+                  });
+
+                  const mesh = new THREE.Mesh(geometry, material);
+                  return mesh;
                 })();
-                const material = new THREE.MeshPhongMaterial({
-                  color: 0x808080,
-                });
+                object.add(coreMesh);
+                object.coreMesh = coreMesh;
 
-                const mesh = new THREE.Mesh(geometry, material);
-                return mesh;
+                const colorWheelMesh = (() => {
+                  const size = 0.05;
+
+                  const object = new THREE.Object3D();
+                  object.position.y = 0.02;
+                  object.visible = false;
+                  object.size = size;
+
+                  const planeMesh = (() => {
+                    const geometry = new THREE.PlaneBufferGeometry(size, size)
+                      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+
+                    const texture = new THREE.Texture(
+                      colorWheelImg,
+                      THREE.UVMapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.ClampToEdgeWrapping,
+                      THREE.NearestFilter,
+                      THREE.NearestFilter,
+                      THREE.RGBAFormat,
+                      THREE.UnsignedByteType,
+                      16
+                    );
+                    texture.needsUpdate = true;
+                    const material = new THREE.MeshBasicMaterial({
+                      color: 0xFFFFFF,
+                      map: texture,
+                      side: THREE.DoubleSide,
+                    });
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    return mesh;
+                  })();
+                  object.add(planeMesh);
+
+                  const notchMesh = (() => {
+                    const geometry = new THREE.CylinderBufferGeometry(0, sq(0.002), 0.005, 4, 1)
+                      .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+                      .applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI));
+                    const material = new THREE.MeshPhongMaterial({
+                      color: 0xFF0000,
+                      shading: THREE.FlatShading,
+                    });
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.y = 0.005 / 2;
+                    return mesh;
+                  })();
+                  object.add(notchMesh);
+                  object.notchMesh = notchMesh;
+
+                  return object;
+                })();
+                object.add(colorWheelMesh);
+                object.colorWheelMesh = colorWheelMesh;
+
+                return object;
               })();
               entityObject.add(paintbrushMesh);
 
@@ -97,6 +163,14 @@ class ZPaint {
                 entityObject.position.set(position[0], position[1], position[2]);
                 entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
                 entityObject.scale.set(position[7], position[8], position[9]);
+              };
+
+              entityApi.color = new THREE.Color(0x000000);
+              entityApi.render = () => {
+                const {color} = entityApi;
+                const {coreMesh} = paintbrushMesh;
+
+                coreMesh.material.color.copy(color);
               };
 
               const _makePaintMesh = ({
@@ -164,8 +238,6 @@ class ZPaint {
               let mesh = null;
 
               const meshes = [];
-
-              entityApi.color = new THREE.Color(0xF44336);
 
               entityApi.load = () => {
                 const {file} = entityApi;
@@ -270,6 +342,8 @@ class ZPaint {
                 grabbed: false,
                 painting: false,
                 lastPointTime: 0,
+                pressed: false,
+                color: '',
               });
               const paintStates = {
                 left: _makePaintState(),
@@ -333,6 +407,43 @@ class ZPaint {
                 }
               };
               input.on('triggerup', _triggerup);
+              const _paddown = e => {
+                const {side} = e;
+                const paintState = paintStates[side];
+                const {grabbed} = paintState;
+
+                if (grabbed) {
+                  paintState.pressed = true;
+
+                  const {colorWheelMesh} = paintbrushMesh;
+                  colorWheelMesh.visible = true;
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('paddown', _paddown, {
+                priority: 1,
+              });
+              const _padup = e => {
+                const {side} = e;
+                const paintState = paintStates[side];
+                const {grabbed} = paintState;
+
+                if (grabbed) {
+                  paintState.pressed = false;
+
+                  const {colorWheelMesh} = paintbrushMesh;
+                  colorWheelMesh.visible = false;
+
+                  const {color} = paintState;
+                  entityElement.setAttribute('color', JSON.stringify('#' + color.toString(16)));
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('padup', _padup, {
+                priority: 1,
+              });
 
               const _update = () => {
                 const {gamepads} = pose.getStatus();
@@ -496,6 +607,26 @@ class ZPaint {
                       }
                     }
                   }
+
+                  const {pressed} = paintState;
+                  if (pressed) {
+                    const {gamepads} = pose.getStatus();
+                    const gamepad = gamepads[side];
+
+                    if (gamepad) {
+                      const {colorWheelMesh} = paintbrushMesh;
+                      const {size, notchMesh} = colorWheelMesh;
+                      const {axes} = gamepad;
+
+                      notchMesh.position.x = -(size / 2) + (((axes[0] / 2) + 0.5) * size);
+                      notchMesh.position.z = (size / 2) - (((axes[1] / 2) + 0.5) * size);
+
+                      const colorHex = colorWheelImg.getColor((axes[0] / 2) + 0.5, (-axes[1] / 2) + 0.5);
+                      paintState.color = colorHex;
+
+                      notchMesh.material.color.setHex(colorHex);
+                    }
+                  }
                 });
               };
               render.on('update', _update);
@@ -519,6 +650,8 @@ class ZPaint {
 
                 input.removeListener('triggerdown', _triggerdown);
                 input.removeListener('triggerup', _triggerup);
+                input.removeListener('paddown', _paddown);
+                input.removeListener('padup', _padup);
 
                 render.removeListener('update', _update);
               };
@@ -558,6 +691,8 @@ class ZPaint {
                 case 'color': {
                   entityApi.color = new THREE.Color(newValue);
 
+                  entityApi.render();
+
                   break;
                 }
               }
@@ -577,6 +712,7 @@ class ZPaint {
   }
 }
 
+const sq = n => Math.sqrt((n * n) + (n * n));
 const _concatArrayBuffers = as => {
   let length = 0;
   for (let i = 0; i < as.length; i++) {

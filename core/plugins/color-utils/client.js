@@ -62,6 +62,16 @@ const colorUtils = () => ({
       // update the canvas
       ctx.putImageData(bitmap, 0, 0);
 
+      canvas.getColor = (x, y) => {
+        const xPx = Math.floor(x * width);
+        const yPx = Math.floor(y * height);
+        const imageData = ctx.getImageData(xPx, yPx, 1, 1);
+        const {data: imageDataData} = imageData;
+        const [r, g, b] = imageDataData;
+
+        return (r << (8 * 2)) | (g << (8 * 1)) | (b << (8 * 0));
+      };
+
       return canvas;
     };
     let colorWheelImg = null;

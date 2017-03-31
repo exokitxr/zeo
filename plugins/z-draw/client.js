@@ -746,15 +746,7 @@ class ZDraw {
                           notchMesh.position.x = -(size / 2) + (((axes[0] / 2) + 0.5) * size);
                           notchMesh.position.z = (size / 2) - (((axes[1] / 2) + 0.5) * size);
 
-                          const colorHex = (() => {
-                            const xPx = Math.floor(((axes[0] / 2) + 0.5) * colorWheelImg.width);
-                            const yPx = Math.floor(((-axes[1] / 2) + 0.5) * colorWheelImg.height);
-                            const imageData = colorWheelImg.ctx.getImageData(xPx, yPx, 1, 1);
-                            const {data: imageDataData} = imageData;
-                            const [r, g, b] = imageDataData;
-
-                            return (r << (8 * 2)) | (g << (8 * 1)) | (b << (8 * 0));
-                          })();
+                          const colorHex = colorWheelImg.getColor((axes[0] / 2) + 0.5, (-axes[1] / 2) + 0.5);
                           pencilState.color = colorHex;
 
                           notchMesh.material.color.setHex(colorHex);
