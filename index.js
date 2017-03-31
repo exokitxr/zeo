@@ -191,8 +191,10 @@ const _install = () => {
         return Promise.resolve(result);
       })
       .catch(err => {
-        spinner.stop();
-        console.log();
+        if (spinner) {
+          spinner.stop();
+          console.log();
+        }
 
         return Promise.reject(err);
       });
