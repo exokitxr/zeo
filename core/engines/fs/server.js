@@ -39,6 +39,12 @@ class Fs {
     return _ensureFsDirectory()
       .then(() => {
         if (live) {
+          const libStatic = express.static(path.join(__dirname, 'lib'));
+          function serveLibStatic(req, res, next) {
+            libStatic(req, res, next);
+          }
+          app.use('/archae/fs/lib', serveLibStatic);
+
           const fsStatic = express.static(fsPath);
           function serveFsStatic(req, res, next) {
             const dirname = req.params[0];
@@ -115,6 +121,7 @@ class Fs {
             }
           }
           app.get(/^\/fs\/([^\/]+)((?:\/.*)?)$/, serveFsStatic);
+
           function serveFsUpload(req, res, next) {
             const dirname = req.params[0];
             const filePath = req.params[1];
@@ -189,6 +196,7 @@ class Fs {
           cleanups.push(() => {
             function removeMiddlewares(route, i, routes) {
               if (
+                route.handle.name === 'serveLibStatic' ||
                 route.handle.name === 'serveFsStatic' ||
                 route.handle.name === 'serveFsUpload'
               ) {

@@ -1,11 +1,3 @@
-import NURBSUtils from './lib/three-extra/NURBSUtils'; // XXX these could be loaded asynchronously to save bandwidth and parse time
-import NURBSCurve from './lib/three-extra/NURBSCurve';
-
-import OBJLoader from './lib/three-extra/OBJLoader';
-import ColladaLoader from './lib/three-extra/ColladaLoader';
-import FBXLoader from './lib/three-extra/FBXLoader2';
-import GLTFLoader from './lib/three-extra/GLTFLoader';
-
 const CHUNK_SIZE = 32 * 1024;
 
 class Fs {
@@ -43,13 +35,57 @@ class Fs {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
-        const THREENURBSUtils = NURBSUtils(THREE);
-        const THREENURBSCurve = NURBSCurve(THREE, THREENURBSUtils);
+        const libRequestPromises = {};
+        const _requestLib = libPath => {
+          let entry = libRequestPromises[libPath];
+          if (!entry) {
+            entry = new Promise((accept, reject) => {
+              window.module = {};
 
-        const THREEOBJLoader = OBJLoader(THREE);
-        const THREEColladaLoader = ColladaLoader(THREE);
-        const THREEFBXLoader = FBXLoader(THREE, THREENURBSCurve);
-        const THREEGLTFLoader = GLTFLoader(THREE);
+              const script = document.createElement('script');
+              script.src = '/archae/fs/lib/' + libPath;
+              script.onload = () => {
+                const {exports} = window.module;
+                window.module = {};
+
+                document.body.removeChild(script);
+
+                accept(exports);
+              };
+              script.onerror = err => {
+                document.body.removeChild(script);
+
+                reject(err);
+              };
+              document.body.appendChild(script);
+            });
+          }
+          return entry;
+        };
+        const _requestNURBSUtils = () => _requestLib('three-extra/NURBSUtils.js')
+          .then(NURBSUtils => NURBSUtils(THREE));
+        const _requestNURBSCurve = () => Promise.all([
+          _requestNURBSUtils(),
+          _requestLib('three-extra/NURBSCurve.js'),
+        ])
+          .then(([
+            THREENURBSUtils,
+            NURBSCurve,
+          ]) => NURBSCurve(THREE, THREENURBSUtils));
+        const _requestOBJLoader = () => _requestLib('three-extra/OBJLoader.js')
+          .then(OBJLoader => OBJLoader(THREE));
+        const _requestColladaLoader = () => _requestLib('three-extra/ColladaLoader.js')
+          .then(ColladaLoader => ColladaLoader(THREE));
+        const _requestFBXLoader = () => Promise.all([
+          _requestNURBSCurve(),
+          _requestLib('three-extra/FBXLoader2.js'),
+        ])
+          .then(([
+            THREENURBSCurve,
+            FBXLoader,
+          ]) => FBXLoader(THREE, THREENURBSCurve));
+        const _requestGLTFLoader = () => _requestLib('three-extra/GLTFLoader.js')
+          .then(GLTFLoader => GLTFLoader(THREE));
 
         const dragover = e => {
           e.preventDefault();
@@ -165,45 +201,41 @@ class Fs {
                       return Promise.resolve(null);
                     }
                   })
-                  .then(modelData => new Promise((accept, reject) => {
-                    const loader = (() => {
-                      const loader = (() => {
-                        switch (ext) {
-                          case 'obj':
-                            return new THREEOBJLoader();
-                          case 'dae':
-                            return new THREEColladaLoader();
-                          case 'fbx':
-                            return new THREEFBXLoader();
-                          case 'gltf':
-                            return new THREEGLTFLoader();
-                          case 'json':
-                            return new THREE.ObjectLoader();
-                          default:
-                            return null;
-                        }
-                      })();
-
+                  .then(modelData =>
+                    (() => {
+                      switch (ext) {
+                        case 'obj':
+                          return _requestOBJLoader()
+                            .then(THREEOBJLoader => new THREEOBJLoader());
+                        case 'dae':
+                          return _requestColladaLoader()
+                            .then(THREEColladaLoader => new THREEColladaLoader());
+                        case 'fbx':
+                          return _requestFBXLoader()
+                            .then(THREEFBXLoader => new THREEFBXLoader());
+                        case 'gltf':
+                          return _requestFLTFLoader()
+                            .then(THREEGLTFLoader => new THREEGLTFLoader());
+                        case 'json':
+                          return new THREE.ObjectLoader();
+                        default:
+                          return Promise.resolve(null);
+                      }
+                    })()
+                    .then(loader => new Promise((accept, reject) => {
                       if (loader) {
                         loader.type = ext;
+                        loader.crossOrigin = true;
                       }
 
-                      return loader;
-                    })();
+                      const baseUrl = url.match(/^(.*?\/?)[^\/]*$/)[1];
+                      const loaderType = loader ? loader.type : null;
+                      if (loaderType === 'obj' || loaderType === 'gltf') {
+                        loader.setPath(baseUrl);
+                      } else if (loaderType === 'json') {
+                        loader.setTexturePath(baseUrl);
+                      }
 
-                    if (loader) {
-                      loader.crossOrigin = true;
-                    }
-
-                    const baseUrl = url.match(/^(.*?\/?)[^\/]*$/)[1];
-                    const loaderType = loader ? loader.type : null;
-                    if (loaderType === 'obj' || loaderType === 'gltf') {
-                      loader.setPath(baseUrl);
-                    } else if (loaderType === 'json') {
-                      loader.setTexturePath(baseUrl);
-                    }
-
-                    const _parse = () => {
                       if (loaderType === 'obj') {
                         const modelMesh = loader.parse(modelData);
                         accept(modelMesh);
@@ -226,9 +258,8 @@ class Fs {
                         const err = new Error('unknown model type: ' + JSON.stringify(ext));
                         reject(err);
                       }
-                    };
-                    _parse();
-                  }));
+                    }))
+                  );
               }
               case 'json': {
                 return fetch(url)
