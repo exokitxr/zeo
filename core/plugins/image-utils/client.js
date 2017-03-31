@@ -1,4 +1,4 @@
-const imageUtils = archae => ({
+const imageUtils = () => ({
   mount() {
     const _boxizeImage = img => {
       const {width, height} = img;
