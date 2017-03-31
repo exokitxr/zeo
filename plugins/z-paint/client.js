@@ -375,13 +375,13 @@ class ZPaint {
 
                   if (grabbed) {
                     paintState.painting = true;
-                  }
 
-                  const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
-                  if (numPainting === 1) {
-                    mesh = _makePaintMesh();
+                    const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                    if (numPainting === 1) {
+                      mesh = _makePaintMesh();
 
-                    scene.add(mesh);
+                      scene.add(mesh);
+                    }
                   }
                 }
               };
@@ -396,13 +396,13 @@ class ZPaint {
 
                   if (grabbed) {
                     paintState.painting = false;
-                  }
 
-                  const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
-                  if (numPainting === 0) {
-                    meshes.push(mesh);
+                    const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
+                    if (numPainting === 0) {
+                      meshes.push(mesh);
 
-                    mesh = null;
+                      mesh = null;
+                    }
                   }
                 }
               };
