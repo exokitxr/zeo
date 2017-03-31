@@ -600,7 +600,7 @@ class ZDraw {
                 const {color} = entityApi;
                 const {coreMesh} = mesh;
 
-                coreMesh.material.color.setHex(color);
+                coreMesh.material.color.copy(color);
               };
 
               const _makePencilState = () => ({
@@ -824,6 +824,7 @@ class ZDraw {
                             return (r << (8 * 2)) | (g << (8 * 1)) | (b << (8 * 0));
                           })();
                           pencilState.color = colorHex;
+
                           notchMesh.material.color.setHex(colorHex);
                         }
                       }
