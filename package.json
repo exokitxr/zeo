@@ -34,7 +34,6 @@
     "busboy": "^0.2.14",
     "cli-spinner": "^0.2.6",
     "cookie": "^0.3.1",
-    "http-proxy": "^1.16.2",
     "lru-cache": "^4.0.2",
     "markdown-toc": "^1.1.0",
     "marked": "^0.3.6",
