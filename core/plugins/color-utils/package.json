@@ -1,7 +1,0 @@
-{
-  "name": "color-utils",
-  "description": "Provides color management utilities for the zeo core.",
-  "version": "0.0.1",
-  "client": "client.js",
-  "dependencies": {}
-}

@@ -101,7 +101,7 @@ class Zeo {
             '/core/plugins/geometry-utils',
             '/core/plugins/random-utils',
             '/core/plugins/text-utils',
-            '/core/plugins/color-utils',
+            '/core/plugins/menu-utils',
             '/core/plugins/creature-utils',
             '/core/plugins/sprite-utils',
           ]);
@@ -132,7 +132,7 @@ class Zeo {
             geometryUtils,
             randomUtils,
             textUtils,
-            colorUtils,
+            menuUtils,
             creatureUtils,
             spriteUtils,
           ]) => {
@@ -611,7 +611,7 @@ class Zeo {
                         this.geometry = geometryUtils;
                         this.random = randomUtils;
                         this.text = textUtils;
-                        this.color = colorUtils;
+                        this.menu = menuUtils;
                         this.creature = creatureUtils;
                         this.sprite = spriteUtils;
                       }

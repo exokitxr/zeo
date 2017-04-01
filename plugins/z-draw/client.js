@@ -19,9 +19,9 @@ const SIDES = ['left', 'right'];
 
 class ZDraw {
   mount() {
-    const {three: {THREE}, input, elements, render, pose, utils: {geometry: geometryUtils, color: colorUtils}} = zeo;
+    const {three: {THREE}, input, elements, render, pose, utils: {geometry: geometryUtils, menu: menuUtils}} = zeo;
 
-    const colorWheelImg = colorUtils.getColorWheelImg();
+    const colorWheelImg = menuUtils.getColorWheelImg();
 
     let live = true;
     this._cleanup = () => {

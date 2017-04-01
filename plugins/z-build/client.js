@@ -4,9 +4,10 @@ const SIDES = ['left', 'right'];
 
 class ZBuild {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils, color: colorUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
 
-    const colorWheelImg = colorUtils.getColorWheelImg();
+    const targetPlaneImg = menuUtils.getTargetPlaneImg();
+    const colorWheelImg = menuUtils.getColorWheelImg();
 
     let live = true;
     this.cleanup = () => {
@@ -91,6 +92,53 @@ class ZBuild {
 
           const menuMesh = (() => {
             const object = new THREE.Object3D();
+
+            const targetPlaneMesh = (() => {
+              const geometry = (() => {
+                const planeGeometries = [
+                  new THREE.PlaneBufferGeometry(0.1, 0.1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1 / 2, 0)),
+                  new THREE.PlaneBufferGeometry(0.1, 0.1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                    .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2))
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0.1 / 2, 0, 0)),
+                  new THREE.PlaneBufferGeometry(0.1, 0.1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                    .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI))
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1 / 2, 0)),
+                  new THREE.PlaneBufferGeometry(0.1, 0.1)
+                    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                    .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2))
+                    .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1 / 2, 0, 0)),
+                ];
+
+                return geometryUtils.concatBufferGeometry(planeGeometries);
+              })();
+              const texture = new THREE.Texture(
+                targetPlaneImg,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.NearestFilter,
+                THREE.NearestFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                16
+              );
+              texture.needsUpdate = true;
+              const material = new THREE.MeshBasicMaterial({
+                color: 0xFFFFFF,
+                map: texture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                alphaTest: 0.5,
+              });
+
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            object.add(targetPlaneMesh);
 
             const shapeMesh = (() => {
               const object = new THREE.Object3D();

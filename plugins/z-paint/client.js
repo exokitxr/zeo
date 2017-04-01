@@ -7,9 +7,9 @@ const SIDES = ['left', 'right'];
 
 class ZPaint {
   mount() {
-    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils, color: colorUtils}} = zeo;
+    const {three: {THREE, scene}, elements, input, pose, world, render, utils: {function: funUtils, geometry: geometryUtils, menu: menuUtils}} = zeo;
 
-    const colorWheelImg = colorUtils.getColorWheelImg();
+    const colorWheelImg = menuUtils.getColorWheelImg();
 
     let live = true;
     this.cleanup = () => {

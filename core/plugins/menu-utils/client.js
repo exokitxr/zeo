@@ -1,5 +1,60 @@
-const colorUtils = () => ({
+const menuUtils = () => ({
   mount() {
+    let targetPlaneImg = null;
+    const _makeTargetPlaneImg = () => {
+      const width = 256;
+      const height = width;
+      const lineWidth = 2;
+      const lineOffset = lineWidth / 2;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.lineWidth = lineWidth;
+
+      // top left
+      ctx.beginPath();
+      ctx.moveTo(lineOffset, lineOffset + (height * 0.1));
+      ctx.lineTo(lineOffset, lineOffset + (height * 0.05));
+      ctx.lineTo(lineOffset + (width * 0.05), lineOffset);
+      ctx.lineTo(lineOffset + (width * 0.1), lineOffset);
+      ctx.stroke();
+
+      // top right
+      ctx.beginPath();
+      ctx.moveTo(width - lineOffset - (width * 0.1), lineOffset);
+      ctx.lineTo(width - lineOffset - (width * 0.05), lineOffset);
+      ctx.lineTo(width - lineOffset, lineOffset + (height * 0.05));
+      ctx.lineTo(width - lineOffset, lineOffset + (height * 0.1));
+      ctx.stroke();
+
+      // bottom right
+      ctx.beginPath();
+      ctx.moveTo(width - lineOffset, height - lineOffset - (height * 0.1));
+      ctx.lineTo(width - lineOffset, height - lineOffset - (height * 0.05));
+      ctx.lineTo(width - lineOffset - (width * 0.05), height - lineOffset);
+      ctx.lineTo(width - lineOffset - (width * 0.1), height - lineOffset);
+      ctx.stroke();
+
+      // bottom left
+      ctx.beginPath();
+      ctx.moveTo(lineOffset + (width * 0.1), height - lineOffset);
+      ctx.lineTo(lineOffset + (width * 0.05), height - lineOffset);
+      ctx.lineTo(lineOffset, height - lineOffset - (height * 0.05));
+      ctx.lineTo(lineOffset, height - lineOffset - (height * 0.1));
+      ctx.stroke();
+
+      return canvas;
+    };
+    const _getTargetPlaneImg = () => {
+      if (!targetPlaneImg) {
+        targetPlaneImg = _makeTargetPlaneImg();
+      }
+      return targetPlaneImg;
+    };
+
     const _makeColorWheelImg = () => {
       function hsv2rgb(h, s, v) {
         var c = v * s;
@@ -83,9 +138,10 @@ const colorUtils = () => ({
     };
 
     return {
+      getTargetPlaneImg: _getTargetPlaneImg,
       getColorWheelImg: _getColorWheelImg,
     };
   },
 });
 
-module.exports = colorUtils;
+module.exports = menuUtils;
