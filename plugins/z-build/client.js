@@ -556,7 +556,7 @@ class ZBuild {
                     file.write(s)
                       .then(() => {
                         if (live) {
-                          const broadcastEvent = new CustomEvent('broadcast', {
+                          const broadcastEvent = new CustomEvent('broadcast', { // XXX support multiplayer here
                             detail: {
                               type: 'build.update',
                               id: entityElement.getId(),
