@@ -256,7 +256,7 @@ class ZDraw {
               entityApi.load = () => {
                 const {file} = entityApi;
 
-                file.read({
+                file.read({ // XXX handle the no-file case
                   type: 'arrayBuffer',
                 })
                   .then(arrayBuffer => {
