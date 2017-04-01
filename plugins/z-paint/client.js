@@ -3,6 +3,11 @@ const POINT_FRAME_RATE = 20;
 const SIZE = 0.02;
 const DIRTY_TIME = 1000;
 
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 const SIDES = ['left', 'right'];
 
 class ZPaint {
@@ -155,6 +160,7 @@ class ZPaint {
               })();
               entityObject.add(paintbrushMesh);
 
+              entityApi.position = DEFAULT_MATRIX;
               entityApi.align = () => {
                 const {position} = entityApi;
 
@@ -639,6 +645,8 @@ class ZPaint {
               render.on('update', _update);
 
               entityApi._cleanup = () => {
+                entityObject.remove(paintbrushMesh);
+
                 if (mesh) {
                   scene.remove(mesh);
                 }
