@@ -589,7 +589,6 @@ class ZBuild {
               const _makeBuildState = () => ({
                 grabbed: false,
                 building: false,
-                lastPointTime: 0,
                 pressed: false,
                 touchStart: null,
                 touchCurrent: null,
