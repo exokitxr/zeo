@@ -19,6 +19,7 @@ class ZBuild {
     const shapeMaterial = new THREE.MeshPhongMaterial({
       color: 0x808080,
       shading: THREE.FlatShading,
+      side: THREE.DoubleSide,
     });
 
     const buildComponent = {
@@ -144,7 +145,7 @@ class ZBuild {
               const object = new THREE.Object3D();
               object.position.y = 0.05;
 
-              const planeMesh = (() => {
+              const backgroundMesh = (() => {
                 const geometry = new THREE.PlaneBufferGeometry(0.09, 0.09)
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = new THREE.MeshPhongMaterial({
@@ -154,7 +155,7 @@ class ZBuild {
                 });
                 return new THREE.Mesh(geometry, material);
               })();
-              object.add(planeMesh);
+              object.add(backgroundMesh);
 
               const boxMesh = (() => {
                 const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01)
@@ -181,11 +182,40 @@ class ZBuild {
                 const material = shapeMaterial;
                 return new THREE.Mesh(geometry, material);
               })();
+              const planeMesh = (() => {
+                const geometry = new THREE.PlaneBufferGeometry(0.01, 0.01);
+                  // .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+                  // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
+                const material = shapeMaterial;
+                return new THREE.Mesh(geometry, material);
+              })();
+              const sphereMesh = (() => {
+                const geometry = new THREE.SphereBufferGeometry(0.005, 8, 8)
+                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+                const material = shapeMaterial;
+                return new THREE.Mesh(geometry, material);
+              })();
+              const cylinderMesh = (() => {
+                const geometry = new THREE.CylinderBufferGeometry(0.005, 0.005, 0.01, 8, 1)
+                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+                const material = shapeMaterial;
+                return new THREE.Mesh(geometry, material);
+              })();
+              const torusMesh = (() => {
+                const geometry = new THREE.TorusBufferGeometry(0.005, 0.005 / 4, 4, 8)
+                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+                const material = shapeMaterial;
+                return new THREE.Mesh(geometry, material);
+              })();
               const shapeMeshes = [
                 boxMesh,
                 rectangleMesh,
                 triangularPyramidMesh,
                 rectangularPyramidMesh,
+                planeMesh,
+                sphereMesh,
+                cylinderMesh,
+                torusMesh,
               ];
 
               const width = 0.09;
