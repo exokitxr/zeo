@@ -1,5 +1,8 @@
+const mod = require('mod-loop');
+
 const MAX_NUM_POINTS = 4 * 1024;
-const POINT_FRAME_RATE = 60;
+const POINT_FRAME_RATE = 30;
+const POINT_FRAME_TIME = 1000 / POINT_FRAME_RATE;
 const DIRTY_TIME = 1000;
 
 const DEFAULT_MATRIX = [
@@ -58,6 +61,10 @@ class ZAnimate {
           type: 'vector',
           value: [0.2, 0.2, 0.2],
         },
+        play: {
+          type: 'checkbox',
+          value: true,
+        },
       },
       entityAddedCallback(entityElement) {
         const entityApi = entityElement.getComponentApi();
@@ -104,22 +111,22 @@ class ZAnimate {
           })
             .then(arrayBuffer => {
               const array = new Float32Array(arrayBuffer);
-              let frameIndex = 0;
-              while (frameIndex < array.length) {
-                const numPoints = Math.floor(array[frameIndex]);
-                const positionSize = numPoints * 3;
+              const numPoints = Math.floor(array[0]);
+              const positionSize = numPoints * 3;
+              const rotationSizeSize = numPoints * 4;
 
-                const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
+              const positions = array.slice(1, 1 + positionSize);
+              const rotations = array.slice(1 + positionSize, 1 + positionSize + rotationSizeSize);
 
-                const mesh = _makeAnimateMesh({
-                  positions,
-                  numPoints,
-                });
-                scene.add(mesh);
-                meshes.push(mesh);
-
-                frameIndex += 1 + positionSize;
+              if (committedMesh) {
+                scene.remove(committedMesh);
               }
+              committedMesh = _makeAnimateMesh({
+                positions,
+                rotations,
+                numPoints,
+              });
+              scene.add(committedMesh);
             });
         };
         let dirtyFlag = false;
@@ -131,8 +138,7 @@ class ZAnimate {
             const timeout = setTimeout(() => {
               const {file} = entityApi;
 
-              const allMeshes = meshes.concat(mesh ? [mesh] : []);
-              const b = _concatArrayBuffers(allMeshes.map(mesh => mesh.getBuffer()));
+              const b = committedMesh.getBuffer();
 
               const _cleanup = () => {
                 entityApi.cancelSave = null;
@@ -178,12 +184,24 @@ class ZAnimate {
           }
         };
 
+        let playing = false;
+        let playStartTime = 0;
+        entityApi.play = () => {
+          playing = true;
+          playStartTime = 0;
+        };
+        entityApi.pause = () => {
+          playing = false;
+        };
+
         const _makeAnimateMesh = ({
           positions = new Float32Array(MAX_NUM_POINTS * 3),
+          rotations = new Float32Array(MAX_NUM_POINTS * 4),
           numPoints = 0,
         } = {}) => {
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+          geometry.rotations = rotations;
           geometry.setDrawRange(0, numPoints);
 
           const material = new THREE.LineBasicMaterial({
@@ -191,30 +209,49 @@ class ZAnimate {
           });
 
           const mesh = new THREE.Line(geometry, material);
+          mesh.visible = numPoints > 0;
           mesh.lastPoint = numPoints;
           mesh.getBuffer = () => {
             const {lastPoint} = mesh;
             const positionSize = lastPoint * 3;
+            const rotationSize = lastPoint * 4;
             const array = new Float32Array(
               1 + // length
-              positionSize // position
+              positionSize + // position
+              rotationSize // rotation
             );
             array[0] = lastPoint; // length
             array.set(positions.slice(0, positionSize), 1); // position
+            array.set(rotations.slice(0, rotationSize), 1 + positionSize); // rotation
 
             return new Uint8Array(array.buffer);
           };
 
           return mesh;
         };
-        let mesh = null;
 
-        const meshes = [];
+        let mesh = null;
+        let committedMesh = null;
+
+        const playMesh = (() => {
+          const geometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.02, 4, 1)
+            .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
+            .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+          const material = new THREE.MeshPhongMaterial({
+            color: 0xFFFF00,
+            shading: THREE.FlatShading,
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.visible = false;
+          return mesh;
+        })();
+        scene.add(playMesh);
 
         const _makeAnimateState = () => ({
           grabbed: false,
           drawing: false,
-          lastPointTime: null,
+          lastPointTime: 0,
         });
         const animateStates = {
           left: _makeAnimateState(),
@@ -246,6 +283,7 @@ class ZAnimate {
 
             if (grabbed) {
               animateState.drawing = true;
+              animateState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
 
               const numDrawing = funUtils.sum(SIDES.map(side => Number(animateStates[side].drawing)));
               if (numDrawing === 1) {
@@ -270,7 +308,12 @@ class ZAnimate {
 
               const numDrawing = funUtils.sum(SIDES.map(side => Number(animateStates[side].drawing)));
               if (numDrawing === 0) {
-                meshes.push(mesh);
+                if (committedMesh) {
+                  scene.remove(committedMesh);
+                }
+
+                committedMesh = mesh;
+                scene.add(committedMesh);
 
                 mesh = null;
               }
@@ -294,54 +337,96 @@ class ZAnimate {
 
               if (lastPoint < MAX_NUM_POINTS) {
                 const {lastPointTime} = animateState;
-                const lastFrame = _getFrame(lastPointTime);
-                const currentPointTime = worldTime;
-                const currentFrame = _getFrame(currentPointTime);
+                const startFrame = _getFrame(lastPointTime);
+                const endFrame = _getFrame(worldTime);
 
-                if (currentFrame > lastFrame) {
-                  const positionsAttribute = mesh.geometry.getAttribute('position');
-
+                if (endFrame > startFrame) {
+                  const {geometry} = mesh;
+                  const positionsAttribute = geometry.getAttribute('position');
                   const positions = positionsAttribute.array;
+                  const {rotations} = geometry;
 
                   const gamepad = gamepads[side];
                   const {position: controllerPosition, rotation: controllerRotation} = gamepad;
 
                   const toolTipPosition = controllerPosition.clone()
                     .add(new THREE.Vector3(0, 0, -0.05 - (0.02 / 2)).applyQuaternion(controllerRotation));
+                  const toolTipRotation = controllerRotation;
 
-                  // positions
-                  const basePositionIndex = lastPoint * 3;
-                  positions[basePositionIndex + 0] = toolTipPosition.x;
-                  positions[basePositionIndex + 1] = toolTipPosition.y;
-                  positions[basePositionIndex + 2] = toolTipPosition.z;
+                  for (let currentFrame = startFrame; currentFrame < endFrame; currentFrame++) {
+                    // positions
+                    const basePositionIndex = lastPoint * 3;
+                    positions[basePositionIndex + 0] = toolTipPosition.x;
+                    positions[basePositionIndex + 1] = toolTipPosition.y;
+                    positions[basePositionIndex + 2] = toolTipPosition.z;
+
+                    // rotations
+                    const baseRotationIndex = lastPoint * 4;
+                    rotations[baseRotationIndex + 0] = toolTipRotation.x;
+                    rotations[baseRotationIndex + 1] = toolTipRotation.y;
+                    rotations[baseRotationIndex + 2] = toolTipRotation.z;
+                    rotations[baseRotationIndex + 3] = toolTipRotation.w;
+
+                    lastPoint++;
+                  }
 
                   positionsAttribute.needsUpdate = true;
 
-                  lastPoint++;
                   mesh.lastPoint = lastPoint;
+                  if (!mesh.visible) {
+                    mesh.visible = true;
+                  }
 
-                  const {geometry} = mesh;
                   geometry.setDrawRange(0, lastPoint);
 
-                  animateState.lastPointTime = lastPointTime;
+                  animateState.lastPointTime = worldTime;
 
                   entityApi.save();
                 }
               }
             }
           });
+
+          if (playing) {
+            if (committedMesh) {
+              const {lastPoint} = committedMesh;
+
+              if (lastPoint > 0) {
+                const currentFrame = mod(_getFrame(worldTime - playStartTime), lastPoint);
+
+                const {geometry} = committedMesh;
+                const positions = geometry.getAttribute('position').array;
+                const positionBaseIndex = currentFrame * 3;
+                const positionArray = positions.slice(positionBaseIndex, positionBaseIndex + 3);
+                playMesh.position.fromArray(positionArray);
+
+                const {rotations} = geometry;
+                const rotationBaseIndex = currentFrame * 4;
+                const rotationArray = rotations.slice(rotationBaseIndex, rotationBaseIndex + 4);
+                playMesh.quaternion.fromArray(rotationArray);
+
+                if (!playMesh.visible) {
+                  playMesh.visible = true;
+                }
+              }
+            }
+          } else {
+            if (playMesh.visible) {
+              playMesh.visible = false;
+            }
+          }
         };
         render.on('update', _update);
 
         entityApi._cleanup = () => {
           entityObject.remove(toolMesh);
+          scene.remove(playMesh);
 
           if (mesh) {
             scene.remove(mesh);
           }
-          for (let i = 0; i < meshes.length; i++) {
-            const mesh = meshes[i];
-            scene.remove(mesh);
+          if (committedMesh) {
+            scene.remove(committedMesh);
           }
 
           entityElement.removeEventListener('grab', _grab);
@@ -354,6 +439,8 @@ class ZAnimate {
           if (cancelSave) {
             cancelSave();
           }
+
+          render.removeListener('update', _update);
         };
       },
       entityRemovedCallback(entityElement) {
@@ -387,6 +474,15 @@ class ZAnimate {
 
             break;
           }
+          case 'play': {
+            if (newValue) {
+              entityApi.play();
+            } else {
+              entityApi.pause();
+            }
+
+            break;
+          }
         }
       },
     };
@@ -403,21 +499,5 @@ class ZAnimate {
 }
 
 const sq = n => Math.sqrt((n * n) + (n * n));
-const _concatArrayBuffers = as => {
-  let length = 0;
-  for (let i = 0; i < as.length; i++) {
-    const e = as[i];
-    length += e.length;
-  }
-
-  const result = new Uint8Array(length);
-  let index = 0;
-  for (let i = 0; i < as.length; i++) {
-    const e = as[i];
-    result.set(e, index);
-    index += e.length;
-  }
-  return result;
-};
 
 module.exports = ZAnimate;
