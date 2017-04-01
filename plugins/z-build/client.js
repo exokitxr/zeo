@@ -1,3 +1,5 @@
+const mod = require('mod-loop');
+
 const DIRTY_TIME = 1000;
 
 const SIDES = ['left', 'right'];
@@ -591,6 +593,9 @@ class ZBuild {
                 lastPointTime: 0,
                 pressed: false,
                 touchStart: null,
+                touchCurrent: null,
+                menu: 'shape',
+                angle: 0,
                 color: '',
               });
               const buildStates = {
@@ -687,6 +692,30 @@ class ZBuild {
                 priority: 1,
               });
 
+              const menuRotationSpecs = [
+                {
+                  menu: 'shape',
+                  angle: 0,
+                },
+                {
+                  menu: 'color',
+                  angle: Math.PI / 2 * 3,
+                },
+                {
+                  menu: 'resize',
+                  angle: Math.PI,
+                },
+                {
+                  menu: 'scale',
+                  angle: Math.PI / 2,
+                },
+              ];
+              const _touchDiffToAngle = touchDiff => (-touchDiff.x / 2) * Math.PI;
+              const _angleDiff = (a, b) => {
+                let diff = b - a;
+                diff = mod(diff + Math.PI, Math.PI * 2) - Math.PI;
+                return Math.abs(diff);
+              };
               const _update = () => {
                 const {gamepads} = pose.getStatus();
 
@@ -704,21 +733,38 @@ class ZBuild {
                       if (padTouched && !touchStart) {
                         const {axes} = gamepad;
                         buildState.touchStart = new THREE.Vector2().fromArray(axes);
+                        buildState.touchCurrent = buildState.touchStart.clone();
                       } else if (!padTouched && touchStart) {
-                        const {axes} = gamepad;
-                        const touchCurrent = new THREE.Vector2().fromArray(axes)
+                        const {touchCurrent, angle: startAngle} = buildState;
                         const touchDiff = touchCurrent.clone().sub(touchStart);
 
-                        console.log('touch diff commit', touchDiff.toArray().join(',')); // XXX commit the menu rotation here
+                        const menuRotationDistanceSpecs = menuRotationSpecs.map(menuRotationSpec => {
+                          const {menu, angle} = menuRotationSpec;
+                          const distance = _angleDiff(startAngle + _touchDiffToAngle(touchDiff), angle);
+
+                          return {
+                            menu,
+                            angle,
+                            distance,
+                          };
+                        });
+                        const closestMenuRotationSpec = menuRotationDistanceSpecs.sort((a, b) => a.distance - b.distance)[0];
 
                         buildState.touchStart = null;
-                      } else if (padTouched && touchStart) {
-                        const {axes} = gamepad;
-                        const touchCurrent = new THREE.Vector2().fromArray(axes)
-                        const touchDiff = touchCurrent.clone().sub(touchStart);
+                        buildState.menu = closestMenuRotationSpec.menu;
+                        buildState.angle = closestMenuRotationSpec.angle;
 
                         const {menuMesh} = toolMesh;
-                        menuMesh.rotation.z = (-touchDiff.x / 2) * Math.PI;
+                        menuMesh.rotation.z = closestMenuRotationSpec.angle;
+                      } else if (padTouched && touchStart) {
+                        const {axes} = gamepad;
+                        const touchCurrent = new THREE.Vector2().fromArray(axes);
+                        buildState.touchCurrent = touchCurrent;
+
+                        const {menuMesh} = toolMesh;
+                        const {angle: startAngle} = buildState;
+                        const touchDiff = touchCurrent.clone().sub(touchStart);
+                        menuMesh.rotation.z = startAngle + _touchDiffToAngle(touchDiff);
                       }
                     }
                   }
