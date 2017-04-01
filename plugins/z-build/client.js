@@ -16,6 +16,15 @@ class ZBuild {
 
     const worldElement = elements.getWorldElement();
 
+    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+    const _decomposeMatrix = matrix => {
+      const position = new THREE.Vector3();
+      const rotation = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      matrix.decompose(position, rotation, scale);
+      return {position, rotation, scale};
+    };
+
     const _requestImg = url => new Promise((accept, reject) => {
       const img = new Image();
       img.src = url;
@@ -119,6 +128,13 @@ class ZBuild {
                 object.add(coreMesh);
                 object.coreMesh = coreMesh;
 
+                const shapeMeshContainer = (() => {
+                  const object = new THREE.Object3D();
+                  object.position.z = -(0.1 / 2) - (0.03 / 2);
+                  return object;
+                })();
+                object.add(shapeMeshContainer);
+
                 const menuMesh = (() => {
                   const object = new THREE.Object3D();
 
@@ -189,51 +205,67 @@ class ZBuild {
                       const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
-                      return new THREE.Mesh(geometry, material);
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.shapeType = 'box';
+                      return mesh;
                     })();
                     const rectangleMesh = (() => {
                       const geometry = new THREE.BoxBufferGeometry(0.01, 0.02, 0.01)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
-                      return new THREE.Mesh(geometry, material);
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.shapeType = 'rectangle';
+                      return mesh;
                     })();
                     const triangularPyramidMesh = (() => {
                       const geometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.01, 3, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
-                      return new THREE.Mesh(geometry, material);
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.shapeType = 'triangularPyramid';
+                      return mesh;
                     })();
                     const rectangularPyramidMesh = (() => {
                       const geometry = new THREE.CylinderBufferGeometry(0, sq(0.005), 0.01, 4, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
-                      return new THREE.Mesh(geometry, material);
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.shapeType = 'rectangularPyramid';
+                      return mesh;
                     })();
                     const planeMesh = (() => {
                       const geometry = new THREE.PlaneBufferGeometry(0.01, 0.01);
                         // .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
                         // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
                       const material = shapeMaterial;
-                      return new THREE.Mesh(geometry, material);
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.shapeType = 'plane';
+                      return mesh;
                     })();
                     const sphereMesh = (() => {
                       const geometry = new THREE.SphereBufferGeometry(0.005, 8, 8)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
-                      return new THREE.Mesh(geometry, material);
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.shapeType = 'sphere';
+                      return mesh;
                     })();
                     const cylinderMesh = (() => {
                       const geometry = new THREE.CylinderBufferGeometry(0.005, 0.005, 0.01, 8, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
-                      return new THREE.Mesh(geometry, material);
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.shapeType = 'cylinder';
+                      return mesh;
                     })();
                     const torusMesh = (() => {
                       const geometry = new THREE.TorusBufferGeometry(0.005, 0.005 / 4, 4, 8)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                       const material = shapeMaterial;
-                      return new THREE.Mesh(geometry, material);
+                      const mesh = new THREE.Mesh(geometry, material);
+                      mesh.shapeType = 'torus';
+                      return mesh;
                     })();
                     const shapeMeshes = [
                       boxMesh,
@@ -436,8 +468,18 @@ class ZBuild {
                 coreMesh.material.color.copy(color);
               };
 
-              const _makeShapeMesh = ({}) => { // XXX make shape mesh here
-                return mesh;
+              const _makeShapeMesh = ({
+                shapeType = 'box',
+              }) => {
+                const {
+                  menuMesh: {
+                    shapeMesh: {
+                      shapeMeshes,
+                    },
+                  },
+                } = toolMesh;
+                const shapeMesh = shapeMeshes.find(shapeMesh => shapeMesh.shapeType === shapeType);
+                return shapeMesh.clone();
               };
               let mesh = null;
 
@@ -504,7 +546,8 @@ class ZBuild {
                   const timeout = setTimeout(() => {
                     const {file} = entityApi;
 
-                    const allMeshes = meshes.concat(mesh ? [mesh] : []);
+                    // XXX implement saving here
+                    /* const allMeshes = meshes.concat(mesh ? [mesh] : []);
                     const b = _concatArrayBuffers(allMeshes.map(mesh => mesh.getBuffer()));
 
                     let live = true;
@@ -527,7 +570,7 @@ class ZBuild {
                             entityApi.save();
                           }
                         }
-                      });
+                      }); */
 
                     entityApi.cancelSave = () => {
                       live = false;
@@ -547,6 +590,7 @@ class ZBuild {
                 building: false,
                 lastPointTime: 0,
                 pressed: false,
+                touchStart: null,
                 color: '',
               });
               const buildStates = {
@@ -580,7 +624,11 @@ class ZBuild {
                   if (grabbed) {
                     buildState.building = true;
 
-                    // XXX create initial shape mesh in the tool here
+                    mesh = _makeShapeMesh({
+                      shapeType: 'box',
+                    });
+                    const {shapeMeshContainer} = toolMesh;
+                    shapeMeshContainer.add(mesh);
                   }
                 }
               };
@@ -596,7 +644,12 @@ class ZBuild {
                   if (grabbed) {
                     buildState.building = false;
 
-                    // XXX commit the shape mesh in the tool here
+                    const matrixWorld = mesh.matrixWorld.clone();
+                    scene.add(mesh);
+                    matrix.matrix.copy(matrixWorld);
+                    matrix.updateMatrixWorld();
+
+                    meshes.push(mesh);
                   }
                 }
               };
@@ -636,35 +689,37 @@ class ZBuild {
 
               const _update = () => {
                 const {gamepads} = pose.getStatus();
-                const worldTime = world.getWorldTime();
-
-                const _getFrame = t => Math.floor(t / POINT_FRAME_RATE);
 
                 SIDES.forEach(side => {
                   const buildState = buildStates[side];
-                  const {building} = buildState;
+                  const {grabbed} = buildState;
 
-                  if (building) {
-                    // XXX handle tracking the current mesh here; might not be necessary if it's attached to the controller
-                  }
-
-                  const {pressed} = buildState;
-                  if (pressed) {
-                    const {gamepads} = pose.getStatus();
+                  if (grabbed) {
                     const gamepad = gamepads[side];
 
-                    if (gamepad) { // XXX handle tracking the pad notch in the menu here
-                      /* const {colorWheelMesh} = toolMesh;
-                      const {size, notchMesh} = colorWheelMesh;
-                      const {axes} = gamepad;
+                    if (gamepad) {
+                      const {buttons: {pad: {touched: padTouched}}} = gamepad;
+                      const {touchStart} = buildState;
 
-                      notchMesh.position.x = -(size / 2) + (((axes[0] / 2) + 0.5) * size);
-                      notchMesh.position.z = (size / 2) - (((axes[1] / 2) + 0.5) * size);
+                      if (padTouched && !touchStart) {
+                        const {axes} = gamepad;
+                        buildState.touchStart = new THREE.Vector2().fromArray(axes);
+                      } else if (!padTouched && touchStart) {
+                        const {axes} = gamepad;
+                        const touchCurrent = new THREE.Vector2().fromArray(axes)
+                        const touchDiff = touchCurrent.clone().sub(touchStart);
 
-                      const colorHex = colorWheelImg.getColor((axes[0] / 2) + 0.5, (-axes[1] / 2) + 0.5);
-                      buildState.color = colorHex;
+                        console.log('touch diff commit', touchDiff.toArray().join(',')); // XXX commit the menu rotation here
 
-                      notchMesh.material.color.setHex(colorHex); */
+                        buildState.touchStart = null;
+                      } else if (padTouched && touchStart) {
+                        const {axes} = gamepad;
+                        const touchCurrent = new THREE.Vector2().fromArray(axes)
+                        const touchDiff = touchCurrent.clone().sub(touchStart);
+
+                        const {menuMesh} = toolMesh;
+                        menuMesh.rotation.z = (-touchDiff.x / 2) * Math.PI;
+                      }
                     }
                   }
                 });
