@@ -412,10 +412,23 @@ const geometryUtils = archae => ({
             });
             return result;
           })();
+          const uvs = (() => {
+            const geometryUvs = geometries.map(geometry => geometry.getAttribute('uv').array);
+            const numUvs = functionUtils.sum(geometryUvs.map(geometryUv => geometryUv.length));
+
+            const result = new Float32Array(numUvs);
+            let i = 0;
+            geometryUvs.forEach(geometryUv => {
+              result.set(geometryUv, i);
+              i += geometryUv.length;
+            });
+            return result;
+          })();
 
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
           geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
           return geometry;
         }
 
