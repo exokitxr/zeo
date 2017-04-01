@@ -762,6 +762,7 @@ class ZBuild {
                         buildState.touchCurrent = touchCurrent;
 
                         const {menuMesh} = toolMesh;
+                        const {menuMesh} = toolMesh;
                         const {angle: startAngle} = buildState;
                         const touchDiff = touchCurrent.clone().sub(touchStart);
                         menuMesh.rotation.z = startAngle + _touchDiffToAngle(touchDiff);
@@ -773,9 +774,9 @@ class ZBuild {
               render.on('update', _update);
 
               entityApi._cleanup = () => {
-                if (mesh) {
-                  scene.remove(mesh);
-                }
+                entityObject.remove(toolMesh);
+                scene.remove(meshesContainer);
+
                 for (let i = 0; i < meshes.length; i++) {
                   const mesh = meshes[i];
                   scene.remove(mesh);
@@ -799,7 +800,6 @@ class ZBuild {
             },
             entityRemovedCallback(entityElement) {
               const entityApi = entityElement.getComponentApi();
-
               entityApi._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
