@@ -106,28 +106,40 @@ class ZAnimate {
         entityApi.load = () => {
           const {file} = entityApi;
 
-          file.read({ // XXX handle the no-file case
-            type: 'arrayBuffer',
-          })
-            .then(arrayBuffer => {
-              const array = new Float32Array(arrayBuffer);
-              const numPoints = Math.floor(array[0]);
-              const positionSize = numPoints * 3;
-              const rotationSizeSize = numPoints * 4;
+          if (file) {
+            file.read({ // XXX handle the no-file case
+              type: 'arrayBuffer',
+            })
+              .then(arrayBuffer => {
+                const array = new Float32Array(arrayBuffer);
+                const numPoints = Math.floor(array[0]);
+                const positionSize = numPoints * 3;
+                const rotationSizeSize = numPoints * 4;
 
-              const positions = array.slice(1, 1 + positionSize);
-              const rotations = array.slice(1 + positionSize, 1 + positionSize + rotationSizeSize);
+                const positions = array.slice(1, 1 + positionSize);
+                const rotations = array.slice(1 + positionSize, 1 + positionSize + rotationSizeSize);
 
-              if (committedMesh) {
-                scene.remove(committedMesh);
-              }
-              committedMesh = _makeAnimateMesh({
-                positions,
-                rotations,
-                numPoints,
+                if (committedMesh) {
+                  scene.remove(committedMesh);
+                }
+                committedMesh = _makeAnimateMesh({
+                  positions,
+                  rotations,
+                  numPoints,
+                });
+                scene.add(committedMesh);
               });
-              scene.add(committedMesh);
+          } else {
+            if (mesh) {
+              scene.remove(mesh);
+              mesh = null;
+            }
+
+            SIDES.forEach(side => {
+              const animateState = animateStates[side];
+              animateState.drawing = false;
             });
+          }
         };
         let dirtyFlag = false;
         entityApi.cancelSave = null;
