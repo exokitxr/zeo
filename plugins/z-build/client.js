@@ -150,6 +150,7 @@ class ZBuild {
                 const x = index % shapesPerRow;
                 const y = Math.floor(index / shapesPerRow);
                 shapeMesh.position.x = -(width / 2) + (shapeWidth / 2) + (x * (width / shapesPerRow));
+                shapeMesh.position.y = 0.01 / 2;
                 shapeMesh.position.z = -(height / 2) + (shapeHeight / 2) + (y * (height / shapesPerCol));
 
                 object.add(shapeMesh);
