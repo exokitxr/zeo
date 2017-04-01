@@ -1,0 +1,8 @@
+{
+  "name": "z-build",
+  "description": "Build 3d scenes with primitive geometry blocks.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "dependencies": {}
+}
