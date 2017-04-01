@@ -308,6 +308,16 @@ class ZDraw {
                     const imageData = canvas.ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const {data: imageDataData} = imageData;
 
+                    const _cleanup = () => {
+                      entityApi.cancelSave = null;
+
+                      if (dirtyFlag) {
+                        dirtyFlag = false;
+
+                        entityApi.save();
+                      }
+                    };
+
                     let live = true;
                     file.write(imageDataData)
                       .then(() => {
@@ -320,14 +330,13 @@ class ZDraw {
                           });
                           worldElement.dispatchEvent(broadcastEvent);
 
-                          entityApi.cancelSave = null;
-
-                          if (dirtyFlag) {
-                            dirtyFlag = false;
-
-                            entityApi.save();
-                          }
+                          _cleanup();
                         }
+                      })
+                      .catch(err => {
+                        console.warn(err);
+
+                        _cleanup();
                       });
 
                     entityApi.cancelSave = () => {

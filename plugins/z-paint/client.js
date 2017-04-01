@@ -301,6 +301,16 @@ class ZPaint {
                     const allMeshes = meshes.concat(mesh ? [mesh] : []);
                     const b = _concatArrayBuffers(allMeshes.map(mesh => mesh.getBuffer()));
 
+                    const _cleanup = () => {
+                      entityApi.cancelSave = null;
+
+                      if (dirtyFlag) {
+                        dirtyFlag = false;
+
+                        entityApi.save();
+                      }
+                    };
+
                     let live = true;
                     file.write(b)
                       .then(() => {
@@ -313,14 +323,13 @@ class ZPaint {
                           });
                           worldElement.dispatchEvent(broadcastEvent);
 
-                          entityApi.cancelSave = null;
-
-                          if (dirtyFlag) {
-                            dirtyFlag = false;
-
-                            entityApi.save();
-                          }
+                          _cleanup();
                         }
+                      })
+                      .catch(err => {
+                        console.warn(err);
+
+                        _cleanup();
                       });
 
                     entityApi.cancelSave = () => {

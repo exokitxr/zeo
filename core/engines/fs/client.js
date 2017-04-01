@@ -230,7 +230,7 @@ class Fs {
                           return _requestFLTFLoader()
                             .then(THREEGLTFLoader => new THREEGLTFLoader());
                         case 'json':
-                          return new THREE.ObjectLoader();
+                          return Promise.resolve(new THREE.ObjectLoader());
                         default:
                           return Promise.resolve(null);
                       }

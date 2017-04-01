@@ -459,6 +459,9 @@ class ZBuild {
               })();
               entityObject.add(toolMesh);
 
+              const meshesContainer = new THREE.Object3D();
+              scene.add(meshesContainer);
+
               entityApi.align = () => {
                 const {position} = entityApi;
 
@@ -501,33 +504,14 @@ class ZBuild {
 
                 if (file) {
                   file.read({
-                    type: 'json',
+                    type: 'model',
                   })
-                    .then(j => { // XXX parse shape meshes here
-                      /* const array = new Float32Array(arrayBuffer);
-                      let frameIndex = 0;
-                      while (frameIndex < array.length) {
-                        const numPoints = Math.floor(array[frameIndex]);
-                        const positionSize = numPoints * 2 * 3;
-                        const uvSize = numPoints * 2 * 2;
-
-                        const positions = array.slice(frameIndex + 1, frameIndex + 1 + positionSize);
-                        const normals = array.slice(frameIndex + 1 + positionSize, frameIndex + 1 + (positionSize * 2));
-                        const colors = array.slice(frameIndex + 1 + (positionSize * 2), frameIndex + 1 + (positionSize * 3));
-                        const uvs = array.slice(frameIndex + 1 + (positionSize * 3), frameIndex + 1 + (positionSize * 3) + uvSize);
-
-                        const mesh = _makeShapeMesh({
-                          positions,
-                          normals,
-                          colors,
-                          uvs,
-                          numPoints,
-                        });
-                        scene.add(mesh);
-                        meshes.push(mesh);
-
-                        frameIndex += 1 + (positionSize * 3) + uvSize;
-                      } */
+                    .then(newMeshesContainer => {
+                      const {children} = newMeshesContainer;
+                      for (let i = 0; i < children.length; i++) {
+                        const child = children[i];
+                        meshesContainer.add(child);
+                      }
                     });
                 } else {
                   if (mesh) {
@@ -557,31 +541,37 @@ class ZBuild {
                   const timeout = setTimeout(() => {
                     const {file} = entityApi;
 
-                    // XXX implement saving here
-                    /* const allMeshes = meshes.concat(mesh ? [mesh] : []);
-                    const b = _concatArrayBuffers(allMeshes.map(mesh => mesh.getBuffer()));
+                    const s = JSON.stringify(meshesContainer.toJSON(), null, 2);
 
-                    let live = true;
-                    file.write(b)
+                    const _cleanup = () => {
+                      entityApi.cancelSave = null;
+
+                      if (dirtyFlag) {
+                        dirtyFlag = false;
+
+                        entityApi.save();
+                      }
+                    };
+
+                    file.write(s)
                       .then(() => {
                         if (live) {
                           const broadcastEvent = new CustomEvent('broadcast', {
                             detail: {
-                              type: 'paintbrush.update',
+                              type: 'build.update',
                               id: entityElement.getId(),
                             },
                           });
                           worldElement.dispatchEvent(broadcastEvent);
 
-                          entityApi.cancelSave = null;
-
-                          if (dirtyFlag) {
-                            dirtyFlag = false;
-
-                            entityApi.save();
-                          }
+                          _cleanup();
                         }
-                      }); */
+                      })
+                      .catch(err => {
+                        console.warn(err);
+
+                        _cleanup();
+                      });
 
                     entityApi.cancelSave = () => {
                       live = false;
@@ -659,12 +649,12 @@ class ZBuild {
                     buildState.building = false;
 
                     const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
-                    scene.add(mesh);
+                    meshesContainer.add(mesh);
                     mesh.position.copy(position);
                     mesh.quaternion.copy(rotation);
                     mesh.scale.copy(scale);
 
-                    meshes.push(mesh);
+                    entityApi.save();
                   }
                 }
               };
