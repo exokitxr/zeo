@@ -256,36 +256,43 @@ class ZDraw {
               entityApi.load = () => {
                 const {file} = entityApi;
 
-                file.read({ // XXX handle the no-file case
-                  type: 'arrayBuffer',
-                })
-                  .then(arrayBuffer => {
-                    const arrayValue = new Uint8ClampedArray(arrayBuffer);
+                if (file) {
+                  file.read({ // XXX handle the no-file case
+                    type: 'arrayBuffer',
+                  })
+                    .then(arrayBuffer => {
+                      const arrayValue = new Uint8ClampedArray(arrayBuffer);
 
-                    if (arrayValue.length > 0) {
-                      const {
-                        planeMesh: {
-                          material: {
-                            map: texture,
+                      if (arrayValue.length > 0) {
+                        const {
+                          planeMesh: {
+                            material: {
+                              map: texture,
+                            },
                           },
-                        },
-                      } = mesh;
-                      const {
-                        image: canvas,
-                      } = texture;
-                      const {ctx} = canvas;
-                      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                      const {data: imageDataData} = imageData;
+                        } = mesh;
+                        const {
+                          image: canvas,
+                        } = texture;
+                        const {ctx} = canvas;
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const {data: imageDataData} = imageData;
 
-                      if (arrayValue.length === imageDataData.length) {
-                        imageDataData.set(arrayValue);
-                        ctx.putImageData(imageData, 0, 0);
-                        texture.needsUpdate = true;
-                      } else {
-                        console.warn('draw paper tried to load invalid file data', {data: arrayValue});
+                        if (arrayValue.length === imageDataData.length) {
+                          imageDataData.set(arrayValue);
+                          ctx.putImageData(imageData, 0, 0);
+                          texture.needsUpdate = true;
+                        } else {
+                          console.warn('draw paper tried to load invalid file data', {data: arrayValue});
+                        }
                       }
-                    }
+                    });
+                } else {
+                  SIDES.forEach(side => {
+                    const pencilState = pencilStates[side];
+                    pencilState.drawing = false;
                   });
+                }
               };
               let dirtyFlag = false;
               entityApi.cancelSave = null;
