@@ -27,7 +27,7 @@ class ZPaint {
       };
     });
 
-    return _requestImage('/archae/paint/brushes/brush.png')
+    return _requestImage('/archae/z-paint/brushes/brush.png')
       .then(brushImg => {
         if (live) {
           const worldElement = elements.getWorldElement();

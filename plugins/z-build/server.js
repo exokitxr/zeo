@@ -1,6 +1,6 @@
 const path = require('path');
 
-class ZPaint {
+class ZBuild {
   constructor(archae) {
     this._archae = archae;
   }
@@ -9,15 +9,15 @@ class ZPaint {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const zPaintBrushesStatic = express.static(path.join(__dirname, 'brushes'));
-    function serveZPaintBrushes(req, res, next) {
-      zPaintBrushesStatic(req, res, next);
+    const zBuildIconsStatic = express.static(path.join(__dirname, 'icons'));
+    function serveZBuildIcons(req, res, next) {
+      zBuildIconsStatic(req, res, next);
     }
-    app.use('/archae/z-paint/brushes', serveZPaintBrushes);
+    app.use('/archae/z-build/icons', serveZBuildIcons);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveZPaintBrushes') {
+        if (route.handle.name === 'serveZBuildIcons') {
           routes.splice(i, 1);
         }
         if (route.route) {
@@ -33,4 +33,4 @@ class ZPaint {
   }
 }
 
-module.exports = ZPaint;
+module.exports = ZBuild;
