@@ -761,7 +761,6 @@ class ZBuild {
                         buildState.touchCurrent = touchCurrent;
 
                         const {menuMesh} = toolMesh;
-                        const {menuMesh} = toolMesh;
                         const {angle: startAngle} = buildState;
                         const touchDiff = touchCurrent.clone().sub(touchStart);
                         menuMesh.rotation.z = startAngle + _touchDiffToAngle(touchDiff);
