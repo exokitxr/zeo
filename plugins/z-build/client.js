@@ -18,15 +18,6 @@ class ZBuild {
 
     const worldElement = elements.getWorldElement();
 
-    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-    const _decomposeMatrix = matrix => {
-      const position = new THREE.Vector3();
-      const rotation = new THREE.Quaternion();
-      const scale = new THREE.Vector3();
-      matrix.decompose(position, rotation, scale);
-      return {position, rotation, scale};
-    };
-
     const _requestImg = url => new Promise((accept, reject) => {
       const img = new Image();
       img.src = url;
@@ -55,6 +46,19 @@ class ZBuild {
         resizeImg,
       }) => {
         if (live) {
+          const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+          const _decomposeMatrix = matrix => {
+            const position = new THREE.Vector3();
+            const rotation = new THREE.Quaternion();
+            const scale = new THREE.Vector3();
+            matrix.decompose(position, rotation, scale);
+            return {position, rotation, scale};
+          };
+
+          const zeroVector = new THREE.Vector3();
+          const zeroQuaternion = new THREE.Quaternion();
+          const oneVector = new THREE.Vector3(1, 1, 1);
+
           const shapeMaterial = new THREE.MeshPhongMaterial({
             color: 0x808080,
             shading: THREE.FlatShading,
@@ -136,6 +140,7 @@ class ZBuild {
                   return object;
                 })();
                 object.add(shapeMeshContainer);
+                object.shapeMeshContainer = shapeMeshContainer;
 
                 const menuMesh = (() => {
                   const object = new THREE.Object3D();
@@ -481,7 +486,11 @@ class ZBuild {
                   },
                 } = toolMesh;
                 const shapeMesh = shapeMeshes.find(shapeMesh => shapeMesh.shapeType === shapeType);
-                return shapeMesh.clone();
+                const shapeMeshClone = shapeMesh.clone();
+                shapeMeshClone.position.copy(zeroVector);
+                shapeMeshClone.quaternion.copy(zeroQuaternion);
+                shapeMeshClone.scale.copy(oneVector);
+                return shapeMeshClone;
               };
               let mesh = null;
 
@@ -649,10 +658,11 @@ class ZBuild {
                   if (grabbed) {
                     buildState.building = false;
 
-                    const matrixWorld = mesh.matrixWorld.clone();
+                    const {position, rotation, scale} = _decomposeObjectMatrixWorld(mesh);
                     scene.add(mesh);
-                    matrix.matrix.copy(matrixWorld);
-                    matrix.updateMatrixWorld();
+                    mesh.position.copy(position);
+                    mesh.quaternion.copy(rotation);
+                    mesh.scale.copy(scale);
 
                     meshes.push(mesh);
                   }
