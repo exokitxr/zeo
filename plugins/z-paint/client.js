@@ -1,5 +1,6 @@
 const MAX_NUM_POINTS = 4 * 1024;
 const POINT_FRAME_RATE = 20;
+const POINT_FRAME_TIME = 1000 / POINT_FRAME_RATE;
 const SIZE = 0.02;
 const DIRTY_TIME = 1000;
 
@@ -216,6 +217,7 @@ class ZPaint {
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.drawMode = THREE.TriangleStripDrawMode;
                 mesh.frustumCulled = false;
+                mesh.visible = numPoints > 0;
                 mesh.lastPoint = numPoints;
                 mesh.getBuffer = () => {
                   const {lastPoint} = mesh;
@@ -388,6 +390,7 @@ class ZPaint {
 
                   if (grabbed) {
                     paintState.painting = true;
+                    paintState.lastPointTime = world.getWorldTime() - POINT_FRAME_TIME;
 
                     const numPainting = funUtils.sum(SIDES.map(side => Number(paintStates[side].painting)));
                     if (numPainting === 1) {
@@ -478,10 +481,11 @@ class ZPaint {
                       const currentFrame = _getFrame(currentPointTime);
 
                       if (currentFrame > lastFrame) {
-                        const positionsAttribute = mesh.geometry.getAttribute('position');
-                        const normalsAttribute = mesh.geometry.getAttribute('normal');
-                        const colorsAttribute = mesh.geometry.getAttribute('color');
-                        const uvsAttribute = mesh.geometry.getAttribute('uv');
+                        const {geometry} = mesh;
+                        const positionsAttribute = geometry.getAttribute('position');
+                        const normalsAttribute = geometry.getAttribute('normal');
+                        const colorsAttribute = geometry.getAttribute('color');
+                        const uvsAttribute = geometry.getAttribute('uv');
 
                         const positions = positionsAttribute.array;
                         const normals = normalsAttribute.array;
@@ -610,11 +614,13 @@ class ZPaint {
 
                         lastPoint++;
                         mesh.lastPoint = lastPoint;
+                        if (!mesh.visible) {
+                          mesh.visible = true;
+                        }
 
-                        const {geometry} = mesh;
                         geometry.setDrawRange(0, lastPoint * 2);
 
-                        paintState.lastPointTime = lastPointTime;
+                        paintState.lastPointTime = worldTime;
 
                         entityApi.save();
                       }
