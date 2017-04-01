@@ -146,6 +146,18 @@ class Fs {
           read({type = null} = {}) {
             const {url} = this;
 
+            const _validateResponse = res => {
+              const {status} = res;
+
+              if (status >= 200 && status < 300) {
+                return Promise.resolve(res);
+              } else if (status === 404) {
+                return Promise.resolve();
+              } else {
+                return Promise.reject(new Error('invalid response status code: ' + status));
+              }
+            };
+
             switch (type) {
               case 'image': {
                 return new Promise((accept, reject) => {
@@ -190,6 +202,7 @@ class Fs {
                 })();
 
                 return fetch(url)
+                  .then(_validateResponse)
                   .then(res => {
                     if (ext === 'obj' || ext === 'dae' || ext === 'fbx') {
                       return res.text();
@@ -263,14 +276,19 @@ class Fs {
               }
               case 'json': {
                 return fetch(url)
-                  .then(res => res.json());
+                  .then(_validateResponse)
+                  .then(res => res.json()
+                    .catch(err => Promise.resolve())
+                  );
               }
               case 'arrayBuffer': {
                 return fetch(url)
+                  .then(_validateResponse)
                   .then(res => res.arrayBuffer());
               }
               default: {
                 return fetch(url)
+                  .then(_validateResponse)
                   .then(res => res.blob());
               }
             }
