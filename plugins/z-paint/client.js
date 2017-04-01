@@ -16,8 +16,6 @@ class ZPaint {
       live = false;
     };
 
-    const planeUvs = geometryUtils.unindexBufferGeometry(new THREE.PlaneBufferGeometry(1, 1, 1, 1)).getAttribute('uv').array;
-
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
       img.src = src;
