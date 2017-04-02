@@ -29,6 +29,7 @@ const DEFAULT_MATRIX = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const NUM_INVENTORY_ITEMS = 4;
 const SERVER_CUBEMAP_INITIAL_ANNOUNCE_TIMEOUT = 2 * 1000;
 const SERVER_CUBEMAP_ANNOUNCE_INTERVAL = 5 * 60 * 1000;
+const SERVER_ENV_MAP_SIZE = 512;
 
 const SIDES = ['left', 'right'];
 const FACES = ['left', 'right', 'top', 'bottom', 'front', 'back']; // envMap order
@@ -479,7 +480,7 @@ class Hub {
                     });
 
                   const mesh = (() => {
-                    const geometry = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 15, 8);
+                    const geometry = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 64, 64);
                     const material = (() => {
                       const texture = new THREE.CubeTexture(
                         [
@@ -1090,15 +1091,15 @@ class Hub {
             const {THREE, scene, camera} = three;
 
             const cubeCanvas = document.createElement('canvas');
-            cubeCanvas.width = 256;
-            cubeCanvas.height = 256;
+            cubeCanvas.width = SERVER_ENV_MAP_SIZE;
+            cubeCanvas.height = SERVER_ENV_MAP_SIZE;
 
             const cubeRenderer = new THREE.WebGLRenderer({
               canvas: cubeCanvas,
             });
             cubeRenderer.render(scene, camera);
 
-            const cubeCamera = new THREE.CubeCamera(0.001, 1024, 256);
+            const cubeCamera = new THREE.CubeCamera(0.001, SERVER_ENV_MAP_SIZE * 4, SERVER_ENV_MAP_SIZE);
             cubeCamera.position.set(0, 1, 0);
             scene.add(cubeCamera);
 
