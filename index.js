@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const child_process = require('child_process');
 
 const mkdirp = require('mkdirp');
 const Spinner = require('cli-spinner').Spinner;
@@ -41,6 +42,7 @@ const flags = {
   serverHost: _findArg('serverHost'),
   worldname: _findArg('worldname'),
   hubUrl: _findArg('hubUrl'),
+  launch: _findArg('launch'),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -348,6 +350,41 @@ const _boot = ({key}) => {
   return Promise.all(bootPromises);
 };
 
+const _launch = () => {
+  if (flags.launch) {
+    console.log('launch command: ' + JSON.stringify(flags.launch));
+
+    const launchProcess = child_process.exec(flags.launch);
+    launchProcess.stdout.pipe(process.stdout);
+    launchProcess.stderr.pipe(process.stderr);
+    launchProcess.on('error', err => {
+      console.warn(err);
+    });
+
+    let live = true;
+    launchProcess.on('exit', code => {
+      console.log('launch process exited with code: ' + JSON.stringify(code));
+
+      if (live) {
+        process.exit();
+
+        live = false;
+      }
+    });
+    process.on('exit', () => {
+      if (live) {
+        console.log('terminating launch process');
+
+        launchProcess.kill();
+
+        live = false;
+      }
+    });
+  }
+
+  return Promise.resolve();
+};
+
 _checkArgs()
   .then(() => _load())
   .then(({
@@ -368,6 +405,7 @@ _checkArgs()
         console.log('https://' + config.metadata.server.url + '/');
       }
     })
+    .then(() => _launch())
   )
   .catch(err => {
     console.warn(err);
