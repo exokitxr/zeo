@@ -700,7 +700,10 @@ class ZBuild {
                 if (grabbed) {
                   const {menu} = buildState;
 
-                  if (menu === 'rotate') {
+                  if (menu === 'color') {
+                    const {color} = buildState;
+                    entityElement.setAttribute('color', JSON.stringify('#' + color.toString(16)));
+                  } else if (menu === 'rotate') {
                     const {pressStart, pressCurrent, rotation} = buildState;
                     const pressDiff = pressCurrent.clone().sub(pressStart);
                     const xAngle = _padDiffToAngle(pressDiff.x);
@@ -834,7 +837,27 @@ class ZBuild {
                           buildState.shape = shapeType;
                         }
                       } else if (menu === 'color') {
-                        // XXX handle this
+                        const gamepad = gamepads[side];
+
+                        if (gamepad) {
+                          const {pressStart} = buildState;
+
+                          if (pressStart) {
+                            const {menuMesh} = toolMesh;
+                            const {colorMesh} = menuMesh;
+                            const {colorWheelMesh} = colorMesh;
+                            const {size, notchMesh} = colorWheelMesh;
+                            const {axes} = gamepad;
+
+                            notchMesh.position.x = -(size / 2) + (((axes[0] / 2) + 0.5) * size);
+                            notchMesh.position.z = (size / 2) - (((axes[1] / 2) + 0.5) * size);
+
+                            const colorHex = colorWheelImg.getColor((axes[0] / 2) + 0.5, (-axes[1] / 2) + 0.5);
+                            buildState.color = colorHex;
+
+                            notchMesh.material.color.setHex(colorHex);
+                          }
+                        }
                       } else if (menu === 'rotate') {
                         const {pressStart} = buildState;
 
