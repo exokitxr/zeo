@@ -22,21 +22,46 @@ const serverPlusImg = require('../img/server-plus');
 const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
 
 const getHubMenuSrc = ({page, searchText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
+  const pageSpec = (() => {
+    const split = page.split(':');
+    const name = split[0];
+    const args = split.slice(1);
+    return {
+      name,
+      args,
+    };
+  })();
+  const content = (() => {
+    const {name} = pageSpec;
+
+    if (name === 'tutorial') {
+      const {args} = pageSpec;
+      const pageIndex = parseInt(args[0], 10);
+      return getTutorialPageSrc(pageIndex, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs);
+    } else if (name === 'remoteServers') {
+      return getRemoteServersSrc();
+    } else if (name === 'localServers') {
+      return getLocalServersSrc();
+    } else {
+      return '';
+    }
+  })();
+
   return `\
     <div style="display: flex; width: ${WIDTH}px; height: ${HEIGHT}px; flex-direction: column;">
       <div style="display: flex; height: 100px; padding: 20px; background-color: #000; font-size: 40px; color: #FFF; box-sizing: border-box; align-items: center;">
         <img src="${imgs.logo}" width="${100 / 2}" height="${158 / 2}" style="margin-right: 30px;" />
         <div>zeo vr</div>
       </div>
-      ${getTutorialPageSrc(page, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs)}
+      ${content}
     </div>
   `;
 };
 
-const getTutorialPageSrc = (page, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs) => {
+const getTutorialPageSrc = (pageIndex, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs) => {
   const keyboardVrMode = vrMode === null || vrMode === 'keyboard';
 
-  switch (page) {
+  switch (pageIndex) {
     case 0: return `\
       <div style="display: flex; padding: 30px 100px; justify-content: center; align-items: center; flex-direction: column; flex-grow: 1">
         <div style="margin-bottom: 10px; font-size: 30px; font-weight: 400;">Welcome to Zeo!</div>
@@ -143,15 +168,15 @@ const getTutorialPageSrc = (page, searchText, inputIndex, inputValue, loading, e
     `;
     case 4: return `\
       <div style="display: flex; height: 500px; justify-content: center; align-items: center;">
-        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="menu:remoteServers">
+        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="hub:remoteServers">
           <div style="margin-bottom: 15px; font-size: 24px;">Remote servers</div>
           <img src="${earthBoxImgSrc}" width="100" height="100" />
         </a>
-        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="menu:tutorial">
+        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="hub:tutorial">
           <div style="margin-bottom: 15px; font-size: 24px;">Tutorial</div>
           <img src="${viewCarouselImgSrc}" width="100" height="100" />
         </a>
-        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="menu:localServers">
+        <a style="display: flex; width: 200px; height: 200px; margin-right: 30px; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="hub:localServers">
           <div style="margin-bottom: 15px; font-size: 24px;">Local servers</div>
           <img src="${serverPlusImgSrc}" width="100" height="100" />
         </a>
@@ -191,6 +216,18 @@ const getTutorialPageSrc = (page, searchText, inputIndex, inputValue, loading, e
     `; */
     default: return '';
   }
+};
+
+const getRemoteServersSrc = () => {
+  return `\
+    Remote servers
+  `;
+};
+
+const getLocalServersSrc = () => {
+  return `\
+    Local servers
+  `;
 };
 
 const getServerTagSrc = ({worldname, description, serverIcon}) => {

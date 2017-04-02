@@ -245,7 +245,7 @@ class Hub {
               fontStyle: biolumi.getFontStyle(),
             };
             const hubState = {
-              page: 0,
+              page: 'tutorial:' + 0,
               searchText: '',
               username: '',
               inputText: '',
@@ -690,28 +690,46 @@ class Hub {
                 const {anchor} = menuHoverState;
                 const onclick = (anchor && anchor.onclick) || '';
 
+                const _parsePage = page => {
+                  const split = page.split(':');
+                  const name = split[0];
+                  const args = split.slice(1);
+                  return {
+                    name,
+                    args,
+                  };
+                };
                 const _setPage = page => {
-                  hubState.page = page;;
+                  hubState.page = page;
 
                   _updatePages();
 
                   const {cakeTagMesh} = menuMesh;
-                  cakeTagMesh.visible = page === 2;
+                  const pageIndex = parseInt(_parsePage(page).args[0], 10);
+                  cakeTagMesh.visible = pageIndex === 2;
                 };
 
                 if (onclick === 'hub:next') {
                   const {page} = hubState;
-                  _setPage(page + 1);
+                  const pageSpec = _parsePage(page);
+                  _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) + 1].join(':'));
 
                   return true;
                 } else if (onclick === 'hub:back') {
                   const {page} = hubState;
-                  _setPage(page - 1);
+                  _setPage([pageSpec.name, parseInt(pageSpec.args[0], 10) - 1].join(':'));
 
                   return true;
                 } else if (onclick === 'hub:tutorial') {
-                  const {page} = hubState;
-                  _setPage(0);
+                  _setPage('tutorial:' + 0);
+
+                  return true;
+                } else if (onclick === 'hub:remoteServers') {
+                  _setPage('remoteServers');
+
+                  return true;
+                } else if (onclick === 'hub:localServers') {
+                  _setPage('localServers');
 
                   return true;
                 } else if (onclick === 'hub:apiDocs') {
