@@ -479,14 +479,17 @@ class ZBuild {
 
               entityApi.color = new THREE.Color(0x000000);
               entityApi.render = () => {
-                const {color} = entityApi;
-                const {coreMesh} = toolMesh;
-
-                coreMesh.material.color.copy(color);
+                if (mesh) {
+                  const {color} = entityApi;
+                  mesh.material.color.copy(color);
+                };
               };
 
               const _makeShapeMesh = ({
                 shapeType = 'box',
+                rotation = zeroQuaternion,
+                scaleValue = 0,
+                color = new THREE.Color(0x808080),
               }) => {
                 const {
                   menuMesh: {
@@ -498,9 +501,13 @@ class ZBuild {
                 const shapeMesh = shapeMeshes.find(shapeMesh => shapeMesh.shapeType === shapeType);
                 const shapeMeshClone = shapeMesh.clone();
                 shapeMeshClone.position.copy(zeroVector);
-                shapeMeshClone.quaternion.copy(zeroQuaternion);
-                shapeMeshClone.scale.copy(oneVector);
-                shapeMeshClone.material = _makeShapeMaterial();
+                shapeMeshClone.quaternion.copy(rotation);
+                const scaleValueExp = Math.pow(2, scaleValue);
+                const scaleVector = oneVector.clone().multiplyScalar(scaleValueExp);
+                shapeMeshClone.scale.copy(scaleVector);
+                shapeMeshClone.material = _makeShapeMaterial({
+                  color,
+                });
                 return shapeMeshClone;
               };
               let mesh = null;
@@ -605,7 +612,7 @@ class ZBuild {
                 angle: 0,
                 shape: 'box',
                 rotation: new THREE.Quaternion(),
-                scale: 0,
+                scaleValue: 0,
                 color: '',
               });
               const buildStates = {
@@ -639,11 +646,13 @@ class ZBuild {
                   if (grabbed) {
                     buildState.building = true;
 
-                    const {shape, rotation, scale} = buildState;
+                    const {shape, rotation, scaleValue} = buildState;
+                    const {color} = entityApi;
                     mesh = _makeShapeMesh({
                       shapeType: shape,
                       rotation,
-                      scale,
+                      scaleValue,
+                      color,
                     });
                     const {shapeMeshContainer} = toolMesh;
                     shapeMeshContainer.add(mesh);
@@ -718,11 +727,11 @@ class ZBuild {
                       new THREE.Quaternion().setFromEuler(new THREE.Euler(yAngle, 0, xAngle, camera.rotation.order))
                     );
                   } else if (menu === 'resize') {
-                    const {pressStart, pressCurrent, scale} = buildState;
+                    const {pressStart, pressCurrent, scaleValue} = buildState;
                     const pressDiff = pressCurrent.clone().sub(pressStart);
                     const yValue = pressDiff.y;
 
-                    buildState.scale = scale + yValue;
+                    buildState.scaleValue = scaleValue + yValue;
                   }
 
                   buildState.pressStart = null;
@@ -895,9 +904,10 @@ class ZBuild {
                             const pressDiff = pressCurrent.clone().sub(pressStart);
                             const yValue = pressDiff.y;
 
-                            const {scale} = buildState;
-                            const newScale = scale + yValue;
-                            const newScaleVector = oneVector.clone().multiplyScalar(Math.pow(2, newScale));
+                            const {scaleValue} = buildState;
+                            const newScaleValue = scaleValue + yValue;
+                            const newScaleValueExp = Math.pow(2, newScaleValue);
+                            const newScaleVector = oneVector.clone().multiplyScalar(newScaleValueExp);
                             mesh.scale.copy(newScaleVector);
                           }
                         }
