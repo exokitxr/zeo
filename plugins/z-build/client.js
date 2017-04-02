@@ -58,8 +58,9 @@ class ZBuild {
           const zeroVector = new THREE.Vector3();
           const zeroQuaternion = new THREE.Quaternion();
           const oneVector = new THREE.Vector3(1, 1, 1);
+          const oneAndHalfVector = new THREE.Vector3(1.5, 1.5, 1.5);
 
-          const shapeMaterial = new THREE.MeshPhongMaterial({
+          const _makeShapeMaterial = () => new THREE.MeshPhongMaterial({
             color: 0x808080,
             shading: THREE.FlatShading,
             side: THREE.DoubleSide,
@@ -103,6 +104,13 @@ class ZBuild {
               const entityApi = entityElement.getComponentApi();
               const entityObject = entityElement.getObject();
 
+              const shapesWidth = 0.18;
+              const shapesHeight = 0.18;
+              const shapesPerRow = 4;
+              const shapesPerCol = 2;
+              const shapeWidth = shapesWidth / shapesPerRow;
+              const shapeHeight = shapesHeight / shapesPerCol;
+              const shapeSize = 0.02;
               const toolMesh = (() => {
                 const object = new THREE.Object3D();
 
@@ -211,7 +219,7 @@ class ZBuild {
                     const boxMesh = (() => {
                       const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                      const material = shapeMaterial;
+                      const material = _makeShapeMaterial();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.shapeType = 'box';
                       return mesh;
@@ -219,7 +227,7 @@ class ZBuild {
                     const rectangleMesh = (() => {
                       const geometry = new THREE.BoxBufferGeometry(0.02, 0.04, 0.02)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                      const material = shapeMaterial;
+                      const material = _makeShapeMaterial();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.shapeType = 'rectangle';
                       return mesh;
@@ -227,7 +235,7 @@ class ZBuild {
                     const triangularPyramidMesh = (() => {
                       const geometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 3, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                      const material = shapeMaterial;
+                      const material = _makeShapeMaterial();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.shapeType = 'triangularPyramid';
                       return mesh;
@@ -236,40 +244,40 @@ class ZBuild {
                       const geometry = new THREE.CylinderBufferGeometry(0, sq(0.01), 0.02, 4, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationY(-Math.PI * (3 / 12)))
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                      const material = shapeMaterial;
+                      const material = _makeShapeMaterial();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.shapeType = 'rectangularPyramid';
                       return mesh;
                     })();
                     const planeMesh = (() => {
-                      const geometry = new THREE.PlaneBufferGeometry(0.02, 0.02);
+                      const geometry = new THREE.PlaneBufferGeometry(0.03, 0.03);
                         // .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
                         // .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
-                      const material = shapeMaterial;
+                      const material = _makeShapeMaterial();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.shapeType = 'plane';
                       return mesh;
                     })();
                     const sphereMesh = (() => {
-                      const geometry = new THREE.SphereBufferGeometry(0.01, 8, 8)
+                      const geometry = new THREE.SphereBufferGeometry(0.015, 8, 8)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                      const material = shapeMaterial;
+                      const material = _makeShapeMaterial();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.shapeType = 'sphere';
                       return mesh;
                     })();
                     const cylinderMesh = (() => {
-                      const geometry = new THREE.CylinderBufferGeometry(0.01, 0.01, 0.02, 8, 1)
+                      const geometry = new THREE.CylinderBufferGeometry(0.015, 0.015, 0.03, 8, 1)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                      const material = shapeMaterial;
+                      const material = _makeShapeMaterial();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.shapeType = 'cylinder';
                       return mesh;
                     })();
                     const torusMesh = (() => {
-                      const geometry = new THREE.TorusBufferGeometry(0.01, 0.01 / 4, 4, 8)
+                      const geometry = new THREE.TorusBufferGeometry(0.015, 0.02 / 4, 4, 8)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                      const material = shapeMaterial;
+                      const material = _makeShapeMaterial();
                       const mesh = new THREE.Mesh(geometry, material);
                       mesh.shapeType = 'torus';
                       return mesh;
@@ -285,19 +293,12 @@ class ZBuild {
                       torusMesh,
                     ];
 
-                    const width = 0.18;
-                    const height = 0.18;
-                    const shapesPerRow = 4;
-                    const shapesPerCol = 2;
-                    const shapeWidth = width / shapesPerRow;
-                    const shapeHeight = height / shapesPerCol;
-                    const shapeSize = 0.02;
                     shapeMeshes.forEach((shapeMesh, index) => {
                       const x = index % shapesPerRow;
                       const y = Math.floor(index / shapesPerRow);
-                      shapeMesh.position.x = -(width / 2) + (shapeWidth / 2) + (x * (width / shapesPerRow));
+                      shapeMesh.position.x = -(shapesWidth / 2) + (shapeWidth / 2) + (x * (shapesWidth / shapesPerRow));
                       shapeMesh.position.y = shapeSize / 2;
-                      shapeMesh.position.z = -(height / 2) + (shapeHeight / 2) + (y * (height / shapesPerCol));
+                      shapeMesh.position.z = -(shapesHeight / 2) + (shapeHeight / 2) + (y * (shapesHeight / shapesPerCol));
 
                       object.add(shapeMesh);
                     });
@@ -595,6 +596,7 @@ class ZBuild {
                 touchCurrent: null,
                 menu: 'shape',
                 angle: 0,
+                shape: 'box',
                 color: '',
               });
               const buildStates = {
@@ -628,8 +630,9 @@ class ZBuild {
                   if (grabbed) {
                     buildState.building = true;
 
+                    const {shape} = buildState;
                     mesh = _makeShapeMesh({
-                      shapeType: 'box',
+                      shapeType: shape,
                     });
                     const {shapeMeshContainer} = toolMesh;
                     shapeMeshContainer.add(mesh);
@@ -666,8 +669,10 @@ class ZBuild {
 
                 if (grabbed) {
                   buildState.pressed = true;
+                  buildState.touchStart = null;
 
-                  // XXX handle notch-tracking the current menu here
+                  const {menuMesh} = toolMesh;
+                  menuMesh.rotation.z = 0;
 
                   e.stopImmediatePropagation();
                 }
@@ -728,9 +733,9 @@ class ZBuild {
 
                     if (gamepad) {
                       const {buttons: {pad: {touched: padTouched}}} = gamepad;
-                      const {touchStart} = buildState;
+                      const {pressed, touchStart} = buildState;
 
-                      if (padTouched && !touchStart) {
+                      if (padTouched && !touchStart && !pressed) {
                         const {axes} = gamepad;
                         buildState.touchStart = new THREE.Vector2().fromArray(axes);
                         buildState.touchCurrent = buildState.touchStart.clone();
@@ -766,6 +771,43 @@ class ZBuild {
                         const touchDiff = touchCurrent.clone().sub(touchStart);
                         menuMesh.rotation.z = startAngle + _touchDiffToAngle(touchDiff);
                       }
+                    }
+                  }
+
+                  const {pressed} = buildState;
+                  if (pressed) {
+                    const {menu} = buildState;
+
+                    if (menu === 'shape') {
+                      const gamepad = gamepads[side];
+
+                      if (gamepad) {
+                        const {axes} = gamepad;
+
+                        const x = Math.round(((((axes[0] / 2) + 0.5) * shapesWidth) - (shapeWidth / 2)) / shapeWidth);
+                        const y = Math.round((((-(axes[1] / 2) + 0.5) * shapesHeight) - (shapeHeight / 2)) / shapeHeight);
+                        const shapeIndex = (y * shapesPerRow) + x;
+
+                        const {
+                          menuMesh: {
+                            shapeMesh: {
+                              shapeMeshes,
+                            },
+                          },
+                        } = toolMesh;
+                        for (let i = 0; i < shapeMeshes.length; i++) {
+                          const shapeMesh = shapeMeshes[i];
+                          const selected = i !== shapeIndex;
+                          shapeMesh.scale.copy(selected ? oneVector : oneAndHalfVector);
+                          shapeMesh.material.color.setHex(selected ? 0x808080 : 0xFF0000);
+                        }
+
+                        const shapeMesh = shapeMeshes[shapeIndex];
+                        const {shapeType} = shapeMesh;
+                        buildState.shape = shapeType;
+                      }
+                    } else if (menu === 'color') {
+                      // XXX handle this
                     }
                   }
                 });
