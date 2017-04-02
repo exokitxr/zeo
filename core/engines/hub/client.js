@@ -724,6 +724,10 @@ class Hub {
                   _setPage('tutorial:' + 0);
 
                   return true;
+                } else if (onclick === 'hub:menu') {
+                  _setPage('tutorial:' + 4);
+
+                  return true;
                 } else if (onclick === 'hub:remoteServers') {
                   _setPage('remoteServers');
 
