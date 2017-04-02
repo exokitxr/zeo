@@ -323,7 +323,7 @@ class ZPaint {
                     file.write(b)
                       .then(() => {
                         if (live) {
-                          const broadcastEvent = new CustomEvent('broadcast', {
+                          const broadcastEvent = new CustomEvent('broadcast', { // XXX handle this for multiplayer
                             detail: {
                               type: 'paintbrush.update',
                               id: entityElement.getId(),
