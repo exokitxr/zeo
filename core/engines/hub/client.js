@@ -286,7 +286,7 @@ class Hub {
                   imgs,
                 }) => ({
                   type: 'html',
-                  src: menuRenderer.getHubSrc({
+                  src: menuRenderer.getHubMenuSrc({
                     page,
                     searchText,
                     inputIndex,
@@ -558,7 +558,7 @@ class Hub {
                             serverIcon,
                           }) => ({
                             type: 'html',
-                            src: menuRenderer.getServerSrc({
+                            src: menuRenderer.getServerTagSrc({
                               worldname,
                               description,
                               serverIcon,
