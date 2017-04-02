@@ -22,6 +22,8 @@ const serverPlusImg = require('../img/server-plus');
 const serverPlusImgSrc = 'data:image/svg+xml;base64,' + btoa(serverPlusImg);
 const chevronLeftImg = require('../img/chevron-left');
 const chevronLeftIconSrc = 'data:image/svg+xml;base64,' + btoa(chevronLeftImg);
+const upImg = require('../img/up');
+const downImg = require('../img/down');
 
 const getHubMenuSrc = ({page, searchText, inputIndex, inputValue, loading, error, vrMode, focusType, imgs}) => {
   const pageSpec = (() => {
@@ -41,9 +43,13 @@ const getHubMenuSrc = ({page, searchText, inputIndex, inputValue, loading, error
 
     return getTutorialPageSrc(pageIndex, searchText, inputIndex, inputValue, loading, error, focusType, vrMode, imgs);
   } else if (name === 'remoteServers') {
-    return getRemoteServersSrc();
+    const pageIndex = 0; // XXX actually derive the real page index here
+
+    return getRemoteServersSrc(pageIndex);
   } else if (name === 'localServers') {
-    return getLocalServersSrc();
+    const pageIndex = 0; // XXX actually derive the real page index here
+
+    return getLocalServersSrc(pageIndex);
   } else {
     return '';
   }
@@ -227,13 +233,41 @@ const getRemoteServersSrc = () => {
   `;
 };
 
-const getLocalServersSrc = () => {
+const getLocalServersSrc = (pageIndex) => {
+  const leftSrc = (() => {
+    return `\
+      <div style="display: flex; height: 100px; margin-right: auto; justify-content: center; align-items: center;">
+        <a style="display: block; width: 100px;" onclick="hub:menu">
+          <img src="${chevronLeftIconSrc}" width="80" height="80" />
+        </a>
+        <div style="margin-right: auto; font-size: 40px;">Local servers</div>
+      </div>
+    `;
+  })();
+  const rightSrc = (() => {
+    const showUp = pageIndex !== 0; // XXX really derive these
+    const showDown = pageIndex === 0;
+
+    return `\
+      <div style="display: flex; width: 250px; height: inherit; flex-direction: column; box-sizing: border-box;">
+        <a style="display: flex; margin: 30px; padding: 20px 0; border: 1px solid; border-radius: 5px; font-weight: 400; text-decoration: none; flex-direction: column; justify-content: center; align-items: center;" onclick="localServers:create">
+          <div style="font-size: 24px;">Create server</div>
+          <img src="${serverPlusImgSrc}" width="80" height="80" />
+        </a>
+        <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: auto; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showUp ? '' : 'visibility: hidden;'}" onclick="servers:up">
+          ${upImg}
+        </a>
+        <a style="position: relative; display: flex; margin: 0 30px; margin-bottom: 20px; border: 1px solid; border-radius: 5px; text-decoration: none; justify-content: center; align-items: center; ${showDown ? '' : 'visibility: hidden;'}" onclick="servers:down">
+          ${downImg}
+        </a>
+      </div>
+    `;
+  })();
+
   return `\
-    <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
-      <a style="display: block; width: 100px;" onclick="hub:menu">
-        <img src="${chevronLeftIconSrc}" width="80" height="80" />
-      </a>
-      <div style="margin-right: auto; font-size: 40px;">Local servers</div>
+    <div style="display: flex; height: ${HEIGHT}px;">
+      ${leftSrc}
+      ${rightSrc}
     </div>
   `;
 };
