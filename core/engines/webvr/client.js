@@ -240,7 +240,7 @@ class WebVR {
             return Boolean(this.display);
           }
 
-          shouldBePresenting() {
+          displayIsPresenting() {
             return bestDisplay.isPresenting;
           }
 

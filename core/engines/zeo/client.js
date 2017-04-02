@@ -365,8 +365,11 @@ class Zeo {
                         _enterHeadsetVR();
                       });
 
-                      if (webvr.shouldBePresenting()) {
+                      const urlRequestPresent = _getQueryVariable('e');
+                      if (webvr.displayIsPresenting() || urlRequestPresent === 'hmd') {
                         _enterHeadsetVR();
+                      } else if (urlRequestPresent === 'keyboard') {
+                        _enterKeyboardVR();
                       }
                     } else {
                       headsetButtons.forEach(headsetButton => {
@@ -654,5 +657,20 @@ class Zeo {
     this._cleanup();
   }
 }
+
+const _getQueryVariable = (url, variable) => {
+  const match = url.match(/\?(.+)$/);
+  const query = match ? match[1] : '';
+  const vars = query.split('&');
+
+  for (let i = 0; i < vars.length; i++) {
+    const pair = vars[i].split('=');
+
+    if (decodeURIComponent(pair[0]) === variable) {
+      return decodeURIComponent(pair[1]);
+    }
+  }
+  return null;
+};
 
 module.exports = Zeo;
