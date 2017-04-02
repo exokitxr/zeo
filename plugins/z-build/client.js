@@ -60,8 +60,10 @@ class ZBuild {
           const oneVector = new THREE.Vector3(1, 1, 1);
           const oneAndHalfVector = new THREE.Vector3(1.5, 1.5, 1.5);
 
-          const _makeShapeMaterial = () => new THREE.MeshPhongMaterial({
-            color: 0x808080,
+          const _makeShapeMaterial = ({
+            color = 0x808080,
+          } = {}) => new THREE.MeshPhongMaterial({
+            color,
             shading: THREE.FlatShading,
             side: THREE.DoubleSide,
           });
@@ -219,8 +221,11 @@ class ZBuild {
                     const boxMesh = (() => {
                       const geometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02)
                         .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-                      const material = _makeShapeMaterial();
+                      const material = _makeShapeMaterial({
+                        color: 0xFF0000,
+                      });
                       const mesh = new THREE.Mesh(geometry, material);
+                      mesh.scale.copy(oneAndHalfVector);
                       mesh.shapeType = 'box';
                       return mesh;
                     })();
