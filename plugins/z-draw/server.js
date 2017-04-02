@@ -9,15 +9,15 @@ class Draw {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
 
-    const brushesStatic = express.static(path.join(__dirname, 'brushes'));
-    function serveBrushes(req, res, next) {
-      brushesStatic(req, res, next);
+    const drawBrushesStatic = express.static(path.join(__dirname, 'brushes'));
+    function serveDrawBrushes(req, res, next) {
+      drawBrushesStatic(req, res, next);
     }
-    app.use('/archae/draw/brushes', serveBrushes);
+    app.use('/archae/draw/brushes', serveDrawBrushes);
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (route.handle.name === 'serveBrushes') {
+        if (route.handle.name === 'serveDrawBrushes') {
           routes.splice(i, 1);
         }
         if (route.route) {
