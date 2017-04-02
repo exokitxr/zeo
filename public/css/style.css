@@ -426,6 +426,8 @@ code {
   width: 80px;
   height: 80px;
   margin-right: 15px;
+  image-rendering: -mox-crisp-edges;
+  image-rendering: pixelated;
 }
 .readme-header .readme-header-wrap {
   display: flex;

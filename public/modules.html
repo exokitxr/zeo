@@ -46,7 +46,7 @@ const _makeModuleElement = module => {
 
   const div = document.createElement('div');
   div.innerHTML = `<div class=module>
-    <img src="${creaturejs.makeStaticCreature('module:' + name)}" class=module-image />
+    <img class=module-image />
     <div class=module-content>
       <div class=module-header>
         <div class=module-header-wrap>
@@ -58,6 +58,10 @@ const _makeModuleElement = module => {
     </div>
   </div>`;
   const moduleElement = div.childNodes[0];
+
+  setTimeout(() => {
+    $$(moduleElement, '.module-image')[0].src = creaturejs.makeStaticCreature('module:' + name);
+  });
 
   return moduleElement;
 };
