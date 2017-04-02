@@ -34,6 +34,7 @@
       </div>
     </footer>
   </div>
+  <script src="/js/lib/creaturejs.js"></script>
   <script>
 const $ = s => document.querySelectorAll(s);
 const $$ = (e, s) => e.querySelectorAll(s);
@@ -41,9 +42,11 @@ const $$ = (e, s) => e.querySelectorAll(s);
 const modulesBody = $('#modules-body')[0];
 
 const _makeModuleElement = module => {
+  const {name} = module;
+
   const div = document.createElement('div');
   div.innerHTML = `<div class=module>
-    <img class=module-image />
+    <img src="${creaturejs.makeStaticCreature('module:' + name)}" class=module-image />
     <div class=module-content>
       <div class=module-header>
         <div class=module-header-wrap>
@@ -56,24 +59,8 @@ const _makeModuleElement = module => {
   </div>`;
   const moduleElement = div.childNodes[0];
 
-  _getFakeImgUrl()
-    .then(url => {
-      $$(moduleElement, '.module-image')[0].src = url;
-    });
-
   return moduleElement;
 };
-const _getFakeImgUrl = () => fetch('https://www.reddit.com/r/wallpapers/.json')
-  .then(res => res.json()
-    .then(j => {
-      const urls = j.data.children.map(o => o.data.url);
-      const validUrls = urls
-        .filter(url => /\.(?:png|jpg)$/.test(url))
-        .map(url => url.replace(/^http:\/\//, 'https://'));
-      const url = validUrls[Math.floor(Math.random() * validUrls.length)];
-      return url;
-    })
-  );
 const _update = () => {
   while (modulesBody.hasChildNodes()) {
     modulesBody.removeChild(modulesBody.lastChild);
