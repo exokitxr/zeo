@@ -498,6 +498,10 @@ class Zeo {
                       removeAllListeners(event) {
                         return input.removeAllListeners(event);
                       }
+
+                      vibrate(side, value, time) {
+                        webvr.vibrate(side, value, time);
+                      }
                     }
 
                     class ZeoRenderApi extends EventEmitter {

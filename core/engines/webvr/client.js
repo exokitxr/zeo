@@ -744,6 +744,49 @@ class WebVR {
             const {display} = this;
             display.resetPose();
           }
+
+          vibrate(side, value, time) {
+            let left = null;
+            let right = null;
+
+            const {display} = this;
+            if (display.getGamepads) {
+              const gamepads = display.getGamepads();
+
+              left = gamepads[0];
+              right = gamepads[1];
+            } else {
+              const gamepads = navigator.getGamepads();
+
+              for (let i = 0; i < gamepads.length; i++) {
+                const gamepad = gamepads[i];
+
+                if (gamepad) {
+                  const {hand} = gamepad;
+
+                  if (hand === 'left') {
+                    left = gamepad;
+                  } else if (hand === 'right') {
+                    right = gamepad;
+                  }
+                }
+              }
+            }
+
+            const _vibrate = gamepad => {
+              const {hapticActuators} = gamepad;
+
+              if (hapticActuators.length > 0) {
+                hapticActuators[0].pulse(value, time);
+              }
+            };
+
+            if (side === 'left' && left !== null) {
+              _vibrate(left);
+            } else if (side === 'right' && right !== null) {
+              _vibrate(right);
+            }
+          }
         }
 
         class FakeVRDisplay extends EventEmitter {
@@ -1141,6 +1184,7 @@ class WebVR {
             })();
             this.buttons = buttons;
             this.axes = [0, 0];
+            this.hapticActuators = [];
 
             const positionOffset = new THREE.Vector3(
               CONTROLLER_DEFAULT_OFFSETS[0] * (index === 0 ? -1 : 1),
