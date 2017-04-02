@@ -95,15 +95,6 @@ const flags = {
     }
     return null;
   })(),
-  official: (() => {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      if (arg === 'official') {
-        return true;
-      }
-    }
-    return false;
-  })(),
 };
 const hasSomeFlag = (() => {
   for (const k in flags) {
@@ -130,7 +121,6 @@ const staticSite = flags.site && !(flags.hub || flags.server);
 const serverHost = flags.serverHost || ('server.' + hostname);
 const worldname = flags.worldname || [_capitalize(rnd.adjective()), _capitalize(rnd.noun())].join(' ');
 const hubUrl = flags.hubUrl || ('hub.' + hostname + ':' + port);
-const official = flags.official || false;
 const config = {
   dirname: __dirname,
   hostname: hostname,
@@ -155,7 +145,6 @@ const config = {
       url: serverHost + ':' + port,
       worldname: worldname,
       enabled: flags.server,
-      official: official,
     },
   },
 };
