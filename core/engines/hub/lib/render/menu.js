@@ -235,12 +235,54 @@ const getRemoteServersSrc = () => {
 
 const getLocalServersSrc = (pageIndex) => {
   const leftSrc = (() => {
-    return `\
-      <div style="display: flex; height: 100px; margin-right: auto; justify-content: center; align-items: center;">
-        <a style="display: block; width: 100px;" onclick="hub:menu">
-          <img src="${chevronLeftIconSrc}" width="80" height="80" />
+    const getServerSrc = server => {
+      const {worldname, url, users} = server;
+
+      return `\
+        <a style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #EEE; text-decoration: none;">
+          <img src="${window.location.protocol + '//hub.' + window.location.hostname + (window.location.port ? (':' + window.location.port) : '') + '/servers/img/icon/' + url}" style="display: flex; width: 80px; height: 80px; margin-right: 10px;" />
+          <div style="display: flex; margin-right: auto; padding: 5px; flex-direction: column;">
+            <div style="font-size: 20px; font-weight: 600;">${worldname}</div>
+            <div style="font-size: 13px; font-weight: 400;">
+              <i>https://${url}</i>
+            </div>
+          </div>
+          <div style="width: 300px; padding: 5px; box-sizing: border-box;">${users.map(user =>
+            `<div style="display: inline-block; margin-right: 5px; padding: 2px 10px; background-color: #F7F7F7; font-size: 13px; font-weight: 400;">${user}</div>`
+          ).join('')}</div>
         </a>
-        <div style="margin-right: auto; font-size: 40px;">Local servers</div>
+      `;
+    };
+    const getServersSrc = servers => {
+      return `\
+        <div style="display: flex; width: ${WIDTH - 250}px; height: ${HEIGHT - 100}px; padding: 0 30px; flex-direction: column; box-sizing: border-box;">
+          ${servers.map(getServerSrc).join('')}
+        </div>
+      `;
+    };
+
+    const servers = [
+      {
+        worldname: 'Server One',
+        url: 'https://server1.zeovr.io:8001',
+        users: ['lol', 'zol', 'troll'],
+      },
+      {
+        worldname: 'Server Two',
+        url: 'https://server2.zeovr.io:8002',
+        users: ['lola', 'zola', 'trolla'],
+      },
+    ];
+
+    return `\
+      <div style="display: flex; margin-right: auto; flex-direction: column;">
+        <div style="display: flex; height: 100px; justify-content: center; align-items: center;">
+          <a style="display: block; width: 100px;" onclick="hub:menu">
+            <img src="${chevronLeftIconSrc}" width="80" height="80" />
+          </a>
+          <div style="margin-right: auto; font-size: 40px;">Local servers</div>
+        </div>
+        ${getServersSrc(servers)}
       </div>
     `;
   })();
